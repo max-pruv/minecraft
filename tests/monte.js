@@ -921,18 +921,36 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et le bouton « Conduire cette voiture » s\'offre tout seul dans la rue',
       boutonVoiture, JSON.stringify(await bouton(tab, 'board-btn')));
 
-    // --- la pastille du garde-manger ------------------------------------------
+    // --- le garde-manger est retiré (v518) ---------------------------------
     //
-    // La récolte fait naître la pastille 🍖 dans le rail. Elle ouvrait
-    // l'atelier ; l'atelier n'existe plus (v255) et elle ne fait plus que
-    // compter — mais elle doit encore compter, et se voir.
-    await tab.evaluate(() => window.__game.animalManager.onHarvest({ meat: '🍖 Côtelette' }));
-    const pastille = await tab.evaluate(() => {
+    // Max : « supprime complètement la feature du poulet ×34 ». Ce témoin
+    // éprouvait que la récolte fait naître la pastille 🍖 ; il éprouve
+    // désormais le RETRAIT, par le trajet de l'enfant : on frappe une poule
+    // jusqu'à ce qu'elle parte en fumée, et RIEN n'apparaît ni ne se compte —
+    // ni pastille dans la page, ni « 🍖 × » à l'écran, ni compteur qui monte
+    // dans le stockage. Et la DONNÉE reste (v256) : la clé n'est ni effacée ni
+    // réécrite. Rouge sur l'ancien code : la pastille s'affiche « 🍖 × 1 ».
+    const recolte = await tab.evaluate(async () => {
+      const g = window.__game, am = g.animalManager;
+      const cle = 'web-minecraft-meat-v1';
+      const lire = () => { try { return localStorage.getItem(cle); } catch { return 'illisible'; } };
+      try { localStorage.setItem(cle, '34'); } catch { /* ignore */ }
+      const avant = lire();
+      const p = g.player.pos;
+      const poule = am.invoquer('chicken', p.x + 1.5, p.z);
+      if (!poule) return { err: 'pas de poule' };
+      for (let k = 0; k < 6 && am.animals.includes(poule) && !(poule.dying > 0); k++) am.attack(poule);
+      const t0 = performance.now();
+      while (am.animals.includes(poule) && performance.now() - t0 < 15000) await new Promise((f) => setTimeout(f, 100));
+      await new Promise((f) => setTimeout(f, 300));
       const el = document.getElementById('meat-counter');
-      return { visible: getComputedStyle(el).display !== 'none', texte: el.textContent };
+      return { partie: !am.animals.includes(poule), pastille: el ? getComputedStyle(el).display : 'absente',
+        ecran: /🍖\s*×/.test(document.body.innerText), avant, apres: lire(),
+        secondes: +((performance.now() - t0) / 1000).toFixed(1) };
     });
-    verifier('la récolte fait naître la pastille du garde-manger',
-      pastille.visible && /🍖 × \d+/.test(pastille.texte), JSON.stringify(pastille));
+    verifier('le garde-manger est parti : une bête frappée part en fumée, et rien n\'apparaît ni ne se compte (la donnée reste)',
+      !recolte.err && recolte.partie && recolte.pastille === 'absente' && !recolte.ecran
+        && recolte.avant === '34' && recolte.apres === '34', JSON.stringify(recolte));
 
     // LA BIBLIOTHÈQUE VIT DANS LE + (v176). Max : « les bâtiments, je
     // voudrais que tu les déplaces dans le bouton plus, là où tu as les
@@ -6163,13 +6181,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await new Promise((f) => setTimeout(f, 500)); }
         if (!auVolant()) return { err: 'pas monté dans la voiture' };
         await new Promise((f) => setTimeout(f, 600));
-        // ON PROVOQUE LA SITUATION, ON NE L'ATTEND PAS (v272) : la pastille de
-        // viande n'apparaît qu'à partir d'un morceau ramassé, et c'est elle
-        // qui volait le doigt dans la zone du joystick. On la montre donc
-        // exprès, comme un enfant qui a chassé — sinon le témoin dépend de ce
-        // que les cent trente témoins d'avant ont laissé traîner.
-        const pastille = document.getElementById('meat-counter');
-        if (pastille) { pastille.style.display = 'block'; pastille.textContent = '🍖 × 3'; }
+        // La pastille de viande qui volait le doigt ici (v272) est retirée
+        // (v518) : le témoin garde la règle, sans elle.
         const vis = (id) => getComputedStyle(document.getElementById(id)).display;
         // LA ZONE DU JOYSTICK SE DEMANDE AU JEU, ELLE NE S'ÉCRIT PAS EN
         // PIXELS : c'est une FRACTION de la vue (main.js : `clientX <
@@ -6200,7 +6213,6 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         return {
           vue: { w: innerWidth, h: innerHeight }, zone,
           canvas: (document.querySelector('canvas') || {}).id || 'game',
-          pastille: pastille ? getComputedStyle(pastille).display : 'absente',
           descendre, attenduDescendre, frein: boite('fm-btn'), freinTient: (() => {
             // toucher le bouton tient la barre d'espace, le relâcher la rend
             const e = document.getElementById('fm-btn');
@@ -6391,10 +6403,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // plus ». Un enfant qui a ramassé de la viande ne pouvait plus prendre le
     // volant à cet endroit. Le témoin la MONTRE exprès (voir `prep`) et exige
     // que le doigt atteigne le canvas du PREMIER coup.
-    verifier('et rien d\'autre ne vole le doigt dans la zone du joystick — la pastille de viande ne se touche pas',
+    // (v518 : la pastille est retirée ; la règle reste — rien ne vole le doigt.)
+    verifier('et rien d\'autre ne vole le doigt dans la zone du joystick',
       !manette.err && !!manette.pose && manette.pose.cible === manette.canvas
-        && manette.pose.f > 0.8 && manette.essais === 1 && manette.pastille === 'block',
-      `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · canvas « ${manette.canvas} » · pastille ${manette.pastille}`);
+        && manette.pose.f > 0.8 && manette.essais === 1,
+      `doigt ${JSON.stringify(manette.pose)} en ${manette.essais} essai(s) · canvas « ${manette.canvas} »`);
     verifier('et ils reviennent à pied',
       !manette.err && manette.apres && !manette.apres.auVolant && manette.apres.saut !== 'none'
         && manette.apres.pioche !== 'none' && manette.apres.barre !== 'none' && manette.apres.gaz === 'none'
@@ -8792,6 +8805,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const ids = ['cap-avion', 'minimap', 'gps', 'toast', 'math-pop', 'fun-target', 'fly-btn', 'train-btn', 'gaz-base', 'gaz-val', 'edu-timer', 'left-rail', 'pause-btn'];
         const R = {};
         for (const id of ids) R[id] = boite(id);
+        // la colonne de gauche (v518) : le bouton carte, et où s'ouvre ce qui
+        // vit sous la carte (les émotes) quand elle est ouverte
+        const colonne = { carte: boite('map-btn'),
+          sousCarte: Math.round(document.getElementById('left-rail-bottom').getBoundingClientRect().top),
+          fileCentre: Math.round(document.getElementById('file-centre').getBoundingClientRect().left) };
         if (mp) mp.style.display = 'none';
         // ET LE QUIZ (invariant 2) ARRÊTE LE VOL : il couvre l'écran, l'avion
         // ne doit pas continuer sous lui. On le lance en plein vol et l'on
@@ -8800,7 +8818,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         g.edu.startQuiz();
         await att(2000);
         const glisse = +g.player.pos.distanceTo(avant).toFixed(2);
-        return { vue: { w: innerWidth, h: innerHeight }, R, glisse, descendre: (document.getElementById('ride-btn') || {}).textContent || '' };
+        return { vue: { w: innerWidth, h: innerHeight }, R, colonne, glisse, descendre: (document.getElementById('ride-btn') || {}).textContent || '' };
       });
       await hudPage.close();
       if (!tab.isClosed()) await banc.ramener(tab);
@@ -8815,6 +8833,22 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier(`en vol (${vue.width} × ${vue.height}), minicarte, cadran de cap, GPS, bandeau et défi de Cornichon ne se recouvrent pas, ni les commandes de bord`,
         !hud.err && manquants.length === 0 && recouvre.length === 0,
         `${hud.err || ''} manquants ${JSON.stringify(manquants)} recouvrements ${JSON.stringify(recouvre)} ${JSON.stringify(R)}`);
+      // LA MINICARTE EST DANS LA COLONNE DE GAUCHE (v518). Max : « la carte
+      // est mal placée, elle pourrait être bien à gauche » — elle flottait à
+      // droite du bouton carte. Formulé sans dimension (v265) : même x que le
+      // bouton carte, juste sous lui (moins d'une hauteur de bouton d'écart),
+      // ce qui vit sous la carte descend sous elle, la file centrale passe à
+      // sa droite, et rien dans le quart du joystick (v272). Rouge sur
+      // l'ancien code : x de la minicarte = x du bouton + sa largeur + 10.
+      {
+        const mm = R.minimap, cb = hud.colonne && hud.colonne.carte, c = hud.colonne || {};
+        const dans = (b) => b.x < hud.vue.w * 0.45 && b.y + b.h > hud.vue.h * 0.4;
+        verifier(`(${vue.width} × ${vue.height}) la minicarte s'ouvre à gauche, sous le bouton carte, sans rien recouvrir ni entrer dans le quart du joystick`,
+          !hud.err && !!mm && !!cb && Math.abs(mm.x - cb.x) <= 1
+            && mm.y >= cb.y + cb.h && mm.y - (cb.y + cb.h) < cb.h
+            && c.sousCarte >= mm.y + mm.h && c.fileCentre >= mm.x + mm.w && !dans(mm),
+          `${hud.err || ''} ${JSON.stringify({ minicarte: mm, colonne: c, vue: hud.vue })}`);
+      }
       const col = ['fun-target', 'fly-btn', 'train-btn'].map((n) => R[n]);
       const gz = R['gaz-base'];
       const joy = (b) => !!b && b.x < hud.vue.w * 0.45 && b.y + b.h > hud.vue.h * 0.4;

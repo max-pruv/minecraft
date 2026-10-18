@@ -1462,29 +1462,12 @@
     .toggle.on { background: #2d6a2d; border-color: #58b04c; }
     .toggle.on::after { transform: translateX(24px); background: #fff; }
 
-    /* Le garde-manger : une pastille qui COMPTE ce que l'enfant a récolté.
-       Elle ouvrait l'atelier, où la viande se dépensait ; l'atelier et la
-       jauge du chantier n'existent plus (v255). Elle habite le rail
-       bas-gauche : en flux, comme tout le bord gauche — plus aucune
-       coordonnée à la main. Et comme elle ne s'ouvre plus, elle ne se
-       présente pas comme un bouton : pas de curseur de main. */
-    /* LA PASTILLE DE VIANDE NE SE TOUCHE PAS — ET ELLE VOLAIT LE DOIGT (v272).
-       `#left-rail-bottom > *` rend TOUS ses enfants cliquables, boutons
-       compris ; mais celle-ci ne fait que compter (main.js le dit : « elle ne
-       se touche plus »), et elle est posée à gauche, à 150 px du bas — DANS la
-       zone du joystick. Un enfant qui a ramassé de la viande ne pouvait donc
-       plus prendre le volant à cet endroit : la pastille mangeait le doigt
-       avant le canvas. Même défaut que le bouton « Descendre » de la capture
-       de Max, à un élément près. Trouvé par l'instrumentation du témoin, qui
-       relève `elementFromPoint` : elle a répondu « meat-counter ».
-       RÈGLE : tout ce qui n'est QUE de l'affichage porte
-       `pointer-events: none`, et ce qui se touche le déclare. */
-    #meat-counter {
-      display: none; white-space: nowrap; pointer-events: none;
-      font-size: 15px; font-weight: bold; color: #fff; text-shadow: 1px 1px 0 #000;
-      background: rgba(0,0,0,0.35); padding: 5px 10px; border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.25);
-    }
+    /* LE GARDE-MANGER EST RETIRÉ (v518, décision de Max : « supprime
+       complètement la feature du poulet ×34 »). La pastille 🍖 × N qui
+       habitait la colonne de gauche est partie avec la récolte qui la
+       nourrissait. La règle qu'elle avait apprise reste (v272) : tout ce qui
+       n'est QUE de l'affichage porte `pointer-events: none`, et ce qui se
+       touche le déclare. */
 
     /* catch celebration */
     #catch-banner {
@@ -2114,9 +2097,19 @@
     .menu-note { margin-left: auto; font-size: 12px; font-weight: 600; color: #4A5470; white-space: nowrap; }
 
     /* LA COLONNE DE GAUCHE NE DESCEND PLUS DANS LE QUART DU JOYSTICK (v272) :
-       les émotes et la pastille de viande montent sous la carte. */
-    body.hud-simple #left-rail-bottom { bottom: auto; top: calc(34px + 52px + var(--safe-top)); }
-    @media (max-width: 700px) { body.hud-simple #left-rail-bottom { top: calc(8px + 52px + var(--safe-top)); } }
+       les émotes montent sous la carte. */
+    body.hud-simple { --sous-carte: calc(34px + 52px + var(--safe-top)); }
+    @media (max-width: 700px) { body.hud-simple { --sous-carte: calc(8px + 52px + var(--safe-top)); } }
+    body.hud-simple #left-rail-bottom { bottom: auto; top: var(--sous-carte); }
+    /* LA MINICARTE SE RANGE DANS LA COLONNE DE GAUCHE (v518). Max : « la carte
+       est mal placée, elle pourrait être bien à gauche ». Elle flottait à
+       droite de la colonne (`--rail-w`), sous la pastille de viande ; elle
+       s'ouvre désormais SOUS son bouton, au même x que lui, et ce qui vivait
+       sous la carte (les émotes) descend sous elle. La file centrale (v445) la
+       contourne par la même variable. */
+    body.hud-simple #minimap { left: var(--rail-x); top: var(--sous-carte); }
+    body.hud-simple.minicarte-ouverte #left-rail-bottom { top: calc(var(--sous-carte) + var(--minimap-w) + 8px); }
+    body.hud-simple.minicarte-ouverte #file-centre { left: calc(var(--rail-x) + var(--minimap-w) + 8px); }
 
     /* LE JOYSTICK, UN ANNEAU FIN — même au repos, pour qu'un enfant sache
        où poser le pouce. Il s'efface quand le vrai se dessine sous le doigt. */
@@ -2387,9 +2380,7 @@
   <button id="inv-btn" title="Inventaire de blocs (E)" aria-label="Mon sac"></button>
   <!-- Colonne de gauche : tout ce qui s'y ajoute se range à la suite. -->
   <div id="left-rail"><button id="map-btn" title="Mini-carte" aria-label="Carte"></button></div>
-  <div id="left-rail-bottom">
-    <div id="meat-counter"></div>
-  </div>
+  <div id="left-rail-bottom"></div>
   <button id="settings-btn" title="Réglages" aria-label="Réglages"></button>
   <button id="cam-btn" title="Caméra (mini visio)" aria-label="Caméra"></button>
   <button id="home-btn" title="Retour à la maison" aria-label="Retour à l'accueil"></button>

@@ -182,7 +182,11 @@ export const PALIERS = {
   // mesurés comme nuisibles sur cet appareil. Ce qu'elle coûte se borne en
   // octets : 25 921 sommets, ~3,3 Mo, la taille de la grille fine d'un iPad.
   // Seul `haut` la porte : `bas` et `moyen` rendent ce qu'ils rendaient.
-  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, loin: 2560, surChoixSeulement: true },
+  // v518 — « Loin n'est pas assez loin » : 2 560 → 10 240. La couronne de
+  // trente-deux s'arrête toujours à 2 560 ; une troisième grille de cent
+  // vingt-huit blocs (horizon.js, `PAS_TRES_LOIN`) porte le reste, pour le
+  // prix d'une couronne de plus (~3,3 Mo). `rr`, file, `hdMo` : inchangés.
+  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, loin: 10240, surChoixSeulement: true },
 };
 
 export const PALIER_PAR_DEFAUT = 'moyen';

@@ -4067,6 +4067,87 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         r.lus > 20 && r.sous === r.lus && r.mo < 4, JSON.stringify(r));
     }
 
+    // LE LOINTAIN TRÈS LOINTAIN (v518). « Loin n'est pas assez loin » : une
+    // TROISIÈME grille, de cent vingt-huit blocs, prend le relais de la
+    // couronne jusqu'à 10 240 blocs. Ce qu'on éprouve, sur le vrai monde de la
+    // page : elle porte jusque-là dans l'axe du regard ; elle ne laisse AUCUN
+    // trou de ciel entre le disque de la couronne et elle (les coins du carré
+    // de la couronne sont au-delà de son disque : mon premier jet de la règle
+    // « on cède le carré de dedans » y laissait le ciel) ; elle ne dessine
+    // aucune case que le disque de la couronne couvre à coup sûr ; elle est
+    // posée sous la couronne ; et elle tient en moins de quatre mégaoctets —
+    // une couronne de trente-deux tirée jusque-là en tiendrait plus de
+    // cinquante. Rouge sur la v504 : `PAS_TRES_LOIN` n'existe pas.
+    {
+      const r = await tab.evaluate(async () => {
+        const H = await import('./src/horizon.js');
+        if (!H.PAS_TRES_LOIN) return { err: 'pas de troisième grille' };
+        const w = window.__game.world;
+        const x = 1200, z = -900;
+        const fine = new H.Horizon(w, 632);
+        const loin = new H.Horizon(w, 2560, { pas: H.PAS_LOIN, interieur: fine, abaisse: H.ABAISSE_LOIN, bords: false });
+        const tres = new H.Horizon(w, 10240, { pas: H.PAS_TRES_LOIN, interieur: loin, abaisse: H.ABAISSE_TRES_LOIN, bords: false });
+        const t0 = performance.now();
+        for (const h of [fine, loin, tres]) while (h.maj(x, z, 1e9) > 0 && h.etat().manquantes > 0) { /* tout remplir */ }
+        const msRemplir = Math.round(performance.now() - t0);
+        fine.majDecoupe(() => false, x, z, 0, -1);
+        loin.majDecoupe(() => false, x, z, 0, -1);
+        const t1 = performance.now();
+        tres.majDecoupe(() => false, x, z, 0, -1);
+        const msDecoupe = +(performance.now() - t1).toFixed(1);
+        const dessinees = (h) => {
+          const idx = h.geo.index.array, pos = h.geo.attributes.position.array, set = new Set();
+          for (let k = 0; k < h.geo.drawRange.count; k += 6) set.add(Math.round(pos[idx[k] * 3] / h.pas) + ',' + Math.round(pos[idx[k] * 3 + 2] / h.pas));
+          return set;
+        };
+        const L = dessinees(loin), T = dessinees(tres);
+        // les trous de ciel : des points devant soi (±60°), de 2 200 à 3 800
+        // blocs, que ni la couronne ni la troisième grille ne dessinent
+        let trous = 0, vus = 0;
+        for (let a = -60; a <= 60; a += 1.5) {
+          const r0 = a * Math.PI / 180;
+          for (let d = 2200; d <= 3800; d += 40) {
+            const px = x + Math.sin(r0) * d, pz = z - Math.cos(r0) * d;
+            vus++;
+            if (!L.has(Math.floor(px / 32) + ',' + Math.floor(pz / 32)) && !T.has(Math.floor(px / 128) + ',' + Math.floor(pz / 128))) trous++;
+          }
+        }
+        // aucune case de la troisième dans le disque sûr de la couronne
+        let dansCouronne = 0, portee = 0;
+        const idx = tres.geo.index.array, pos = tres.geo.attributes.position.array, n = tres.geo.drawRange.count;
+        for (let k = 0; k < n; k += 6) {
+          const ax = pos[idx[k] * 3], az = pos[idx[k] * 3 + 2];
+          const coins = [[ax, az], [ax + 128, az], [ax, az + 128], [ax + 128, az + 128]];
+          if (coins.every(([qx, qz]) => Math.hypot(qx - x, qz - z) < 2560 - 32)) dansCouronne++;
+          const cx = ax - x, cz = az - z;
+          if (Math.abs(cx) < -cz * 0.6) portee = Math.max(portee, -cz);
+        }
+        let sous = 0, lus = 0;
+        const pl = loin.geo.attributes.position.array;
+        for (let i = 0; i < loin.N * loin.N; i += 7) {
+          const px = pl[i * 3], pz = pl[i * 3 + 2];
+          if (px % 128 || pz % 128) continue;
+          const j = ((px / 128) - tres.ox) * tres.N + ((pz / 128) - tres.oz);
+          if (j < 0 || j >= tres.N * tres.N) continue;
+          lus++;
+          if (pos[j * 3 + 1] <= pl[i * 3 + 1] - 4) sous++;
+        }
+        let octets = 0;
+        for (const a of Object.values(tres.geo.attributes)) octets += a.array.byteLength;
+        octets += tres.geo.index.array.byteLength + tres.bat.instanceMatrix.array.byteLength + tres.bat.instanceColor.array.byteLength;
+        for (const k of ['hauteurs', 'pret', 'bati', 'toits', 'estNY', 'climats']) octets += tres[k].byteLength;
+        const out = { pas: tres.pas, sommets: tres.N * tres.N, cases: n / 6, portee: Math.round(portee), trous, vus, dansCouronne,
+          sous, lus, mo: +(octets / 1048576).toFixed(2), msRemplir, msDecoupe };
+        fine.geo.dispose(); loin.geo.dispose(); tres.geo.dispose();
+        return out;
+      });
+      verifier('« Loin » : une troisième grille porte à 10 240 blocs, sans un trou de ciel entre elle et la couronne',
+        !r.err && r.pas === 128 && r.portee >= 9800 && r.trous === 0 && r.vus > 1000 && r.dansCouronne === 0 && r.cases > 1000,
+        JSON.stringify(r));
+      verifier('« Loin » : la troisième grille est posée sous la couronne, et tient en moins de 4 Mo',
+        !r.err && r.lus > 20 && r.sous === r.lus && r.mo < 4, JSON.stringify(r));
+    }
+
     // LES FALAISES ET LES BERGES, VUES DE LOIN (v340). Le monde proche montre
     // la roche d'une falaise et le sable d'une grève depuis la v326 ;
     // `horizon.js` gardait le vert de la carte partout. On remplit un paysage

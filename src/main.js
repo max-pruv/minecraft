@@ -33,7 +33,8 @@ import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { creerGuides, DUREE_PANNEAU_MS } from './guides.js';
-import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN } from './horizon.js';
+import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN, PORTEE_COURONNE,
+  ABAISSE_TRES_LOIN, rayonTresLoin } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
 import { mondeDevant, ligneDiagConduite } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
@@ -257,12 +258,21 @@ const RAYON_HORIZON = rayonHorizon(RENDER_RADIUS, CHUNK);
 // ne change ici — ni le brouillard, ni le plan lointain de la caméra.
 // `?loin=0` l'éteint, `?loin=3000` la force (mesures, captures).
 const LOIN_FORCE = new URLSearchParams(location.search).get('loin');
+const LOIN_VOULU = LOIN_FORCE != null ? Number(LOIN_FORCE) || 0 : (PALIER && PALIER.loin) || 0;
 const RAYON_LOIN = (() => {
-  const voulu = LOIN_FORCE != null ? Number(LOIN_FORCE) || 0 : (PALIER && PALIER.loin) || 0;
-  const r = rayonLoin(voulu);
+  const r = rayonLoin(Math.min(LOIN_VOULU, PORTEE_COURONNE));
   return r > RAYON_HORIZON + PAS_LOIN ? r : 0;
 })();
-const PORTEE_VUE = RAYON_LOIN || RAYON_HORIZON;
+// ET AU-DELÀ DE LA COURONNE, UNE TROISIÈME GRILLE (v518) : « Loin n'est pas
+// assez loin ». La couronne garde ses 2 560 blocs ; une grille de cent
+// vingt-huit blocs porte jusqu'à `loin` (10 240 au palier `haut`). Le
+// brouillard et le plan lointain reculent avec elle. `?loin=2560` rend la
+// v497 au sommet près.
+const RAYON_TRES_LOIN = (() => {
+  const r = rayonTresLoin(LOIN_VOULU);
+  return RAYON_LOIN && r > RAYON_LOIN + PAS_TRES_LOIN ? r : 0;
+})();
+const PORTEE_VUE = RAYON_TRES_LOIN || RAYON_LOIN || RAYON_HORIZON;
 // Millisecondes maximum consacrées par frame à construire des chunks.
 //
 // LE BUDGET ÉTAIT SOUS LE COÛT D'UN SEUL MORCEAU (v229). Mesuré dans la boucle
@@ -461,7 +471,7 @@ scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK, PORTEE_VUE);
 // Le plan lointain recule avec la couronne lointaine (v497) — de quoi voir son
 // bord depuis le ciel — et reste à 900 partout ailleurs, au bit près.
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1,
-  RAYON_LOIN ? RAYON_LOIN + 300 : 900);
+  PORTEE_VUE > RAYON_HORIZON ? PORTEE_VUE + 300 : 900);
 // La caméra de l'enfant voit toutes les couches (couches.js) : le décor que
 // la sonde des reflets dessine, et la carrosserie qu'elle ne dessine pas.
 voirTout(camera);
@@ -649,6 +659,15 @@ if (horizonLoin) {
   horizonLoin.mesh.renderOrder = 2;          // après la grille fine, qui gagne au recouvrement
   scene.add(decor(horizonLoin.objet()));
 }
+// Le lointain très lointain (v518) : `null` sans couronne, et au palier « Loin »
+// au-delà de ses 2 560 blocs. Il cède à la couronne, comme elle cède à la fine.
+const horizonTresLoin = RAYON_TRES_LOIN ? new Horizon(world, RAYON_TRES_LOIN,
+  { pas: PAS_TRES_LOIN, interieur: horizonLoin, abaisse: ABAISSE_TRES_LOIN, bords: false }) : null;
+if (horizonTresLoin) {
+  horizonTresLoin.mesh.name = 'horizon-tres-loin';
+  horizonTresLoin.mesh.renderOrder = 3;
+  scene.add(decor(horizonTresLoin.objet()));
+}
 // LE BÂTI LOINTAIN SE COUPE EN RENDU LOGICIEL, COMME LES OMBRES ET LA COUCHE
 // HD (v331). Mesuré en A/B sur la même page, en vol vers Paris à rr=12, ordre
 // alterné : 4,8 · 5,8 · 5,7 images par seconde avec, 15,0 · 17,6 · 11,6 sans
@@ -660,6 +679,7 @@ if (horizonLoin) {
   const voulu = new URLSearchParams(location.search).get('batiloin');
   horizon.bat.visible = voulu != null ? voulu !== '0' : !renduLogiciel();
   if (horizonLoin) horizonLoin.bat.visible = horizon.bat.visible;
+  if (horizonTresLoin) horizonTresLoin.bat.visible = horizon.bat.visible;
 }
 
 // LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
@@ -3377,21 +3397,11 @@ window.addEventListener('deviceorientation', (e) => {
   lastOrient = { alpha: e.alpha, beta: e.beta, gamma: e.gamma };
 });
 
-// --- meat harvest -----------------------------------------------------------------
-
-const MEAT_KEY = 'web-minecraft-meat-v1';
-let meatCount = 0;
-try { meatCount = Number(localStorage.getItem(MEAT_KEY)) || 0; } catch { meatCount = 0; }
-const meatCounter = document.getElementById('meat-counter');
-function renderMeat() {
-  meatCounter.style.display = meatCount > 0 ? 'block' : 'none';
-  meatCounter.textContent = `🍖 × ${meatCount}`;
-}
-renderMeat();
-// Le garde-manger ouvrait l'atelier, où la viande se dépensait en recettes ;
-// l'atelier n'existe plus (v255), la pastille ne fait plus que compter ce
-// que l'enfant a récolté. Elle ne se touche plus — un bouton qui ne ferait
-// rien serait pire qu'une pastille qui compte.
+// LE GARDE-MANGER EST RETIRÉ (v518). Max : « supprime complètement la feature
+// du poulet ×34 ». La pastille 🍖 × N et la récolte qui la nourrissait sont
+// parties ; la clé de stockage (`web-minecraft-meat-v1`) et son champ de
+// `sync.js` RESTENT (v256 : on retire l'écran, jamais les données). Une bête
+// frappée fuit et disparaît en fumée, sans rien donner.
 
 function emojiBurst(emojis, n = 18) {
   const container = document.getElementById('confetti');
@@ -3565,13 +3575,6 @@ function garagiste(dt) {
     if (!dejaLa) animalManager.invoquer('voiture', x, z);
   }
 }
-
-animalManager.onHarvest = (def) => {
-  meatCount++;
-  try { localStorage.setItem(MEAT_KEY, String(meatCount)); } catch { /* ignore */ }
-  renderMeat();
-  emojiBurst([def.meat.split(' ')[0], '✨'], 10);
-};
 
 // --- catch celebration ------------------------------------------------------------
 
@@ -8387,7 +8390,7 @@ window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = nul
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
-  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, horizonLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
+  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, horizonLoin, horizonTresLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
@@ -8516,6 +8519,11 @@ function frame(now) {
     horizonLoin.sansNY = renduDansManhattan;
     horizonLoin.maj(player.pos.x, player.pos.z, horizon.complet ? 3 : 0.5);
   }
+  // le très lointain (v518) prend ce que la couronne laisse, deux millisecondes
+  if (horizonTresLoin) {
+    horizonTresLoin.sansNY = renduDansManhattan;
+    horizonTresLoin.maj(player.pos.x, player.pos.z, horizon.complet && horizonLoin.complet ? 2 : 0.3);
+  }
   // La découpe se refait à une cadence en TEMPS RÉEL, et tout de suite si le
   // joueur a franchement tourné la tête — sinon le cône de vision découvrirait
   // un quart de seconde de ciel vide au milieu d'un virage.
@@ -8529,6 +8537,12 @@ function frame(now) {
       horizonLoin.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
         player.pos.x, player.pos.z, vise, viseZ);
       horizonLoin.msDecoupe = performance.now() - tl;
+    }
+    if (horizonTresLoin) {
+      const tl = performance.now();
+      horizonTresLoin.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
+        player.pos.x, player.pos.z, vise, viseZ);
+      horizonTresLoin.msDecoupe = performance.now() - tl;
     }
   }
   updateSky(dt);
