@@ -21,6 +21,9 @@ const T = (d, w = 2.4) => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="tru
 // Une silhouette d'avion vue de dessus, nez en haut, dessinée pour ce jeu.
 const AVION = 'M12 2.6c.9 0 1.5.9 1.5 2V9.4l7 4.2v2.2l-7-2v4.4l2.3 1.8V21L12 20.1 8.2 21v-1.4l2.3-1.8v-4.4l-7 2v-2.2l7-4.2V4.6c0-1.1.6-2 1.5-2z';
 const avion = (angle) => `<path fill="currentColor" stroke="none" transform="translate(12 10) rotate(${angle}) scale(.92) translate(-12 -12)" d="${AVION}"/><path d="M3.5 21h17" stroke-width="2.4"/>`;
+// Un appareil vu de côté, en aplat : nez à droite, dérive à gauche, décalé de
+// `dy` vers le bas (le train rentré pose le ventre sur la roue).
+const FUSELAGE = (dy) => `<path fill="currentColor" stroke="none" transform="translate(0 ${dy})" d="M2.6 1.4h2.6l2.4 2.6h9.6c2.4 0 4.3 1 4.6 2.2.1.6-.4 1.2-1.2 1.2H4.2c-1 0-1.7-.6-1.7-1.4z"/>`;
 export const ICONES = {
   menu: T('<path d="M4 6.5h16M4 12h16M4 17.5h16"/>', 2.6),
   carte: T('<path d="M8.5 4 3 6.2V20l5.5-2.2 7 2.2L21 17.8V4l-5.5 2.2z"/><path d="M8.5 4v13.8M15.5 6.2V20"/>', 2.2),
@@ -32,7 +35,13 @@ export const ICONES = {
   decoller: T(avion(48)),
   atterrir: T(avion(132)),
   frein: T('<circle cx="12" cy="12" r="5.8"/><path d="M12 9.2v3.4M12 15.1v.01"/><path d="M4.4 7.2a9.6 9.6 0 0 0 0 9.6M19.6 7.2a9.6 9.6 0 0 1 0 9.6"/>', 2.4),
-  train: T('<path d="M12 2.8v6.8M8.6 5.8h6.8"/><circle cx="12" cy="15.4" r="5.2"/><circle cx="12" cy="15.4" r="1.5" fill="currentColor" stroke="none"/>', 2.4),
+  // LE TRAIN (v514). Max : « on ne comprend pas que c'est une roue ». Une
+  // croix sur un cercle se lisait comme une cible. Ici un appareil vu de
+  // côté (aplat, nez à droite, dérive à gauche) et SA roue : un pneu épais,
+  // un moyeu, quatre rayons. L'icône dit l'ÉTAT, comme le mot : sorti, la
+  // roue pend sous sa jambe ; rentré, elle est collée dans le ventre.
+  train: T(`${FUSELAGE(-0.6)}<path d="M12 6.4v2.6"/><circle cx="12" cy="15.6" r="6.1" stroke-width="3.2"/><circle cx="12" cy="15.6" r="2" fill="currentColor" stroke="none"/><path d="M12 11.3v2.1M12 17.8v2.1M7.7 15.6h2.1M14.2 15.6h2.1" stroke-width="2.2"/>`, 2.8),
+  trainRentre: T(`<circle cx="12" cy="17" r="3.8" stroke-width="2.8"/><circle cx="12" cy="17" r="1.4" fill="currentColor" stroke="none"/>${FUSELAGE(5.4)}`, 2.6),
   construire: T('<path d="M12 3.2 20 7.6l-8 4.4-8-4.4z" fill="currentColor" fill-opacity=".45"/><path d="M12 3.2 20 7.6v8.8L12 20.8l-8-4.4V7.6zM12 12v8.8M4 7.6 12 12l8-4.4"/>', 2.2),
   poser: T('<path d="M12 4.5v15M4.5 12h15"/>', 3.2),
   // CASSER : une pioche — le geste qu'un enfant connaît des jeux de blocs.

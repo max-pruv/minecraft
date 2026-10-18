@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 514,
+    titre: 'Le train est une roue',
+    puces: [
+      'Une vraie roue sous l\'avion',
+      'Sorti : la roue pend dessous',
+      'Rentré : la roue se range',
+    ],
+  },
+  {
     v: 513,
     titre: 'On roule dans la forêt',
     puces: [

@@ -2934,7 +2934,14 @@ function majBoutonsVehicule() {
     const ic = document.querySelector('#fly-btn .ic');
     if (ic) ic.innerHTML = motVol === 'DÉCOLLER' ? ICONES.decoller : ICONES.atterrir;
   }
-  if (motTrain !== dernierMotTrain) { dernierMotTrain = motTrain; trainLb.textContent = motTrain; }
+  if (motTrain !== dernierMotTrain) {
+    dernierMotTrain = motTrain; trainLb.textContent = motTrain;
+    // L'ICÔNE DIT L'ÉTAT (v514) : la roue pend sous sa jambe, ou elle est
+    // rangée dans le ventre. Le mot reste dans `.lb` et `aria-label`.
+    trainBtn.setAttribute('aria-label', `Train d'atterrissage ${motTrain === 'SORTI' ? 'sorti' : 'rentré'}`);
+    const ic = trainBtn.querySelector('.ic');
+    if (ic) ic.innerHTML = motTrain === 'SORTI' ? ICONES.train : ICONES.trainRentre;
+  }
   majCadranDeCap();
 }
 window.__majBoutonsVehicule = majBoutonsVehicule;
