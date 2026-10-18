@@ -2211,7 +2211,7 @@ function dansMetroBoiteDC(x, z, t) {
 // de trois blocs du sol reste celui d'avant au bloc près : on n'ouvre pas une
 // trémie sous sa maison, on ne referme pas celle qu'il a vue. La date se
 // relit à la fusion (v309).
-export const DATE_STATIONS = Date.UTC(2026, 9, 18, 18, 47, 0);
+export const DATE_STATIONS = Date.UTC(2026, 9, 18, 23, 8, 0);
 function dansStations(x, z, t) {
   if (!(t <= DATE_STATIONS)) return false;
   const E = EMPRISE_METRO_DC;   // la boîte et sa marge, où le métro se creuse
