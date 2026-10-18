@@ -932,7 +932,12 @@
       background: rgba(0,0,0,0.35); padding: 4px 12px; border-radius: 8px; z-index: 6;
     }
     #edu-timer.urgent { color: #ff6b5e; animation: pulse 1s infinite; }
-    #edu-timer { padding-right: 30px; pointer-events: auto; }
+    #edu-timer { padding-right: 40px; pointer-events: auto; }
+    #edu-timer-ico:empty { display: none; }
+    #edu-timer { white-space: nowrap; }
+    #edu-timer-ico .ico { display: inline-block; width: 18px; height: 18px; vertical-align: -3px; margin-right: 6px; }
+    /* La croix du badge : un doigt d'enfant, pas une pointe de souris (44 px). */
+    #edu-timer .fermer-msg { width: 44px; height: 44px; line-height: 44px; right: -4px; background: transparent; font-size: 15px; }
     @keyframes pulse { 50% { opacity: 0.55; } }
     #inv-btn {
       position: fixed; top: calc(8px + var(--safe-top)); right: 56px; z-index: 11;
@@ -1210,6 +1215,13 @@
        `display` forcé : le bandeau garde sa propre logique d'affichage, et un
        message arrivé pendant qu'on regardait la carte se voit à la fermeture. */
     body.carte-ouverte #link-banner { display: none !important; }
+    /* Un état calme (seul dans un monde en ligne) n'est pas une panne : il
+       prend le verre clair des pilules, encre sombre, sur une ligne. */
+    #link-banner.calme {
+      background: rgba(255,255,255,0.86); border-color: rgba(255,255,255,0.95);
+      color: #111A2E; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #link-banner.calme .fermer-msg { background: rgba(17,26,46,0.10); color: #111A2E; }
     #link-banner.ok { background: rgba(45, 120, 70, 0.92); border-color: rgba(150, 230, 180, 0.5); }
     /* La croix des messages : une fois qu'on a compris, on referme. */
     .fermer-msg {
@@ -2551,7 +2563,7 @@
     </div>
   </div>
   <div id="link-banner"><span id="link-banner-txt"></span><button class="fermer-msg" id="link-banner-close" aria-label="Masquer">✕</button></div>
-  <div id="edu-timer"><span id="edu-timer-txt"></span><button class="fermer-msg" id="edu-timer-close" aria-label="Masquer">✕</button></div>
+  <div id="edu-timer"><span id="edu-timer-ico"></span><span id="edu-timer-txt"></span><button class="fermer-msg" id="edu-timer-close" aria-label="Masquer">✕</button></div>
   <!-- Le cadran de cap (v263) : ce que l'enfant lit aux commandes. -->
   <!-- LA FILE CENTRALE (aviation) : tout ce qui s'affiche en haut au milieu s'y
        range l'un sous l'autre — elle ne peut donc rien recouvrir par construction. -->

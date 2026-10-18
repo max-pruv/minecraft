@@ -20,6 +20,30 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v522 — Les blocs parlent français, et deux bandeaux se lisent
+
+**Pourquoi.** La revue d'écran de la v506 a relevé trois textes qu'un enfant de
+sept ans ne lit pas. Le bloc en main s'appelait « Grass » au milieu de l'écran,
+et trente-sept blocs de base portaient un nom anglais (ligne 1). Un monde en
+ligne sans ami affichait « 🕐 Seul·e dans le monde 60739 — donne ce code à ton
+ami·e », blanc sur ocre, sur deux lignes (ligne 12). Un déblocage parental
+affichait « 🔑 1440 min sans quiz », fermé par une croix de 22 px (ligne 13).
+
+**Ce que ça change.**
+- Les blocs s'appellent Herbe, Terre, Pierre, Bûche de chêne, Briques, Laine
+  rouge… Seul le nom affiché change : ni l'identifiant ni une sauvegarde.
+- Seul dans son monde, on lit « Donne le code 60739 à ton ami », sur une ligne,
+  encre sombre sur verre clair. C'est un bandeau d'état, pas un message de jeu.
+- Le temps libre s'écrit « Libre jusqu'à 18 h » (l'heure de fin, arrondie au
+  quart d'heure inférieur), avec une horloge dessinée, et sa croix fait 44 px.
+  Le répit se compte toujours en temps joué (invariant 2) : seul l'affichage
+  change.
+
+**Ce qui le prouve.** Quatre témoins dans la fumée, chacun rouge sur la v520 :
+aucun nom de bloc anglais, l'heure de fin (« 17 h 45 », « 17 h 15 », « toute la
+journée »), le bandeau (texte, classe, encre sombre, une ligne) et le badge
+(sans emoji, icône dessinée, croix de 44 × 44). Captures avant et après, iPhone
+et iPad, de jour et de nuit, dans la PR.
 ## v520 — On finit de construire là où l'on a commencé
 
 **Pourquoi.** Max, sur iPhone : « Quand on est en mode builder, le bouton avec

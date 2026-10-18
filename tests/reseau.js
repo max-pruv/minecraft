@@ -1091,10 +1091,12 @@ function verifier(nom, ok, detail = '') {
     // Le défaut signalé par la famille : on tape un code, tout se passe sans la
     // moindre erreur, et l'enfant joue seul en croyant avoir rejoint l'autre.
     const solo = await banc.rejoindre('Elsa', '77777');
-    await jusqua(async () => /seul/i.test((await vu(solo)).bandeau));
+    // v522 : le bandeau dit le GESTE (« Donne le code 77777 à ton ami »), plus
+    // une écriture inclusive qu'on ne lit pas à sept ans.
+    await jusqua(async () => /Donne le code/.test((await vu(solo)).bandeau));
     const etatSolo = await vu(solo);
     verifier('ouvrir un monde vide le dit franchement',
-      /seul/i.test(etatSolo.bandeau) && etatSolo.bandeau.includes('77777'),
+      /Donne le code/.test(etatSolo.bandeau) && etatSolo.bandeau.includes('77777'),
       JSON.stringify(etatSolo.bandeau));
     verifier('et le compteur reste honnête', etatSolo.compteur === 1 && etatSolo.avatars.length === 0,
       `compteur ${etatSolo.compteur}`);

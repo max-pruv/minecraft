@@ -350,6 +350,46 @@ function verifier(nom, ok, detail = '') {
     }
     verifier('aucun texte du jeu ne promet une fonctionnalité retirée (créatures, feux d\'artifice, coffre, quête, chapeaux)',
       restes.length === 0, restes.join(' · ') || 'aucun');
+    // LES TEXTES DE LA REVUE D'ÉCRAN (lignes 1, 12, 13). Un enfant de sept ans
+    // lit « Herbe », pas « Grass » ; « Donne le code 60739 à ton ami », pas une
+    // écriture inclusive blanche sur ocre ; « Libre jusqu'à 18 h », pas
+    // « 🔑 1440 min sans quiz » fermé par une croix de 22 px.
+    const urlSrc = (f) => require('url').pathToFileURL(path.join(dossier, f)).href;
+    const { BLOCK_INFO } = await import(urlSrc('blocks.js'));
+    const ANGLAIS = /\b(Grass|Dirt|Stone|Sand|Log|Leaves|Water|Planks?|Cobble(stone)?|Glass|Bricks?|Snow|Sandstone|Gravel|Mossy|Birch|Dark|Ice|Gold|Block|Diamond|Obsidian|Bookshelf|Wool|Red|Blue|Yellow|Green|Purple|Black|Slab|Quartz|Terracotta|Brownstone|Oak)\b/;
+    const anglais = Object.values(BLOCK_INFO).map((b) => b.name).filter((n) => ANGLAIS.test(n || ''));
+    verifier('aucun nom de bloc n\'est anglais', anglais.length === 0, anglais.join(', '));
+    const edu = await import(urlSrc('education.js'));
+    const midi = new Date(2026, 9, 18, 17, 13);
+    const libres = edu.texteLibre
+      ? [edu.texteLibre(2700, midi), edu.texteLibre(600, midi), edu.texteLibre(86400, midi)] : null;
+    verifier('le temps libre se dit en heure : « Libre jusqu\'à 17 h 45 »',
+      !!libres && libres[0] === 'Libre jusqu’à 17 h 45' && libres[1] === 'Libre jusqu’à 17 h 15'
+      && libres[2] === 'Libre toute la journée', JSON.stringify(libres || 'pas de texteLibre'));
+    const srcMain = fs.readFileSync(path.join(dossier, 'main.js'), 'utf8');
+    const ecran = await tab.evaluate(async () => {
+      const lb = document.getElementById('link-banner');
+      window.__alerte('monde-seul', true, 'Donne le code 60739 à ton ami');
+      await new Promise((r) => setTimeout(r, 100));
+      const cs = getComputedStyle(lb), r = lb.getBoundingClientRect();
+      const bandeau = { cls: lb.className, color: cs.color, h: Math.round(r.height), lh: parseFloat(cs.lineHeight) || 16, fond: cs.backgroundColor };
+      window.__alerte('monde-seul', false);
+      const t = document.getElementById('edu-timer'), avant = t.style.display;
+      t.style.display = 'block';
+      const x = document.getElementById('edu-timer-close').getBoundingClientRect();
+      const badge = { txt: document.getElementById('edu-timer-txt').textContent,
+        svg: !!document.querySelector('#edu-timer-ico svg'), w: Math.round(x.width), h: Math.round(x.height) };
+      t.style.display = avant;
+      return { bandeau, badge };
+    });
+    const sombre = (c) => { const m = (c.match(/\d+/g) || []).map(Number); return m.length >= 3 && m[0] + m[1] + m[2] < 200; };
+    verifier('seul dans un monde : « Donne le code … à ton ami », une ligne, encre sombre sur verre clair',
+      srcMain.includes('`Donne le code ${net.code} à ton ami`') && !/Seul·e|ami·e/.test(srcMain)
+      && ecran.bandeau.cls === 'calme' && sombre(ecran.bandeau.color) && ecran.bandeau.h < 2 * ecran.bandeau.lh + 16,
+      JSON.stringify(ecran.bandeau));
+    verifier('le badge du temps libre : sans emoji, une icône dessinée, une croix de 44 px',
+      !/🔑|min sans quiz/.test(ecran.badge.txt) && (!/^Libre/.test(ecran.badge.txt) || ecran.badge.svg)
+      && ecran.badge.w >= 44 && ecran.badge.h >= 44, JSON.stringify(ecran.badge));
 
     // GRAPHISMES NORMAL / AVANCÉ (v257). Max : « dans les settings, un mode
     // normal ou un mode avancé ». Le réglage est une ligne des Réglages, il

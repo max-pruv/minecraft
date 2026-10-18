@@ -79,6 +79,8 @@ export const ICONES = {
   corbeille: T('<path d="M4.5 6.5h15M9.5 6.5V4h5v2.5M6.5 6.5l1 13.5h9l1-13.5"/>', 2.2),
   partager: T('<path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v8h14v-8"/>', 2.2),
   melanger: T('<path d="M3.5 7h3.5c4 0 6 10 10 10h3.5M3.5 17h3.5c4 0 6-10 10-10h3.5"/><path d="m18 4 3 3-3 3M18 14l3 3-3 3"/>', 2.2),
+  // LIBRE : une horloge, pour « libre jusqu'à 18 h » (le badge du temps libre).
+  libre: T('<circle cx="12" cy="12" r="8.6"/><path d="M12 7v5.2l3.4 2.2"/>', 2.4),
   etincelle: T('<path d="M12 3.5 13.9 10.1 20.5 12l-6.6 1.9L12 20.5l-1.9-6.6L3.5 12l6.6-1.9z" fill="currentColor"/>', 1.6),
 };
 // LA PASTILLE D'UNE LIGNE (v504) : un enfant qui ne lit pas encore bien

@@ -1,5 +1,39 @@
 # Ce qui est en cours
 
+## LES ROUGES DU PORTAIL DE LA v522 — intermittents de `monte.js`, aucun causé par la livraison
+
+La v522 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le
+code », badge « Libre jusqu'à ») : rien sur les chemins de la circulation, du
+worker ou de l'avion. Preuve structurelle, plus trois passages de `monte.js` :
+
+| témoin | portail branche | seule branche | seule `origin/main` |
+| --- | --- | --- | --- |
+| et l'on ne marche pas dans une rue vide | ❌ | ❌ | ❌ (vus 0,7,7,1,0,0,1,19) |
+| deux voisines d'un convoi gardent leur longueur d'écart | ❌ | ✅ | ✅ |
+| au feu, la voiture freine sur plusieurs relevés | ❌ | ❌ | ✅ |
+| à l'arrivée, la rue se fabrique par tranches (vues 5 pour 6) | ✅ | ❌ | ✅ |
+| à 80 b/s dans Paris, le worker ne reste pas à sec (× 1,07) | ✅ | ❌ | ✅ |
+| ✈️ près d'Orly, l'approche pose l'avion de ligne sur la piste | ✅ | ❌ | ✅ |
+
+Et au premier portail (coupé à deux heures), `maj.js` « toucher l'écran casse
+en construction » (`{"explorer":0,"construction":0}`) : vert au portail
+suivant. La distribution n'est pas faite au sens de la v269 (trois passages de
+plus de trente minutes) : à reprendre si l'un d'eux revient sur une livraison
+qui touche ces chemins.
+
+Au portail rebasé (v516), même famille, toutes déclarées plus bas : `degats.js`
+(percuter une voiture de la rue), `maj.js` (le loader compte les fichiers),
+`manhattan.js` (le taxi), `monte.js` (passant lancé sur la voiture, convoi, feu,
+rue vide, worker). Le portail ne finit pas sous la limite de deux heures d'une
+commande de fond : `reseau.js` rejouée seule, un rouge **non déclaré jusqu'ici** :
+« il le voit s'écraser : l'appareil de l'ami prend feu chez lui »
+(`enFeuVu.vehicule: false` en 1 801 ms). Rejouée seule sur `origin/main` (v518) :
+vert, mais QUATRE autres rouges (« Alice retrouve son monde après une veille »,
+« la reprise tient », « seule après le départ de l'hôte », « continue d'essayer
+de la reconnecter »), que la branche a rendus aussi au premier portail. Une
+intermittence des deux côtés, sur des chemins (réseau, dégâts d'avion) que la
+v522 ne touche pas ; la distribution reste à faire.
+
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v518 (Loin,
   garde-manger, minicarte)** — double mesure de la v195, chaque suite rejouée
   SEULE sur la branche et sur `origin/main` v506 (`git worktree`). `maj.js` :
