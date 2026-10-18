@@ -614,6 +614,10 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     const [f, x, z] = msg.c.map(Number);
     if (![f, x, z].every(Number.isFinite)) return;
     noter(msg.o.slice(0, 200), [f, x, z]);
+    // ses feux de détresse aussi (v507) : la voiture de ce nom s'arrête et
+    // clignote chez l'ami comme chez celui qui l'a percutée (vehicules.js)
+    const m = nommer ? nommer(msg.o.slice(0, 200)) : null;
+    if (m && m.userData) m.userData.heurteRecu = 3 + 3 * Math.max(0, Math.min(1, f));
     rapprocher(true);
   }
 

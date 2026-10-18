@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v507 — Les feux de détresse sur la carrosserie
+
+**Pourquoi.** Max, capture d'iPhone à Lille, de nuit, derrière une voiture de
+la rue qu'il vient de percuter : trois ou quatre boules orange vif flottent
+au-dessus et à côté de la carrosserie. « Les warnings qui s'affichent en dehors
+de la voiture au niveau des lumières, ça fait aucun sens, c'est pas
+réaliste. » Mesuré : les feux de détresse de la v372 étaient quatre sphères à
+cotes fixes, les mêmes pour les cinquante-sept modèles de la flotte. Une
+sonde (`tests/sonde-detresse.cjs`) tire un rayon le long de chaque feu
+jusqu'à la tôle : sur `origin/main`, **172 feux sur 228 sont dans le vide**,
+et les 57 modèles en ont au moins un qui ne touche pas la carrosserie.
+
+**Ce que ça change.** Les feux de détresse clignotent SUR la voiture, aux
+quatre coins, là où sont ses blocs optiques : de petites lentilles orange
+plates, à fleur de la tôle, orientées comme elle. Chaque modèle est mesuré
+(ses feux nommés, sinon sa boîte, puis un rayon trouve la carrosserie). Le
+rythme est celui d'un vrai feu de détresse. Et chez l'ami en ligne, la
+voiture percutée s'arrête et clignote aussi.
+
+La « flamme » de la capture n'est pas du feu : une voiture de la rue ne prend
+jamais feu (v356), et le témoin qui le garde (« très touchée elle fume, ne
+prend JAMAIS feu ») est vert. Le plus probable est une des sphères orange vue
+contre le flanc — elles dépassaient du côté des voitures étroites — mais la
+capture seule ne permet pas de le prouver.
+
+**Ce qui le prouve.** La sonde, sur la branche : 228 feux sur 228 à un
+centimètre et demi devant la tôle, aucun dans le vide. Deux témoins neufs dans
+`degats.js` : sept modèles, des plus petits (Cayman, F40) aux plus grands
+(Spectre, fourgonnette, Crown Victoria), ont leurs quatre feux sur la tôle,
+qui clignotent, sans compiler un programme (les clés) ; et chez Alice, la
+voiture de la rue que Marlon percute s'arrête en détresse. Les deux sont
+rouges sur `origin/main`.
 ## v518 — « Loin » voit plus loin, le garde-manger part, la minicarte à gauche
 
 Trois sujets, trois lignes au journal du jeu, un témoin pour chacun.

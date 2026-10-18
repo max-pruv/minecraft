@@ -253,6 +253,14 @@ function chaufferLesFabriquees(renderer, scene, camera) {
     ici.add(flammeDeChauffe());
     renderer.compile(ici, camera, scene);
   } catch (e) { console.warn('chauffe de la flamme', e); }
+  // la lentille des feux de détresse (v507) : elle naît au premier choc d'une
+  // voiture de la rue, son programme se compile ici
+  try {
+    materielDetresse();
+    const ici = new THREE.Scene();
+    ici.add(new THREE.Mesh(geoDetresse, matDetresse));
+    renderer.compile(ici, camera, scene);
+  } catch (e) { console.warn('chauffe des feux de détresse', e); }
   for (const entree of FLOTTE) {
     if (!entree.fabrique) continue;
     const chargement = chargerVoitureFlotte(entree);
@@ -1821,6 +1829,7 @@ class Convoi {
     for (let i = 0; i < n; i++) {
       const pas = this.base[i] - ancien[i];
       const vConv = dt > 0 ? Math.max(0, pas / dt) : 0;
+      heurteRecu(this, i);
       if (this.heurte[i] > 0) this.heurte[i] = Math.max(0, this.heurte[i] - dt);
       let vise = this.heurte[i] > 0 ? 0 : this.cible[i];
       // rattraper, oui, mais pas à soixante-dix dans Paris : trois blocs par
@@ -2019,6 +2028,7 @@ class Convoi {
       // coup. Ce qu'elle n'a pas fait devient du retard (v372).
       const vConv = dt > 0 ? pas / dt : 0;
       for (let i = 0; i < this.nb; i++) {
+        heurteRecu(this, i);
         if (this.heurte[i] > 0) this.heurte[i] = Math.max(0, this.heurte[i] - dt);
         let vise = this.heurte[i] > 0 ? 0 : this.cible[i];
         const libre = vConv * (this.retard[i] > 0.05 ? 1.3 : 1);
@@ -2232,29 +2242,122 @@ export function decalerADroite(pts, e) {
   return out;
 }
 
-// LES FEUX DE DÉTRESSE D'UNE VOITURE HEURTÉE (v372). Quatre petits feux
-// orange aux coins, qui clignotent une fois par seconde, émissifs seulement
-// (aucune lampe : la clé des programmes ne bouge pas, v248). La géométrie et
-// le matériau sont PARTAGÉS (`liberer.js` ne les rend pas) ; le groupe ne se
-// fabrique que pour une voiture effectivement heurtée.
+// LES FEUX DE DÉTRESSE D'UNE VOITURE HEURTÉE (v372), POSÉS SUR SA CARROSSERIE
+// (v507). Max, capture de Lille de nuit : « les warnings qui s'affichent en
+// dehors de la voiture, ça fait aucun sens ». Quatre sphères à cotes fixes
+// (±0,85 ; 0,85 ; ±2,1) pour cinquante-sept modèles de tailles différentes :
+// au-dessus du capot d'une voiture basse, à côté d'une étroite, au-delà du
+// pare-chocs d'une courte (`sonde-detresse.cjs`). On MESURE le modèle (v230) :
+// les feux de ses blocs optiques s'ils sont nommés (`RE_FEU`), sinon les
+// coins de sa boîte, puis un rayon depuis l'extérieur trouve la tôle, et une
+// lentille PLATE se pose à fleur, orientée comme la face touchée. Émissives
+// seulement, aucune lampe (v248) ; géométrie et matériau partagés, chauffés à
+// l'accueil (`chaufferLesFabriquees`) : aucun programme ne naît au choc.
+// Les poses se mesurent une fois par modèle (sur la voiture même, avant la
+// coque d'attente remplacée), le clignotement ne fait que basculer `visible`.
+const RE_FEU = /light|lamp|amber|indicat|clignot/i, RE_PAS_FEU = /housing|brake|lightly|guide|windshield|wheel|disc|caliper/i;
+const posesParModele = new Map();
+const _rc = new THREE.Raycaster(); _rc.layers.enableAll();
 let geoDetresse = null, matDetresse = null;
-function feuxDeDetresse(m, allumes) {
+function materielDetresse() {
+  if (!geoDetresse) {
+    geoDetresse = new THREE.PlaneGeometry(0.26, 0.11); geoDetresse.userData.partagee = true;
+    matDetresse = new THREE.MeshBasicMaterial({ color: 0xffa21a, toneMapped: false }); matDetresse.userData.partagee = true;
+  }
+}
+// Les quatre poses { x, y, z, nx, ny, nz } dans le repère de la voiture `m`
+// (nez vers −z) : avant gauche, avant droite, arrière gauche, arrière droite.
+export function posesDetresse(m) {
+  const cle = m.userData && m.userData.flotte && m.userData.roues ? m.userData.flotte : null;
+  if (cle && posesParModele.has(cle)) return posesParModele.get(cle);
+  // on mesure dans le repère de la voiture : posée un instant à l'origine
+  const pos = m.position.clone(), quat = m.quaternion.clone(), parent = m.parent;
+  if (parent) parent.remove(m);
+  m.position.set(0, 0, 0); m.quaternion.identity(); m.updateMatrixWorld(true);
+  const meshes = [], feux = { av: new THREE.Box3(), ar: new THREE.Box3() };
+  const boite = new THREE.Box3(), b = new THREE.Box3();
+  m.traverse((o) => {
+    if (!o.isMesh || o.name === 'detresse-lentille' || !o.geometry) return;
+    for (let p = o; p && p !== m; p = p.parent) if (p.name === 'detresse' || p.visible === false) return;
+    meshes.push(o);
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    b.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+    boite.union(b);
+    const nom = `${o.name || ''}|${(o.material && o.material.name) || ''}`;
+    if (RE_FEU.test(nom) && !RE_PAS_FEU.test(nom)) (b.getCenter(_v3).z < 0 ? feux.av : feux.ar).union(b);
+  });
+  const poses = [];
+  if (!boite.isEmpty()) {
+    const h = boite.max.y - boite.min.y, demiL = Math.max(0.3, Math.min(-boite.min.x, boite.max.x));
+    for (const [sz, cote] of [[-1, 'av'], [1, 'ar']]) {
+      const f = feux[cote];
+      const yF = f.isEmpty() ? boite.min.y + Math.min(0.85, Math.max(0.45, h * 0.45)) : (f.min.y + f.max.y) / 2;
+      const xF = f.isEmpty() ? demiL * 0.72 : Math.max(0.2, Math.min(demiL - 0.15, Math.max(-f.min.x, f.max.x) - 0.14));
+      for (const sx of [-1, 1]) poses.push(poserLentille(meshes, boite, sx, sz, xF, yF));
+    }
+  }
+  m.position.copy(pos); m.quaternion.copy(quat);
+  if (parent) parent.add(m);
+  m.updateMatrixWorld(true);
+  if (cle) posesParModele.set(cle, poses);
+  return poses;
+}
+const _v3 = new THREE.Vector3(), _o3 = new THREE.Vector3(), _d3 = new THREE.Vector3();
+// Un rayon venu de devant (ou de derrière) à la hauteur du feu ; s'il ne
+// touche rien, on rentre vers l'axe et l'on descend, jusqu'à toucher la tôle.
+function poserLentille(meshes, boite, sx, sz, x0, y0) {
+  const h = boite.max.y - boite.min.y;
+  for (const kx of [1, 0.85, 0.7, 0.5, 0.3]) for (const dy of [0, -0.1, 0.1, -0.2, -0.3]) {
+    const x = sx * x0 * kx, y = Math.max(boite.min.y + 0.12, Math.min(boite.max.y - 0.05, y0 + dy * h));
+    _o3.set(x, y, sz < 0 ? boite.min.z - 1 : boite.max.z + 1); _d3.set(0, 0, -sz);
+    _rc.set(_o3, _d3); _rc.far = boite.max.z - boite.min.z + 2;
+    const touche = _rc.intersectObjects(meshes, false)[0];
+    if (!touche) continue;
+    const n = touche.face ? touche.face.normal.clone().transformDirection(touche.object.matrixWorld) : new THREE.Vector3(0, 0, sz);
+    if (n.dot(_d3) > 0) n.negate();
+    // une lentille regarde vers l'avant ou l'arrière, pas vers le ciel : la
+    // face touchée l'incline, l'axe de la voiture la redresse — sinon, sous
+    // l'aileron d'une Jesko ou d'une Zonda, elle regardait le dessous de l'aile
+    n.multiplyScalar(0.5).z += sz;
+    n.normalize();
+    const p = touche.point;
+    // rien devant la lentille, vue de face : sous une aile, on cherche ailleurs
+    _rc.set(_o3.copy(p).addScaledVector(n, 1), _d3.copy(n).negate()); _rc.far = 1.5;
+    const devant = _rc.intersectObjects(meshes, false)[0];
+    if (devant && devant.distance < 0.97) continue;
+    return { x: p.x + n.x * 0.015, y: p.y + n.y * 0.015, z: p.z + n.z * 0.015, nx: n.x, ny: n.y, nz: n.z };
+  }
+  return { x: sx * x0 * 0.5, y: y0, z: sz < 0 ? boite.min.z : boite.max.z, nx: 0, ny: 0, nz: sz };
+}
+// Éclairée ou non : allumée une demi-seconde sur un peu plus d'une seconde,
+// le rythme d'un vrai feu de détresse (environ quatre-vingt-dix par minute).
+export const detresseAllumee = (t = performance.now()) => (t % 700) < 380;
+export function feuxDeDetresse(m, allumes) {
   let g = m.userData.detresse;
   if (!allumes) { if (g) g.visible = false; return; }
+  // la coque d'attente puis le modèle : les poses se refont quand il arrive
+  const cle = m.userData.roues ? 'modele' : 'attente';
+  if (g && g.userData.cle !== cle) { m.remove(g); g = null; }
   if (!g) {
-    if (!geoDetresse) {
-      geoDetresse = new THREE.SphereGeometry(0.16, 8, 6); geoDetresse.userData.partagee = true;
-      matDetresse = new THREE.MeshBasicMaterial({ color: 0xffa21a, toneMapped: false }); matDetresse.userData.partagee = true;
-    }
-    g = new THREE.Group(); g.name = 'detresse';
-    for (const [x, z] of [[-0.85, -2.1], [0.85, -2.1], [-0.85, 2.1], [0.85, 2.1]]) {
+    materielDetresse();
+    g = new THREE.Group(); g.name = 'detresse'; g.userData.cle = cle;
+    for (const p of posesDetresse(m)) {
       const f = new THREE.Mesh(geoDetresse, matDetresse);
-      f.position.set(x, 0.85, z);
+      f.name = 'detresse-lentille';
+      f.position.set(p.x, p.y, p.z);
+      f.lookAt(p.x + p.nx, p.y + p.ny, p.z + p.nz);
       g.add(f);
     }
     m.add(g); m.userData.detresse = g;
   }
-  g.visible = (performance.now() % 1000) < 550;
+  g.visible = detresseAllumee();
+}
+// LE FEU DE DÉTRESSE QUE L'AMI A ALLUMÉ (v507). Un choc de la rue reçu par le
+// réseau (`degats3d.recevoirRue`) marque la voiture de ce nom ; le convoi la
+// lit comme son propre choc : elle s'arrête et clignote aussi chez l'ami.
+function heurteRecu(c, i) {
+  const m = c.elements[i];
+  if (m && m.userData.heurteRecu > 0) { c.heurte[i] = Math.max(c.heurte[i], m.userData.heurteRecu); m.userData.heurteRecu = 0; m.userData.detresseRecue = (m.userData.detresseRecue || 0) + 1; }
 }
 
 // REPEINDRE UNE VOITURE DE LA FLOTTE (v305) — une seule règle, lue par la rue

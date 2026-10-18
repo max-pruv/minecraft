@@ -1002,6 +1002,64 @@ function verifier(nom, ok, detail = '') {
         && !longue.rue.err && longue.rue.enfoncements === 30,
       JSON.stringify(longue));
 
+    // 6 ter. LES FEUX DE DÉTRESSE SONT SUR LA CARROSSERIE (v507). Max, capture
+    // de Lille de nuit : des boules orange qui flottent autour d'une voiture de
+    // la rue heurtée, « ça fait aucun sens ». Pour des modèles de la flotte,
+    // des plus petits (Cayman, F40) aux plus grands (Spectre, fourgonnette,
+    // Crown Victoria), chaque feu se lit dans la scène : un rayon tiré du
+    // dehors le long de la normale du feu doit toucher la tôle à quelques
+    // centièmes derrière lui — ni enterré, ni posé dans le vide —, il clignote,
+    // et le dessiner ne compile aucun programme (les CLÉS, v363). Sur l'ancien
+    // code, `feuxDeDetresse` n'est pas publié : rouge, en le disant ; la même
+    // mesure sur les sphères de la v372 (`sonde-detresse.cjs`) en rend la
+    // plupart dans le vide.
+    const detresse = await tab.evaluate(async () => {
+      const g = window.__game, THREE = await import('three'), V = await import('./src/vehicules.js');
+      if (!V.feuxDeDetresse || !V.posesDetresse) return { err: 'feuxDeDetresse non publié (ancien code)' };
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb'];
+      const rc = new THREE.Raycaster(); rc.layers.enableAll();
+      const avantCles = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
+      const res = [];
+      const cam = g.camera, devant = new THREE.Vector3(0, 0, -9).applyQuaternion(cam.quaternion).add(cam.position);
+      for (const f of modeles) {
+        const entree = V.FLOTTE.find((e) => e.fichier === f);
+        const proto = entree ? await V.chargerVoitureFlotte(entree) : null;
+        if (!proto) { res.push({ f, err: 'modèle absent' }); continue; }
+        const m = new THREE.Group(), modele = proto.clone(true);
+        m.add(modele);
+        const roues = []; modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
+        m.userData.flotte = f; m.userData.roues = roues;
+        m.position.copy(devant); m.rotation.y = 0.7;
+        g.scene.add(m);
+        V.feuxDeDetresse(m, true);
+        const gr = m.userData.detresse;
+        m.updateMatrixWorld(true);
+        const corps = []; m.traverse((o) => { if (o.isMesh && o.name !== 'detresse-lentille') corps.push(o); });
+        const ecarts = [];
+        for (const l of gr ? gr.children : []) {
+          const p = new THREE.Vector3().setFromMatrixPosition(l.matrixWorld);
+          const n = new THREE.Vector3(0, 0, 1).transformDirection(l.matrixWorld);
+          rc.set(p.clone().addScaledVector(n, 1), n.clone().negate()); rc.far = 3;
+          const h = rc.intersectObjects(corps, false)[0];
+          ecarts.push(h ? +(1 - h.distance).toFixed(3) : null);   // > 0 : devant la tôle
+        }
+        // le clignotement : on le lit sur une seconde et demie
+        const vus = new Set();
+        for (let k = 0; k < 15; k++) { V.feuxDeDetresse(m, true); vus.add(gr.visible); await dodo(100); }
+        gr.visible = true;
+        g.renderer.render(g.scene, cam);
+        g.scene.remove(m);
+        res.push({ f, n: gr ? gr.children.length : 0, ecarts, clignote: vus.size === 2 });
+      }
+      const neuves = g.renderer.info.programs.map((q) => q.cacheKey).filter((k) => !avantCles.has(k));
+      return { res, neuves: neuves.length };
+    });
+    const surLaTole = (r) => !r.err && r.n === 4 && r.ecarts.every((e) => e !== null && e > -0.02 && e < 0.06) && r.clignote;
+    verifier('les feux de détresse se posent SUR la carrosserie, aux quatre coins, du plus petit modèle au plus grand, et ils clignotent — sans compiler un programme',
+      !detresse.err && detresse.res.length === 7 && detresse.res.every(surLaTole) && detresse.neuves === 0,
+      JSON.stringify(detresse));
+
     verifier('aucune erreur JavaScript de bout en bout', erreurs.length === 0, JSON.stringify(erreurs.slice(0, 4)));
     await tab.close();
 
@@ -1178,6 +1236,17 @@ function verifier(nom, ok, detail = '') {
     verifier('à plusieurs, la voiture de la rue que Marlon percute est froissée chez Alice aussi — la même histoire de chocs',
       pose.auVolant && cles[0] === cles[1] && !coup.err && vue && JSON.stringify(vue.chocs) === JSON.stringify(coup.chocs) && vue.froissees > 0,
       JSON.stringify({ memeConvoi: cles[0] === cles[1], rang, coup, vue }));
+
+    // 9 bis. ET CHEZ ALICE, ELLE S'ARRÊTE FEUX DE DÉTRESSE ALLUMÉS (v507) :
+    // le choc reçu marque la voiture de ce nom, que le convoi lit comme le sien.
+    const detAlice = coup.err ? { err: coup.err } : await alice.evaluate((r) => {
+      // le convoi a lu le choc reçu (`detresseRecue`, compté par vehicules.js) :
+      // un relevé par minuteur ne tient pas, une page de fond les ralentit
+      const c = window.__convB, m = c.elements[r];
+      return { recues: m ? m.userData.detresseRecue || 0 : null, heurte: c.heurte ? +(c.heurte[r] || 0).toFixed(2) : null };
+    }, coup.rang);
+    verifier('chez Alice aussi, la voiture de la rue que Marlon percute s\'arrête feux de détresse allumés',
+      !detAlice.err && detAlice.recues > 0, JSON.stringify(detAlice));
 
     // 10. UN HÔTE RESTÉ SUR L'ANCIENNE VERSION NE RELAIE PAS `rue_choc`
     // (v374). On le provoque : Marlon cesse d'envoyer `rue_choc` (ce qu'un
