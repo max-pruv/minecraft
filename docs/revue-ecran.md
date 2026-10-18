@@ -73,6 +73,7 @@ dans `docs/revue-ecran/`.
 | 15 | basse | minicarte | [06](revue-ecran/06-ane-en-cubes.png) | L'étiquette « Quartier des enfants » est **coupée au bord** de la minicarte. *Voisin de loin-viande-minicarte, qui déplace la minicarte.* | Placer les étiquettes à l'intérieur du cadre, ou les tronquer avec un repère. | `src/carte.js` (minicarte) |
 | 16 | basse | menu ☰ ouvert | [11](revue-ecran/11-menu-pause.png) | Le jeu est en pause, mais **le joystick et les boutons restent nets** derrière le menu : on croit pouvoir encore jouer. | Voiler le HUD (opacité ou flou) tant que le menu est ouvert. | `index.html` (`#menu-jeu`) |
 | 17 | à vérifier | voiture de la rue percutée, Paris | [12](revue-ecran/12-louvre-chaussee.png) | La **pyramide du Louvre** a l'air posée sur une chaussée marquée, avec des lignes de voie qui y entrent. Cela peut aussi être la cour pavée vue de loin. | Une capture au sol de la cour Napoléon, puis la carte ASCII des colonnes autour du repère (v493). | `src/paris.js`, `src/monuments.js` |
+| 18 | à vérifier | témoin de contraste (`maj.js`) | — | Le témoin « les commandes se lisent sur le ciel de midi comme sur la nuit » rend `ciel: 87ceeb` **à minuit comme à midi** : il lit la couleur du ciel avant que le ciel ait tourné (v291), et ne mesure donc pas la nuit. | Attendre le fait du monde (le soleil sous l'horizon) avant de lire la couleur du ciel, durée dans le message. | `tests/maj.js` |
 
 ## Ce que la sonde ne couvre pas encore
 

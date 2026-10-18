@@ -37,7 +37,7 @@ en roulant, voiture de la rue percutée, vol libre, avion au sol, en vol et en
 approche, construction, métro, et deux tablettes en ligne). Elle capture chacun
 à la taille de l'iPhone de Max et de l'iPad, de jour et de nuit, avec la couche
 HD et les ombres. Un rapport, `docs/revue-ecran.md`, donne la grille de lecture
-et dix-sept défauts trouvés, triés par gravité, chacun avec sa capture et son
+et dix-huit constats, triés par gravité, chacun avec sa capture et son
 remède. Les trois plus graves : les blocs de base s'appellent « Grass » et
 « Stone » en anglais, la pilule « Monter · Âne » passe par-dessus la carte du
 monde, et à bord du métro la caméra est sur le toit de la rame. Enfin, une règle
