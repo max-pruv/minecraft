@@ -14,6 +14,8 @@ const TOUTES = [];
 for (const [nom, p] of Object.entries(SITES)) {
   TOUTES.push({ nom: `${nom}-ciel`, ...p, h: 70, pitch: -0.75, yaw: 0.6 });
   TOUTES.push({ nom: `${nom}-volant`, ...p, h: 1.4, pitch: -0.03, yaw: 1.2 });
+  // de près : à cinq blocs du premier arbre trouvé autour du site, à hauteur d'yeux
+  TOUTES.push({ nom: `${nom}-pres`, ...p, h: 1.6, pitch: 0.12, yaw: 0, pres: true });
 }
 const filtre = process.argv[4];
 const VUES = filtre ? TOUTES.filter((v) => v.nom.startsWith(filtre)) : TOUTES;
@@ -22,12 +24,17 @@ const VUES = filtre ? TOUTES.filter((v) => v.nom.startsWith(filtre)) : TOUTES;
   await banc.ouvrir();
   try {
     await souffler();
-    const page = await banc.jouerSeul('Bosquets', { rr: 8, viewport: { width: 1280, height: 720 }, dpr: 1 });
+    const page = await banc.jouerSeul('Bosquets', { rr: 8, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&hd=4&arbres=1' });
     for (const v of VUES) {
       try {
         const info = await page.evaluate(async (v) => {
           const g = window.__game, w = g.world;
-          const x = v.x + 0.5, z = v.z + 0.5;
+          let x = v.x + 0.5, z = v.z + 0.5;
+          if (v.pres) {
+            let t = null;
+            for (let r = 0; r < 60 && !t; r++) for (let dx = -r; dx <= r && !t; dx++) for (const dz of [-r, r]) { const a = w.treeAt(v.x + dx, v.z + dz); if (a) t = { x: v.x + dx, z: v.z + dz, a }; }
+            if (t) { x = t.x + 0.5; z = t.z + 0.5 + 6; v.h = 1.6; }
+          }
           const sol = w.solContinu ? (w.solContinu(x, z) ?? w.terrainHeight(v.x, v.z) + 1) : w.terrainHeight(v.x, v.z) + 1;
           g.player.flying = true;
           g.player.pos.set(x, sol + v.h, z);
