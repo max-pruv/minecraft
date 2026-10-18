@@ -75,7 +75,9 @@ const dessusNaturel = (id) => DESSUS_NATUREL.has(id) || isProp(id);
 // posés SUR la surface.
 export const SOL_ROUTE = new Set([CITY_BLOCK.ASPHALT, BLOCK.GRASS, BLOCK.DIRT, BLOCK.SAND, BLOCK.GRAVEL]);
 export function colonneRoute(world, x, z, r) {
-  const t = Math.floor(r.cote) - 1;
+  // le bloc que le générateur a ÉCRIT (une voie ferrée le publie : sa cote de
+  // surface se lit au centre de la colonne, son bloc au coin — v529)
+  const t = r.blocVoxel ?? Math.floor(r.cote) - 1;
   if (!SOL_ROUTE.has(world.getBlock(x, t, z))) return false;
   return dessusNaturel(world.getBlock(x, t + 1, z));
 }

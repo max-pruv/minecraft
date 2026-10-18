@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v529 — Rien ne traverse une voie, et le train est un train
+
+**Pourquoi.** Max, deux captures d'iPhone en vol bas au-dessus du TGV
+Paris–Lyon : « Those things should never happen ». Une dalle d'herbe et de terre
+avançait au-dessus d'une voie et coupait le train en deux, des piliers de pierre
+se dressaient entre les rails, et le convoi — la rame du métro, des cylindres
+gris aux bouts arrondis — avait ses voitures qui se traversaient. Mesuré sur les
+neuf lignes : **507 blocs et 221 points de surface dans le gabarit des voies**,
+tous sur un pas de viaduc. Le viaduc (v465) se décidait sur l'axe : toute la
+largeur du pas était « pont », et là où la berge monte au-dessus du tablier le
+générateur n'y creusait rien. Le témoin d'avant ne lisait que l'axe, entre les
+deux voies. Et les voitures, longues de 8,0 à 8,7 blocs, étaient posées tous les
+7,6 blocs. Vu d'en haut enfin, un point de traverse sur huit était sous la
+surface du ballast (7 520 sur 58 494).
+
+**Ce que ça change.**
+- Une rive plus haute que le tablier est creusée comme un déblai : le gabarit
+  des deux voies est dégagé partout, sur les ponts comme ailleurs. Seules les
+  colonnes basses gardent l'eau, la pile et le tablier.
+- Le train a une motrice au nez effilé à chaque bout, avec pare-brise et
+  phares, des voitures à fenêtres, une bande de livrée, deux bogies, et un
+  soufflet entre deux voitures. L'écart se déduit des longueurs : plus aucun
+  recouvrement. Deux appels de dessin par voiture, aucun programme neuf.
+- Le ballast n'enterre plus les traverses : sa surface suit la voie au centre
+  de chaque colonne.
+- Le relief ne bouge pas : les deux empreintes de `plafond.js` sont intactes.
+
+**Ce qui le prouve.** Quatre témoins. `plafond.js` : le gabarit des deux voies
+sur 113 050 points du réseau entier (0 bloc, 0 surface ; la règle d'avant rend
+506 blocs sur les seuls pas de viaduc) ; deux lignes ne se partagent jamais une
+colonne (36 paires, la plus proche à 141 blocs) ; les traverses (1 point sur
+5 628, contre 1 205 avec la cote lue au coin). `carteMonde.js` : le convoi rendu
+(motrice effilée aux deux bouts, jeu positif à chaque attelage, deux maillages
+par voiture). L'empreinte des 490 morceaux change ; corrections désarmées, elle
+rend la constante d'avant au bit près.
+
+---
 ## v528 — Les arbres sont beaux partout, même au loin
 
 **Pourquoi.** Max, en vol au-dessus d'une forêt, sur iPhone : « Au loin, les

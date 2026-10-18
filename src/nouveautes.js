@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 529,
+    titre: 'Plus rien sur les rails',
+    puces: [
+      'Les berges ne coupent plus le train',
+      'Un vrai train : motrice et fenêtres',
+      'Les wagons ne se touchent plus',
+    ],
+  },
+  {
     v: 528,
     titre: 'De beaux arbres, même au loin',
     puces: [

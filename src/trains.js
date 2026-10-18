@@ -251,6 +251,11 @@ const CULEE = 2;
 const GARDE_GARE = 7 + 16;   // `GARE_LONG` (déclaré plus bas) et seize pas de rampe
 let VIADUC_ACTIF = true;
 export function viaducs(actif) { VIADUC_ACTIF = !!actif; PROFILS.clear(); }
+// `RIVES_CREUSEES` à faux rejoue la règle d'avant la v529 (toute la largeur
+// d'un pas de viaduc est « pont ») — pour la sonde et le témoin, jamais un
+// réglage.
+let RIVES_CREUSEES = true;
+export function rivesCreusees(actif) { RIVES_CREUSEES = !!actif; }
 
 // Où en est-on le long d'un segment, entre 0 et 1 ?
 function tSegment(s, x, z) {
@@ -290,7 +295,17 @@ export function voieEn(x, z) {
     // Sur un viaduc (v465), la plate-forme est le TABLIER, un ruban : la
     // colonne n'a ni ballast ni talus, l'eau reste dessous.
     const pr = profilDe(s), kv = Math.round(t * (pr.length - 1));
-    const ouvrage = !!pr.viaduc[kv];
+    // UNE RIVE N'EST PAS UN PONT (v529). Le viaduc se décide sur l'AXE (l'eau
+    // sous lui) ; à trois blocs de côté, la berge peut monter AU-DESSUS du
+    // tablier. La colonne était quand même « pont » : le générateur n'y
+    // creusait rien, et la berge restait en travers des voies — Max, capture
+    // d'iPhone sur le TGV Paris–Lyon, une dalle d'herbe qui coupe le train et
+    // des piliers de pierre entre les rails (507 colonnes de gabarit sur les
+    // neuf lignes, toutes sur un pas de viaduc). C'est la culée de l'A1 (v300)
+    // du côté du rail : une colonne dont le terrain monte jusque sous le
+    // ballast est de la PLATE-FORME (une culée, creusée comme un déblai), et
+    // seule une colonne plus basse garde l'eau, la pile et le tablier.
+    const ouvrage = !!pr.viaduc[kv] && (!RIVES_CREUSEES || SOL(x, z) < Math.floor(cote) - 2);
     if (d < EMPRISE) { best = { d, seg: s, cote, bloc: Math.floor(cote) - 1, piece: 'ballast', ouvrage, abs: t * s.longueur }; continue; }
     if (ouvrage) continue;
     // LE TALUS se raccorde au terrain de CETTE colonne : au bout, la surface

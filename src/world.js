@@ -3028,6 +3028,10 @@ export class JournalBlocs extends Map {
   }
 }
 
+// `COTE_AU_CENTRE.actif` à faux rejoue la surface de la voie d'avant la v529
+// (cote lue au coin) — pour la sonde et le témoin, jamais un réglage.
+export const COTE_AU_CENTRE = { actif: true };
+
 export class World {
   // `avant` : le monde d'avant Paris doublé (v306, `CONF_AVANT`) — pour juger
   // les blocs posés dedans, jamais pour jouer.
@@ -3380,7 +3384,19 @@ export class World {
     const r = routeEn(x, z);
     if (r) return r;
     const v = voieEn(x, z);
-    return v ? { seg: v.seg, d: v.d, cote: v.cote, piece: v.piece, ouvrage: !!v.ouvrage, rail: true } : null;
+    if (!v) return null;
+    // LA COTE DU BALLAST SE LIT LÀ OÙ LA SURFACE LA POSE (v529). Le sol
+    // continu met le sommet d'une colonne en son CENTRE (x + ½, z + ½), et
+    // lisait la cote de la voie au COIN : sur une pente d'un tiers, la surface
+    // passait jusqu'à 0,15 bloc au-dessus des traverses — 7 520 points de
+    // traverse sur 58 494 enterrés, vus d'en haut comme des rails sans
+    // traverses. Le générateur, lui, garde le coin (son bloc est un indice).
+    let cote = v.cote;
+    if (v.piece === 'ballast' && !v.ouvrage && COTE_AU_CENTRE.actif) {
+      const c = voieEn(x + 0.5, z + 0.5);
+      if (c && c.piece === 'ballast' && c.seg === v.seg) cote = c.cote;
+    }
+    return { seg: v.seg, d: v.d, cote, blocVoxel: v.bloc, piece: v.piece, ouvrage: !!v.ouvrage, rail: true };
   }
   rubansDans(x0, z0, x1, z1) {
     const r = rubansDans(x0, z0, x1, z1), v = rubansVoieDans(x0, z0, x1, z1);

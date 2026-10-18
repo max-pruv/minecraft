@@ -46,6 +46,19 @@ export const ROUTES_RELEVEES = ['A1', 'E429', 'E19', 'A20', 'BR-116', 'A-4', 'A1
 
 export async function empreinteMorceaux(src) {
   const { World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu } = await charger(src);
+  // LES RIVES DU VIADUC ET LA COTE DU BALLAST (v529) sont des corrections de
+  // contenu (rien ne traverse une voie) : désarmées, la branche rend la
+  // constante d'avant (l'ancien code n'a pas ces interrupteurs).
+  const T = await import(src + '/trains.js'), Wm = await import(src + '/world.js');
+  if (T.rivesCreusees) T.rivesCreusees(false);
+  if (Wm.COTE_AU_CENTRE) Wm.COTE_AU_CENTRE.actif = false;
+  try { return await empreinteDesMorceaux({ World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu }); } finally {
+    if (T.rivesCreusees) T.rivesCreusees(true);
+    if (Wm.COTE_AU_CENTRE) Wm.COTE_AU_CENTRE.actif = true;
+  }
+}
+
+async function empreinteDesMorceaux({ World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu }) {
   const h = crypto.createHash('sha256');
   let morceaux = 0, route = 0;
   for (const [nom, pos] of LIEUX) {

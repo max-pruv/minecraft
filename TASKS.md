@@ -1,5 +1,32 @@
 # Ce qui est en cours
 
+## v529 — RIEN NE TRAVERSE UNE VOIE : ce qui reste, mesuré
+
+- **Le journal de la session des captures n'est pas encore remonté** (il part
+  au lancement suivant de l'iPhone). L'endroit a été retrouvé par la géométrie :
+  le TGV Paris–Lyon, viaduc des pas 716 à 767 et tranchée du pas 786, vers
+  (226, 1240) — même dalle d'herbe et mêmes piliers en capture au banc. À
+  relire dans `journal_appareil` (session v522 du 18 octobre, matin heure de
+  l'iPhone) pour confirmer.
+- **Des triangles de ciel au ras de la crête** (capture 2 de Max), vus aussi
+  au banc à gauche du viaduc (pas 716) avant ET après : la couture entre les
+  morceaux maillés et le paysage lointain. `horizon.js` est sur la PR de la
+  session `loin-reel` (#534) : non touché ici, à mesurer sur sa branche.
+- **La rame du MÉTRO garde son recouvrement** : `metro()` pose par défaut
+  `construireRame` (8,0 à 8,7 blocs) tous les 7,6 blocs — Washington, Paris,
+  Rome. Zone de la session des stations de métro : il suffit de lui passer
+  `ecart: 8.8`, ou un modèle à bouts plats.
+- **Sept cubes de ballast dépassent de 0,37 bloc au plus** au-dessus de la
+  base des rails, là où le sol continu n'est pas dessiné (au bord d'un
+  tablier, d'une gare) : le bloc est écrit à la cote du COIN, qui monte d'un
+  tiers de bloc par bloc. Sous le dessus des rails ; le témoin compte à partir
+  de `RAIL_HAUT + ROUES + 0,1`.
+- **Les routes portent le même décalage coin/centre** que le ballast avant la
+  v529 (`corridorEn` → `routeEn(x, z)` posé à x + ½) : rien ne s'y enterre (pas
+  de traverses), mais la surface est à un demi-bloc de pente près.
+- **Au demi-tour en gare, le convoi saute d'une voie à l'autre** sur un pas de
+  tracé (quatre blocs de côté pour quatre de long) : `traceSegment` recoud
+  l'aller et le retour sans courbe. À l'arrêt en gare, donc peu visible.
 - [ ] **Rouges de portail de la v528 (les arbres au loin) : aucun de la
   livraison.** Seul rouge à moi : `parishd.js` lisait « cubes cachés » sur
   `plat` caché — repointé sur `arbresLoin`, vert. Restent `degats.js` (percuter

@@ -524,6 +524,47 @@ const VRAIES_KM = [
       !rails.absent && rails.pas > 0 && rails.dedans === 0 && rails.viaduc >= 1,
       JSON.stringify(rails.absent ? rails : { dedans: rails.dedans, viaduc: rails.viaduc }));
 
+    // LE TRAIN SE LIT COMME UN TRAIN, ET SES VOITURES NE SE RECOUVRENT PAS
+    // (v529). Le convoi était la rame du métro, posée tous les 7,6 blocs pour
+    // 8,0 à 8,7 blocs de caisse : les bouts arrondis de deux voitures voisines
+    // se traversaient. On mesure les modèles RENDUS (leur boîte le long de la
+    // voie) et l'écart que portent les trains de la page : la queue d'une
+    // voiture s'arrête avant le nez de la suivante, à chaque attelage.
+    const convoi = await tab.evaluate(async () => {
+      let M;
+      try { M = await import('./src/convoitrain.js'); } catch { return { absent: true }; }
+      const THREE = await import('three');
+      const boite = (role) => {
+        const g = M.construireTrain(role); g.updateMatrixWorld(true);
+        const b = new THREE.Box3().setFromObject(g);
+        let maillages = 0; g.traverse((o) => { if (o.isMesh) maillages++; });
+        // la demi-largeur du bout avant et du bout arrière (le tiers de bloc
+        // extrême) : un nez s'effile, un attelage non
+        const bout = [0, 0], p = new THREE.Vector3();
+        g.traverse((o) => {
+          if (!o.isMesh) return;
+          const pos = o.geometry.attributes.position;
+          for (let i = 0; i < pos.count; i++) {
+            p.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+            if (p.z < b.min.z + 0.3) bout[0] = Math.max(bout[0], Math.abs(p.x));
+            if (p.z > b.max.z - 0.3) bout[1] = Math.max(bout[1], Math.abs(p.x));
+          }
+        });
+        return { min: b.min.z, max: b.max.z, maillages, larg: b.max.x, bout };
+      };
+      const m = boite('motrice'), v = boite('voiture'), q = boite('queue');
+      const trains = (window.__vehicules.etat() || []).filter((c) => /^train /.test(c.nom));
+      const ecarts = [...new Set(trains.map((c) => c.ecart))];
+      const e = Math.min(...ecarts);
+      // le nez d'une voiture est en −z : celle de devant finit à son `max`,
+      // celle de derrière commence à son `min`, un écart plus loin
+      const jeu = Math.min(e - m.max + v.min, e - v.max + v.min, e - v.max + q.min);
+      return { trains: trains.length, ecarts, jeu, nez: m.bout[0] / m.larg, queue: q.bout[1] / q.larg, attelage: v.bout[0] / v.larg, maillages: Math.max(m.maillages, v.maillages, q.maillages) };
+    });
+    verifier('le train a une motrice à chaque bout, et deux voitures voisines ne se recouvrent jamais',
+      !convoi.absent && convoi.trains >= 9 && convoi.jeu >= 0 && convoi.nez < 0.6 && convoi.queue < 0.6 && convoi.maillages <= 2,
+      JSON.stringify(convoi.absent ? convoi : { trains: convoi.trains, ecarts: convoi.ecarts, jeu: +convoi.jeu.toFixed(2), nez: +convoi.nez.toFixed(2), queue: +convoi.queue.toFixed(2), attelage: +convoi.attelage.toFixed(2), maillages: convoi.maillages }));
+
     // LA ROUTE PARIS–LILLE (v300) ---------------------------------------------
     //
     // Programme « monde fidèle », livraison 3. Le corridor est un REGISTRE
