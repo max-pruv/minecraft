@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 524,
+    titre: 'Des guides dans les villes',
+    puces: [
+      'Un guide et son fanion orange',
+      'Il raconte à voix haute',
+      'Paris, Londres, Rome, New York, Washington',
+      'En français ou en anglais',
+    ],
+  },
+  {
     v: 522,
     titre: 'Les blocs parlent français',
     puces: [

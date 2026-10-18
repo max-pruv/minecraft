@@ -821,6 +821,45 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les guides des villes (v524) — un guide est un rôle à part, et il se pose à ciel ouvert
+
+Trois règles.
+
+- **LE GUIDE EST LA SEULE EXCEPTION À LA v243, ET ELLE VIT DANS SA CLASSE.**
+  `Guide` (vie.js) tient son poste, ne marche pas, et se tourne vers l'enfant
+  à moins de seize blocs — c'est son métier. `Habitant` ne change pas : un
+  passant ne s'arrête toujours pas. Ce que dit le guide passe par la règle des
+  panneaux (`creerGuides`, guides.js : une fois par visite, jamais en rafale,
+  en temps réel), dans la langue du profil (`texteDuGuide` : `fr`, `en`, et
+  `both` alterne d'une visite à l'autre). Ses positions se demandent au
+  registre des repères (`REPERES`, `villeDuRepere`) ; ses faits sont vérifiés.
+- **PLUS DE MESSAGE À L'ÉCRAN, DONC LE GUIDE PARLE.** Depuis la v504 rien ne
+  s'affiche en jeu (décision de Max) : un panneau passe par la voix du
+  navigateur (`parlerAVoixHaute`, guides.js), langue du panneau, pictogrammes
+  retirés (`phraseAParler`), seulement si `sonActif()`. Un témoin remplace
+  `speechSynthesis` par un enregistreur et lit ce que le jeu a demandé de dire
+  — jamais un drapeau. Un appareil sans synthèse ne dit rien ; la visite se
+  compte quand même.
+- **UN CENTRE DE MONUMENT EST SOUVENT CREUX.** La rotonde du Capitole, la nef
+  de Notre-Dame, le dessous de la tour Eiffel sont au niveau de la rue et
+  praticables : le premier jet y posait douze guides sur dix-neuf, invisibles
+  du dehors. `essaiParBlocs` (guidesvilles.js, pure) exige le sol au niveau du
+  relief ET `CIEL` blocs d'air au-dessus ; à Manhattan, dont le plan n'est pas
+  fait de blocs, on demande le trottoir au monde (`trottoirA`).
+- **UN GUIDE EST UN PIÉTON POUR LA RUE, DONC JAMAIS SUR LA CHAUSSÉE.** Il est
+  dans `npcs`, que la circulation lit (`brancherPietons`), et une voiture
+  attend sans limite devant un piéton (v395). Le premier jet en posait quatre
+  sur dix-neuf sur l'asphalte (Capucine à la tour Eiffel, St Paul, le
+  Panthéon, Saint-Pierre), trouvés par une sonde sous node — j'avais d'abord
+  accusé le bouchon de « la rue roule » (médiane zéro), qui est déclaré et
+  revient sans eux. `essaiParBlocs` refuse `CHAUSSEE`.
+  **Tout personnage qui se tient immobile se pose hors de la chaussée**, sinon
+  il arrête une file pour toujours.
+- **UN ACCESSOIRE DE PERSONNAGE SE FABRIQUE À L'ATELIER.** Le fanion du guide
+  est fait avec `Atelier` (`matiereVivante`) : le programme des corps sculptés,
+  chauffé à l'accueil (v246). Un matériau neuf aurait compilé à l'arrivée au
+  monument — et la présence (v241) en fait une variante transparente de plus.
+
 ## Montmartre et les jardins (v512) — une cote se lit sous la voiture, et une voie traverse un jardin déclaré
 
 Trois règles.

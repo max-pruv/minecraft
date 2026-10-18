@@ -20,6 +20,51 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v524 — Des guides au pied des monuments
+
+**Pourquoi.** Apprendre dans les villes s'arrêtait à Washington : sept panneaux
+(v460), en français seulement, et personne pour les dire. Paris, Londres, Rome
+et New York ne racontaient rien de ce qu'on y regarde — la tour Eiffel, Big
+Ben, le Colisée, l'Empire State n'étaient que des formes.
+
+**Ce que ça change.** Vingt-deux guides, un par grand monument : cinq à Paris
+(tour Eiffel, Arc de Triomphe, Louvre, Notre-Dame, Sacré-Cœur), quatre à
+Londres, trois à Rome, trois à New York, et les sept lieux de Washington. Chacun
+est un personnage original — Capucine, Wilfred, Livia, Jasmine… — debout au
+pied du monument, à ciel ouvert, un fanion orange levé ; il se tourne vers
+l'enfant qui arrive (un rôle à part : le passant, lui, ne s'arrête toujours
+pas). En arrivant, son panneau passe une fois : deux ou trois phrases pour un
+enfant de sept à dix ans, des faits vérifiés (hauteurs, années, usages), et sa
+signature. Et comme plus rien ne s'affiche pendant le jeu (décision de Max,
+v504), **le guide le dit à voix haute** : la voix du navigateur, dans la langue
+du profil — français, anglais, ou les deux en alternance d'une visite à
+l'autre —, sans les pictogrammes, et seulement si le son du jeu est allumé.
+Aucun bandeau. Le mode éducatif reste toujours actif : les guides ne se coupent
+pas. Les panneaux de Washington (v460) passent par la même voix.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `washington.js`, rouges sur
+l'ancien code (le module n'existe pas) : chaque ville a au moins trois guides
+trouvés dans le registre des repères, chaque panneau a son français et son
+anglais en trois phrases au plus ; la langue du profil choisit et « les deux »
+alterne ; aucun rayon n'en recouvre un autre et chaque guide hors Manhattan a
+un sol au niveau de la rue, à ciel ouvert, dans le rayon de son panneau
+(mesuré sous node : douze guides sur dix-neuf tombaient d'abord DANS leur
+monument, sous une voûte, et quatre sur l'asphalte, où la rue les prenait pour des
+piétons et attendait sans fin devant eux) ; et au navigateur, à la tour Eiffel, le guide naît,
+se tourne vers l'enfant, et la voix de Capucine dit son panneau en français —
+ce que le jeu demande à la synthèse vocale est enregistré par le témoin, langue
+comprise, et rien ne s'affiche ; à l'Arc de Triomphe la même chose en anglais.
+Le témoin du Lincoln (v460) compte la visite une fois, sans affichage. Jugé sur
+captures : Capucine sous la tour Eiffel, Livia devant le Colisée, Jasmine sur
+le trottoir de la Cinquième Avenue au pied de l'Empire State — le fanion
+d'abord sorti rouille a été avivé, et Jasmine avait un corps d'homme (le
+modèle se tirait sur l'identifiant du lieu, il suit désormais le prénom).
+
+---
+
+
+---
+
 ## v522 — Les blocs parlent français, et deux bandeaux se lisent
 
 **Pourquoi.** La revue d'écran de la v506 a relevé trois textes qu'un enfant de
