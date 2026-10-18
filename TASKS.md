@@ -20,6 +20,20 @@ en construction » (`{"explorer":0,"construction":0}`) : vert au portail
 suivant. La distribution n'est pas faite au sens de la v269 (trois passages de
 plus de trente minutes) : à reprendre si l'un d'eux revient sur une livraison
 qui touche ces chemins.
+
+Au portail rebasé (v516), même famille, toutes déclarées plus bas : `degats.js`
+(percuter une voiture de la rue), `maj.js` (le loader compte les fichiers),
+`manhattan.js` (le taxi), `monte.js` (passant lancé sur la voiture, convoi, feu,
+rue vide, worker). Le portail ne finit pas sous la limite de deux heures d'une
+commande de fond : `reseau.js` rejouée seule, un rouge **non déclaré jusqu'ici** :
+« il le voit s'écraser : l'appareil de l'ami prend feu chez lui »
+(`enFeuVu.vehicule: false` en 1 801 ms). Rejouée seule sur `origin/main` (v518) :
+vert, mais QUATRE autres rouges (« Alice retrouve son monde après une veille »,
+« la reprise tient », « seule après le départ de l'hôte », « continue d'essayer
+de la reconnecter »), que la branche a rendus aussi au premier portail. Une
+intermittence des deux côtés, sur des chemins (réseau, dégâts d'avion) que la
+v517 ne touche pas ; la distribution reste à faire.
+
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v518 (Loin,
   garde-manger, minicarte)** — double mesure de la v195, chaque suite rejouée
   SEULE sur la branche et sur `origin/main` v506 (`git worktree`). `maj.js` :
