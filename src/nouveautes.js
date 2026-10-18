@@ -78,7 +78,7 @@ export const NOUVEAUTES = [
     ],
   },
   {
-    v: 516,
+    v: 506,
     titre: 'On vérifie chaque écran',
     puces: [
       'Chaque écran est photographié avant la sortie',
