@@ -958,6 +958,14 @@ boutons… enlève les messages qui s'affichent dans le jeu ». Cinq règles.
   au mot (« Monter · Cheval »), à `data-quoi` (pour les témoins) et à la
   pastille dessinée de la ligne (`pastille`). Les émotes, qui SONT des emojis,
   sont l'exception ; ✕ et les flèches typographiques ne sont pas des emojis.
+- **UNE ICÔNE DE BASCULE DIT SON ÉTAT, ET SE JUGE À LA TAILLE DU POUCE
+  (v514).** La roue du train se lisait comme une cible à 20 pixels, et ne
+  changeait pas quand le train rentrait. Une commande à deux états a deux
+  dessins (`train` / `trainRentre`), échangés là où le mot change (main.js),
+  et l'état passe aussi dans `aria-label`. Une icône qui doit se reconnaître
+  à la silhouette peut prendre plus de place dans son bouton : `.ic` est figé
+  à 20 pixels (index.html), on le libère pour ce bouton-là. On juge sur une
+  capture à 430 × 932, jamais sur le SVG seul.
 - **UN TÉMOIN NE LIT PAS UN PICTOGRAMME.** `startsWith('⬇️')`, `includes('🐘')`,
   `/🟠/` sont devenus `includes('Descendre')`, `quoi === 'elephant'`,
   `/Orange/.test(quoi)` : on cherche l'emoji retiré dans `tests/` avant de

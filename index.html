@@ -2040,6 +2040,10 @@
     body.hud-simple .ico { width: 24px; height: 24px; display: block;
       filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.55)); }
     body.hud-simple .tbtn .ic { font-size: 0; line-height: 0; display: flex; }
+    /* Le train (v514) : la roue doit se reconnaître au premier regard, l'icône
+       prend donc plus de place que les autres dans son bouton. */
+    body.hud-simple #train-btn .ic { flex: none; width: auto; height: auto; }
+    body.hud-simple #train-btn .ico { width: 34px; height: 34px; flex: none; }
     /* Le mot reste lisible par un lecteur d'écran et par les témoins, pas
        par l'œil. */
     body.hud-simple .tbtn .lb, body.hud-simple #ride-btn .lb {

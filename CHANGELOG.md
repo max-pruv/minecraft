@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v514 — Le bouton du train d'atterrissage est une roue
+
+**Pourquoi.** Max, sur iPhone, aux commandes d'un avion : « le bouton du train
+d'atterrissage n'est absolument pas explicite, on ne comprend pas que c'est une
+roue. » L'icône de la v504 était une croix posée sur un cercle de 20 pixels :
+de près, une cible ou un symbole ; et elle ne changeait pas quand le train
+rentrait — seul le fond vert le disait.
+
+**Ce que ça change.** Le bouton montre un avion vu de côté (aplat, nez à
+droite, dérive à gauche) et SA roue : un pneu épais, un moyeu, quatre rayons.
+Train sorti, la roue pend sous sa jambe ; train rentré, elle est rangée contre
+le ventre de l'avion. L'icône occupe 34 pixels au lieu de 20 dans le même
+bouton, au même endroit, avec le même identifiant et le même geste. Le mot
+de l'état reste dans `.lb` et passe aussi dans `aria-label` (« Train
+d'atterrissage sorti / rentré »).
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (« l'icône du train est
+une roue sous l'appareil, et elle dit sorti ou rentré ») lit le dessin RENDU
+dans les deux états, par le vrai bouton : grande roue (rayon ≥ 5 sur 24) et
+aplat d'avion quand il est sorti, petite roue quand il est rentré, deux dessins
+différents, l'état dans `aria-label`, l'icône d'au moins 30 pixels — rouge sur
+`origin/main` (même dessin dans les deux états, 20 pixels, pas d'aplat). Le
+témoin de contraste des boutons ronds (`maj.js`) reste vert. Captures à
+430 × 932, aux commandes, de jour et de nuit, avant et après, dans la PR.
+
+
+
+---
+
 ## v513 — On roule à travers la forêt
 
 **Pourquoi.** Max : « moins de densité d'arbres pour être capable de rouler dans

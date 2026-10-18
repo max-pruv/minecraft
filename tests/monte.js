@@ -6688,9 +6688,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         return r;
       };
       await tab.evaluate(() => document.getElementById('train-btn').click());
+      // L'ICÔNE DIT L'ÉTAT (v514) : Max ne reconnaissait pas une roue. Sorti,
+      // une grande roue (pneu de rayon ≥ 5 sur 24) sous l'appareil ; rentré,
+      // une petite roue rangée. On lit le dessin RENDU, après une image.
+      const lireIcone = () => tab.evaluate(async () => {
+        await new Promise((f) => requestAnimationFrame(() => requestAnimationFrame(f)));
+        const b = document.getElementById('train-btn'), svg = b.querySelector('.ic svg');
+        const rs = svg ? [...svg.querySelectorAll('circle')].map((c) => +c.getAttribute('r')) : [];
+        return { html: svg ? svg.innerHTML.length + ':' + svg.innerHTML.slice(0, 40) : null, roue: rs.length ? Math.max(...rs) : 0,
+          aplat: svg ? svg.querySelectorAll('path[fill="currentColor"]').length : 0, al: b.getAttribute('aria-label'), taille: svg ? Math.round(svg.getBoundingClientRect().width) : 0 };
+      });
       const trainSorti = await attendreTrain(1);
+      const iconeSorti = await lireIcone();
       await tab.evaluate(() => document.getElementById('train-btn').click());
       const trainRentre = await attendreTrain(0);
+      const iconeRentre = await lireIcone();
       await tab.evaluate(() => document.getElementById('train-btn').click());
       await attendreTrain(1);
       // les deux cycles de train ont fait deux cents blocs : on se remet
@@ -6739,12 +6751,18 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (const [x, y, z] of P.dalle) g.world.setBlock(x, y, z, 0);
         g.player.pos.copy(P.sauve); g.player.yaw = P.yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
       });
-      return { ...prep, trainSorti, trainRentre, toucheLaPiste, arret, arretMs, descendu: avantToucher.length, gazMin: Math.min(...avantToucher.map((r) => r.gaz == null ? 9 : r.gaz)) };
+      return { ...prep, trainSorti, trainRentre, iconeSorti, iconeRentre, toucheLaPiste, arret, arretMs, descendu: avantToucher.length, gazMin: Math.min(...avantToucher.map((r) => r.gaz == null ? 9 : r.gaz)) };
     })();
     verifier('aux commandes, 🛞 sort et rentre le train — et le bouton n\'existe qu\'en avion',
       !manuel.err && manuel.boutons && manuel.boutons.train === 'flex' && manuel.boutons.vol !== 'none'
         && manuel.trainSorti && manuel.trainSorti.train >= 0.97 && manuel.trainRentre && manuel.trainRentre.train <= 0.03,
       `${manuel.err || ''} ${JSON.stringify({ boutons: manuel.boutons, sorti: manuel.trainSorti, rentre: manuel.trainRentre })}`);
+    verifier('l\'icône du train est une roue sous l\'appareil, et elle dit sorti ou rentré',
+      !manuel.err && !!manuel.iconeSorti && !!manuel.iconeRentre
+        && manuel.iconeSorti.roue >= 5 && manuel.iconeSorti.aplat >= 1 && manuel.iconeSorti.taille >= 30
+        && manuel.iconeRentre.roue > 0 && manuel.iconeRentre.roue < 5 && manuel.iconeSorti.html !== manuel.iconeRentre.html
+        && /sorti/.test(manuel.iconeSorti.al || '') && /rentré/.test(manuel.iconeRentre.al || ''),
+      `${manuel.err || ''} ${JSON.stringify({ sorti: manuel.iconeSorti, rentre: manuel.iconeRentre })}`);
     verifier('gaz réduits et manche en avant, on se pose soi-même sur la piste — sans ✈️, train sorti, jusqu\'à l\'arrêt',
       !manuel.err && manuel.gazMin === 0 && manuel.descendu >= 2 && !!manuel.toucheLaPiste
         && manuel.toucheLaPiste.train >= 0.9 && !manuel.toucheLaPiste.ventre

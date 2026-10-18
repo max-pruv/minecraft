@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+- [ ] **Deux rouges de DURÉE non déclarés au portail de la v514 (l'icône du
+  train).** `manhattan.js` « les passants de Manhattan marchent au long cap »
+  (débit 0,52, déjà vu à 0,53 sous la v354, un tirage de cadence) et `monte.js`
+  « à quatre-vingts blocs par seconde dans Paris, le worker ne reste pas à
+  sec » (débit × 0,26), sur un portail chargé (`monte.js` 58 min contre 40 au
+  portail précédent du même code, où les deux étaient verts). Preuve
+  structurelle, pas de double mesure : la v514 ne change que le dessin, la
+  taille et l'`aria-label` de `#train-btn`, et le bloc de `main.js` qui les
+  écrit s'arrête à `if (!enAvion) return` — aucun de ces deux témoins n'est
+  aux commandes d'un avion. `carte.js` « ouvrir la carte ne fige pas l'image »
+  (413 ms pour 400) est vert rejoué seul (285 ms), et c'est alors « la faire
+  glisser » (déclarée) qui rougit : une barre de 400 ms sous la charge du banc
+  est un tirage. À remesurer seules des deux côtés au prochain portail.
+
 - [ ] **Le banc lâche sur `maj.js`, `carte.js`, `reglages.js` et `manhattan.js`
   des deux côtés (portail de la v510, Monter au-dessus de Descendre).** Rejouées
   SEULES sur la branche et sur `origin/main` v506 (`git worktree`), les quatre
