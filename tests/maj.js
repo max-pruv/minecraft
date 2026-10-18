@@ -786,7 +786,10 @@ function verifier(nom, ok, detail = '') {
       const l = g.scene.getObjectByName('horizon-loin');
       return { brouillard: g.scene.fog.far, planLointain: g.camera.far,
         fine: g.horizon.rayon, pasFine: g.horizon.pas || 8, abaisseFine: g.horizon.abaisse || 0,
-        loin: l ? Math.round(g.horizonLoin.rayon) : 0, pasLoin: l ? g.horizonLoin.pas : 0 };
+        loin: l ? Math.round(g.horizonLoin.rayon) : 0, pasLoin: l ? g.horizonLoin.pas : 0,
+        tresLoin: g.scene.getObjectByName('horizon-tres-loin') && g.horizonTresLoin ? Math.round(g.horizonTresLoin.rayon) : 0,
+        pasTresLoin: g.horizonTresLoin ? g.horizonTresLoin.pas : 0,
+        abaisses: [g.horizonLoin ? g.horizonLoin.abaisse : 0, g.horizonTresLoin ? g.horizonTresLoin.abaisse : 0] };
     });
     const vueSans = await vueDe(sansMesure);
     await sansMesure.close();
@@ -801,7 +804,7 @@ function verifier(nom, ok, detail = '') {
     // à dessein (v220) : il garde ce qu'on ne veut pas casser — la mémoire que
     // l'iPhone a déjà payée deux fois (v291, v299).
     const vueInchangee = (v) => v.brouillard === 632 && v.planLointain === 900 && v.fine === 632
-      && v.pasFine === 8 && v.abaisseFine === 0 && v.loin === 0;
+      && v.pasFine === 8 && v.abaisseFine === 0 && v.loin === 0 && v.tresLoin === 0;
     verifier('sans palier et au palier moyen, le paysage lointain est celui d\'avant',
       vueInchangee(vueSans) && vueInchangee(vueMoyen), JSON.stringify({ sans: vueSans, moyen: vueMoyen }));
     verifier('sans mesure, le jeu est celui d\'avant — un appareil non mesuré ne perd rien',
@@ -856,9 +859,17 @@ function verifier(nom, ok, detail = '') {
     // et la file ne bougent pas : ce sont les chiffres que le dépôt a mesurés
     // comme nuisibles (v269, v291). Rouge sur l'ancien code : pas de couronne,
     // brouillard à 632.
-    verifier('« Loin » voit beaucoup plus loin : une couronne lointaine à 2 560 blocs, sans toucher rr ni la file',
-      vueHaut.loin === 2560 && vueHaut.pasLoin === 32 && vueHaut.brouillard === 2560
-        && vueHaut.planLointain >= 2560 && vueHaut.fine === 632 && applique.file === 8 && applique.rr === 12,
+    // ET « LOIN » VOIT ENCORE QUATRE FOIS PLUS LOIN (v518). Max : « le mode
+    // Loin n'est pas assez loin. » La couronne garde ses 2 560 blocs et une
+    // troisième grille, de cent vingt-huit blocs, porte jusqu'à 10 240 ; le
+    // brouillard et le plan lointain reculent avec elle. Chaque grille plus
+    // lâche est posée plus bas que celle de dedans (la fine gagne, puis la
+    // couronne). Rouge sur la v504 : brouillard à 2 560, pas de troisième grille.
+    verifier('« Loin » voit beaucoup plus loin : une couronne à 2 560 blocs, une troisième grille à 10 240, sans toucher rr ni la file',
+      vueHaut.loin === 2560 && vueHaut.pasLoin === 32 && vueHaut.tresLoin === 10240 && vueHaut.pasTresLoin === 128
+        && vueHaut.brouillard === 10240 && vueHaut.planLointain >= 10240
+        && vueHaut.abaisses[1] > vueHaut.abaisses[0] && vueHaut.abaisses[0] > 0
+        && vueHaut.fine === 632 && applique.file === 8 && applique.rr === 12,
       JSON.stringify(vueHaut));
     // ET LA CHAÎNE ENTIÈRE SE SUIT : jouer, mesurer, ranger. La fenêtre vaut
     // trente secondes de JEU par défaut — `?palierms=` la raccourcit ici, et

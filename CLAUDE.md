@@ -1118,6 +1118,43 @@ Deux règles.
   est posée `ABAISSE_LOIN` blocs plus bas et dessinée après : jamais de trou
   de ciel entre les deux, jamais la grossière par-dessus la fine. Au-delà de
   sa portée le brouillard est plein, elle n'y dessine rien.
+## Le lointain très lointain (v518) — une grille de dedans qui a sa portée ne cède que son disque
+
+Max : « le mode Loin n'est pas assez loin ». Trois règles.
+
+- **ON AJOUTE UN ÉTAGE, ON N'ÉLARGIT PAS LE PRÉCÉDENT.** La couronne de
+  trente-deux garde 2 560 blocs ; une troisième grille de cent vingt-huit
+  (`PAS_TRES_LOIN`, horizon.js) porte jusqu'à `loin` (10 240, fiche `haut`).
+  Prolonger la couronne aurait coûté seize fois ses sommets ; l'étage coûte
+  une couronne (25 921 sommets, 3,2 Mo, mesuré). `rr`, file, `hdMo`,
+  `VITESSE_JET` ne bougent jamais pour la portée (v497).
+- **UNE GRILLE DONT LA GRILLE DE DEDANS A UNE PORTÉE NE LUI CÈDE QUE CE QUE
+  SON DISQUE COUVRE À COUP SÛR.** La fine dessine tout son carré ; la couronne
+  s'arrête à son disque. Céder le carré entier laisserait les coins (au-delà
+  du disque) en ciel vide : on ne cède une case que si ses quatre coins sont à
+  moins de `rayon − pas` du joueur. Le témoin de `plafond.js` compte les trous
+  devant soi entre 2 200 et 3 800 blocs (zéro).
+- **L'ABAISSEMENT SUIT LA PRÉCISION DU TAMPON DE PROFONDEUR.** À 2 560 blocs,
+  avec un plan proche à 0,1, un pas de profondeur vaut ≈ 3,9 blocs : la
+  troisième grille est seize blocs sous la couronne (`ABAISSE_TRES_LOIN`),
+  comme la couronne deux sous la fine. `?loin=2560` rend la v504 au sommet
+  près.
+
+## Le garde-manger retiré, la minicarte à gauche (v518)
+
+Deux règles.
+
+- **UN RETRAIT SE PROUVE PAR LE TRAJET DE L'ENFANT.** Le témoin de la pastille
+  🍖 devient un témoin de retrait : on frappe une bête jusqu'à la fumée, rien
+  n'apparaît, rien ne se compte, et la clé `web-minecraft-meat-v1` reste
+  intacte (v256). Le champ `meat` des fiches d'espèces, que seule la récolte
+  lisait, est parti avec elle.
+- **CE QUI S'OUVRE SOUS UN BOUTON DE LA COLONNE DE GAUCHE PREND SON X.** La
+  minicarte s'ouvre sous le bouton carte (`--sous-carte`, `--rail-x`) ; ce qui
+  vivait sous la carte (les émotes) descend de `--minimap-w`, et la file
+  centrale (v445) la contourne par la même variable. Le témoin est formulé
+  sans dimension et joué à 430 × 932 et 420 × 760.
+
 ## ✈️ se pose devant (v502) — une approche assistée va là où le nez pointe
 
 Max : « quand on clique sur se poser, il devrait se poser sur la direction

@@ -90,6 +90,22 @@ export const rayonLoin = (blocs) => Math.round(blocs / PAS_LOIN) * PAS_LOIN;
 // sous la vraie surface, un étage plus loin).
 export const ABAISSE_LOIN = 2;
 
+// LE LOINTAIN TRÈS LOINTAIN (v518). Max : « le mode Loin n'est pas assez
+// loin. » La couronne de trente-deux blocs garde sa portée (2 560) et une
+// TROISIÈME grille, quatre fois plus lâche encore, prend le relais jusqu'à la
+// portée du palier (`loin` de la fiche `haut`, 10 240 blocs). Même règle d'un
+// étage à l'autre : chaque grille cède à celle de dedans, et la grossière est
+// posée plus bas. Élargir la couronne de trente-deux jusque-là aurait coûté
+// seize fois ses sommets (25 921 → 410 000) ; la troisième grille en coûte
+// autant que la couronne, ~3,3 Mo. L'abaissement est celui que la précision du
+// tampon de profondeur demande à 2 560 blocs (≈ z² / (près × 2²⁴) = 3,9 blocs,
+// plan proche à 0,1) : seize, quatre fois cette marge, invisible à cette
+// distance.
+export const PAS_TRES_LOIN = 128;
+export const PORTEE_COURONNE = 2560;
+export const ABAISSE_TRES_LOIN = 16;
+export const rayonTresLoin = (blocs) => Math.round(blocs / PAS_TRES_LOIN) * PAS_TRES_LOIN;
+
 // Le contenu se déplace de (−dix, −diz) cases. Même figure que `decalerCarte`
 // dans `main.js` : les lignes se parcourent dans le sens qui évite d'écraser ce
 // qu'on n'a pas encore lu, et `copyWithin` fait le reste.
@@ -545,6 +561,22 @@ export class Horizon {
     const fine = this.interieur && this.interieur.ox !== null ? this.interieur : null;
     const fx0 = fine ? fine.ox * fine.pas : 0, fx1 = fine ? (fine.ox + fine.CASES) * fine.pas : 0;
     const fz0 = fine ? fine.oz * fine.pas : 0, fz1 = fine ? (fine.oz + fine.CASES) * fine.pas : 0;
+    // UNE GRILLE DE DEDANS QUI A ELLE-MÊME UNE GRILLE DE DEDANS NE DESSINE PAS
+    // TOUT SON CARRÉ (v518) : elle s'arrête à sa portée, un disque. La troisième
+    // grille ne lui cède donc que les cases que ce disque couvre à coup sûr —
+    // les quatre coins à moins de `rayon − pas` du joueur (une case de la
+    // couronne est dessinée si son coin est à `rayon + pas`, sa diagonale vaut
+    // `pas · √2`). Sans cela, les coins du carré de la couronne, au-delà de son
+    // disque, seraient des trous de ciel.
+    const rIn = fine && fine.interieur ? fine.rayon - fine.pas : Infinity;
+    const rIn2 = rIn * rIn;
+    const couvert = (x, z) => {
+      if (rIn2 === Infinity) return true;
+      for (const [qx, qz] of [[x, z], [x + pas, z], [x, z + pas], [x + pas, z + pas]]) {
+        if ((qx - px) * (qx - px) + (qz - pz) * (qz - pz) > rIn2) return false;
+      }
+      return true;
+    };
     const portee2 = this.interieur ? (this.rayon + pas) * (this.rayon + pas) : Infinity;
     for (let ix = 0; ix < CASES; ix++) {
       const wx = (this.ox + ix) * this.pas;
@@ -553,7 +585,7 @@ export class Horizon {
         const wz = (this.oz + iz) * this.pas;
         const cz = Math.floor(wz / CHUNK);
         if (estDessine(cxA, cz)) continue;
-        if (fine && wx >= fx0 && wx + pas <= fx1 && wz >= fz0 && wz + pas <= fz1) continue;
+        if (fine && wx >= fx0 && wx + pas <= fx1 && wz >= fz0 && wz + pas <= fz1 && couvert(wx, wz)) continue;
         const dx = wx - px, dz = wz - pz;
         const d2 = dx * dx + dz * dz;
         if (d2 > portee2) continue;

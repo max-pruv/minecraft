@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 518,
+    titre: 'Plus loin, plus simple',
+    puces: [
+      '« Loin » voit quatre fois plus loin',
+      'Plus de compteur de viande',
+      'La minicarte s\'ouvre bien à gauche',
+    ],
+  },
+  {
     v: 517,
     titre: 'Les personnages à jour',
     puces: [

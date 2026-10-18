@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v518 — « Loin » voit plus loin, le garde-manger part, la minicarte à gauche
+
+Trois sujets, trois lignes au journal du jeu, un témoin pour chacun.
+
+**Pourquoi.** Trois demandes de Max, avec deux captures d'iPhone :
+« Le mode Loin n'est pas assez loin » — la couronne de la v497 s'arrêtait à
+2 560 blocs. « Supprime complètement la feature du poulet ×34 » — la pastille
+🍖 × N, en haut à gauche, qui comptait ce que l'enfant récoltait en frappant
+les bêtes. « La carte est mal placée, elle pourrait être bien à gauche » — la
+minicarte s'ouvrait à droite du bouton carte, sous la pastille.
+
+**Ce que ça change.**
+- **« Loin » porte à 10 240 blocs.** La couronne de trente-deux blocs garde
+  ses 2 560 ; une troisième grille, de cent vingt-huit blocs, prend le relais
+  jusqu'au bout, et le brouillard et le plan lointain reculent avec elle.
+  Chaque grille plus lâche est posée plus bas que celle de dedans (la fine
+  gagne, puis la couronne). `rr`, la file, `hdMo` et la vitesse des jets ne
+  bougent pas. Les paliers Court et Normal ne changent pas d'un sommet.
+- **Le garde-manger est retiré.** Plus de pastille, plus de compteur : une
+  bête frappée fuit puis part en fumée sans rien donner. La clé de stockage
+  et son champ de synchronisation restent (on retire l'écran, jamais les
+  données).
+- **La minicarte s'ouvre sous le bouton carte**, au même x que lui ; les
+  émotes descendent sous elle et la file centrale passe à sa droite.
+
+**Ce qui le prouve.** Mesuré en ordre alterné, palier haut, rr 12, en vol
+(`sonde-tres-loin.cjs`) : +25 921 sommets et +3,2 Mo (une couronne de plus),
+157 112 → 180 738 triangles par image, découpe 2,2 ms quatre fois par seconde ;
+au banc en rendu logiciel, 10,8 · 10,4 → 9,5 · 9,3 images par seconde (du
+remplissage, qui ne se transpose pas). Témoins : la troisième grille porte à
+10 240 sans un trou de ciel entre elle et la couronne, et tient sous 4 Mo
+(`plafond.js`, deux verdicts) ; la page « Loin » lit brouillard, plan
+lointain et trois grilles dans la scène, les autres paliers rien de neuf
+(`maj.js`) ; une poule frappée part en fumée sans que rien n'apparaisse ni ne
+se compte, la donnée intacte (`monte.js`) ; la minicarte s'ouvre sous le
+bouton carte, au même x, sans rien recouvrir, à 430 × 932 et 420 × 760
+(`monte.js`).
+
 ## v517 — Les restes des fonctionnalités retirées : un inventaire, et trois phrases
 
 **Pourquoi.** Max : « supprimer toutes les musiques inutiles, du style les trucs

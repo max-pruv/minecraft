@@ -380,21 +380,21 @@ function voitureNeuve(voeu) {
 
 export const MONTURES = [
   { key: 'elephant', name: 'Éléphant', cry: 'Barriiiit !', emoji: '🐘', speed: 0.9,
-    height: 2.9, width: 1.6, meat: '🥜 Cacahuète', montable: true, allure: 1.6, assise: 2.5 },
+    height: 2.9, width: 1.6, montable: true, allure: 1.6, assise: 2.5 },
   { key: 'zebre', name: 'Zèbre', cry: 'Hi-han-hii !', emoji: '🦓', speed: 2.0,
-    height: 1.5, width: 0.7, meat: '🍎 Pomme', montable: true, allure: 2.3, assise: 1.45 },
+    height: 1.5, width: 0.7, montable: true, allure: 2.3, assise: 1.45 },
   { key: 'ane', name: 'Âne', cry: 'Hi-han !', emoji: '🫏', speed: 1.2,
-    height: 1.1, width: 0.55, meat: '🥕 Carotte', montable: true, allure: 1.7, assise: 1.05 },
+    height: 1.1, width: 0.55, montable: true, allure: 1.7, assise: 1.05 },
   { key: 'chameau', name: 'Chameau', cry: 'Bloub !', emoji: '🐪', speed: 1.3,
-    height: 1.9, width: 0.7, habitat: 'sand', meat: '🌴 Datte', montable: true, allure: 1.9, assise: 1.9 },
+    height: 1.9, width: 0.7, habitat: 'sand', montable: true, allure: 1.9, assise: 1.9 },
   { key: 'lama', name: 'Lama', cry: 'Mèèh !', emoji: '🦙', speed: 1.4,
-    height: 1.6, width: 0.6, meat: '🧶 Laine', montable: true, allure: 1.8, assise: 1.25 },
+    height: 1.6, width: 0.6, montable: true, allure: 1.8, assise: 1.25 },
   { key: 'autruche', name: 'Autruche', cry: 'Bouh bouh !', emoji: '🪶', speed: 2.2,
-    height: 2.1, width: 0.6, habitat: 'sand', meat: '🥚 Gros œuf', montable: true, allure: 2.7, assise: 1.45 },
+    height: 2.1, width: 0.6, habitat: 'sand', montable: true, allure: 2.7, assise: 1.45 },
   { key: 'sanglier', name: 'Sanglier', cry: 'Grrrouf !', emoji: '🐗', speed: 1.7,
-    height: 1.0, width: 0.7, meat: '🍄 Champignon', montable: true, allure: 1.9, assise: 0.9 },
+    height: 1.0, width: 0.7, montable: true, allure: 1.9, assise: 0.9 },
   { key: 'ours', name: 'Ours brun', cry: 'Grooo !', emoji: '🐻', speed: 1.3,
-    height: 1.3, width: 0.9, habitat: 'snow', meat: '🍯 Pot de miel', montable: true, allure: 1.8, assise: 1.2 },
+    height: 1.3, width: 0.9, habitat: 'snow', montable: true, allure: 1.8, assise: 1.2 },
   // La voiture neuve : elle sort de la chaîne de la Giga-usine, et c'est la
   // plus rapide de toutes les montures — c'est une voiture. Son habitat
   // `usine` n'existe dans aucun biome : elle n'apparaît JAMAIS toute seule
@@ -431,7 +431,7 @@ export const MONTURES = [
   // du bestiaire la faisait « bouger tac tac tac sans rouler » — Max). Elle
   // ne se déplace que conduite, où elle suit le joueur, en douceur.
   { key: 'voiture', name: 'Voiture neuve', cry: 'Vroum vroum !', emoji: '🚗', speed: 0.01,
-    height: 1.3, width: 0.98, habitat: 'usine', meat: '🔩 Boulon', montable: true,
+    height: 1.3, width: 0.98, habitat: 'usine', montable: true,
     // l'allure de SECOURS, quand le modèle n'a pas de classe : une berline
     // (v358 — elle valait 3,4, plus lent que toutes les classes)
     allure: allureDeClasse('berline'),
@@ -634,7 +634,7 @@ export const MONTURES = [
   // mord un peu (v212). Un avion passe l'essentiel de sa vie en l'air, où
   // rien ne le frotte.
   { key: 'avionligne', name: 'Avion de ligne', cry: 'Rrrrrouuuu !', emoji: '✈️', speed: 0.01,
-    height: 4.2, width: 2.2, habitat: 'aeroport', meat: '🎫 Carte d\'embarquement',
+    height: 4.2, width: 2.2, habitat: 'aeroport',
     montable: true, allure: 1, assise: 2.6, poursuite: { recul: 18, hauteur: 7 },
     nourrissable: false, immobile: true, vole: true, gabarit: 2.4,
     pilote: { max: 95, poussee: 18, decrochage: 30, virage: 0.55,
@@ -643,7 +643,7 @@ export const MONTURES = [
     moteur: 'avion' },
 
   { key: 'concorde', name: 'Concorde', cry: 'Whoooosh !', emoji: '🛩️', speed: 0.01,
-    height: 4.4, width: 1.6, habitat: 'aeroport', meat: '🥂 Coupe de voyage',
+    height: 4.4, width: 1.6, habitat: 'aeroport',
     montable: true, allure: 1, assise: 2.7, poursuite: { recul: 22, hauteur: 8 },
     nourrissable: false, immobile: true, vole: true, gabarit: 2.0,
     // Il vole vite mais il vire mal : une aile delta ne tourne pas court, et
@@ -655,7 +655,7 @@ export const MONTURES = [
     moteur: 'avion' },
 
   { key: 'chasseur', name: 'Avion de chasse', cry: 'Vriiiii !', emoji: '🚀', speed: 0.01,
-    height: 3.2, width: 1.4, habitat: 'aeroport', meat: '🎖️ Insigne',
+    height: 3.2, width: 1.4, habitat: 'aeroport',
     montable: true, allure: 1, assise: 2.2, poursuite: { recul: 13, hauteur: 5 },
     nourrissable: false, immobile: true, vole: true, gabarit: 1.8,
     // Même pointe que le Concorde, mais il grimpe trois fois plus vite et

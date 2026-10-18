@@ -230,21 +230,21 @@ const BUILDERS = {
 
 // habitat: 'grass' (default) for meadows, 'sand' for beaches, 'snow' for peaks
 const SPECIES = [
-  { key: 'cow', name: 'Vache', cry: 'Meuh !', emoji: '🐄', speed: 1.0, height: 1.1, width: 0.7, meat: '🥩 Steak' },
-  { key: 'pig', name: 'Cochon', cry: 'Groin groin !', emoji: '🐷', speed: 1.1, height: 0.8, width: 0.6, meat: '🍖 Côtelette' },
-  { key: 'sheep', name: 'Mouton', cry: 'Bêêê !', emoji: '🐑', speed: 0.9, height: 1.0, width: 0.65, meat: '🍖 Gigot' },
-  { key: 'horse', name: 'Cheval', cry: 'Hiiii !', emoji: '🐴', speed: 1.8, height: 1.4, width: 0.7, meat: '🍖 Viande', montable: true, allure: 2.2, assise: 1.0 },
-  { key: 'chicken', name: 'Poule', cry: 'Cot cot !', emoji: '🐔', speed: 0.8, height: 0.7, width: 0.4, meat: '🍗 Poulet' },
-  { key: 'rabbit', name: 'Lapin', cry: '…sniff sniff', emoji: '🐰', speed: 1.4, height: 0.6, width: 0.4, hopper: true, meat: '🍗 Lapin' },
-  { key: 'goat', name: 'Chèvre', cry: 'Bêêêh !', emoji: '🐐', speed: 1.2, height: 1.0, width: 0.6, meat: '🍖 Gigot' },
-  { key: 'deer', name: 'Cerf', cry: '…brame !', emoji: '🦌', speed: 1.9, height: 1.3, width: 0.65, meat: '🍖 Viande', montable: true, allure: 2.4, assise: 0.95 },
-  { key: 'fox', name: 'Renard', cry: 'Glapit !', emoji: '🦊', speed: 1.7, height: 0.7, width: 0.5, meat: '🍓 Baies' },
-  { key: 'wolf', name: 'Loup', cry: 'Aouuuh !', emoji: '🐺', speed: 1.6, height: 0.9, width: 0.6, meat: '🍖 Viande', montable: true, allure: 2.1, assise: 0.85 },
-  { key: 'squirrel', name: 'Écureuil', cry: '…scrat scrat', emoji: '🐿️', speed: 1.5, height: 0.5, width: 0.35, hopper: true, meat: '🌰 Noisette' },
-  { key: 'duck', name: 'Canard', cry: 'Coin coin !', emoji: '🦆', speed: 0.9, height: 0.7, width: 0.4, habitat: 'sand', meat: '🍗 Canard' },
-  { key: 'turtle', name: 'Tortue', cry: '…', emoji: '🐢', speed: 0.4, height: 0.5, width: 0.55, habitat: 'sand', meat: '🥚 Œuf' },
-  { key: 'crab', name: 'Crabe', cry: 'Clac clac !', emoji: '🦀', speed: 1.0, height: 0.5, width: 0.6, habitat: 'sand', meat: '🦀 Pince de crabe' },
-  { key: 'penguin', name: 'Manchot', cry: 'Groink !', emoji: '🐧', speed: 0.9, height: 0.9, width: 0.45, habitat: 'snow', meat: '🐟 Poisson' },
+  { key: 'cow', name: 'Vache', cry: 'Meuh !', emoji: '🐄', speed: 1.0, height: 1.1, width: 0.7 },
+  { key: 'pig', name: 'Cochon', cry: 'Groin groin !', emoji: '🐷', speed: 1.1, height: 0.8, width: 0.6 },
+  { key: 'sheep', name: 'Mouton', cry: 'Bêêê !', emoji: '🐑', speed: 0.9, height: 1.0, width: 0.65 },
+  { key: 'horse', name: 'Cheval', cry: 'Hiiii !', emoji: '🐴', speed: 1.8, height: 1.4, width: 0.7, montable: true, allure: 2.2, assise: 1.0 },
+  { key: 'chicken', name: 'Poule', cry: 'Cot cot !', emoji: '🐔', speed: 0.8, height: 0.7, width: 0.4 },
+  { key: 'rabbit', name: 'Lapin', cry: '…sniff sniff', emoji: '🐰', speed: 1.4, height: 0.6, width: 0.4, hopper: true },
+  { key: 'goat', name: 'Chèvre', cry: 'Bêêêh !', emoji: '🐐', speed: 1.2, height: 1.0, width: 0.6 },
+  { key: 'deer', name: 'Cerf', cry: '…brame !', emoji: '🦌', speed: 1.9, height: 1.3, width: 0.65, montable: true, allure: 2.4, assise: 0.95 },
+  { key: 'fox', name: 'Renard', cry: 'Glapit !', emoji: '🦊', speed: 1.7, height: 0.7, width: 0.5 },
+  { key: 'wolf', name: 'Loup', cry: 'Aouuuh !', emoji: '🐺', speed: 1.6, height: 0.9, width: 0.6, montable: true, allure: 2.1, assise: 0.85 },
+  { key: 'squirrel', name: 'Écureuil', cry: '…scrat scrat', emoji: '🐿️', speed: 1.5, height: 0.5, width: 0.35, hopper: true },
+  { key: 'duck', name: 'Canard', cry: 'Coin coin !', emoji: '🦆', speed: 0.9, height: 0.7, width: 0.4, habitat: 'sand' },
+  { key: 'turtle', name: 'Tortue', cry: '…', emoji: '🐢', speed: 0.4, height: 0.5, width: 0.55, habitat: 'sand' },
+  { key: 'crab', name: 'Crabe', cry: 'Clac clac !', emoji: '🦀', speed: 1.0, height: 0.5, width: 0.6, habitat: 'sand' },
+  { key: 'penguin', name: 'Manchot', cry: 'Groink !', emoji: '🐧', speed: 0.9, height: 0.9, width: 0.45, habitat: 'snow' },
   // Les bêtes qu'on peut monter vivent dans le même bestiaire que les autres :
   // elles broutent, fuient et se reproduisent exactement pareil. Ce qui les
   // distingue tient dans leur fiche (src/montures.js), pas dans leur code.
@@ -277,7 +277,9 @@ class Animal {
     this.mesh.scale.setScalar(this.scale);
   }
 
-  // A hit from the player: flash red, flee away, and eventually drop meat.
+  // A hit from the player: flash red, flee away, and eventually poof. Le
+  // garde-manger (🍖 × N) est retiré (v518, décision de Max) : la bête ne
+  // « donne » plus rien, et plus rien ne compte ce qu'on a récolté.
   hurt(player) {
     if (this.dying > 0) return false;
     this.hp--;
@@ -441,7 +443,6 @@ export class AnimalManager {
     this.animals = [];
     this.spawnTimer = 1;
     this.chronoNaissance = chronoReel(2);
-    this.onHarvest = null; // hook(def) — set by main.js to award the meat
   }
 
   // Player attacks the animal in the crosshair (within melee reach).
@@ -488,11 +489,10 @@ export class AnimalManager {
     for (const a of [...this.animals]) {
       if (a.dying > 0) {
         a.update(dt, this.world, this.player, this.toast);
-        if (a.dying <= 0) { // poof finished: award the meat
+        if (a.dying <= 0) { // poof finished
           this.scene.remove(a.mesh);
           liberer(a.mesh);
           this.animals = this.animals.filter((o) => o !== a);
-          if (this.onHarvest) this.onHarvest(a.def);
         }
         continue;
       }

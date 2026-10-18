@@ -1,5 +1,31 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v518 (Loin,
+  garde-manger, minicarte)** — double mesure de la v195, chaque suite rejouée
+  SEULE sur la branche et sur `origin/main` v506 (`git worktree`). `maj.js` :
+  les deux mêmes rouges des deux côtés (« pendant l'installation, le loader dit
+  combien de fichiers sont rangés », « après le rechargement, le loader ne
+  s'efface qu'une fois… »). `reglages.js` et `manhattan.js` : verts seuls des
+  deux côtés (leurs rouges de portail — PeerJS « ID is taken », un témoin de
+  Manhattan — ne se reproduisent pas). `monte.js` : des deux côtés « la rue se
+  fabrique par tranches », « au feu la voiture freine sur plusieurs relevés »,
+  « on ne marche pas dans une rue vide » ; branche seule « un mur pris de face »
+  (rebond −1,89, déjà vu sur `origin/main`, déclaré plus bas) et « une voiture
+  de la rue heurtée… feux de détresse » (`clignote` faux, déclaré plus bas) ;
+  `origin/main` seul « la caméra laisse la voiture glisser », « un flâneur posé
+  au milieu de la chaussée », « deux voisines d'un convoi ». La livraison ne
+  touche ni la physique des voitures ni la rue (la couronne n'existe qu'au
+  palier `haut`, que ces pages ne demandent pas) ; ses huit témoins sont verts
+  aux trois portails. Troisième portail (rebasé sur la v513 ; v514 et v515 de `main` arrivées ensuite) : neuf suites
+  vertes, `monte.js` 4 rouges — les trois des deux côtés ci-dessus, et « les
+  passants se posent quand le monde est là » (un passant dans un mur ; vu sur
+  `origin/main` seul au portail de la v504, déclaré plus bas ; vert seul des
+  deux côtés à cette double mesure). Quatrième portail (rebasé sur la v515) :
+  `maj.js` les deux rouges du loader (identiques sur `origin/main`), `monte.js`
+  sept rouges tous déjà déclarés — le flâneur, « un passant de rue marche
+  vraiment » (débit 0,69, vu sur `origin/main` v483), « à Rome aussi, en
+  biais », la rue vide, le passant dans un mur, un mur pris de face.
+
 - [ ] **Rouges de portail vus en v517, rejoués SEULS des deux côtés.** `monte.js`
   « au-dessus d'une ville aussi, le monde se charge devant l'avion » (rouge sur
   `origin/main` v506 ET la branche : trou 58 et 16 pour une barre à 47,5/60),
