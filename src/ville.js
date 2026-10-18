@@ -19,8 +19,8 @@
 // tout ce que le bâtisseur pose ou creuse. Une cabane enterrée sur le tracé
 // reste donc intacte, et c'est le tunnel qui a un trou — pas l'inverse.
 
-import { BLOCK, CITY_BLOCK, DECOR_START } from './blocks.js';
-import { adresseParis, solParis, lotParisLibre } from './paris.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, METRO_BLOCK } from './blocks.js';
+import { adresseParis, solParis, lotParisLibre, PARIS, CITE, zCite } from './paris.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
@@ -391,7 +391,9 @@ export const LIGNE1 = {
 };
 // Interrupteur de mesure : `actif = false` rend le monde d'avant la v473 au bit
 // près (empreinte des 490 morceaux, plafond.js).
-export const METRO_PARIS = { actif: true };
+export const METRO_PARIS = { actif: true, stations: true };
+// `stations = false` rend les stations de la v473 au bit près (v529) : c'est
+// ce qui prouve, pour l'empreinte des 490 morceaux, que rien d'autre n'a bougé.
 
 // Les stations, en KILOMÈTRES depuis Notre-Dame, sur le plan du jeu (celui de
 // `LIEUX` dans paris.js) — jamais un décalage en blocs. Celles qui ne sont pas
@@ -545,7 +547,7 @@ export const empreinteEsc = (q, b) => {
   for (let m = -2; m <= LONG_ESC + 3; m++) for (let t = -3; t <= 3; t++) out.add(cleCol(...pointEsc(q, b, m, t)));
   return out;
 };
-export function placesDe(q, k) {
+export function placesDe(q, k, evite = null) {
   const libre = (b) => {
     for (let m = 1; m <= LONG_ESC + 2; m++) {
       for (let t = -3; t <= 3; t++) {
@@ -564,7 +566,8 @@ export function placesDe(q, k) {
     }
     return true;
   };
-  const tient = (b) => emprisesTremie(q, b).every(([x, z]) => praticable(x, z) && !lotParisLibre(Math.floor(x), Math.floor(z)))
+  const tient = (b) => emprisesTremie(q, b).every(([x, z]) => praticable(x, z) && !lotParisLibre(Math.floor(x), Math.floor(z))
+    && !(evite && evite(x, z)))
     && emprisesEscalier(q, b).every(pasDEau) && libre(b);
   const As = [];
   for (let a = 2; a <= LIGNE1.demiStation - 2; a++) As.push(a, -a);
@@ -593,8 +596,27 @@ export function placesDe(q, k) {
   }
   return out;
 }
-export const BOUCHES_LIGNE1 = (() => {
-  const places = QUAIS_LIGNE1.map((q, k) => placesDe(q, k).map((b) => ({ b, e: empreinteEsc(q, b) })));
+// UNE TRÉMIE NE SORT PAS DANS UN MONUMENT (v529). Les repères se posent APRÈS
+// les colonnes (v205) : la bouche d'Hôtel de Ville de la v473 sortait dans le
+// parvis de Notre-Dame, ses contreforts bouchaient le haut des marches, et
+// l'on n'y descendait que par l'escalier de Saint-Paul — la sonde de la v473
+// marchait sur soixante blocs et ne le voyait pas. Notre-Dame est le seul
+// repère que la ligne approche ; un témoin de `plafond.js` lit TOUS les
+// repères de Paris contre toutes les trémies.
+const NOTRE_DAME = { x: PARIS.x + CITE.u, z: zCite(), box: 9 };
+export const dansNotreDame = (x, z) => Math.abs(Math.floor(x) - NOTRE_DAME.x) <= NOTRE_DAME.box + 1
+  && Math.abs(Math.floor(z) - NOTRE_DAME.z) <= NOTRE_DAME.box + 1;
+// `garder` : les bouches d'une version d'avant. Celles qui tiennent encore
+// restent à leur place, au bloc près — on n'ouvre pas une trémie neuve et on
+// n'en referme pas une vieille pour en déplacer UNE (v529) ; seules celles qui
+// ne tiennent plus se cherchent, autour des autres.
+function choisirBouches(evite, garder = null, liberes = new Set()) {
+  const places = QUAIS_LIGNE1.map((q, k) => {
+    const toutes = placesDe(q, k, evite);
+    const g = garder && !liberes.has(k) && garder[k];
+    const meme = g && toutes.find((b) => b.a === g.a && b.sg === g.sg && b.o === g.o && b.cote === g.cote && !!b.perp === !!g.perp);
+    return (meme ? [meme] : toutes).map((b) => ({ b, e: empreinteEsc(q, b) }));
+  });
   const ordre = QUAIS_LIGNE1.map((_, k) => k).sort((i, j) => places[i].length - places[j].length || i - j);
   // une recherche en profondeur, bornée : le plus de stations servies, et à
   // nombre égal le premier choix de chacune (l'ordre des places dit la préférence)
@@ -630,9 +652,40 @@ export const BOUCHES_LIGNE1 = (() => {
     const mat = (t) => pasUneRue(...pointEsc(q, b, LONG_ESC + 1, t));
     b.arche = mat(-2) && mat(2);
     b.mat = b.arche ? 0 : mat(2) ? 2 : mat(-2) ? -2 : 0;
-    choix[k] = { nom: q.nom, q, ...b, tx, tz };
+    // LE COULOIR ARRIVE AU FOND DE LA SALLE DES BILLETS (v529) : décalé de
+    // trois blocs et demi derrière le pied de l'escalier, pour que les
+    // portillons soient ENTRE le quai et la rue. Seulement s'il reste sur le
+    // quai — au-delà du bout du quai, il déboucherait dans le mur de fin.
+    const cq = !b.perp && Math.abs(b.a - b.sg * 3.5) <= LIGNE1.demiStation - 2.5 ? -b.sg * 3.5 : 0;
+    choix[k] = { nom: q.nom, q, ...b, tx, tz, cq };
   }
   return choix;
+}
+// les bouches de la v473, telles quelles : le monde d'avant (`stations` à
+// faux) et, sous ce qu'un enfant a bâti, ce qui touche la surface
+export const BOUCHES_V473 = choisirBouches(null);
+// Hôtel de Ville déplacé n'a plus de place qui ne croise pas l'escalier de
+// Saint-Paul : une station qu'on ne sert plus libère ses voisines dont
+// l'escalier croise toutes ses places, et l'on recherche ces deux-là ensemble.
+export const BOUCHES_LIGNE1 = (() => {
+  let liberes = new Set();
+  for (let tour = 0; tour < 3; tour++) {
+    const choix = choisirBouches(dansNotreDame, BOUCHES_V473, liberes);
+    const perdues = choix.map((b, k) => (!b && BOUCHES_V473[k] ? k : -1)).filter((k) => k >= 0);
+    if (!perdues.length) return choix;
+    liberes = new Set(liberes);
+    for (const k of perdues) {
+      liberes.add(k);
+      const q = QUAIS_LIGNE1[k];
+      const siennes = placesDe(q, k, dansNotreDame).map((b) => empreinteEsc(q, b));
+      BOUCHES_V473.forEach((b, j) => {
+        if (!b || j === k) return;
+        const e = empreinteEsc(b.q, b);
+        if (siennes.some((m) => [...m].some((c) => e.has(c)))) liberes.add(j);
+      });
+    }
+  }
+  return choisirBouches(dansNotreDame, BOUCHES_V473, liberes);
 })();
 
 // LES DEUX VOIES. Le métro parisien roule à droite ; au terminus, demi-tour
@@ -669,15 +722,20 @@ export function arretsLigne1Paris() {
 }
 
 // Rangement par cases de huit, comme à Washington.
+// Deux grilles : celle d'aujourd'hui et celle de la v473 (ses bouches), qui
+// ne diffèrent que par les bouches.
 const CASE = 8;
 const GRILLE1 = new Map();
+const GRILLE1_V473 = new Map();
 const cle1 = (bx, bz) => bx * 65536 + bz;
-function ranger1(x0, x1, z0, z1, obj) {
+function ranger1(x0, x1, z0, z1, obj, grilles = [GRILLE1, GRILLE1_V473]) {
   for (let bx = Math.floor(x0 / CASE); bx <= Math.floor(x1 / CASE); bx++) {
     for (let bz = Math.floor(z0 / CASE); bz <= Math.floor(z1 / CASE); bz++) {
       const k = cle1(bx, bz);
-      if (!GRILLE1.has(k)) GRILLE1.set(k, []);
-      GRILLE1.get(k).push(obj);
+      for (const g of grilles) {
+        if (!g.has(k)) g.set(k, []);
+        g.get(k).push(obj);
+      }
     }
   }
 }
@@ -698,10 +756,12 @@ for (const q of QUAIS_LIGNE1) {
       { quoi: 'gabarit', x0: a.x, z0: a.z, x1: b.x, z1: b.z });
   }
 }
-for (const b of BOUCHES_LIGNE1) {
-  if (!b) continue;
-  const r = Math.abs(b.a) + LONG_ESC + 5 + b.o;
-  ranger1(b.q.x - r, b.q.x + r, b.q.z - r, b.q.z + r, { quoi: 'bouche', ...b });
+for (const [liste, g] of [[BOUCHES_LIGNE1, GRILLE1], [BOUCHES_V473, GRILLE1_V473]]) {
+  for (const b of liste) {
+    if (!b) continue;
+    const r = Math.abs(b.a) + LONG_ESC + 5 + b.o;
+    ranger1(b.q.x - r, b.q.x + r, b.q.z - r, b.q.z + r, { quoi: 'bouche', ...b }, [g]);
+  }
 }
 
 const surSegment = (x, z, s) => {
@@ -724,18 +784,232 @@ const RAIL = GRIS_CLAIR;
 const TRAVERSE = ROUGE_SOMBRE;
 const hVoute1 = (tr) => Math.round(LIGNE1.hVoute * Math.sqrt(Math.max(0, 1 - (tr / (LIGNE1.demiVoute + 0.4)) ** 2)));
 
+// --- LES STATIONS RÉALISTES (v529) ------------------------------------------
+//
+// Max : « on ne peut même pas marcher dedans, le personnage ne passe pas en
+// hauteur ; elles ne ressemblent pas à l'intérieur des vraies stations ». La
+// sonde (`sonde-stations.cjs`, le VRAI joueur sous node) l'a dit en chiffres :
+// trois blocs d'air dans les couloirs et les escaliers, un quai de deux blocs
+// au mur dentelé. Le joueur mesure 1,8 et SAUTE pour monter une marche (1,42
+// bloc) : il lui faut quatre blocs d'air là où il prend son élan.
+//
+// Ce qu'on a relevé des vraies stations parisiennes, et ce qu'on en bâtit :
+//   · la voûte elliptique, piédroits presque droits, carrelée de BLANC
+//     BISEAUTÉ jusqu'à la clef (`METRO_BLOCK.CARREAU`) ;
+//   · le quai et sa bordure blanche au bord de la voie ;
+//   · le long des piédroits, les cadres publicitaires, la plaque émaillée
+//     bleue du nom (un plan devant le carreau, `stations.js`), le plan du
+//     réseau et les sièges ;
+//   · la rampe lumineuse sous la voûte, au-dessus de chaque quai — toujours
+//     allumée, sans lampe de plus (v248) ;
+//   · un couloir carrelé à quatre blocs de haut, puis la salle des billets et
+//     sa rangée de portillons, au pied de l'escalier.
+// Rien de tout cela ne touche la surface : la clef reste à 27 (le lit de la
+// Seine, v473), les bouches et leurs trémies restent où elles étaient (sauf
+// Hôtel de Ville, dont la trémie tombait sous Notre-Dame, et Saint-Paul, qui
+// lui cède la place), et un escalier ne gagne de hauteur que sous le bloc de
+// la rue, jamais dedans.
+const CARREAU_M = METRO_BLOCK.CARREAU;
+const hVouteN = (tr) => Math.round(LIGNE1.hVoute
+  * Math.cbrt(Math.max(0, 1 - (Math.abs(tr) / (LIGNE1.demiVoute + 0.4)) ** 3)));
+// le piédroit commence à 6,4 de l'axe (et non 6) : une colonne de quai de plus
+const MUR_QUAI = LIGNE1.demiVoute - 0.6;
+const modulo = (v, n) => ((Math.round(v) % n) + n) % n;
+
+const dansStation1 = (cx, cz, s) => {
+  const r = reperQ(cx, cz, s);
+  return Math.abs(r.le) <= LIGNE1.demiStation + 1 && Math.abs(r.tr) <= LIGNE1.demiVoute + 1.2;
+};
+
+function stationParisN(s, cx, cz, x, z, o) {
+  const yr = LIGNE1.voie;
+  const r = reperQ(cx, cz, s);
+  const L = LIGNE1.demiStation, V = LIGNE1.demiVoute;
+  if (Math.abs(r.le) > L + 1 || Math.abs(r.tr) > V + 1.2) return;
+  const atr = Math.abs(r.tr);
+  const li = modulo(r.le, 12);
+  // le carreau du piédroit, à hauteur d'yeux les cadres et le plan (la plaque
+  // du nom est un plan devant le carreau, `plaquesParis`)
+  const piedroit = (y) => {
+    if ((li === 2 || li === 3) && (y === yr + 3 || y === yr + 4)) return METRO_BLOCK.AFFICHE;
+    if (Math.round(r.le) === 0 && (y === yr + 3 || y === yr + 4)) return METRO_BLOCK.PLAN;
+    return CARREAU_M;
+  };
+  if (atr > V || Math.abs(r.le) > L) {
+    // l'enveloppe ; le mur de fin, vu du quai, est carrelé. Et le long du
+    // quai elle est carrelée AUSSI : la trame est en biais, le piédroit fait
+    // des marches, et une case d'enveloppe se voit entre deux carreaux (le
+    // béton gris, en bandes sombres, sur la première capture)
+    const fin = Math.abs(r.le) > L && atr <= V;
+    const cote = Math.abs(r.le) <= L;
+    for (let y = yr; y <= yr + 1 + LIGNE1.hVoute; y++) {
+      o.pleins.push([y, y <= yr + 1 ? BETON : fin ? CARREAU_M : cote ? piedroit(y) : BETON]);
+    }
+    return;
+  }
+  const haut = yr + 1 + hVouteN(atr);
+  if (atr < LIGNE1.quai) {
+    const rail = Math.abs(atr - LIGNE1.ecart) < 0.6;
+    o.pleins.push([yr, rail ? RAIL : ((x + z) % 3 === 0 && atr < LIGNE1.ecart + 1 ? TRAVERSE : GRIS)]);
+    o.creuser(yr + 1, haut - 1);
+  } else {
+    o.apres.push([yr + 1, atr < LIGNE1.quai + 0.8 ? METRO_BLOCK.BORD_PARIS : QUAI]);
+    o.pleins.push([yr, BETON]);
+    if (atr > MUR_QUAI) {
+      // le piédroit : carreau blanc, et sur lui, à hauteur d'yeux, les cadres
+      // publicitaires, la plaque bleue du nom, le plan près du milieu
+      for (let y = yr + 2; y < haut; y++) o.pleins.push([y, piedroit(y)]);
+    } else {
+      o.creuser(yr + 2, haut - 1);
+      // les sièges, contre le piédroit, entre deux cadres
+      if (atr > MUR_QUAI - 1 && (li === 5 || li === 6) && Math.round(r.le) !== 0) o.apres.push([yr + 2, METRO_BLOCK.SIEGE]);
+    }
+  }
+  // la voûte carrelée, et la rampe lumineuse au-dessus de chaque quai
+  o.pleins.push([haut, atr >= 4.4 && atr < 5.4 ? METRO_BLOCK.LAMPE : CARREAU_M]);
+}
+
+// LE NOM DE LA STATION (v529) : où `stations.js` écrit le nom. Devant les
+// deux cases de carreau li 8 et 9 entre deux cadres, à yr + 3, un plan à deux
+// centièmes de la case de piédroit la plus avancée sous lui — la trame est
+// en biais, le carreau fait des marches, et le plan ne doit entrer dans
+// aucune. Pure : un témoin la relit contre le monde engendré.
+export function plaquesParis() {
+  const yr = LIGNE1.voie, L = LIGNE1.demiStation, V = LIGNE1.demiVoute, out = [];
+  for (const q of QUAIS_LIGNE1) {
+    const plaques = [];
+    for (let m = -2; m <= 1; m++) {
+      const le0 = 12 * m + 8.5;          // le milieu des cases li 8 et 9
+      if (Math.abs(le0) > L - 1) continue;
+      for (const sg of [1, -1]) {
+        const px = q.x + q.dx * le0 - q.dz * sg * MUR_QUAI, pz = q.z + q.dz * le0 + q.dx * sg * MUR_QUAI;
+        const cases = [];                 // les cases de mur autour, et leurs coins
+        for (let ix = Math.floor(px) - 4; ix <= Math.floor(px) + 4; ix++) {
+          for (let iz = Math.floor(pz) - 4; iz <= Math.floor(pz) + 4; iz++) {
+            const c = reperQ(ix + 0.5, iz + 0.5, q);
+            if (c.tr * sg <= MUR_QUAI || c.tr * sg > V + 1.2 || Math.abs(c.le) > L) continue;
+            const coins = [];
+            for (let a = 0; a <= 1; a += 0.125) for (let b = 0; b <= 1; b += 0.125) coins.push(reperQ(ix + a, iz + b, q));
+            cases.push({ c, coins, plaque: Math.abs(c.le - le0) < 2.5 && (modulo(c.le, 12) === 8 || modulo(c.le, 12) === 9) });
+          }
+        }
+        // la plaque bleue : devant les cases li 8 et 9 de la première rangée de
+        // carreau
+        // (le piédroit), d'un bout à l'autre ; le nom se centre sur elles
+        const avant = cases.filter((k) => k.plaque && k.c.tr * sg <= V);
+        const lesP = (avant.length ? avant : cases.filter((k) => k.plaque)).flatMap((k) => k.coins.map((r) => r.le));
+        if (!lesP.length) continue;
+        const lo = Math.min(...lesP), hi = Math.max(...lesP);
+        const leC = (lo + hi) / 2, larg = Math.min(2.6, Math.max(1.6, hi - lo));
+        // le plan se pose devant la plus avancée des cases sous lui
+        let d = Infinity;
+        for (const k of cases) for (const r of k.coins) if (Math.abs(r.le - leC) <= larg / 2 + 0.05) d = Math.min(d, r.tr * sg);
+        if (!Number.isFinite(d)) continue;
+        const t = sg * (d - 0.02);
+        plaques.push({
+          x: q.x + q.dx * leC - q.dz * t, y: yr + 3.5, z: q.z + q.dz * leC + q.dx * t,
+          nx: q.dz * sg, nz: -q.dx * sg, larg, haut: 0.96, sur: 'mur',
+        });
+      }
+    }
+    out.push({ ville: 'Paris', nom: q.nom, style: 'paris', plaques });
+  }
+  return out;
+}
+
+function boucheParisN(s, cx, cz, x, z, h, o) {
+  const yr = LIGNE1.voie;
+  const V = LIGNE1.demiVoute;
+  const r = reperQ(cx, cz, s.q);
+  const lat = r.tr * s.cote;
+  const leQ = r.le - s.a;
+  const le = s.perp ? lat - s.o : leQ * s.sg;
+  const dl = s.perp ? leQ : lat - s.o;
+  const plafond = (y0, y1, lampe) => {            // un couloir de 4 blocs de haut
+    o.creuser(y0, y1);
+    o.pleins.push([y1 + 1, lampe ? METRO_BLOCK.LAMPE : CARREAU_M]);
+  };
+  // le couloir carrelé, du quai à la salle des billets
+  const cq = s.cq || 0;
+  const bout = s.o + (s.perp ? 0.5 : 2.5);
+  if (Math.abs(leQ - cq) <= 1.5 && lat >= V - 1 && lat <= bout) {
+    if (Math.abs(leQ - cq) > 1 || (!s.perp && cq === 0 && lat > s.o + 1.5)) {
+      for (let y = yr + 2; y <= yr + 5; y++) o.pleins.push([y, (y === yr + 3 || y === yr + 4) && modulo(lat, 4) === 0 ? METRO_BLOCK.AFFICHE : CARREAU_M]);
+    } else {
+      o.apres.push([yr + 1, METRO_BLOCK.CARREAU_SOL]);
+      plafond(yr + 2, yr + 5, modulo(lat, 3) === 0);
+    }
+  }
+  // la salle des billets, au pied de l'escalier : ses portillons, son plan
+  if (!s.perp && le >= -6.5 && le <= 0.5 && Math.abs(dl) <= 3.5 && lat >= V + 1.2) {
+    const dedans = le >= -5.5 && Math.abs(dl) <= 2.5;
+    if (!dedans) {
+      for (let y = yr + 2; y <= yr + 5; y++) {
+        let id = CARREAU_M;
+        if (le < -5.5 && Math.round(dl) === 0 && (y === yr + 3 || y === yr + 4)) id = METRO_BLOCK.PLAN;
+        else if (le >= -5.5 && (y === yr + 3 || y === yr + 4) && modulo(le, 3) === 1) id = METRO_BLOCK.AFFICHE;
+        o.pleins.push([y, id]);
+      }
+    } else {
+      o.apres.push([yr + 1, METRO_BLOCK.CARREAU_SOL]);
+      plafond(yr + 2, yr + 5, modulo(le, 3) === 0 && Math.round(dl) === 0);
+      // les portillons : un sur deux, en travers de la salle, entre le
+      // couloir (au fond) et l'escalier (devant)
+      if (cq !== 0 && Math.abs(le + 1) < 0.5 && modulo(dl, 2) === 0) o.apres.push([yr + 2, METRO_BLOCK.PORTILLON]);
+    }
+  }
+  // l'escalier, de la cote du quai à celle de la rue
+  if (Math.abs(dl) <= 2.5 && le > 0.5 && le <= LONG_ESC + 2.5) {
+    const m = Math.round(le);
+    const sol = Math.min(h, yr + 1 + marcheEn(le));
+    const ouvert = sol + 3 >= h;                      // la trémie : on voit le ciel
+    // quatre blocs d'air sous terre ; jamais le bloc de la rue lui-même
+    const haut = ouvert ? h + 7 : Math.min(sol + 4, h - 1);
+    if (Math.abs(dl) > 1.5) {                          // les joues de l'escalier
+      if (m <= LONG_ESC) for (let y = sol; y < Math.min(h, haut + 2); y++) o.pleins.push([y, CARREAU_M]);
+      if (ouvert && m <= LONG_ESC && pasUneRue(cx, cz)) o.apres.push([h + 1, VERT_METRO]);
+    } else if (m <= LONG_ESC) {
+      o.apres.push([sol, GRIS_CLAIR]);
+      o.creuser(sol + 1, haut);
+      if (!ouvert && haut + 1 < h) o.pleins.push([haut + 1, m % 4 === 0 && Math.round(dl) === 0 ? METRO_BLOCK.LAMPE : CARREAU_M]);
+    } else {
+      o.creuser(h + 1, h + 7);                         // le palier de la rue, dégagé
+    }
+    if (m === LONG_ESC + 1) {
+      const d = Math.round(dl);
+      if (s.arche) {
+        if (Math.abs(d) === 2 && pasUneRue(cx, cz)) for (let y = h + 1; y <= h + 3; y++) o.apres.push([y, VERT_METRO]);
+        o.apres.push([h + 4, VERT_METRO]);
+        if (d === 0) o.apres.push([h + 5, JAUNE]);
+      } else if (s.mat && d === s.mat && pasUneRue(cx, cz)) {
+        for (let y = h + 1; y <= h + 3; y++) o.apres.push([y, VERT_METRO]);
+        o.apres.push([h + 4, JAUNE]);
+      }
+    }
+    if (ouvert && Math.abs(dl) <= 1.5 && yr + 1 + marcheEn(le - 1) + 3 < h && pasUneRue(cx, cz)) {
+      o.apres.push([h + 1, VERT_METRO]);
+    }
+  }
+}
+
 // Une colonne de Paris : (x, z) le coin du bloc, h la cote de la rue (le bloc
 // de surface), `poser(y, id)` en cote ABSOLUE. Rend vrai si elle a creusé.
-export function creuserMetroParis(x, z, h, poser) {
+// `ancien` : la géométrie de la v473, pour ce qui touche la surface sous une
+// colonne où un enfant a bâti avant `DATE_STATIONS` (world.js).
+export function creuserMetroParis(x, z, h, poser, ancien = false) {
   if (!METRO_PARIS.actif) return false;
-  const segs = GRILLE1.get(cle1(Math.floor(x / CASE), Math.floor(z / CASE)));
+  const neuf = METRO_PARIS.stations && !ancien;
+  const segs = (neuf ? GRILLE1 : GRILLE1_V473).get(cle1(Math.floor(x / CASE), Math.floor(z / CASE)));
   if (!segs) return false;
   const cx = x + 0.5, cz = z + 0.5;
   const yr = LIGNE1.voie;
   const vides = [], pleins = [], apres = [], gabarit = [];
   const creuser = (y0, y1) => { if (y1 >= y0) vides.push([y0, y1]); };
+  const o = { pleins, apres, creuser };
 
   for (const s of segs) {
+    if (neuf && s.quoi === 'station') { stationParisN(s, cx, cz, x, z, o); continue; }
+    if (neuf && s.quoi === 'bouche') { boucheParisN(s, cx, cz, x, z, h, o); continue; }
     if (s.quoi === 'gabarit') {
       if (surSegment(cx, cz, s) <= 1.0) gabarit.push([yr + 1, yr + 3]);
       continue;
@@ -751,7 +1025,11 @@ export function creuserMetroParis(x, z, h, poser) {
       pleins.push([yr, rail ? RAIL : ((x + z) % 3 === 0 && tr < LIGNE1.ecart + 1 ? TRAVERSE : GRIS)]);
       creuser(yr + 1, yr + LIGNE1.hTunnel);
       pleins.push([yr + LIGNE1.hTunnel + 1, BETON]);
-      if (tr > LIGNE1.demiTunnel - 1 && (((x + z) % 8) + 8) % 8 === 0) apres.push([yr + 4, JAUNE]);
+      // la lampe du tunnel ; dans la géométrie neuve elle cède à une station
+      // (le tunnel du segment voisin entre dans ses bouts : une lampe jaune
+      // flottait au-dessus des voies de la Bastille)
+      if (tr > LIGNE1.demiTunnel - 1 && (((x + z) % 8) + 8) % 8 === 0
+        && !(neuf && segs.some((t) => t.quoi === 'station' && dansStation1(cx, cz, t)))) apres.push([yr + 4, JAUNE]);
       continue;
     }
     if (s.quoi === 'station') {

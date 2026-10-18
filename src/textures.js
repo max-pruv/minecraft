@@ -1,7 +1,7 @@
 // Procedurally generated 16x16 pixel-art texture atlas — no image assets needed.
 
 import * as THREE from 'three';
-import { TILE, DECOR_ITEMS, CITY_TILE_START, VILLANDRY_TILE, ARCHI_TILE, ROUTE_TILE_START } from './blocks.js';
+import { TILE, DECOR_ITEMS, CITY_TILE_START, VILLANDRY_TILE, ARCHI_TILE, ROUTE_TILE_START, METRO_TILE } from './blocks.js';
 
 import { TILE_PX, ATLAS_COLS, ATLAS_ROWS, tileUV, tileRect } from './tuiles.js';
 export { TILE_PX, ATLAS_COLS, ATLAS_ROWS, tileUV, tileRect };
@@ -439,8 +439,127 @@ const peintresArchi = {
   },
 };
 
+// --- les stations de métro (v529) -----------------------------------------
+//
+// Ce qu'on reconnaît d'une vraie station, tuile par tuile. Paris : le carreau
+// blanc BISEAUTÉ (un rectangle de 15 × 7,5 cm, deux par bloc en largeur et
+// quatre en hauteur, chaque carreau éclairé en haut à gauche et ombré en bas
+// à droite — c'est le biseau qui fait briller la voûte), la plaque bleue
+// émaillée, la bordure de quai. Washington : le caisson de béton de la voûte,
+// le carrelage hexagonal brun, le granit du bord et ses feux, la gorge
+// d'éclairage indirect. Aucun logo, aucune marque : des formes génériques.
+const peintresMetro = {
+  [METRO_TILE.CARREAU](ctx, ox, oy) {
+    for (let y = 0; y < TILE_PX; y++) {
+      for (let x = 0; x < TILE_PX; x++) {
+        const cx = x % 8, cy = y % 4;
+        let v = 236;
+        if (cx === 7 || cy === 3) v = 196;          // le joint
+        else if (cx === 0 || cy === 0) v = 252;      // le biseau éclairé
+        else if (cx === 6 || cy === 2) v = 222;      // le biseau ombré
+        px(ctx, ox, oy, x, y, v, v, v - 2);
+      }
+    }
+  },
+  [METRO_TILE.LAMPE](ctx, ox, oy) {
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < TILE_PX; x++) {
+      const bord = y < 3 || y > 12;
+      if (bord) px(ctx, ox, oy, x, y, 150, 156, 160);
+      else px(ctx, ox, oy, x, y, 255, 248, 222);
+    }
+    for (let x = 0; x < TILE_PX; x += 8) for (let y = 3; y <= 12; y++) px(ctx, ox, oy, x, y, 220, 214, 190);
+  },
+  [METRO_TILE.AFFICHE](ctx, ox, oy) {
+    const rng = mulberry32(8801);
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < TILE_PX; x++) {
+      if (x === 0 || x === 15 || y === 0 || y === 15) { px(ctx, ox, oy, x, y, 64, 70, 76); continue; }
+      // une affiche générique : un ciel, un soleil, une bande de titre
+      if (y < 4) px(ctx, ox, oy, x, y, 236, 92, 60);
+      else if (y < 11) px(ctx, ox, oy, x, y, 120 + y * 6, 190, 232);
+      else px(ctx, ox, oy, x, y, 246, 236, 214);
+      if (Math.hypot(x - 10, y - 7) < 2.2) px(ctx, ox, oy, x, y, 250, 214, 70);
+      if (y >= 12 && y <= 13 && x >= 3 && x <= 12 && rng() < 0.7) px(ctx, ox, oy, x, y, 60, 60, 70);
+    }
+  },
+  [METRO_TILE.SIEGE](ctx, ox, oy) {
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < TILE_PX; x++) {
+      const siege = (x % 8) >= 1 && (x % 8) <= 6 && y >= 2 && y <= 9;
+      if (siege) px(ctx, ox, oy, x, y, 226 - y * 4, 98, 40);
+      else if (y > 12) px(ctx, ox, oy, x, y, 70, 74, 80);
+      else px(ctx, ox, oy, x, y, 188, 188, 186);
+    }
+  },
+  [METRO_TILE.PLAN](ctx, ox, oy) {
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < TILE_PX; x++) {
+      if (x === 0 || x === 15 || y === 0 || y === 15) { px(ctx, ox, oy, x, y, 40, 48, 70); continue; }
+      px(ctx, ox, oy, x, y, 244, 242, 234);
+    }
+    // les lignes du réseau, en couleurs, et leurs stations
+    const lignes = [[[1, 4], [14, 6], [236, 196, 40]], [[2, 12], [13, 3], [40, 110, 200]], [[7, 1], [8, 14], [210, 52, 44]], [[1, 9], [14, 10], [40, 150, 90]]];
+    for (const [[x0, y0], [x1, y1], c] of lignes) {
+      for (let t = 0; t <= 1; t += 0.05) px(ctx, ox, oy, Math.round(x0 + (x1 - x0) * t), Math.round(y0 + (y1 - y0) * t), ...c);
+    }
+    for (const [x, y] of [[4, 5], [10, 7], [8, 8], [5, 10]]) px(ctx, ox, oy, x, y, 30, 30, 30);
+  },
+  [METRO_TILE.CAISSON](ctx, ox, oy) {
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < TILE_PX; x++) {
+      // un caisson par bloc : la nervure en relief tout autour, le fond creux
+      const d = Math.min(x, y, 15 - x, 15 - y);
+      let v = d === 0 ? 168 : d === 1 ? 182 : d <= 3 ? 148 - (d - 2) * 10 : 122;
+      if (d >= 1 && d <= 3 && (x < y) !== (x < 15 - y)) v -= 8;
+      px(ctx, ox, oy, x, y, v, v - 4, v - 10);
+    }
+  },
+  [METRO_TILE.BORD_DC](ctx, ox, oy) {
+    const rng = mulberry32(8802);
+    noisyFill(ctx, ox, oy, [44, 44, 46], 6, rng);
+    for (const cx of [3, 11]) for (let y = 6; y <= 9; y++) for (let x = cx; x <= cx + 2; x++) px(ctx, ox, oy, x, y, 255, 240, 200);
+  },
+  [METRO_TILE.INDIRECT](ctx, ox, oy) {
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < TILE_PX; x++) {
+      const v = 255 - y * 5;
+      px(ctx, ox, oy, x, y, v, v - 22, v - 70);
+    }
+  },
+  [METRO_TILE.HEXA](ctx, ox, oy) {
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < TILE_PX; x++) {
+      const r = Math.floor(y / 4), xx = (x + (r & 1) * 2) % 4, yy = y % 4;
+      const joint = (xx === 0 && yy !== 0) || (yy === 0 && xx !== 2);
+      if (joint) px(ctx, ox, oy, x, y, 64, 40, 28);
+      else px(ctx, ox, oy, x, y, 128 + ((x * 5 + y * 3) % 7), 74, 44);
+    }
+  },
+  [METRO_TILE.PYLONE](ctx, ox, oy) {
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < TILE_PX; x++) {
+      if (y >= 5 && y <= 10) px(ctx, ox, oy, x, y, (x % 3 === 1 && y >= 7 && y <= 8) ? 236 : 46, (x % 3 === 1 && y >= 7 && y <= 8) ? 236 : 36, (x % 3 === 1 && y >= 7 && y <= 8) ? 230 : 30);
+      else px(ctx, ox, oy, x, y, 104, 70, 44);
+    }
+  },
+  [METRO_TILE.PORTILLON](ctx, ox, oy) {
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < TILE_PX; x++) {
+      if (y < 3) px(ctx, ox, oy, x, y, 60, 64, 70);
+      else if (y < 6 && x >= 4 && x <= 11) px(ctx, ox, oy, x, y, x < 8 ? 60 : 220, x < 8 ? 200 : 60, 70);
+      else px(ctx, ox, oy, x, y, 168, 172, 176);
+      if (x === 0 || x === 15) px(ctx, ox, oy, x, y, 120, 124, 128);
+    }
+  },
+  [METRO_TILE.BORD_PARIS](ctx, ox, oy) {
+    const rng = mulberry32(8803);
+    noisyFill(ctx, ox, oy, [150, 150, 148], 10, rng);
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < 5; x++) px(ctx, ox, oy, x, y, 238, 238, 232);
+    for (let y = 1; y < TILE_PX; y += 3) for (let x = 6; x < TILE_PX; x += 3) px(ctx, ox, oy, x, y, 120, 120, 118);
+  },
+  [METRO_TILE.CARREAU_SOL](ctx, ox, oy) {
+    for (let y = 0; y < TILE_PX; y++) for (let x = 0; x < TILE_PX; x++) {
+      const joint = x % 8 === 0 || y % 8 === 0;
+      px(ctx, ox, oy, x, y, joint ? 112 : 158 + ((x + y) % 3) * 3, joint ? 112 : 156, joint ? 110 : 150);
+    }
+  },
+};
+
 const painters = {
   ...peintresArchi,
+  ...peintresMetro,
 
   // --- Villandry ----------------------------------------------------------
   // Le tuffeau : un calcaire blanc crème, très clair, à peine grenu. C'est lui

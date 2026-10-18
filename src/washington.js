@@ -57,7 +57,7 @@
 // Le reste — les rives, les collines, le tracé des avenues, les stations de
 // métro — est à sa place réelle, calculé et non deviné.
 
-import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI } from './blocks.js';
+import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, METRO_BLOCK } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds } from './voies.js';
 import { positionDe } from './mondes.js';
 import { sectionDeRue } from './voirie.js';
@@ -1281,6 +1281,37 @@ export const QUAIS_METRO = [...QUAIS.values()];
 // La bouche d'accès : l'escalier droit qui remonte du quai à la rue, avec un
 // palier tous les six, et la MEZZANINE à mi-hauteur — la salle des portillons,
 // comme dans les vraies stations.
+// les points des voies, un par demi-bloc : ce qu'un escalier ne doit pas toucher
+const pointsDeVoie = (() => {
+  const out = [];
+  for (const l of LIGNES) {
+    const v = voiesDeLigne(l.nom);
+    for (let i = 0; i < v.length; i++) {
+      const a = v[i], b = v[(i + 1) % v.length];
+      const n = Math.max(1, Math.ceil(Math.hypot(b.u - a.u, b.v - a.v) * 2));
+      for (let j = 0; j < n; j++) out.push({ u: a.u + (b.u - a.u) * j / n, v: a.v + (b.v - a.v) * j / n, y: a.y });
+    }
+  }
+  return out;
+})();
+// Les points de voie rangés par cases de 2,5 blocs : `genes` et `parRame`
+// les cherchent à moins de 1,9 et 2,4 blocs, donc dans les 3 × 3 cases
+// voisines. Parcourir les milliers de points à chaque échantillon coûtait
+// dix-sept secondes au chargement du module (fil principal ET worker).
+const CASE_VOIE = 2.5;
+const grilleVoie = new Map();
+for (const p of pointsDeVoie) {
+  const k = Math.floor(p.u / CASE_VOIE) + ',' + Math.floor(p.v / CASE_VOIE);
+  (grilleVoie.get(k) || grilleVoie.set(k, []).get(k)).push(p);
+}
+const voieProche = (u, v, test) => {
+  const iu = Math.floor(u / CASE_VOIE), iv = Math.floor(v / CASE_VOIE);
+  for (let a = iu - 1; a <= iu + 1; a++) for (let b = iv - 1; b <= iv + 1; b++) {
+    const c = grilleVoie.get(a + ',' + b);
+    if (c && c.some(test)) return true;
+  }
+  return false;
+};
 export const BOUCHES_METRO = QUAIS_METRO.map((q) => {
   const cotes = [[-q.dv, q.du], [q.dv, -q.du], [q.du, q.dv], [-q.du, -q.dv]];
   const sol = Math.round(solDeWashington(WASHINGTON.x + q.u, WASHINGTON.z + q.v));
@@ -1309,9 +1340,69 @@ export const BOUCHES_METRO = QUAIS_METRO.map((q) => {
     return mal;
   };
   const [nu, nv] = cotes.reduce((a, b) => (note(b) < note(a) ? b : a));
+  // L'ACCÈS AU QUAI (v529). Le quai est CENTRAL : une bouche de côté posait
+  // sa première marche à deux blocs au-dessus de la fosse des voies, de
+  // l'autre côté des rails — dix-huit stations sur vingt sans chemin de la
+  // rue au quai. On monte désormais par un escalier au BOUT du quai central,
+  // sur une passerelle au-dessus des voies, puis par un couloir à la
+  // mezzanine et à l'escalier de la rue, qui ne bouge pas. `fin` : le bout du
+  // quai choisi (le côté sec, dans la boîte) ; `lat` : le côté de la bouche.
+  const along = Math.abs(nu * q.du + nv * q.dv) > 0.5;
+  const lat = along ? 0 : Math.sign(nu * -q.dv + nv * q.du);
+  const noteFin = (e) => {
+    let mal = 0;
+    for (let k = -2; k <= DEMI_STATION + 6; k++) for (const t of along ? [0] : [0, 6, 11, 14]) {
+      const u = q.u + q.du * k * e - q.dv * t * lat, v = q.v + q.dv * k * e + q.du * t * lat;
+      if (surEauWashington(u, v)) mal += 100;
+      if (!dansEmpriseMetro(u, v)) mal += 100;
+    }
+    return mal;
+  };
+  // UN ESCALIER DE QUAI NE SE POSE PAS SUR UNE VOIE. À Smithsonian, la Bleue
+  // tourne d'un quart de tour sous la station : ses rails traversent les deux
+  // bouts du quai, et le gabarit des rames, creusé en dernier, emportait les
+  // marches. On compte les points de voie sous l'escalier (à la cote des
+  // rames) et sous la passerelle et le couloir (à la cote de la mezzanine),
+  // pour chaque bout et chaque départ `k0`, et l'on garde le moins gêné — à
+  // égalité, le plus près du bout : un escalier au milieu du quai le coupe.
+  const genes = (e, k0) => {
+    let n = 0;
+    const touche = (k, t, y0, y1) => {
+      const u = q.u + q.du * k * e - q.dv * t * (lat || 1), v = q.v + q.dv * k * e + q.du * t * (lat || 1);
+      if (voieProche(u, v, (p) => p.y + 3 >= y0 && p.y + 1 <= y1 && Math.hypot(p.u - u, p.v - v) < 1.9)) n++;
+    };
+    for (let k = k0 - 0.5; k <= k0 + 5.5; k += 0.5) for (let t = -1.5; t <= 1.5; t += 0.5) touche(k, t, q.y + 1, q.y + 10);
+    const kB = along ? DEMI_VOUTE + 6.5 : k0 + 9.5;
+    for (let k = k0 + 6; k <= kB; k += 0.5) for (let t = -1.5; t <= (along ? 1.5 : 13.5); t += 0.5) touche(k, t, q.y + 6, q.y + 11);
+    if (!along) for (let k = -2.5; k <= kB; k += 0.5) for (let t = 8.5; t <= 13.5; t += 0.5) touche(k, t, q.y + 6, q.y + 11);
+    return n;
+  };
+  let fin = along ? Math.sign(nu * q.du + nv * q.dv) : 1, k0 = DEMI_STATION - 5, mieux = Infinity;
+  for (const e of along ? [fin] : [1, -1]) {
+    for (let k = DEMI_STATION - 5; k >= -DEMI_STATION + 7; k--) {
+      const n = genes(e, k) * 1000 + (along ? 0 : noteFin(e)) + (DEMI_STATION - 5 - k) * 3;
+      if (n < mieux) { mieux = n; fin = e; k0 = k; }
+    }
+  }
+  q.fin = fin; q.k0 = k0;
+  // LES PYLÔNES DU NOM (v529) : au milieu et vers les bouts, là où ni
+  // l'escalier ni le passage d'une rame ne les coupe — une station dans un
+  // virage voit la voie croiser les bouts de son quai, et le gabarit, creusé
+  // en dernier, y laissait des pylônes d'un bloc pendus au plafond.
+  const libreK = (kk) => kk < k0 - 1 || kk > k0 + 6;
+  const parRame = (kk) => {
+    const cu = q.u + q.du * kk * fin, cv = q.v + q.dv * kk * fin;
+    return voieProche(cu, cv, (p) => p.y + 3 >= q.y + 2 && p.y + 1 <= q.y + 4 && Math.hypot(p.u - cu, p.v - cv) < 2.4);
+  };
+  q.pylones = [];
+  for (const kk of [0, -8, 8, -6, 6, -10, 10, -4, 4, -2, 2]) {
+    if (q.pylones.length < 3 && libreK(kk) && !parRame(kk) && q.pylones.every((a) => Math.abs(a - kk) >= 6)) q.pylones.push(kk);
+  }
+  q.bancs = [-4, 4, -1, 1].filter((kk) => libreK(kk) && !parRame(kk) && q.pylones.every((a) => Math.abs(a - kk) >= 2)).slice(0, 2);
   return {
     nom: q.nom, u: q.u, v: q.v, y: q.y, sol, nu, nv, marches, longueur,
     tu: q.u + nu * longueur, tv: q.v + nv * longueur,
+    du: q.du, dv: q.dv, along, lat, fin, k0,
   };
 });
 
@@ -1402,8 +1493,11 @@ for (const l of LIGNES) {
 }
 for (const b of BOUCHES_METRO) {
   const st = { quoi: 'bouche', ...b };
-  ranger(Math.min(b.u, b.tu) - 4, Math.max(b.u, b.tu) + 4,
-    Math.min(b.v, b.tv) - 4, Math.max(b.v, b.tv) + 4, st);
+  // la station entière en plus (v529) : l'escalier au bout du quai, la
+  // passerelle et le couloir de la mezzanine
+  const r = DEMI_STATION + 8;
+  ranger(Math.min(b.u - r, b.tu - 4), Math.max(b.u + r, b.tu + 4),
+    Math.min(b.v - r, b.tv - 4), Math.max(b.v + r, b.tv + 4), st);
 }
 
 // Coordonnées le long d'un objet : `le` suit l'axe, `tr` en travers.
@@ -1503,16 +1597,212 @@ const hauteurVoute = (tr) => Math.round(H_VOUTE * Math.sqrt(Math.max(0, 1 - (tr 
 // Le caisson en damier : la signature de Harry Weese, un gaufrier retourné.
 const caisson = (a, b) => (((Math.floor(a / 2) + Math.floor(b / 2)) & 1) === 0 ? BETON : BETON_CLAIR);
 
-function creuserMetro(u, v, h, poser) {
+// --- LES STATIONS RÉALISTES (v529) ------------------------------------------
+//
+// Ce qu'on a relevé des stations de Harry Weese, et ce qu'on en bâtit :
+//   · la voûte en berceau à CAISSONS de béton (`METRO_BLOCK.CAISSON`) ;
+//   · le quai central en carrelage hexagonal brun, et au bord le granit sombre
+//     où clignotent des feux encastrés (`BORD_DC`, toujours allumé) ;
+//   · l'éclairage INDIRECT au pied des murs, une gorge lumineuse qui lave la
+//     voûte de bas en haut (`INDIRECT`) — aucune lampe pendue ;
+//   · les pylônes bruns du nom (écrit par `stations.js`), les bancs de béton ;
+//   · au bout du quai, l'escalier vers la MEZZANINE suspendue au-dessus des
+//     voies, ses portillons et son plan, puis l'escalier de la rue.
+// Le joueur saute pour monter une marche : partout, quatre blocs d'air.
+export const METRO_DC = { stations: true };
+// `stations = false` rend le métro de la v487 au bit près (empreinte).
+const Y_MEZZ = 6;              // la mezzanine, six blocs au-dessus du ballast
+
+function stationDC(s, u, v, o) {
+  const r = repere(u, v, s.u, s.v, s.du, s.dv);
+  if (Math.abs(r.le) > DEMI_STATION + 1 || Math.abs(r.tr) > DEMI_VOUTE + 1.2) return;
+  const yr = s.y, atr = Math.abs(r.tr);
+  if (atr > DEMI_VOUTE || Math.abs(r.le) > DEMI_STATION) {
+    for (let y = yr; y <= yr + 1 + hauteurVoute(0); y++) o.pleins.push([y, BETON]);
+    return;
+  }
+  const surRail = Math.abs(atr - ECART_VOIE) < 0.7;
+  o.pleins.push([yr, surRail ? RAIL : ((Math.round(r.le) & 1) === 0 && atr > 2.4 ? TRAVERSE : BETON)]);
+  const haut = yr + 1 + hauteurVoute(atr);
+  o.creuser(yr + 1, haut - 1);
+  o.pleins.push([haut, METRO_BLOCK.CAISSON]);
+  // la gorge lumineuse au pied de chaque mur
+  if (atr > DEMI_VOUTE - 0.8) o.apres.push([yr + 1, METRO_BLOCK.INDIRECT]);
+  if (atr <= 2.4) {
+    o.apres.push([yr + 1, atr > 1.7 ? METRO_BLOCK.BORD_DC : METRO_BLOCK.HEXA]);
+    // le pylône du nom, au milieu et à l'autre bout ; un banc entre les deux
+    const k = Math.round(r.le) * (s.fin || 1);
+    if (atr < 0.6 && (s.pylones || []).includes(k)) {
+      o.apres.push([yr + 2, METRO_BLOCK.PYLONE], [yr + 3, METRO_BLOCK.PYLONE], [yr + 4, METRO_BLOCK.PYLONE]);
+    }
+    if (atr < 0.6 && (s.bancs || []).includes(k)) o.apres.push([yr + 2, BETON_CLAIR]);
+  }
+}
+
+// LE NOM DE LA STATION (v529) : où `stations.js` l'écrit — sur les deux faces
+// de chaque pylône du quai central, en haut, tourné vers les voies, comme le
+// fait la vraie ville. Le pylône est la colonne PYLONE de `stationDC` (une ou
+// deux cases selon le biais de la trame) ; le plan se pose à deux centièmes
+// de sa case la plus avancée. Pure : un témoin la relit contre le monde.
+export function plaquesDC() {
+  const out = [];
+  const par = (q, le, t) => [WASHINGTON.x + q.u + q.du * le - q.dv * t, WASHINGTON.z + q.v + q.dv * le + q.du * t];
+  for (const q of QUAIS_METRO) {
+    const fin = q.fin || 1;
+    const plaques = [];
+    // sur les pylônes du quai central, quand il y en a
+    for (const k of q.pylones || []) {
+      const le0 = k * fin;
+      const cu = q.u + q.du * le0, cv = q.v + q.dv * le0;
+      const cases = [];
+      for (let iu = Math.floor(cu) - 2; iu <= Math.floor(cu) + 2; iu++) {
+        for (let iv = Math.floor(cv) - 2; iv <= Math.floor(cv) + 2; iv++) {
+          const r = repere(iu, iv, q.u, q.v, q.du, q.dv);
+          if (Math.abs(r.tr) < 0.6 && Math.round(r.le) * fin === k) cases.push([iu, iv]);
+        }
+      }
+      if (!cases.length) continue;
+      for (const sg of [1, -1]) {
+        let d = -Infinity, les = 0;
+        for (const [iu, iv] of cases) {
+          les += repere(iu + 0.5, iv + 0.5, q.u, q.v, q.du, q.dv).le;
+          for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) d = Math.max(d, repere(iu + a, iv + b, q.u, q.v, q.du, q.dv).tr * sg);
+        }
+        const le = les / cases.length, [x, z] = par(q, le, sg * (d + 0.02));
+        plaques.push({ x, y: q.y + 4.4, z, nx: -q.dv * sg, nz: q.du * sg, larg: 2.2, haut: 0.7, sur: 'pylone' });
+      }
+    }
+    // et sur le mur, de l'autre côté des voies, comme la vraie ville : on le
+    // lit du quai. Les cases du mur sont celles de l'enveloppe (au-delà de la
+    // voûte) ; le plan se pose devant la plus avancée sous lui.
+    // Une station dans un virage voit le tunnel voisin entamer son mur : on
+    // ne pose une plaque que devant un mur que rien ne perce.
+    const proches = [];
+    for (const pts of TRACES.values()) {
+      for (const p of pts) if (p.y > q.y - 7 && p.y < q.y + 12 && Math.hypot(p.u - q.u, p.v - q.v) < DEMI_STATION + 12) proches.push(p);
+    }
+    const voisines = QUAIS_METRO.filter((o) => o !== q && Math.abs(o.y - q.y) < 10 && Math.hypot(o.u - q.u, o.v - q.v) < 2 * DEMI_STATION + 10);
+    const percee = (iu, iv) => proches.some((p) => Math.hypot(p.u - iu - 0.5, p.v - iv - 0.5) < DEMI_TUNNEL + 1.9)
+      || voisines.some((o) => {   // la station voisine (Metro Center et McPherson Square sont à dix blocs)
+        const r = repere(iu + 0.5, iv + 0.5, o.u, o.v, o.du, o.dv);
+        return Math.abs(r.le) <= DEMI_STATION + 1.5 && Math.abs(r.tr) <= DEMI_VOUTE + 0.5;
+      });
+    for (const sg of [1, -1]) {
+      const pris = [];
+      for (const le0 of [-6, 6, -3, 3, 0, -9, 9]) {
+        if (pris.length >= 2 || pris.some((a) => Math.abs(a - le0) < 5)) continue;
+        const [pu, pv] = [q.u + q.du * le0 - q.dv * sg * DEMI_VOUTE, q.v + q.dv * le0 + q.du * sg * DEMI_VOUTE];
+        let d = Infinity, perce = false;
+        for (let iu = Math.floor(pu) - 3; iu <= Math.floor(pu) + 3; iu++) {
+          for (let iv = Math.floor(pv) - 3; iv <= Math.floor(pv) + 3; iv++) {
+            const c = repere(iu, iv, q.u, q.v, q.du, q.dv);
+            if (c.tr * sg <= DEMI_VOUTE || c.tr * sg > DEMI_VOUTE + 1.2 || Math.abs(c.le) > DEMI_STATION) continue;
+            let sous = false;
+            for (let a = 0; a <= 1; a += 0.125) for (let b = 0; b <= 1; b += 0.125) {
+              const r = repere(iu + a, iv + b, q.u, q.v, q.du, q.dv);
+              if (Math.abs(r.le - le0) <= 1.3) { d = Math.min(d, r.tr * sg); sous = true; }
+            }
+            if (sous && percee(iu, iv)) perce = true;
+          }
+        }
+        if (perce || !Number.isFinite(d)) continue;
+        pris.push(le0);
+        const [x, z] = par(q, le0, sg * (d - 0.02));
+        plaques.push({ x, y: q.y + 2.8, z, nx: q.dv * sg, nz: -q.du * sg, larg: 2.5, haut: 0.7, sur: 'mur' });
+      }
+    }
+    out.push({ ville: 'Washington', nom: q.nom, style: 'dc', plaques });
+  }
+  return out;
+}
+
+function boucheDC(s, u, v, h, o) {
+  const L = DEMI_STATION;
+  const yr = s.y, yM = yr + Y_MEZZ;
+  const rs = repere(u, v, s.u, s.v, s.du, s.dv);
+  const k = rs.le * s.fin;                       // vers le bout du quai choisi
+  const t = s.along ? rs.tr : rs.tr * s.lat;     // vers le côté de la bouche
+  const salle = (y0, lampe) => {                 // sol, quatre blocs d'air, plafond
+    o.apres.push([y0, METRO_BLOCK.HEXA]);
+    o.creuser(y0 + 1, y0 + 4);
+    o.pleins.push([y0 + 5, lampe ? METRO_BLOCK.INDIRECT : METRO_BLOCK.CAISSON]);
+  };
+  const mur = (y0, y1, id = BETON) => { for (let y = y0; y <= y1; y++) o.pleins.push([y, id]); };
+
+  // A. l'escalier du quai central : cinq marches, du quai à la mezzanine
+  const k0 = s.k0 === undefined ? L - 5 : s.k0;
+  if (Math.abs(rs.tr) <= 2.6 && k >= k0 - 0.5 && k <= k0 + 5.5) {
+    const st = Math.max(0, Math.min(5, Math.round(k) - k0));
+    const sol = yr + 1 + st;
+    if (Math.abs(rs.tr) <= 1.5) {
+      for (let y = yr + 2; y < sol; y++) o.apres.push([y, GRANIT]);
+      o.apres.push([sol, GRANIT]);
+      o.creuser(sol + 1, sol + 4);
+      o.pleins.push([sol + 5, METRO_BLOCK.CAISSON]);
+    } else if (k >= k0 + 0.5) {
+      // le parapet entre l'escalier et la voie
+      for (let y = yr + 2; y <= sol + 4; y++) o.apres.push([y, GRANIT]);
+    }
+  }
+  // B. la passerelle au-dessus des voies (ou le palier, bouche dans l'axe)
+  const kFin = s.along ? DEMI_VOUTE + 6.5 : k0 + 9.5;
+  if (k > k0 + 5.5 && k <= kFin + 1 && t >= -2.5 && t <= (s.along ? 2.5 : 13.5)) {
+    if (k > kFin || t < -1.5 || (s.along && t > 1.5)) mur(yM, yM + 5);
+    else salle(yM, Math.round(t) % 4 === 0 && Math.round(k) === k0 + 7);
+  }
+  // C. le couloir de la mezzanine, le long de la station : portillons, plan
+  const kC0 = Math.min(-2.5, k0 + 5.5), kC1 = Math.max(2.5, k0 + 9.5);
+  if (!s.along && k >= kC0 && k <= kC1 && t >= 7.5 && t <= 14.5) {
+    const sortie = Math.abs(rs.le) <= 1.8;       // là où part l'escalier de la rue
+    if (t < 8.5) mur(yM, yM + 5);
+    else if (t > 13.5) { if (!sortie) mur(yM, yM + 5, Math.round(k) === 6 ? METRO_BLOCK.PLAN : BETON); }
+    else if ((k < kC0 + 1 || k > kC1 - 1) && !sortie) mur(yM, yM + 5);
+    else {
+      salle(yM, Math.round(k) % 3 === 0 && Math.round(t) === 11);
+      // les portillons, entre la passerelle et l'escalier de la rue
+      const kP = k0 + 5.5 > 4 ? 3 : -3;
+      if (Math.round(k) === kP && Math.round(t) % 2 === 1) o.apres.push([yM + 1, METRO_BLOCK.PORTILLON]);
+    }
+  }
+  // D. l'escalier de la rue : celui de la v487, au même endroit, avec quatre
+  //    blocs d'air sous terre — jamais le bloc de la rue lui-même
+  const r = repere(u, v, s.u, s.v, s.nu, s.nv);
+  const MEZZ = 6;
+  if (r.le > DEMI_VOUTE + MEZZ + 0.5 && r.le <= s.longueur + 0.5 && Math.abs(r.tr) <= 2.6) {
+    const pas = Math.max(0, Math.round(r.le) - (DEMI_VOUTE + MEZZ + 1));
+    const monte = Math.floor(pas / 8) * 6 + Math.min(6, pas % 8);
+    const y = Math.min(h - 1, yM + 1 + monte);
+    const ouvert = y + 3 >= h;
+    const haut = ouvert ? y + 3 : Math.min(y + 4, h - 1);
+    if (Math.abs(r.tr) > 1.8) {
+      for (let yy = y; yy <= Math.min(h, haut + 1); yy++) o.pleins.push([yy, GRANIT]);
+    } else {
+      o.apres.push([y, GRANIT]);
+      o.creuser(y + 1, haut);
+      if (haut + 1 < h) o.pleins.push([haut + 1, GRANIT]);
+    }
+  }
+  // le pylône brun de la rue : le « M », sur le sol LOCAL
+  if (r.le > s.longueur + 0.5 && r.le <= s.longueur + 3.5 && Math.abs(r.tr) < 0.6) {
+    for (let y = h; y <= h + 3; y++) o.apres.push([y, CARREAU]);
+    o.apres.push([h + 4, MARBRE]);
+  }
+}
+
+function creuserMetro(u, v, h, poser, ancien = false) {
   const segs = GRILLE_METRO.get(cleCase(Math.floor(u / BANDE), Math.floor(v / BANDE)));
   if (!segs) return false;
+  const neuf = METRO_DC.stations && !ancien;
   const vides = [];      // [y0, y1] : ce qui doit être creusé
   const pleins = [];     // [y, id] : structure, abandonnée si elle tombe dans un vide
   const apres = [];      // [y, id] : mobilier, posé quoi qu'il arrive
   const gabarit = [];    // [y0, y1] : le passage des rames, creusé en tout dernier
   const creuser = (y0, y1) => { if (y1 >= y0) vides.push([y0, y1]); };
+  const o = { pleins, apres, creuser };
 
   for (const s of segs) {
+    if (neuf && s.quoi === 'station') { stationDC(s, u, v, o); continue; }
+    if (neuf && s.quoi === 'bouche') { boucheDC(s, u, v, h, o); continue; }
     if (s.quoi === 'gabarit') {
       if (u < s.uMin - 3 || u > s.uMax + 3) continue;
       const du = s.u1 - s.u0, dv = s.v1 - s.v0;
@@ -1670,10 +1960,20 @@ function creuserMetro(u, v, h, poser) {
 // (Pentagon, Eastern Market, Dupont Circle, Union Station) font leur
 // demi-tour jusqu'à huit blocs au-delà, et la rame y roulait dans la roche ;
 // la bouche de Pentagon sort dans la marge, son pylône un peu plus loin.
-export function creuserMetroWashington(x, z, h, poser) {
+export function creuserMetroWashington(x, z, h, poser, garde = false) {
   const E = EMPRISE_METRO_DC;
   if (x < E.x0 || x > E.x1 || z < E.z0 || z > E.z1) return false;
-  return creuserMetro(x - WASHINGTON.x, z - WASHINGTON.z, h, poser);
+  return creuserMetroGarde(x - WASHINGTON.x, z - WASHINGTON.z, h, poser, garde);
+}
+// SOUS CE QU'UN ENFANT A BÂTI AVANT `DATE_STATIONS` (world.js), ce qui est à
+// moins de trois blocs du sol reste celui de la v487 au bloc près ; la
+// station neuve ne vaut que dessous (v529, règle de la v485).
+export const SURFACE_STATIONS = -3;
+function creuserMetroGarde(u, v, h, poser, garde) {
+  if (!garde) return creuserMetro(u, v, h, poser);
+  const a = creuserMetro(u, v, h, (dy, id) => { if (dy <= SURFACE_STATIONS) poser(dy, id); });
+  const b = creuserMetro(u, v, h, (dy, id) => { if (dy > SURFACE_STATIONS) poser(dy, id); }, true);
+  return a || b;
 }
 
 // --- le bâti ordinaire ---------------------------------------------------------
@@ -1708,11 +2008,11 @@ function axeDeLot(la, lb) {
   return axe;
 }
 
-export function batirColonneWashington(x, z, h, poser) {
+export function batirColonneWashington(x, z, h, poser, gardeMetro = false) {
   const u = x - WASHINGTON.x, v = z - WASHINGTON.z;
   if (!dansBoite(u, v)) return;
 
-  creuserMetro(u, v, h, poser);
+  creuserMetroGarde(u, v, h, poser, gardeMetro);
   if (!lotWashingtonLibre(x, z)) return;
 
   const q = quartierDe(u, v);

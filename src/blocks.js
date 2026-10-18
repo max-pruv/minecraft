@@ -483,6 +483,52 @@ for (const [nom, id] of Object.entries(ARCHI)) {
   };
 }
 
+// --- les stations de métro (v529) -------------------------------------------
+//
+// Max : « elles ne ressemblent pas à l'intérieur des vraies stations ». Les
+// stations étaient faites de blocs de décor unis : un mur « Uni blanc » n'est
+// pas un carreau biseauté, un damier gris n'est pas un caisson de béton, et
+// rien n'éclairait. Ces blocs ont leur dessin, et ceux qui ÉCLAIRENT sont
+// TOUJOURS allumés (`METRO_LUMINEUX`, lu par le mailleur) : sous terre, une
+// station est éclairée par ses propres lampes, pas par une lumière de plus
+// (quatre lampes pour tout le jeu, v248). Ils n'entrent pas dans la palette
+// des enfants (`cache`), comme les bandes d'étage : ce sont des pièces de
+// station. Ids après l'architecture (649), tuiles après les bandes (391).
+export const METRO_START = 650;
+export const METRO_TILE_START = 392;
+export const METRO_BLOCK = {
+  // (652 reste libre : la plaque émaillée du nom est un plan, `stations.js`)
+  CARREAU: 650,        // le carreau blanc biseauté du métro parisien
+  LAMPE: 651,          // la rampe lumineuse sous la voûte, toujours allumée
+  AFFICHE: 653,        // le cadre publicitaire et son affiche (motifs génériques)
+  SIEGE: 654,          // la rangée de sièges du quai
+  PLAN: 655,           // le plan du réseau, éclairé
+  CAISSON: 656,        // le caisson de béton de la voûte de Washington
+  BORD_DC: 657,        // le granit du bord de quai et ses feux encastrés
+  INDIRECT: 658,       // la gorge d'éclairage indirect au pied des murs
+  HEXA: 659,           // le carrelage hexagonal brun des quais de Washington
+  PYLONE: 660,         // le pylône brun et sa bande de nom
+  PORTILLON: 661,      // le portillon (tourniquet) de la salle des billets
+  BORD_PARIS: 662,     // la bordure de quai parisienne, bande blanche et granit
+  CARREAU_SOL: 663,    // le carrelage gris du sol de la salle et des couloirs
+};
+const METRO_NOMS = {
+  CARREAU: 'Carreau de métro', LAMPE: 'Rampe lumineuse',
+  AFFICHE: 'Affiche', SIEGE: 'Sièges de quai', PLAN: 'Plan du réseau',
+  CAISSON: 'Caisson de béton', BORD_DC: 'Bord de quai lumineux', INDIRECT: 'Éclairage indirect',
+  HEXA: 'Carrelage hexagonal', PYLONE: 'Pylône de station', PORTILLON: 'Portillon',
+  BORD_PARIS: 'Bordure de quai', CARREAU_SOL: 'Carrelage de couloir',
+};
+export const METRO_TILE = {};
+Object.keys(METRO_BLOCK).forEach((nom, i) => { METRO_TILE[nom] = METRO_TILE_START + i; });
+export const METRO_LUMINEUX = new Set([METRO_BLOCK.LAMPE, METRO_BLOCK.PLAN, METRO_BLOCK.BORD_DC, METRO_BLOCK.INDIRECT, METRO_BLOCK.AFFICHE]);
+for (const [nom, id] of Object.entries(METRO_BLOCK)) {
+  const t = METRO_TILE[nom];
+  // le dessus d'un siège, d'un portillon ou d'un bord de quai : leur tuile ; le
+  // dessus d'un mur carrelé : le carreau
+  BLOCK_INFO[id] = { name: METRO_NOMS[nom], tiles: [t, t, t], solid: true, transparent: false, cache: true };
+}
+
 // La liste des blocs qu'un enfant peut poser. Elle se calcule EN DERNIER, une
 // fois tous les registres déclarés : calculée plus haut, elle ignorait les
 // blocs d'architecture, et les façades haussmanniennes seraient restées

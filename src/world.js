@@ -63,7 +63,7 @@ import {
 import {
   WASHINGTON, WASHINGTON_R, surTerreWashington, dansEauWashington, hauteurWashington, solWashington,
   batirColonneWashington, MONUMENTS_DC, QUAIS_METRO, pontWashington, COTE_PONT_DC,
-  VOIES_CIRCUITS_DC, creuserMetroWashington, ZONE_WASHINGTON, EMPRISE_METRO_DC,
+  VOIES_CIRCUITS_DC, creuserMetroWashington, ZONE_WASHINGTON, EMPRISE_METRO_DC, SURFACE_STATIONS,
 } from './washington.js';
 import {
   buildCapitole, buildObelisque, buildLincoln, buildMemorialGuerre, buildMaisonBlanche,
@@ -2204,6 +2204,21 @@ function dansMetroBoiteDC(x, z, t) {
   const du = x - WASHINGTON.x, dv = z - WASHINGTON.z, r = WASHINGTON_R - 2;
   return du * du + dv * dv >= r * r;
 }
+// LES STATIONS RÉALISTES (v529). Les stations de Paris et de Washington sont
+// refaites sous terre, et deux bouches de Paris changent de place (Hôtel de
+// Ville sortait dans Notre-Dame). Sous une colonne où un enfant a posé ou
+// creusé un bloc avant cette date (ni ses huit voisines), ce qui est à moins
+// de trois blocs du sol reste celui d'avant au bloc près : on n'ouvre pas une
+// trémie sous sa maison, on ne referme pas celle qu'il a vue. La date se
+// relit à la fusion (v309).
+export const DATE_STATIONS = Date.UTC(2026, 9, 18, 18, 47, 0);
+function dansStations(x, z, t) {
+  if (!(t <= DATE_STATIONS)) return false;
+  const E = EMPRISE_METRO_DC;   // la boîte et sa marge, où le métro se creuse
+  if (x >= E.x0 - 1 && x <= E.x1 + 1 && z >= E.z0 - 1 && z <= E.z1 + 1) return true;
+  const du = x - PARIS.x, dv = z - PARIS.z, r = PARIS.r + 2;
+  return du * du + dv * dv <= r * r;
+}
 function dansVilleAvant(x, z, t) {
   if (!(t <= DATE_FIGEE_MAX)) return false;
   for (const f of VILLES_FIGEES) {
@@ -3049,6 +3064,7 @@ export class World {
     this.colonnesTrameLondres = new Set(); // les colonnes de Londres où la trame générique d'avant reste (v447)
     this.colonnesJardinsParis = new Set(); // les colonnes de Paris où le jardin d'avant reste sous une voie (v512)
     this.colonnesMetroDC = new Set();     // celles de la boîte de Washington où le métro ne touche pas la surface (v485)
+    this.colonnesStations = new Set();    // celles où les stations de la v529 ne touchent pas la surface
     this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v370, v370)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
@@ -4056,19 +4072,29 @@ export class World {
           DC.batirColonneWashington(wx, wz, h, (dy, id) => {
             const wy = h + dy;
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
-          });
+          }, this.colonnesStations.size > 0 && this.colonnesStations.has(cleColonneParis(wx, wz)));
           continue;
         }
         // Hors du cercle, dans la boîte : le métro seul (v485). Les mondes
         // d'avant (`villesAvant`) ne creusaient pas ici, et ne creusent pas.
-        if (!city && !this.conf.villesAvant && wx >= ZONE_WASHINGTON.x0 && wx <= ZONE_WASHINGTON.x1
-          && wz >= ZONE_WASHINGTON.z0 && wz <= ZONE_WASHINGTON.z1) {
+        // Et jusqu'au bout de l'emprise (v529) : la règle de la v485 le disait
+        // (« la zone, plus de quoi poser un pylône ») et le code s'arrêtait à
+        // la zone — la bouche de Pentagon y passait, et son couloir finissait
+        // dans la terre. Dans cette marge, rien n'a jamais été creusé : sous ce
+        // qu'un enfant a bâti avant `DATE_STATIONS`, elle ne s'ouvre qu'à
+        // trois blocs et plus sous le sol.
+        if (!city && !this.conf.villesAvant && wx >= EMPRISE_METRO_DC.x0 && wx <= EMPRISE_METRO_DC.x1
+          && wz >= EMPRISE_METRO_DC.z0 && wz <= EMPRISE_METRO_DC.z1) {
+          const dansZone = wx >= ZONE_WASHINGTON.x0 && wx <= ZONE_WASHINGTON.x1
+            && wz >= ZONE_WASHINGTON.z0 && wz <= ZONE_WASHINGTON.z1;
           const garde = this.colonnesMetroDC.size > 0 && this.colonnesMetroDC.has(cleColonneParis(wx, wz));
+          const gardeSt = this.colonnesStations.size > 0 && this.colonnesStations.has(cleColonneParis(wx, wz));
           creuserMetroWashington(wx, wz, h, (dy, id) => {
             if (garde && dy > SURFACE_METRO_DC) return;
+            if (!dansZone && gardeSt && dy > SURFACE_STATIONS) return;
             const wy = h + dy;
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
-          });
+          }, dansZone && gardeSt);
         }
 
         // Paris : le fleuve, ses quais, ses ponts, l'Étoile, les
@@ -4143,9 +4169,12 @@ export class World {
           // LA LIGNE 1 DU MÉTRO (v473) : creusée sous la ville, après elle, comme
           // le métro de Washington. Seulement dans le monde d'aujourd'hui.
           if (this.conf.metroParis && !this.conf.parisAvant) {
-            creuserMetroParis(wx, wz, h, (wy, id) => {
-              if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
-            });
+            const ecrire = (wy, id) => { if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id; };
+            if (this.colonnesStations.size > 0 && this.colonnesStations.has(cleColonneParis(wx, wz))) {
+              // sous ce qu'un enfant a bâti : la v473 près du sol (v529)
+              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy <= h + SURFACE_STATIONS) ecrire(wy, id); });
+              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy > h + SURFACE_STATIONS) ecrire(wy, id); }, true);
+            } else creuserMetroParis(wx, wz, h, ecrire);
           }
           continue;
         }
@@ -4831,6 +4860,7 @@ export class World {
     if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
     if (dansJardinsParis(x, z, t)) marquerParisCede(this.colonnesJardinsParis, x, z);
     if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
+    if (dansStations(x, z, t)) marquerParisCede(this.colonnesStations, x, z);
     if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
     if (t <= DATE_CLAIRIERES) this.marquerAvantClairieres(x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
@@ -5098,10 +5128,11 @@ export class World {
     this.colonnesTrameLondres.clear();
     this.colonnesJardinsParis.clear();
     this.colonnesMetroDC.clear();
+    this.colonnesStations.clear();
     this.morceauxAvantClimat.clear();
     this.morceauxAvantClairieres.clear();
     for (const [k, t] of this.editTimes) {
-      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS || t <= DATE_CLAIRIERES)) continue;
+      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS || t <= DATE_CLAIRIERES || t <= DATE_STATIONS)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
       if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
@@ -5111,6 +5142,7 @@ export class World {
       if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
       if (dansJardinsParis(x, z, t)) marquerParisCede(this.colonnesJardinsParis, x, z);
       if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
+      if (dansStations(x, z, t)) marquerParisCede(this.colonnesStations, x, z);
     }
     this.monumentsTouches.clear();
     if (REPERES_HD.length === 0) return;
@@ -5244,6 +5276,7 @@ export class World {
     this.colonnesTrameLondres.clear();
     this.colonnesJardinsParis.clear();
     this.colonnesMetroDC.clear();
+    this.colonnesStations.clear();
     this.loadEdits();
     this.allDirty = true;
   }
@@ -5262,6 +5295,7 @@ export class World {
     this.colonnesTrameLondres.clear();
     this.colonnesJardinsParis.clear();
     this.colonnesMetroDC.clear();
+    this.colonnesStations.clear();
     this.chunks.clear();
     this.tops.clear();
     this.allDirty = true;
