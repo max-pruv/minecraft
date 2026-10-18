@@ -56,6 +56,278 @@ le réseau, déclarés dans `TASKS.md`.
 
 ---
 
+## v512 — Les voitures de Montmartre roulent mieux
+
+**Pourquoi.** Deux dettes de Paris, remesurées en v475 sur la voie que la
+voiture roule (1,3 bloc à droite de l'axe) et confiées par Max (« sur les
+décisions fais au mieux »). Remesurées ici sous node sur `origin/main` :
+**74 pas de carrosserie dans un bloc plein** sur les huit circuits — 32 sur le
+pavé d'une colonne plus haute d'un bloc le long des boulevards de Clichy et de
+Rochechouart, 17 dans les murs du Moulin Rouge, posé en travers du boulevard
+de Clichy, 25 dans les troncs des jardins que les rues traversent (Tuileries
+11, Buttes-Chaumont 12, place des Vosges 2). Les neuf pas du bois de Vincennes
+de la v475 n'existent plus.
+
+**Ce que ça change.**
+- Le Moulin Rouge borde le boulevard au nord, façade, porte et ailes tournées
+  vers lui, dans la même boîte : le relief ne bouge pas. Les mondes figés
+  gardent l'ancien bâtisseur.
+- Sur la pente de la butte, la voiture ne mord plus le pavé : sa hauteur se lit
+  sous sa carrosserie, dans sa voie, et plus sous l'axe de la rue. Rien du
+  monde ne bouge. C'est vrai dans les six villes bâties à la main (San
+  Francisco 233 → 63 pas, Nice 110 → 59), d'une marche au plus.
+- La rue de Belleville, le boulevard de Ménilmontant et le boulevard
+  Beaumarchais traversent les Buttes-Chaumont et la place des Vosges sur leur
+  chaussée, sans changer un lot. Sous une colonne où un enfant a bâti avant la
+  date, le jardin d'avant reste.
+- **Pas les Tuileries**, et c'est déclaré : pour que la rue de Rivoli longe la
+  grille, il faut déplacer la rue, ce qui change 171 colonnes de lot.
+
+**Ce qui le prouve.** 74 → 11 pas dans un bloc plein à Paris, les onze dans
+les Tuileries (`sonde.mjs` dans le brouillon, les deux arbres). Quatre témoins
+neufs : `carteMonde.js` lit tous les pas de tous les circuits sur la voie, hors
+Tuileries (0 ici, 63 sur `origin/main`) ; `plafond.js` lit le disque entier
+des deux façons (267 colonnes de jardin passées à la rue, zéro lot changé, zéro
+hors des jardins déclarés), pose une cabane avant et après la date, et vérifie
+que le Moulin Rouge tient dans sa boîte, hors de la chaussée, et que le monde
+figé garde l'ancien. L'empreinte des 490 morceaux change (la place des Vosges
+est dans les morceaux de Paris) : désarmée, elle rend la constante de la v504
+au bit près. Le prix, déclaré : sur les pentes, une voiture peut flotter
+au-dessus du pavé sous son centre là où son flanc touche la marche (25 pas sur
+5 809 au-dessus d'un bloc à Paris, contre 6).
+
+---
+
+## v510 — En vol, Monter est au-dessus de Descendre
+
+**Pourquoi.** Max, sur iPhone, en vol : « Ça serait bien d'inverser les boutons
+pour voler. Le bouton pour monter est en bas, et le bouton pour descendre est
+en haut. C'est contre-intuitif. » Mesuré : à pied en vol, Descendre était 56 px
+au-dessus de Sauter (qui fait monter) ; en construction, 24 px au-dessus.
+
+**Ce que ça change.** En vol, le bouton qui fait monter prend la place haute,
+celui qui fait descendre la place basse — à pied comme en construction. Hors
+vol rien ne bouge ; ids, gestionnaires et `aria-label` sont les mêmes. Aux
+commandes d'un avion, la colonne de bord n'a pas ce défaut (« Descendre » y
+veut dire quitter l'appareil, pas perdre de l'altitude) : inchangée.
+
+**Ce qui le prouve.** Deux témoins de `maj.js`, joués à 420 × 760 et à
+430 × 932, formulés sans dimension : le haut de Monter est au-dessus du haut de
+Descendre (rouge sur l'ancien code, mesuré par `sonde-vol-boutons.cjs`), et en
+vol rien ne se recouvre ni n'entre dans le quart du joystick. Ce second témoin
+a trouvé un défaut d'avant : en vol, la pilule d'action mordait de 8 px le
+bouton du haut ; elle monte d'autant.
+
+---
+
+## v509 — Les arbres reviennent, et les records de course comptent juste
+
+Deux sujets, deux décisions que Max a déléguées (« sur les décisions fais au
+mieux »).
+
+### La sûreté du palier descend d'un cran, pas au fond
+
+**Pourquoi.** Max : « les arbres ont pas changé ». Lu dans le journal de bord :
+son iPhone était au palier « bas », source « sûreté », sous l'étendue « Loin »
+— il y avait planté deux fois de suite. Le disjoncteur de la v296 rangeait
+alors le palier le plus bas, `hd 0` : ni les vrais arbres (v499), ni les
+façades de Paris, ni la couronne lointaine (v497), depuis au moins la v473. Et
+rien ne le lui disait au bon endroit.
+
+**Ce que ça change.** Deux plantages de suite sous une étendue choisie font
+descendre d'UN cran depuis le palier qui tournait : Loin → Normal, Normal →
+bas ; sous « Auto », rien ne change. Le compte des plantages repart de zéro au
+palier neuf. Un ancien verdict « bas sous Loin » se relit comme Normal :
+l'iPhone de Max retrouve les arbres sans rien toucher. Dans les Réglages, la
+rangée de l'étendue le dit en premier, avec le geste : « Touche « Loin » pour
+réessayer, ou garde ça » — et retoucher l'étendue lève la sûreté.
+
+**Ce qui le prouve.** Deux témoins neufs dans `parent.js` : la règle pure
+(Loin → Normal → bas, « Auto » → bas, un ancien verdict relu Normal, le
+palier qui tournait lu dans la fiche du journal), et la situation exacte de
+l'appareil — verdict rangé avant la v509, étendue « Loin », rechargement : le
+jeu joue Normal et l'aide des Réglages dit quoi faire. Le témoin de la v299
+suit la règle (« un cran dessous »).
+
+### Les records de course d'avant la v483
+
+**Pourquoi.** Jusqu'à la v483, le chronomètre de la course du parc comptait en
+temps de jeu : sur une tablette qui ramait, un record pouvait valoir le quart
+du temps couru (mesuré 2,3 s pour 8,6 s). Ces records ne se battent pas.
+
+**Ce que ça change.** On n'efface rien : l'ancien record est gardé à part
+(`courseVieuxChrono`, « ancien record, vieux chrono »), et le record à
+battre repart de la première course chronométrée juste. La migration est
+pure et idempotente, appliquée au stockage au chargement et à chaque document
+reçu du nuage — une tablette restée en arrière qui republie l'ancien champ le
+voit rangé à part. Le prix déclaré : une course gagnée entre la v483 et la
+v503 était déjà juste, et devient « ancienne ».
+
+Aucun écran ne montre les records depuis la v255, et les messages en jeu
+sont partis en v504 : l'ancien record est donc gardé, pas encore affiché —
+déclaré dans `TASKS.md`.
+
+**Ce qui le prouve.** Un témoin neuf dans `sauvegarde.js` : un document du
+nuage tel qu'une ancienne tablette l'écrirait garde l'ancien record à part, le
+record juste reste celui à battre, la migration est idempotente, et un ancien
+champ encore rangé sur l'appareil ne fait pas relancer la page.
+
+---
+
+## v508 — La carte du monde passe au verre clair, et rien ne la recouvre
+
+**Pourquoi.** La revue d'écran (v506) a relevé trois défauts autour de la carte
+et du menu. Près d'une bête, la pilule « Monter · Âne » passait par-dessus la
+carte du monde ouverte : elle cachait des boutons, et un doigt qui visait la
+carte faisait monter sur l'âne (#2, haute). La carte était bleu nuit au milieu
+d'une interface en verre clair, avec des emojis dans la recherche, l'astuce et
+la légende (#14). Et le menu ☰ ouvert laissait le joystick et les boutons nets
+derrière lui : on croyait jouer encore (#16).
+
+**Ce que ça change.** Carte ouverte, tout le HUD de jeu se cache (joystick,
+pilules, barre de blocs, menu, bandeaux du haut) : chaque bouton de la carte
+reçoit le doigt. La fiche de la carte est en verre clair, encre sombre ; la
+loupe de la recherche et le doigt de l'astuce sont des icônes dessinées, la
+légende montre les repères à leurs vraies couleurs. Le dessin de la carte, lui,
+ne change pas. Menu ouvert, le HUD se voile et la pilule se tait.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carte.js`, rouges sur l'ancien
+code : `elementFromPoint` au centre de chaque bouton de la carte avec un âne
+devant soi ; la fiche claire, deux icônes dessinées et aucun emoji ; le menu
+qui voile le HUD et le rend en se fermant. Captures avant et après
+(`sonde-revue-ecran.cjs --etats=carte-monde,menu`, iPhone et iPad, jour et
+nuit) dans la PR.
+
+---
+
+## v506 — La revue d'écran : trouver les défauts avant Max
+
+**Pourquoi.** En une matinée, Max a dû signaler lui-même, depuis son iPhone,
+sept défauts qu'une capture montrait au premier regard : boutons monter et
+descendre inversés en vol, coche illisible pour sortir de la construction,
+roue du train méconnaissable, cubes orange dans le ciel, feux de détresse qui
+flottent, minicarte décalée, approche sans le nom de la ville. Le portail était
+vert chaque fois. « C'est vraiment des choses que tu devrais anticiper. »
+
+**Ce que ça change.** Pour la famille, rien encore : cette livraison ne corrige
+aucun défaut, elle les trouve. Elle apporte trois choses. Une sonde,
+`tests/sonde-revue-ecran.cjs`, met le jeu dans quinze états (accueil, menu, à
+pied en campagne et dans Paris, minicarte, carte du monde, volant à l'arrêt et
+en roulant, voiture de la rue percutée, vol libre, avion au sol, en vol et en
+approche, construction, métro, et deux tablettes en ligne). Elle capture chacun
+à la taille de l'iPhone de Max et de l'iPad, de jour et de nuit, avec la couche
+HD et les ombres. Un rapport, `docs/revue-ecran.md`, donne la grille de lecture
+et dix-huit constats, triés par gravité, chacun avec sa capture et son
+remède. Les trois plus graves : les blocs de base s'appellent « Grass » et
+« Stone » en anglais, la pilule « Monter · Âne » passe par-dessus la carte du
+monde, et à bord du métro la caméra est sur le toit de la rame. Enfin, une règle
+dans `CLAUDE.md` : toute livraison qui touche ce que l'enfant voit joue la sonde
+sur les états concernés et met les captures dans la PR avant de fusionner.
+
+**Ce qui le prouve.** Quatre-vingt-dix captures, aucun état en échec (`journal.txt` de la
+sonde : au volant, aux commandes, en approche « ralliement », à bord). La sonde
+s'est corrigée elle-même : sa première passe prenait 0,0 pour minuit, et les
+captures ont montré un ciel rose de lever du soleil. Aucun fichier du jeu ne
+change. Le portail est en voie courte (la sonde est isolée).
+
+---
+
+## v504 — Des icônes claires, et plus de messages pendant le jeu
+
+Deux sujets, deux lignes au journal du jeu, des témoins pour chacun.
+
+**Pourquoi.** Max : « Les icônes ne sont pas suffisamment claires, le bouton
+pour voler n'est pas suffisamment clair, et je veux que tu enlèves aussi les
+emojis sur les boutons. Et je veux aussi que tu enlèves les messages qui
+s'affichent dans le jeu. Quand il écrit des messages, style la météo, etc., tu
+vires tous ces messages-là. » Les icônes de la v494 étaient dessinées au trait
+fin (1,8 sur 24) et se lisaient mal sur le ciel ; Voler était un trait de
+papier plié. Des emojis restaient sur une trentaine de boutons (les pilules
+« 🐴 Monter », « 🚇 Monter à bord », « ⬇️ Descendre », les onglets du sac, la
+carte, les panneaux). Et le jeu parlait sans cesse : 116 appels de bandeau
+— la pluie, la saison, les cris des bêtes, les compagnons, les panneaux des
+monuments et de l'usine, chaque montée et chaque descente, le GPS, les records,
+les arrivées et les départs des amis, l'étiquette de ce qu'on vise.
+
+**Ce que ça change.** Toutes les icônes sont redessinées, en SVG dans le jeu
+(rien à télécharger, rien d'emprunté) : un trait épais (2,2 à 3,2), une idée
+par icône, des aplats pour les silhouettes. Voler est une aile pleine ; aux
+commandes d'un avion, le même bouton montre un avion qui décolle, puis un
+avion qui se pose. Casser est une pioche, Descendre une flèche vers le sol. Les
+pilules portent une icône et un mot (« Monter · Cheval », « Conduire cette
+voiture ») ; la ligne d'un métro garde sa pastille de couleur, dessinée. Plus
+un seul emoji sur un bouton du jeu (les émotes, qui SONT des emojis, mises à
+part). Et le jeu ne parle plus pendant la partie : sur 116 bandeaux, il en
+reste 31 — et seulement ceux-ci, chacun nommé à Max pour qu'il tranche :
+
+- **le quiz et l'espace parent (invariant 2)** : le quiz qui arrive dans une
+  minute, « prépare-toi », les quarante-cinq minutes débloquées par le parent,
+  le code parental incorrect, et la réponse au défi de Cornichon (« Exact ! »,
+  « Presque ! C'était… ») ;
+- **ce qui dit QUOI FAIRE quand c'est refusé ou bloqué** : la voiture devant
+  l'eau (« fais demi-tour »), le vol refusé au volant, l'avion cassé et sa
+  raison, posé sur le ventre (« sors le train »), de l'eau sous l'avion qui se
+  pose, téléporté en pleine mer (« nage jusqu'à la terre »), la voiture en feu
+  ou en panne (« descends »), sorti sain et sauf, la voiture de l'ami cassée, la
+  caméra hors d'une partie en ligne, la caméra refusée, le micro sans caméra,
+  « touche l'écran pour entendre », les alertes refusées ou impossibles, une
+  étendue des graphismes qui attend le prochain lancement, le mode léger après
+  deux plantages, la sauvegarde allégée (la règle « jamais en silence »),
+  l'indice du trésor qu'on vient de demander, le lien à copier ;
+- **l'indispensable à plusieurs** : l'invitation ratée, le cache-cache lancé
+  (« les autres comptent jusqu'à 20 »), « X a repris la partie depuis un autre
+  appareil », et le bandeau de lien (« seul·e dans le monde — donne ce code »,
+  « reconnexion… »), qui n'est pas un message mais un état.
+
+Tout le reste est retiré à l'appel, jamais au mécanisme : `bandeau.js` est là
+pour les exceptions, la pluie tombe toujours, les records s'écrivent toujours,
+la visite d'un monument se compte toujours, le poste de l'usine se suit
+toujours — simplement, rien ne s'affiche.
+
+**Ce qui le prouve.** Six témoins neufs, et des témoins repointés. Dans
+`fumee.js` : aucun message pendant une partie — la pluie et le soleil par le
+vrai minuteur du temps, un GPS lancé et arrêté, une photo, avec le bandeau, le
+grand bandeau et l'étiquette sous surveillance (rouge sur `origin/main` : pas
+de minuteur à forcer, « 🌧️ Il pleut ! ») ; et la table des bandeaux restants,
+fichier par fichier — un `toast(` de plus rougit et nomme son fichier. Dans
+`maj.js`, à la taille de l'iPhone de Max : plus un emoji sur un bouton de la
+page, menu ouvert compris ; chaque bouton rond porte une icône au trait épais
+ou en aplat ; la pilule porte une icône et le nom de la bête ; Voler change
+d'icône au sol, en vol, et la retrouve à pied. Le contraste des commandes
+(3:1 à midi et à minuit, v494) passe tel quel. Les témoins qui lisaient un
+emoji (« ⬇️ », « 🐘 », « 🟠 ») lisent désormais le mot ou `data-quoi` ; ceux qui
+ne lisaient qu'un message retiré (la photo, le panneau du Lincoln, le poste de
+peinture) mesurent l'effet de jeu à la place.
+
+---
+
+## v503 — Les blocs passent en bas
+
+**Pourquoi.** Max, sur le mode construction : « ça va pas du tout. On affiche
+les briques dans une toute petite zone. Ça devrait être en bas. Et le bouton
+terminer prend beaucoup trop de place. » Mesuré sur la v496 : la barre de
+blocs vivait dans la file du haut, cases de **30 px** (sous les 44 qu'il faut à
+un doigt d'enfant), et la pilule « Construction · Terminer » faisait 188 px de
+large.
+
+**Ce que ça change.** En construction, sur tablette et téléphone, la barre de
+blocs est une bande en bas de l'écran, sur toute la largeur : cases de 50 px,
+sept visibles d'un coup sur l'iPhone, les autres au bout du doigt (elle
+défile). Poser, Casser, Sauter et l'anneau du joystick montent de la hauteur de
+la barre ; le joystick garde tout le quart bas-gauche au-dessus d'elle.
+« Terminer » devient une petite coche ronde, de la taille des autres boutons.
+L'ordinateur ne change pas.
+
+**Ce qui le prouve.** Six témoins neufs dans `maj.js`, joués aux deux tailles
+(le banc 420 × 760, l'iPhone de Max 430 × 932) : la barre est en bas, large, à
+cases de 44 px au moins, et défile ; dans le quart du joystick au-dessus
+d'elle le doigt tombe sur le canvas et fait marcher l'enfant, PUIS une case de
+la barre se touche et se choisit ; « Terminer » fait 44 × 44, son mot dans
+`aria-label` et `.lb`, sans rien recouvrir. Le témoin de contraste lit la
+coche à 3:1, midi et minuit. Avant/après : `tests/sonde-construction-bas.cjs`.
+
+---
+
 ## v502 — ✈️ se pose devant, pas derrière
 
 **Pourquoi.** Max : « quand on est en avion et qu'on clique sur se poser, il
