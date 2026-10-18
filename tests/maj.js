@@ -1179,7 +1179,7 @@ function verifier(nom, ok, detail = '') {
         await att(300);
         const explorer = releve();
         explorer.attendu = Math.round(performance.now() - t0);
-        // EN VOL, MONTER EST AU-DESSUS DE DESCENDRE (v508, Max : « le bouton
+        // EN VOL, MONTER EST AU-DESSUS DE DESCENDRE (v510, Max : « le bouton
         // pour monter est en bas, et le bouton pour descendre est en haut ») —
         // à pied ici, en construction plus bas. On prend le vol comme le jeu
         // (`player.flying`) et l'on attend la classe que main.js pose.

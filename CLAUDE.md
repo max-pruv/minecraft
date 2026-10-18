@@ -854,7 +854,7 @@ transparence, moins de texte ». Cinq règles.
   deux pilules côte à côte se coupaient. Tout est à droite de 55 % de la vue
   (v272). *(La barre de blocs vivait dans la file du haut (v445) ; la v503,
   décision de Max, la remet EN BAS — voir « La barre de blocs en bas ».)*
-  **En vol, Monter est au-dessus de Descendre (v508, Max)** : à pied comme
+  **En vol, Monter est au-dessus de Descendre (v510, Max)** : à pied comme
   en construction, Sauter (qui fait monter) prend la place haute de sa
   colonne et Descendre la basse ; un témoin de `maj.js` compare leurs hauts.
   Tout bouton qui gagne un contraire (monter/descendre) se range dans le sens
