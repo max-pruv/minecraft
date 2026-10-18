@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 517,
+    v: 521,
     titre: 'Les blocs parlent français',
     puces: [
       'Herbe, Terre, Pierre : des noms en français',

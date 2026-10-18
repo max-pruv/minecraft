@@ -1091,7 +1091,7 @@ function verifier(nom, ok, detail = '') {
     // Le défaut signalé par la famille : on tape un code, tout se passe sans la
     // moindre erreur, et l'enfant joue seul en croyant avoir rejoint l'autre.
     const solo = await banc.rejoindre('Elsa', '77777');
-    // v507 : le bandeau dit le GESTE (« Donne le code 77777 à ton ami »), plus
+    // v517 : le bandeau dit le GESTE (« Donne le code 77777 à ton ami »), plus
     // une écriture inclusive qu'on ne lit pas à sept ans.
     await jusqua(async () => /Donne le code/.test((await vu(solo)).bandeau));
     const etatSolo = await vu(solo);

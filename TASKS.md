@@ -1,8 +1,8 @@
 # Ce qui est en cours
 
-## LES ROUGES DU PORTAIL DE LA v507 — intermittents de `monte.js`, aucun causé par la livraison
+## LES ROUGES DU PORTAIL DE LA v517 — intermittents de `monte.js`, aucun causé par la livraison
 
-La v507 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le
+La v517 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le
 code », badge « Libre jusqu'à ») : rien sur les chemins de la circulation, du
 worker ou de l'avion. Preuve structurelle, plus trois passages de `monte.js` :
 
