@@ -821,7 +821,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Montmartre et les jardins (v508) — une cote se lit sous la voiture, et une voie traverse un jardin déclaré
+## Montmartre et les jardins (v512) — une cote se lit sous la voiture, et une voie traverse un jardin déclaré
 
 Trois règles.
 
@@ -886,6 +886,11 @@ transparence, moins de texte ». Cinq règles.
   deux pilules côte à côte se coupaient. Tout est à droite de 55 % de la vue
   (v272). *(La barre de blocs vivait dans la file du haut (v445) ; la v503,
   décision de Max, la remet EN BAS — voir « La barre de blocs en bas ».)*
+  **En vol, Monter est au-dessus de Descendre (v510, Max)** : à pied comme
+  en construction, Sauter (qui fait monter) prend la place haute de sa
+  colonne et Descendre la basse ; un témoin de `maj.js` compare leurs hauts.
+  Tout bouton qui gagne un contraire (monter/descendre) se range dans le sens
+  du geste.
 - **LE VERRE SE RÈGLE SUR LE CONTRASTE, PAS SUR L'ŒIL.** Un voile sombre à 0,30
   (`--hud-voile`) est ce qu'il faut pour qu'une icône blanche tienne 3:1 sur le
   ciel de midi ; les pilules qui portent du texte sont claires (encre sur verre
@@ -929,6 +934,29 @@ boutons… enlève les messages qui s'affichent dans le jeu ». Cinq règles.
   `/🟠/` sont devenus `includes('Descendre')`, `quoi === 'elephant'`,
   `/Orange/.test(quoi)` : on cherche l'emoji retiré dans `tests/` avant de
   lancer le portail, et l'on repointe vers le mot.
+
+## La carte du monde se ferme au jeu (v508) — un panneau plein écran cache le HUD, il ne compte pas sur son z-index
+
+Deux règles.
+
+- **UN PANNEAU QUI PREND L'ÉCRAN CACHE LE HUD DE JEU, PAR UNE CLASSE DU
+  `body`.** La carte (z-index 14) passait sous la pilule « Monter » (30) : un
+  doigt qui visait un bouton de la carte montait sur l'âne. Remonter la carte
+  au-dessus de tout l'aurait mise au-dessus du quiz (invariant 2) ; on cache
+  donc le HUD (`body.carte-ouverte`, `visibility` et jamais `display`, que des
+  témoins lisent). Le menu ☰ voile le même HUD (`:has(#menu-jeu.ouvert)`,
+  opacité, pas de flou). Le témoin demande `elementFromPoint` au centre de
+  chaque bouton du panneau, une bête devant soi : un élément neuf du HUD posé
+  au-dessus de 14 doit entrer dans la liste, ou il rougit. **Et une liste de ce
+  qu'on cache se relit contre ce qui vit DANS le panneau** : le bouton trésor de
+  `fun.js` est inséré dans `#map-outils`, et mon premier jet le cachait avec le
+  HUD. Le témoin l'a laissé passer, parce qu'un bouton caché rend le doigt à la
+  fiche : il exige désormais que le doigt tombe sur LE bouton visé, visible.
+- **LA PEAU DE LA CARTE EST CLAIRE, SON DESSIN NE CHANGE PAS.** La matière
+  claire (v276) ne touche que la fiche, la recherche, les boutons, la légende ;
+  le canvas garde ses couleurs, que les témoins de `carte.js` lisent en pixels.
+  Les icônes de la fiche viennent d'`ICONES` (`chercher`, `appui`), posées par
+  `main.js` ; la légende dessine ses repères en CSS, aux couleurs du canvas.
 
 ## La barre de blocs en bas (v503) — une décision de Max annule une règle, et la règle se redit en relatif
 
@@ -6112,6 +6140,8 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   morte) ; `palierRetenu` ne l'oppose qu'à ce choix-là, « Normal » passe, et
   choisir une autre étendue lève le verdict — c'est la décision explicite qui
   rouvre la porte. Et le jeu le dit, avec le nom de l'étendue.
+  **Depuis la v509, la sûreté descend d'UN cran depuis le palier qui tournait
+  (Loin → Normal → bas), pas au fond** — voir « La sûreté d'un cran (v509) ».
 - **UN BUDGET SE POSE SUR CE QU'ON A VU SURVIVRE, ET IL SE DIT.** 128 Mo :
   au-dessus des 98 que le vieil iPad de la v296 a tenus au centre, très
   au-dessous des cinq cents et plus sous lesquels l'iPhone est mort. Ce
@@ -13200,6 +13230,41 @@ Depuis la v245 ce n'est plus un masquage à chaque capture mais une COUCHE
 sonde ne voient pas. `realisme.js` renouvelle les reflets quatre fois dans la
 vraie scène et vérifie le code WebGL ainsi que l'absence de maillage laissé
 caché.
+
+## La sûreté d'un cran (v509) — un disjoncteur ne coupe pas plus que la panne
+
+Max : « les arbres ont pas changé ». Son iPhone jouait au palier `bas` par
+sûreté depuis deux plantages sous « Loin » : `hd 0`, donc ni les vrais arbres,
+ni les façades de Paris, ni la couronne lointaine — trois livraisons qui ne
+l'atteignaient pas, la régression de RÉGLAGE de la v291 une fois de plus.
+Trois règles.
+
+- **SOUS UNE ÉTENDUE CHOISIE, ON DESCEND D'UN CRAN DEPUIS LE PALIER QUI
+  TOURNAIT.** `suretePalier(plantages, sousChoix, palierEnCours)` (journal.js)
+  lit le palier de la fiche de la session morte (`reglage.palier`) : sous une
+  sûreté l'étendue reste « Loin » pendant que le jeu joue Normal, et c'est
+  Normal qu'on descend. Sans étendue choisie (« Auto »), le fond, comme avant.
+  Et le compteur repart de zéro quand un verdict est RANGÉ : deux plantages de
+  suite se comptent au palier neuf.
+- **UN VERDICT RANGÉ SOUS L'ANCIENNE RÈGLE SE RELIT, IL NE SE REMPLACE PAS.**
+  Le verdict neuf porte `cran` ; sans lui, un « bas sous Loin » se lit Normal
+  (`palierDeSurete`, palier.js). La correction atteint l'appareil de Max sans
+  qu'il touche à rien, et sans changer de clé de rangement (v290 : la clé
+  change quand le SENS de la règle change ; ici seule sa lecture change).
+- **CE QU'ON NE DIT PLUS EN JEU SE DIT DANS LES RÉGLAGES, AVEC LE GESTE.** Les
+  messages en jeu partent (les commandes à icônes, décision de Max) : la rangée
+  de l'étendue dit la sûreté en premier (« Touche « Loin » pour réessayer, ou
+  garde ça »), et retoucher l'étendue même lève la sûreté. Le témoin de
+  `parent.js` rejoue l'appareil : verdict rangé, rechargement, configuration
+  lue (`reglageApplique`) et phrase lue.
+
+Et les records de course d'avant la v483 (même livraison) : on n'efface rien.
+`bestRace` n'est plus écrit ; `migrerRecordsCourse` (sync.js, pure,
+idempotente) le range en `courseVieuxChrono`, gardé à part (plus annoncé en jeu, v504),
+et le record à battre est `courseJuste`. Appliquée au chargement (fun.js) et à
+chaque document reçu du nuage ; les temps se fusionnent par le plus petit
+positif, et la comparaison « la fusion a-t-elle rapporté quelque chose ? » se
+fait sur les records MIGRÉS (sinon un ancien champ relancerait la page, v189).
 
 ## Les vrais arbres (v499) — un arbre se reconnaît à la règle qui l'a planté
 

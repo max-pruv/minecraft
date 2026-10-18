@@ -89,7 +89,7 @@ const GARDIENS = {
   // Le tempo du banc (v501) : lu par `main.js`, donc gardé par ses gardiens ;
   // `reglages.js` est la suite qui le déclare et le relit sous node.
   'src/tempo.js': ['reglages.js', 'carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],
-  'src/sync.js': ['sauvegarde.js', 'reglages.js', 'manhattan.js'],
+  'src/sync.js': ['sauvegarde.js', 'reglages.js', 'manhattan.js', 'monte.js', 'carte.js', 'reseau.js', 'degats.js'],
   // `monte.js` depuis la v236 : c'est lui qui éprouve l'oubli des morceaux
   // dépassés, la seule chose qui garde la mémoire d'un iPad en vol.
   // `horizon.js` lit `terrainHeight` et dessine ce que les morceaux n'ont pas
@@ -103,7 +103,7 @@ const GARDIENS = {
   // c'est lui qui porte les témoins du palier —, `reglages.js` l'espace où l'on
   // reprend la main sur la qualité, `carte.js` la distance d'affichage vue de la
   // carte.
-  'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js', 'parishd.js'],
+  'src/palier.js': ['monte.js', 'maj.js', 'reglages.js', 'carte.js', 'parishd.js', 'parent.js'],
   'src/journal.js': ['parent.js', 'reglages.js', 'maj.js'],
   // le sol continu (v297) : lu par le mailleur et par toute physique au sol
   'src/solcontinu.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carte.js', 'carteMonde.js', 'parishd.js', 'washington.js'],

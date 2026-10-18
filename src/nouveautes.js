@@ -6,12 +6,39 @@
 
 export const NOUVEAUTES = [
   {
-    v: 508,
+    v: 512,
     titre: 'Les voitures de Montmartre roulent mieux',
     puces: [
       'Le Moulin Rouge borde le boulevard',
       'Les voitures ne touchent plus la pente',
       'Des rues traversent les Buttes-Chaumont',
+    ],
+  },
+  {
+    v: 510,
+    titre: 'Monter en haut, descendre en bas',
+    puces: [
+      'En vol, la flèche du haut fait monter',
+      'Celle du bas fait descendre',
+    ],
+  },
+  {
+    v: 509,
+    titre: 'Les arbres reviennent, records justes',
+    puces: [
+      'Après deux pannes, un cran plus bas seulement',
+      'Les Réglages disent comment réessayer « Loin »',
+      'Ton ancien record est gardé à part',
+      'Le nouveau record se gagne au vrai chrono',
+    ],
+  },
+  {
+    v: 508,
+    titre: 'Une carte claire',
+    puces: [
+      'La carte du monde est claire',
+      'Rien ne passe plus par-dessus',
+      'Le menu cache les boutons du jeu',
     ],
   },
   {

@@ -254,7 +254,7 @@ function coteEn(solDe, x, z) {
   return m;
 }
 
-// LA COTE SE LIT SOUS LA VOITURE, PAS SOUS L'AXE (v508). Depuis la v372 un
+// LA COTE SE LIT SOUS LA VOITURE, PAS SOUS L'AXE (v512). Depuis la v372 un
 // convoi d'avenue roule `VOIE_CIRCUIT` blocs à droite de son tracé ; sa cote,
 // elle, restait celle de l'AXE et de ses quatre voisins. En dévers — le
 // boulevard de Clichy et le boulevard de Rochechouart longent la pente de la

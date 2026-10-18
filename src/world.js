@@ -1225,7 +1225,7 @@ const LANDMARKS_V317 = [
     return {
       name: nom === 'Louvre' ? 'Pyramide du Louvre' : nom,
       x: PARIS.x + p.u, z: PARIS.z + p.v, box: Math.max(p.socle[0], p.socle[1]), build,
-      // le Moulin Rouge du monde d'aujourd'hui borde le boulevard (v508)
+      // le Moulin Rouge du monde d'aujourd'hui borde le boulevard (v512)
       ...(nom === 'Moulin Rouge' ? { tour: buildMoulinRougeNord } : {}),
       // v306 : Paris doublé se lit à 1,7 bloc par pixel quand il tient entier
       // sur un téléphone ; ses monuments restent sur le plan (carte.js)
@@ -2159,7 +2159,7 @@ function dansTrameLondres(x, z, t) {
   const du = x - LONDRES.x, dv = z - LONDRES.z, r = LONDRES.r + 16;
   return du * du + dv * dv <= r * r;
 }
-// LA VOIE NOMMÉE TRAVERSE LE JARDIN SUR SA CHAUSSÉE (v508). La rue de
+// LA VOIE NOMMÉE TRAVERSE LE JARDIN SUR SA CHAUSSÉE (v512). La rue de
 // Belleville et le boulevard de Ménilmontant traversaient les Buttes-Chaumont,
 // le boulevard Beaumarchais la place des Vosges : les jardins passaient avant
 // les rues dans `solParis`, et les voitures roulaient dans les troncs (quatorze
@@ -2168,7 +2168,7 @@ function dansTrameLondres(x, z, t) {
 // jardin) — sauf sous une colonne où un enfant a posé ou creusé un bloc avant
 // cette date (et ses huit voisines) : elle garde son jardin, et ce qui portait
 // sa cabane. La date se relit à la fusion (v309).
-export const DATE_JARDINS_PARIS = Date.UTC(2026, 9, 18, 12, 0, 0);
+export const DATE_JARDINS_PARIS = Date.UTC(2026, 9, 18, 12, 20, 0);
 function dansJardinsParis(x, z, t) {
   if (!(t <= DATE_JARDINS_PARIS)) return false;
   const du = x - PARIS.x, dv = z - PARIS.z, r = PARIS.r + 2;
@@ -3036,7 +3036,7 @@ export class World {
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
     this.colonnesTrameLondres = new Set(); // les colonnes de Londres où la trame générique d'avant reste (v447)
-    this.colonnesJardinsParis = new Set(); // les colonnes de Paris où le jardin d'avant reste sous une voie (v508)
+    this.colonnesJardinsParis = new Set(); // les colonnes de Paris où le jardin d'avant reste sous une voie (v512)
     this.colonnesMetroDC = new Set();     // celles de la boîte de Washington où le métro ne touche pas la surface (v485)
     this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v370, v370)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
@@ -4042,7 +4042,7 @@ export class World {
           // enfant avait bâti avant la date (`DATE_PARIS_DOUBLE`)
           const PV = this.conf.parisAvant ? PARIS_AVANT : PARIS_NEUF;
           const cede = !this.conf.parisAvant && this.colonnesCedees.size > 0 && this.colonnesCedees.has(cleColonneParis(wx, wz));
-          // le jardin d'avant la v508 sous une colonne où un enfant a bâti
+          // le jardin d'avant la v512 sous une colonne où un enfant a bâti
           const jAvant = !this.conf.voiesJardinsParis
             || (this.colonnesJardinsParis.size > 0 && this.colonnesJardinsParis.has(cleColonneParis(wx, wz)));
           const sp = PV.solParis(wx, wz, jAvant);

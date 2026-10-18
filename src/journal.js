@@ -75,7 +75,7 @@ export const CADENCE_RELEVE_MS = 5000;
 // l'étendue choisie sous laquelle la session morte jouait (fiche.reglage,
 // v299), pour que la sûreté sache à quel choix elle s'oppose.
 export function bilanPrecedent({ drapeau, journalBrut, plantages = 0 }) {
-  if (!drapeau) return { rapport: null, plantages: plantages || 0, etendue: null };
+  if (!drapeau) return { rapport: null, plantages: plantages || 0, etendue: null, palierEnCours: null };
   let journal = null;
   try { journal = journalBrut ? JSON.parse(journalBrut) : null; } catch { journal = null; }
   const rapport = journal && typeof journal === 'object'
@@ -83,19 +83,37 @@ export function bilanPrecedent({ drapeau, journalBrut, plantages = 0 }) {
     : { fin: 'plantage', sansJournal: true };
   const reglage = journal && journal.fiche && journal.fiche.reglage;
   const etendue = reglage && typeof reglage.etendue === 'string' ? reglage.etendue : null;
-  return { rapport, plantages: (plantages || 0) + 1, etendue };
+  // ET LE PALIER QUI TOURNAIT (v509) : sous une sûreté, l'étendue choisie
+  // reste « Loin » pendant que le jeu joue « Normal ». C'est ce palier-là
+  // qu'il faut descendre d'un cran, pas l'étendue.
+  const palierEnCours = reglage && typeof reglage.palier === 'string' ? reglage.palier : null;
+  return { rapport, plantages: (plantages || 0) + 1, etendue, palierEnCours };
 }
 
-// Le disjoncteur : au-delà de `PLANTAGES_SURETE`, un verdict `bas` marqué
-// `surete`, dans la forme que `palierRetenu` lit (palier.js).
+// Le disjoncteur : au-delà de `PLANTAGES_SURETE`, un verdict marqué `surete`,
+// dans la forme que `palierRetenu` lit (palier.js).
 // `sousChoix` (v299) : l'étendue CHOISIE sous laquelle ça a planté, si ce n'est
 // pas `auto` — le verdict passe alors devant ce choix-là (`palierRetenu`).
-export function suretePalier(plantages, sousChoix = null) {
+//
+// UN CRAN SOUS CE QUI A PLANTÉ, PAS LE FOND (v509). Max : « les arbres ont pas
+// changé ». Son iPhone, mort deux fois sous « Loin », jouait au palier `bas`
+// depuis : `hd 0`, donc ni les vrais arbres (v499), ni les façades de Paris,
+// ni la couronne lointaine — un remède allé bien plus loin que la panne
+// (v245). Sous une étendue choisie on descend d'UN cran depuis le palier qui
+// tournait (`palierEnCours`, la fiche du journal) : Loin → Normal, Normal →
+// bas. Sans étendue choisie (« Auto »), le fond, comme avant. `cran` marque le
+// verdict neuf : un ancien « bas sous Loin » se relit comme Normal
+// (`palierDeSurete`, palier.js).
+export function suretePalier(plantages, sousChoix = null, palierEnCours = null) {
   if (!(plantages >= PLANTAGES_SURETE)) return null;
-  const v = { palier: 'bas', raison: `${plantages} plantages de suite`, surete: true, le: Date.now() };
-  if (sousChoix && sousChoix !== 'auto') v.sousChoix = sousChoix;
+  const choisi = sousChoix && sousChoix !== 'auto';
+  const depuis = palierEnCours || (choisi ? sousChoix : null);
+  const palier = choisi ? (CRAN_DESSOUS[depuis] || 'bas') : 'bas';
+  const v = { palier, raison: `${plantages} plantages de suite`, surete: true, le: Date.now() };
+  if (choisi) { v.sousChoix = sousChoix; v.cran = true; }
   return v;
 }
+export const CRAN_DESSOUS = { haut: 'moyen', moyen: 'bas', bas: 'bas' };
 
 // Un document borné : on retire le plus ancien jusqu'à tenir dans MAX_OCTETS.
 export function borner(doc, maxOctets = MAX_OCTETS) {
@@ -186,12 +204,13 @@ export class Journal {
     const { mortes, douteuses } = classerSessions(sessions, now);
     let plantages = Number(this.lire(PLANTAGES_CLE)) || 0;
     const rapports = [];
-    let etendue = null;
+    let etendue = null, palierEnCours = null;
     for (const id of mortes) {
       const b = bilanPrecedent({ drapeau: true, journalBrut: this.journalDe(id, sessions[id].ancienne), plantages });
       plantages = b.plantages;
       rapports.push(b.rapport);
       if (b.etendue) etendue = b.etendue;
+      if (b.palierEnCours) palierEnCours = b.palierEnCours;
       this.oublier(id, sessions[id].ancienne);
     }
     for (const id of douteuses) this.douteuses[id] = sessions[id].vu;
@@ -203,7 +222,7 @@ export class Journal {
     this.doc.plantagesAvant = plantages;
     if (douteuses.length) this.doc.douteuses = douteuses.length;
     this.persister(true);
-    return { rapport: rapports[rapports.length - 1] || null, rapports, plantages, etendue, douteuses };
+    return { rapport: rapports[rapports.length - 1] || null, rapports, plantages, etendue, palierEnCours, douteuses };
   }
 
   // LE BATTEMENT : « je vis encore ». Appelé toutes les BATTEMENT_MS par la

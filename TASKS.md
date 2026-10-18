@@ -1,5 +1,38 @@
 # Ce qui est en cours
 
+- [ ] **Le banc lâche sur `maj.js`, `carte.js`, `reglages.js` et `manhattan.js`
+  des deux côtés (portail de la v510, Monter au-dessus de Descendre).** Rejouées
+  SEULES sur la branche et sur `origin/main` v506 (`git worktree`), les quatre
+  meurent sur un délai de `waitForFunction`/`locator.click` (maj.js : 9–13 verts
+  avant le délai des deux côtés, à des endroits différents ; manhattan.js
+  `origin/main` : 1 vert puis délai), avec des rouges voisins vus des deux côtés
+  (GPS « la flèche pointe », « fond de carte à froid », « survit au
+  redémarrage »). Le banc tournait à « charge stable 3,5 cœurs » sans suite
+  ouverte : à démonter avant de croire un rouge de durée. Les témoins de la
+  v510 ont été joués à part (le bloc « commandes » de `maj.js` extrait) : verts
+  aux deux tailles. Et « toucher l'écran casse en construction » y rend
+  `construction 0` une fois sur deux sur `origin/main` aussi (2 passages) —
+  intermittence, pas la livraison : la livraison ne change que le CSS en vol.
+
+- [ ] **Rouges de portail de la v509 (la sûreté d'un cran, les records) :
+  aucun de la livraison.** Le portail complet a tapé sa borne de deux heures
+  pendant `reseau.js` (`monte.js` seule 42 min). Un seul rouge était à moi —
+  une puce du journal à neuf mots, corrigée. Le reste, rejoué SEUL : `carte.js`
+  branche 103 verts / 0 rouge, `origin/main` (v504) 101 / 1 (« la flèche du
+  GPS », l'intermittence de la v321) — l'appui long et le GPS du portail étaient
+  la charge ; `maj.js` branche 65 / 1, « le loader dit combien de fichiers sont
+  rangés », rouge sur `origin/main` au portail de la v503 (déclaré plus bas) ;
+  `reseau.js` branche 88 / 2, « un hôte sans courtier est trouvé » et « il le
+  REJOINT », la famille du nuage déclarée plus bas — `net.js`, `relaisnuage.js`
+  et `cloud.js` n'ont pas bougé. `monte.js` au portail : « la rue se fabrique
+  par tranches », « deux voisines d'un convoi », « la rue roule à l'allure
+  d'une ville », « rue vide », « frein à main », « un mur pris de face » — tous
+  déjà mesurés des deux côtés aux portails des v503 et v504 (ci-dessous) ; la
+  livraison ne touche dans `fun.js` que le nom du champ du record de course.
+  Rejeu de `maj.js` sur le code rebasé : 65 verts, 1 rouge, « commandes
+  (430 × 932) : toucher l'écran… casse en construction » (vert au rejeu
+  précédent, rouge au portail de la v503) — la construction n'est pas touchée.
+
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v504 (les
   icônes et le jeu qui se tait)** — double mesure de la v195, `monte.js`
   rejouée SEULE sur la branche et sur `origin/main` v502 (`git worktree`).
@@ -7503,12 +7536,43 @@ l'embarquement a eu lieu, pas par une hypothèse.
   longue de la v465 (« Sur la mer, le train roule sur un viaduc »), présente
   sur `origin/main`, donc en production.
 
-- [ ] **DÉCISION DE MAX : les records de course écrits avant la v483.** Le
+- [x] **DÉCISION DE MAX : les records de course écrits avant la v483.**
+  *Décidé (décision déléguée par Max, 18 octobre 2026), fait en v509 : on
+  n'efface rien ; l'ancien record passe à part (`courseVieuxChrono`, « ancien
+  record (vieux chrono) » — gardé, PAS ENCORE AFFICHÉ : aucun écran ne montre
+  les records depuis la v255 et les messages en jeu sont partis en v504 ; à
+  montrer le jour où un écran des records existe) et le record à battre
+  (`courseJuste`) repart de la première course chronométrée juste. Migration
+  pure, idempotente, au stockage et à chaque document du nuage
+  (`migrerRecordsCourse`, sync.js). Prix déclaré : une course gagnée entre la
+  v483 et la v503 était juste et devient « ancienne ».* Le
   chronomètre comptait en temps de jeu : sur une tablette qui ramait, un
   record pouvait valoir le quart du temps réellement couru (mesuré 2,3 s pour
   8,6 s à cinq images par seconde). La v483 compte juste à partir de
   maintenant et ne touche pas `records.bestRace`. Les remettre à zéro (pour
   Marlon et Alice) ou les garder : à trancher par Max, pas par le code.
+
+- [x] **La sûreté du palier coupait trop (v509).** Décision déléguée par Max,
+  18 octobre 2026. L'iPhone de Max jouait en `bas` (`hd 0`) depuis deux
+  plantages sous « Loin » : ni les vrais arbres, ni les façades de Paris, ni
+  la couronne lointaine. La sûreté descend désormais d'UN cran depuis le
+  palier qui tournait (Loin → Normal → bas ; « Auto » → bas comme avant), un
+  ancien « bas sous Loin » se relit Normal, et les Réglages le disent avec le
+  geste. **Reste à voir sur l'iPhone** : que Normal tienne là où Loin
+  plantait (`?diag=1`, `journal_appareil`) ; s'il replante deux fois, il
+  redescend à `bas` tout seul.
+- [x] **Les anneaux de Tokyo et de Dubaï restent tels quels.** Décision
+  déléguée par Max, 18 octobre 2026 : aucun remède sans toucher le sol ou la
+  sélection des anneaux (la carte des segments bloqués de la v435 le montre),
+  et le défaut est mineur.
+- [x] **Les sept pistes courtes restent telles quelles** (`PISTES_COURTES`).
+  Décision déléguée par Max, 18 octobre 2026 : toutes sont au-dessus de ce
+  que l'approche assistée demande, sauf Los Angeles pour le Concorde, de
+  justesse — pas de déplacement d'aérodrome.
+- [x] **Le programme des autoroutes est en pause.** Décision déléguée par Max,
+  18 octobre 2026 : les trois corridors restants (Séoul–Busan, Los
+  Angeles–San Diego, Manchester–Liverpool) sont barrés par le relief ; un
+  tunnel écrit en blocs serait un projet à part, à proposer plus tard.
 
 - [ ] **Les cadences de ménage hors de `animals.js` et `fun.js` (relevé v483).**
   Le grep (`grep -rn -- "-= dt\|+= dt" src/*.js`) rend soixante et une
@@ -7818,7 +7882,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   **49 → 0**. Tenue de rue 95 98 100 99 96 100 100 100 → 94 100 100 100 96 100
   100 100. Témoin dans `carteMonde.js`, rouge sur `origin/main`.
 
-- [ ] **PORTAILS DE LA v508.** Premier : un rouge à moi, corrigé (« le convoi
+- [ ] **PORTAILS DE LA v512.** Premier : un rouge à moi, corrigé (« le convoi
   suit le sol », San Francisco écart 7 pour une pente de 2 — la cote sous la
   voie se borne désormais à une marche) ; les autres déclarés (flèche du GPS,
   PeerJS de `manhattan.js`, construction de `maj.js` à 420 × 760, et dans
@@ -7830,7 +7894,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   touche que la HAUTEUR des convois (voies.js), le sol de deux jardins et le
   Moulin Rouge (paris.js, world.js) ; ni la caméra, ni la grille horaire, ni
   les passants.
-- [x] **RÉSOLU en v508 : la butte et le Moulin Rouge.** Remesuré sous node
+- [x] **RÉSOLU en v512 : la butte et le Moulin Rouge.** Remesuré sous node
   sur `origin/main` : 32 pas sur le pavé d'une colonne plus haute d'un bloc
   (Clichy, Rochechouart) et 17 dans les murs du Moulin Rouge. La pente n'était
   pas le relief mais la COTE du convoi, lue sous l'axe quand la voiture roule
@@ -7876,7 +7940,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   défaut que l'escalier du Sacré-Cœur, qui descendait à quinze blocs quand sa
   boîte en annonçait douze.
 
-- [x] **RÉSOLU en v508 pour les Buttes-Chaumont et la place des Vosges ;
+- [x] **RÉSOLU en v512 pour les Buttes-Chaumont et la place des Vosges ;
   DÉCLARÉ pour les Tuileries.** La voie nommée l'emporte sur le jardin sur sa
   chaussée et son trottoir dans les jardins déclarés `traverse` (paris.js) :
   267 colonnes, zéro lot changé ; sous une colonne où un enfant a bâti avant

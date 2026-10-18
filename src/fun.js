@@ -31,6 +31,7 @@ import { brancherTraces, avancerTraces, chaufferTraces } from './traces.js';
 import { creerEmbarquement, ATTENTE_RAME_MIN } from './embarquement.js';
 import { chronoReel } from './cadence.js';
 import { ICONES, avecIcone, pastille } from './commandes.js';
+import { migrerRecordsCourse } from './sync.js';
 
 // Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
 // coffre (`web-minecraft-chest-v1::…`) et le chantier
@@ -68,9 +69,13 @@ export function initFun(ctx) {
   // `duels` n'est plus jamais incrémenté (les duels partent en v285) mais le champ
   // RESTE, et les anciennes valeurs avec : on retire l'écran et les commandes,
   // jamais les données (v256).
+  // Le record de course d'avant la v483 passe à part (`migrerRecordsCourse`,
+  // sync.js, v509) : migré ici, au chargement, et rangé tout de suite.
+  const rangesAvant = loadJson(RECORDS_KEY, {});
   const records = { blocks: 0, quizCorrect: 0, treasures: 0, duels: 0,
-    mathWins: 0, parkour: 0, bestRace: 0, ...loadJson(RECORDS_KEY, {}) };
+    mathWins: 0, parkour: 0, courseJuste: 0, ...migrerRecordsCourse(rangesAvant) };
   const saveRecords = () => saveJson(RECORDS_KEY, records);
+  if (rangesAvant && typeof rangesAvant === 'object' && 'bestRace' in rangesAvant) saveRecords();
 
   // ---- styles & panels ------------------------------------------------------
   const style = document.createElement('style');
@@ -915,7 +920,7 @@ export function initFun(ctx) {
   let parkourDone = false;
 
   // LE CHRONOMÈTRE DE LA COURSE EST EN TEMPS RÉEL (v483). Il écrit
-  // `records.bestRace`, que Marlon et Alice comparent : compté en `dt` borné,
+  // le record de course (`courseJuste` depuis la v509), que Marlon et Alice comparent : compté en `dt` borné,
   // il récompensait la tablette qui rame (à cinq images par seconde, vingt
   // secondes de montre en comptaient cinq). Les records déjà écrits ne sont
   // pas touchés — les remettre à zéro est une décision de Max (`TASKS.md`).
@@ -930,9 +935,11 @@ export function initFun(ctx) {
       if (de < 2.5) {
         const t = raceTime;
         raceTime = null; raceCooldown = 5;
-        const best = records.bestRace;
-        // Le record s'écrit toujours ; il ne s'annonce plus (v504).
-        if (!best || t < best) { records.bestRace = t; saveRecords(); emojiBurst(['🏁', '🏆'], 16); }
+        const best = records.courseJuste;
+        // Le record s'écrit au vrai chrono (v509) ; il ne s'annonce plus en jeu (v504),
+        // et l'ancien record (vieux chrono) est gardé, pas encore affiché : aucun
+        // écran ne montre les records depuis la v255 (dette, TASKS.md).
+        if (!best || t < best) { records.courseJuste = t; saveRecords(); emojiBurst(['🏁', '🏆'], 16); }
       } else if (raceTime > 60) { raceTime = null; }
     }
     // parkour podium
@@ -1443,7 +1450,7 @@ export function initFun(ctx) {
     // La course du parc, EN LECTURE (v483) : le témoin du chronomètre en temps
     // réel pose l'enfant au départ, puis à l'arrivée, et lit ce qui a compté.
     courseEtat: () => ({ depart: RACE_START, arrivee: RACE_END, chrono: raceTime,
-      delai: raceCooldown, record: records.bestRace ?? null }),
+      delai: raceCooldown, record: records.courseJuste || null, ancien: records.courseVieuxChrono || null }),
     onBlockPlaced() {
       records.blocks++;
       saveRecords();

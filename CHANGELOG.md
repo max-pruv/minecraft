@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v508 — Les voitures de Montmartre roulent mieux
+## v512 — Les voitures de Montmartre roulent mieux
 
 **Pourquoi.** Deux dettes de Paris, remesurées en v475 sur la voie que la
 voiture roule (1,3 bloc à droite de l'axe) et confiées par Max (« sur les
@@ -59,6 +59,108 @@ est dans les morceaux de Paris) : désarmée, elle rend la constante de la v504
 au bit près. Le prix, déclaré : sur les pentes, une voiture peut flotter
 au-dessus du pavé sous son centre là où son flanc touche la marche (25 pas sur
 5 809 au-dessus d'un bloc à Paris, contre 6).
+
+---
+
+## v510 — En vol, Monter est au-dessus de Descendre
+
+**Pourquoi.** Max, sur iPhone, en vol : « Ça serait bien d'inverser les boutons
+pour voler. Le bouton pour monter est en bas, et le bouton pour descendre est
+en haut. C'est contre-intuitif. » Mesuré : à pied en vol, Descendre était 56 px
+au-dessus de Sauter (qui fait monter) ; en construction, 24 px au-dessus.
+
+**Ce que ça change.** En vol, le bouton qui fait monter prend la place haute,
+celui qui fait descendre la place basse — à pied comme en construction. Hors
+vol rien ne bouge ; ids, gestionnaires et `aria-label` sont les mêmes. Aux
+commandes d'un avion, la colonne de bord n'a pas ce défaut (« Descendre » y
+veut dire quitter l'appareil, pas perdre de l'altitude) : inchangée.
+
+**Ce qui le prouve.** Deux témoins de `maj.js`, joués à 420 × 760 et à
+430 × 932, formulés sans dimension : le haut de Monter est au-dessus du haut de
+Descendre (rouge sur l'ancien code, mesuré par `sonde-vol-boutons.cjs`), et en
+vol rien ne se recouvre ni n'entre dans le quart du joystick. Ce second témoin
+a trouvé un défaut d'avant : en vol, la pilule d'action mordait de 8 px le
+bouton du haut ; elle monte d'autant.
+
+---
+
+## v509 — Les arbres reviennent, et les records de course comptent juste
+
+Deux sujets, deux décisions que Max a déléguées (« sur les décisions fais au
+mieux »).
+
+### La sûreté du palier descend d'un cran, pas au fond
+
+**Pourquoi.** Max : « les arbres ont pas changé ». Lu dans le journal de bord :
+son iPhone était au palier « bas », source « sûreté », sous l'étendue « Loin »
+— il y avait planté deux fois de suite. Le disjoncteur de la v296 rangeait
+alors le palier le plus bas, `hd 0` : ni les vrais arbres (v499), ni les
+façades de Paris, ni la couronne lointaine (v497), depuis au moins la v473. Et
+rien ne le lui disait au bon endroit.
+
+**Ce que ça change.** Deux plantages de suite sous une étendue choisie font
+descendre d'UN cran depuis le palier qui tournait : Loin → Normal, Normal →
+bas ; sous « Auto », rien ne change. Le compte des plantages repart de zéro au
+palier neuf. Un ancien verdict « bas sous Loin » se relit comme Normal :
+l'iPhone de Max retrouve les arbres sans rien toucher. Dans les Réglages, la
+rangée de l'étendue le dit en premier, avec le geste : « Touche « Loin » pour
+réessayer, ou garde ça » — et retoucher l'étendue lève la sûreté.
+
+**Ce qui le prouve.** Deux témoins neufs dans `parent.js` : la règle pure
+(Loin → Normal → bas, « Auto » → bas, un ancien verdict relu Normal, le
+palier qui tournait lu dans la fiche du journal), et la situation exacte de
+l'appareil — verdict rangé avant la v509, étendue « Loin », rechargement : le
+jeu joue Normal et l'aide des Réglages dit quoi faire. Le témoin de la v299
+suit la règle (« un cran dessous »).
+
+### Les records de course d'avant la v483
+
+**Pourquoi.** Jusqu'à la v483, le chronomètre de la course du parc comptait en
+temps de jeu : sur une tablette qui ramait, un record pouvait valoir le quart
+du temps couru (mesuré 2,3 s pour 8,6 s). Ces records ne se battent pas.
+
+**Ce que ça change.** On n'efface rien : l'ancien record est gardé à part
+(`courseVieuxChrono`, « ancien record, vieux chrono »), et le record à
+battre repart de la première course chronométrée juste. La migration est
+pure et idempotente, appliquée au stockage au chargement et à chaque document
+reçu du nuage — une tablette restée en arrière qui republie l'ancien champ le
+voit rangé à part. Le prix déclaré : une course gagnée entre la v483 et la
+v503 était déjà juste, et devient « ancienne ».
+
+Aucun écran ne montre les records depuis la v255, et les messages en jeu
+sont partis en v504 : l'ancien record est donc gardé, pas encore affiché —
+déclaré dans `TASKS.md`.
+
+**Ce qui le prouve.** Un témoin neuf dans `sauvegarde.js` : un document du
+nuage tel qu'une ancienne tablette l'écrirait garde l'ancien record à part, le
+record juste reste celui à battre, la migration est idempotente, et un ancien
+champ encore rangé sur l'appareil ne fait pas relancer la page.
+
+---
+
+## v508 — La carte du monde passe au verre clair, et rien ne la recouvre
+
+**Pourquoi.** La revue d'écran (v506) a relevé trois défauts autour de la carte
+et du menu. Près d'une bête, la pilule « Monter · Âne » passait par-dessus la
+carte du monde ouverte : elle cachait des boutons, et un doigt qui visait la
+carte faisait monter sur l'âne (#2, haute). La carte était bleu nuit au milieu
+d'une interface en verre clair, avec des emojis dans la recherche, l'astuce et
+la légende (#14). Et le menu ☰ ouvert laissait le joystick et les boutons nets
+derrière lui : on croyait jouer encore (#16).
+
+**Ce que ça change.** Carte ouverte, tout le HUD de jeu se cache (joystick,
+pilules, barre de blocs, menu, bandeaux du haut) : chaque bouton de la carte
+reçoit le doigt. La fiche de la carte est en verre clair, encre sombre ; la
+loupe de la recherche et le doigt de l'astuce sont des icônes dessinées, la
+légende montre les repères à leurs vraies couleurs. Le dessin de la carte, lui,
+ne change pas. Menu ouvert, le HUD se voile et la pilule se tait.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carte.js`, rouges sur l'ancien
+code : `elementFromPoint` au centre de chaque bouton de la carte avec un âne
+devant soi ; la fiche claire, deux icônes dessinées et aucun emoji ; le menu
+qui voile le HUD et le rend en se fermant. Captures avant et après
+(`sonde-revue-ecran.cjs --etats=carte-monde,menu`, iPhone et iPad, jour et
+nuit) dans la PR.
 
 ---
 
