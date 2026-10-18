@@ -127,7 +127,7 @@ const BOSQUET_LARGE = 0.4;
 const ISOLE = 0.001;
 // L'HEURE DES BOSQUETS (v513), relue à la fusion (v309) : un bloc posé avant
 // garde les arbres d'avant dans son morceau et ses huit voisins.
-export const DATE_CLAIRIERES = Date.parse('2026-10-18T05:30:00Z');
+export const DATE_CLAIRIERES = Date.parse('2026-10-18T11:55:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
   return fbm(x * 0.07, z * 0.07, SEED + 941) > 0.64 ? BLOCK.GRAVEL : BLOCK.GRASS;

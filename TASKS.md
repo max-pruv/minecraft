@@ -88,7 +88,26 @@
   le brouillon `cab.mjs` de la v503 (forêt de `treeAt` autour de (-1500,
   -2500), cabane 3 × 3 × 3 de rondins au centre du morceau). Zone vrais arbres.
 
-- [ ] **PORTAILS DE LA v503 (les bosquets) : rouges mesurés des deux côtés.**
+- [ ] **PORTAILS DE LA v503 (les bosquets), après le rebase sur la v502 :
+  cinq passages coupés à deux heures, puis la double mesure SEULE, sans rien
+  d'autre sur la machine.** `monte.js` : branche 241 verts / 7 rouges,
+  `origin/main` v502 243 / 5 — communs « rue vide », Moscou ×2, « les voitures
+  de la rue rendent leur mémoire » (Rome n'a pas fabriqué de voitures, 2
+  voitures) ; branche seule « la rue se fabrique par tranches », « au feu, la
+  voiture freine » (tous deux rouges sur `origin/main` v487 seule) et « un
+  piéton frôlé sursaute » (déclaré) ; `origin/main` seule « ✈️ en vol près de
+  Orly » (que la branche rend aussi sous charge). `reseau.js` : branche 83 / 7,
+  `origin/main` v502 86 / 4 — communs « le message dit quoi faire », « un
+  réseau qui bloque tout », « un hôte sans courtier » et son dépendant ;
+  branche seule « seule après le départ de l'hôte » et « continue d'essayer »
+  (rouges sur `origin/main` v487 seule, deux passages sur deux) et « un monde
+  bien rempli » (déclaré, 25 à 40 s ; le coût d'un morceau est inchangé :
+  6,7–7,3 ms au point d'apparition contre 6,9–8,4, 3,1–3,2 en forêt contre
+  3,1–3,2). Un passage de `monte.js` avec une page de captures HD ouverte à
+  côté a rendu 13 rouges en 56 min : non compté. Tous en ville ou sur le
+  réseau, où la règle des bosquets n'agit pas.
+
+- [ ] **PORTAILS DE LA v503 (les bosquets), avant le rebase : rouges mesurés des deux côtés.**
   Rejouées SEULES (branche, puis `origin/main` v487 dans un arbre détaché) :
   `visio.js` et `maj.js` vertes sur la branche ; `monte.js` 233 verts des deux
   côtés, rouges des deux côtés « l'on ne marche pas dans une rue vide », « à
