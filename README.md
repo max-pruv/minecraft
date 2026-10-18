@@ -203,7 +203,7 @@ src/textures.js   procedural texture atlas
 src/facadeshd.js  Paris HD layer: facade relief and street surfaces, as buffers
 src/paris-monuments-hd.js  its eight authored landmarks, clipped per chunk
 src/matierehd.js  its single PBR material, 1024-px atlas and environment
-src/bandeau.js    the game's passing message, the one voice everything speaks with
+src/bandeau.js    the game's passing message — since v497 only for what the child must do (quiz, refusals, multiplayer)
 
   the shared world
 src/net.js        sessions, peers, presentation, edit log, reconnection

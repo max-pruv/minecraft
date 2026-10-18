@@ -833,8 +833,10 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       document.querySelector('.fun-btn[title="Photo"]').click();
       return document.getElementById('toast').textContent;
     });
-    verifier('le toast de la photo montre le vrai chemin',
-      /Souvenirs/.test(photo) && !/🏆|Atelier/.test(photo), photo);
+    // Le bandeau de la photo s'est tu (v504, « tu vires tous ces messages ») :
+    // ce qui prouve que la photo est prise, c'est l'album, juste en dessous.
+    verifier('la photo ne s\'annonce plus en bandeau — l\'album la montre',
+      !/Souvenirs|Photo/.test(photo), photo);
     const galerie = await alice.evaluate(async () => {
       // Plus d'onglet à choisir : le bouton 🖼️ ouvre l'album directement (v255).
       document.querySelector('.fun-btn[title="Souvenirs"]').click();

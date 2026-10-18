@@ -2037,7 +2037,7 @@
       -webkit-tap-highlight-color: transparent; cursor: pointer;
     }
     body.hud-simple #map-btn { border-radius: 14px; display: flex; }
-    body.hud-simple .ico { width: 20px; height: 20px; display: block;
+    body.hud-simple .ico { width: 24px; height: 24px; display: block;
       filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.55)); }
     body.hud-simple .tbtn .ic { font-size: 0; line-height: 0; display: flex; }
     /* Le mot reste lisible par un lecteur d'écran et par les témoins, pas
@@ -2220,9 +2220,7 @@
     /* fun.js écrit « ⬇️ Descendre » dans ce bouton rond ; l'icône au trait
        se pose par-dessus le pictogramme, le mot reste (visuellement caché). */
     body.hud-simple.en-avion #ride-btn .ic {
-      font-size: 0; display: block; width: 20px; height: 20px; margin: auto;
-      background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 4H5v16h5M14 8l4 4-4 4M18 12H9'/%3E%3C/svg%3E");
-      filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.55));
+      font-size: 0; display: block; width: 24px; height: 24px; margin: auto;
     }
     body.hud-simple #gaz-base, body.hud-simple #cmd-vol { background: var(--hud-voile); border: 1px solid var(--hud-liseré); }
     body.hud-simple #gaz-fill { background: rgba(232, 86, 42, 0.78); }
@@ -2237,6 +2235,19 @@
     body.hud-simple #gps { padding: 4px 6px 4px 12px; gap: 8px; }
     body.hud-simple #gps-fleche { font-size: 20px; color: var(--corail-texte, #B83B16); }
     body.hud-simple #gps-texte { font-size: 14px; }
+
+    /* PLUS UN EMOJI SUR UN BOUTON (v497). Les icônes sont dessinées
+       (commandes.js) : dans une pilule elles précèdent le mot, à la taille
+       du texte, en encre ; ailleurs elles prennent la couleur du bouton. */
+    #fun-target button .ico, #treasure-hint-btn .ico {
+      display: inline-block !important; width: 18px !important; height: 18px !important;
+      vertical-align: -4px; margin-right: 6px; filter: none !important;
+    }
+    #fun-target button .ico.pastille { width: 20px !important; height: 20px !important; }
+    body.hud-simple.en-avion #ride-btn .ic .ico { display: block !important; width: 24px !important; height: 24px !important;
+      margin: 0 !important; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.55)) !important; }
+    .fun-btn .ico, #emote-toggle .ico { width: 24px; height: 24px; display: block; margin: auto; }
+    .ico { width: 1.3em; height: 1.3em; vertical-align: middle; }
     /* la consigne (« tourne à gauche ») se lit sur la flèche : une ligne */
     body.hud-simple #gps-texte br, body.hud-simple #gps-texte small { display: none; }
     body.hud-simple #gps-stop { width: 30px; height: 30px; border-radius: 15px; border: 0;
@@ -2266,7 +2277,7 @@
   <div id="block-name"></div>
   <div id="hotbar"></div>
   <div id="creature-label"></div>
-  <button id="pause-btn">⏸</button>
+  <button id="pause-btn" aria-label="Pause"></button>
   <!-- LE MENU UNIQUE (commandes simplifiées) : il remplace les petits boutons
        dispersés, qui restent dans la page et que ses lignes appuient. -->
   <button id="menu-btn" aria-label="Menu" aria-haspopup="dialog" aria-expanded="false"></button>
@@ -2280,21 +2291,21 @@
       <div id="menu-lignes"></div>
     </div>
   </div>
-  <button id="inv-btn" title="Inventaire de blocs (E)">🎒</button>
+  <button id="inv-btn" title="Inventaire de blocs (E)" aria-label="Mon sac"></button>
   <!-- Colonne de gauche : tout ce qui s'y ajoute se range à la suite. -->
-  <div id="left-rail"><button id="map-btn" title="Mini-carte" aria-label="Carte">🗺️</button></div>
+  <div id="left-rail"><button id="map-btn" title="Mini-carte" aria-label="Carte"></button></div>
   <div id="left-rail-bottom">
     <div id="meat-counter"></div>
   </div>
-  <button id="settings-btn" title="Réglages">⚙️</button>
-  <button id="cam-btn" title="Caméra (mini visio)">📷</button>
-  <button id="home-btn" title="Retour à la maison">🏠</button>
-  <button id="chat-btn" title="Messages du monde">💬</button>
+  <button id="settings-btn" title="Réglages" aria-label="Réglages"></button>
+  <button id="cam-btn" title="Caméra (mini visio)" aria-label="Caméra"></button>
+  <button id="home-btn" title="Retour à la maison" aria-label="Retour à l'accueil"></button>
+  <button id="chat-btn" title="Messages du monde" aria-label="Messages"></button>
   <div id="chat-badge" aria-live="polite"></div>
   <div id="video-wrap">
     <div id="visio-invite" style="display:none">
       <span id="visio-invite-txt"></span>
-      <button id="visio-invite-btn">🎥 Allumer la mienne</button>
+      <button id="visio-invite-btn">Allumer la mienne</button>
     </div>
     <div id="visio-chemin" style="display:none"></div>
   </div>
@@ -2396,7 +2407,7 @@
       <div id="confirm-msg"></div>
       <div id="confirm-actions">
         <button id="confirm-cancel">Annuler</button>
-        <button id="confirm-ok">Relâcher 🕊️</button>
+        <button id="confirm-ok">Relâcher</button>
       </div>
     </div>
   </div>
@@ -2414,15 +2425,15 @@
         <canvas id="map-modal-canvas" width="560" height="560"></canvas>
         <div id="map-cible"></div>
         <div id="map-choix">
-          <button id="map-choix-tp">✨ Téléporter</button>
-          <button id="map-choix-gps">🧭 S'y rendre</button>
+          <button id="map-choix-tp">Téléporter</button>
+          <button id="map-choix-gps">S'y rendre</button>
         </div>
       </div>
       <div id="map-outils">
         <button id="map-moins" class="zoom" title="Dézoomer">−</button>
         <button id="map-plus" class="zoom" title="Zoomer">+</button>
-        <button id="map-moi" title="Me retrouver">🔺 moi</button>
-        <button id="map-tout" title="Voir tout le monde">🌍 tout</button>
+        <button id="map-moi" title="Me retrouver">moi</button>
+        <button id="map-tout" title="Voir tout le monde">tout</button>
       </div>
       <div id="map-legend">🔺 toi · 🟦 joueurs · ⬜ personnages · 🟨 animaux</div>
       <div id="map-astuce">✊ Appui long <b>n'importe où</b> : t'y téléporter, ou t'y rendre avec le GPS</div>
@@ -2434,10 +2445,10 @@
       <div id="inv-title">🎒 Choisis un bloc pour la case sélectionnée</div>
       <button id="inv-close">✕</button>
       <div id="inv-tabs">
-        <button data-tab="blocks" class="active">🧱 Blocs</button>
-        <button data-tab="decor">🎨 Déco</button>
-        <button data-tab="props">🪑 Meubles</button>
-        <button data-tab="batiments">🏛️ Bâtiments</button>
+        <button data-tab="blocks" class="active">Blocs</button>
+        <button data-tab="decor">Déco</button>
+        <button data-tab="props">Meubles</button>
+        <button data-tab="batiments">Bâtiments</button>
       </div>
       <div id="inv-grid"></div>
       <div id="inv-pager"></div>
@@ -2452,7 +2463,7 @@
     <div id="construction-pill"><button id="construction-fin" aria-label="Terminer la construction"><span class="ic"></span><span class="lb">Terminer</span></button></div>
     <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
     <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
-    <div id="gps-ami"><span id="gps-ami-texte"></span><button id="gps-ami-oui">🧭 Y aller</button><button id="gps-ami-non" title="Non merci">✕</button></div>
+    <div id="gps-ami"><span id="gps-ami-texte"></span><button id="gps-ami-oui">Y aller</button><button id="gps-ami-non" title="Non merci">✕</button></div>
     <div id="toast"></div>
   </div>
   <div id="notif-carte">
@@ -2483,11 +2494,11 @@
     <div class="hardstop-card">
       <div class="hardstop-title">⏰ Temps de jeu terminé !</div>
       <div id="hardstop-played" class="hardstop-text"></div>
-      <button class="quiz-opt hardstop-btn" id="hardstop-marathon">🎓 Répondre à 20 questions = +45 min</button>
+      <button class="quiz-opt hardstop-btn" id="hardstop-marathon">Répondre à 20 questions = +45 min</button>
       <div class="hardstop-or">— ou —</div>
       <div class="hardstop-code-row">
         <input id="hardstop-code" type="password" inputmode="numeric" maxlength="8" placeholder="Code parental" autocomplete="off" />
-        <button class="quiz-opt" id="hardstop-unlock">🔑 Débloquer</button>
+        <button class="quiz-opt" id="hardstop-unlock">Débloquer</button>
       </div>
       <div class="hardstop-or">le code parental donne 45 min sans quiz</div>
       <div id="hardstop-feedback"></div>
@@ -2514,20 +2525,20 @@
   <div id="touch-ui">
     <div id="joy-base"><div id="joy-knob"></div></div>
     <div id="joy-repos" aria-hidden="true"></div>
-    <button class="tbtn" id="jump-btn" aria-label="Sauter">⤒</button>
-    <button class="tbtn" id="mode-btn">⛏️</button>
+    <button class="tbtn" id="jump-btn" aria-label="Sauter"></button>
+    <button class="tbtn" id="mode-btn" aria-label="Poser ou casser"></button>
     <button class="tbtn" id="construire-btn" aria-label="Construire" aria-pressed="false"></button>
     <button class="tbtn" id="poser-btn" aria-label="Poser un bloc"></button>
     <button class="tbtn" id="casser-btn" aria-label="Casser un bloc"></button>
-    <button class="tbtn" id="fly-btn" aria-label="Voler"><span class="ic">✈️</span><span class="lb" id="fly-lb">VOLER</span></button>
-    <button class="tbtn" id="down-btn" aria-label="Descendre">▼</button>
-    <button class="tbtn" id="fm-btn" title="Frein à main" aria-label="Frein à main"><span class="ic">🛑</span><span class="lb">DÉRAPER</span></button>
+    <button class="tbtn" id="fly-btn" aria-label="Voler"><span class="ic"></span><span class="lb" id="fly-lb">VOLER</span></button>
+    <button class="tbtn" id="down-btn" aria-label="Descendre"></button>
+    <button class="tbtn" id="fm-btn" title="Frein à main" aria-label="Frein à main"><span class="ic"></span><span class="lb">DÉRAPER</span></button>
     <!-- La manette des gaz (v262) : au volant ou aux commandes, à droite, on
          la monte et on la baisse — en même temps que le joystick à gauche. -->
     <div id="gaz-base"><div id="gaz-fill"></div><div id="gaz-knob"></div></div>
     <div id="cmd-vol"></div>
     <div id="gaz-val"></div>
-    <button class="tbtn" id="train-btn" title="Train d'atterrissage" aria-label="Train d'atterrissage"><span class="ic">🛞</span><span class="lb" id="train-lb">TRAIN</span></button>
+    <button class="tbtn" id="train-btn" title="Train d'atterrissage" aria-label="Train d'atterrissage"><span class="ic"></span><span class="lb" id="train-lb">TRAIN</span></button>
   </div>
 
   <div id="overlay">
@@ -2587,18 +2598,18 @@
       </div>
       <div class="pb-row">
         <span class="pb-label">🔒 Ma sécurité :</span>
-        <button id="reface-btn" class="pb-toggle">📸 Refaire mes photos</button>
-        <button id="repin-btn" class="pb-toggle">🔢 Changer mon code</button>
+        <button id="reface-btn" class="pb-toggle">Refaire mes photos</button>
+        <button id="repin-btn" class="pb-toggle">Changer mon code</button>
       </div>
       <div id="reface-hint"></div>
-      <button id="profile-back">💾 Sauvegarder</button>
+      <button id="profile-back">Sauvegarder</button>
     </div>
     <div id="online-menu">
       <div class="online-title">🌐 Multijoueur</div>
       <div class="online-section">🌍 Mes mondes — un tap pour y retourner :</div>
       <div id="recent-worlds"></div>
       <div id="online-actions">
-        <button id="host-btn">➕ Créer un nouveau monde</button>
+        <button id="host-btn">Créer un nouveau monde</button>
         <div class="online-section">🔑 Rejoindre un monde existant — tape son code :</div>
         <div class="join-row">
           <input id="join-code" maxlength="6" placeholder="12345" inputmode="numeric" autocomplete="off" autocapitalize="characters">
@@ -2609,7 +2620,7 @@
       <div id="room-code-box">
         <div class="online-label">Partage ce code avec ton ami·e :</div>
         <div id="room-code"></div>
-        <button id="online-play-btn">▶ Entrer dans le monde !</button>
+        <button id="online-play-btn">Entrer dans le monde !</button>
       </div>
       <button id="online-back">← Retour</button>
     </div>
@@ -2651,7 +2662,7 @@
       <canvas id="partage-qr" width="440" height="440"></canvas>
       <div id="partage-lien"></div>
       <div class="partage-boutons">
-        <button id="partage-envoyer">📲 Envoyer le lien</button>
+        <button id="partage-envoyer">Envoyer le lien</button>
         <a id="partage-whatsapp" class="partage-lien-app" target="_blank" rel="noopener">💬 WhatsApp</a>
         <a id="partage-sms" class="partage-lien-app">✉️ SMS</a>
       </div>
@@ -2764,7 +2775,7 @@
       <div id="nouveautes-liste"></div>
       <div class="pied">
         <span id="nouveautes-etat"></span>
-        <button id="nouveautes-maj">🔄 Mettre à jour</button>
+        <button id="nouveautes-maj">Mettre à jour</button>
       </div>
     </div>
   </div>

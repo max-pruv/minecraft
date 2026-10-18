@@ -517,7 +517,7 @@ class Bestiole {
     this.cri -= dt;
     if (this.cri <= 0) {
       this.cri = 14 + Math.random() * 34;
-      if (dJoueur < 7) toast(`${this.def.emoji} ${this.def.cri}`, 0xffffff);
+      // Le cri ne passe plus en bandeau (v504).
     }
   }
 

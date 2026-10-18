@@ -1,5 +1,28 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v504 (les
+  icônes et le jeu qui se tait)** — double mesure de la v195, `monte.js`
+  rejouée SEULE sur la branche et sur `origin/main` v502 (`git worktree`).
+  Branche 243 verts, 5 rouges ; `origin/main` 244 verts, 4 rouges. Des deux
+  côtés : « la rue se fabrique par tranches » et « on ne marche pas dans une
+  rue vide ». Branche seule : « un flâneur posé au milieu de la chaussée en
+  sort », « deux voisines d'un convoi gardent leur longueur d'écart »
+  (`minTrace` 3,49) et « au frein à main, les pneus crissent même tout droit »
+  (`droit posees 0`). `origin/main` seul : « à Rome, en biais, passage peint »
+  et « au feu la voiture freine sur plusieurs relevés ». Les deux rouges
+  neufs du portail complet (la visée à 12 s, la monoplace à 9,0 m/s) ne se
+  reproduisent pas rejoués seuls. Toutes des intermittences de la rue déjà
+  déclarées plus bas ; preuve STRUCTURELLE (v291) : la livraison ne touche que
+  le HUD (icônes, `aria-label`, `data-quoi`) et retire des appels à `toast` ;
+  ni `vehicules.js`, ni la circulation, ni les traces, ni le monde ne changent.
+  Portail final, sur le code rebasé sur la v503 : onze suites vertes ;
+  `monte.js` 4 rouges, tous de la liste ci-dessus (flâneur, deux voisines, feu,
+  rue vide) ; `reseau.js` 2 rouges, « deux enfants se retrouvent sans courtier
+  du tout » et, en découlant, « sans courtier, le conducteur voit son passager
+  assis » — la famille du nuage déclarée plus bas. `reseau.js` rejouée SEULE
+  sur la branche : 91 verts, 0 rouge. `net.js` et `relaisnuage.js` n'ont pas
+  bougé.
+
 - [ ] **PORTAIL DE LA v503 (la barre de blocs en bas) : aucun rouge de la
   livraison, double mesure faite.** Au portail (`npm test`, banc chargé :
   pages jusqu'à 68 s pour `__game`), rouges sur `degats.js`, `maj.js`,

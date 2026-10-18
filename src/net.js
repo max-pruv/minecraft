@@ -899,7 +899,6 @@ export class NetSession {
     this.ouvrirRelaisNuage();   // reconstruit le phare, désormais sous notre identifiant
     this.link('ok');
     this.state(`En attente d'un joueur… code : ${this.code}`);
-    this.hooks.toast('👑 Tu deviens l\'hôte : le monde continue !', 0x6ee06e);
   }
 
   scheduleReconnect() {
@@ -1284,7 +1283,6 @@ export class NetSession {
     // tentative de connexion avortée n'est pas un ami qui s'en va.
     if (c.pret) {
       if (this.onLeave) this.onLeave(c.name);
-      else this.hooks.toast(`👋 ${c.name} est parti·e`, 0xcccccc);
     }
     this.state(this.statusText());
     const call = this.calls.get(id);
@@ -1524,7 +1522,6 @@ export class NetSession {
           this.envoyerBrut(conn, { t: 'sync', blocks: this.hooks.world.exportEdits() });
         }
         if (this.onJoin) this.onJoin(entry.name);
-        else this.hooks.toast(`🎉 ${entry.name} a rejoint la partie !`, 0x6ee06e);
         this.state(this.statusText());
         this.playersChanged();
         // On lui donne l'heure tout de suite, sans attendre le prochain
@@ -1635,10 +1632,7 @@ export class NetSession {
       case 'sync': {
         // `msg.chantier`, qu'un ancien hôte envoie encore, est ignoré.
         const applied = this.hooks.world.mergeEdits(msg.blocks);
-        if (applied > 0) {
-          this.hooks.world.saveEdits(); // remote history must survive a reload
-          this.hooks.toast(`🔄 Monde synchronisé (${applied} blocs)`, 0x9fd8e8);
-        }
+        if (applied > 0) this.hooks.world.saveEdits(); // remote history must survive a reload
         break;
       }
       case 'op':
@@ -1795,7 +1789,6 @@ export class NetSession {
     }
     this.micOn = !this.micOn;
     pistes.forEach((t) => { t.enabled = this.micOn; });
-    this.hooks.toast(this.micOn ? '🎤 Micro activé — parlez-vous !' : '🔇 Micro coupé', this.micOn ? 0x6ee06e : 0xcccccc);
     return this.micOn;
   }
 
@@ -1838,9 +1831,6 @@ export class NetSession {
       this.camOn = true;
       this.reconcilierVideo();
       this.veillerSurLaVideo();
-      this.hooks.toast(this.micOn
-        ? '🎥 Caméra et micro activés — coucou !'
-        : '🎥 Caméra activée (sans micro)', 0x6ee06e);
       if (this.onCamChange) this.onCamChange(true);
     } else {
       this.camOn = false;
@@ -1853,7 +1843,6 @@ export class NetSession {
         this.videoStream = null;
       }
       this.annoncerCameraCoupee();
-      this.hooks.toast('📷 Caméra et micro coupés', 0xcccccc);
       if (this.onCamChange) this.onCamChange(false);
     }
     return this.camOn;

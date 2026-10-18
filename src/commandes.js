@@ -8,33 +8,75 @@
 //
 // Aucun import : ce module ne sait rien du monde, il reçoit ce qu'il lui faut.
 
-// Des icônes au trait fin, blanches, sans libellé — retour de Max sur la
-// maquette : « plus de transparence, moins de texte ». Le mot vit dans
-// `aria-label`, jamais sous le bouton.
-const T = (d, w = 1.8) => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+// LES ICÔNES (v504). Max : « les icônes ne sont pas suffisamment claires, le
+// bouton pour voler n'est pas suffisamment clair ». Celles de la v494 étaient
+// au trait fin (1,8 sur 24) : sur le ciel, à la taille d'un pouce, elles se
+// lisaient comme des griffonnages. Ici : un trait ÉPAIS (2,4 à 3), UNE idée
+// par icône, et des aplats là où une silhouette se reconnaît mieux qu'un
+// contour — l'aile de Voler, l'avion qui décolle ou se pose. Tout est dessiné
+// ici, en SVG en ligne : ni police d'icônes, ni réseau (le jeu marche hors
+// ligne), et aucun dessin emprunté (invariant 4). Le mot vit dans
+// `aria-label` et dans `.lb`, jamais sous le bouton.
+const T = (d, w = 2.4) => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+// Une silhouette d'avion vue de dessus, nez en haut, dessinée pour ce jeu.
+const AVION = 'M12 2.6c.9 0 1.5.9 1.5 2V9.4l7 4.2v2.2l-7-2v4.4l2.3 1.8V21L12 20.1 8.2 21v-1.4l2.3-1.8v-4.4l-7 2v-2.2l7-4.2V4.6c0-1.1.6-2 1.5-2z';
+const avion = (angle) => `<path fill="currentColor" stroke="none" transform="translate(12 10) rotate(${angle}) scale(.92) translate(-12 -12)" d="${AVION}"/><path d="M3.5 21h17" stroke-width="2.4"/>`;
 export const ICONES = {
-  menu: T('<path d="M5 8h14M5 16h14"/>', 2),
-  carte: T('<path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6z"/><path d="M9 4v14M15 6v14"/>'),
-  sauter: T('<path d="M12 19V6M6.5 11.5 12 6l5.5 5.5"/>', 2),
-  descendre: T('<path d="M12 5v13M6.5 12.5 12 18l5.5-5.5"/>', 2),
-  voler: T('<path d="M2.5 14.5 21.5 7l-4.5 9-5-2.5-4 4v-5.5z"/>'),
-  construire: T('<path d="M4 8.5 12 4.5l8 4-8 4z"/><path d="M4 8.5v7l8 4 8-4v-7M12 12.5v7"/>'),
-  poser: T('<path d="M12 5v14M5 12h14"/>', 2.2),
-  casser: T('<path d="M14.5 4.5l5 5M4 20l9.5-9.5M10.5 7.5l6 6"/>', 2),
-  frein: T('<circle cx="12" cy="12" r="7.5"/><path d="M12 8.5v4.5M12 16v.01"/>', 2),
-  train: T('<circle cx="12" cy="15" r="4.5"/><path d="M12 4v6.5"/>'),
-  sac: T('<path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'),
-  photos: T('<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="m3.5 16 5-5 4 4 2.5-2.5 5 5"/><circle cx="15.5" cy="9" r="1.4"/>'),
-  photo: T('<rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.5"/><path d="M9 7l1.5-2.5h3L15 7"/>'),
-  ami: T('<circle cx="9" cy="9" r="3.2"/><path d="M3 19c1-3.5 3.5-5 6-5s5 1.5 6 5"/><path d="M16 6.5a3 3 0 0 1 0 5.5M18 14c1.6.6 2.6 2 3 4"/>'),
-  messages: T('<path d="M4.5 5.5h15v10h-9l-4 3.5v-3.5h-2z"/>'),
-  camera: T('<rect x="3" y="7" width="12.5" height="10" rx="2.5"/><path d="m15.5 10.5 5-3v9l-5-3"/>'),
-  apprendre: T('<path d="M3 8l9-4 9 4-9 4z"/><path d="M7 10v4c0 2 2.5 3.5 5 3.5s5-1.5 5-3.5v-4"/>'),
-  reglages: T('<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>'),
-  accueil: T('<path d="M4 11l8-7 8 7v9H4z"/>'),
-  reprendre: T('<path d="M8 5.5v13l11-6.5z"/>', 2),
-  terminer: T('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 2.4),
+  menu: T('<path d="M4 6.5h16M4 12h16M4 17.5h16"/>', 2.6),
+  carte: T('<path d="M8.5 4 3 6.2V20l5.5-2.2 7 2.2L21 17.8V4l-5.5 2.2z"/><path d="M8.5 4v13.8M15.5 6.2V20"/>', 2.2),
+  sauter: T('<path d="M12 16V4.5M6.5 10 12 4.5l5.5 5.5"/><path d="M5 20.5h14"/>', 2.8),
+  descendre: T('<path d="M12 3.5V15M6.5 9.5 12 15l5.5-5.5"/><path d="M5 20.5h14"/>', 2.8),
+  // VOLER : une aile, pleine. Elle ne ressemble à aucun autre bouton du jeu,
+  // et un enfant de sept ans la lit « voler » avant de savoir lire le mot.
+  voler: T('<path fill="currentColor" stroke="none" transform="translate(12 12) scale(1.12) translate(-12 -11)" d="M2.5 9.5C2.5 7 4.5 5.5 7 5.5c5 0 9.5 1 14.5-1.5-1.3 3.4-3.6 5.2-6.6 5.8 1.8.3 3.6.1 5-.5-1.6 2.9-4.3 4.2-7.3 4.5 1.4.5 2.8.6 4.1.3-2.3 2.9-6 4.2-9.6 3.4C4.1 16.8 2.5 13.6 2.5 9.5z"/>'),
+  decoller: T(avion(48)),
+  atterrir: T(avion(132)),
+  frein: T('<circle cx="12" cy="12" r="5.8"/><path d="M12 9.2v3.4M12 15.1v.01"/><path d="M4.4 7.2a9.6 9.6 0 0 0 0 9.6M19.6 7.2a9.6 9.6 0 0 1 0 9.6"/>', 2.4),
+  train: T('<path d="M12 2.8v6.8M8.6 5.8h6.8"/><circle cx="12" cy="15.4" r="5.2"/><circle cx="12" cy="15.4" r="1.5" fill="currentColor" stroke="none"/>', 2.4),
+  construire: T('<path d="M12 3.2 20 7.6l-8 4.4-8-4.4z" fill="currentColor" fill-opacity=".45"/><path d="M12 3.2 20 7.6v8.8L12 20.8l-8-4.4V7.6zM12 12v8.8M4 7.6 12 12l8-4.4"/>', 2.2),
+  poser: T('<path d="M12 4.5v15M4.5 12h15"/>', 3.2),
+  // CASSER : une pioche — le geste qu'un enfant connaît des jeux de blocs.
+  casser: T('<path d="M4.5 19.5 14.6 9.4"/><path d="M8 4.6Q20.2 3.2 19.4 16"/>', 2.8),
+  pause: T('<path d="M8.5 5v14M15.5 5v14"/>', 3),
+  sac: T('<path d="M5.5 9.5h13l-1.2 10.5H6.7z"/><path d="M9 9.5V7a3 3 0 0 1 6 0v2.5"/>', 2.2),
+  photos: T('<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="m3.5 16.5 5-5 4 4 2.5-2.5 5 5"/><circle cx="15.5" cy="9.3" r="1.4" fill="currentColor" stroke="none"/>', 2.2),
+  photo: T('<rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.6"/><path d="M9 7l1.5-2.5h3L15 7"/>', 2.2),
+  ami: T('<circle cx="9" cy="8.8" r="3.3"/><path d="M3 19.5c.9-3.5 3.4-5.3 6-5.3s5.1 1.8 6 5.3"/><path d="M16 5.8a3.1 3.1 0 0 1 0 6M18 14.2c1.7.6 2.6 2.1 3 4.3"/>', 2.2),
+  messages: T('<path d="M4.5 5h15v10.5h-9l-4.5 3.8v-3.8h-1.5z"/>', 2.2),
+  camera: T('<rect x="2.8" y="7" width="12.7" height="10" rx="2.5"/><path d="m15.5 10.6 5.5-3.2v9.2l-5.5-3.2"/>', 2.2),
+  apprendre: T('<path d="M2.8 8.5 12 4.2l9.2 4.3L12 12.8z"/><path d="M6.8 10.6v4.2c0 1.9 2.4 3.4 5.2 3.4s5.2-1.5 5.2-3.4v-4.2"/>', 2.2),
+  reglages: T('<path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.4"/><circle cx="9.5" cy="17" r="2.4"/>', 2.2),
+  accueil: T('<path d="M3.8 11.2 12 4l8.2 7.2V20H3.8z"/><path d="M10 20v-5h4v5"/>', 2.2),
+  reprendre: T('<path d="M8 5v14l11-7z" fill="currentColor"/>', 2),
+  terminer: T('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 2.8),
+  // Les pilules d'action : l'icône dit le geste, le mot qui suit dit quoi.
+  monter: T('<path d="M14 4h5v16h-5"/><path d="M3.5 12H14M10 8l4 4-4 4"/>', 2.4),
+  sortir: T('<path d="M10 4H5v16h5"/><path d="M9 12h11.5M16.5 8l4 4-4 4"/>', 2.4),
+  volant: T('<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="2.2"/><path d="M3.6 10.8h6.4M14 10.8h6.4M12 14.2v6.4"/>', 2.2),
+  piloter: T(`<path fill="currentColor" stroke="none" transform="translate(12 12) rotate(45) scale(.9) translate(-12 -12)" d="${AVION}"/>`),
+  nourrir: T('<path d="M12 8.2c-1.2-1-3-1.4-4.6-.8-2.8 1.1-3.4 4.8-1.8 8.3 1.2 2.7 3.4 5 5.2 4.3.6-.2.9-.4 1.2-.4s.6.2 1.2.4c1.8.7 4-1.6 5.2-4.3 1.6-3.5 1-7.2-1.8-8.3-1.6-.6-3.4-.2-4.6.8z"/><path d="M12 8.2c0-2.2.9-3.7 2.6-4.4"/>', 2.2),
+  emotes: T('<circle cx="12" cy="12" r="8.6"/><path d="M8.3 14.2c2 2.3 5.4 2.3 7.4 0"/><path d="M9 9.6v.6M15 9.6v.6"/>', 2.4),
+  moi: T('<circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>', 2.2),
+  monde: T('<circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2M12 3.4c2.4 2.4 3.6 5.3 3.6 8.6s-1.2 6.2-3.6 8.6c-2.4-2.4-3.6-5.3-3.6-8.6s1.2-6.2 3.6-8.6z"/>', 2),
+  tresor: T('<path d="M3.5 10.5h17V20h-17z"/><path d="M3.5 10.5V9a5 5 0 0 1 5-5h7a5 5 0 0 1 5 5v1.5"/><path d="M10.5 13.5h3v3h-3z" fill="currentColor"/>', 2.2),
+  boussole: T('<circle cx="12" cy="12" r="8.6"/><path d="m15.6 8.4-2 5.2-5.2 2 2-5.2z" fill="currentColor"/>', 2.2),
+  corbeille: T('<path d="M4.5 6.5h15M9.5 6.5V4h5v2.5M6.5 6.5l1 13.5h9l1-13.5"/>', 2.2),
+  partager: T('<path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v8h14v-8"/>', 2.2),
+  melanger: T('<path d="M3.5 7h3.5c4 0 6 10 10 10h3.5M3.5 17h3.5c4 0 6-10 10-10h3.5"/><path d="m18 4 3 3-3 3M18 14l3 3-3 3"/>', 2.2),
+  etincelle: T('<path d="M12 3.5 13.9 10.1 20.5 12l-6.6 1.9L12 20.5l-1.9-6.6L3.5 12l6.6-1.9z" fill="currentColor"/>', 1.6),
 };
+// LA PASTILLE D'UNE LIGNE (v504) : un enfant qui ne lit pas encore bien
+// reconnaît un rond bleu avant un mot (washington.js). Le rond était un
+// emoji ; c'est désormais un disque de la teinte de la ligne.
+const TEINTES_PASTILLE = { '🔵': '#2f6fdc', '🔴': '#d8342c', '🟢': '#1c9a4a', '🟡': '#f2c21b', '🟠': '#e8822a',
+  '⚪': '#f4f4f4', '🟣': '#8a4fd8', '🟤': '#8a5a34', '⚫': '#222' };
+export function pastille(emoji) {
+  const c = TEINTES_PASTILLE[emoji];
+  return c ? `<svg class="ico pastille" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="${c}" stroke="#fff" stroke-width="2.4"/></svg>` : null;
+}
+// L'icône d'une pilule et son mot, en une écriture : le mot reste du TEXTE
+// (des témoins lisent `textContent`), l'icône ne porte aucun caractère.
+export const avecIcone = (cle, mot) => `${ICONES[cle] || cle || ''}<span class="mot">${mot}</span>`;
 
 // Les lignes du menu, dans l'ordre de la maquette. `cible` est le bouton
 // d'avant que la ligne appuie ; `quand` dit si le jeu l'offre en ce moment —
@@ -81,6 +123,12 @@ export function initCommandes(h) {
   icone('#fm-btn', 'frein'); icone('#train-btn', 'train'); icone('#construire-btn', 'construire');
   icone('#construction-fin', 'terminer');
   icone('#poser-btn', 'poser'); icone('#casser-btn', 'casser'); icone('#map-btn', 'carte');
+  // Les petits boutons d'avant, hors de l'écran mais toujours dans la page :
+  // plus un emoji sur un bouton du jeu (v504).
+  icone('#pause-btn', 'pause'); icone('#inv-btn', 'sac'); icone('#settings-btn', 'reglages');
+  icone('#cam-btn', 'camera'); icone('#home-btn', 'accueil'); icone('#chat-btn', 'messages');
+  icone('#emote-toggle', 'emotes'); icone('#mode-btn', 'casser');
+  for (const [sel, cle] of [['.fun-btn[title="Souvenirs"]', 'photos'], ['.fun-btn[title="Photo"]', 'photo']]) icone(sel, cle);
 
   for (const l of LIGNES) {
     if (l.sep) liste.insertAdjacentHTML('beforeend', '<div class="menu-sep"></div>');

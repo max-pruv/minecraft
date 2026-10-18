@@ -848,6 +848,40 @@ transparence, moins de texte ». Cinq règles.
   décision annule « chaque bouton porte son mot » (v265) : c'est Max qui l'a
   prise, sur la maquette.
 
+## Des icônes, pas d'emojis, et un jeu qui se tait (v504) — un message en jeu est une exception déclarée
+
+Max : « les icônes ne sont pas suffisamment claires… enlève les emojis sur les
+boutons… enlève les messages qui s'affichent dans le jeu ». Cinq règles.
+
+- **UN MESSAGE PENDANT LA PARTIE EST UNE EXCEPTION, ET ELLE SE DÉCLARE.** Trois
+  familles seulement : ce que l'invariant 2 impose (le quiz, le parent), ce qui
+  dit QUOI FAIRE quand une action est refusée ou que l'enfant est bloqué, et
+  l'indispensable à plusieurs. Tout le reste — météo, saison, cris, compagnons,
+  panneaux, montées et descentes, GPS, records, arrivées — est retiré. La table
+  `PERMIS` de `tests/fumee.js` compte les `toast(` fichier par fichier : un
+  message neuf s'y déclare avec sa raison, ou il rougit. Le bandeau de lien
+  (`alerte`, état de la connexion) n'est pas un message : il reste.
+- **ON RETIRE L'APPEL, JAMAIS LE MÉCANISME.** `bandeau.js` reste (v285) ; la
+  pluie tombe, les records s'écrivent, la visite d'un monument se compte
+  (`guides.journal`), le poste de l'usine se suit (`__posteUsine`). Un crochet
+  qui portait un message (`say`, `annonce`, `dire`) devient une fonction vide :
+  aucun module ne plante parce qu'il parle à personne.
+- **UNE ICÔNE SE DESSINE ICI, AU TRAIT ÉPAIS.** `ICONES` (commandes.js, sans
+  import) : SVG en ligne, trait de 2,2 au moins sur 24, aplats pour les
+  silhouettes (l'aile de Voler, l'avion qui décolle ou se pose). Ni police
+  d'icônes ni réseau (hors ligne), aucun dessin emprunté (invariant 4). Cette
+  règle annule le « trait fin » de la v494 ; le contraste de la v494 tient.
+- **PLUS UN EMOJI SUR UN BOUTON, ET CE QU'IL IDENTIFIAIT PASSE AU MOT.** Une
+  pilule s'écrit `avecIcone(clé, mot)` : l'icône ne porte aucun caractère, le
+  mot reste du texte. Ce que l'emoji disait (quelle bête, quelle ligne) passe
+  au mot (« Monter · Cheval »), à `data-quoi` (pour les témoins) et à la
+  pastille dessinée de la ligne (`pastille`). Les émotes, qui SONT des emojis,
+  sont l'exception ; ✕ et les flèches typographiques ne sont pas des emojis.
+- **UN TÉMOIN NE LIT PAS UN PICTOGRAMME.** `startsWith('⬇️')`, `includes('🐘')`,
+  `/🟠/` sont devenus `includes('Descendre')`, `quoi === 'elephant'`,
+  `/Orange/.test(quoi)` : on cherche l'emoji retiré dans `tests/` avant de
+  lancer le portail, et l'on repointe vers le mot.
+
 ## La barre de blocs en bas (v503) — une décision de Max annule une règle, et la règle se redit en relatif
 
 Max : « le mode construction, ça va pas du tout. On affiche les briques dans une

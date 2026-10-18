@@ -20,6 +20,75 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v504 — Des icônes claires, et plus de messages pendant le jeu
+
+Deux sujets, deux lignes au journal du jeu, des témoins pour chacun.
+
+**Pourquoi.** Max : « Les icônes ne sont pas suffisamment claires, le bouton
+pour voler n'est pas suffisamment clair, et je veux que tu enlèves aussi les
+emojis sur les boutons. Et je veux aussi que tu enlèves les messages qui
+s'affichent dans le jeu. Quand il écrit des messages, style la météo, etc., tu
+vires tous ces messages-là. » Les icônes de la v494 étaient dessinées au trait
+fin (1,8 sur 24) et se lisaient mal sur le ciel ; Voler était un trait de
+papier plié. Des emojis restaient sur une trentaine de boutons (les pilules
+« 🐴 Monter », « 🚇 Monter à bord », « ⬇️ Descendre », les onglets du sac, la
+carte, les panneaux). Et le jeu parlait sans cesse : 116 appels de bandeau
+— la pluie, la saison, les cris des bêtes, les compagnons, les panneaux des
+monuments et de l'usine, chaque montée et chaque descente, le GPS, les records,
+les arrivées et les départs des amis, l'étiquette de ce qu'on vise.
+
+**Ce que ça change.** Toutes les icônes sont redessinées, en SVG dans le jeu
+(rien à télécharger, rien d'emprunté) : un trait épais (2,2 à 3,2), une idée
+par icône, des aplats pour les silhouettes. Voler est une aile pleine ; aux
+commandes d'un avion, le même bouton montre un avion qui décolle, puis un
+avion qui se pose. Casser est une pioche, Descendre une flèche vers le sol. Les
+pilules portent une icône et un mot (« Monter · Cheval », « Conduire cette
+voiture ») ; la ligne d'un métro garde sa pastille de couleur, dessinée. Plus
+un seul emoji sur un bouton du jeu (les émotes, qui SONT des emojis, mises à
+part). Et le jeu ne parle plus pendant la partie : sur 116 bandeaux, il en
+reste 31 — et seulement ceux-ci, chacun nommé à Max pour qu'il tranche :
+
+- **le quiz et l'espace parent (invariant 2)** : le quiz qui arrive dans une
+  minute, « prépare-toi », les quarante-cinq minutes débloquées par le parent,
+  le code parental incorrect, et la réponse au défi de Cornichon (« Exact ! »,
+  « Presque ! C'était… ») ;
+- **ce qui dit QUOI FAIRE quand c'est refusé ou bloqué** : la voiture devant
+  l'eau (« fais demi-tour »), le vol refusé au volant, l'avion cassé et sa
+  raison, posé sur le ventre (« sors le train »), de l'eau sous l'avion qui se
+  pose, téléporté en pleine mer (« nage jusqu'à la terre »), la voiture en feu
+  ou en panne (« descends »), sorti sain et sauf, la voiture de l'ami cassée, la
+  caméra hors d'une partie en ligne, la caméra refusée, le micro sans caméra,
+  « touche l'écran pour entendre », les alertes refusées ou impossibles, une
+  étendue des graphismes qui attend le prochain lancement, le mode léger après
+  deux plantages, la sauvegarde allégée (la règle « jamais en silence »),
+  l'indice du trésor qu'on vient de demander, le lien à copier ;
+- **l'indispensable à plusieurs** : l'invitation ratée, le cache-cache lancé
+  (« les autres comptent jusqu'à 20 »), « X a repris la partie depuis un autre
+  appareil », et le bandeau de lien (« seul·e dans le monde — donne ce code »,
+  « reconnexion… »), qui n'est pas un message mais un état.
+
+Tout le reste est retiré à l'appel, jamais au mécanisme : `bandeau.js` est là
+pour les exceptions, la pluie tombe toujours, les records s'écrivent toujours,
+la visite d'un monument se compte toujours, le poste de l'usine se suit
+toujours — simplement, rien ne s'affiche.
+
+**Ce qui le prouve.** Six témoins neufs, et des témoins repointés. Dans
+`fumee.js` : aucun message pendant une partie — la pluie et le soleil par le
+vrai minuteur du temps, un GPS lancé et arrêté, une photo, avec le bandeau, le
+grand bandeau et l'étiquette sous surveillance (rouge sur `origin/main` : pas
+de minuteur à forcer, « 🌧️ Il pleut ! ») ; et la table des bandeaux restants,
+fichier par fichier — un `toast(` de plus rougit et nomme son fichier. Dans
+`maj.js`, à la taille de l'iPhone de Max : plus un emoji sur un bouton de la
+page, menu ouvert compris ; chaque bouton rond porte une icône au trait épais
+ou en aplat ; la pilule porte une icône et le nom de la bête ; Voler change
+d'icône au sol, en vol, et la retrouve à pied. Le contraste des commandes
+(3:1 à midi et à minuit, v494) passe tel quel. Les témoins qui lisaient un
+emoji (« ⬇️ », « 🐘 », « 🟠 ») lisent désormais le mot ou `data-quoi` ; ceux qui
+ne lisaient qu'un message retiré (la photo, le panneau du Lincoln, le poste de
+peinture) mesurent l'effet de jeu à la place.
+
+---
+
 ## v503 — Les blocs passent en bas
 
 **Pourquoi.** Max, sur le mode construction : « ça va pas du tout. On affiche
@@ -44,6 +113,8 @@ d'elle le doigt tombe sur le canvas et fait marcher l'enfant, PUIS une case de
 la barre se touche et se choisit ; « Terminer » fait 44 × 44, son mot dans
 `aria-label` et `.lb`, sans rien recouvrir. Le témoin de contraste lit la
 coche à 3:1, midi et minuit. Avant/après : `tests/sonde-construction-bas.cjs`.
+
+---
 
 ## v502 — ✈️ se pose devant, pas derrière
 
@@ -225,6 +296,9 @@ derrière la voiture et lit la projection du milieu de la caisse : −1,17 avant
 −0,29 après (barre 0,9). Et `sonde-captures-camera-volant.cjs` lit dans la
 matrice le flanc que la caméra regarde : virage à gauche → flanc gauche
 (β 10,8°), à droite → flanc droit (β −13°), un seul signe chacun.
+
+---
+
 ## v497 — En « Loin », on voit trois fois plus loin
 
 **Pourquoi.** Max : « Je voudrais que le mode Loin, quand on voit de loin, soit

@@ -256,6 +256,78 @@ function verifier(nom, ok, detail = '') {
       && Number(voix.apres.opacite) > 0.5,
       JSON.stringify(voix));
 
+    // PLUS UN MESSAGE D'AMBIANCE PENDANT UNE PARTIE (v504). Max : « les
+    // messages qui s'affichent dans le jeu, style la météo, tu vires tous ces
+    // messages-là ». On guette le bandeau ET le grand bandeau pendant que le
+    // jeu fait, par ses propres chemins, ce qui parlait le plus : la pluie qui
+    // tombe et qui s'arrête (le minuteur du temps), un GPS qu'on lance et
+    // qu'on arrête, une photo. Rouge sur l'ancien code : « 🌧️ Il pleut ! ».
+    const ambiance = await tab.evaluate(async () => {
+      const g = window.__game;
+      if (!window.__forcerMeteo) return { err: 'pas de minuteur de météo à forcer' };
+      const t = document.getElementById('toast'), grand = document.getElementById('catch-banner');
+      const vus = [];
+      const noter = () => {
+        if (t && Number(getComputedStyle(t).opacity) > 0.05 && t.textContent) vus.push(t.textContent);
+        if (grand && grand.classList.contains('show')) vus.push('grand : ' + grand.textContent.trim());
+        const etiq = document.getElementById('creature-label');
+        if (etiq && getComputedStyle(etiq).display !== 'none') vus.push('étiquette : ' + etiq.textContent);
+      };
+      const obs = new MutationObserver(noter);
+      if (t) obs.observe(t, { childList: true, characterData: true, subtree: true, attributes: true });
+      if (grand) obs.observe(grand, { attributes: true, childList: true, subtree: true });
+      t.style.opacity = '0'; t.textContent = '';
+      const att = (ms) => new Promise((r) => setTimeout(r, ms));
+      const meteo = () => window.__ciel().meteo;
+      const changements = [];
+      for (let k = 0; k < 2; k++) {
+        const avant = meteo();
+        window.__forcerMeteo();
+        const t0 = performance.now();
+        while (meteo() === avant && performance.now() - t0 < 8000) await att(100);
+        changements.push(`${avant}→${meteo()}`);
+        await att(400); noter();
+      }
+      const p = g.player.pos;
+      if (window.__gpsVers) { window.__gpsVers(p.x + 400, p.z + 400, 'Témoin'); await att(400); noter(); }
+      document.getElementById('gps-stop')?.click(); await att(400); noter();
+      document.querySelector('.fun-btn[title="Photo"]')?.click(); await att(600); noter();
+      obs.disconnect();
+      return { running: g.running, changements, vus };
+    });
+    verifier('aucun message d\'ambiance pendant une partie — ni la pluie, ni le soleil, ni le GPS, ni la photo',
+      !ambiance.err && ambiance.running && ambiance.changements.length === 2
+      && ambiance.changements.every((c) => c.split('→')[0] !== c.split('→')[1])
+      && ambiance.vus.length === 0, JSON.stringify(ambiance));
+
+    // ET CE QUI RESTE EST UNE LISTE QU'ON LIT. Les bandeaux gardés sont les
+    // exceptions de Max — le quiz et l'espace parent (invariant 2), ce qui dit
+    // QUOI FAIRE quand une action est refusée, l'indispensable à plusieurs. Un
+    // `toast(` de plus quelque part rougit ce témoin et nomme son fichier : un
+    // message neuf se déclare ici, avec sa raison, ou il ne s'écrit pas.
+    const PERMIS = {
+      'degats3d.js': 1,   // sorti sain et sauf (le feu et la panne passent par `dire`)
+      'education.js': 3,  // le quiz qui arrive (deux), le parent qui débloque
+      'fun.js': 6,        // la voiture de l'ami cassée ; le cache-cache lancé ; l'indice du trésor (deux) ; Cornichon (deux)
+      'main.js': 17,      // l'eau, le vol refusé, l'avion cassé, le ventre, la mer, l'invitation ratée, la caméra hors ligne, le code parental…
+      'net.js': 2,        // le micro sans caméra ; la caméra refusée
+      'partage.js': 2,    // le lien copié, ou le lien à copier
+    };
+    const path = chemin;
+    const dossier = path.join(__dirname, '..', 'src');
+    const compte = {};
+    for (const f of fs.readdirSync(dossier).filter((n) => n.endsWith('.js') && n !== 'bandeau.js')) {
+      // les relais (`(msg, color) => toast(msg, color)`) et la définition du
+      // grand bandeau ne sont pas des messages : seul ce qui porte un texte compte
+      const n = [...fs.readFileSync(path.join(dossier, f), 'utf8').matchAll(/\b(?:toast|grandBandeau)\(\s*([^)\s,]+)/g)]
+        .filter((m) => !['msg', 'm', 'titre'].includes(m[1])).length;
+      if (n) compte[f] = n;
+    }
+    const ecarts = Object.keys({ ...compte, ...PERMIS }).filter((f) => (compte[f] || 0) !== (PERMIS[f] || 0))
+      .map((f) => `${f} : ${compte[f] || 0} écrits pour ${PERMIS[f] || 0} déclarés`);
+    verifier('les seuls bandeaux qui restent sont déclarés, fichier par fichier',
+      ecarts.length === 0, ecarts.join(' · ') || JSON.stringify(compte));
+
     // GRAPHISMES NORMAL / AVANCÉ (v257). Max : « dans les settings, un mode
     // normal ou un mode avancé ». Le réglage est une ligne des Réglages, il
     // bascule au toucher, il vit sur l'appareil, et le jeu le lit (ombres,

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 504,
+    titre: 'Des icônes claires, moins de messages',
+    puces: [
+      'De vraies icônes sur chaque bouton',
+      'Voler se reconnaît à son aile',
+      'Plus de messages pendant le jeu',
+    ],
+  },
+  {
     v: 503,
     titre: 'Les blocs passent en bas',
     puces: [

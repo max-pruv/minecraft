@@ -356,11 +356,7 @@ export class BaseNPC {
     this.speechTimer -= dt;
     if (this.speechTimer <= 0) {
       this.speechTimer = 18 + Math.random() * 22;
-      const dist = this.player.pos.distanceTo(this.pos);
-      if (dist < 9) {
-        const msg = this.phrases[(Math.random() * this.phrases.length) | 0];
-        this.toast(`${this.name} : ${msg}`, 0xffffff);
-      }
+      // Les phrases des compagnons ne passent plus en bandeau (v504).
     }
   }
 

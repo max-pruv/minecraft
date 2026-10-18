@@ -287,11 +287,12 @@ let RAYON = 38;
               if (!best || d < best.d) best = { d: +d.toFixed(1), dy: +(c.y - p.y).toFixed(1) };
             }
           }
-          return { visible, texte: b ? b.textContent : '', best, sim: window.__simL1 };
+          return { visible, texte: b ? b.textContent : '', quoi: b ? b.dataset.quoi || '' : '', pastille: !!(b && b.querySelector('.pastille')), best, sim: window.__simL1 };
         });
         sim = e.sim;
         if (e.best && (!approche || e.best.d < approche.d)) approche = e.best;
-        if (e.visible && /🟡/.test(e.texte)) { vu = true; break; }
+        // la pastille jaune est dessinée depuis la v504 : on lit le nom de la ligne
+        if (e.visible && e.pastille && /ligne 1/.test(e.quoi)) { vu = true; break; }
         await dormir(800);
       }
       verifier('une rame jaune de la ligne 1 se présente, et on propose d\'y monter', vu,
