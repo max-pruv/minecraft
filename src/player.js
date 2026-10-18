@@ -200,7 +200,7 @@ export class Player {
       const choix = pisteVisee(this.pos.x, this.pos.z, this.yaw, this.pilote);
       if (choix) {
         this.approche = { piste: choix.piste, sens: choix.sens, seuil: choix.seuil, phase: 'ralliement', devant: choix.devant };
-        this.sansPiste = 0;
+        this.sansPiste = 0; this.remiseT = 0;
         this.avionEtat = 'atterrissage';
         return 'approche';
       }
@@ -208,7 +208,7 @@ export class Player {
       // premier appui qui ne ferait que parler laisserait croire au bouton
       // cassé (v228) —, et le jeu montre l'aéroport le plus proche (cadran de
       // cap) pour la fois suivante.
-      this.sansPiste = Date.now(); this.approche = null;
+      this.sansPiste = Date.now(); this.approche = null; this.remiseT = 0;
       this.aerodromeVise = aerodromeLePlusProche(this.pos.x, this.pos.z);
       this.avionEtat = 'atterrissage';
       return 'pasDePiste';
@@ -217,7 +217,7 @@ export class Player {
       // remise des gaz : on repart d'où l'on est, nez en l'air
       this.avionEtat = 'decollage'; this.rotationFaite = true; this.avionEnVol = true;
       this.altitudeDecollage = this.pos.y;
-      this.approche = null;
+      this.approche = null; this.remiseT = Date.now();
       return 'remise';
     }
     // au sol, ou encore en train de freiner : pleins gaz, le nez se lèvera
@@ -884,7 +884,7 @@ export class Player {
           (x, y, z) => this.world.isSolid(Math.floor(x), y, Math.floor(z)));
         this.guideApproche = guide;
         if (this.approche.remise) {
-          this.approche.remise = false;
+          this.approche.remise = false; this.remiseT = Date.now();
           if (this.surAvion) this.surAvion('remiseLongue');
         }
         if (this.approche.change) {
@@ -1031,7 +1031,7 @@ export class Player {
           this.avionEtat = 'vol'; this.avionEnVol = true;
           if (this.gaz != null) this.gaz = 1;
           this.vel.y = Math.max(this.vel.y, MONTEE_DECOLLAGE * 0.6);
-          cibleAssiette = ASSIETTE_ROTATION;
+          cibleAssiette = ASSIETTE_ROTATION; this.remiseT = Date.now();
           if (this.surAvion) this.surAvion('remiseDesGaz');
         } else {
           const sol = this.world.sommetColonne(Math.floor(this.pos.x), Math.floor(this.pos.z));

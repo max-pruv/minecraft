@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v516 — L'avion dit vers quelle ville il se pose
+
+**Pourquoi.** Max : « Quand on lance un atterrissage depuis l'avion, ce serait
+bien d'avoir un message qui te dise "atterrissage vers <nom de la ville>",
+quelque part, parce que ce n'est pas très clair aujourd'hui. » Depuis la v502,
+✈️ choisit la piste qu'on vise ; le cadran la nommait par le nom complet de
+l'aérodrome (« Paris–Orly », « Base aérienne de Saint-Dizier »), en petit, et
+rien ne disait qu'une approche avait commencé, ni qu'on remettait les gaz.
+
+**Ce que ça change.** Sous le cadran de cap, une pilule de verre clair, icône
+dessinée et mot : « Atterrissage vers Paris » dès l'appui sur ✈️ et tant que
+dure l'approche ; « Atterrissage sur place » quand aucune piste n'est à portée ;
+« Remise des gaz » quatre secondes quand on remet les gaz (second appui,
+approche trop longue, eau sous l'appareil). Elle s'efface une fois posé. C'est
+un état de l'interface, pas un message éphémère : il dit ce que fait l'avion.
+
+**Ce qui le prouve.** Deux témoins dans `monte.js`, rouges sur l'ancien code
+(pas d'élément `#etat-pose`, pas de `etatDePose`). Dans le jeu, au bouton : le
+texte lu dans le DOM vaut mot pour mot « Atterrissage vers » + la ville de la
+piste que `pisteVisee` choisit, relu à chaque relevé de l'approche, « Remise
+des gaz » au second appui, et plus rien une fois l'avion arrêté — à
+Saint-Dizier et à Orly. Sous node : la pose sur place, la remise, et un nom de
+ville lisible pour chacun des vingt aérodromes.
 ## v515 — À bord du métro, on voit le quai
 
 **Pourquoi.** La revue d'écran de la v506 (lignes 3, 5 et 6) : à bord d'une

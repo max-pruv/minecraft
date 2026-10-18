@@ -8886,28 +8886,86 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         P.avionEtat = 'vol'; P.avionEnVol = true; P.vitesseAvion = P.pilote.max * 0.8; P.yaw = -Math.PI / 4;
         P.touchMove = { f: 0, s: 0 };
         await att(300);
-        document.getElementById('fly-btn').dispatchEvent(new TouchEvent('touchstart', { cancelable: true, bubbles: true }));
+        // « ATTERRISSAGE VERS <VILLE> » (v516) : la piste se choisit à l'appui
+        // par `pisteVisee` ; le nom attendu se lit dans la FICHE de l'aérodrome
+        // (sur l'ancien code, la partie avant le tiret), le texte dans le DOM.
+        const Ap = await import('./src/approche.js');
+        const villeDe = (q) => q.ville || q.nom.replace(/^Base aérienne d(?:e |')/, '').split('–')[0].trim();
+        const lire = () => { const el = document.getElementById('etat-pose');
+          return { t: el ? el.textContent.trim() : '', vu: !!el && getComputedStyle(el).display !== 'none' }; };
+        const appui = () => document.getElementById('fly-btn').dispatchEvent(new TouchEvent('touchstart', { cancelable: true, bubbles: true }));
+        const choix = Ap.pisteVisee ? Ap.pisteVisee(P.pos.x, P.pos.z, P.yaw, P.pilote) : null;
+        const attendu = choix ? 'Atterrissage vers ' + villeDe(choix.piste) : null;
+        appui();
+        await att(600);
+        const pose = { attendu, apresAppui: lire() };
+        if (espece === 'chasseur') {
+          // le second appui remet les gaz, le troisième relance l'approche
+          appui(); await att(600); pose.remise = lire();
+          appui(); await att(600); pose.relance = lire();
+        }
+        let ecarts = 0, lus = 0;
         const t0 = performance.now(), i0 = g.renderer ? g.renderer.info.render.frame : 0;
         let toucher = null, etat = P.avionEtat, phases = new Set();
         while (performance.now() - t0 < 240000) {
           await att(100);
+          if (P.avionEtat === 'atterrissage' && P.approche && !(P.remiseT && Date.now() - P.remiseT < 4000)) {
+            lus++; if (lire().t !== 'Atterrissage vers ' + villeDe(P.approche.piste)) ecarts++;
+          }
           if (P.guideApproche) phases.add(P.guideApproche.phase);
           if (!toucher && (P.avionEtat === 'freinage' || P.avionEtat === 'sol' || P.avionEtat === 'epave')) toucher = { x: P.pos.x, z: P.pos.z, y: P.pos.y };
           etat = P.avionEtat;
           if (toucher && (etat === 'sol' || etat === 'epave')) break;
           if (!P.pilote) break;
         }
+        await att(400);
+        Object.assign(pose, { fin: lire(), lus, ecarts });
         const surPiste = (q) => !!q && pistes.some((pi) => Math.abs(q.z - pi.z) <= pi.demi + 0.5 && q.x >= pi.x0 && q.x <= pi.x1);
         return { toucher, arret: { x: P.pos.x, z: P.pos.z }, etat, pilote: !!P.pilote, phases: [...phases],
           surPisteToucher: surPiste(toucher), surPisteArret: surPiste({ x: P.pos.x, z: P.pos.z }),
           s: Math.round((performance.now() - t0) / 1000), images: g.renderer ? g.renderer.info.render.frame - i0 : null,
-          pistes: pistes.map((pi) => ({ z: pi.z, x0: pi.x0, x1: pi.x1 })) };
+          pistes: pistes.map((pi) => ({ z: pi.z, x0: pi.x0, x1: pi.x1 })), pose };
       }, { espece, cle });
       await apPage.close();
       if (!tab.isClosed()) await banc.ramener(tab);
       verifier(`✈️ en vol près de ${cle} : l'approche assistée pose le ${espece} SUR la piste et l'y arrête`,
         !r.err && r.surPisteToucher && r.surPisteArret && r.etat === 'sol' && r.pilote,
         `${r.err || ''} ${JSON.stringify(r)}`);
+      // CE QUE L'ENFANT LIT EN SE POSANT (v516). Max : « un message qui te dise
+      // atterrissage vers <ville> ». Mot pour mot, dès l'appui, tant que dure
+      // l'approche ; « Remise des gaz » au second appui ; plus rien une fois posé.
+      const ps = r.pose || {};
+      verifier(`✈️ près de ${cle} : « Atterrissage vers <ville> » s'affiche dès l'appui, dure l'approche, et s'efface une fois posé`,
+        !r.err && !!ps.attendu && ps.apresAppui && ps.apresAppui.vu && ps.apresAppui.t === ps.attendu
+          && ps.lus > 0 && ps.ecarts === 0 && ps.fin && !ps.fin.vu
+          && (espece !== 'chasseur' || (ps.remise && ps.remise.vu && ps.remise.t === 'Remise des gaz'
+            && ps.relance && ps.relance.vu && ps.relance.t.startsWith('Atterrissage vers '))),
+        `${r.err || ''} ${JSON.stringify(ps)} · ${r.s} s`);
+    }
+
+    // LES TROIS ÉTATS DE LA POSE, ET UN NOM DE VILLE PAR AÉRODROME (v516), sous
+    // node : la pose sur place sans piste, la remise qui passe devant, et pour
+    // chaque aérodrome un nom qu'un enfant lit (ni tiret, ni « Aéroport », ni
+    // « Base aérienne »). Rouge sur l'ancien code : `etatDePose` n'existe pas.
+    {
+      const src = require('path').join(__dirname, '..', 'src');
+      const Ap = await import(require('url').pathToFileURL(require('path').join(src, 'approche.js')).href);
+      let rp = null;
+      if (Ap.etatDePose) {
+        const pil = { max: 95 };
+        rp = {
+          place: Ap.etatDePose({ pilote: pil, avionEtat: 'atterrissage', approche: null }, 1e6),
+          remise: Ap.etatDePose({ pilote: pil, avionEtat: 'atterrissage', approche: { piste: { ville: 'Rome' } }, remiseT: 1e6 - 1000 }, 1e6),
+          apres: Ap.etatDePose({ pilote: pil, avionEtat: 'vol', remiseT: 1e6 - 9000 }, 1e6),
+          pied: Ap.etatDePose({ pilote: null, avionEtat: 'atterrissage' }, 1e6),
+          villes: [...new Set(Ap.pistesDuMonde().map((q) => q.ville))],
+        };
+      }
+      verifier('✈️ sans piste « Atterrissage sur place », « Remise des gaz » quand on remet les gaz, et chaque aérodrome a un nom de ville lisible',
+        !!rp && rp.place && rp.place.texte === 'Atterrissage sur place' && rp.remise && rp.remise.texte === 'Remise des gaz'
+          && rp.apres === null && rp.pied === null && rp.villes.includes('Paris') && rp.villes.includes('Saint-Dizier')
+          && rp.villes.every((v) => v && !/–|Aéroport|Base aérienne/.test(v)),
+        JSON.stringify(rp));
     }
 
     // ✈️ SE POSE LÀ OÙ L'ON VISE (v502). Max : « quand on clique sur se poser,

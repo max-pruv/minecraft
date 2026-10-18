@@ -47,6 +47,32 @@ export const MONTEE_MAX = 16;    // … et vers le haut
 export const MARGE_RELIEF = 14;  // en ralliement, la hauteur gardée au-dessus du relief
 
 let memo = null;
+// LE NOM QU'UN ENFANT LIT (v516). « Atterrissage vers Paris–Orly » se lit mal à
+// sept ans ; on dit la VILLE. La fiche peut la nommer (`ville`, Roissy, dont le
+// nom ne la dit pas) ; sinon on retire « Base aérienne de » et l'on garde ce qui
+// précède le tiret : « Paris–Orly » → Paris, « Base aérienne de Saint-Dizier »
+// → Saint-Dizier, « Francfort » → Francfort.
+export function villeDeLAerodrome(a) {
+  if (a.ville) return a.ville;
+  return a.nom.replace(/^Base aérienne d(?:e |')/, '').replace(/^Aéroport /, '').split('–')[0].trim();
+}
+
+// CE QUE L'ENFANT LIT PENDANT QU'IL SE POSE (v516). Max : « un message qui te
+// dise atterrissage vers <ville>, parce que ce n'est pas très clair ». Un ÉTAT,
+// pas un bandeau : il dure tant que dure ce qu'il dit, et il dit ce qui se passe
+// vraiment — la piste choisie à l'appui (`pisteVisee`, v502), la pose sur place
+// faute de piste (v261), ou la remise des gaz (second appui, approche trop
+// longue, eau sous l'appareil), affichée `REMISE_AFFICHEE_MS` puis rendue à ce
+// qui suit. Pur, lu par `main.js` et par le témoin.
+export const REMISE_AFFICHEE_MS = 4000;
+export function etatDePose(j, maintenant) {
+  if (!j || !j.pilote) return null;
+  if (j.remiseT && maintenant - j.remiseT < REMISE_AFFICHEE_MS) return { cle: 'remise', texte: 'Remise des gaz' };
+  if (j.avionEtat !== 'atterrissage') return null;
+  if (j.approche && j.approche.piste) return { cle: 'vers', texte: `Atterrissage vers ${j.approche.piste.ville || villeDeLAerodrome(j.approche.piste)}` };
+  return { cle: 'place', texte: 'Atterrissage sur place' };
+}
+
 // LES PISTES DU MONDE, en coordonnées du monde. Une piste est une bande
 // est-ouest (toutes le sont) : son axe `z`, ses deux bouts `x0 < x1`, sa
 // demi-largeur, et `sol`, la cote du bloc de revêtement — l'avion roule à
@@ -57,7 +83,7 @@ export function pistesDuMonde() {
   const out = [];
   for (const a of AEROPORTS) {
     for (const p of pistesDe(a)) {
-      out.push({ cle: a.cle, nom: a.nom, z: a.z + p.z0, x0: a.x - p.ouest, x1: a.x + p.est,
+      out.push({ cle: a.cle, nom: a.nom, ville: villeDeLAerodrome(a), z: a.z + p.z0, x0: a.x - p.ouest, x1: a.x + p.est,
         demi: p.demi, sol: a.sol, cx: a.x, cz: a.z });
     }
   }

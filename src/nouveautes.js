@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 516,
+    titre: 'L\'avion dit où il se pose',
+    puces: [
+      '« Atterrissage vers Paris » en haut',
+      'Ou « Atterrissage sur place »',
+      '« Remise des gaz » s\'il remonte',
+    ],
+  },
+  {
     v: 515,
     titre: 'Assis dans le métro',
     puces: [
@@ -69,7 +78,7 @@ export const NOUVEAUTES = [
     ],
   },
   {
-    v: 506,
+    v: 516,
     titre: 'On vérifie chaque écran',
     puces: [
       'Chaque écran est photographié avant la sortie',
