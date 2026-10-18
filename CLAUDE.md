@@ -1185,6 +1185,24 @@ Max : « le mode Loin n'est pas assez loin ». Trois règles.
   comme la couronne deux sous la fine. `?loin=2560` rend la v504 au sommet
   près.
 
+## La sûreté garde le lointain (v525) — un disjoncteur ne retire que ce qui coûte ce qu'il protège
+
+Max : « on ne voit pas du tout quatre fois plus loin ». Deux règles.
+
+- **AVANT DE CHERCHER POURQUOI UNE FONCTIONNALITÉ NE SE VOIT PAS, ON LIT CE
+  QUE L'APPAREIL JOUAIT.** `journal_appareil` : « Loin » choisi, `moyen` par
+  sûreté depuis la v509 — la couronne (v497, v518) n'avait JAMAIS tourné sur
+  l'iPhone de Max. C'est la régression de réglage de la v291 une fois de plus,
+  et deux livraisons l'ont portée sans que rien ne le dise. La fiche porte
+  désormais `loin` (la portée de la vue).
+- **LA SÛRETÉ DESCEND LES MORCEAUX, PAS LE PAYSAGE.** Sous une étendue
+  choisie, `palierRetenu` garde le `loin` de cette étendue : la couronne lit
+  `terrainHeight` et ne fabrique aucun morceau, et aucun plantage de l'appareil
+  n'a tourné avec elle. Le prix est mesuré (+47 000 triangles, +5,2 Mo à
+  rr 12). Le jour où une étendue gagne un réglage, on se demande s'il coûte ce
+  que la sûreté protège (des morceaux, de la mémoire de façades) ; sinon il
+  survit à la sûreté.
+
 ## Le garde-manger retiré, la minicarte à gauche (v518)
 
 Deux règles.
