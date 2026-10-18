@@ -1179,6 +1179,21 @@ function verifier(nom, ok, detail = '') {
         await att(300);
         const explorer = releve();
         explorer.attendu = Math.round(performance.now() - t0);
+        // EN VOL, MONTER EST AU-DESSUS DE DESCENDRE (v510, Max : « le bouton
+        // pour monter est en bas, et le bouton pour descendre est en haut ») —
+        // à pied ici, en construction plus bas. On prend le vol comme le jeu
+        // (`player.flying`) et l'on attend la classe que main.js pose.
+        const enVol = async (oui) => {
+          P.flying = oui;
+          const tv = performance.now();
+          while (performance.now() - tv < 30000 && document.body.classList.contains('en-vol') !== oui) await att(100);
+          await att(300);
+          return Math.round(performance.now() - tv);
+        };
+        const volMs = await enVol(true);
+        const vol = releve();
+        vol.ms = volMs;
+        await enVol(false);
         // UNE pilule, et son mot tient sur une ligne sans être coupé — y
         // compris le plus long que le jeu écrive à pied.
         const pilules = () => [...document.querySelectorAll('#fun-target button')].filter((b) => vis(b))
@@ -1252,6 +1267,10 @@ function verifier(nom, ok, detail = '') {
         await att(400);
         const construction = releve();
         const n2 = await tap();
+        const volCMs = await enVol(true);
+        const volConstruction = releve();
+        volConstruction.ms = volCMs;
+        await enVol(false);
         // LA BARRE EST EN BAS, ET LE JOYSTICK GARDE LE QUART AU-DESSUS (v503,
         // décision de Max). Trois gestes de l'enfant, dans la même page :
         // le doigt posé dans le quart du joystick tombe sur le canvas (on
@@ -1296,7 +1315,7 @@ function verifier(nom, ok, detail = '') {
         document.getElementById('construction-fin').click();
         await att(300);
         P.pitch = 0;
-        return { vue: [innerWidth, innerHeight], explorer, construction, barre, inventaire, pause, appuis, repris,
+        return { vue: [innerWidth, innerHeight], explorer, construction, vol, volConstruction, barre, inventaire, pause, appuis, repris,
           gestes: { explorer: n1 - n0, construction: n2 - n1 }, enConstruction: C.enConstruction() };
       });
       await cmd.close();
@@ -1339,6 +1358,21 @@ function verifier(nom, ok, detail = '') {
         !r.err && F.w === 44 && F.h === 44 && finCroise.length === 0 && /Terminer/.test(B.finMot || '') && /\|Terminer/.test(B.finMot || '')
         && (!B.finLb || (B.finLb.w <= 2 && B.finLb.h <= 2)),
         `${r.err || ''} ${JSON.stringify({ fin: F, finCroise, mot: B.finMot, lb: B.finLb })}`);
+      // Monter (Sauter, qui fait monter en vol) au-dessus de Descendre : le
+      // HAUT de l'un au-dessus du haut de l'autre, sans dimension (v265) ; et
+      // la même règle que les autres états — rien ne se recouvre, rien dans
+      // le quart du joystick.
+      const ordre = (et) => {
+        const R = (et && et.R) || {}, m = R['jump-btn'], d = R['down-btn'];
+        return { monter: m && m.y, descendre: d && d.y, ok: !!m && !!d && m.y < d.y };
+      };
+      const vo = ordre(r.vol), vc = ordre(r.volConstruction), jv = juge(r.vol), jc = juge(r.volConstruction);
+      verifier(`commandes (${vue.width} × ${vue.height}) : en vol, le bouton qui fait monter est AU-DESSUS de celui qui fait descendre, à pied comme en construction`,
+        !r.err && vo.ok && vc.ok,
+        `${r.err || ''} à pied ${JSON.stringify(vo)} (${r.vol && r.vol.ms} ms) construction ${JSON.stringify(vc)} (${r.volConstruction && r.volConstruction.ms} ms)`);
+      verifier(`commandes (${vue.width} × ${vue.height}) : en vol, rien ne se recouvre ni n'entre dans le quart du joystick, à pied comme en construction`,
+        !r.err && jv.recouvre.length === 0 && jv.joy.length === 0 && jc.recouvre.length === 0 && jc.joy.length === 0,
+        `${r.err || ''} à pied ${JSON.stringify(jv)} construction ${JSON.stringify(jc)}`);
       verifier(`commandes (${vue.width} × ${vue.height}) : toucher l'écran ne casse rien hors construction, et casse en construction`,
         !r.err && r.gestes.explorer === 0 && r.gestes.construction > 0, JSON.stringify(r.gestes));
       if (vue.width === 420) {
