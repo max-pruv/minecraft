@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 525,
+    titre: 'Loin, même par sûreté',
+    puces: [
+      '« Loin » montre enfin l\'horizon lointain',
+      'Même quand le jeu s\'allège par sûreté',
+    ],
+  },
+  {
     v: 522,
     titre: 'Les blocs parlent français',
     puces: [

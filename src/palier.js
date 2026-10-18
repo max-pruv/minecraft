@@ -392,8 +392,21 @@ export function palierRetenu({ choix = null, mesure = null } = {}) {
   // sans issue. Le verdict porte l'étendue sous laquelle ça a planté
   // (`sousChoix`, journal.js) ; il ne s'applique qu'à CE choix-là, et choisir
   // une autre étendue passe toujours devant.
+  //
+  // ET LA SÛRETÉ NE RETIRE PAS LE PAYSAGE LOINTAIN (v519). Max : « on ne voit
+  // pas du tout quatre fois plus loin. » Son journal le dit : « Loin » choisi,
+  // et le jeu joue `moyen` par sûreté depuis la v509 (`bas` avant), donc AUCUNE
+  // couronne — `loin` n'est que dans la fiche `haut`. Depuis la v497 la
+  // couronne n'a jamais tourné sur son iPhone, et elle ne pouvait pas avoir
+  // causé ses plantages : tous datent de la v406 à la v411, avant elle. Elle ne
+  // fabrique aucun morceau (elle lit `terrainHeight`, pure) : un disjoncteur qui
+  // retire des MORCEAUX n'a pas de raison de la retirer avec. On garde donc le
+  // `loin` de l'étendue choisie ; `rr`, la file et la couche HD restent ceux du
+  // cran de sûreté. C'est « un disjoncteur ne coupe pas plus que la panne »
+  // (v509), appliqué à ce qui ne coûte pas de morceaux.
   if (sur && choix && choix !== 'auto' && mesure.sousChoix === choix) {
-    return { nom: sur, source: 'sûreté', sousChoix: choix, mesure, ...PALIERS[sur] };
+    const loin = Math.max(PALIERS[sur].loin || 0, (PALIERS[choix] && PALIERS[choix].loin) || 0);
+    return { nom: sur, source: 'sûreté', sousChoix: choix, mesure, ...PALIERS[sur], ...(loin ? { loin } : {}) };
   }
   if (choix && choix !== 'auto' && PALIERS[choix]) {
     return { nom: choix, source: 'choix', ...PALIERS[choix] };

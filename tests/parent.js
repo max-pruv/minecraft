@@ -304,7 +304,23 @@ async function panneau(p) {
         const ancien = { palier: 'bas', raison: '2 plantages de suite', surete: true, le: 1, sousChoix: 'haut' };
         const rAncien = PAL.palierRetenu({ choix: 'haut', mesure: ancien });
         const rAuto = PAL.palierRetenu({ choix: 'auto', mesure: J.suretePalier(2, null, 'moyen') });
-        verifier('la sûreté descend d’un cran : Loin → Normal → bas, et un ancien « bas sous Loin » se relit Normal',
+        // ET LA SÛRETÉ GARDE LE PAYSAGE LOINTAIN DE L'ÉTENDUE CHOISIE (v519). Max :
+      // « on ne voit pas du tout quatre fois plus loin » — « Loin » choisi, le
+      // jeu en « Normal » par sûreté, donc sans couronne. Les morceaux restent
+      // ceux du cran (rr 12, HD 3) ; la portée, elle, est celle de « Loin ».
+      // Sur l'ancien code : loin 0.
+      {
+        const ancien2 = { palier: 'bas', raison: '2 plantages de suite', surete: true, le: 1, sousChoix: 'haut' };
+        const rs = PAL.palierRetenu({ choix: 'haut', mesure: ancien2 });
+        const g = PAL.reglageDe(rs, true), gN = PAL.reglageDe(PAL.palierRetenu({ choix: 'moyen' }), true);
+        const rAuto2 = PAL.reglageDe(PAL.palierRetenu({ choix: 'auto', mesure: J.suretePalier(2, null, 'moyen') }), true);
+        verifier('sous « Loin », la sûreté garde le paysage lointain et ne rend que des morceaux de « Normal »',
+          !!rs && rs.nom === 'moyen' && g.loin === PAL.PALIERS.haut.loin && g.loin > 0
+            && g.rr === gN.rr && g.file === gN.file && g.hd === gN.hd && g.hdMo === gN.hdMo
+            && gN.loin === 0 && rAuto2.loin === 0,
+          JSON.stringify({ sûreté: g, normal: gN, auto: rAuto2 }));
+      }
+      verifier('la sûreté descend d’un cran : Loin → Normal → bas, et un ancien « bas sous Loin » se relit Normal',
           sh.palier === 'moyen' && bm.palierEnCours === 'moyen' && sm && sm.palier === 'bas' && sm.cran === true
             && !!(rm2 && rm2.nom === 'bas') && sn && sn.palier === 'bas'
             && !!(rAncien && rAncien.nom === 'moyen' && rAncien.source === 'sûreté')
@@ -486,6 +502,17 @@ async function panneau(p) {
         vu.palier === 'moyen' && vu.source === 'sûreté' && vu.etendue === 'haut'
           && !!(vu.aide && vu.aide.includes('Normal') && vu.aide.includes('réessayer')),
         JSON.stringify(vu));
+      // v519 : et la SCÈNE de cette page porte le paysage de « Loin » — les deux
+      // couronnes nommées, le brouillard et le plan lointain reculés. C'est
+      // l'état exact de l'iPhone de Max (journal_appareil, v509 à v512).
+      const scene = await tab.evaluate(() => {
+        const g = window.__game;
+        return { couronnes: ['horizon-loin', 'horizon-tres-loin'].filter((n) => g.scene.getObjectByName(n)),
+          brouillard: Math.round(g.scene.fog.far), planLointain: Math.round(g.camera.far), rr: g.reglageApplique.rr };
+      });
+      verifier('en « Normal » par sûreté sous « Loin », la scène voit quand même jusqu’à 10 240 blocs',
+        scene.couronnes.length === 2 && scene.brouillard >= 10000 && scene.planLointain > scene.brouillard,
+        JSON.stringify(scene));
       await tab.evaluate(() => { localStorage.removeItem('web-minecraft-palier-v2'); localStorage.removeItem('web-minecraft-etendue-v1'); });
     }
     await tab.close();
