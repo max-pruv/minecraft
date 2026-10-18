@@ -1322,7 +1322,8 @@ function verifier(nom, ok, detail = '') {
           caseMin: Math.round(Math.min(cb.width, cb.height)), entieres, deborde, glisse, defile: getComputedStyle(hb).overflowX,
           horsCanvas, marche: +marche.toFixed(2), marcheMs, atteinte, choisie,
           fin: vis(fin), finMot: (fin.getAttribute('aria-label') || '') + '|' + ((fin.querySelector('.lb') || {}).textContent || ''),
-          finLb: vis(fin.querySelector('.lb')) };
+          finLb: vis(fin.querySelector('.lb')), finLbTexte: (fin.querySelector('.lb') || {}).textContent || '',
+          finLbCoupe: (() => { const l = fin.querySelector('.lb'); return !l || l.scrollWidth > l.clientWidth + 0.5; })() };
         document.getElementById('construction-fin').click();
         await att(300);
         P.pitch = 0;
@@ -1357,18 +1358,27 @@ function verifier(nom, ok, detail = '') {
         `${r.err || ''} ${JSON.stringify(co)} ${JSON.stringify(r.construction && r.construction.R)} terminé ${!r.enConstruction}`);
       const B = r.barre || {}, bd = B.bande || {}, F = B.fin || {};
       const R2 = (r.construction && r.construction.R) || {};
-      const finCroise = ['hotbar', 'poser-btn', 'casser-btn', 'jump-btn'].filter((n) => R2[n] && B.fin && croise(B.fin, R2[n]));
-      verifier(`commandes (${vue.width} × ${vue.height}) : en construction, la barre de blocs est EN BAS, sur presque toute la largeur, des cases d'au moins 44 px, et elle défile au doigt`,
-        !r.err && bd.y + bd.h >= r.vue[1] * 0.95 && bd.w >= r.vue[0] * 0.9 && B.caseMin >= 44 && B.entieres >= 6
+      const finCroise = ['hotbar', 'poser-btn', 'casser-btn', 'jump-btn', 'down-btn'].filter((n) => R2[n] && B.fin && croise(B.fin, R2[n]));
+      verifier(`commandes (${vue.width} × ${vue.height}) : en construction, la barre de blocs est EN BAS, sur presque toute la largeur avec « Terminer » au bout, des cases d'au moins 44 px, et elle défile au doigt`,
+        !r.err && bd.y + bd.h >= r.vue[1] * 0.95 && bd.w + (F.w || 0) >= r.vue[0] * 0.9 && B.caseMin >= 44 && B.entieres >= 6
         && (!B.deborde || (B.defile === 'auto' && B.glisse)),
         `${r.err || ''} ${JSON.stringify({ bande: bd, caseMin: B.caseMin, entieres: B.entieres, deborde: B.deborde, defile: B.defile, glisse: B.glisse })}`);
       verifier(`commandes (${vue.width} × ${vue.height}) : en construction, on marche au joystick ET l'on choisit un bloc dans la barre`,
         !r.err && (B.horsCanvas || [1]).length === 0 && B.marche >= 1.2 && B.atteinte && B.choisie,
         `${r.err || ''} ${JSON.stringify({ horsCanvas: B.horsCanvas, marche: B.marche, ms: B.marcheMs, atteinte: B.atteinte, choisie: B.choisie })}`);
-      verifier(`commandes (${vue.width} × ${vue.height}) : « Terminer » est un petit bouton rond, son mot dans aria-label et .lb, et il ne recouvre ni la barre ni Poser/Casser`,
-        !r.err && F.w === 44 && F.h === 44 && finCroise.length === 0 && /Terminer/.test(B.finMot || '') && /\|Terminer/.test(B.finMot || '')
-        && (!B.finLb || (B.finLb.w <= 2 && B.finLb.h <= 2)),
-        `${r.err || ''} ${JSON.stringify({ fin: F, finCroise, mot: B.finMot, lb: B.finLb })}`);
+      // ON SORT PAR LÀ OÙ L'ON EST ENTRÉ (v520, décision de Max) : en
+      // construction, « Terminer » est à l'endroit de Construire — même
+      // colonne, les deux boîtes se recouvrent —, il porte son mot ÉCRIT (pas
+      // seulement dans aria-label), il ne recouvre ni la barre ni Poser,
+      // Casser, Sauter, et l'appuyer fait sortir du mode. Sans dimension.
+      const cons = (r.explorer && r.explorer.R && r.explorer.R['construire-btn']) || null;
+      const colonne = !!cons && !!B.fin && Math.min(cons.x + cons.w, B.fin.x + B.fin.w) > Math.max(cons.x, B.fin.x);
+      const surPlace = !!cons && !!B.fin && croise(cons, B.fin);
+      const motVu = !!B.finLb && B.finLb.w > 12 && B.finLb.h > 6 && /^(Terminer|Fini)$/.test((B.finLbTexte || '').trim()) && !B.finLbCoupe;
+      verifier(`commandes (${vue.width} × ${vue.height}) : en construction, « Terminer » est à la place de Construire, son mot écrit, sans rien recouvrir, et il fait sortir du mode`,
+        !r.err && colonne && surPlace && motVu && /Terminer/.test(B.finMot || '') && finCroise.length === 0
+        && F.w <= r.vue[0] * 0.2 && !r.enConstruction,
+        `${r.err || ''} ${JSON.stringify({ construire: cons, fin: F, colonne, surPlace, finCroise, mot: B.finMot, lb: B.finLb, texte: B.finLbTexte, coupe: B.finLbCoupe, sorti: !r.enConstruction })}`);
       // Monter (Sauter, qui fait monter en vol) au-dessus de Descendre : le
       // HAUT de l'un au-dessus du haut de l'autre, sans dimension (v265) ; et
       // la même règle que les autres états — rien ne se recouvre, rien dans
@@ -1499,10 +1509,10 @@ function verifier(nom, ok, detail = '') {
         const h = g.scene.background.getHexString();
         return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16), a: 1, hex: h };
       };
-      // « Terminer » est une icône depuis la v503 : il se juge à 3:1, comme
-      // les autres boutons ronds.
+      // « Terminer » porte une icône (3:1) ET son mot écrit (4,5:1) depuis la
+      // v520.
       const icones = ['menu-btn', 'map-btn', 'jump-btn', 'fly-btn', 'construire-btn', 'construction-fin'];
-      const textes = [['fun-target button', '#ride-btn'], ['gps', '#gps-texte']];
+      const textes = [['fun-target button', '#ride-btn'], ['gps', '#gps-texte'], ['terminer', '#construction-fin .lb']];
       const out = {};
       for (const [moment, fr] of [['midi', 0.25], ['minuit', 0.75]]) {
         const s = await lire(fr);

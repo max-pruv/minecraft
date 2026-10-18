@@ -1038,7 +1038,8 @@ s'y ajoute le jour où l'on retire la fonctionnalité qu'il nomme.
 
 Max : « le mode construction, ça va pas du tout. On affiche les briques dans une
 toute petite zone. Ça devrait être en bas. Et le bouton terminer prend beaucoup
-trop de place. » Mesuré avant : cases de 30 px dans la file du haut, une pilule
+trop de place. » (La place de « Terminer » a changé en v520, voir la troisième
+règle.) Mesuré avant : cases de 30 px dans la file du haut, une pilule
 « Construction · Terminer » de 188 px. **Cette décision annule celle de la
 v445/v494 pour la barre de blocs** (« en haut, elle mordait le quart du
 joystick »). Trois règles.
@@ -1055,9 +1056,15 @@ joystick »). Trois règles.
   marcher l'enfant. Tout ce qui vivait au ras du bas (Poser, Casser, Sauter,
   Descendre, l'anneau du joystick au repos) monte de `--bande-blocs`. Un
   élément neuf posé en bas en construction se cote sur cette variable.
-- **« TERMINER » EST UN BOUTON ROND À ICÔNE** (une coche, 44 px, en haut au
-  milieu), son mot dans `aria-label` et `.lb` ; il se juge à 3:1 comme les
-  autres icônes. Il garde son id `#construction-fin`.
+- **ON SORT PAR LÀ OÙ L'ON EST ENTRÉ (v520, décision de Max, qui annule le
+  bouton rond à coche en haut au milieu de la v503 : « pas très clair, et mal
+  placé »).** En construction, `#construction-fin` (id gardé, des témoins le
+  touchent) est une tuile claire de 56 px À LA PLACE de Construire, au bout de
+  la barre de blocs : le cube barré d'une croix (`ICONES.terminer`, jamais une
+  coche) et le mot ÉCRIT dessous (`.lb` visible ici, 4,5:1), le mot aussi dans
+  `aria-label`. La barre lui laisse sa place (`--fin-l`) et garde six cases
+  entières à 420 px. Le témoin exige le recouvrement des boîtes avec celle de
+  Construire, sans dimension.
 
 ## On entre dans Sainte-Sophie (v493) — un monument visitable se choisit sur la carte du MONDE
 

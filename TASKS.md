@@ -122,6 +122,38 @@
   5,7 s à s'arrêter pour un arrêt de 5,4 s : une ou deux images pendant tout
   l'arrêt) ; vert aux trois autres. `reseau.js` et `manhattan.js` verts seuls
   des deux côtés.
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v520 (la
+  sortie de construction)** — `monte.js` rejouée SEULE sur la branche et sur
+  `origin/main` v504 (`git worktree`). Branche 241 verts, 7 rouges ;
+  `origin/main` 243 verts, 5 rouges. Des deux côtés : « la rue se fabrique par
+  tranches », « au feu la voiture freine… au lieu de piler » et « on ne marche
+  pas dans une rue vide ». Branche seule : « deux voisines d'un convoi gardent
+  leur longueur d'écart » (`minTrace` 3,99, déjà vu en v504), « la recharge à
+  l'arrivée garde la cadence » (rapport 0,59), « l'écran ne se fige pas en
+  arrivant sur une ville », « au-dessus d'une ville aussi, le monde se charge »
+  (Paris@120 trou 16). `origin/main` seul : « passage peint à Londres » et
+  « l'approche assistée pose l'avion de ligne à Orly ». Au portail complet,
+  « un passant lancé sur la voiture la contourne » (9 traversées sur 10) et
+  « feux de détresse » (`clignote` faux) étaient rouges aussi. Preuve
+  STRUCTURELLE que la v520 n'y est pour rien : `monte.js` n'entre jamais en
+  construction, la tuile `#construction-pill` et `--fin-l` n'existent qu'en
+  construction, et `commandes.js` ne change qu'un tracé SVG. Distribution de
+  cadence et de circulation, à démonter par une sonde par témoin (v223).
+  Second portail (après rebase sur la v506) : `maj.js`, `carte.js`,
+  `reglages.js`, `manhattan.js` rouges aussi. Rejouées SEULES des deux côtés
+  (deux fois pour `maj.js`) : `carte.js` identique (flèche du GPS ; fond de
+  carte à froid 500 ms branche contre 639 sur `origin/main`, borne 400) ;
+  `maj.js` meurt tôt des deux côtés sur des délais de `banc.joueur`, et rend
+  les MÊMES rouges sur `origin/main` v506 : « une installation qui ne finit
+  jamais » et « le loader s'efface » (86 s main, 82 et 110 s branche),
+  « revenir dans l'application recharge sur la version neuve » (1 fois sur 2
+  chaque côté). Le diff de `sw.js` n'est que le numéro de version. Les
+  témoins de construction de la v520 ont été verts aux deux portails.
+  Après rebase sur la v516, deux portails de plus sur un banc dégradé
+  (délais de 90 s à l'ouverture, une tâche de 19,7 s sur le fil) : `maj.js`
+  meurt avant ses témoins de commandes. La fumée rejouée seule est verte sur
+  la branche (35) et rend 1 rouge sur `origin/main` ; le bloc « commandes »
+  de `maj.js` extrait et joué à part : 25 verts sur 25, aux deux tailles.
 
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v504 (les
   icônes et le jeu qui se tait)** — double mesure de la v195, `monte.js`

@@ -57,7 +57,9 @@ export const ICONES = {
   reglages: T('<path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.4"/><circle cx="9.5" cy="17" r="2.4"/>', 2.2),
   accueil: T('<path d="M3.8 11.2 12 4l8.2 7.2V20H3.8z"/><path d="M10 20v-5h4v5"/>', 2.2),
   reprendre: T('<path d="M8 5v14l11-7z" fill="currentColor"/>', 2),
-  terminer: T('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 2.8),
+  // Sortir de la construction : le cube de Construire, barré d'une croix —
+  // on sort par le bouton par lequel on est entré (v520), plus une coche.
+  terminer: T('<path d="M10 2.4 16.8 6.2v7.6L10 17.6l-6.8-3.8V6.2z" fill="currentColor" fill-opacity=".25"/><path d="M10 2.4 16.8 6.2v7.6L10 17.6l-6.8-3.8V6.2zM10 10v7.6M3.2 6.2 10 10l6.8-3.8"/><circle cx="17.6" cy="17.6" r="5.6" fill="currentColor" stroke="none"/><path d="M15.4 15.4l4.4 4.4M19.8 15.4l-4.4 4.4" stroke="#fff" stroke-width="2.2"/>', 2.2),
   // Les pilules d'action : l'icône dit le geste, le mot qui suit dit quoi.
   monter: T('<path d="M14 4h5v16h-5"/><path d="M3.5 12H14M10 8l4 4-4 4"/>', 2.4),
   sortir: T('<path d="M10 4H5v16h5"/><path d="M9 12h11.5M16.5 8l4 4-4 4"/>', 2.4),

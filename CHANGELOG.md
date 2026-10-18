@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v520 — On finit de construire là où l'on a commencé
+
+**Pourquoi.** Max, sur iPhone : « Quand on est en mode builder, le bouton avec
+une espèce de checkbox pour sortir du mode est en haut à droite. C'est vraiment
+pas très clair. Et mal placé. » La v503 avait remplacé la pilule « Construction
+· Terminer » (188 px) par un bouton rond à coche de 44 px, en haut au milieu de
+l'écran — loin du pouce, et une coche qui ne dit pas « sortir ».
+
+**Ce que ça change.** On sort par là où l'on est entré. En construction, le
+bouton Construire (le cube, en bas à droite) devient une tuile claire « Terminer »
+au même endroit, au bout de la barre de blocs : le cube barré d'une croix, et le
+mot écrit dessous. 56 px de large. La coche du haut de l'écran disparaît ; la
+barre de blocs garde six cases entières, Poser, Casser et Sauter ne bougent pas.
+
+**Ce qui le prouve.** Le témoin des commandes de `maj.js` est réécrit, sans
+dimension, aux deux tailles (420 × 760 et l'iPhone de Max, 430 × 932) : la sortie
+est dans la colonne de Construire et leurs boîtes se recouvrent, son mot est
+visible et entier, elle ne recouvre ni la barre ni Poser, Casser, Sauter,
+Descendre, et l'appuyer fait sortir du mode. Sur l'ancien code, mesuré par la
+sonde `sonde-construction-bas.cjs` : la sortie était en (196, 92), Construire en
+(366, 860), le mot caché — rouge. Le témoin de contraste lit le mot à 4,5:1 de
+jour et de nuit. Captures avant/après dans la PR. Portail : cinq suites vertes,
+`monte.js` rouge de conduite et de cadence. Rejouée seule des deux côtés, elle
+rend 5 défauts sur `origin/main` et 7 sur la branche, dont deux identiques, et
+cette suite n'entre jamais en construction, où seule la tuile existe. Ce sont
+des intermittences déclarées dans `TASKS.md`.
 ## v519 — Les feux de détresse sur la carrosserie
 
 **Pourquoi.** Max, capture d'iPhone à Lille, de nuit, derrière une voiture de
