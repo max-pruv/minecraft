@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 526,
+    titre: 'De beaux arbres, même au loin',
+    puces: [
+      'Plus d\'arbres en cubes au loin',
+      'Chaque arbre garde sa forme et sa couleur',
+      'Le jeu reste aussi léger',
+    ],
+  },
+  {
     v: 522,
     titre: 'Les blocs parlent français',
     puces: [

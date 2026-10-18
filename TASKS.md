@@ -1,5 +1,16 @@
 # Ce qui est en cours
 
+- [ ] **Les arbres beaux partout (v519) : ce qui reste.** (1) Au bord du
+  disque chargé, la part de couronne d'un arbre dont la base est dans un
+  morceau pas encore maillé manque (ses cubes se taisent dans le voisin) —
+  dans le brouillard, mais à regarder en vol rapide. (2) Le paysage lointain
+  (horizon.js) n'a aucun arbre : une forêt au-delà des morceaux maillés est
+  une prairie verte ; des silhouettes instanciées par `treeAt` y seraient la
+  suite. (3) Le palier bas et le rendu logiciel gardent les cubes (pas de
+  couche HD). (4) Coût worker de la reconnaissance partout : +0,3 ms par
+  morceau aux tropiques, +0,6 en taïga (mesuré sous node, rr 12) — à relire
+  sur l'iPhone (`?diag=1`, débit de maillage en vol au-dessus d'une forêt).
+
 ## LES ROUGES DU PORTAIL DE LA v522 — intermittents de `monte.js`, aucun causé par la livraison
 
 La v522 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le
