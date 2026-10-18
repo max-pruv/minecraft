@@ -20,6 +20,60 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v509 — Les arbres reviennent, et les records de course comptent juste
+
+Deux sujets, deux décisions que Max a déléguées (« sur les décisions fais au
+mieux »).
+
+### La sûreté du palier descend d'un cran, pas au fond
+
+**Pourquoi.** Max : « les arbres ont pas changé ». Lu dans le journal de bord :
+son iPhone était au palier « bas », source « sûreté », sous l'étendue « Loin »
+— il y avait planté deux fois de suite. Le disjoncteur de la v296 rangeait
+alors le palier le plus bas, `hd 0` : ni les vrais arbres (v499), ni les
+façades de Paris, ni la couronne lointaine (v497), depuis au moins la v473. Et
+rien ne le lui disait au bon endroit.
+
+**Ce que ça change.** Deux plantages de suite sous une étendue choisie font
+descendre d'UN cran depuis le palier qui tournait : Loin → Normal, Normal →
+bas ; sous « Auto », rien ne change. Le compte des plantages repart de zéro au
+palier neuf. Un ancien verdict « bas sous Loin » se relit comme Normal :
+l'iPhone de Max retrouve les arbres sans rien toucher. Dans les Réglages, la
+rangée de l'étendue le dit en premier, avec le geste : « Touche « Loin » pour
+réessayer, ou garde ça » — et retoucher l'étendue lève la sûreté.
+
+**Ce qui le prouve.** Deux témoins neufs dans `parent.js` : la règle pure
+(Loin → Normal → bas, « Auto » → bas, un ancien verdict relu Normal, le
+palier qui tournait lu dans la fiche du journal), et la situation exacte de
+l'appareil — verdict rangé avant la v509, étendue « Loin », rechargement : le
+jeu joue Normal et l'aide des Réglages dit quoi faire. Le témoin de la v299
+suit la règle (« un cran dessous »).
+
+### Les records de course d'avant la v483
+
+**Pourquoi.** Jusqu'à la v483, le chronomètre de la course du parc comptait en
+temps de jeu : sur une tablette qui ramait, un record pouvait valoir le quart
+du temps couru (mesuré 2,3 s pour 8,6 s). Ces records ne se battent pas.
+
+**Ce que ça change.** On n'efface rien : l'ancien record est gardé à part
+(`courseVieuxChrono`, « ancien record, vieux chrono »), et le record à
+battre repart de la première course chronométrée juste. La migration est
+pure et idempotente, appliquée au stockage au chargement et à chaque document
+reçu du nuage — une tablette restée en arrière qui republie l'ancien champ le
+voit rangé à part. Le prix déclaré : une course gagnée entre la v483 et la
+v503 était déjà juste, et devient « ancienne ».
+
+Aucun écran ne montre les records depuis la v255, et les messages en jeu
+sont partis en v504 : l'ancien record est donc gardé, pas encore affiché —
+déclaré dans `TASKS.md`.
+
+**Ce qui le prouve.** Un témoin neuf dans `sauvegarde.js` : un document du
+nuage tel qu'une ancienne tablette l'écrirait garde l'ancien record à part, le
+record juste reste celui à battre, la migration est idempotente, et un ancien
+champ encore rangé sur l'appareil ne fait pas relancer la page.
+
+---
+
 ## v508 — La carte du monde passe au verre clair, et rien ne la recouvre
 
 **Pourquoi.** La revue d'écran (v506) a relevé trois défauts autour de la carte

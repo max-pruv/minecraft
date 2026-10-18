@@ -367,7 +367,19 @@ export const ETENDUES = [
 // n'est pas perdue pour autant — `?diag=1` la dit, et l'aide des Réglages
 // propose à Max de choisir « Loin » lui-même. La mesure ne décide plus, elle
 // propose : c'est sa décision de la v290, appliquée au palier qu'elle a livré.
+// UN ANCIEN VERDICT DE SÛRETÉ SE RELIT UN CRAN SOUS SON ÉTENDUE (v509) : avant
+// la v509, deux plantages sous « Loin » rangeaient `bas` — le fond, `hd 0` —
+// là où la règle donne désormais « Normal ». Sans le drapeau `cran` (posé par
+// `suretePalier`, journal.js), un `bas` sous « Loin » se lit `moyen` : l'iPhone
+// de Max retrouve les arbres sans rien toucher. Deux plantages de suite sous
+// Normal le redescendent à `bas`, et ce verdict-là porte `cran`.
+export function palierDeSurete(mesure) {
+  if (!mesure || !mesure.surete) return null;
+  if (!mesure.cran && mesure.palier === 'bas' && mesure.sousChoix === 'haut') return 'moyen';
+  return PALIERS[mesure.palier] ? mesure.palier : null;
+}
 export function palierRetenu({ choix = null, mesure = null } = {}) {
+  const sur = palierDeSurete(mesure);
   // LA SÛRETÉ PASSE DEVANT L'ÉTENDUE CHOISIE QUAND C'EST SOUS ELLE QUE LE JEU
   // EST MORT (v299). La v296 faisait du choix la porte de sortie de tout
   // réglage automatique — et c'est juste — mais l'iPhone de Max est mort deux
@@ -376,8 +388,8 @@ export function palierRetenu({ choix = null, mesure = null } = {}) {
   // sans issue. Le verdict porte l'étendue sous laquelle ça a planté
   // (`sousChoix`, journal.js) ; il ne s'applique qu'à CE choix-là, et choisir
   // une autre étendue passe toujours devant.
-  if (mesure && mesure.surete && choix && choix !== 'auto' && mesure.sousChoix === choix && PALIERS[mesure.palier]) {
-    return { nom: mesure.palier, source: 'sûreté', sousChoix: choix, mesure, ...PALIERS[mesure.palier] };
+  if (sur && choix && choix !== 'auto' && mesure.sousChoix === choix) {
+    return { nom: sur, source: 'sûreté', sousChoix: choix, mesure, ...PALIERS[sur] };
   }
   if (choix && choix !== 'auto' && PALIERS[choix]) {
     return { nom: choix, source: 'choix', ...PALIERS[choix] };
@@ -387,8 +399,8 @@ export function palierRetenu({ choix = null, mesure = null } = {}) {
   // la mesure — qui n'a jamais pu se faire, puisque l'appareil meurt avant
   // ses trente secondes — et derrière le choix de l'étendue, qui reste la
   // porte de sortie de tout réglage automatique (v290, v291).
-  if (mesure && mesure.surete && PALIERS[mesure.palier]) {
-    return { nom: mesure.palier, source: 'sûreté', mesure, ...PALIERS[mesure.palier] };
+  if (sur) {
+    return { nom: sur, source: 'sûreté', mesure, ...PALIERS[sur] };
   }
   if (mesure && PALIERS[mesure.palier] && !PALIERS[mesure.palier].surChoixSeulement) {
     return { nom: mesure.palier, source: 'mesure', mesure, ...PALIERS[mesure.palier] };

@@ -48,7 +48,9 @@ async function mesurerMinuteurs(page, { fenetre = 12000, course = 8000 } = {}) {
         P.pos.set(q.x + 0.5, y + 1.05, q.z + 0.5);
       };
       const cleRec = 'web-minecraft-records-v1';
-      const recordAvant = (() => { try { return JSON.parse(localStorage.getItem(cleRec) || '{}').bestRace || 0; } catch { return 0; } })();
+      // `courseJuste` depuis la v509 (le record à battre), `bestRace` avant.
+      const lireRec = () => { const o = JSON.parse(localStorage.getItem(cleRec) || '{}'); return o.courseJuste ?? o.bestRace; };
+      const recordAvant = (() => { try { return lireRec() || 0; } catch { return 0; } })();
       poser(depart);
       // départ : le jeu le voit à l'image suivante (on attend, borné à 6 s)
       let tA = null, cA = null;
@@ -71,7 +73,7 @@ async function mesurerMinuteurs(page, { fenetre = 12000, course = 8000 } = {}) {
       let record = null;
       while (performance.now() - ta < 6000) {
         poser(arrivee);
-        try { const r = JSON.parse(localStorage.getItem(cleRec) || '{}').bestRace; if (r && r !== recordAvant) { record = r; break; } } catch { /* rien */ }
+        try { const r = lireRec(); if (r && r !== recordAvant) { record = r; break; } } catch { /* rien */ }
         await att(100);
       }
       const tFin = performance.now();
