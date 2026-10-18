@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v515 — À bord du métro, on voit le quai
+
+**Pourquoi.** La revue d'écran de la v506 (lignes 3, 5 et 6) : à bord d'une
+rame, la caméra était posée à hauteur d'un enfant DEBOUT sur sa place
+(1,62 bloc au-dessus de l'assise), soit 2,72 blocs au-dessus de la voie pour
+un toit à 2,35 — on voyait le toit de la rame et un plafond de pierre, jamais
+le quai. La pilule « Descendre du métro Bl… » coupait le nom de la ligne, qui
+était tout son sens ; et Voler, Construire et Sauter restaient affichés dans
+une rame où ils n'ont rien à faire. Les trains intervilles passent par le même
+convoi (`vehicules.metro`) : mêmes défauts.
+
+**Ce que ça change.** Dans le métro et dans le train, l'enfant est assis dans
+la voiture, à hauteur du bandeau vitré, et regarde dans le sens de la marche :
+il voit le quai et le paysage par la fenêtre. Dans les courbes, son regard
+tourne avec la rame (ce qu'il a tourné lui-même reste à lui) : sans cela, à
+Washington, il finissait le nez dans la vitre en six secondes. La pilule dit « Descendre » avec
+la pastille de couleur de la ligne (le nom complet seulement s'il tient). Les
+boutons de la marche se cachent à bord, comme au volant.
+
+**Ce qui le prouve.** Trois témoins neufs dans le passage de la porte de rame
+(`sonde-porte-rame.cjs`, lu par `monte.js`), rouges sur `origin/main` : la
+caméra est dans le volume de la voiture et regarde dans son axe (2,72 contre un
+toit à 2,35 avant, 1,75 ici ; alignement 1,00 — et 0,94 à 1,00 dans une courbe
+de Washington, mesuré à la sonde, contre 0,86 → 0,22 sans le suivi du cap), les quatre boutons sont cachés (Voler, Construire et Sauter
+visibles avant — et le témoin vérifie qu'il voit bien Voler à pied), la pilule
+n'est pas tronquée (225 px de texte dans 205 avant). Captures de la revue
+d'écran, métro, iPhone et iPad, jour et nuit, avant et après dans la PR.
+
+Le portail complet a rendu cinq suites rouges, toutes sur des témoins de
+cadence ou des dettes déjà déclarées dans `TASKS.md`. `monte.js`, rejouée
+SEULE des deux côtés (règle v195) : 3 rouges sur la branche, 5 sur
+`origin/main`, la même famille d'intermittences de la rue (passage peint de
+Rome, rue vide, voitures l'une dans l'autre ou freinage au feu selon le
+passage). Aucun ne lit la rame, ses boutons ou `place()`.
+
+---
+
 ## v514 — Le bouton du train d'atterrissage est une roue
 
 **Pourquoi.** Max, sur iPhone, aux commandes d'un avion : « le bouton du train

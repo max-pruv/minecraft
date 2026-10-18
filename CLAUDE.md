@@ -2970,6 +2970,27 @@ un arrêt tous les vingt blocs et douze secondes de pause (v233). Elle est lue
 par `monte.js`, donc elle n'est pas isolée (`sondeIsolee`) : la retoucher
 rejoue le portail entier.
 
+**À bord, l'œil est dans la voiture (v507).** La caméra suivait
+`eyePosition()` — un enfant debout, 1,62 au-dessus de l'assise — donc 2,72 au-
+dessus de la voie pour une rame dont le toit est à 2,35 : la revue d'écran
+voyait le toit, jamais le quai. Trois règles. **CE QUI PORTE UN VOYAGEUR DIT OÙ
+SONT SES YEUX** : `oeil` dans les options du convoi (`OEIL_RAME`, le milieu du
+bandeau vitré de `construireRame`), rendu par `place()`, appliqué dans
+`updateBord` — l'habitacle d'une voiture (v230), du côté d'une rame ; sans
+`oeil` (la monoplace, à ciel ouvert), rien ne change. **ET LE REGARD TOURNE
+AVEC LA CAISSE** : un cap posé une fois à la montée dérive dans la première
+courbe (0,86 → 0,22 d'alignement en six secondes à Washington, nez dans la
+vitre) ; `updateBord` ajoute au regard ce que `capCaisse` a tourné, et ce que
+l'enfant a tourné lui-même lui reste. Le premier témoin, sur une ligne droite,
+ne pouvait pas le voir — c'est la capture qui l'a montré. Le métro et les trains
+intervilles passent par `vehicules.metro` : un remède, les deux. **À BORD EST UN
+ÉTAT DU CORPS** : `a-bord` (posé par `majBoutonsVehicule`, lu sur
+`fun.bordDe()`) cache la marche comme `en-vehicule`, sans le frein à main.
+**UN TÉMOIN DE BOUTON NE LIT PAS `offsetParent`** : il vaut `null` pour tout
+élément `position: fixed`, et le premier témoin déclarait cachés des boutons
+affichés. Il lit la boîte, montre l'interface tactile que le banc de bureau
+masque, et vérifie d'abord qu'il voit Voler à pied.
+
 ## L'arrivée n'engendre plus le monde (v472) — sur le fil principal, on lit ce qui est là, on ne le fabrique pas
 
 Trois règles.
