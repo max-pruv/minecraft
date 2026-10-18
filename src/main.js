@@ -24,7 +24,7 @@ import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
 import { cadran, cadranVers, distanceLisible } from './cap.js';
-import { D_ENTREE } from './approche.js';
+import { D_ENTREE, etatDePose } from './approche.js';
 import { guidage, arriveEntre, nomDestination, rotationContinue, repereMinicarte, ARRIVEE } from './gps.js';
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, optionsMetro, HORAIRE_METRO, circuitsWashington } from './washington.js';
@@ -2951,6 +2951,24 @@ function majBoutonsVehicule() {
     if (ic) ic.innerHTML = motTrain === 'SORTI' ? ICONES.train : ICONES.trainRentre;
   }
   majCadranDeCap();
+  majEtatDePose();
+}
+
+// CE QUE L'AVION EST EN TRAIN DE FAIRE QUAND IL SE POSE (v516). Max :
+// « un message qui te dise atterrissage vers <ville> ». Un ÉTAT de la file du
+// centre, sous le cadran — pas un bandeau : il dure tant que dure l'approche
+// (règle pure, `etatDePose`, approche.js). Icône dessinée et mot, jamais
+// d'emoji (v504) ; le DOM ne s'écrit que quand le texte change (v263).
+const etatPoseEl = document.getElementById('etat-pose');
+let etatPoseTexte = null;
+function majEtatDePose() {
+  const e = etatDePose(player, Date.now());
+  const texte = e ? `${e.cle}|${e.texte}` : '';
+  if (texte === etatPoseTexte) return;
+  etatPoseTexte = texte;
+  etatPoseEl.classList.toggle('visible', !!e);
+  etatPoseEl.dataset.quoi = e ? e.cle : '';
+  etatPoseEl.innerHTML = e ? `${e.cle === 'remise' ? ICONES.decoller : ICONES.atterrir}<span class="mot">${e.texte}</span>` : '';
 }
 window.__majBoutonsVehicule = majBoutonsVehicule;
 

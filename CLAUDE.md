@@ -938,7 +938,14 @@ boutons… enlève les messages qui s'affichent dans le jeu ». Cinq règles.
   familles seulement : ce que l'invariant 2 impose (le quiz, le parent), ce qui
   dit QUOI FAIRE quand une action est refusée ou que l'enfant est bloqué, et
   l'indispensable à plusieurs. Tout le reste — météo, saison, cris, compagnons,
-  panneaux, montées et descentes, GPS, records, arrivées — est retiré. La table
+  panneaux, montées et descentes, GPS, records, arrivées — est retiré.
+  **Un ÉTAT affiché n'est pas un message (v516)** : la pilule `#etat-pose`
+  (« Atterrissage vers <ville> », « Atterrissage sur place », « Remise des
+  gaz »), décision de Max, dit ce que fait l'avion tant qu'il le fait, sous le
+  cadran dans `#file-centre`. Sa règle est pure (`etatDePose`, approche.js) ;
+  la ville se lit dans la fiche de l'aérodrome (`ville`, ou le nom avant le
+  tiret, `villeDeLAerodrome`). Un état neuf de ce genre se range là, jamais en
+  `toast(`. La table
   `PERMIS` de `tests/fumee.js` compte les `toast(` fichier par fichier : un
   message neuf s'y déclare avec sa raison, ou il rougit. Le bandeau de lien
   (`alerte`, état de la connexion) n'est pas un message : il reste.

@@ -815,6 +815,17 @@
       pointer-events: none; font-weight: bold;
     }
     body.en-avion #cap-avion { display: block; }
+    /* CE QUE L'AVION FAIT QUAND IL SE POSE (v516) : « Atterrissage vers Lyon »,
+       « Atterrissage sur place », « Remise des gaz ». Un état, rangé dans la
+       file du centre sous le cadran : rien ne le recouvre, et il reste hors du
+       quart du joystick (v272). */
+    #etat-pose {
+      display: none; align-items: center; gap: 8px; color: #fff; text-shadow: 1px 1px 0 #000;
+      background: rgba(0,0,0,0.5); border-radius: 18px; padding: 5px 14px; font-weight: bold; font-size: 16px;
+      white-space: nowrap; pointer-events: none;
+    }
+    body.en-avion #etat-pose.visible { display: flex; }
+    #etat-pose .ico { width: 22px; height: 22px; flex: none; }
     /* LE GPS (v306) : quand une destination est choisie, une flèche qui dit
        où tourner, le nom et la distance, et ✕ pour arrêter. En haut au
        milieu ; aux commandes d'un avion, sous le cadran de cap. */
@@ -893,7 +904,7 @@
       position: static !important; transform: none !important; max-width: 100%; box-sizing: border-box;
       pointer-events: auto;
     }
-    #file-centre > #toast, #file-centre > #cap-avion { pointer-events: none; }
+    #file-centre > #toast, #file-centre > #cap-avion, #file-centre > #etat-pose { pointer-events: none; }
     #creature-label {
       display: none; position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
       font-size: 15px; font-weight: bold; text-shadow: 1px 1px 0 #000;
@@ -2246,7 +2257,7 @@
     body.hud-simple #gaz-fill { background: rgba(232, 86, 42, 0.78); }
 
     /* LES PILULES DU HAUT : GPS et cadran de cap, sur une ligne. */
-    body.hud-simple #gps, body.hud-simple #cap-avion {
+    body.hud-simple #gps, body.hud-simple #cap-avion, body.hud-simple #etat-pose {
       background: var(--hud-pilule); color: var(--encre, #111A2E); text-shadow: none;
       border: 1px solid rgba(255, 255, 255, 0.95); border-radius: 20px; white-space: nowrap;
       font-family: var(--corps, system-ui, sans-serif);
@@ -2273,6 +2284,8 @@
     body.hud-simple #gps-stop { width: 30px; height: 30px; border-radius: 15px; border: 0;
       background: rgba(17, 26, 46, 0.08); color: var(--encre, #111A2E); }
     body.hud-simple #cap-avion { padding: 6px 14px 7px; }
+    body.hud-simple #etat-pose { font-size: 15px; padding: 6px 14px; }
+    body.hud-simple #etat-pose .ico { color: var(--corail-texte, #B83B16); }
     body.hud-simple #cap-degres, body.hud-simple #cap-ville { display: inline; font-size: 14px; }
     body.hud-simple #cap-degres { opacity: 1; color: #4A5470; margin-right: 8px; letter-spacing: 0.04em; }
     body.hud-simple #cap-ville small { color: #4A5470; }
@@ -2543,6 +2556,7 @@
   <div id="file-centre">
     <div id="construction-pill"><button id="construction-fin" aria-label="Terminer la construction"><span class="ic"></span><span class="lb">Terminer</span></button></div>
     <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
+    <div id="etat-pose" role="status" aria-live="polite"></div>
     <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
     <div id="gps-ami"><span id="gps-ami-texte"></span><button id="gps-ami-oui">Y aller</button><button id="gps-ami-non" title="Non merci">✕</button></div>
     <div id="toast"></div>

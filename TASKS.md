@@ -1,5 +1,20 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v516
+  (« Atterrissage vers <ville> »)** — `monte.js` rejouée SEULE sur la branche
+  et sur `origin/main` v504 (`git worktree`). Branche 23 rouges, `origin/main`
+  14. Sur les 13 de la branche seule, 9 étaient VERTS au portail du même code
+  (« au volant… », 🛞, « on se pose soi-même », la voiture contre un mur…) :
+  intermittences. Restent 4, sur des chemins que la v516 ne touche pas (elle
+  n'ajoute qu'une pilule au-dessus du cadran, lue aux commandes d'un avion) :
+  « au feu, la voiture freine… au lieu de piler » (panne déclarée en v471),
+  « les passants de la ville d'arrivée se posent quand le monde est là »,
+  « le chronomètre de la course compte les secondes de la montre » (compte
+  7,6 pour 9,3 réelles), « le worker ne reste pas à sec » (débit × 1,35 pour
+  1,5). `origin/main` seul : la recharge à l'arrivée, l'atterrissage qui
+  s'entend, le fond défilé de la minicarte (12 021 écarts sur 37 249), la
+  mémoire en vol. À démonter un par un : `grep -n "<nom>" TASKS.md` d'abord.
+
 - [ ] **Deux rouges de DURÉE non déclarés au portail de la v514 (l'icône du
   train).** `manhattan.js` « les passants de Manhattan marchent au long cap »
   (débit 0,52, déjà vu à 0,53 sous la v354, un tirage de cadence) et `monte.js`

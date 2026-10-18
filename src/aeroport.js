@@ -98,7 +98,7 @@ export const AEROPORTS = [
   // tombait dans l'eau (Dubaï à 89 % dans le golfe, Francfort 14 %, Yokota
   // 12 %) ou sur une voisine. Le chiffre `sol` est REMESURÉ partout : c'est
   // la médiane du relief, et le relief a changé.
-  { cle: 'cdg', nom: 'Aéroport Charles-de-Gaulle', x: -697, z: -17, r: 92, sol: 33, profil: 'roissy' },  // v306, Paris doublé : le nord de la ville est semé de lacs (9 à 23 % d'eau), le nord-est est le quartier des enfants → cap 315° NO, 476 blocs · eau 2 %, écart 8  // Paris (l'ancre, ne bouge pas), vrai cap 43° NE → 0° N (le NE est le quartier des enfants), 291 blocs
+  { cle: 'cdg', nom: 'Aéroport Charles-de-Gaulle', ville: 'Paris', x: -697, z: -17, r: 92, sol: 33, profil: 'roissy' },  // v306, Paris doublé : le nord de la ville est semé de lacs (9 à 23 % d'eau), le nord-est est le quartier des enfants → cap 315° NO, 476 blocs · eau 2 %, écart 8  // Paris (l'ancre, ne bouge pas), vrai cap 43° NE → 0° N (le NE est le quartier des enfants), 291 blocs
   { cle: 'orly', nom: 'Paris–Orly', x: -582, z: 705, r: 62, sol: 37, profil: 'ville' },               // v306, Paris doublé : l'ancien site est DANS la ville ; vrai cap 195° → 210°, 444 blocs · eau 3,5 %, écart 7               // Paris, cap 195° S — exact, 315 blocs
   { cle: 'lhr', nom: 'Londres–Heathrow', x: -1410, z: -1344, r: 78, sol: 40, profil: 'hub' },         // Londres, cap 262° O — même écart qu'en v223, 204 blocs
   { cle: 'jfk', nom: 'New York–JFK', x: -19708, z: 4747, r: 84, sol: 38, profil: 'hub' },             // New York, vrai cap 115° SE → 50° NE (la baie de Jamaica est de l'eau, et le SE est le rectangle de Manhattan), 440 blocs · 13 blocs du rectangle
