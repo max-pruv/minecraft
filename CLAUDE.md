@@ -1022,7 +1022,7 @@ Deux règles.
   le canvas garde ses couleurs, que les témoins de `carte.js` lisent en pixels.
   Les icônes de la fiche viennent d'`ICONES` (`chercher`, `appui`), posées par
   `main.js` ; la légende dessine ses repères en CSS, aux couleurs du canvas.
-## Les textes de la revue d'écran (v517) — un nom affiché est en français, un état n'est pas une alerte
+## Les textes de la revue d'écran (v522) — un nom affiché est en français, un état n'est pas une alerte
 
 Trois règles.
 

@@ -1,8 +1,8 @@
 # Ce qui est en cours
 
-## LES ROUGES DU PORTAIL DE LA v517 — intermittents de `monte.js`, aucun causé par la livraison
+## LES ROUGES DU PORTAIL DE LA v522 — intermittents de `monte.js`, aucun causé par la livraison
 
-La v517 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le
+La v522 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le
 code », badge « Libre jusqu'à ») : rien sur les chemins de la circulation, du
 worker ou de l'avion. Preuve structurelle, plus trois passages de `monte.js` :
 
@@ -32,7 +32,7 @@ vert, mais QUATRE autres rouges (« Alice retrouve son monde après une veille �
 « la reprise tient », « seule après le départ de l'hôte », « continue d'essayer
 de la reconnecter »), que la branche a rendus aussi au premier portail. Une
 intermittence des deux côtés, sur des chemins (réseau, dégâts d'avion) que la
-v517 ne touche pas ; la distribution reste à faire.
+v522 ne touche pas ; la distribution reste à faire.
 
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v518 (Loin,
   garde-manger, minicarte)** — double mesure de la v195, chaque suite rejouée
