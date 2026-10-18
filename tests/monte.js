@@ -51,7 +51,7 @@ const bouton = (p, id) => p.evaluate((id) => {
   const rangee = b.closest('.fun-target');
   const visible = getComputedStyle(b).display !== 'none'
     && (!rangee || getComputedStyle(rangee).display !== 'none');
-  return { existe: true, visible, texte: b.textContent.trim() };
+  return { existe: true, visible, texte: b.textContent.trim(), quoi: b.dataset.quoi || '', pastille: !!b.querySelector('.pastille') };
 }, id);
 
 const pose = (p) => p.evaluate(() => {
@@ -188,7 +188,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('un éléphant devant soi propose de monter',
       propose.visible, JSON.stringify(propose));
     verifier('et le bouton porte l\'animal qu\'on a sous les yeux',
-      propose.texte.includes('🐘'), propose.texte);
+      propose.quoi === 'elephant' && /Éléphant/.test(propose.texte), JSON.stringify(propose));
 
     // Le vieux défaut : il fallait viser l'animal au degré près. Ici on le
     // regarde de biais, comme on le fait vraiment en marchant.
@@ -815,7 +815,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const b = document.getElementById('board-btn');
       return !!(b && getComputedStyle(b).display !== 'none'
         && getComputedStyle(b.closest('.fun-target')).display !== 'none'
-        && b.textContent.includes('🏎️'));
+        && (b.dataset.quoi || '') === 'formule 1');
     }, null, { timeout: 60000 }).then(() => true).catch(() => false);
     verifier('quand la monoplace arrive, on a le temps de voir le bouton',
       monteeF1, JSON.stringify(await bouton(tab, 'board-btn')));
@@ -1041,12 +1041,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.pos.set(p.x - 33, g.world.terrainHeight(p.x - 33, p.z - 3) + 1.05, p.z - 3);
       g.player.vel.set(0, 0, 0);
     });
+    // Depuis la v504 le panneau ne passe plus en bandeau (Max) : le jeu sait
+    // toujours devant quel poste est l'enfant, et rien ne s'affiche.
     const panneau = await tab.waitForFunction(() => {
-      const t = (document.getElementById('toast') || {}).textContent || '';
+      const t = window.__posteUsine ? window.__posteUsine() : '';
       return /peinture/i.test(t) ? t : null;
     }, null, { timeout: 12000, polling: 150 }).then((h) => h.jsonValue()).catch(() => '');
-    verifier('dans le hall, chaque poste dit à l\'enfant ce qu\'on y fait',
-      /peinture/i.test(panneau), panneau || 'aucun bandeau de poste');
+    const bandeauPoste = await tab.evaluate(() => (document.getElementById('toast') || {}).textContent || '');
+    verifier('dans le hall, le jeu sait devant quel poste est l\'enfant — sans bandeau',
+      /peinture/i.test(panneau) && !/peinture/i.test(bandeauPoste), `${panneau || 'aucun poste reconnu'} · bandeau « ${bandeauPoste} »`);
 
     // Le garagiste : on approche du parc, trois voitures neuves attendent.
     await tab.evaluate(async () => {
@@ -1073,7 +1076,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     }, null, { timeout: 5000 }).catch(() => {});
     const proposeAuto = await bouton(tab, 'ride-btn');
     verifier('elle propose de monter — clés sur le contact',
-      proposeAuto.visible && proposeAuto.texte.includes('🚗'), JSON.stringify(proposeAuto));
+      proposeAuto.visible && proposeAuto.quoi === 'voiture', JSON.stringify(proposeAuto));
 
     await tab.evaluate(() => { window.__game.player.flying = false; });
     const capAuto = await capDegage(tab, 14);
@@ -1357,11 +1360,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.pos.set(depart.x + 300, g.world.terrainHeight(Math.floor(depart.x + 300), Math.floor(depart.z)) + 1.5, depart.z);
       g.player.vel.set(0, 0, 0);
       await new Promise((f) => setTimeout(f, 2000));
-      const auVolant = document.getElementById('ride-btn').textContent.startsWith('⬇️');
+      const auVolant = document.getElementById('ride-btn').textContent.includes('Descendre');
       const gabarit = g.player.gabarit;
       g.player.pos.set(depart.x, depart.y, depart.z); g.player.vel.set(0, 0, 0);
       await new Promise((f) => setTimeout(f, 1000));
-      return { auVolant, gabarit, encoreAuVolant: document.getElementById('ride-btn').textContent.startsWith('⬇️') };
+      return { auVolant, gabarit, encoreAuVolant: document.getElementById('ride-btn').textContent.includes('Descendre') };
     });
     verifier('téléporté de trois cents blocs au volant, on est encore au volant, et la voiture a suivi',
       saut.auVolant && saut.encoreAuVolant && saut.gabarit > 1, JSON.stringify(saut));
@@ -1447,7 +1450,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       for (let essai = 0; essai < 6; essai++) {
         if (!(await auVolantMaintenant())) await tab.evaluate(() => document.getElementById('ride-btn').click());
         const monte = await tab.waitForFunction(() => (window.__game.fun.montureConduite && window.__game.fun.montureConduite())
-          && document.getElementById('ride-btn').textContent.startsWith('⬇️'), null, { timeout: 3000, polling: 200 }).then(() => true).catch(() => false);
+          && document.getElementById('ride-btn').textContent.includes('Descendre'), null, { timeout: 3000, polling: 200 }).then(() => true).catch(() => false);
         if (monte) break;
         await dormir(700);
       }
@@ -1460,7 +1463,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (!m || d < m.d) m = { d, x: q[0], z: q[1], cap: q[2] };
       }));
       if (!m) return null;
-      if (!document.getElementById('ride-btn').textContent.startsWith('⬇️')) return { auVolant: false };
+      if (!document.getElementById('ride-btn').textContent.includes('Descendre')) return { auVolant: false };
       g.player.keys.delete('KeyW');
       const rect = (x, z, cap) => { const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux; return [[x + ux * 2.2 + vx * 1.13, z + uz * 2.2 + vz * 1.13], [x + ux * 2.2 - vx * 1.13, z + uz * 2.2 - vz * 1.13], [x - ux * 2.2 - vx * 1.13, z - uz * 2.2 - vz * 1.13], [x - ux * 2.2 + vx * 1.13, z - uz * 2.2 + vz * 1.13]]; };
       const separes = (P, Q) => { for (const R of [P, Q]) for (let k = 0; k < 4; k++) { const ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0]; const pr = (S) => S.map((q) => q[0] * ax + q[1] * az); const p1 = pr(P), p2 = pr(Q); if (Math.max(...p1) < Math.min(...p2) || Math.max(...p2) < Math.min(...p1)) return true; } return false; };
@@ -1610,7 +1613,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     await dormir(2500);
     const etatAPied = await tab.evaluate(() => ({ gabarit: window.__game.player.gabarit,
-      auVolant: document.getElementById('ride-btn').textContent.startsWith('⬇️'),
+      auVolant: document.getElementById('ride-btn').textContent.includes('Descendre'),
       monture: !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()),
       voitures: window.__game.animalManager.animals.length }));
     const ecartAPied = await contreLeMur(false);

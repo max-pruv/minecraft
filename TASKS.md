@@ -1,5 +1,28 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v504 (les
+  icônes et le jeu qui se tait)** — double mesure de la v195, `monte.js`
+  rejouée SEULE sur la branche et sur `origin/main` v502 (`git worktree`).
+  Branche 243 verts, 5 rouges ; `origin/main` 244 verts, 4 rouges. Des deux
+  côtés : « la rue se fabrique par tranches » et « on ne marche pas dans une
+  rue vide ». Branche seule : « un flâneur posé au milieu de la chaussée en
+  sort », « deux voisines d'un convoi gardent leur longueur d'écart »
+  (`minTrace` 3,49) et « au frein à main, les pneus crissent même tout droit »
+  (`droit posees 0`). `origin/main` seul : « à Rome, en biais, passage peint »
+  et « au feu la voiture freine sur plusieurs relevés ». Les deux rouges
+  neufs du portail complet (la visée à 12 s, la monoplace à 9,0 m/s) ne se
+  reproduisent pas rejoués seuls. Toutes des intermittences de la rue déjà
+  déclarées plus bas ; preuve STRUCTURELLE (v291) : la livraison ne touche que
+  le HUD (icônes, `aria-label`, `data-quoi`) et retire des appels à `toast` ;
+  ni `vehicules.js`, ni la circulation, ni les traces, ni le monde ne changent.
+  Portail final, sur le code rebasé sur la v503 : onze suites vertes ;
+  `monte.js` 4 rouges, tous de la liste ci-dessus (flâneur, deux voisines, feu,
+  rue vide) ; `reseau.js` 2 rouges, « deux enfants se retrouvent sans courtier
+  du tout » et, en découlant, « sans courtier, le conducteur voit son passager
+  assis » — la famille du nuage déclarée plus bas. `reseau.js` rejouée SEULE
+  sur la branche : 91 verts, 0 rouge. `net.js` et `relaisnuage.js` n'ont pas
+  bougé.
+
 - [ ] **PORTAIL DE LA v503 (la barre de blocs en bas) : aucun rouge de la
   livraison, double mesure faite.** Au portail (`npm test`, banc chargé :
   pages jusqu'à 68 s pour `__game`), rouges sur `degats.js`, `maj.js`,
@@ -7795,7 +7818,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   **49 → 0**. Tenue de rue 95 98 100 99 96 100 100 100 → 94 100 100 100 96 100
   100 100. Témoin dans `carteMonde.js`, rouge sur `origin/main`.
 
-- [ ] **PORTAILS DE LA v504.** Premier : un rouge à moi, corrigé (« le convoi
+- [ ] **PORTAILS DE LA v505.** Premier : un rouge à moi, corrigé (« le convoi
   suit le sol », San Francisco écart 7 pour une pente de 2 — la cote sous la
   voie se borne désormais à une marche) ; les autres déclarés (flèche du GPS,
   PeerJS de `manhattan.js`, construction de `maj.js` à 420 × 760, et dans
@@ -7807,7 +7830,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   touche que la HAUTEUR des convois (voies.js), le sol de deux jardins et le
   Moulin Rouge (paris.js, world.js) ; ni la caméra, ni la grille horaire, ni
   les passants.
-- [x] **RÉSOLU en v504 : la butte et le Moulin Rouge.** Remesuré sous node
+- [x] **RÉSOLU en v505 : la butte et le Moulin Rouge.** Remesuré sous node
   sur `origin/main` : 32 pas sur le pavé d'une colonne plus haute d'un bloc
   (Clichy, Rochechouart) et 17 dans les murs du Moulin Rouge. La pente n'était
   pas le relief mais la COTE du convoi, lue sous l'axe quand la voiture roule
@@ -7853,7 +7876,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   défaut que l'escalier du Sacré-Cœur, qui descendait à quinze blocs quand sa
   boîte en annonçait douze.
 
-- [x] **RÉSOLU en v504 pour les Buttes-Chaumont et la place des Vosges ;
+- [x] **RÉSOLU en v505 pour les Buttes-Chaumont et la place des Vosges ;
   DÉCLARÉ pour les Tuileries.** La voie nommée l'emporte sur le jardin sur sa
   chaussée et son trottoir dans les jardins déclarés `traverse` (paris.js) :
   267 colonnes, zéro lot changé ; sous une colonne où un enfant a bâti avant

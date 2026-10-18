@@ -393,10 +393,10 @@ const EMPREINTE_MORCEAUX_V414 = '863d4203a441e3fd029ce2404fc6d6e706799e7f64fe489
 // constante de la v473, au bit près.
 // l'écart d'une voie à l'axe du métro (metromonde.js, GABARIT.ecart)
 const MM_ECART = 2.2;
-// v504 : à Paris, un des neuf lieux, le boulevard Beaumarchais traverse la
+// v505 : à Paris, un des neuf lieux, le boulevard Beaumarchais traverse la
 // place des Vosges sur sa chaussée (`traverse`). `reglageJardins.voies` à faux
 // et le Moulin Rouge neuf retiré (le champ `tour`), la branche rend fe1e5a37…,
-// la constante de la v503, au bit près.
+// la constante de la v504, au bit près.
 const EMPREINTE_MORCEAUX_V357 = '713d47041321fa80d68a54f7e1e3c501c108f6d548f291ef3ee1a218b2cb49d1';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
@@ -2994,7 +2994,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       reg ? `${formes} couches de solidité différente, ${ailleurs} blocs changés hors des bandes` : 'pas de reglageBaies (ancien code)');
   }
 
-  // LA VOIE NOMMÉE TRAVERSE LE JARDIN, SUR SA CHAUSSÉE (v504). Les jardins
+  // LA VOIE NOMMÉE TRAVERSE LE JARDIN, SUR SA CHAUSSÉE (v505). Les jardins
   // passaient avant les rues dans `solParis` : les voitures de la rue de
   // Belleville, du boulevard de Ménilmontant et du boulevard Beaumarchais
   // roulaient dans les troncs des Buttes-Chaumont et de la place des Vosges.
@@ -3043,7 +3043,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       garde && garde.bon === true, JSON.stringify(garde));
   }
 
-  // LE MOULIN ROUGE BORDE LE BOULEVARD AU NORD (v504). Son bâtisseur posait la
+  // LE MOULIN ROUGE BORDE LE BOULEVARD AU NORD (v505). Son bâtisseur posait la
   // salle en travers du boulevard de Clichy, dont l'axe passe par le repère :
   // dix-sept pas de carrosserie dans ses murs. Le bâtisseur neuf (`tour`) tient
   // dans la même boîte, sa moitié nord, et laisse libres les rangées que la

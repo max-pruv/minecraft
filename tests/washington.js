@@ -29,7 +29,7 @@ const bouton = (p, id) => p.evaluate((id) => {
   const rangee = b.closest('.fun-target');
   const visible = getComputedStyle(b).display !== 'none'
     && (!rangee || getComputedStyle(rangee).display !== 'none');
-  return { existe: true, visible, texte: b.textContent.trim() };
+  return { existe: true, visible, texte: b.textContent.trim(), quoi: b.dataset.quoi || '', pastille: !!b.querySelector('.pastille') };
 }, id);
 
 const pose = (p) => p.evaluate(() => {
@@ -654,7 +654,7 @@ const descendre = async (p, ms) => {
     // La pastille de couleur dit QUELLE ligne : un enfant qui ne lit pas
     // encore bien reconnaît un rond bleu avant un mot.
     verifier('et la pastille dit de quelle ligne il s\'agit',
-      /🔵|🔴|🟢|🟡|🟠|⚪/.test(aBord.texte), aBord.texte);
+      aBord.pastille, JSON.stringify(aBord));
 
     await tab.evaluate(() => document.getElementById('board-btn').click());
     const embarque = await pose(tab);
@@ -718,7 +718,7 @@ const descendre = async (p, ms) => {
     await tab.evaluate(() => document.getElementById('board-btn').click());
     await dormir(1500);
     verifier('et on redescend quand on veut',
-      !(await bouton(tab, 'board-btn')).texte.startsWith('⬇️'));
+      !(await bouton(tab, 'board-btn')).texte.includes('Descendre'));
 
     // --- 5. le pont de la Jaune -----------------------------------------------
     // La chose la plus spectaculaire du vrai réseau, et elle est vraie : la
@@ -829,7 +829,7 @@ const descendre = async (p, ms) => {
     let orange = null;
     for (let i = 0; i < 120 && rdv && rdv.t !== null; i++) {
       const b = await bouton(tab, 'board-btn');
-      if (b.visible && /🟠/.test(b.texte)) { orange = b; break; }
+      if (b.visible && /Orange/.test(b.quoi)) { orange = b; break; }
       await dormir(500);
     }
     verifier('sur le quai, une rame Orange arrive et propose de monter',
@@ -850,7 +850,7 @@ const descendre = async (p, ms) => {
       }
       await tab.evaluate(() => document.getElementById('board-btn').click());
       await dormir(1500);
-      trajet.descendu = !(await bouton(tab, 'board-btn')).texte.startsWith('⬇️');
+      trajet.descendu = !(await bouton(tab, 'board-btn')).texte.includes('Descendre');
     }
     verifier('elle nous emmène à la station suivante, et l\'on en descend',
       !!orange && trajet.arrivee !== trajet.depart && trajet.descendu, JSON.stringify(trajet));
@@ -947,8 +947,10 @@ const descendre = async (p, ms) => {
       const journal = window.__guides ? window.__guides.journal.map((j) => j.id) : null;
       return { affiches: affiches.length, texte: affiches[0] || el.textContent, journal };
     }, { x0: P.x, z0: P.z });
-    verifier('en marchant jusqu\'au Lincoln, son panneau passe une fois',
-      vuPanneau.affiches === 1 && !!vuPanneau.journal
+    // Depuis la v504 (Max : « tu vires tous ces messages-là »), le panneau ne
+    // passe plus à l'écran ; la visite se compte toujours, une fois.
+    verifier('en marchant jusqu\'au Lincoln, la visite se compte une fois — et rien ne s\'affiche',
+      vuPanneau.affiches === 0 && !!vuPanneau.journal
         && vuPanneau.journal.filter((id) => id === 'lincoln').length === 1,
       `${vuPanneau.affiches} affichage(s), journal ${JSON.stringify(vuPanneau.journal)}, « ${vuPanneau.texte} »`);
   } finally {

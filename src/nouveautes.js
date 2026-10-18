@@ -6,12 +6,21 @@
 
 export const NOUVEAUTES = [
   {
-    v: 504,
+    v: 505,
     titre: 'Les voitures de Montmartre roulent mieux',
     puces: [
       'Le Moulin Rouge borde le boulevard',
       'Les voitures ne touchent plus la pente',
       'Des rues traversent les Buttes-Chaumont',
+    ],
+  },
+  {
+    v: 504,
+    titre: 'Des icônes claires, moins de messages',
+    puces: [
+      'De vraies icônes sur chaque bouton',
+      'Voler se reconnaît à son aile',
+      'Plus de messages pendant le jeu',
     ],
   },
   {

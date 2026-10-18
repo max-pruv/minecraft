@@ -1148,7 +1148,7 @@ function verifier(nom, ok, detail = '') {
         const att = (ms) => new Promise((f) => setTimeout(f, ms));
         const g = window.__game, C = window.__commandes;
         if (!C) return { err: 'pas de menu unique' };
-        const { REMPLACES, LIGNES } = await import('./src/commandes.js');
+        const { REMPLACES, LIGNES, avecIcone } = await import('./src/commandes.js');
         const vis = (el) => { if (!el) return null; const st = getComputedStyle(el), b = el.getBoundingClientRect();
           return st.display === 'none' || st.visibility === 'hidden' || b.width === 0 ? null
             : { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) }; };
@@ -1185,10 +1185,10 @@ function verifier(nom, ok, detail = '') {
           .map((b) => ({ t: b.textContent, coupe: b.scrollWidth > b.clientWidth + 1 || b.getBoundingClientRect().height > 50 }));
         explorer.pilules = pilules();
         const fb = document.getElementById('board-btn'), rb = document.getElementById('ride-btn'), fe = document.getElementById('feed-btn');
-        const sauve = [fb.textContent, fb.style.display, rb.style.display, fe.style.display];
-        fb.textContent = '🚗 Conduire cette voiture'; fb.style.display = 'block'; rb.style.display = 'none'; fe.style.display = 'none';
+        const sauve = [fb.innerHTML, fb.style.display, rb.style.display, fe.style.display];
+        fb.innerHTML = avecIcone('volant', 'Conduire cette voiture'); fb.style.display = 'block'; rb.style.display = 'none'; fe.style.display = 'none';
         explorer.longue = pilules();
-        [fb.textContent, fb.style.display, rb.style.display, fe.style.display] = sauve;
+        [fb.innerHTML, fb.style.display, rb.style.display, fe.style.display] = sauve;
         // Inventaire : chaque bouton remplacé existe encore, n'est plus à
         // l'écran, et le menu a une ligne qui l'appuie (le menu lui-même tient
         // lieu de pause).
@@ -1351,6 +1351,80 @@ function verifier(nom, ok, detail = '') {
           JSON.stringify({ pause: r.pause, rate, repris: r.repris }));
       }
     }
+
+    // DE VRAIES ICÔNES, PLUS UN EMOJI SUR UN BOUTON (v504). Max : « les icônes
+    // ne sont pas suffisamment claires, le bouton pour voler n'est pas
+    // suffisamment clair, et je veux que tu enlèves les emojis sur les
+    // boutons ». Trois choses se mesurent sur une page tactile à la taille de
+    // son iPhone : (1) aucun bouton de la page — visible ou rangé, créé par la
+    // page ou par le jeu — ne porte un emoji (les émotes, qui SONT des
+    // emojis, exceptées) ; (2) chaque bouton rond porte une icône dessinée au
+    // trait épais (2,2 au moins sur 24) ou en aplat ; (3) le bouton Voler
+    // change d'icône aux commandes d'un avion — Décoller, Se poser — et la
+    // retrouve à pied. Rouge sur l'ancien code : ✈️ 🛑 🛞 ⤒ 🐴 🚇 dans les
+    // boutons, et des icônes à 1,8.
+    const ico = await banc.jouerSeul('Icones', { viewport: { width: 430, height: 932 }, tactile: true, rr: 2 });
+    const icones = await ico.evaluate(async () => {
+      const att = (ms) => new Promise((f) => setTimeout(f, ms));
+      const g = window.__game;
+      const em = /\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F/u;
+      const avecEmoji = () => [...document.querySelectorAll('button')]
+        .filter((b) => !b.closest('#emote-row') && em.test(b.textContent))
+        .map((b) => `${b.id || b.className} « ${b.textContent.trim().slice(0, 30)} »`);
+      const epaisseur = (b) => {
+        const svg = b && b.querySelector('svg');
+        if (!svg) return 0;
+        const plein = [...svg.querySelectorAll('[fill]')].some((n) => n.getAttribute('fill') === 'currentColor');
+        const w = Math.max(...[svg, ...svg.querySelectorAll('[stroke-width]')].map((n) => +(n.getAttribute('stroke-width') || 0)));
+        return plein ? Math.max(w, 9) : w;
+      };
+      const RONDS = ['menu-btn', 'map-btn', 'jump-btn', 'fly-btn', 'down-btn', 'construire-btn', 'poser-btn', 'casser-btn', 'fm-btn', 'train-btn'];
+      const traits = Object.fromEntries(RONDS.map((id) => [id, epaisseur(document.getElementById(id))]));
+      // Les pilules : une monture devant soi, puis on lit la pilule.
+      const am = g.animalManager;
+      for (const a of [...am.animals]) am.scene.remove(a.mesh);
+      am.animals.length = 0;
+      const P = g.player;
+      const cheval = am.invoquer('horse', P.pos.x - Math.sin(P.yaw) * 3, P.pos.z - Math.cos(P.yaw) * 3);
+      const t0 = performance.now();
+      const rb = document.getElementById('ride-btn');
+      while (performance.now() - t0 < 20000 && rb.style.display !== 'block') {
+        await att(400);
+        if (cheval && cheval.pos) { cheval.pos.x = P.pos.x - Math.sin(P.yaw) * 3; cheval.pos.z = P.pos.z - Math.cos(P.yaw) * 3; }
+      }
+      const pilule = { texte: rb.textContent.trim(), icone: !!rb.querySelector('svg'), quoi: rb.dataset.quoi || '' };
+      // Le bouton Voler aux commandes, par la fonction que la boucle appelle.
+      const fly = () => (document.querySelector('#fly-btn .ic') || {}).innerHTML || '';
+      const aPied = fly();
+      const sauve = { pilote: P.pilote, etat: P.avionEtat, running: g.running };
+      P.pilote = { max: 95, kmh: 900 }; P.avionEtat = 'sol';
+      window.__majBoutonsVehicule();
+      const auSol = fly();
+      P.avionEtat = 'vol';
+      window.__majBoutonsVehicule();
+      const enVol = fly();
+      P.pilote = sauve.pilote; P.avionEtat = sauve.etat;
+      window.__majBoutonsVehicule();
+      const retour = fly();
+      document.getElementById('menu-btn').click();
+      await att(300);
+      const menuEmoji = avecEmoji();
+      document.getElementById('menu-reprendre').click();
+      return { emojis: avecEmoji(), menuEmoji, traits, pilule,
+        voler: { aPied: !!aPied, auSol: auSol !== aPied && !!auSol, enVol: enVol !== auSol && enVol !== aPied && !!enVol, retour: retour === aPied } };
+    });
+    await ico.close();
+    verifier('plus un emoji sur un bouton du jeu — HUD, pilules, menu et panneaux',
+      icones.emojis.length === 0 && icones.menuEmoji.length === 0,
+      JSON.stringify({ emojis: icones.emojis.slice(0, 12), menu: icones.menuEmoji.slice(0, 6) }));
+    const fins = Object.entries(icones.traits).filter(([, w]) => !(w >= 2.2)).map(([id, w]) => `${id} ${w}`);
+    verifier('chaque bouton rond porte une icône dessinée, au trait épais ou en aplat',
+      fins.length === 0, fins.join(' · ') || JSON.stringify(icones.traits));
+    verifier('la pilule porte une icône et dit quelle bête — le mot, plus l\'emoji',
+      icones.pilule.icone && icones.pilule.quoi === 'horse' && /Monter/.test(icones.pilule.texte) && /Cheval/i.test(icones.pilule.texte),
+      JSON.stringify(icones.pilule));
+    verifier('Voler a son aile à pied, un avion qui décolle au sol, un avion qui se pose en vol — et retrouve son aile',
+      icones.voler.aPied && icones.voler.auSol && icones.voler.enVol && icones.voler.retour, JSON.stringify(icones.voler));
 
     // LE CONTRASTE DES COMMANDES, SUR LE CIEL DE MIDI ET SUR LA NUIT. Le verre
     // est presque invisible (retour de Max) : c'est exactement ce qui casse un

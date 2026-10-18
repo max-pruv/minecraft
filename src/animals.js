@@ -394,9 +394,7 @@ class Animal {
     this.cryTimer -= dt;
     if (this.cryTimer <= 0) {
       this.cryTimer = 12 + Math.random() * 20;
-      if (this.pos.distanceTo(player.pos) < 6) {
-        toast(`${this.def.emoji} ${this.def.cry}`, 0xffffff);
-      }
+      // Le cri d'une bête ne passe plus en bandeau (v504).
     }
   }
 
@@ -449,8 +447,7 @@ export class AnimalManager {
   // Player attacks the animal in the crosshair (within melee reach).
   attack(a) {
     if (!a || a.dying > 0) return;
-    const dead = a.hurt(this.player);
-    if (!dead) this.toast(`${a.def.emoji} Aïe ! (${a.hp} ❤️)`, 0xffb1a1);
+    a.hurt(this.player);   // la bête qui fuit le dit ; plus de bandeau (v504)
   }
 
   trySpawn() {

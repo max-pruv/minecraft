@@ -77,7 +77,7 @@ import { CloudSave } from './cloud.js';
 import { EducationMode, GRADES, todayKey } from './education.js';
 import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
 import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe, micOuvert } from './visio.js';
-import { initCommandes } from './commandes.js';
+import { initCommandes, ICONES } from './commandes.js';
 
 // New York appartient à la Terre. Les anciennes adresses deviennent un lieu de départ.
 const VISITE_MANHATTAN = ['manhattan'].includes(new URLSearchParams(location.search).get('lieu')) || new URLSearchParams(location.search).get('carte') === 'manhattan';
@@ -1636,7 +1636,9 @@ function updateChunks() {
     for (let dx = -1; dx <= 1; dx++) meshChunk(pcx + dx, pcz + dz);
   }
   rebuildQueue();
-  const say = (msg, color) => toast(msg, color);
+  // Les compagnons ne parlent plus en bandeau (v504) : leurs phrases étaient
+  // des messages d'ambiance.
+  const say = () => {};
   marlon = new Marlon(scene, world, player, say);
   cornichon = new Cornichon(scene, world, player, say, player.pos.x + 6, player.pos.z + 4);
   npcs = [
@@ -1657,7 +1659,7 @@ function updateChunks() {
     scene, world, player, toast: say, emojiBurst, clang: () => cliquetis(),
     // Le bandeau plein écran et le cor : un simple message en bas d'écran
     // passait inaperçu au milieu d'une construction.
-    annonce: (titre, sous) => grandBandeau(titre, sous, 3400),
+    annonce: () => {},   // le grand bandeau du siège s'est tu (v504)
     cor: () => carillon([220, 165, 220, 294]),
   });
   npcs.push(...siege.npcs);
@@ -2339,7 +2341,6 @@ function positionDuCloud(state) {
   if (connue > 0 && Date.now() - posEntree > 40000) return;
   posAppliquee.set(posCtx, p.t);
   placerA(p);
-  toast('☁️ Je t\'ai remis là où tu t\'étais arrêté !', 0x9fd8e8);
 }
 
 // Live rescue: if a player somehow ends far above the world (runaway
@@ -2351,7 +2352,6 @@ setInterval(() => {
     player.pos.y = gy + 0.2;
     player.vel.set(0, 0, 0);
     player.flying = false;
-    toast('🪂 Hop, retour sur la terre ferme !', 0x9fd8e8);
   }
 }, 4000);
 
@@ -2752,7 +2752,7 @@ bindHoldButton('fm-btn', 'Space');
 document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
   breakMode = !breakMode;
-  e.target.textContent = breakMode ? '⛏️' : '🧱';
+  e.currentTarget.innerHTML = breakMode ? ICONES.casser : ICONES.poser;
   if (commandes) commandes.outil(breakMode);
 }, { passive: false });
 
@@ -2773,29 +2773,9 @@ document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
 // neuf à apprendre — c'est la même discipline que « un seul jeu de commandes ».
 function refuserOuVoler() {
   const aBord = player.decollerOuSePoser();
-  if (aBord === 'decollage') {
-    toast('✈️ Pleins gaz ! Le nez se lève tout seul — le joystick tient le cap.', 0x9fd8ff);
-    return true;
-  }
-  if (aBord === 'remise') {
-    toast('✈️ On remet les gaz ! Le joystick monte, descend et tourne.', 0x9fd8ff);
-    return true;
-  }
-  if (aBord === 'approche') {
-    const ap = player.approche;
-    toast(`🛬 Cap sur la piste ${ap.devant ? 'devant toi, ' : ''}de ${ap.piste.nom} (${distanceLisible(Math.hypot(player.pos.x - ap.seuil, player.pos.z - ap.piste.z))}) — l'avion se pose tout seul. Le joystick corrige, ✈️ remet les gaz.`, 0x9fd8ff, 4200);
-    return true;
-  }
-  if (aBord === 'pasDePiste') {
-    const a = player.aerodromeVise;
-    toast(a ? `🛬 Pas de piste tout près : on se pose ici, train sorti. La prochaine fois, ${a.nom} est à ${distanceLisible(a.d)} — suis le cadran.`
-      : '🛬 Pas de piste tout près : on se pose ici, train sorti.', 0xffd166, 5000);
-    return true;
-  }
-  if (aBord === 'atterrissage') {
-    toast('🛬 On se pose ici — train sorti, garde le cap.', 0x9fd8ff);
-    return true;
-  }
+  // Ce que l'avion fait tout seul ne s'annonce plus (v504) : seul le refus
+  // se dit, avec ce qu'il faut faire.
+  if (aBord) return true;
   if (player.toggleFly()) return true;
   toast('🚗 Une voiture ne vole pas — descends d\'abord (touche M).', 0xffd166);
   return false;
@@ -2806,9 +2786,9 @@ function refuserOuVoler() {
 // est SAIN ET SAUF, et QUOI FAIRE — un avion neuf attend au parking de
 // l'aéroport, et ✈️ « Se poser » sait se poser tout seul. Jamais d'accusation.
 const MESSAGES_CRASH = {
-  vite: '💥 Trop vite pour te poser ! L\'avion est cassé, tu es sain et sauf. Un avion neuf t\'attend à l\'aéroport — et ✈️ « Se poser » le pose tout seul.',
-  dur: '💥 Atterrissage trop dur ! L\'avion est cassé, tu es sain et sauf. Descends doucement, train sorti (🛞) — ou laisse ✈️ te poser sur une piste.',
-  ventre: '💥 Sur le ventre, hors d\'une piste ! L\'avion est cassé, tu es sain et sauf. Sors le train (🛞) avant de toucher le sol.',
+  vite: '💥 Trop vite pour te poser ! L\'avion est cassé, tu es sain et sauf. Un avion neuf t\'attend à l\'aéroport — et le bouton « Se poser » le pose tout seul.',
+  dur: '💥 Atterrissage trop dur ! L\'avion est cassé, tu es sain et sauf. Descends doucement, train sorti — ou laisse « Se poser » t\'amener sur une piste.',
+  ventre: '💥 Sur le ventre, hors d\'une piste ! L\'avion est cassé, tu es sain et sauf. Sors le train d\'atterrissage avant de toucher le sol.',
   arbres: '🌲 Dans les arbres ! L\'avion est cassé, tu es sain et sauf. Pose-toi sur une piste ou un grand champ plat.',
   relief: '⛰️ Terrain trop accidenté ! L\'avion est cassé, tu es sain et sauf. Pose-toi sur une piste ou un grand champ bien plat.',
   bati: '🏢 Contre un bâtiment ! L\'avion est cassé, tu es sain et sauf. Vole plus haut au-dessus des villes.',
@@ -2817,13 +2797,12 @@ const MESSAGES_CRASH = {
 window.__messagesCrash = MESSAGES_CRASH;
 player.surAvion = (quoi, raison) => {
   if (quoi === 'crash') { toast(MESSAGES_CRASH[raison] || MESSAGES_CRASH.dur, 0xffb347, 7000); return; }
-  if (quoi === 'touche') toast('🛬 Posé·e ! On freine…', 0x9fd8ff);
-  else if (quoi === 'ventre') toast('💥 Sur le ventre ! Sors le train (🛞) avant de te poser.', 0xffd166);
-  else if (quoi === 'arret') toast('🛑 À l\'arrêt. Le joystick fait rouler, ✈️ redécolle.', 0x9fd8ff);
+  // PLUS QUE CE QUI DIT QUOI FAIRE (v504) : le toucher, l'arrêt, la piste
+  // changée, la remise des gaz trop longue ne s'annoncent plus — l'avion le
+  // fait tout seul, on le voit. Restent le ventre (sortir le train) et l'eau.
   // UN AVION NE SE POSE PAS DANS L'EAU (v267) : le message dit QUOI FAIRE,
   // jamais seulement ce qui est refusé — la règle de la maison.
-  else if (quoi === 'changePiste' && player.approche) toast(`🛬 Piste trop courte — cap sur celle de ${player.approche.piste.nom}.`, 0x9fd8ff);
-  else if (quoi === 'remiseLongue') toast('✈️ Trop loin pour s\'arrêter sur la piste — on remet les gaz et on refait un tour.', 0x9fd8ff);
+  if (quoi === 'ventre') toast('💥 Sur le ventre ! Sors le train d\'atterrissage avant de te poser.', 0xffd166);
   else if (quoi === 'remiseDesGaz') toast('🌊 De l\'eau en dessous ! On remet les gaz — va vers la terre.', 0xffd166);
 };
 
@@ -2869,7 +2848,6 @@ gazBase.addEventListener('touchstart', (e) => e.preventDefault(), { passive: fal
 trainBtn.addEventListener('click', () => {
   if (!player.pilote) return;
   player.trainVoulu = !((player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
-  toast(player.trainVoulu ? '🛞 Train sorti.' : '🛞 Train rentré.', 0x9fd8ff);
 });
 // LES BOUTONS DE LA MARCHE S'EFFACENT EN VÉHICULE — saut, pioche, capture,
 // coffre — et reviennent à pied (Max). La classe du `body` fait le tri en CSS.
@@ -2892,6 +2870,12 @@ function majBoutonsVehicule() {
     // construction, et l'on revient à pied en mode Explorer.
     if (enVehicule && commandes) commandes.construire(false);
   }
+  // À pied comme au volant, le bouton redevient Voler — son mot ET son aile.
+  if (!enAvion && dernierMotVol !== 'VOLER') {
+    dernierMotVol = 'VOLER'; flyLb.textContent = 'VOLER';
+    const ic = document.querySelector('#fly-btn .ic');
+    if (ic) ic.innerHTML = ICONES.voler;
+  }
   if (!enVehicule) return;
   // LA MANETTE ET LE COMPTEUR NE S'ÉCRIVENT QU'EN AVION (v272). Ils ne sont
   // plus affichés en voiture — décision de Max — et l'on n'écrit pas dans un
@@ -2899,7 +2883,6 @@ function majBoutonsVehicule() {
   // qu'on ne voit pas finit par dire n'importe quoi sans que personne ne le
   // remarque.
   if (!enAvion) {
-    if (dernierMotVol !== 'VOLER') { dernierMotVol = 'VOLER'; flyLb.textContent = 'VOLER'; }
     dernierKmh = null;
     return;
   }
@@ -2940,7 +2923,13 @@ function majBoutonsVehicule() {
   const etat = player.avionEtat || (player.avionEnVol ? 'vol' : 'sol');
   const motVol = etat === 'sol' || etat === 'freinage' ? 'DÉCOLLER' : 'SE POSER';
   const motTrain = (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5 ? 'SORTI' : 'RENTRÉ';
-  if (motVol !== dernierMotVol) { dernierMotVol = motVol; flyLb.textContent = motVol; }
+  if (motVol !== dernierMotVol) {
+    dernierMotVol = motVol; flyLb.textContent = motVol;
+    // L'ICÔNE SUIT LE MOT (v504) : un avion qui monte pour décoller, un avion
+    // qui descend pour se poser — l'aile de Voler n'a rien à faire aux commandes.
+    const ic = document.querySelector('#fly-btn .ic');
+    if (ic) ic.innerHTML = motVol === 'DÉCOLLER' ? ICONES.decoller : ICONES.atterrir;
+  }
   if (motTrain !== dernierMotTrain) { dernierMotTrain = motTrain; trainLb.textContent = motTrain; }
   majCadranDeCap();
 }
@@ -2975,7 +2964,6 @@ function demarrerGPS(x, z, nom) {
   document.body.classList.add('gps-actif');
   majGPS();
   majMinicarteGPS();
-  toast(`🧭 GPS : en route vers ${gpsCible.nom} (${guidage(player.pos.x, player.pos.z, player.yaw, gpsCible).lisible})`, 0x6ee7b7);
 }
 function arreterGPS() {
   const avait = !!gpsCible;
@@ -2990,7 +2978,6 @@ function majGPS() {
   if (g.arrive || (gpsPrec && arriveEntre(gpsPrec.x, gpsPrec.z, x, z, gpsCible))) {
     const nom = gpsCible.nom;
     arreterGPS();
-    toast(nom === 'le point choisi' ? '🏁 Tu es arrivé !' : `🏁 Tu es arrivé à ${nom} !`, 0x6ee7b7);
     return;
   }
   gpsPrec = { x, z };
@@ -3006,7 +2993,6 @@ function majGPS() {
 document.getElementById('gps-stop').addEventListener('click', (e) => {
   e.preventDefault(); e.stopPropagation();
   arreterGPS();
-  toast('🧭 GPS arrêté.', 0xcfd8e8);
 });
 window.__gps = () => (gpsCible ? { ...gpsCible, ...guidage(player.pos.x, player.pos.z, player.yaw, gpsCible) } : null);
 // Pour les sondes et les témoins de mise en page : poser un trajet sans passer par la carte.
@@ -3237,7 +3223,9 @@ function renderEtendue() {
         const a = reglageDe(palierRetenu({ choix: e.cle, mesure: mesureRangee() }), IS_TOUCH);
         const b = reglageDe(PALIER, IS_TOUCH);
         const change = a.rr !== b.rr || a.file !== b.file || a.hd !== b.hd || a.loin !== b.loin;
-        toast(change ? `${e.mot} — reviens au menu 🏠 et rejoue` : `Graphismes : ${e.mot}`);
+        // Seul le choix qui attend le prochain lancement se dit (v290) : il
+        // dit QUOI FAIRE. La simple confirmation s'est tue (v504).
+        if (change) toast(`${e.mot} — reviens au menu et rejoue`);
       });
       etendueChoix.appendChild(b);
     }
@@ -3317,7 +3305,6 @@ document.getElementById('gyro-row').addEventListener('click', () => {
   if (settings.gyro) requestGyroPermission();
   renderSettings();
   saveSettings();
-  toast(settings.gyro ? '📱 Visée par mouvement activée' : '📱 Visée par mouvement désactivée', 0x9fd8e8);
 });
 
 // Applies the CHANGE in device angles to the camera, so gyro aiming and
@@ -3519,10 +3506,11 @@ let posteLu = -1;
 function guideUsine() {
   const pu = USINE();
   if (Math.abs(player.pos.x - pu.x) > 120 || Math.abs(player.pos.z - pu.z) > 120) { posteLu = -1; return; }
-  const i = player.flying ? -1 : posteSousLesPieds(player.pos.x, player.pos.y, player.pos.z);
-  if (i >= 0 && i !== posteLu) toast(POSTES[i].panneau, 0xffd75e, 6000);
-  posteLu = i;
+  // Le poste sous les pieds se suit toujours ; son panneau ne passe plus à
+  // l'écran (v504). Un témoin le lit par `__posteUsine`.
+  posteLu = player.flying ? -1 : posteSousLesPieds(player.pos.x, player.pos.y, player.pos.z);
 }
+window.__posteUsine = () => (posteLu >= 0 ? POSTES[posteLu].panneau : '');
 
 function garagiste(dt) {
   if (!garagistePret()) return;
@@ -3540,7 +3528,6 @@ animalManager.onHarvest = (def) => {
   meatCount++;
   try { localStorage.setItem(MEAT_KEY, String(meatCount)); } catch { /* ignore */ }
   renderMeat();
-  toast(`${def.meat} +1 ! (garde-manger : ${meatCount})`, 0xffd75e);
   emojiBurst([def.meat.split(' ')[0], '✨'], 10);
 };
 
@@ -3606,7 +3593,7 @@ function updatePlayersBtn() {
   }
   playersBtn.style.display = 'block';
   const n = net.playerCount();
-  playersBtn.textContent = `🌐 ${n} ▾`;
+  playersBtn.textContent = `${n} joueur${n > 1 ? 's' : ''}`;
   // Le bandeau porte le code : c'est ce qu'il faut dicter à l'autre pour qu'il
   // arrive, et c'est justement l'information qu'on cherche à ce moment-là.
   //
@@ -3711,7 +3698,6 @@ async function inviter(nom) {
   if (!net || !net.active) return false;
   try {
     await cloud.prefsPush(cleInvit(nom), { de: myName(), code: net.code, carte: 'terre', at: Date.now() });
-    toast(`✉️ Invitation envoyée à ${nom} !`, 0x7ee787);
     return true;
   } catch {
     toast('Impossible d\'envoyer l\'invitation — réessaie.', 0xff9d5e);
@@ -3799,7 +3785,6 @@ profileSync.onMerged = (state) => {
   const applied = state?.edits ? world.importerProfil(state.edits) : 0;
   if (applied > 0) {
     world.saveEdits();
-    toast(`☁️ ${applied} blocs arrivés d'un autre appareil !`, 0x9fd8e8);
   }
   positionDuCloud(state);
 };
@@ -3938,7 +3923,9 @@ function majPastilleSiege() {
   const actif = !!siege?.enCours();
   if (actif === siegeAllume) return;
   siegeAllume = actif;
-  siegeChip.style.display = actif ? 'block' : 'none';
+  // La pastille s'est tue avec les autres messages (v504) : l'état se suit
+  // toujours, rien ne s'affiche.
+  siegeChip.style.display = 'none';
   siegeChip.textContent = siege?.phase() === 'approche'
     ? '🐎 Des assaillants approchent !' : '⚔️ Assaut au château !';
 }
@@ -4080,7 +4067,6 @@ async function guetterConsignes() {
     try {
       if (await lireConsignes()) {
         appliquerConsignes();
-        toast('⚙️ Un parent vient de changer tes réglages.', 0x9fd8e8);
       }
     } catch { /* on repassera dans deux secondes */ }
   }
@@ -4275,7 +4261,6 @@ const identity = new Identity(cloud, raw);
   if (!asked) return;
   if (asked !== '135246') { toast('Code parental incorrect', 0xff6b6b); return; }
   identity.clearLock();
-  toast('🔓 Reconnaissance débloquée !', 0x9fd8e8);
   // On retire le code de la barre d'adresse — il n'a pas à rester dans
   // l'historique ni à repartir dans un lien partagé — sans toucher au reste
   // des paramètres, qui configurent le jeu.
@@ -4302,7 +4287,6 @@ identity.onLook = (name, look) => {
   playerProfile.look = look;
   saveProfile();
   refreshCharPortraits();
-  toast('🎨 Ton personnage te ressemble maintenant !', 0x9fd8e8);
 };
 
 // A face enrolled just before this profile was entered (typically a
@@ -4553,7 +4537,7 @@ function renderRecentWorlds() {
     chip.className = 'world-chip';
     const btn = document.createElement('button');
     btn.className = 'world-btn';
-    btn.textContent = `🌍 Monde ${roomCode}`;
+    btn.textContent = `Monde ${roomCode}`;
     btn.addEventListener('click', () => openWorld(roomCode));
     const open = document.createElement('button');
     open.className = 'world-open';
@@ -5117,9 +5101,8 @@ async function openWorld(code) {
     world.switchContext('local');
     return;
   }
-  if (ouvertVide) {
-    grandBandeau('🚪 MONDE OUVERT !', `Personne n'est encore là. Donne le code ${code} à ton ami·e !`, 5200);
-  }
+  // Le monde vide ne s'annonce plus en grand (v504) : le bandeau de lien
+  // (« Seul·e dans le monde … — donne ce code ») le dit dès qu'on y est.
   rememberWorld(code);
   cloud.attach(contexteCarte(code));
   onlineStatus.textContent = '';
@@ -5188,7 +5171,7 @@ function refreshCharPortraits() {
 NET_CHARACTERS.forEach((c, i) => {
   const btn = document.createElement('button');
   btn.className = 'char-btn' + (i === selectedChar ? ' active' : '');
-  btn.innerHTML = `<img src="${charPortraits[i]}" alt="${c.name}"><span>${c.emoji} ${c.name}</span>`;
+  btn.innerHTML = `<img src="${charPortraits[i]}" alt="${c.name}"><span>${c.name}</span>`;
   btn.addEventListener('click', () => {
     selectedChar = i;
     playerProfile.charIdx = i;
@@ -5216,7 +5199,7 @@ function showOnlineUI() {
     addChatMsg(name, msg, false);
     chatDing();
     if (chatPanel.style.display !== 'block') {
-      toast(`💬 ${name} : ${msg}`, 0x9fd8e8);
+      // La pastille du menu le dit ; le message ne passe plus à l'écran (v504).
       setUnread(unread + 1);
     }
     // Un message qui arrive pendant qu'on est ailleurs mérite le système : le
@@ -5234,7 +5217,7 @@ function showOnlineUI() {
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();
   net.onJoin = (nom) => annonceArrivee(nom);
-  net.onLeave = (nom) => toast(`👋 ${nom} est parti·e`, 0xcccccc);
+  net.onLeave = () => {};   // le départ ne s'annonce plus (v504)
   // ON NE RENVOIE PLUS L'ENFANT AU MENU AVEC UNE ACCUSATION.
   //
   // Ce message vient d'un hôte qui porte notre prénom. Le jeu ne l'envoie plus
@@ -5284,7 +5267,7 @@ function leaveToMainMenu() {
   syncRemotePlayers([]); // remove remote avatars
   for (const id of [...remoteTiles.keys()]) removeRemoteTile(id);
   removeLocalTile();
-  camBtn.style.display = 'none'; camBtn.textContent = '📷'; camBtn.classList.remove('on');
+  camBtn.style.display = 'none'; camBtn.innerHTML = ICONES.camera; camBtn.classList.remove('on');
   viderLaVisio();
   playersBtn.style.display = 'none';
   chatBtn.style.display = 'none';
@@ -5701,7 +5684,7 @@ camBtn.addEventListener('click', async () => {
 // l'invitation : deux chemins vers une seule vérité.
 async function allumerOuEteindreLaCamera() {
   const on = await net.toggleCam();
-  camBtn.textContent = on ? '🎥' : '📷';
+  camBtn.innerHTML = ICONES.camera;   // `.on` dit qu'elle est allumée (v504 : plus d'emoji)
   camBtn.classList.toggle('on', on);
   if (on) {
     // La caméra porte aussi le son, dans le même flux : se voir sans
@@ -5826,7 +5809,6 @@ document.getElementById('notif-toggle')?.addEventListener('click', async () => {
     return;
   }
   if (Notification.permission === 'granted') {
-    toast('🔔 Déjà activé ! (pour couper, va dans les réglages du navigateur)', 0x9fd8e8);
     return;
   }
   if (Notification.permission === 'denied') {
@@ -5836,9 +5818,6 @@ document.getElementById('notif-toggle')?.addEventListener('click', async () => {
   // Ici, et seulement ici, on est dans un vrai geste de l'utilisateur.
   try { await Notification.requestPermission(); } catch { /* refusé */ }
   majLigneNotif();
-  if (Notification.permission === 'granted') {
-    toast('🔔 C\'est activé ! Tu seras prévenu quand un ami arrive.', 0x58b04c);
-  }
 });
 document.getElementById('settings-btn')?.addEventListener('click', majLigneNotif);
 majLigneNotif();
@@ -5915,12 +5894,6 @@ function proposerNotifs(raison) {
       try { await Notification.requestPermission(); } catch { /* refusé */ }
       majLigneNotif();
       notifMemoEcrire({ n: NOTIF_MAX, t: Date.now() });   // question réglée
-      toast(
-        Notification.permission === 'granted'
-          ? '🔔 C\'est activé ! Tu seras prévenu quand un ami arrive.'
-          : '🔕 Pas de souci — tu pourras l\'activer dans ⚙️ Réglages.',
-        Notification.permission === 'granted' ? 0x58b04c : 0x9fd8e8
-      );
     };
   }
   tard.onclick = () => fermerCarteNotif();
@@ -5960,7 +5933,6 @@ function grandBandeau(titre, sous, duree = 3200) {
 }
 
 function annonceArrivee(nom) {
-  grandBandeau('👋 UN JOUEUR ARRIVE !', `${nom} vient de rejoindre ton monde !`);
   carillon([660, 990, 1320]); // trois notes qui montent : quelqu'un entre
   emojiBurst(['👋', '🎉', '✨'], 14);
 
@@ -6123,7 +6095,6 @@ async function pullPlayTime() {
     const applied = world.importerProfil(state.edits);
     if (applied > 0) {
       world.saveEdits();
-      toast(`☁️ ${applied} blocs retrouvés depuis tes autres appareils !`, 0x9fd8e8);
     }
   }
   if (changed && !already) {
@@ -6383,7 +6354,6 @@ gradeSelect.addEventListener('change', () => {
   saveProfile();
   edu.setPrefs(playerProfile.lang, playerProfile.grade);
   pushPrefsToCloud();
-  toast(`🎓 Niveau réglé : ${GRADES[playerProfile.grade][0]} · ${GRADES[playerProfile.grade][1]}`, 0x9fd8e8);
 });
 edu.setPrefs(playerProfile.lang, playerProfile.grade);
 
@@ -6479,7 +6449,6 @@ function adopterProfilDistant(prefs) {
     }
   }
   if (changed || skillsChanged) {
-    toast('☁️ Tes réglages et ton avancement ont été retrouvés sur le serveur !', 0x9fd8e8);
   }
 })();
 
@@ -6521,26 +6490,11 @@ function adopterProfilDistant(prefs) {
 const creatureLabel = document.getElementById('creature-label');
 
 function updateCreatureLabel() {
-  if (running) {
-    for (const npc of npcs) {
-      if (npc.isTargeted()) {
-        creatureLabel.style.display = 'block';
-        creatureLabel.textContent = npc.label;
-        creatureLabel.style.color = '#fff';
-        return;
-      }
-    }
-    const animal = animalManager.targeted();
-    if (animal) {
-      creatureLabel.style.display = 'block';
-      creatureLabel.textContent =
-        `${animal.def.emoji} ${animal.def.name}${animal.baby ? ' (bébé)' : ''} · ${animal.def.cry}`;
-      creatureLabel.style.color = '#fff';
-      return;
-    }
-  }
-  // Plus de créature sauvage à nommer depuis la v285 : l'étiquette ne sert plus
-  // qu'aux bêtes et aux montures, juste au-dessus.
+  // L'ÉTIQUETTE DE CE QU'ON VISE S'EST TUE (v504, Max : « les messages qui
+  // s'affichent dans le jeu… tu vires tous ces messages-là ») : « 🐴 Cheval ·
+  // Hiiii ! » et « Marlon — ton compagnon ! » passaient au milieu de l'écran
+  // dès que le réticule effleurait quelqu'un. La bête se voit ; la pilule
+  // d'action dit ce qu'on peut faire avec elle.
   creatureLabel.style.display = 'none';
 }
 
@@ -6728,7 +6682,7 @@ function celluleBati(m, sousTitre, surRemplace) {
   cell.appendChild(petit);
   if (surRemplace) {
     const melanger = document.createElement('span');
-    melanger.textContent = '🔀';
+    melanger.innerHTML = ICONES.melanger;
     melanger.title = 'Voir le modèle suivant';
     melanger.style.cssText = 'position:absolute;top:4px;right:6px;cursor:pointer';
     melanger.addEventListener('click', (e) => { e.stopPropagation(); surRemplace(cell); });
@@ -7281,7 +7235,6 @@ const carte = new Carte({
     carte.limiter();
     deposerA(lieu.x + 1.5, lieu.z + 1.5);   // sur la trame des rues, pas dans une maison
     fermerCarte();
-    toast(`🧳 Voyage vers ${lieu.name} !`, 0xffd75e);
   },
   // « 🧭 S'y rendre » : on ne bouge pas, on reçoit une flèche (v306). Un lieu
   // nommé (étiquette, recherche) garde son nom (v321).
@@ -7293,10 +7246,8 @@ const carte = new Carte({
   surTeleport: (wx, wz) => {
     const { dansEau } = deposerA(wx, wz);
     fermerCarte();
-    toast(
-      dansEau ? '🌊 Téléporté en pleine mer — nage jusqu\'à la terre !' : '✨ Téléporté ! Bon voyage.',
-      dansEau ? 0x6ec8ff : 0xffd75e
-    );
+    // Seule la mer se dit : elle dit quoi faire (v504).
+    if (dansEau) toast('🌊 Téléporté en pleine mer — nage jusqu\'à la terre !', 0x6ec8ff);
   },
 });
 
@@ -7405,7 +7356,7 @@ function montrerResultats() {
     // La distance dit quelque chose d'utile : « Tokyo, à 2 400 blocs » prépare
     // l'enfant au voyage au lieu de le téléporter à l'aveugle.
     const d = Math.round(Math.hypot(lieu.x - player.pos.x, lieu.z - player.pos.z));
-    b.textContent = `📍 ${lieu.name}  ·  ${d} blocs`;
+    b.textContent = `${lieu.name}  ·  ${d} blocs`;
     b.addEventListener('click', () => allerAuLieu(lieu));
     listeLieux.appendChild(b);
   }
@@ -7875,7 +7826,6 @@ function adopterCiel({ temps, meteo, rue }) {
   if ((meteo === 'clear' || meteo === 'rain') && meteo !== weather) {
     weather = meteo;
     rainPoints.visible = weather === 'rain';
-    if (running) toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
   }
 }
 
@@ -7893,8 +7843,7 @@ function updateWeather(dt) {
     weather = weather === 'clear' ? 'rain' : 'clear';
     weatherTimer = weather === 'rain' ? 50 + Math.random() * 70 : 140 + Math.random() * 160;
     rainPoints.visible = weather === 'rain';
-    if (running) toast(weather === 'rain' ? '🌧️ Il pleut !' : '🌈 Le soleil revient !', 0x9fd8e8);
-    // le changement part tout de suite : c'est ce qui se voit le plus
+    // La pluie se voit, elle ne s'annonce plus (v504). Le changement part tout de suite : c'est ce qui se voit le plus
     if (net && net.active && net.isHost) net.diffuserCiel(cielDuMonde());
   }
   if (weather === 'rain') animerPluie(dt);
@@ -7953,7 +7902,6 @@ let seasonTime = 0, seasonToastShown = false;
 function updateSeasons(dt) {
   if (!seasonToastShown && running) {
     seasonToastShown = true;
-    toast(`${SEASON.emoji} C'est ${SEASON.label} dans le monde !`, 0xfff1b8);
   }
   seasonTime += dt;
   const pos = seasonGeo.attributes.position;
@@ -8320,7 +8268,7 @@ commandes = initCommandes({
   choisirOutil: (casser) => {
     breakMode = !!casser;
     const mb = document.getElementById('mode-btn');
-    if (mb) mb.textContent = breakMode ? '⛏️' : '🧱';
+    if (mb) mb.innerHTML = breakMode ? ICONES.casser : ICONES.poser;
   },
 });
 if (IS_TOUCH) {
@@ -8346,6 +8294,9 @@ window.__setMeteo = (m) => {
   rainPoints.visible = weather === 'rain';
   weatherTimer = 999;   // on éprouve la synchronisation, pas le hasard
 };
+// Le VRAI changement de temps, par le minuteur que le jeu dépense (v504) :
+// c'est le chemin qui annonçait « 🌧️ Il pleut ! », et le témoin le prend.
+window.__forcerMeteo = () => { weatherTimer = 0; };
 window.__eau = () => waterMaterial.userData.temps.value;
 window.__carte = carte;   // les tests regardent la vue et la pilotent
 window.__alerte = (k, v, t) => alerte(k, v, t);
@@ -8377,7 +8328,9 @@ window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 // Les panneaux à lire sur place : une fois par visite, en temps réel (v460).
 const guides = creerGuides({
-  dire: (texte) => toast(texte, 0xffe8a3, DUREE_PANNEAU_MS),
+  // Les panneaux des monuments ne passent plus à l'écran (v504, Max) : la
+  // mécanique reste (une fois par visite), elle ne dit plus rien.
+  dire: () => {},
   maintenant: () => performance.now(),
 });
 window.__guides = guides;
@@ -8410,14 +8363,11 @@ let derniereMesureVue = 0;
 let elanAnnonce = false;
 let croisiereAnnonce = false;
 function signalerElanDeVol() {
-  const lance = player.volLance();
-  if (lance && !elanAnnonce) toast('🚀 Vol rapide — et ça continue d\'accélérer !', 0x6ec8ff);
-  elanAnnonce = lance;
-  // Puis la vitesse grandit sans bruit — sauf une fois, au sommet : l'enfant
-  // sait qu'il tient sa vitesse de croisière et qu'insister ne donnera plus.
-  const croisiere = player.volCroisiere && player.volCroisiere();
-  if (croisiere && !croisiereAnnonce) toast('✈️ Vitesse de croisière — le monde défile !', 0x9fd8ff);
-  croisiereAnnonce = croisiere;
+  // PLUS DE MOT (v504, Max : « tu vires tous ces messages-là ») : l'élan et
+  // la croisière se voient au monde qui défile. Les drapeaux restent, pour
+  // qu'un témoin lise encore l'état.
+  elanAnnonce = player.volLance();
+  croisiereAnnonce = !!(player.volCroisiere && player.volCroisiere());
 }
 
 function frame(now) {

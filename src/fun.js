@@ -30,6 +30,7 @@ import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensation
 import { brancherTraces, avancerTraces, chaufferTraces } from './traces.js';
 import { creerEmbarquement, ATTENTE_RAME_MIN } from './embarquement.js';
 import { chronoReel } from './cadence.js';
+import { ICONES, avecIcone, pastille } from './commandes.js';
 
 // Le sac (`web-minecraft-bag-v1`), la quête (`web-minecraft-quest-v1`), le
 // coffre (`web-minecraft-chest-v1::…`) et le chantier
@@ -179,7 +180,7 @@ export function initFun(ctx) {
   });
 
   const targetRow = el(`<div class="fun-target" id="fun-target">
-    <button id="feed-btn">🍼 Nourrir</button><button id="ride-btn">🐴 Monter</button><button id="board-btn">🚇 Monter à bord</button>
+    <button id="feed-btn">${avecIcone('nourrir', 'Nourrir')}</button><button id="ride-btn">${avecIcone('monter', 'Monter')}</button><button id="board-btn">${avecIcone('monter', 'Monter à bord')}</button>
   </div>`);
 
   // Un seul corps, plus d'onglets : le panneau n'a plus que les Souvenirs.
@@ -232,10 +233,7 @@ export function initFun(ctx) {
       const baby = new AnimalClass(a.def, (a.pos.x + partner.pos.x) / 2, a.pos.y + 0.3, (a.pos.z + partner.pos.z) / 2, true);
       animalManager.animals.push(baby);
       animalManager.scene.add(baby.mesh);
-      toast(`${a.def.emoji} Un bébé ${a.def.name.toLowerCase()} est né ! 🍼`, 0xffc9dd);
       emojiBurst(['🍼', '💖', a.def.emoji], 16);
-    } else {
-      toast(`${a.def.emoji} ${a.def.name} adore les câlins ! (il faut 2 ${a.def.name.toLowerCase()}s adultes proches pour un bébé)`, 0xffd7e0);
     }
   }
 
@@ -286,7 +284,7 @@ export function initFun(ctx) {
       moteurCoupe(); radioCoupe();
       quitte.montee = false;
       degats.descend();   // dégâts (v343) : plus d'état publié à pied
-      if (!silencieux && !rangerAuGarage(quitte)) toast('🐴 Tu es descendu·e.', 0xd8c9a4);
+      if (!silencieux) rangerAuGarage(quitte);
       return;
     }
     if (!montable(a)) return;
@@ -306,16 +304,7 @@ export function initFun(ctx) {
     // taise. Même discipline que `montable` et `vole`.
     if (a.def.moteur) moteurDemarre(a.def.moteur);
     if (a.def.radio) radioDemarre();
-    const allure = allureMonture(a);
-    if (a.def.pilote) {
-      // Un enfant de sept ans doit savoir QUOI FAIRE, pas ce que le jeu
-      // calcule. Trois gestes, dans l'ordre où on s'en sert.
-      toast(`${a.def.emoji} Aux commandes du ${a.def.name.toLowerCase()} !`
-        + ' Le joystick fait rouler, ✈️ met les gaz — le nez se lève tout seul.', 0xa8d8ff);
-    } else {
-      toast(`${a.def.emoji} En selle sur ${a.def.name.toLowerCase()} ! Vitesse ×${allure.toFixed(1).replace('.0', '')}`
-        + ' — refais pareil pour descendre.', 0xffe07a);
-    }
+    // Monter ne s'annonce plus (v504, Max) : le bouton dit « Descendre ».
     emojiBurst([a.def.emoji, '💨'], 8);
   }
 
@@ -367,7 +356,6 @@ export function initFun(ctx) {
     const assis = () => {
       passager = { de: ami.id, s, nom: ami.nom };
       player.vel.set(0, 0, 0);
-      toast(`🚗 Tu montes avec ${ami.nom} ! Appuie encore pour descendre.`, 0xa8d8ff);
       emojiBurst(['🚗', '💨'], 8);
     };
     // PAR LA PORTIÈRE DROITE, comme au volant (v377) : la séquence marche,
@@ -383,7 +371,6 @@ export function initFun(ctx) {
     passager = null;           // plus passager dès le premier appui (v384)
     player.vel.set(0, 0, 0);
     if (silencieux) return;
-    toast(`🚶 Tu descends de la voiture de ${nom}.`, 0xd8c9a4);
     // PAR LA PORTIÈRE DROITE, comme on est monté (v384) : la séquence à
     // l'envers sur la voiture de l'ami, et l'ami voit sa portière s'ouvrir
     const veh = vehiculeDistant ? vehiculeDistant(de) : null;
@@ -425,7 +412,6 @@ export function initFun(ctx) {
     bord = null;               // plus à bord dès le premier appui (v489, comme v366)
     player.vel.set(0, 0, 0);
     if (silencieux) return;
-    toast(`🚶 Tu descends du ${nom}.`, 0xd8c9a4);
     // PAR LA PORTE, SI LA RAME EST À QUAI (v489) : sinon l'ancien geste
     const r = rameDe(id);
     if (r && r.aQuai) embarquement.descendreRame(r);
@@ -482,7 +468,6 @@ export function initFun(ctx) {
     // elle s'arrête (elle n'est plus dans le convoi) et l'enfant y MARCHE : une
     // voiture de la rue est vide, personne n'en est sorti (v366)
     monterDans(auto);
-    toast(`🚗 Tu prends le volant ${pris.nom ? `de la ${pris.nom}` : 'de la voiture'} !`, 0xa8d8ff);
     return true;
   }
 
@@ -499,7 +484,6 @@ export function initFun(ctx) {
     if (place.nom === 'voiture' && conduireLaVoiture(place)) return;
     const aBord = () => {
       bord = { id: place.id, nom: place.nom, emoji: place.emoji };
-      toast(`${place.emoji} Tu montes dans le ${place.nom} ! Il t'emmène — appuie encore pour descendre.`, 0xa8d8ff);
       emojiBurst([place.emoji, '💨'], 8);
     };
     // PAR LA PORTE, SI LA RAME EST À QUAI (v489) : l'enfant marche jusqu'à la
@@ -748,7 +732,6 @@ export function initFun(ctx) {
     if (net && net.active && net.sendLot) net.sendLot(lot);
     records.blocks += lot.length;
     saveRecords();
-    toast(`${m.emoji} ${m.nom} — ${lot.length.toLocaleString('fr')} blocs posés !`, 0xffd166);
     panel.style.display = 'none';
   }
 
@@ -779,7 +762,7 @@ export function initFun(ctx) {
       d.innerHTML = `<img src="${p}">`;
       const del = document.createElement('button');
       del.className = 'del';
-      del.textContent = '🗑';
+      del.innerHTML = ICONES.corbeille;
       del.addEventListener('click', () => {
         photos.splice(i, 1);
         saveJson(PHOTOS_KEY, photos);
@@ -790,7 +773,7 @@ export function initFun(ctx) {
       // là où il existe (iPad, téléphone) ; un enregistrement direct sinon.
       const garder = document.createElement('button');
       garder.className = 'garder';
-      garder.textContent = '📤';
+      garder.innerHTML = ICONES.partager;
       garder.title = 'Garder la photo';
       garder.addEventListener('click', async () => {
         try {
@@ -845,8 +828,7 @@ export function initFun(ctx) {
     photosNuage?.pousser();
     flash.style.opacity = 0.9;
     setTimeout(() => { flash.style.opacity = 0; }, 120);
-    // Le chemin dit dans le toast est le vrai : un bouton, l'album.
-    toast('📸 Photo rangée dans 🖼️ Souvenirs !', 0x9fd8e8);
+    // Le flash dit que la photo est prise ; le bandeau s'est tu (v504).
   });
 
   // ---- daily treasure -------------------------------------------------------
@@ -891,7 +873,6 @@ export function initFun(ctx) {
       records.treasures++; saveRecords();
       // Le sac et le feu d'artifice sont partis avec l'atelier (v255) : la
       // récompense, c'est la fête — et un trésor de plus au compteur.
-      toast('💰 TRÉSOR DU JOUR trouvé ! Bravo !', 0xffd75e);
       emojiBurst(['💰', '🪙', '🎉', '⭐'], 30);
     }
   }
@@ -916,7 +897,7 @@ export function initFun(ctx) {
   // l'appui. Dans la rangée, il ne peut plus recouvrir quoi que ce soit, et il
   // se voit enfin pour ce qu'il est.
   document.getElementById('map-outils')?.insertAdjacentHTML('beforeend',
-    '<button id="treasure-hint-btn" title="Où est le trésor du jour ?">💰 trésor</button>');
+    `<button id="treasure-hint-btn" title="Où est le trésor du jour ?">${avecIcone('tresor', 'trésor')}</button>`);
   document.getElementById('treasure-hint-btn')?.addEventListener('click', () => {
     treasureHint();
     // On referme par le bouton de fermeture, jamais en cachant la modale à la
@@ -944,15 +925,14 @@ export function initFun(ctx) {
     const de = Math.hypot(player.pos.x - RACE_END.x - 0.5, player.pos.z - RACE_END.z - 0.5);
     if (raceTime === null && ds < 2.5 && raceCooldown <= 0) {
       raceTime = 0;
-      toast('🏁 COURSE ! File jusqu\'au drapeau à damier !', 0x6ee06e);
     } else if (raceTime !== null) {
       raceTime += dtr;
       if (de < 2.5) {
         const t = raceTime;
         raceTime = null; raceCooldown = 5;
         const best = records.bestRace;
-        if (!best || t < best) { records.bestRace = t; saveRecords(); toast(`🏁 ${t.toFixed(1)} s — NOUVEAU RECORD !`, 0xffd75e); emojiBurst(['🏁', '🏆'], 16); }
-        else toast(`🏁 ${t.toFixed(1)} s (record : ${best.toFixed(1)} s)`, 0x9fd8e8);
+        // Le record s'écrit toujours ; il ne s'annonce plus (v504).
+        if (!best || t < best) { records.bestRace = t; saveRecords(); emojiBurst(['🏁', '🏆'], 16); }
       } else if (raceTime > 60) { raceTime = null; }
     }
     // parkour podium
@@ -962,7 +942,6 @@ export function initFun(ctx) {
         player.pos.y > baseY + 9) {
       parkourDone = true;
       records.parkour++; saveRecords();
-      toast('🤸 PARKOUR RÉUSSI ! Champion·ne !', 0xffd75e);
       emojiBurst(['🤸', '🏆', '🎉'], 20);
     }
   }
@@ -1029,7 +1008,6 @@ export function initFun(ctx) {
     monture.garage = g.id;
     // LE GARAGE RÉPARE (v343) : une voiture garée ressort neuve.
     degats.reparer(monture.mesh);
-    toast(`🅿️ ${nom} est garée — tu la retrouveras ici, même demain.`, 0xa8d8ff);
     emojiBurst(['🅿️', '🚗'], 8);
     return true;
   }
@@ -1270,9 +1248,13 @@ export function initFun(ctx) {
     if (etat === dernierBord) return;
     dernierBord = etat;
     const boardB = document.getElementById('board-btn');
-    boardB.textContent = bord ? `⬇️ Descendre du ${bord.nom}`
-      : v && v.nom === 'voiture' ? '🚗 Conduire cette voiture'
-        : `${v ? v.emoji : '🚇'} Monter à bord`;
+    // PLUS D'EMOJI SUR UN BOUTON (v504) : une icône dessinée dit le geste,
+    // le mot dit quoi ; la ligne d'un métro garde sa pastille de couleur, et
+    // `data-quoi` nomme ce qu'on prend, pour les témoins.
+    boardB.innerHTML = bord ? avecIcone('sortir', `Descendre du ${bord.nom}`)
+      : v && v.nom === 'voiture' ? avecIcone('volant', 'Conduire cette voiture')
+        : avecIcone((v && pastille(v.emoji)) || 'monter', 'Monter à bord');
+    boardB.dataset.quoi = bord ? bord.nom : v ? v.nom : '';
     boardB.style.display = bord || v ? 'block' : 'none';
     if (etat && targetRow.style.display === 'none') targetRow.style.display = 'flex';
   }
@@ -1331,13 +1313,15 @@ export function initFun(ctx) {
     // Aux commandes d'un avion, le bouton est rond dans la colonne de bord :
     // l'icône et son mot, comme ✈️ et 🛞. Le texte reste « Descendre ».
     const auxCommandes = riding && riding.def && riding.def.pilote;
-    const texteRide = passager ? '⬇️ Descendre'
-      : riding ? '⬇️ Descendre'
-        : ami ? `🚗 Monter avec ${ami.nom}`
-          : `${m ? m.def.emoji : '🐴'} ${verbe(m && m.def)}`;
-    const htmlRide = auxCommandes ? '<span class="ic">⬇️</span><span class="lb">Descendre</span>' : null;
-    if (htmlRide) { if (rideB.innerHTML !== htmlRide) rideB.innerHTML = htmlRide; }
-    else if (rideB.textContent !== texteRide) rideB.textContent = texteRide;
+    // Le mot dit QUELLE bête : l'emoji qui le disait est parti (v504), le nom
+    // le remplace, et `data-quoi` porte sa clé pour les témoins.
+    const nomBete = m && m.def.name ? ` · ${m.def.name.split(' ')[0]}` : '';
+    const htmlRide = auxCommandes ? `<span class="ic">${ICONES.sortir}</span><span class="lb">Descendre</span>`
+      : passager || riding ? avecIcone('sortir', 'Descendre')
+        : ami ? avecIcone('volant', `Monter avec ${ami.nom}`)
+          : avecIcone(m && m.def.pilote ? 'piloter' : 'monter', `${verbe(m && m.def)}${nomBete}`);
+    if (rideB.innerHTML !== htmlRide) rideB.innerHTML = htmlRide;
+    rideB.dataset.quoi = riding || passager ? '' : ami ? 'ami' : m ? m.def.key : '';
     rideB.style.display = riding || m || ami || passager ? 'block' : 'none';
     // Le bouton « à bord » a son propre rythme : on le laisse faire, sinon les
     // deux se contrediraient quatre fois par seconde.
