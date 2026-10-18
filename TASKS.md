@@ -1,5 +1,20 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DE LA v503 (la barre de blocs en bas) : aucun rouge de la
+  livraison, double mesure faite.** Au portail (`npm test`, banc chargé :
+  pages jusqu'à 68 s pour `__game`), rouges sur `degats.js`, `maj.js`,
+  `monte.js`. Rejouées SEULES des deux côtés : `degats.js` branche 47 verts /
+  0 rouge, `origin/main` (v501) 45 / 1 (« percuter une voiture de la rue
+  l'abîme AUSSI ») ; `maj.js` branche 63 / 0 (les six témoins neufs de la
+  construction verts aux deux tailles, « toucher l'écran casse en
+  construction » compris, rouge une fois au portail à 420 × 760), `origin/main`
+  53 / 3 (le loader qui compte les fichiers, « une mise à jour ne compte pas
+  comme un plantage », « Failed to resolve module specifier three ») ;
+  `monte.js` branche 243 / 3 (flâneur de Rome, « au feu… au lieu de piler »,
+  « rue vide », tous déclarés plus bas), `origin/main` 241 / 5 (les mêmes
+  feu et rue vide, plus « deux voisines d'un convoi », « la rue se fabrique
+  par tranches », « un mur pris de face »).
+
 - [ ] **`monte.js` « à l'arrivée d'une téléportation, le fil principal
   n'engendre pas les morceaux que le worker va rendre » INTERMITTENT au portail
   de la v502.** Vert au premier portail (1 morceau, `Player.update`), rouge au
