@@ -597,6 +597,8 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
             // dessine ce qu'elle rend, et les passants butent dessus (v425)
             const m = mobilierTrottoir((dx, dy, dz) => localGet(x + dx, y + dy, z + dz), ox + x, oz + z, optsMobilier);
             if (!m) continue;
+            // écrasé par une voiture (v523) : le morceau se remaille sans lui
+            if (world.mobilierCasse && world.mobilierCasse.size && world.mobilierCasse.has((ox + x) + ',' + (oz + z))) continue;
             if (m.genre === 'potelet') poteletHD(facades, x, y, z, m.cote);
             else if (m.genre === 'corbeille') corbeilleHD(facades, x, y, z, m.cote);
             else if (m.genre === 'terrasse') terrasseHD(facades, x, y, z, ox + x, oz + z, m.vers);

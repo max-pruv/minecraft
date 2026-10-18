@@ -1,5 +1,23 @@
 # Ce qui est en cours
 
+- [ ] **Le mobilier se casse (v523) : ce qui reste, et deux décisions pour
+  Max.** (1) LES RUES SONT ÉTROITES, ET C'EST MESURÉ
+  (`tests/sonde-mobilier-route.cjs`, le long des circuits) : chaussée médiane
+  6,5 blocs dans les villes engendrées (p10 6), 13 à Paris, 6,5 à Londres
+  (18 % sous 4,5) ; trottoir à droite 1,5 bloc (médiane), mobilier à la
+  bordure. Une voiture de 2,26 centrée sur sa voie garde 2,1 blocs de marge ;
+  à un bloc d'écart vers le trottoir, 60 à 100 pièces par kilomètre. Élargir
+  (pas de trame, chaussée, recul du mobilier) change le sol sous ce que les
+  enfants ont bâti : décision de Max, non faite. Piste moins chère, à mesurer :
+  reculer le seul mobilier de bordure d'un bloc dans les villes engendrées
+  (`mobilierVillesMonde`), ce qui ne touche que des blocs de décor. (2) Un
+  réverbère, un feu ou une jardinière qu'un ENFANT a posés ne se cassent pas
+  (restent des obstacles) : à confirmer par Max. Dettes : Manhattan garde ses
+  obstacles (mobilier instancié par lots, rien à coucher seul) ; la casse
+  n'est pas partagée en ligne (l'ami voit le poteau debout, et sa voiture y
+  bute chez lui) ; un fût tombé vers la chaussée peut y dépasser, et les
+  voitures de la rue passent au travers ; les arbres de rue (`LOG`) restent
+  durs.
 ## LES ROUGES DU PORTAIL DE LA v522 — intermittents de `monte.js`, aucun causé par la livraison
 
 La v522 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le
