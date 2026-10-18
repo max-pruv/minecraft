@@ -100,6 +100,77 @@ const position = (p) => p.evaluate(() => ({
     verifier('le menu du jeu ne recouvre pas la carte',
       (await tab.evaluate(() => getComputedStyle(document.getElementById('overlay')).display)) === 'none');
 
+    // LA REVUE D'ÉCRAN (v507), LIGNES #2, #14 ET #16. Une bête devant soi
+    // allume la pilule « Monter · Âne » (z-index 30), et la carte (14)
+    // passait SOUS elle : un doigt qui visait un bouton de la carte montait
+    // sur l'âne. On pose la bête, on attend la pilule, on rouvre la carte, et
+    // l'on demande au document ce qui reçoit le doigt au centre de chaque
+    // bouton de la carte — `elementFromPoint`, la question que pose le doigt.
+    const revue = await tab.evaluate(async () => {
+      const g = window.__game;
+      const att = (ms) => new Promise((r) => setTimeout(r, ms));
+      document.getElementById('map-modal-close').click();
+      await att(200);
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const x = g.player.pos.x - Math.sin(g.player.yaw) * 3;
+      const z = g.player.pos.z - Math.cos(g.player.yaw) * 3;
+      const pose = !!g.animalManager.invoquer('ane', x, z);
+      const pilule = document.getElementById('ride-btn');
+      const t0 = performance.now();
+      while (performance.now() - t0 < 15000 && !(pilule && pilule.offsetParent)) await att(150);
+      const pilVue = !!(pilule && pilule.offsetParent);
+      if (document.getElementById('minimap').style.display !== 'block') document.getElementById('map-btn').click();
+      document.getElementById('minimap').click();
+      await att(600);
+      const modal = document.getElementById('map-modal');
+      const boutons = [...modal.querySelectorAll('button, input')].filter((b) => b.offsetParent);
+      const fautes = [];
+      for (const b of boutons) {
+        const r = b.getBoundingClientRect();
+        const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        // Le doigt doit tomber sur CE bouton, et il doit se voir : un bouton
+        // caché laisse passer le doigt à la fiche, ce qui n'est pas mieux.
+        if (!e || !b.contains(e) || getComputedStyle(b).visibility !== 'visible') fautes.push(`${b.id || b.textContent.trim()} → ${e ? (e.id || e.className || e.tagName) : 'rien'}`);
+      }
+      // Et la pilule elle-même ne prend plus aucun doigt, où qu'elle soit.
+      const rp = pilule.getBoundingClientRect();
+      const sous = rp.width ? document.elementFromPoint(rp.x + rp.width / 2, rp.y + rp.height / 2) : null;
+      const sousPilule = !!sous && document.getElementById('fun-target').contains(sous);
+      // #14 : la fiche est claire, et plus un emoji dans ce qu'elle écrit.
+      const lum = (c) => { const m = c.match(/[\d.]+/g).map(Number); return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255; };
+      const fiche = lum(getComputedStyle(document.getElementById('map-modal-card')).backgroundColor);
+      const texte = [modal.innerText, document.getElementById('map-chercher').placeholder].join(' ');
+      const emojis = texte.match(/\p{Extended_Pictographic}/gu) || [];
+      const icones = modal.querySelectorAll('#map-loupe svg, #map-appui svg').length;
+      document.getElementById('map-modal-close').click();
+      await att(300);
+      // #16 : le menu ouvert voile le HUD, et la pilule s'y tait.
+      document.getElementById('menu-btn').click();
+      await att(400);
+      const ui = Number(getComputedStyle(document.getElementById('touch-ui')).opacity);
+      const pilMenu = getComputedStyle(document.getElementById('fun-target')).visibility;
+      const menuOuvert = document.getElementById('menu-jeu').classList.contains('ouvert');
+      document.getElementById('menu-reprendre').click();
+      await att(300);
+      const uiApres = Number(getComputedStyle(document.getElementById('touch-ui')).opacity);
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      return { pose, pilVue, boutons: boutons.length, fautes,
+        sousPilule,
+        fiche: +fiche.toFixed(2), emojis, icones, menuOuvert, ui, pilMenu, uiApres };
+    });
+    console.log(`   🔎 revue d'écran : ${JSON.stringify(revue)}`);
+    verifier('une bête devant soi, la carte ouverte : chaque bouton de la carte reçoit le doigt',
+      revue.pose && revue.pilVue && revue.boutons >= 6 && revue.fautes.length === 0 && !revue.sousPilule,
+      JSON.stringify(revue));
+    verifier('la carte est en verre clair, avec ses icônes dessinées et sans emoji',
+      revue.fiche > 0.85 && revue.emojis.length === 0 && revue.icones === 2, JSON.stringify(revue));
+    verifier('le menu ouvert voile le HUD et tait la pilule, et le rend en se fermant',
+      revue.menuOuvert && revue.ui < 0.5 && revue.pilMenu === 'hidden' && revue.uiApres > 0.9,
+      JSON.stringify(revue));
+    await banc.ouvrirLaCarte(tab);
+
     // --- se promener ---------------------------------------------------------
     const c = await cadre(tab);
     // Un coin plutôt que le centre : au centre il y a le joueur, et souvent

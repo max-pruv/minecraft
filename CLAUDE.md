@@ -898,6 +898,29 @@ boutons… enlève les messages qui s'affichent dans le jeu ». Cinq règles.
   `/Orange/.test(quoi)` : on cherche l'emoji retiré dans `tests/` avant de
   lancer le portail, et l'on repointe vers le mot.
 
+## La carte du monde se ferme au jeu (v507) — un panneau plein écran cache le HUD, il ne compte pas sur son z-index
+
+Deux règles.
+
+- **UN PANNEAU QUI PREND L'ÉCRAN CACHE LE HUD DE JEU, PAR UNE CLASSE DU
+  `body`.** La carte (z-index 14) passait sous la pilule « Monter » (30) : un
+  doigt qui visait un bouton de la carte montait sur l'âne. Remonter la carte
+  au-dessus de tout l'aurait mise au-dessus du quiz (invariant 2) ; on cache
+  donc le HUD (`body.carte-ouverte`, `visibility` et jamais `display`, que des
+  témoins lisent). Le menu ☰ voile le même HUD (`:has(#menu-jeu.ouvert)`,
+  opacité, pas de flou). Le témoin demande `elementFromPoint` au centre de
+  chaque bouton du panneau, une bête devant soi : un élément neuf du HUD posé
+  au-dessus de 14 doit entrer dans la liste, ou il rougit. **Et une liste de ce
+  qu'on cache se relit contre ce qui vit DANS le panneau** : le bouton trésor de
+  `fun.js` est inséré dans `#map-outils`, et mon premier jet le cachait avec le
+  HUD. Le témoin l'a laissé passer, parce qu'un bouton caché rend le doigt à la
+  fiche : il exige désormais que le doigt tombe sur LE bouton visé, visible.
+- **LA PEAU DE LA CARTE EST CLAIRE, SON DESSIN NE CHANGE PAS.** La matière
+  claire (v276) ne touche que la fiche, la recherche, les boutons, la légende ;
+  le canvas garde ses couleurs, que les témoins de `carte.js` lisent en pixels.
+  Les icônes de la fiche viennent d'`ICONES` (`chercher`, `appui`), posées par
+  `main.js` ; la légende dessine ses repères en CSS, aux couleurs du canvas.
+
 ## La barre de blocs en bas (v503) — une décision de Max annule une règle, et la règle se redit en relatif
 
 Max : « le mode construction, ça va pas du tout. On affiche les briques dans une

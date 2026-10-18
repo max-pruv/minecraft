@@ -2259,6 +2259,66 @@
     body.hud-simple #cap-regle { background: linear-gradient(90deg, rgba(17,26,46,0.08), rgba(17,26,46,0.3), rgba(17,26,46,0.08)); }
     body.hud-simple #cap-regle::before { background: var(--encre, #111A2E); }
 
+    /* LA CARTE DU MONDE EN MATIÈRE CLAIRE (v507, revue d'écran #14). Couche de
+       surcharge (v276) : on ne touche qu'à la peau de la fiche — le dessin de
+       la carte (le canvas) garde ses couleurs, que les témoins lisent en
+       pixels. Le voile du fond est clair et SANS flou : un flou plein écran
+       au-dessus du jeu est ce que le rendu logiciel paie le plus cher. */
+    #map-modal { background: rgba(226, 233, 246, 0.86) !important; }
+    #map-modal-card {
+      background: rgba(255, 255, 255, 0.94) !important; border: 1px solid rgba(255, 255, 255, 0.98) !important;
+      box-shadow: 0 18px 50px rgba(17, 26, 46, 0.18); color: var(--encre, #111A2E);
+    }
+    #map-modal-close { color: #4A5470 !important; font-size: 20px !important; }
+    #map-chercher {
+      background: #fff !important; color: var(--encre, #111A2E) !important;
+      border: 1px solid rgba(17, 26, 46, 0.2) !important; padding-left: 38px !important;
+    }
+    #map-chercher::placeholder { color: #5A6480 !important; }
+    #map-chercher:focus { border-color: #2F5FC4 !important; background: #fff !important; }
+    .ico-carte { display: inline-flex; color: #4A5470; flex: none; }
+    #map-modal .ico-carte .ico { width: 18px; height: 18px; display: block; filter: none; }
+    #map-loupe { position: absolute; left: 11px; top: 10px; pointer-events: none; }
+    #map-resultats { background: #fff !important; border: 1px solid rgba(17, 26, 46, 0.14) !important;
+      box-shadow: 0 10px 24px rgba(17, 26, 46, 0.18) !important; }
+    #map-resultats button { color: var(--encre, #111A2E) !important; border-bottom-color: rgba(17, 26, 46, 0.08) !important; }
+    #map-resultats button:hover, #map-resultats button.vise { background: rgba(47, 95, 196, 0.12) !important; }
+    #map-resultats .rien { color: #4A5470 !important; }
+    #map-outils button {
+      background: rgba(17, 26, 46, 0.06) !important; border: 1px solid rgba(17, 26, 46, 0.16) !important;
+      color: var(--encre, #111A2E) !important;
+    }
+    #map-outils button.zoom { background: rgba(17, 26, 46, 0.09) !important; }
+    #map-outils button:active { background: rgba(47, 95, 196, 0.2) !important; }
+    #map-legend { color: #3A4460 !important; }
+    #map-astuce { color: #3A4460 !important; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    #map-astuce b { color: var(--encre, #111A2E) !important; }
+    #map-astuce .ico-carte { color: #B83B16; }
+    /* La légende montre les repères que la carte DESSINE, à leurs couleurs. */
+    #map-legend .rep { display: inline-block; width: 10px; height: 10px; margin: 0 4px -1px 0;
+      border: 1px solid rgba(17, 26, 46, 0.45); box-sizing: border-box; }
+    #map-legend .rep.toi { width: 0; height: 0; border: 6px solid transparent; border-left: 10px solid #ff4444;
+      border-right: 0; margin-bottom: -2px; }
+    #map-legend .rep.joueurs { background: #4ac9ff; border-radius: 50%; }
+    #map-legend .rep.gens { background: #fff; }
+    #map-legend .rep.betes { background: #ffd75e; }
+    #map-choix { background: rgba(255, 255, 255, 0.94) !important; box-shadow: 0 8px 20px rgba(17, 26, 46, 0.2) !important; }
+
+    /* RIEN DU JEU NE PASSE PAR-DESSUS LA CARTE (v507, revue d'écran #2). La
+       pilule « Monter · Âne » (z-index 30) recouvrait la carte (14) : elle
+       cachait des boutons, et toucher la carte faisait monter sur la bête. On
+       cache tout le HUD de jeu tant que la carte est ouverte — `visibility`,
+       jamais `display`, que des témoins lisent pour d'autres raisons. */
+    body.carte-ouverte :is(#touch-ui, .fun-target, .fun-btn, #hotbar, #menu-btn, #file-centre) {
+      visibility: hidden !important; }
+
+    /* LE MENU OUVERT VOILE LE HUD (v507, revue d'écran #16). Le jeu est en
+       pause : le joystick et les boutons nets derrière le menu faisaient
+       croire qu'on jouait encore. Une opacité, pas un flou (rendu logiciel).
+       La pilule, au-dessus du menu (30 contre 25), se tait. */
+    body:has(#menu-jeu.ouvert) :is(#touch-ui, #hotbar, #file-centre, .fun-btn) { opacity: 0.22 !important; }
+    body:has(#menu-jeu.ouvert) .fun-target { visibility: hidden !important; }
+
 </style>
 </head>
 <!-- `prepare` : pas de flou tant que l'accueil travaille — voir `verreQuandPret`
@@ -2418,7 +2478,8 @@
       <div id="map-recherche">
         <input id="map-chercher" type="text" autocomplete="off" autocorrect="off"
                autocapitalize="off" spellcheck="false"
-               placeholder="🔎 Chercher un lieu — Paris, Tokyo, la Tour Eiffel…">
+               placeholder="Chercher un lieu — Paris, Tokyo, la Tour Eiffel…">
+        <span id="map-loupe" class="ico-carte" aria-hidden="true"></span>
         <div id="map-resultats"></div>
       </div>
       <div id="map-zone">
@@ -2435,8 +2496,8 @@
         <button id="map-moi" title="Me retrouver">moi</button>
         <button id="map-tout" title="Voir tout le monde">tout</button>
       </div>
-      <div id="map-legend">🔺 toi · 🟦 joueurs · ⬜ personnages · 🟨 animaux</div>
-      <div id="map-astuce">✊ Appui long <b>n'importe où</b> : t'y téléporter, ou t'y rendre avec le GPS</div>
+      <div id="map-legend"><span class="rep toi"></span>toi · <span class="rep joueurs"></span>joueurs · <span class="rep gens"></span>personnages · <span class="rep betes"></span>animaux</div>
+      <div id="map-astuce"><span id="map-appui" class="ico-carte" aria-hidden="true"></span><span>Appui long <b>n'importe où</b> : t'y téléporter, ou t'y rendre avec le GPS</span></div>
     </div>
   </div>
 

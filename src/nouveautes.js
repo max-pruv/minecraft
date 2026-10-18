@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 507,
+    titre: 'Une carte claire',
+    puces: [
+      'La carte du monde est claire',
+      'Rien ne passe plus par-dessus',
+      'Le menu cache les boutons du jeu',
+    ],
+  },
+  {
     v: 506,
     titre: 'On vérifie chaque écran',
     puces: [
