@@ -49,7 +49,7 @@ désarmés) sont inchangées. Deux témoins des vrais arbres (v499) choisissaien
 leur arbre sur la densité d'avant : la caméra du fût de `parishd.js` se pose
 sous la couronne de SON chêne, et le témoin de la cabane de `plafond.js` se
 joue bosquets désarmés — son nouveau morceau rate la conservation des faces
-d'une, sur `origin/main` aussi (déclaré). `plafond.js` 182 verts, `parishd.js`
+d'une, sur `origin/main` aussi (déclaré). `plafond.js` 185 verts, `parishd.js`
 157, seules ; `monte.js` et `reseau.js` rejouées seules sur la branche et sur
 `origin/main` v502 rendent la même répartition de rouges, tous en ville ou sur
 le réseau, déclarés dans `TASKS.md`.
