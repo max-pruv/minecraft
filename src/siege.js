@@ -140,7 +140,6 @@ export function createSiege({ scene, world, player, toast, emojiBurst, clang, an
       // les assaillants convergent vers le pont-levis, en ligne
       assaillants.forEach((a, i) => { a.cible = { x: PORTE.x - 6 + i * 3, z: RIVE_ASSAUT - 6 }; });
       if (proche()) {
-        toast('🐎 Des assaillants approchent du château !', 0xe8892c);
         annonce?.('🐎 ILS ARRIVENT !', 'Une bande approche du château — va voir !');
         cor?.();
       }
@@ -150,7 +149,6 @@ export function createSiege({ scene, world, player, toast, emojiBurst, clang, an
       // toute la garnison converge vers la porte : les tours se vident
       gardes.forEach((g, i) => { g.cible = { x: PORTE.x - 5 + i * 2, z: RIVE_GARDE }; });
       if (proche()) {
-        toast('⚔️ L\'assaut commence — les gardes tiennent la porte !', 0xd83a3a);
         annonce?.('⚔️ L\'ASSAUT !', 'Les gardes tiennent la porte — cours les aider !');
         cor?.();
       }
@@ -158,7 +156,6 @@ export function createSiege({ scene, world, player, toast, emojiBurst, clang, an
       reste = RETRAITE;
       assaillants.forEach((a) => { a.cible = { ...a.attache }; });
       if (proche()) {
-        toast('🛡️ Les assaillants battent en retraite ! Le château tient bon.', 0x58b04c);
         annonce?.('🛡️ VICTOIRE !', 'Les assaillants battent en retraite. Le château tient bon.');
       }
     } else {

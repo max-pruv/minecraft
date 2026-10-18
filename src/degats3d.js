@@ -458,7 +458,8 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     const e = rec.etat;
     if (e.enFeu && !avant.enFeu) dire(rec, 'feu', '🔥 Ta voiture prend feu — descends vite !', 0xff5a3a, 4000);
     else if (e.enPanne && !avant.enPanne) dire(rec, 'panne', '🛑 Ta voiture est en panne. Descends et prends-en une autre !', 0xffb347, 4000);
-    else if (e.moteur < D.SEUIL_FUMEE && avant.moteur >= D.SEUIL_FUMEE) dire(rec, 'fumee', '💨 Aïe ! Le moteur fume — doucement.', 0xd8c9a4);
+    // La fumée se voit ; elle ne s'annonce plus (v504). Le feu et la panne
+    // disent QUOI FAIRE : ils restent.
     return { zone, mesure };
   }
 

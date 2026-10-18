@@ -506,11 +506,10 @@ export class CloudSave {
           if(anciens && this.world.importerAncienneManhattan(anciens)>0)this.world.saveEdits();
         }catch{ /* Le monde courant reste accessible si l'archive est indisponible. */ }
       }
+      // La sauvegarde ne s'annonce plus (v504) ; un échec durable se dit par
+      // l'alerte « sauvegarde-ko » du bandeau de lien.
       await this.push();
-      this.toast('☁️ Sauvegarde cloud active — rien ne sera perdu !', 0x9fd8e8);
-    } catch {
-      this.toast('☁️ Sauvegarde cloud indisponible pour le moment', 0xff9d5e);
-    }
+    } catch { /* on réessaie à la prochaine poussée */ }
     clearInterval(this.timer);
     this.timer = setInterval(() => { this.push().catch(() => {}); }, PUSH_INTERVAL);
     this._onHide = () => {

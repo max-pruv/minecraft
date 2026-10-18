@@ -887,7 +887,7 @@ export class AdminPanel {
           <button class="adm-btn" data-reset="${esc(l.nom)}"
             title="${l.code ? 'Effacer son code et lui en faire choisir un nouveau' : 'Lui demander de choisir un code'}"
             >🔑 ${l.code ? 'Réinitialiser' : 'Créer'}</button>
-          <button class="adm-btn danger" data-suppr="${esc(l.nom)}" title="Supprimer ce compte">🗑️ Supprimer</button>
+          <button class="adm-btn danger" data-suppr="${esc(l.nom)}" title="Supprimer ce compte">Supprimer</button>
         </td>
       </tr>`;
     }).join('');
