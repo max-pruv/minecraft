@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v508 — La carte du monde passe au verre clair, et rien ne la recouvre
+
+**Pourquoi.** La revue d'écran (v506) a relevé trois défauts autour de la carte
+et du menu. Près d'une bête, la pilule « Monter · Âne » passait par-dessus la
+carte du monde ouverte : elle cachait des boutons, et un doigt qui visait la
+carte faisait monter sur l'âne (#2, haute). La carte était bleu nuit au milieu
+d'une interface en verre clair, avec des emojis dans la recherche, l'astuce et
+la légende (#14). Et le menu ☰ ouvert laissait le joystick et les boutons nets
+derrière lui : on croyait jouer encore (#16).
+
+**Ce que ça change.** Carte ouverte, tout le HUD de jeu se cache (joystick,
+pilules, barre de blocs, menu, bandeaux du haut) : chaque bouton de la carte
+reçoit le doigt. La fiche de la carte est en verre clair, encre sombre ; la
+loupe de la recherche et le doigt de l'astuce sont des icônes dessinées, la
+légende montre les repères à leurs vraies couleurs. Le dessin de la carte, lui,
+ne change pas. Menu ouvert, le HUD se voile et la pilule se tait.
+
+**Ce qui le prouve.** Trois témoins neufs dans `carte.js`, rouges sur l'ancien
+code : `elementFromPoint` au centre de chaque bouton de la carte avec un âne
+devant soi ; la fiche claire, deux icônes dessinées et aucun emoji ; le menu
+qui voile le HUD et le rend en se fermant. Captures avant et après
+(`sonde-revue-ecran.cjs --etats=carte-monde,menu`, iPhone et iPad, jour et
+nuit) dans la PR.
+
+---
+
 ## v506 — La revue d'écran : trouver les défauts avant Max
 
 **Pourquoi.** En une matinée, Max a dû signaler lui-même, depuis son iPhone,

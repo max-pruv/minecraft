@@ -7317,6 +7317,12 @@ document.getElementById('map-moins').addEventListener('click', () => {
 // sont, ce qui est exactement ce qu'un enfant ne sait pas. On tape « Tokyo »,
 // on y va.
 const champLieu = document.getElementById('map-chercher');
+// Les icônes de la carte se dessinent ici, comme celles du HUD (v504) : plus
+// un emoji dans la fiche.
+for (const [id, cle] of [['map-loupe', 'chercher'], ['map-appui', 'appui']]) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = ICONES[cle];
+}
 const listeLieux = document.getElementById('map-resultats');
 
 // Sans accents ni casse : un enfant tape « eiffel », « chateau », « new york ».
