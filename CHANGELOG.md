@@ -20,6 +20,79 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v529 — On marche dans les stations de métro
+
+**Pourquoi.** Max : « les stations de métro ne ressemblent pas du tout à des
+stations de métro, on ne peut même pas marcher dedans, le personnage ne passe
+pas en hauteur ». Mesuré avant d'écrire une ligne, station par station, avec
+le VRAI joueur de `player.js` sous node (`tests/sonde-stations.cjs` : un
+chemin case par case de chaque bouche à son quai, puis le joueur qui le suit,
+aller et retour, en sautant chaque marche qui monte) :
+
+| | quais atteints | rues retrouvées | cases sous 4 blocs d'air (par station) |
+| --- | --- | --- | --- |
+| Paris, v528 | 14 / 15 | 14 / 15 | 21 à 43 |
+| Paris, v529 | **15 / 15** | **15 / 15** | **2 à 6** |
+| Washington, v528 | 2 / 20 | 2 / 20 | 8 à 10 (plafond à 2 à Capitol South) |
+| Washington, v529 | **20 / 20** | **20 / 20** | **1 à 3** |
+
+Station par station en v528 : à Paris, Hôtel de Ville sans chemin (sa trémie
+débouchait dans le parvis de Notre-Dame, que le monument recouvre), et dans
+toutes les autres un escalier et un couloir à trois blocs de haut — la tête de
+l'enfant cogne au sommet de chaque saut. À Washington, seuls Capitol South et
+Dupont Circle : ailleurs l'escalier de la bouche arrivait au-dessus de la fosse
+des voies, de l'autre côté des rails d'un quai central ; à Smithsonian et dans
+les stations en virage le passage des rames emportait les marches ; et la
+bouche de Pentagon sortait de la zone où le métro se creuse, son couloir finissait
+dans la terre. Les stations, elles, n'avaient de la vraie que le nom : une
+voûte grise, un quai nu.
+
+**Ce que ça change.** On descend debout de la rue au quai et l'on remonte, dans
+les trente-cinq stations, avec quatre blocs d'air presque partout.
+- **Paris (ligne 1)** : une voûte elliptique en carreau blanc biseauté, la
+  bordure blanche du quai, la plaque bleue émaillée du nom sur les piédroits,
+  les cadres d'affiches, le plan du réseau au milieu du quai, des sièges
+  orange, la rampe lumineuse sous la voûte ; un couloir carrelé à quatre blocs
+  de haut, puis la salle des billets et sa rangée de portillons, au pied de
+  l'escalier. Hôtel de Ville a sa bouche hors du parvis ; Saint-Paul s'est
+  déplacée pour lui laisser la place.
+- **Washington** : la voûte à caissons de béton, la gorge lumineuse au pied des
+  murs, le quai central en carrelage hexagonal brun, la bordure de granit à
+  feux encastrés, les pylônes bruns ; de chaque quai, un escalier au bout du
+  quai, une passerelle au-dessus des voies à la mezzanine, un couloir et ses
+  portillons, puis l'escalier de la rue, qui n'a pas bougé.
+- **Le nom de chaque station est écrit sur le quai** : sur les plaques bleues à
+  Paris, en haut des pylônes et sur le mur d'en face à Washington.
+Tout est éclairé sans une lampe de plus (des blocs toujours allumés), en blocs
+(un appel de dessin par morceau), et sans logo ni charte d'exploitant.
+
+**Ce qui ne bouge pas.** Le relief : les deux empreintes de `plafond.js` sont
+intactes. Les bouches gardent leur place sauf deux (Hôtel de Ville, Saint-Paul),
+la clef de la voûte de Paris reste sous le lit de la Seine (v473), et le
+passage des rames se creuse en dernier (zéro bloc dans leur gabarit sur 12 701
+points). Sous ce qu'un enfant a bâti avant `DATE_STATIONS`, ce qui est à moins
+de trois blocs du sol reste au bloc près celui de la v528 (la règle de la v485).
+
+**Ce qui le prouve.** Quatre témoins de `plafond.js`, lus sur la sonde : les
+trente-cinq stations aller et retour par le vrai joueur, la tête qui passe
+(jamais moins de trois blocs, au plus huit cases sous quatre par station, aucun
+élan qui cogne en descendant), le passage des rames libre, et un nom sur chaque
+quai — 180 plaques relues contre le monde engendré, aucune dans un mur, aucune
+sans appui. Un témoin de `metro.js` voit la plaque nommée dans la scène quand on
+est sur le quai. L'empreinte des 490 morceaux change (Paris et Washington sont
+deux des neuf lieux) ; stations neuves désarmées, la branche rend la constante
+de la v522 au bit près.
+
+Deux témoins de `washington.js` repointés : le quai praticable se lit sur une
+case sans pylône, sans banc et hors de l'escalier du quai central ; la descente
+suit le chemin de la sonde (37 cases, neuf à onze blocs de descente) au lieu
+d'une ligne droite qui butait contre la mezzanine. Et le choix des escaliers
+de Washington coûtait dix-sept secondes au chargement du module : il lit
+désormais les points de voie par cases, même résultat au bit près, 1,1 s
+contre 0,7 sur `origin/main`.
+
+---
+
 ## v528 — Les arbres sont beaux partout, même au loin
 
 **Pourquoi.** Max, en vol au-dessus d'une forêt, sur iPhone : « Au loin, les

@@ -48,6 +48,7 @@ import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
+import { creerNomsDeStations, chaufferStations } from './stations.js';
 import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
 import { traceAnneau, traceLigne1Paris, arretsLigne1Paris } from './ville.js';
 import { LIGNES_MONDE, traceLigneMonde } from './metromonde.js';
@@ -1053,6 +1054,8 @@ for (let i = 0; i < 4; i++) {
   scene.add(l);
   lampesRue.push(l);
 }
+// Le nom de chaque station de métro, écrit sur son quai (v529, stations.js).
+const nomsDeStations = creerNomsDeStations(scene);
 const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS, lamps: lampesRue});
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
@@ -8398,7 +8401,7 @@ const guides = creerGuides({
   maintenant: () => performance.now(),
 });
 window.__guides = guides;
-window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
+window.__game = { nomsDeStations, fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
   // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
@@ -8633,6 +8636,7 @@ function frame(now) {
 
   eclairerLaRue();
   reglerLesFeux();
+  nomsDeStations.update(player.pos);
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renduDansManhattan=villeRealiste.active;
   const debutRendu = performance.now();
@@ -8734,6 +8738,8 @@ requestAnimationFrame(() => {
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
     // les traces de pneus (v434) : un matériau neuf, son essaim exact
     try { fun.chaufferTraces(renderer, camera, scene); } catch (e) { console.warn('chauffe des traces', e); }
+    // le nom des stations de métro (v529) : un matériau à carte
+    try { chaufferStations(renderer, camera, scene); } catch (e) { console.warn('chauffe des stations', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };

@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 529,
+    titre: 'De vraies stations de métro',
+    puces: [
+      'On descend et on remonte debout',
+      'Carreaux blancs à Paris, caissons à Washington',
+      'Le nom de la station sur le quai',
+      'Des portillons, des bancs, des affiches',
+    ],
+  },
+  {
     v: 528,
     titre: 'De beaux arbres, même au loin',
     puces: [

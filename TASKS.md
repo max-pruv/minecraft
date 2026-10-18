@@ -1,5 +1,35 @@
 # Ce qui est en cours
 
+- [ ] **Les rouges du portail de la v529, double mesure (rejoués seuls, branche
+  contre `origin/main` v522).** `monte.js` : 7 rouges des deux côtés, tous de la
+  rue et de la circulation (voisines d'un convoi, freinage au feu, rue vide,
+  voiture heurtée, flâneur, passage peint de Londres — la liste change d'un
+  passage à l'autre) plus deux venus de `main` (« minimap×edu-timer » en vol aux
+  deux tailles, « Atterrissage vers Saint-Dizier » absent à l'appui).
+  `maj.js` (le loader qui compte les fichiers) et `reseau.js` (le banc lâche en
+  fin de suite) : verts rejoués seuls sur la branche ; `reseau.js` rend sur
+  `origin/main` « la voiture de la rue qui arrive derrière… l'attend » un
+  passage sur deux. `degats.js` « percuter une voiture de la rue » : rouge sur
+  `origin/main`, déjà déclaré. `reglages.js` « un choix fait sur une
+  tablette » : même rouge des deux côtés, déjà déclaré.
+- [ ] **Les stations en virage (v529) : la voie croise les bouts du quai.**
+  À Washington, la trace d'une ligne est décalée de ±4 en suivant SON cap à
+  chaque point ; dans une station posée sur un virage (Smithsonian, McPherson
+  Square, Foggy Bottom, Arlington Cemetery, Metro Center, L'Enfant Plaza,
+  Gallery Place…), la voie converge vers l'axe et passe à 0,1–0,7 bloc de
+  l'axe du quai central vers les bouts (|le| 6 à 10, mesuré). Le gabarit,
+  creusé en dernier, ouvre alors le quai à ces bouts : la rame roule sur le
+  bord du quai, et il n'y a pas de place pour un pylône (cinq stations sans
+  pylône, leur nom n'est que sur le mur d'en face). Même chose, en plus petit,
+  au bout du quai de la Bastille à Paris. Remède : redresser la trace sur
+  ±DEMI_STATION autour de chaque arrêt — cela change les tunnels, la durée des
+  tours (l'Orange et l'Argent ont des tours de même durée, v468) et les portes
+  de la rame (v489) : une livraison à elle, à mesurer avant.
+- [ ] **Quelques cases à trois blocs d’air restent (v529)** : en haut de
+  chaque escalier, sous le bloc de la rue (on ne creuse jamais dans la rue),
+  et au-dessus des portillons. La sonde les compte (1 à 6 par station) ; le
+  vrai joueur passe aux deux sens. `DATE_STATIONS` (world.js) se relit à la
+  fusion.
 - [ ] **Rouges de portail de la v528 (les arbres au loin) : aucun de la
   livraison.** Seul rouge à moi : `parishd.js` lisait « cubes cachés » sur
   `plat` caché — repointé sur `arbresLoin`, vert. Restent `degats.js` (percuter

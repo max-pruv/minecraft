@@ -821,6 +821,62 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les stations de métro (v529) — on juge une station avec le vrai joueur, à l'aller et au retour
+
+Max : « on ne peut même pas marcher dedans ». Sept règles.
+
+- **UNE SONDE DE MARCHE FAIT MARCHER `player.js`, DANS LES DEUX SENS.** La
+  sonde de la v473 marchait sur une grille et disait « 16 sur 16 » ; elle ne
+  voyait pas Washington (2 quais sur 20). `sonde-stations.cjs` cherche le
+  chemin case par case, puis le vrai joueur le suit, aller ET retour (monter
+  une marche, c'est sauter : 1,42 bloc, et la tête cogne sous trois blocs
+  d'air — il passe encore, de 0,2 bloc ; sous deux, plus du tout). La marge
+  voulue est quatre blocs ; la sonde compte les cases où on ne l'a pas. Et elle
+  ne descend que dans SA bouche et SA station : une bouche murée qu'on
+  contourne par l'escalier d'à côté n'est pas une bouche (c'est ce qui cachait
+  Hôtel de Ville).
+- **UNE TRÉMIE SE MESURE CONTRE LES REPÈRES, PUIS LES BOUCHES SE RECHOISISSENT
+  EN GARDANT CE QUI TENAIT.** Celle d'Hôtel de Ville (v473) débouchait dans le
+  parvis de Notre-Dame : les monuments se posent après le creusement. Le choix
+  (`choisirBouches`) garde le choix de la v473 tant qu'il est valide et ne
+  libère que le voisin qui gêne : deux bouches bougent sur quinze.
+- **UN ESCALIER DE QUAI CENTRAL SE POSE AU BOUT DU QUAI, LOIN DES VOIES.**
+  Washington a un quai central : une bouche de côté arrivait au-dessus de la
+  fosse, de l'autre côté des rails. On monte au bout du quai, par une
+  passerelle à la mezzanine ; le bout et la marche de départ se choisissent
+  contre les points de voie (`genes`) — dans une station en virage, la voie
+  croise les bouts du quai, et le gabarit, creusé en dernier, emportait les
+  marches. Les pylônes du nom se choisissent de même (`q.pylones`).
+- **CE QU'UNE RÈGLE DIT CREUSER « DANS L'EMPRISE » SE CREUSE DANS L'EMPRISE.**
+  La v485 écrivait `EMPRISE_METRO_DC` et `world.js` s'arrêtait à la zone : la
+  bouche de Pentagon y passait et finissait dans la terre. Dans la marge,
+  jamais creusée, sous ce qu'un enfant a bâti avant `DATE_STATIONS` on ne
+  creuse qu'à trois blocs et plus sous le sol.
+- **UN DÉCOR D'UN SEGMENT SE POSE DANS L'ESPACE D'UN AUTRE.** `apres` passe
+  après les vides de TOUS les segments d'une colonne : la lampe jaune du
+  tunnel voisin flottait au-dessus des voies de la Bastille. Un mobilier de
+  tunnel cède à une station (`dansStation1`). Toute pièce `apres` neuve se
+  demande dans quels segments voisins elle peut tomber.
+- **UN NOM EST UN PLAN DEVANT UNE CASE, PLACÉ PAR UNE RÈGLE PURE ET RELU CONTRE
+  LE MONDE.** `plaquesParis` (ville.js) et `plaquesDC` (washington.js) donnent
+  la place, `stations.js` dessine (un maillage, un canevas par station, à
+  70 blocs ; la chauffe du programme pendant l'accueil). Sur une trame en biais
+  le mur est un escalier de cases : le plan se pose devant la plus avancée sous
+  lui, jamais dans une autre ; et un mur que le tunnel voisin ou la station
+  voisine perce (Metro Center et McPherson Square sont à dix blocs) ne porte
+  pas de plaque. La sonde relit chaque plaque : aucune dans un bloc, aucune
+  sans appui.
+
+- **UN CHOIX CALCULÉ AU CHARGEMENT D'UN MODULE SE MESURE EN TEMPS DE
+  CHARGEMENT.** Le choix des escaliers de Washington (`genes`, `parRame`)
+  parcourait tous les points de voie pour chaque échantillon, à l'import de
+  `washington.js` : 17,3 s au lieu de 0,7, sur le fil principal ET dans le
+  worker. Aucun témoin de station ne le voyait ; ce sont `reglages.js` et
+  `manhattan.js` qui ont rougi, leur seconde tablette relancée n'ayant pas
+  encore de `__game`. Grille de cases (`voieProche`), même résultat au bit
+  près. Quand un module gagne un calcul à son chargement, on chronomètre
+  `import('./src/world.js')` des deux côtés.
+
 ## Montmartre et les jardins (v512) — une cote se lit sous la voiture, et une voie traverse un jardin déclaré
 
 Trois règles.
