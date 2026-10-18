@@ -25,7 +25,7 @@
 //   `solid` et se voit. Un arbre est reconnu à son fût : un bloc de bois sans
 //   bois dessous, au moins deux de haut, avec au moins trois feuilles
 //   connectées dans sa fenêtre (`reconnaitreArbres`).
-// - LE LOIN A SES ARBRES AUSSI (v526). Jusqu'à la v510, au-delà de
+// - LE LOIN A SES ARBRES AUSSI (v528). Jusqu'à la v510, au-delà de
 //   `RAYON_HD`, un morceau maillé sans détail gardait ses arbres en cubes —
 //   Max, en vol : « au loin, ils sont en forme Minecraft ». Tout morceau
 //   reconnaît désormais ses arbres ; leurs cubes ne s'émettent nulle part, et
@@ -453,7 +453,7 @@ export function arbreVrai(buf, x, y, z, wx, wz, h, boite, essence, climat = 0) {
   }
 }
 
-// --- un arbre au loin (v526) ------------------------------------------------------------
+// --- un arbre au loin (v528) ------------------------------------------------------------
 //
 // Max, en vol au-dessus d'une forêt : « Au loin, les arbres sont moches, ils
 // sont en forme Minecraft. Au proche, ils sont beaux. » Au-delà du détail, un
@@ -551,7 +551,7 @@ export function arbreLoin(buf, x, y, z, wx, wz, h, boite, essence, climat = 0) {
 // Pour chaque arbre reconnu dont la base est dans le morceau : l'essence (le
 // `kind` de sa signature, ou un arbre de ville), le climat, le modèle.
 // `climats` est la table de `teintesDuMorceau` (ou null).
-// `loin` : le modèle lointain (`arbreLoin`, v526) au lieu du proche.
+// `loin` : le modèle lointain (`arbreLoin`, v528) au lieu du proche.
 export function emettreArbres(buf, arbres, ox, oz, C, climats, loin = false) {
   let n = 0;
   const modele = loin ? arbreLoin : arbreVrai;

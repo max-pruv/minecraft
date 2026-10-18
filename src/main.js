@@ -627,7 +627,7 @@ world.hd = RAYON_HD > 0 ? 1 : 0;
 // d'un morceau — campagne, villes, Paris — sont dessinés en relief (tronc qui
 // s'effile, branches, cartes de feuilles) dans le tampon `facades`, et leurs
 // cubes se taisent ; au-delà, chaque arbre garde sa couronne en quelques
-// cartes (`arbresLoin`, v526) — plus un cube d'arbre à aucune distance.
+// cartes (`arbresLoin`, v528) — plus un cube d'arbre à aucune distance.
 // Même portée, même budget, même matériau que le détail de Paris : rien de
 // neuf à compiler, un appel de dessin par morceau. Coupés avec la couche (rendu logiciel, palier bas) ; `?arbres=0`
 // les coupe seuls, pour mesurer ; `?hd=N&arbres=1` les force au banc.
@@ -1255,7 +1255,7 @@ function installerMorceau(cx, cz, tampons) {
   // LA COUCHE HD DE PARIS (v287). Le sol HD est toujours montré ; le détail
   // des façades et leur tuile plate se relaient selon la distance — c'est
   // `montrerLeDetail` qui tranche, ici et à chaque changement de morceau.
-  // LES ARBRES AU LOIN (v526) : chaque arbre du morceau en quelques cartes de
+  // LES ARBRES AU LOIN (v528) : chaque arbre du morceau en quelques cartes de
   // sa couronne, dans le même matériau que la couche HD (aucune clé de
   // programme neuve), montrés quand le détail ne l'est pas (`montrerLeDetail`).
   if (tampons.sol || tampons.facades || tampons.arbresLoin) {
@@ -1404,7 +1404,7 @@ function montrerLeDetail(entry, cx, cz, pcx, pcz) {
   if (entry.facades) entry.facades.visible = pres;
   if (entry.plat) entry.plat.visible = !pres;
   if (entry.platLumineux) entry.platLumineux.visible = !pres;
-  // les arbres du loin (v526) se relaient avec leurs modèles proches, qui
+  // les arbres du loin (v528) se relaient avec leurs modèles proches, qui
   // vivent dans `facades` : jamais les deux à la fois
   if (entry.arbresLoin) entry.arbresLoin.visible = !pres;
 }

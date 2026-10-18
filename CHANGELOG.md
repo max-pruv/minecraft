@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v526 — Les arbres sont beaux partout, même au loin
+## v528 — Les arbres sont beaux partout, même au loin
 
 **Pourquoi.** Max, en vol au-dessus d'une forêt, sur iPhone : « Au loin, les
 arbres sont moches, ils sont en forme Minecraft. Au proche, ils sont beaux. Il
