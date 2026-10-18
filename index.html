@@ -2126,6 +2126,9 @@
        de la colonne, Descendre la place basse. Hors vol, rien ne bouge. */
     body.hud-simple.en-vol:not(.construction) #jump-btn { bottom: calc(108px + var(--safe-bottom)); }
     body.hud-simple.en-vol:not(.construction) #down-btn { bottom: calc(52px + var(--safe-bottom)); }
+    /* La place haute monte jusqu'à 152 px : la pilule d'action passe au-dessus
+       (elle mordait déjà Descendre de 8 px avant la v508 — le témoin l'a dit). */
+    body.hud-simple.en-vol:not(.construction) .fun-target { bottom: calc(164px + var(--safe-bottom)); }
     body.hud-simple .fun-target {
       left: auto; right: 20px; transform: none; bottom: calc(144px + var(--safe-bottom));
       max-width: calc(55vw - 24px); justify-content: flex-end;

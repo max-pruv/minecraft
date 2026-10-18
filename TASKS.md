@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+- [ ] **Le banc lâche sur `maj.js`, `carte.js`, `reglages.js` et `manhattan.js`
+  des deux côtés (portail de la v508, Monter au-dessus de Descendre).** Rejouées
+  SEULES sur la branche et sur `origin/main` v506 (`git worktree`), les quatre
+  meurent sur un délai de `waitForFunction`/`locator.click` (maj.js : 9–13 verts
+  avant le délai des deux côtés, à des endroits différents ; manhattan.js
+  `origin/main` : 1 vert puis délai), avec des rouges voisins vus des deux côtés
+  (GPS « la flèche pointe », « fond de carte à froid », « survit au
+  redémarrage »). Le banc tournait à « charge stable 3,5 cœurs » sans suite
+  ouverte : à démonter avant de croire un rouge de durée. Les témoins de la
+  v508 ont été joués à part (le bloc « commandes » de `maj.js` extrait) : verts
+  aux deux tailles. Et « toucher l'écran casse en construction » y rend
+  `construction 0` une fois sur deux sur `origin/main` aussi (2 passages) —
+  intermittence, pas la livraison : la livraison ne change que le CSS en vol.
+
 - [ ] **Rouges de portail de la v509 (la sûreté d'un cran, les records) :
   aucun de la livraison.** Le portail complet a tapé sa borne de deux heures
   pendant `reseau.js` (`monte.js` seule 42 min). Un seul rouge était à moi —

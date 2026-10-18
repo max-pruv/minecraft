@@ -36,7 +36,9 @@ veut dire quitter l'appareil, pas perdre de l'altitude) : inchangée.
 **Ce qui le prouve.** Deux témoins de `maj.js`, joués à 420 × 760 et à
 430 × 932, formulés sans dimension : le haut de Monter est au-dessus du haut de
 Descendre (rouge sur l'ancien code, mesuré par `sonde-vol-boutons.cjs`), et en
-vol rien ne se recouvre ni n'entre dans le quart du joystick.
+vol rien ne se recouvre ni n'entre dans le quart du joystick. Ce second témoin
+a trouvé un défaut d'avant : en vol, la pilule d'action mordait de 8 px le
+bouton du haut ; elle monte d'autant.
 
 ---
 

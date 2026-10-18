@@ -1186,11 +1186,13 @@ function verifier(nom, ok, detail = '') {
         const enVol = async (oui) => {
           P.flying = oui;
           const tv = performance.now();
-          while (performance.now() - tv < 8000 && document.body.classList.contains('en-vol') !== oui) await att(100);
-          await att(200);
+          while (performance.now() - tv < 30000 && document.body.classList.contains('en-vol') !== oui) await att(100);
+          await att(300);
+          return Math.round(performance.now() - tv);
         };
-        await enVol(true);
+        const volMs = await enVol(true);
         const vol = releve();
+        vol.ms = volMs;
         await enVol(false);
         // UNE pilule, et son mot tient sur une ligne sans être coupé — y
         // compris le plus long que le jeu écrive à pied.
@@ -1265,8 +1267,9 @@ function verifier(nom, ok, detail = '') {
         await att(400);
         const construction = releve();
         const n2 = await tap();
-        await enVol(true);
+        const volCMs = await enVol(true);
         const volConstruction = releve();
+        volConstruction.ms = volCMs;
         await enVol(false);
         // LA BARRE EST EN BAS, ET LE JOYSTICK GARDE LE QUART AU-DESSUS (v503,
         // décision de Max). Trois gestes de l'enfant, dans la même page :
@@ -1366,7 +1369,7 @@ function verifier(nom, ok, detail = '') {
       const vo = ordre(r.vol), vc = ordre(r.volConstruction), jv = juge(r.vol), jc = juge(r.volConstruction);
       verifier(`commandes (${vue.width} × ${vue.height}) : en vol, le bouton qui fait monter est AU-DESSUS de celui qui fait descendre, à pied comme en construction`,
         !r.err && vo.ok && vc.ok,
-        `${r.err || ''} à pied ${JSON.stringify(vo)} construction ${JSON.stringify(vc)}`);
+        `${r.err || ''} à pied ${JSON.stringify(vo)} (${r.vol && r.vol.ms} ms) construction ${JSON.stringify(vc)} (${r.volConstruction && r.volConstruction.ms} ms)`);
       verifier(`commandes (${vue.width} × ${vue.height}) : en vol, rien ne se recouvre ni n'entre dans le quart du joystick, à pied comme en construction`,
         !r.err && jv.recouvre.length === 0 && jv.joy.length === 0 && jc.recouvre.length === 0 && jc.joy.length === 0,
         `${r.err || ''} à pied ${JSON.stringify(jv)} construction ${JSON.stringify(jc)}`);
