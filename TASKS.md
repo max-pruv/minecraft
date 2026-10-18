@@ -1,5 +1,17 @@
 # Ce qui est en cours
 
+- [ ] **Les rouges du portail de la v529, double mesure (rejoués seuls, branche
+  contre `origin/main` v522).** `monte.js` : 7 rouges des deux côtés, tous de la
+  rue et de la circulation (voisines d'un convoi, freinage au feu, rue vide,
+  voiture heurtée, flâneur, passage peint de Londres — la liste change d'un
+  passage à l'autre) plus deux venus de `main` (« minimap×edu-timer » en vol aux
+  deux tailles, « Atterrissage vers Saint-Dizier » absent à l'appui).
+  `maj.js` (le loader qui compte les fichiers) et `reseau.js` (le banc lâche en
+  fin de suite) : verts rejoués seuls sur la branche ; `reseau.js` rend sur
+  `origin/main` « la voiture de la rue qui arrive derrière… l'attend » un
+  passage sur deux. `degats.js` « percuter une voiture de la rue » : rouge sur
+  `origin/main`, déjà déclaré. `reglages.js` « un choix fait sur une
+  tablette » : même rouge des deux côtés, déjà déclaré.
 - [ ] **Les stations en virage (v529) : la voie croise les bouts du quai.**
   À Washington, la trace d'une ligne est décalée de ±4 en suivant SON cap à
   chaque point ; dans une station posée sur un virage (Smithsonian, McPherson
