@@ -39,7 +39,7 @@ de la v475 n'existent plus.
 - Sur la pente de la butte, la voiture ne mord plus le pavé : sa hauteur se lit
   sous sa carrosserie, dans sa voie, et plus sous l'axe de la rue. Rien du
   monde ne bouge. C'est vrai dans les six villes bâties à la main (San
-  Francisco 233 → 6 pas, Nice 110 → 59).
+  Francisco 233 → 63 pas, Nice 110 → 59), d'une marche au plus.
 - La rue de Belleville, le boulevard de Ménilmontant et le boulevard
   Beaumarchais traversent les Buttes-Chaumont et la place des Vosges sur leur
   chaussée, sans changer un lot. Sous une colonne où un enfant a bâti avant la

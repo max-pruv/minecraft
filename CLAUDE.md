@@ -814,7 +814,9 @@ Trois règles.
   cote restait celle de l'axe et de ses quatre voisins (v210) : en dévers, la
   carrosserie mordait le pavé d'une colonne plus haute (32 pas sur la butte,
   233 à San Francisco). `coteSousLaVoie` (voies.js) prend aussi le plus haut
-  sol sous l'emprise (cinq points en travers, cinq le long). C'est la règle de
+  sol sous l'emprise (cinq points en travers, cinq le long), UNE MARCHE au plus
+  au-dessus de l'axe — au-delà c'est un mur, et San Francisco flottait à sept
+  blocs (le témoin « le convoi suit le sol » l'a dit). C'est la règle de
   la v475 (« un circuit se juge sur la voie ») appliquée à la hauteur ; le
   relief ne bouge pas. Le prix : un flanc qui flotte au-dessus d'une marche.
 - **UNE VOIE NOMMÉE TRAVERSE UN JARDIN DÉCLARÉ, SUR SA CHAUSSÉE.** Les

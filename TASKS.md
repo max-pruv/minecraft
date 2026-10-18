@@ -7807,7 +7807,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   l'enfant qui y descend vers l'ouest la contourne par la voie sud), et sur les
   pentes une voiture flotte au-dessus du pavé sous son centre là où son flanc
   touche la marche (25 pas sur 5 809 à plus d'un bloc, 6 avant ; San Francisco
-  451 pas à plus d'un demi-bloc contre 181). Ancien texte :
+  386 pas à plus d'un demi-bloc contre 181, pour 233 → 63 pas dans le solide). Ancien texte :
 - [ ] ~~**REMESURÉ en v475 sur la voie que la voiture roule (1,3 bloc à droite
   de l'axe) : 49 pas, tous sur le circuit du nord~~ (La Fayette… Clichy,
   Rochechouart)** — trente dans la pente de la butte (le boulevard de Clichy
