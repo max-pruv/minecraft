@@ -20,6 +20,49 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v530 — Des pistes larges, et l'avion roule jusqu'à elles
+
+**Pourquoi.** Max : « Les pistes des aéroports sont extrêmement étroites. Et
+quand on veut décoller, en fait, on a des problèmes. Il y a aussi une espèce de
+bloc de béton qui pose des problématiques pour manœuvrer l'avion. » Mesuré
+avant d'écrire une ligne, avec le vrai joueur sous node, ✈️ appuyé depuis
+chacun des soixante postes des dix-neuf aérodromes : **7 décollages sur 60**.
+Les cinquante-trois autres appareils s'écrasaient ou restaient bloqués, presque
+tous contre le « bloc de béton » : le hangar, posé dans l'axe de la rangée de
+stationnement. La bande de piste faisait 9 blocs de large, pour une envergure de
+quinze.
+
+**Ce que ça change.**
+- Les pistes ont la largeur du plus grand avion plus une marge : 19 blocs de
+  bande partout, avec des marques de seuil. Roissy garde deux pistes larges, et
+  la seconde piste des grands aéroports s'écarte de la première.
+- Le hangar quitte l'aire de stationnement et va à côté du terminal. La tour de
+  contrôle aussi : plus rien en travers du chemin d'un avion.
+- Au poste, ✈️ fait rouler l'avion tout seul jusqu'à la piste, l'aligne, puis
+  décolle. La pilule dit « Roulage vers la piste ». Un second appui arrête le
+  roulage, et tirer le joystick en arrière le reprend en main.
+- Les prolongements de piste et ce qu'ils bâtissent restent dans leurs bornes ;
+  `terrainHeight` ne bouge pas.
+
+**Ce qui le prouve.**
+- La sonde des soixante postes (`sonde-decollage-postes.cjs`) passe de 7/60 à
+  **60/60**. `carteMonde.js` la lit : un poste qui ne décolle plus la fait
+  rougir et le nomme.
+- `carteMonde.js` exige aussi que chaque piste soit plus large que l'envergure
+  plus deux blocs.
+- `monte.js` fait le trajet de l'enfant à Orly : il monte dans un Concorde garé,
+  appuie sur ✈️, la pilule « Roulage vers la piste » s'affiche, l'avion s'aligne
+  sur l'axe et vole. Sur l'ancien code, il s'écrase dans le hangar.
+- Les deux empreintes du relief de `plafond.js` n'ont pas bougé. L'empreinte des
+  490 morceaux, elle, change, et elle est prouvée désarmée : avec l'ancien
+  `aeroport.js`, on retrouve la constante d'avant. Les 252 colonnes qui
+  diffèrent sont toutes dans un aérodrome ou un tronçon de piste.
+- Le portail complet est vert, sauf des rouges déjà déclarés dans `TASKS.md`,
+  et deux rouges rejoués seuls des deux côtés avec la même distribution :
+  - le bandeau « Atterrissage vers <ville> » à Saint-Dizier (1 sur 3 sur la
+    branche, 2 sur 3 sur `origin/main`) ;
+  - l'avion de l'ami en feu (voir `TASKS.md`).
+
 ## v529 — On marche dans les stations de métro
 
 **Pourquoi.** Max : « les stations de métro ne ressemblent pas du tout à des
