@@ -8977,6 +8977,66 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         `${r.err || ''} ${JSON.stringify(ps)} · ${r.s} s`);
     }
 
+    // ✈️ AU POSTE : ON ROULE JUSQU'À LA PISTE, PUIS ON DÉCOLLE (v530). Max :
+    // « quand on veut décoller, on a des problèmes… une espèce de bloc de
+    // béton… il faut le circuler ». L'appareil garé au poste de la rangée,
+    // l'enfant monte, appuie UNE fois sur ✈️ et lâche tout : l'état
+    // « Roulage vers la piste » s'affiche, les gaz se mettent sur l'AXE d'une
+    // piste, et l'appareil est en vol — jamais une épave. Sur l'ancien code, il
+    // part tout droit sur l'aire et s'écrase sur le hangar. Durée de montre
+    // bornée (le banc rend peu d'images), dans le message.
+    for (const [espece, cle] of [['concorde', 'orly']]) {
+      if (!tab.isClosed()) await banc.mettreDeCote(tab);
+      const dePage = await banc.jouerSeul('MonteDecollage' + espece, { rr: 2 });
+      const r = await dePage.evaluate(async ({ espece, cle }) => {
+        const g = window.__game, am = g.animalManager, P = g.player;
+        const att = (ms) => new Promise((f) => setTimeout(f, ms));
+        const A = await import('./src/aeroport.js');
+        const a = A.AEROPORTS.find((q) => q.cle === cle);
+        const q = A.postesAvion(a.profil, a.r).find((u) => u.espece === espece);
+        for (const b of [...am.animals]) am.scene.remove(b.mesh);
+        am.animals.length = 0;
+        const x = a.x + q.du + 0.5, z = a.z + q.dv + 0.5;
+        // l'enfant à pied, à trois blocs du flanc, face à l'appareil
+        P.pos.set(x, a.sol + 1.05, z - 3); P.yaw = Math.PI;
+        await att(1500);
+        const ne = am.invoquer(espece, Math.floor(x), Math.floor(z));
+        if (ne) ne.yaw = q.cap;
+        await att(800);
+        for (let e = 0; e < 8 && !P.pilote; e++) { document.getElementById('ride-btn').click(); await att(500); }
+        if (!P.pilote) return { err: 'pas aux commandes' };
+        // aux commandes, nez le long de l'aérogare, comme au poste
+        P.pos.set(x, a.sol + 1.05, z); P.yaw = q.cap + Math.PI;
+        P.avionEtat = 'sol'; P.avionEnVol = false; P.vitesseAvion = 0; P.touchMove = { f: 0, s: 0 };
+        await att(500);
+        let pistes = [];
+        try { pistes = (await import('./src/approche.js')).pistesDuMonde().filter((u) => u.cle === cle); } catch { /* ancien code */ }
+        const lire = () => { const el = document.getElementById('etat-pose');
+          return el && getComputedStyle(el).display !== 'none' ? el.textContent.trim() : ''; };
+        document.getElementById('fly-btn').dispatchEvent(new TouchEvent('touchstart', { cancelable: true, bubbles: true }));
+        const t0 = performance.now(), textes = new Set();
+        let gaz = null, etat = P.avionEtat, y0 = P.pos.y;
+        while (performance.now() - t0 < 240000) {
+          await att(100);
+          const t = lire(); if (t) textes.add(t);
+          if (!gaz && P.avionEtat === 'decollage') {
+            const pi = pistes.find((u) => Math.abs(P.pos.z - u.z) <= u.demi && P.pos.x >= u.x0 && P.pos.x <= u.x1);
+            gaz = { lx: +(P.pos.x - a.x).toFixed(1), lz: +(P.pos.z - a.z).toFixed(1), surPiste: !!pi, lat: pi ? +(P.pos.z - pi.z).toFixed(2) : null };
+          }
+          etat = P.avionEtat;
+          if (etat === 'vol' || etat === 'epave' || !P.pilote) break;
+        }
+        return { etat, gaz, textes: [...textes], monte: +(P.pos.y - y0).toFixed(1),
+          crash: P.crash ? P.crash.raison : null, ou: { lx: +(P.pos.x - a.x).toFixed(1), lz: +(P.pos.z - a.z).toFixed(1) },
+          s: Math.round((performance.now() - t0) / 1000) };
+      }, { espece, cle });
+      await dePage.close();
+      if (!tab.isClosed()) await banc.ramener(tab);
+      verifier(`✈️ au poste de ${cle} : le ${espece} roule jusqu'à la piste, met les gaz sur son axe et décolle`,
+        !r.err && r.etat === 'vol' && r.gaz && r.gaz.surPiste && Math.abs(r.gaz.lat) < 1 && r.textes.includes('Roulage vers la piste'),
+        `${r.err || ''} ${JSON.stringify(r)}`);
+    }
+
     // LES TROIS ÉTATS DE LA POSE, ET UN NOM DE VILLE PAR AÉRODROME (v516), sous
     // node : la pose sur place sans piste, la remise qui passe devant, et pour
     // chaque aérodrome un nom qu'un enfant lit (ni tiret, ni « Aéroport », ni

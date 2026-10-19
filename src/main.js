@@ -3000,7 +3000,7 @@ function majEtatDePose() {
   etatPoseTexte = texte;
   etatPoseEl.classList.toggle('visible', !!e);
   etatPoseEl.dataset.quoi = e ? e.cle : '';
-  etatPoseEl.innerHTML = e ? `${e.cle === 'remise' ? ICONES.decoller : ICONES.atterrir}<span class="mot">${e.texte}</span>` : '';
+  etatPoseEl.innerHTML = e ? `${e.cle === 'remise' || e.cle === 'roulage' ? ICONES.decoller : ICONES.atterrir}<span class="mot">${e.texte}</span>` : '';
 }
 window.__majBoutonsVehicule = majBoutonsVehicule;
 

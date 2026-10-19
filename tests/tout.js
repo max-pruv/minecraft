@@ -170,7 +170,7 @@ const GARDIENS = {
   // le nom de chaque station de métro, écrit sur le quai (v529) : la place
   // des plaques se relit sous node (`plafond.js`), leur dessin en jeu (`metro.js`)
   'src/stations.js': ['metro.js', 'plafond.js', 'maj.js'],
-  'src/player.js': ['plafond.js', 'monte.js', 'manhattan.js'],
+  'src/player.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carteMonde.js'],
   'src/conduite.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],

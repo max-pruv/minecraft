@@ -10841,6 +10841,42 @@ Les dix-neuf terminaux étaient praticables et vides. Trois règles.
   du fichier n'emploie) : c'est ce qui permet au témoin de compter le
   mobilier aérodrome par aérodrome sans le confondre avec un marquage.
 
+### Les pistes à l'envergure, et ✈️ roule jusqu'à elles (v530)
+
+Max : « les pistes sont extrêmement étroites… quand on veut décoller on a des
+problèmes… une espèce de bloc de béton… il faut le circuler ». Mesuré AVANT une
+ligne par `tests/sonde-decollage-postes.cjs` (le vrai joueur sous node, ✈️
+depuis chacun des soixante postes) : 7 en vol, 53 écrasés ou bloqués, presque
+tous sur le hangar posé dans l'axe de la rangée. Quatre règles.
+
+- **UNE LARGEUR DE PISTE SE CALCULE SUR L'ENVERGURE DE TOUTE LA FLOTTE.**
+  `DEMI_PISTE = ceil(ENVERGURE_MAX / 2 + MARGE_AILE)` (aeroport.js), lu par
+  le plan, Roissy, `pistesDe`, les tronçons et les témoins : tout appareil
+  peut se poser sur toute piste assez longue (v502), donc c'est le plus large
+  qui compte. Neuf blocs de bande devenaient dix-neuf.
+- **UN APPAREIL QUI PART DE SON POSTE BALAIE LA RANGÉE : RIEN NE S'Y POSE.**
+  Le hangar longeait l'aire à `STAND + AILE` ; il est à côté du terminal, la
+  tour du côté sans hangar (derrière, elle sortait du disque d'Orly). La
+  sonde est la mesure : un bâtiment neuf sur un aérodrome se rejoue par elle.
+- **✈️ AU SOL SUR UN AÉRODROME ROULE D'ABORD JUSQU'À L'AXE.** Un poste est
+  parallèle à la piste, à vingt blocs d'elle : pleins gaz tout droit, on ne
+  la rencontre jamais. `pisteDeDecollage` / `guiderRoulage` (approche.js,
+  purs) suivent l'axe par une carotte, devant soi s'il y a la place
+  (`longueurDecollage` : roulement plus de quoi monter de `H_DEGAGE` à
+  `MONTEE_DECOLLAGE`, que player.js lit là), sinon demi-tour, sinon on remonte
+  jusqu'au bout. Aligné, c'est le décollage d'avant. Second appui ou joystick
+  en arrière : arrêt (v452). L'état « Roulage vers la piste » passe par
+  `etatDePose` (v516). Hors d'un aérodrome, rien ne change.
+- **ÉLARGIR UN OUVRAGE DÉBORDE SUR CE QU'IL LONGEAIT.** Les prolongements
+  (v448) étaient mesurés pour neuf blocs ; dix-neuf débordent sur des flancs
+  de vallon et de mer jusqu'à quinze blocs sous le remblai. Hors du disque,
+  remblai `+ APPUI_PROLONGE` et tranchée `+ DEGAGE_CIME` (les couronnes
+  d'arbres suspendues au-dessus de la tranchée cassaient les avions qui
+  levaient le nez). Roissy perd ses deux pistes intérieures : élargis, deux
+  doublets ne tenaient plus dans son disque ; les axes extérieurs restent,
+  rapprochés de sept blocs (64 → 57) pour que chaque aile garée reste à douze
+  blocs du bord (le témoin de la v280), prolongements re-mesurés. La seconde piste des hubs passe de z 15 à 25.
+
 ### Les aérodromes (`aeroport.js`) — la piste prend le diamètre (v280)
 
 Max, trois demandes en une phrase : « supprime les avions qui ne volent pas, en

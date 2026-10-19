@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 530,
+    titre: 'Des pistes larges',
+    puces: [
+      'Les pistes deux fois plus larges',
+      "L'avion roule tout seul jusqu'à la piste",
+      'Plus de hangar en travers du chemin',
+    ],
+  },
+  {
     v: 529,
     titre: 'De vraies stations de métro',
     puces: [
