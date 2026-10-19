@@ -604,10 +604,9 @@ const position = (p) => p.evaluate(() => ({
       // vignette a dessiné (sa couleur, à l'endroit annoncé), pas une variable.
       const mini = g ? await tab.evaluate(async () => {
         const p = window.__game.player;
-        const btn = document.getElementById('map-btn');
         const cv = document.getElementById('minimap');
         const allumee = () => getComputedStyle(cv).display !== 'none';
-        if (!allumee()) btn.click();
+        if (!allumee()) return { err: 'minicarte éteinte en jeu' };
         const vert = (r) => {
           if (!r) return null;
           const k = r.dedans ? [r.x + 3.5, r.y] : [r.x + Math.cos(r.angle) * 2, r.y + Math.sin(r.angle) * 2];
@@ -627,7 +626,6 @@ const position = (p) => p.evaluate(() => ({
         const pres = await lire();
         document.getElementById('gps-stop')?.click();
         const apres = await lire();
-        if (allumee()) btn.click();
         return { loin, attendu: +attendu.toFixed(2), pres, apres };
       }) : null;
       verifier('la minicarte montre la destination : une flèche au bord, du côté de la cible',
@@ -2030,7 +2028,7 @@ const position = (p) => p.evaluate(() => ({
     // fenêtre, parce qu'il n'y a pas d'autre façon.
     const allumer = await nino.evaluate(() => {
       const t0 = performance.now();
-      if (document.getElementById('minimap').style.display !== 'block') document.getElementById('map-btn').click();
+      // toujours là depuis la v530 : « allumer » ne coûte plus un clic
       return Math.round(performance.now() - t0);
     });
     await dormir(2500);
@@ -2296,6 +2294,128 @@ const position = (p) => p.evaluate(() => ({
 
     verifier('aucune erreur JavaScript sur le téléphone couché', couche.erreurs.length === 0,
       JSON.stringify(couche.erreurs));
+    await couche.close();
+
+    // LA MINICARTE EST TOUJOURS LÀ (v530). Max : « il faut trouver une
+    // solution pour mettre la mini-carte toujours visible. » Elle ne
+    // s'affichait qu'après un appui sur son bouton. Le témoin entre en jeu
+    // SANS UN GESTE, puis la lit dans chaque mode — à pied, en construction,
+    // au volant, aux commandes d'un avion —, à la taille de l'iPhone de Max et
+    // de l'iPad, formulé sans dimension (v265) : visible, rien par-dessus
+    // (`elementFromPoint` en cinq points), elle ne recouvre aucun élément du
+    // HUD, rien dans le quart du joystick (v272) et le doigt y tombe sur le
+    // canvas. Puis : menu ☰ ouvert, elle est sous le voile ; carte du monde
+    // ouverte et pendant un quiz, elle se cache ; la toucher ouvre la carte du
+    // monde ; son ancien bouton n'est plus à l'écran. Rouge sur l'ancien code :
+    // `display: none` à l'entrée en jeu.
+    for (const vue of [{ width: 430, height: 932 }, { width: 820, height: 1180 }]) {
+      const mc = await banc.jouerSeul('Minicarte' + vue.width, { viewport: vue, tactile: true, rr: 2 });
+      const r = await mc.evaluate(async () => {
+        const att = (ms) => new Promise((f) => setTimeout(f, ms));
+        const g = window.__game, C = window.__commandes, am = g.animalManager, P = g.player;
+        const mm = document.getElementById('minimap'), cv = document.getElementById('game');
+        const vis = (el) => { if (!el) return null; const st = getComputedStyle(el), b = el.getBoundingClientRect();
+          return st.display === 'none' || st.visibility === 'hidden' || b.width === 0 ? null
+            : { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) }; };
+        // l'état d'entrée, AVANT tout geste du témoin
+        const entree = vis(mm);
+        const HUD = ['menu-btn', 'map-btn', 'edu-timer', 'gps', 'cap-avion', 'fun-target', 'construction-pill', 'construction-fin',
+          'hotbar', 'jump-btn', 'fly-btn', 'down-btn', 'construire-btn', 'poser-btn', 'casser-btn', 'ride-btn', 'train-btn',
+          'gaz-base', 'gaz-val', 'cmd-vol', 'joy-repos', 'link-banner', 'gps-ami', 'manhattan-adresse'];
+        const croise = (a, b) => Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x) && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
+        const lire = (mode) => {
+          const b = vis(mm);
+          const out = { mode, b, dessus: [], recouvre: [], joy: false, horsCanvas: [] };
+          if (!b) return out;
+          for (const [fx, fy] of [[0.5, 0.5], [0.08, 0.08], [0.92, 0.08], [0.08, 0.92], [0.92, 0.92]]) {
+            const el = document.elementFromPoint(b.x + b.w * fx, b.y + b.h * fy);
+            if (el !== mm) out.dessus.push(el ? el.id || String(el.className) : null);
+          }
+          for (const id of HUD) { const o = vis(document.getElementById(id)); if (o && croise(o, b)) out.recouvre.push(id); }
+          // les enfants de la file centrale (v445), un par un
+          for (const el of document.querySelectorAll('#file-centre > *')) { const o = vis(el); if (o && croise(o, b)) out.recouvre.push('file:' + (el.id || el.className)); }
+          out.joy = b.x < innerWidth * 0.45 && b.y + b.h > innerHeight * 0.4;
+          const hb = vis(document.getElementById('hotbar'));
+          const y1 = hb && hb.y > innerHeight * 0.6 ? hb.y - 4 : innerHeight * 0.95;
+          for (let i = 0; i <= 4; i++) for (let j = 0; j <= 4; j++) {
+            const x = innerWidth * (0.04 + 0.1 * i), y = innerHeight * 0.42 + (y1 - innerHeight * 0.42) * j / 4;
+            const el = document.elementFromPoint(x, y);
+            if (el !== cv) out.horsCanvas.push([Math.round(x), Math.round(y), el ? el.id || String(el.className) : null]);
+          }
+          return out;
+        };
+        const modes = [lire('pied')];
+        C.construire(true); await att(500); modes.push(lire('construction')); C.construire(false); await att(300);
+        // au volant, puis aux commandes : on fait le vide, on invoque, on monte (v284)
+        for (const a of [...am.animals]) am.scene.remove(a.mesh);
+        am.animals.length = 0;
+        const monter = async (cle, test) => {
+          const v = am.invoquer(cle, P.pos.x - Math.sin(P.yaw) * 3, P.pos.z - Math.cos(P.yaw) * 3);
+          const t0 = performance.now();
+          while (performance.now() - t0 < 20000 && !test()) {
+            if (v && v.pos) { v.pos.x = P.pos.x - Math.sin(P.yaw) * 3; v.pos.z = P.pos.z - Math.cos(P.yaw) * 3; }
+            if (!g.fun.montureConduite()) document.getElementById('ride-btn').click();
+            await att(600);
+          }
+          return test();
+        };
+        const volant = await monter('voiture', () => g.fun.montureConduite() && !P.pilote && P.gabarit > 1);
+        await att(500); modes.push({ ...lire('volant'), pris: volant });
+        for (let e = 0; e < 6 && g.fun.montureConduite(); e++) { document.getElementById('ride-btn').click(); await att(600); }
+        for (const a of [...am.animals]) am.scene.remove(a.mesh);
+        am.animals.length = 0;
+        const avion = await monter('chasseur', () => !!P.pilote);
+        if (avion) { P.pos.y += 60; P.avionEtat = 'vol'; P.avionEnVol = true; P.vitesseAvion = 100; }
+        await att(800); modes.push({ ...lire('avion'), pris: avion });
+        P.pilote = null; P.avionEtat = undefined; P.avionEnVol = false;
+        for (let e = 0; e < 6 && g.fun.montureConduite(); e++) { document.getElementById('ride-btn').click(); await att(600); }
+        await att(500);
+        // sous le menu ☰ : toujours là, et sous le voile
+        document.getElementById('menu-btn').click(); await att(400);
+        const bm = vis(mm);
+        const sousMenu = { b: !!bm, voile: bm ? !!document.elementFromPoint(bm.x + bm.w / 2, bm.y + bm.h / 2).closest('#menu-jeu') : false };
+        if (C.estOuvert()) document.getElementById('menu-reprendre').click();
+        await att(400);
+        // la toucher ouvre la carte du monde, et sous elle la minicarte se cache
+        mm.click(); await att(500);
+        const carte = { ouverte: !!(window.__carte && window.__carte.ouverte), cachee: !vis(mm) };
+        document.getElementById('map-modal-close').click(); await att(500);
+        carte.revient = !!vis(mm);
+        // APRÈS UN SAUT, LE FOND DE NUIT S'EN VA (v530, vu en capture) : le
+        // raster repart d'un fond bleu nuit que les bandes repeignent ; un
+        // raccourci qui prenait ce fond pour « déjà peint d'après le relief »
+        // le laissait là pour toujours là où les morceaux manquaient. On
+        // saute à quatre mille blocs et l'on compte les pixels bleu nuit,
+        // jusqu'à ce qu'ils passent sous un sur cinq (borné, durée au message).
+        let saut = null;
+        if (innerWidth < 600) {
+          P.pos.set(P.pos.x + 4000, g.world.terrainHeight(Math.floor(P.pos.x + 4000), Math.floor(P.pos.z)) + 2, P.pos.z);
+          const nuit = () => { const d = mm.getContext('2d').getImageData(0, 0, mm.width, mm.height).data; let n = 0;
+            for (let i = 0; i < d.length; i += 16) if (d[i] === 20 && d[i + 1] === 26 && d[i + 2] === 40) n++;
+            return n / (d.length / 16); };
+          await att(400);
+          const t0 = performance.now(); let part = nuit();
+          while (performance.now() - t0 < 45000 && (part = nuit()) > 0.2) await att(500);
+          saut = { part: +part.toFixed(2), ms: Math.round(performance.now() - t0) };
+        }
+        // pendant un quiz (invariant 2), elle se cache, et revient après
+        g.edu.startQuiz(); await att(600);
+        const quiz = { actif: !!g.edu.quizActive, cachee: !vis(mm) };
+        return { saut, entree, modes, sousMenu, carte, quiz, bouton: !!vis(document.getElementById('map-btn')), vue: [innerWidth, innerHeight] };
+      });
+      await mc.close();
+      const T = `minicarte (${vue.width} × ${vue.height})`;
+      verifier(`${T} : visible dès l'entrée en jeu, sans un geste, et son ancien bouton n'est plus à l'écran`,
+        !r.err && !!r.entree && !r.bouton, JSON.stringify({ entree: r.entree, bouton: r.bouton }));
+      const fautes = (r.modes || []).filter((m) => !m.b || m.dessus.length || m.recouvre.length || m.joy || m.horsCanvas.length || m.pris === false);
+      verifier(`${T} : à pied, en construction, au volant et en avion — visible, rien par-dessus, elle ne recouvre rien, et le quart du joystick reste au canvas`,
+        !r.err && (r.modes || []).length === 4 && fautes.length === 0, JSON.stringify(fautes.length ? fautes : r.modes));
+      verifier(`${T} : sous le menu ☰ elle reste, voilée ; la toucher ouvre la carte du monde, sous laquelle elle se cache, puis revient ; un quiz la cache`,
+        !r.err && r.sousMenu.b && r.sousMenu.voile && r.carte.ouverte && r.carte.cachee && r.carte.revient && r.quiz.actif && r.quiz.cachee,
+        JSON.stringify({ sousMenu: r.sousMenu, carte: r.carte, quiz: r.quiz }));
+      if (r.saut) verifier(`${T} : après un saut de quatre mille blocs, le fond de nuit de la minicarte se repeint`,
+        r.saut.part <= 0.2, JSON.stringify(r.saut));
+    }
   } finally {
     await banc.fermer();
   }

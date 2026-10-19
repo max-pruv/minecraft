@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 530,
+    titre: 'La minicarte toujours là',
+    puces: [
+      'La minicarte s\'affiche toute seule',
+      'La toucher ouvre la carte du monde',
+    ],
+  },
+  {
     v: 529,
     titre: 'De vraies stations de métro',
     puces: [

@@ -5597,11 +5597,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const m = await import('./src/montures.js');
       const toile = document.getElementById('minimap');
       if (!toile) return { err: 'pas de minicarte' };
-      if (toile.style.display !== 'block') {
-        const bouton = document.getElementById('map-btn');
-        if (bouton && bouton.click) bouton.click();
-      }
-      if (toile.style.display !== 'block') return { err: 'la minicarte ne s\'ouvre pas' };
+      // TOUJOURS LÀ DEPUIS LA v530 : on ne touche plus le bouton carte (il
+      // ouvre la carte du monde, sous laquelle la minicarte se cache) ; on
+      // attend qu'elle s'affiche d'elle-même, dix secondes au plus.
+      const tMini = performance.now();
+      while (toile.style.display !== 'block' && performance.now() - tMini < 10000) await new Promise((f) => setTimeout(f, 100));
+      if (toile.style.display !== 'block') return { err: 'la minicarte ne s\'affiche pas', etat: window.__minicarte ? window.__minicarte() : null, classes: document.body.className };
       const def = m.MONTURES.find((d) => d.key === 'avionligne');
       if (!def || !def.pilote) return { err: 'pas d\'avion de ligne' };
       // Un couloir vierge, loin de tout — ET SUR TERRE. À (−40 000, 40 000)
@@ -8788,7 +8789,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await att(500); }
         if (!g.player.pilote) return { err: 'pas aux commandes' };
         g.player.pos.y += 60; g.player.avionEtat = 'vol'; g.player.avionEnVol = true; g.player.vitesseAvion = 100;
-        if (getComputedStyle(document.getElementById('minimap')).display === 'none') document.getElementById('map-btn').click();
+        // la minicarte est toujours là (v530) : aucun geste pour l'ouvrir
         if (window.__gpsVers) window.__gpsVers(x0 + 2000, z0 - 9000, 'Minneapolis');
         else if (g.carte && g.carte.surGPS) g.carte.surGPS(x0 + 2000, z0 - 9000, 'Minneapolis');
         const { toast } = await import('./src/bandeau.js');
@@ -8805,9 +8806,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const ids = ['cap-avion', 'minimap', 'gps', 'toast', 'math-pop', 'fun-target', 'fly-btn', 'train-btn', 'gaz-base', 'gaz-val', 'edu-timer', 'left-rail', 'pause-btn'];
         const R = {};
         for (const id of ids) R[id] = boite(id);
-        // la colonne de gauche (v518) : le bouton carte, et où s'ouvre ce qui
+        // la colonne de gauche (v518) : son haut, et où s'ouvre ce qui
         // vit sous la carte (les émotes) quand elle est ouverte
-        const colonne = { carte: boite('map-btn'),
+        const colonne = { haut: Math.round(document.getElementById('left-rail').getBoundingClientRect().top),
           sousCarte: Math.round(document.getElementById('left-rail-bottom').getBoundingClientRect().top),
           fileCentre: Math.round(document.getElementById('file-centre').getBoundingClientRect().left) };
         if (mp) mp.style.display = 'none';
@@ -8833,19 +8834,19 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier(`en vol (${vue.width} × ${vue.height}), minicarte, cadran de cap, GPS, bandeau et défi de Cornichon ne se recouvrent pas, ni les commandes de bord`,
         !hud.err && manquants.length === 0 && recouvre.length === 0,
         `${hud.err || ''} manquants ${JSON.stringify(manquants)} recouvrements ${JSON.stringify(recouvre)} ${JSON.stringify(R)}`);
-      // LA MINICARTE EST DANS LA COLONNE DE GAUCHE (v518). Max : « la carte
-      // est mal placée, elle pourrait être bien à gauche » — elle flottait à
-      // droite du bouton carte. Formulé sans dimension (v265) : même x que le
-      // bouton carte, juste sous lui (moins d'une hauteur de bouton d'écart),
-      // ce qui vit sous la carte descend sous elle, la file centrale passe à
-      // sa droite, et rien dans le quart du joystick (v272). Rouge sur
-      // l'ancien code : x de la minicarte = x du bouton + sa largeur + 10.
+      // LA MINICARTE EST DANS LA COLONNE DE GAUCHE (v518), ET TOUJOURS LÀ
+      // (v530). Max : « la carte est mal placée, elle pourrait être bien à
+      // gauche », puis « toujours visible ». Elle a pris la place de son
+      // bouton, en tête de la colonne. Formulé sans dimension (v265) : visible
+      // en vol SANS un geste, à gauche (son bord au x de la colonne, moins
+      // d'une demi-largeur de bouton), son haut à celui de la colonne, ce qui
+      // vit sous la carte descend sous elle, la file centrale passe à sa
+      // droite, et rien dans le quart du joystick (v272).
       {
-        const mm = R.minimap, cb = hud.colonne && hud.colonne.carte, c = hud.colonne || {};
+        const mm = R.minimap, c = hud.colonne || {};
         const dans = (b) => b.x < hud.vue.w * 0.45 && b.y + b.h > hud.vue.h * 0.4;
-        verifier(`(${vue.width} × ${vue.height}) la minicarte s'ouvre à gauche, sous le bouton carte, sans rien recouvrir ni entrer dans le quart du joystick`,
-          !hud.err && !!mm && !!cb && Math.abs(mm.x - cb.x) <= 1
-            && mm.y >= cb.y + cb.h && mm.y - (cb.y + cb.h) < cb.h
+        verifier(`(${vue.width} × ${vue.height}) la minicarte est là sans geste, en tête de la colonne de gauche, sans rien recouvrir ni entrer dans le quart du joystick`,
+          !hud.err && !!mm && mm.x <= 22 && Math.abs(mm.y - c.haut) <= 2
             && c.sousCarte >= mm.y + mm.h && c.fileCentre >= mm.x + mm.w && !dans(mm),
           `${hud.err || ''} ${JSON.stringify({ minicarte: mm, colonne: c, vue: hud.vue })}`);
       }

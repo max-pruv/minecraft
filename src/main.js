@@ -6948,7 +6948,7 @@ const RELIEF_CARTE = 96;
 // ET LE FOND ENTIER SE REFAIT QUAND MÊME, lentement. Un bloc posé par l'enfant
 // tombe dans la partie recopiée, que rien ne recalculerait jamais.
 let carteRaster = null;         // le fond, un point par bloc
-let carteReel = null;           // 1 : peint d'après les vrais blocs ; 0 : d'après le relief (morceau absent)
+let carteReel = null;           // 1 : peint d'après les vrais blocs ; 0 : d'après le relief (morceau absent) ; 2 : esquissé, 3 : pas encore peint (v530)
 let carteRasterCx = 0, carteRasterCz = 0, carteRasterR = 0;
 let carteHorsSol = null;        // le canevas intermédiaire, à la taille du raster
 let carteBande = 0;             // la prochaine ligne du raster à repeindre
@@ -6983,7 +6983,10 @@ function assurerRasterCarte(radius) {
   if (neuf || Math.abs(dx) >= N || Math.abs(dz) >= N) {
     // rien à recopier : le fond de nuit, que les bandes remplacent en une seconde
     for (let o = 0; o < carteRaster.length; o += 4) { carteRaster[o] = 20; carteRaster[o + 1] = 26; carteRaster[o + 2] = 40; carteRaster[o + 3] = 255; }
-    carteReel.fill(0);
+    // 3 : pas encore peint du tout. Surtout pas 0 (« peint d'après le
+    // relief ») : la bande sauterait ces points tant que leur morceau manque,
+    // et une arrivée laissait la minicarte bleu nuit (vu en capture, v530).
+    carteReel.fill(3);
     carteBande = 0; carteBandeI = 0; carteTours = 0;
   } else if (dx !== 0 || dz !== 0) {
     decalerCarte(carteRaster, N, dx, dz);
@@ -6991,8 +6994,30 @@ function assurerRasterCarte(radius) {
     // la bande neuve, et elle seule : c'est tout le gain
     const i0 = dx > 0 ? N - dx : 0, i1 = dx > 0 ? N : -dx;
     const j0 = dz > 0 ? N - dz : 0, j1 = dz > 0 ? N : -dz;
-    for (let j = 0; j < N; j++) for (let i = i0; i < i1; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius, carteReel);
-    for (let j = j0; j < j1; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius, carteReel);
+    // UNE BANDE LARGE S'ESQUISSE (v530). La minicarte est toujours là
+    // désormais, et en vol le bord neuf coûtait 87 ms par seconde au fil
+    // principal (sonde-minicarte-cout.cjs) : à 120 blocs par seconde, 23 000
+    // points dont le morceau n'est pas encore là, chacun peint par la couleur
+    // de la carte du monde. Au-delà de trois blocs d'avance, on peint un point
+    // sur quatre et on le recopie sur ses voisins ; ils portent la marque 2
+    // (« esquissé »), et les bandes qui repassent (v258) les repeignent un à
+    // un. Un carré de deux points fait 1,7 pixel sur l'écran de l'iPhone.
+    const pas = Math.max(i1 - i0, j1 - j0) >= 3 ? 2 : 1;
+    const zone = (ia, ib, ja, jb) => {
+      for (let j = ja; j < jb; j += pas) for (let i = ia; i < ib; i += pas) {
+        peindreCarte(carteRaster, N, i, j, pcx, pcz, radius, carteReel);
+        if (pas === 1) continue;
+        const o = (j * N + i) * 4;
+        for (const [a, b] of [[1, 0], [0, 1], [1, 1]]) {
+          if (i + a >= ib || j + b >= jb) continue;
+          const q = ((j + b) * N + i + a);
+          carteRaster.copyWithin(q * 4, o, o + 4);
+          carteReel[q] = 2;
+        }
+      }
+    };
+    if (i1 > i0) zone(i0, i1, 0, N);
+    if (j1 > j0) zone(dx > 0 ? 0 : i1, dx > 0 ? i0 : N, j0, j1);
   }
   carteRasterCx = pcx; carteRasterCz = pcz;
 }
@@ -7014,7 +7039,13 @@ function repeindreBandeCarte(lignes, budgetMs) {
   const fin = performance.now() + budgetMs;
   let faites = 0;
   for (;;) {
-    peindreCarte(carteRaster, N, carteBandeI, carteBande, carteRasterCx, carteRasterCz, carteRasterR, carteReel);
+    // Un point peint d'après le relief dont le morceau n'est toujours pas
+    // là rendrait EXACTEMENT la même couleur : on ne le repeint pas (v530).
+    const p = carteBande * N + carteBandeI;
+    if (carteReel[p] !== 0 || world.chunks.has(Math.floor((carteRasterCx + carteBandeI - carteRasterR) / CHUNK) + ','
+        + Math.floor((carteRasterCz + carteBande - carteRasterR) / CHUNK))) {
+      peindreCarte(carteRaster, N, carteBandeI, carteBande, carteRasterCx, carteRasterCz, carteRasterR, carteReel);
+    }
     if (++carteBandeI >= N) {
       carteBandeI = 0; carteBande = (carteBande + 1) % N;
       if (carteBande === 0) carteTours++;
@@ -7116,6 +7147,7 @@ function decalerCarte(buf, N, dx, dz, canaux = 4) {
   }
 }
 
+let carteImage = null;          // l'image du fond, réutilisée d'un dessin à l'autre (v530)
 function drawMap(mapCanvas, radius) {
   const ctx = mapCanvas.getContext('2d');
   const size = mapCanvas.width;
@@ -7123,7 +7155,8 @@ function drawMap(mapCanvas, radius) {
   const N = radius * 2 + 1;
   assurerRasterCarte(radius);
   const hctx = carteHorsSol.getContext('2d');
-  const img = hctx.createImageData(N, N);
+  if (!carteImage || carteImage.width !== N) carteImage = hctx.createImageData(N, N);
+  const img = carteImage;
   img.data.set(carteRaster);
   hctx.putImageData(img, 0, 0);
   ctx.imageSmoothingEnabled = false;
@@ -7459,16 +7492,40 @@ mapModalCanvas.addEventListener('pointerdown', () => { listeLieux.style.display 
 document.getElementById('map-moi').addEventListener('click', () => carte.centrerSurJoueur(0.6));
 document.getElementById('map-tout').addEventListener('click', () => carte.toutVoir());
 
-document.getElementById('map-btn').addEventListener('click', () => {
-  minimapVisible = !minimapVisible;
-  minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
-  // la file centrale se range à droite de la minicarte ouverte (aviation)
-  document.body.classList.toggle('minicarte-ouverte', minimapVisible);
-  if (minimapVisible) {
+// LA MINICARTE EST TOUJOURS LÀ (v530). Max : « il faut trouver une solution
+// pour mettre la mini-carte toujours visible. » Elle s'allume dès que la
+// partie est à l'écran — à pied, au volant, en vol, en construction, menu ☰
+// ouvert compris (le voile la couvre comme le reste) — et ne s'éteint que
+// sous la carte du monde et pendant un quiz (invariant 2). Son ancien bouton
+// ne bascule plus rien : il ouvrirait une carte déjà ouverte, et un bouton
+// qui ne fait rien est pire qu'un bouton qui refuse (v228). Il est retiré de
+// l'écran (CSS) et, s'il est appuyé, ouvre la carte du monde, comme la
+// minicarte elle-même. La décision est dans `minicarteVoulue`, lue à chaque
+// image ; le DOM ne s'écrit que quand elle change.
+// `?minicarte=0` l'éteint, pour mesurer ce qu'elle coûte (sonde-minicarte-cout.cjs).
+const MINICARTE_COUPEE = PARAMS_JEU.get('minicarte') === '0';
+// La partie est à l'écran quand l'accueil est fermé : on ne lit PAS `en-jeu`,
+// qui demande aussi le bouton pause — au bureau, souris verrouillée, il ne
+// s'affiche jamais (Échap fait pause), et la minicarte ne venait pas.
+function minicarteVoulue() {
+  return !MINICARTE_COUPEE && overlay.style.display === 'none' && !carteOuverte && !edu.quizActive;
+}
+function majMinicarte() {
+  const voulue = minicarteVoulue();
+  if (voulue === minimapVisible) return;
+  minimapVisible = voulue;
+  minimapCanvas.style.display = voulue ? 'block' : 'none';
+  // la file centrale se range à droite de la minicarte (v445)
+  document.body.classList.toggle('minicarte-ouverte', voulue);
+  if (voulue) {
     drawMap(minimapCanvas, 96);
     carteVue = { x: player.pos.x, z: player.pos.z };
   }
-});
+}
+// ce qu'elle coûte au fil principal, cumulé : la sonde en fait un débit
+const coutMinicarte = { ms: 0, dessins: 0 };
+window.__minicarte = () => ({ visible: minimapVisible, voulue: minicarteVoulue(), ms: +coutMinicarte.ms.toFixed(1), dessins: coutMinicarte.dessins });
+document.getElementById('map-btn').addEventListener('click', ouvrirCarte);
 minimapCanvas.addEventListener('click', ouvrirCarte);
 document.getElementById('map-modal-close').addEventListener('click', fermerCarte);
 mapModal.addEventListener('click', (e) => {
@@ -8593,7 +8650,9 @@ function frame(now) {
   // quand même ; en vol, une seconde d'horloge valait soixante-quatorze blocs
   // de retard. Le déclencheur est donc la DISTANCE, bornée par une cadence en
   // temps réel — jamais en `dt`, qui ralentit avec l'affichage (leçon v226).
+  majMinicarte();
   if (minimapVisible) {
+    const tMini = performance.now();
     const bouge = !carteVue
       || Math.hypot(player.pos.x - carteVue.x, player.pos.z - carteVue.z) >= CARTE_PAS;
     // le fond se repeint par bandes à chaque image (v258), et l'affichage se
@@ -8603,7 +8662,9 @@ function frame(now) {
     if (bouge || carteSuivre()) {
       drawMap(minimapCanvas, 96);
       carteVue = { x: player.pos.x, z: player.pos.z };
+      coutMinicarte.dessins++;
     }
+    coutMinicarte.ms += performance.now() - tMini;
   } else if (!running && PREPARER && PARAMS_JEU.get('prepmini') !== '0') {
     // à l'accueil, la minicarte se prépare autour de l'enfant (v258) : son
     // premier fond, 37 000 colonnes, ne coûte rien à l'image où on l'allume.

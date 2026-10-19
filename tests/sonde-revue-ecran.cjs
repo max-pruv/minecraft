@@ -59,8 +59,7 @@ const aPied = (tab) => tab.evaluate(async () => {
   for (const k of ['KeyW', 'KeyA', 'KeyD']) g.player.keys.delete(k);
   g.player.touchMove = { f: 0, s: 0 };
   if (g.player.flying) g.player.toggleFly();
-  const mini = document.getElementById('minimap');
-  if (mini && mini.style.display === 'block') document.getElementById('map-btn').click();
+  // la minicarte est toujours là en jeu (v530) : on ne la ferme plus
   g.running = true;
 });
 
@@ -114,14 +113,13 @@ const ETATS = [
   } },
   { nom: 'minicarte', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
-    await tab.evaluate(() => document.getElementById('map-btn').click());
+    // toujours là depuis la v530 : on ne l'ouvre pas, on la regarde
     await dormir(2500);
     return tab.evaluate(() => ({ affichee: document.getElementById('minimap').style.display }));
   } },
   { nom: 'carte-monde', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
     await tab.evaluate(() => {
-      if (document.getElementById('minimap').style.display !== 'block') document.getElementById('map-btn').click();
       document.getElementById('minimap').click();
     });
     await tab.waitForFunction(() => window.__carte && window.__carte.ouverte, null, { timeout: 30000 });
