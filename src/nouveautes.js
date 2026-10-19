@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 531,
+    titre: 'De vraies feuilles d\'automne',
+    puces: [
+      'Plus de carrés orange dans le ciel',
+      'Les feuilles tombent en tournant',
+      'Elles se posent sur le sol',
+    ],
+  },
+  {
     v: 530,
     titre: 'Des pistes larges',
     puces: [

@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v531 — De vraies feuilles d'automne, posées sur le monde
+
+**Pourquoi.** Max, capture d'iPhone au volant sur une autoroute : « Je ne sais
+pas ce que c'est que ces carrés orange-jaune dans le ciel, mais je veux enlever
+les trucs type Minecraft en carré. Si ce sont des feuilles qui volent parce que
+c'est l'automne, je veux voir des vraies feuilles, haute définition. » C'étaient
+les feuilles d'automne : un nuage de cent soixante carrés sans texture, posé de
+−1 à +9 blocs au-dessus du sol sous l'enfant. Vu d'une caméra de voiture à trois
+blocs du sol, tout ce qui la dépasse se projette au-dessus de l'horizon — la
+bande de la v484 ne pouvait pas l'empêcher. Mesuré sur `origin/main` : 16
+particules du champ sur 19 au-dessus de l'œil, 126 à 1 228 pixels de l'effet sur
+fond de ciel.
+
+**Ce que ça change.** Les feuilles sont de vraies feuilles : une silhouette à
+nervures et pétiole, sept teintes d'automne, qui tournent sur elles-mêmes en
+tombant, planent, se posent sur le sol (ou un toit, ou l'eau) et y restent
+quelques secondes avant de disparaître. Elles tombent bas, à hauteur d'arbre
+bas, au-dessus de leur propre coin de terrain : plus rien dans le ciel, ni en
+voiture ni en avion. Au printemps des pétales échancrés, en été des lucioles à
+halo, en hiver des flocons à six branches (la neige seule tombe du ciel).
+
+**Ce qui le prouve.** Quatre témoins dans `monte.js`, lus par
+`sonde-saison-ciel.cjs` : la silhouette (63 % de texels transparents, 0 sur
+l'ancien code), l'écart de chaque feuille à ce qui la porte (2,95 contre 12,08),
+les pixels de l'effet sur fond de ciel vus d'une caméra de voiture (0 contre
+126), et le vol (rien ne se dessine). Trois rouges sur `origin/main`. Un seul
+appel de dessin, aucune lampe, compilé pendant l'accueil ; coût en rendu
+logiciel dans le bruit (`sonde-saison-cout.cjs` : 17,6 contre 17,9 images par
+seconde, médianes ABBA).
+
+---
 ## v530 — Des pistes larges, et l'avion roule jusqu'à elles
 
 **Pourquoi.** Max : « Les pistes des aéroports sont extrêmement étroites. Et
@@ -248,6 +279,9 @@ centimètre et demi devant la tôle, aucun dans le vide. Deux témoins neufs dan
 qui clignotent, sans compiler un programme (les clés) ; et chez Alice, la
 voiture de la rue que Marlon percute s'arrête en détresse. Les deux sont
 rouges sur `origin/main`.
+
+---
+
 ## v518 — « Loin » voit plus loin, le garde-manger part, la minicarte à gauche
 
 Trois sujets, trois lignes au journal du jeu, un témoin pour chacun.

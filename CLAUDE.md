@@ -1329,6 +1329,39 @@ sa couleur, lancer de rayon (`layers.enableAll()`) à travers chacun —
 pose sur le MONDE (le sol, l'eau), jamais sur l'enfant : `BANDE_SAISON`
 (main.js), basse pour feuilles, pétales et lucioles, haute pour la neige.
 
+## De vraies feuilles d'automne (v531) — une ambiance vit sur SA colonne, et elle a une forme
+
+Max, capture d'iPhone au volant : des carrés orange-jaune dans le ciel. C'était
+encore le nuage de la v484 : un `Points` de carrés sans texture, de −1 à +9
+blocs au-dessus du sol SOUS L'ENFANT. Mesuré au banc sur `origin/main` : 16
+particules du champ sur 19 au-dessus de l'œil, et vu d'une caméra de voiture
+(trois blocs du sol, cap à l'horizon) 126 à 1 228 pixels de l'effet sur fond de
+ciel. Trois règles.
+
+- **« À HAUTEUR D'ARBRE » N'EST PAS « SOUS L'HORIZON ».** Une bande au-dessus du
+  sol de l'enfant se projette au-dessus de l'horizon dès qu'elle dépasse la
+  caméra, et une caméra de poursuite est à trois blocs. Chaque particule vit
+  sur SA colonne (`saisons.js`) : elle naît à moins de 3,4 blocs de ce qui la
+  porte, tombe en planant, relit ce qui la porte quand elle change de colonne
+  (sinon, quittant la cime d'un arbre, elle se pose en l'air), traverse le
+  feuillage, se pose (sol, toit, eau), s'efface. Le sol se lit sur un morceau
+  déjà engendré (`morceauxPrets`), jamais par un `getBlock` qui fabrique (v472).
+  La neige seule tombe du ciel.
+- **UNE AMBIANCE A UNE SILHOUETTE DESSINÉE ICI.** Feuille à nervures, pétale
+  échancré, flocon à six branches, luciole à halo : un canvas au chargement,
+  sans réseau (invariant 4). Un `InstancedMesh` de quads, la teinte par
+  instance (`setColorAt` dès la naissance), Lambert (les feuilles s'éteignent la
+  nuit ; la luciole est additive et hors correspondance tonale), aucune lampe.
+  `chauffer` compile l'essaim pendant l'accueil (chaîne `pas` de main.js) — et
+  un `scene.add` dans une scène de chauffe RETIRE l'objet de son parent : on
+  l'y remet, sinon l'effet disparaît du jeu (vu au premier jet).
+- **LE TÉMOIN LIT LES PIXELS SUR FOND DE CIEL, ET LA FORME PAR SA CARTE.**
+  `sonde-saison-ciel.cjs` (lue par `monte.js`) trouve l'effet par sa forme
+  (l'ancien `Points` de taille 0,24 ou l'essaim `saison-*`) : silhouette (plus
+  de 30 % de texels transparents), écart de chaque particule à ce qui la porte
+  (≤ 6 : une feuille qui tombe d'un talus garde sa hauteur), pixels ajoutés là où sans lui on voit le ciel (≤ 20). Trois rouges sur
+  `origin/main`, verts ici. `?saison=` force la saison.
+
 ## Les voitures de la rue se rendent (v495) — un prototype se marque partagé là où il naît
 
 Trois règles.

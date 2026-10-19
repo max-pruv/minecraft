@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+- [ ] **Les rouges du portail de la v531 (vraies feuilles d'automne), 19 octobre
+  2026, sur un conteneur lent (1,7 à 2,0 s pour 3·10⁸ tours, charge nulle).**
+  Portail complet, 94 min : treize suites vertes. `maj.js` rouge sur le seul
+  badge (journal v531, `CACHE_VERSION` v530 avant le bump). `manhattan.js` « le
+  taxi roule avec les contrôles tactiles » (3 s de jeu en 244 s de montre),
+  déjà déclaré. `monte.js` : six rouges de la famille déclarée plus bas (rue
+  et circulation : passage peint de Rome, freinage au feu, rue vide ;
+  « minimap×edu-timer » aux deux tailles et « Atterrissage vers Saint-Dizier »
+  venus de `main`). Les quatre témoins des saisons sont VERTS au portail.
+  `reseau.js` : le trio et ce qui en dépend (compteur, prénoms sur la carte,
+  GPS d'un invité à travers l'hôte, puis le banc qui lâche sur `net.peer`
+  nul, Nina n'étant jamais entrée), c'est-à-dire « le jeu à plusieurs ne
+  tourne plus sur ce banc, des deux côtés », déclaré ci-dessous. Aucune de ces
+  suites, `monte.js` exceptée, ne lit `saisons.js`.
 - [ ] **Les rouges du portail de la v529, double mesure (rejoués seuls, branche
   contre `origin/main` v522).** `monte.js` : 7 rouges des deux côtés, tous de la
   rue et de la circulation (voisines d'un convoi, freinage au feu, rue vide,
