@@ -1,5 +1,47 @@
 # Ce qui est en cours
 
+- [ ] **Monter en passager dans TOUT véhicule d'un ami, pas seulement sa
+  voiture (demande de Max, 20 octobre 2026).** « Pouvoir rentrer dans une
+  voiture, avion… en passager sur le jeu online si un autre joueur est déjà
+  conducteur. » Ce qui existe : la voiture seule (v253, portière v377, descente
+  v384, suivi de l'identité du conducteur v407, `net.estMoi` v410).
+  `vehiculeAmiProche` (fun.js) ne propose que ce dont la fiche porte `sieges`,
+  et seule la fiche `voiture` (montures.js:448) en a : un ami aux commandes d'un
+  avion, d'une bête montée ou d'un autre véhicule ne se rejoint pas. Ce qu'il
+  faut : des `sieges` mesurés dans les fiches des trois avions (cabine, pas le
+  cockpit ; le Concorde n'a pas de porte, v389) et des montures à deux places,
+  la montée par l'escalier de l'avion de l'ami (`monterAvion` rejoué sur le
+  maillage DISTANT, comme `monterChez` pour la portière), la caméra passager en
+  vol (le pilote garde les commandes, le passager regarde librement), la
+  descente au sol seulement (en vol : refus qui dit quoi faire). Témoins à deux
+  tablettes dans `reseau.js` : la parenté du maillage et le passager qui SUIT
+  l'avion de l'ami, sur `pos` ET `rpos` (v406). Zone : `fun.js`,
+  `embarquement.js`, `montures.js`, `avions.js` — se marche dessus avec la
+  conduite.
+- [ ] **Les autres joueurs bougent par saccades, surtout en voiture et en avion
+  (demande de Max, 20 octobre 2026).** « Tu le vois bouger de manière saccadée,
+  toutes les secondes il a avancé… c'est pas très real time. » Ce qui est dans
+  le code, pas encore mesuré : `startPosLoop` (net.js:1765) envoie la position
+  toutes les 120 ms, sans vitesse ; `updateRemotePlayers` (main.js:4881) court
+  après la DERNIÈRE position reçue par un lissage exponentiel (`dt × 10`) —
+  aucune interpolation entre deux relevés, aucune extrapolation. À 60 b/s un
+  relevé vaut 7 blocs : l'ami avance par marches puis s'arrête. Par le nuage
+  (`relaisnuage.js`, `SONDAGE_MS` 500, et l'hôte qui relaie `rpos`), les relevés
+  arrivent par paquets toutes les demi-secondes ou plus — c'est probablement le
+  « toutes les secondes » de Max. Pistes, dans l'ordre : (1) MESURER au banc et
+  sur la tablette (`?diag=1`) l'écart réel entre deux relevés reçus, chemin
+  direct, relayé et nuage ; (2) horodater chaque relevé à l'envoi (heure de la
+  rue, v305, partagée) et rejouer l'ami avec un retard fixe en INTERPOLANT entre
+  deux relevés (tampon de 2-3 relevés), extrapolation bornée (vitesse, 250 ms
+  au plus) quand le suivant manque ; (3) envoyer la vitesse (et le cap du
+  véhicule, pas seulement le regard) dans `pos` — champ neuf, l'ancienne
+  tablette l'ignore (le receveur cède) ; (4) cadence d'envoi plus serrée en
+  véhicule rapide seulement, si la mesure le demande. Règles : un champ ajouté à
+  `pos` a deux témoins (`pos` et `rpos`, v406) ; tout compte en temps réel,
+  jamais en `dt` (v226) ; le témoin mesure le PIRE saut de position par image
+  de l'ami chez l'autre tablette, au volant, sur chaque chemin. Zone : réseau
+  (`net.js`, `relaisnuage.js`) et `main.js` (`updateRemotePlayers`).
+
 - [ ] **Les rouges du portail de la v531 (vraies feuilles d'automne), 19 octobre
   2026, sur un conteneur lent (1,7 à 2,0 s pour 3·10⁸ tours, charge nulle).**
   Portail complet, 94 min : treize suites vertes. `maj.js` rouge sur le seul
