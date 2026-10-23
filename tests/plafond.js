@@ -618,7 +618,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       !t.erreur && t.points > 50000 && t.trous === 0, t.erreur || JSON.stringify(t));
   }
 
-  // --- LE MOBILIER SE CASSE, PUR (v535) --------------------------------------
+  // --- LE MOBILIER SE CASSE, PUR (v536) --------------------------------------
   // La règle (`mobiliercasse.js`) : ce qui se casse, comment ça tombe, quand ça
   // se relève. Sur l'ancien code le module n'existe pas, et le verdict le dit.
   {

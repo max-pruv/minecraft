@@ -128,7 +128,7 @@ const ETATS = [
     await dormir(4000);
     return { ouverte: true };
   } },
-  // LE MOBILIER TOMBÉ (v535) : un réverbère et un feu de Paris renversés
+  // LE MOBILIER TOMBÉ (v536) : un réverbère et un feu de Paris renversés
   // comme une voiture lancée les renverse, vus du trottoir — la nuit, la
   // lanterne couchée ne doit plus éclairer la rue
   { nom: 'mobilier-tombe', async prep(tab) {

@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **PORTAIL DE LA v535 (mobilier cassable, fusionné à la v531) : aucun
+- [ ] **PORTAIL DE LA v536 (mobilier cassable, fusionné à la v531) : aucun
   rouge de la livraison.** Le portail n'a pas fini sous la limite de deux
   heures (coupé dans `reseau.js`). Rejoués SEULS des deux côtés : `monte.js`
   branche 258 / 5 (fabrication par tranches, voisines d'un convoi, feu « au
@@ -19,14 +19,14 @@
   (vrai/faux) qu'avant, à surveiller ; le loader qui compte les fichiers
   rouge des deux côtés (déclaré) ; `reseau.js` branche 89 / 1 (la voiture
   de la rue chez l'ami, déclaré). Second portail, refusionné à la v534 (et
-  renommé v535), JOUÉ JUSQU'AU BOUT (131 min) : `degats.js` 1 (feux de
+  renommé v536), JOUÉ JUSQU'AU BOUT (131 min) : `degats.js` 1 (feux de
   détresse, déclaré par la v533), `maj.js` 1 (le loader qui compte les
   fichiers, déclaré), `monte.js` 6 (passant de Rome, feu « au lieu de
   piler », rue vide, `minimap×edu-timer` aux deux tailles, « Atterrissage
   vers ») — tous rouges sur `origin/main` rejouée seule ci-dessus ; les
   témoins du mobilier et ceux de la voiture garée (v534) verts.
 
-- [ ] **Le mobilier se casse (v535) : ce qui reste, et deux décisions pour
+- [ ] **Le mobilier se casse (v536) : ce qui reste, et deux décisions pour
   Max.** (1) LES RUES SONT ÉTROITES, ET C'EST MESURÉ
   (`tests/sonde-mobilier-route.cjs`, le long des circuits) : chaussée médiane
   6,5 blocs dans les villes engendrées (p10 6), 13 à Paris, 6,5 à Londres

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v535 — Le mobilier de rue se casse
+## v536 — Le mobilier de rue se casse
 
 **Pourquoi.** Max : « quand tu roules avec les voitures, tout le mobilier
 urbain, poteau, feu rouge, il est hyper dur. Comme dans GTA, il devrait
@@ -67,7 +67,7 @@ s'arrête devant). Portail sur le code fusionné à la v531 : les rouges de
 `monte.js`, `degats.js`, `maj.js` et `reseau.js` sont ceux de `origin/main`,
 rejoués seuls des deux côtés (`TASKS.md`). Revue d'écran
 (`--etats=mobilier-tombe,volant-arret`, iPhone et iPad, jour et nuit) dans
-`docs/revue-ecran/v535/` : le réverbère couché au pied du trottoir se lit
+`docs/revue-ecran/v536/` : le réverbère couché au pied du trottoir se lit
 au premier regard.
 ## v534 — Un choc a de l'élan
 

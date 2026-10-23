@@ -1231,7 +1231,7 @@ function meshChunk(cx, cz) {
   statsMaillage.locaux++;
 }
 
-// LE MOBILIER QUI EST TOMBÉ (v535, `mobiliercasse.js`). Le registre vit ici,
+// LE MOBILIER QUI EST TOMBÉ (v536, `mobiliercasse.js`). Le registre vit ici,
 // à côté des morceaux : un morceau remaillé retrouve ses pièces couchées, et
 // une pièce se relève quand l'enfant est loin. `parCle` mène d'une clé de bloc
 // à son maillage, pour l'animer sans parcourir la scène.
@@ -1340,7 +1340,7 @@ function installerMorceau(cx, cz, tampons) {
       if (!mesh) continue;
       mesh.position.set(cx * CHUNK + p.x + 0.5, p.y, cz * CHUNK + p.z + 0.5);
       group.add(mesh);
-      // la clé du bloc (v535) : un morceau remaillé retrouve ses pièces tombées
+      // la clé du bloc (v536) : un morceau remaillé retrouve ses pièces tombées
       const cleP = cleBloc(cx * CHUNK + p.x, p.y, cz * CHUNK + p.z);
       if (faconDeCasser(p.id)) { mesh.userData.cle = cleP; piecesParCle.set(cleP, mesh); }
       // LA LANTERNE D'UN RÉVERBÈRE EST UNE LAMPE POSSIBLE (v248) : sa place
@@ -1354,7 +1354,7 @@ function installerMorceau(cx, cz, tampons) {
         const lan = new THREE.Vector3(
           mesh.position.x + 0.5 * Math.cos(mesh.rotation.y), p.y + 2.7,
           mesh.position.z - 0.5 * Math.sin(mesh.rotation.y));
-        lan.cle = cleP;                 // une lanterne tombée n'éclaire plus (v535)
+        lan.cle = cleP;                 // une lanterne tombée n'éclaire plus (v536)
         lanternes.push(lan);
       }
       // LE FEU TRICOLORE REGARDE LA RUE QU'IL COMMANDE (v273), et l'on note
@@ -1794,7 +1794,7 @@ function updateChunks() {
   // demande la règle qui les pose (`world.mobilierVu`, v425 — seulement le
   // mobilier MONTRÉ, sinon une tablette sans couche HD aurait des tables
   // invisibles qui arrêtent), une fois par colonne couverte.
-  // ET LE MOBILIER DE RUE SE CASSE (v535). `casser` (le sens de la marche)
+  // ET LE MOBILIER DE RUE SE CASSE (v536). `casser` (le sens de la marche)
   // n'est donné que pour le PAS que la voiture fait vraiment, assez vite : ce
   // qu'elle touche alors et qui sait tomber (`faconDeCasser`) tombe, et cesse
   // d'arrêter. Ce qui est déjà tombé n'arrête plus rien. Un bloc qu'un enfant
@@ -2025,7 +2025,7 @@ function updateChunks() {
   // mailleur dessine (`mobilierTrottoir`) ; on ne bute que sur ce qui est
   // MONTRÉ — le détail du morceau visible (`montrerLeDetail`) —, sinon un
   // appareil sans couche HD aurait des tables invisibles qui arrêtent.
-  // rend le GENRE de la pièce (vrai), ou faux ; une pièce écrasée (v535) n'est plus là
+  // rend le GENRE de la pièce (vrai), ou faux ; une pièce écrasée (v536) n'est plus là
   const mobilierVu = (x, z, y) => {
     const bx = Math.floor(x), bz = Math.floor(z);
     if (casses.taille && casses.has(cleHD(bx, bz))) return false;
@@ -7857,7 +7857,7 @@ function placeAssise(a, siege) {
 // qui suffit à un enfant qui marche à trois blocs par seconde, et rien à
 // faire tant qu'il fait jour. Une lampe sans lanterne s'éteint.
 const lampesPretes = cadence(500);
-// LE MOBILIER TOMBÉ (v535) : chaque image, les pièces qui tombent encore
+// LE MOBILIER TOMBÉ (v536) : chaque image, les pièces qui tombent encore
 // avancent leur chute (temps réel) ; une fois par seconde, ce qui a assez
 // duré au sol et que l'enfant ne voit plus se relève.
 const statsCasse = { n: 0, releves: 0 };
@@ -7954,7 +7954,7 @@ function reglerLesFeux() {
       if (!e || !e.feux) continue;
       for (const f of e.feux) {
         const etat = etatFeu(f.axe, t);
-        // UN FEU TOMBÉ S'ÉTEINT, MAIS LE CARREFOUR GARDE SA RÈGLE (v535) : la
+        // UN FEU TOMBÉ S'ÉTEINT, MAIS LE CARREFOUR GARDE SA RÈGLE (v536) : la
         // circulation est une fonction de l'horloge que deux tablettes
         // partagent (v305), et la casse est LOCALE — si le feu tombé laissait
         // passer les voitures ici, la rue de l'ami ne serait plus la même.
@@ -8541,7 +8541,7 @@ window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fi
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
   get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage,
-  // le mobilier tombé (v535) : le registre, les comptes, et le maillage d'une pièce
+  // le mobilier tombé (v536) : le registre, les comptes, et le maillage d'une pièce
   mobilierCasse: { casses, stats: statsCasse, piece: (cle) => piecesParCle.get(cle) || null }, horizonLoin, horizonTresLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,

@@ -4719,7 +4719,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       table.notee && (table.contre === true || table.contre === 'mobilier') && table.libre === false,
       JSON.stringify(table));
 
-    // ---- LE MOBILIER DE RUE SE CASSE (v535) ---------------------------------
+    // ---- LE MOBILIER DE RUE SE CASSE (v536) ---------------------------------
     //
     // Max : « tout le mobilier urbain, poteau, feu rouge, est hyper dur. Comme
     // dans GTA, il devrait tomber pour ne pas bloquer la voiture. » Un réverbère
@@ -4812,7 +4812,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('à l\'arrêt contre un réverbère de la ville, rien ne tombe : c\'est un obstacle',
       tombe.lieu && tombe.contreArret === 'mobilier' && !tombe.tombeArret, JSON.stringify(tombe));
-    verifier('lancée, la voiture renverse un réverbère de la ville et continue sa route (v535)',
+    verifier('lancée, la voiture renverse un réverbère de la ville et continue sa route (v536)',
       tombe.lieu && tombe.auVolant && tombe.tombe && tombe.depasse > 2 && tombe.haut !== null && tombe.haut < 0.3,
       JSON.stringify(tombe));
     verifier('et le réverbère qui tombe ne compile aucun programme',

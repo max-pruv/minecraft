@@ -821,7 +821,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Le mobilier se casse (v535) — un obstacle de rue est un geste, pas un mur
+## Le mobilier se casse (v536) — un obstacle de rue est un geste, pas un mur
 
 Max : « tout le mobilier urbain, poteau, feu rouge, est hyper dur. Comme dans
 GTA, il devrait tomber pour ne pas bloquer la voiture. » `src/mobiliercasse.js`
