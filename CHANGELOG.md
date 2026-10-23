@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v532 — La minicarte toujours là
+## v533 — La minicarte toujours là
 
 **Pourquoi.** Max : « Il faut trouver une solution pour mettre la mini-carte
 toujours visible. » Elle ne s'affichait qu'après un appui sur le bouton carte,

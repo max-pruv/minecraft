@@ -1254,10 +1254,10 @@ Deux règles.
   minicarte s'ouvre sous le bouton carte (`--sous-carte`, `--rail-x`) ; ce qui
   vivait sous la carte (les émotes) descend de `--minimap-w`, et la file
   centrale (v445) la contourne par la même variable. Le témoin est formulé
-  sans dimension et joué à 430 × 932 et 420 × 760. *(Depuis la v532 la
+  sans dimension et joué à 430 × 932 et 420 × 760. *(Depuis la v533 la
   minicarte n'a plus de bouton : elle prend sa place — voir ci-dessous.)*
 
-## La minicarte toujours là (v532) — ce qui s'affiche toujours se paie en vol, et un raccourci de peinture garde ses états
+## La minicarte toujours là (v533) — ce qui s'affiche toujours se paie en vol, et un raccourci de peinture garde ses états
 
 Max : « mettre la mini-carte toujours visible ». Trois règles.
 

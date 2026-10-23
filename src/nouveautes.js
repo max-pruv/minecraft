@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 532,
+    v: 533,
     titre: 'La minicarte toujours là',
     puces: [
       'La minicarte s\'affiche toute seule',
