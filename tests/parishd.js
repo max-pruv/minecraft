@@ -367,12 +367,13 @@ function verifier(nom, ok, detail = '') {
     let plusFourni = null;
     for (const [nomQ, qx, qz] of [['Marais', 0.9, -0.35], ['Quartier latin', 0.15, 0.85], ['Saint-Germain', -1.7, 0.8], ['Monceau', -3.2, -2.2]]) {
       const [mx, mz] = adresseParis(qx, qz);
-      let terr = 0, avant = 0;
+      let terr = 0, avant = 0, lots = 0;
       for (let kx = Math.floor(mx / CHUNK) - 1; kx <= Math.floor(mx / CHUNK) + 1; kx++) for (let kz = Math.floor(mz / CHUNK) - 1; kz <= Math.floor(mz / CHUNK) + 1; kz++) {
         w.ensureChunk(kx, kz);
         let ici = 0;
         for (let lx = 0; lx < CHUNK; lx++) for (let lz = 0; lz < CHUNK; lz++) {
           const bx = kx * CHUNK + lx, bz = kz * CHUNK + lz, by = w.sommetColonne(bx, bz);
+          if (P0.solParis(bx, bz) === null && P0.lotParisLibre(bx, bz)) lots++;
           if (w.getBlock(bx, by, bz) !== CITY_BLOCK.SIDEWALK || w.getBlock(bx, by + 1, bz) !== B.AIR) continue;
           const at = (a, b, c) => w.getBlock(bx + a, by + b, bz + c);
           const m = HD.mobilierTrottoir(at, bx, bz);
@@ -382,13 +383,21 @@ function verifier(nom, ok, detail = '') {
         }
         if (!plusFourni || ici > plusFourni.n) plusFourni = { n: ici, kx, kz };
       }
-      parQuartier.push({ q: nomQ, terrasses: terr, avant });
+      parQuartier.push({ q: nomQ, terrasses: terr, avant, lots });
     }
     const t = buildChunkTampons(w, plusFourni.kx, plusFourni.kz);
     const cannage = compteTuile(t.facades, 'rotin');
+    // UNE TERRASSE SE COMPTE PAR LOT (les rues à la GTA). Des rues plus larges
+    // laissent moins de lots, donc moins de devantures : le Marais tombait de 7
+    // à 3 terrasses sur neuf morceaux pour une règle inchangée. Mesuré sur les
+    // quatre quartiers, terrasses pour cent colonnes de lot : 13 sur la v531,
+    // 16 avec les rues à la GTA ; la barre est à la moitié de la v531. Et
+    // chaque quartier en a au moins une, ce que la règle d'avant ne fait nulle part.
+    const totT = parQuartier.reduce((a, p) => a + p.terrasses, 0), totL = parQuartier.reduce((a, p) => a + p.lots, 0);
+    const densite = totL ? 100 * totT / totL : 0;
     verifier('chaque quartier de Paris a ses terrasses de café devant ses devantures (la devanture en bandes de la v301), et le mailleur les dessine',
-      parQuartier.every((p) => p.terrasses >= 5) && cannage > 0,
-      `${parQuartier.map((p) => `${p.q} ${p.terrasses} (règle d'avant ${p.avant})`).join(' · ')} — ${cannage} sommets de cannage dans (${plusFourni.kx}, ${plusFourni.kz}), ${plusFourni.n} terrasses`);
+      parQuartier.every((p) => p.terrasses >= 1) && densite >= 6 && cannage > 0,
+      `${parQuartier.map((p) => `${p.q} ${p.terrasses} sur ${p.lots} lots (règle d'avant ${p.avant})`).join(' · ')} — ${densite.toFixed(1)} pour cent lots — ${cannage} sommets de cannage dans (${plusFourni.kx}, ${plusFourni.kz}), ${plusFourni.n} terrasses`);
   }  {
     // ── UNE COLONNE MORRIS SE PLANTE DANS LE VIDE (v443) ─────────────────────
     //
@@ -537,7 +546,7 @@ function verifier(nom, ok, detail = '') {
     // qui écrit son terrain se trompe de terrain (v285). Mesuré à l'écriture :
     // 2 512 sommets de brisis, 2 292 de terrasson en pente, 1 552 de dessus dans
     // `plat` ; les barres sont à la moitié. Sur l'ancien code, zéro des trois.
-    let brisis = 0, terrasson = 0, platHaut = 0, affiche = 0, lattes = 0, corbeilles = 0;
+    let brisis = 0, terrasson = 0, platHaut = 0, affiche = 0, lattes = 0, corbeilles = 0, lots25 = 0;
     for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
       const t = (dx === 0 && dz === 0) ? avec.t : tampons(1, cx + dx, cz + dz).t;
       if (t.facades) {
@@ -547,10 +556,19 @@ function verifier(nom, ok, detail = '') {
         corbeilles += compteTuile(t.facades, 'fer');
       }
       for (let i = 0; i < nb(t.plat); i++) if (t.plat.normals[i * 3 + 1] > 0.99) platHaut++;
+      for (let lx = 0; lx < CHUNK; lx++) for (let lz = 0; lz < CHUNK; lz++) {
+        const x = (cx + dx) * CHUNK + lx, z = (cz + dz) * CHUNK + lz;
+        if (P0.solParis(x, z) === null && P0.lotParisLibre(x, z)) lots25++;
+      }
     }
+    // PAR LOT DEPUIS LES RUES À LA GTA : des rues plus larges laissent moins de
+    // toits (618 → 383 colonnes de lot sur les vingt-cinq morceaux). Mesuré :
+    // 2,3 sommets de brisis et 2,3 de terrasson par lot sur la v531, 2,7 et 2,6
+    // ici ; les barres sont à la moitié de la v531.
+    const parLot = (n) => (lots25 ? n / lots25 : 0);
     verifier('le comble est à la Mansart : un brisis raide au premier rang, un terrasson en pente douce au-dessus',
-      brisis > 1200 && terrasson > 1100,
-      `${brisis} sommets de brisis, ${terrasson} de terrasson en pente, sur 25 morceaux`);
+      parLot(brisis) > 1.15 && parLot(terrasson) > 1.1,
+      `${brisis} sommets de brisis, ${terrasson} de terrasson en pente, sur 25 morceaux et ${lots25} colonnes de lot (${parLot(brisis).toFixed(2)} et ${parLot(terrasson).toFixed(2)} par lot)`);
     // AUCUNE PENTE N'EST VRILLÉE, ET AUCUNE NE SORT DE SA COLONNE. Un quad dont
     // l'arête haute va à rebours de l'arête basse est un nœud papillon : deux
     // ailerons de zinc dressés au bout des faîtières (vu en capture, quand les
