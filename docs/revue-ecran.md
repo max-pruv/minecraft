@@ -89,3 +89,18 @@ dans `docs/revue-ecran/`.
 - **Le rendu logiciel** coupe certaines parures (ombres hors forçage, bâti
   lointain, traces). Ce que la sonde montre est très proche de la tablette, mais
   pas identique.
+
+## Le relevé de la v539 (le rail), 23 octobre 2026
+
+Captures dans `docs/revue-ecran/v539/` : le TGV Paris–Lyon aux deux endroits
+des captures de Max (viaduc du pas 716, tranchée du pas 786), iPhone et iPad,
+jour et nuit, et le train vu de près.
+
+- Corrigé : plus de dalle d'herbe ni de pilier dans le gabarit, les traverses
+  sont visibles d'un bout à l'autre, les voitures du train ne se recouvrent plus.
+- Vu, non corrigé : les rails ont l'air ondulés en vue oblique. C'est le profil
+  en long (un tiers de bloc de pente, lissé en cône) projeté de biais, pas un
+  défaut de tracé ; un profil plus doux est une décision de terrain (déblais
+  plus profonds), à poser à Max.
+- Vu, non corrigé : la nuit, les fenêtres du train sont noires (aucune vitre
+  allumée), alors que celles des villes s'allument.

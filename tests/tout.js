@@ -146,6 +146,7 @@ const GARDIENS = {
   // Les trains intervilles : les voies touchent le terrain et la carte, les
   // rames se prouvent dans monte.js.
   'src/trains.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
+  'src/convoitrain.js': ['carteMonde.js', 'monte.js'],
   // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
   // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
   'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],

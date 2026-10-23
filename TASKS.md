@@ -1,5 +1,58 @@
 # Ce qui est en cours
 
+## v539 — RIEN NE TRAVERSE UNE VOIE : ce qui reste, mesuré
+
+- **Rouges du portail de la v539 : aucun de la livraison.** `degats.js`
+  (« percuter une voiture de la rue l'abîme AUSSI » et « les feux de détresse
+  se posent SUR la carrosserie » — la Bugatti Bolide rend 0,45 sur deux feux) :
+  rejouée SEULE, mêmes deux rouges sur la branche et sur `origin/main` v531.
+  `monte.js` (rue et circulation : fabrication par tranches, passage peint de
+  Rome, allure d'une ville, voiture heurtée, rue vide), `reglages.js` (un choix
+  fait sur une tablette) et `reseau.js` (la voiture qui arrive derrière, sans
+  courtier) : familles déjà déclarées ci-dessous. Le premier portail avait
+  rendu SOIXANTE rouges dans `monte.js` : le sol continu lisait le ballast dans
+  l'air et la boucle de jeu mourait près d'un train — corrigé, témoin ajouté.
+  Après l'intégration de la v533 : `maj.js` (« en construction, on marche au
+  joystick », puis « le loader compte les fichiers ») vert rejoué SEUL sur la
+  branche et sur `origin/main` ; « de nuit, la voiture a ses phares » rouge une
+  fois sur `voiture.glb` (une lueur à z 0,54), vert sur `origin/main` rejoué
+  seul — le témoin tire un modèle au hasard, et la livraison ne touche aucun
+  modèle de voiture : à mesurer modèle par modèle dans la zone des phares.
+  `monte.js` sur `origin/main` rejouée seule : mêmes familles (rue vide, feu,
+  mur de face, minicarte en vol, flâneur, voisines d'un convoi).
+  Après l'intégration de la v536 : `reseau.js` rejouée SEULE deux fois de
+  chaque côté — branche 1 rouge sur 2 (veille sans retour, reprise d'hôte,
+  compteur après le départ de l'hôte : la famille qui va et vient, déclarée
+  plus bas), `origin/main` 0 sur 2. La livraison ne touche ni `net.js` ni
+  `sync.js`.
+- **Les rails semblent ondulés en vue oblique** (profil en long d'un tiers de
+  pente) et **les fenêtres du train restent noires la nuit** : relevé de la
+  revue d'écran (`docs/revue-ecran.md`).
+- **Le journal de la session des captures n'est pas encore remonté** (il part
+  au lancement suivant de l'iPhone). L'endroit a été retrouvé par la géométrie :
+  le TGV Paris–Lyon, viaduc des pas 716 à 767 et tranchée du pas 786, vers
+  (226, 1240) — même dalle d'herbe et mêmes piliers en capture au banc. À
+  relire dans `journal_appareil` (session v522 du 18 octobre, matin heure de
+  l'iPhone) pour confirmer.
+- **Des triangles de ciel au ras de la crête** (capture 2 de Max), vus aussi
+  au banc à gauche du viaduc (pas 716) avant ET après : la couture entre les
+  morceaux maillés et le paysage lointain. `horizon.js` est sur la PR de la
+  session `loin-reel` (#534) : non touché ici, à mesurer sur sa branche.
+- **La rame du MÉTRO garde son recouvrement** : `metro()` pose par défaut
+  `construireRame` (8,0 à 8,7 blocs) tous les 7,6 blocs — Washington, Paris,
+  Rome. Zone de la session des stations de métro : il suffit de lui passer
+  `ecart: 8.8`, ou un modèle à bouts plats.
+- **Sept cubes de ballast dépassent de 0,37 bloc au plus** au-dessus de la
+  base des rails, là où le sol continu n'est pas dessiné (au bord d'un
+  tablier, d'une gare) : le bloc est écrit à la cote du COIN, qui monte d'un
+  tiers de bloc par bloc. Sous le dessus des rails ; le témoin compte à partir
+  de `RAIL_HAUT + ROUES + 0,1`.
+- **Les routes portent le même décalage coin/centre** que le ballast avant la
+  v539 (`corridorEn` → `routeEn(x, z)` posé à x + ½) : rien ne s'y enterre (pas
+  de traverses), mais la surface est à un demi-bloc de pente près.
+- **Au demi-tour en gare, le convoi saute d'une voie à l'autre** sur un pas de
+  tracé (quatre blocs de côté pour quatre de long) : `traceSegment` recoud
+  l'aller et le retour sans courbe. À l'arrêt en gare, donc peu visible.
 - [ ] **Rouges de portail de la v538 (les guides des villes) : aucun de la
   livraison.** Soupçonnant les guides devant « la rue roule à l'allure d'une
   ville » (médiane 0), une sonde sous node a trouvé quatre guides sur la

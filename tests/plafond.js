@@ -4020,7 +4020,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           // l'ancien `voieEn` rendait le BLOC de ballast : la surface où l'on
           // marche est un bloc plus haut
           const bloc = v.bloc !== undefined ? v.bloc : v.cote;
-          const cote = v.bloc !== undefined ? v.cote : v.cote + 1;
+          let cote = v.bloc !== undefined ? v.cote : v.cote + 1;
+          // LA SURFACE DU BALLAST SE LIT AU CENTRE DE LA COLONNE (v539), là
+          // où le sol continu pose son sommet ; le talus garde la sienne.
+          if (w.corridorEn && v.piece === 'ballast' && !v.ouvrage) { const r = w.corridorEn(x, z); if (r) cote = r.cote; }
           colonnes++; if (v.piece === 'talus') talus++;
           for (let dy = -1; dy <= 2; dy++) {
             const id = w.getBlock(x, bloc + dy, z);
@@ -4111,6 +4114,121 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         verifier('relever la voie sur l\'eau ne bouge aucune gare, et la rampe à terre reste sous deux blocs',
           gares === 18 && bougees === 0 && maxTerre <= 2 + 1e-9,
           `${bougees} gare(s) déplacée(s) sur ${gares} · ${terre} pas de rampe à terre, au plus ${maxTerre.toFixed(2)} bloc`);
+      }
+    }
+
+    // RIEN NE TRAVERSE UNE VOIE (v539). Max, deux captures d'iPhone sur le TGV
+    // Paris–Lyon : « Those things should never happen » — une dalle d'herbe qui
+    // coupe le train, des piliers de pierre entre les rails. Le viaduc (v465)
+    // se décidait sur l'AXE, et toute la largeur d'un pas de viaduc était
+    // « pont » : là où la berge monte au-dessus du tablier, le générateur n'y
+    // creusait rien. Le témoin d'avant (`carteMonde.js`) ne lisait que l'AXE,
+    // entre les deux voies : il ne pouvait pas voir le gabarit d'une voie. Ce
+    // témoin lit les DEUX voies, sur tout le réseau, bloc par bloc : aucun bloc
+    // plein (que la surface ne tait pas) ni aucune surface au-dessus du dessus
+    // des rails dans le gabarit, sur ponts comme ailleurs. Il compte ce qu'il a
+    // lu (zéro est rouge), et il se vérifie capable de rougir : la règle
+    // d'avant (`rivesCreusees(false)`) rejouée sur les pas de viaduc rend des
+    // centaines de blocs.
+    {
+      let T = null; try { T = await import('../src/trains.js'); } catch { /* le témoin le dit */ }
+      const W = await import('../src/world.js');
+      const { BLOCK_INFO } = await import('../src/blocks.js');
+      const t0 = performance.now();
+      const SEUIL = (T.RAIL_HAUT || 0.3) + (T.ROUES || 0.05) + 0.1;
+      const OFFS = [-3.1, -2.6, -2, -1.4, -0.9, 0.9, 1.4, 2, 2.6, 3.1];
+      const balayer = (monde, seulViaduc) => {
+        let lus = 0, blocs = 0, surface = 0; const ex = [];
+        for (const s of T.segmentsDeTrain()) {
+          const L = s.longueur, ux = (s.x1 - s.x0) / L, uz = (s.z1 - s.z0) / L, nx = -uz, nz = ux;
+          for (let k = 0; k < L; k++) {
+            if (seulViaduc && !(T.surViaduc && T.surViaduc(s, k, L))) continue;
+            const cote = T.coteContinue(s, k / L);
+            for (const o of OFFS) {
+              const x = s.x0 + ux * k + nx * o, z = s.z0 + uz * k + nz * o, bx = Math.floor(x), bz = Math.floor(z);
+              lus++;
+              for (let y = Math.floor(cote + SEUIL); y <= Math.floor(cote + 4); y++) {
+                const id = monde.getBlock(bx, y, bz);
+                if (id && BLOCK_INFO[id] && BLOCK_INFO[id].solid && !monde.blocSousLaSurface(bx, y, bz)) {
+                  blocs++; if (ex.length < 3) ex.push(`${s.de}–${s.vers} pas ${k} (${bx}, ${y}, ${bz})`); break;
+                }
+              }
+              const sc = monde.solContinu(x, z);
+              if (sc !== null && sc > cote + SEUIL) surface++;
+            }
+          }
+        }
+        return { lus, blocs, surface, ex };
+      };
+      const neuf = balayer(new World(), false);
+      let avant = null;
+      if (T.rivesCreusees) { T.rivesCreusees(false); avant = balayer(new World(), true); T.rivesCreusees(true); }
+      verifier('rien ne traverse une voie : le gabarit des DEUX voies est dégagé partout, sur les ponts comme ailleurs',
+        neuf.lus > 100000 && neuf.blocs === 0 && neuf.surface === 0 && avant && avant.blocs > 100,
+        `${neuf.blocs} bloc(s) et ${neuf.surface} point(s) de surface dans le gabarit sur ${neuf.lus} lus${neuf.ex.length ? ' — ' + neuf.ex.join(' · ') : ''} · règle d'avant sur les pas de viaduc : ${avant ? `${avant.blocs} bloc(s), ${avant.surface} de surface` : 'absente (code d\'avant la v539)'} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+      // DEUX LIGNES NE SE PARTAGENT JAMAIS UNE COLONNE. Chaque segment est une
+      // droite de gare à gare, et deux plates-formes talus compris ne doivent
+      // jamais se toucher : sinon `voieEn` donne la colonne au segment le plus
+      // proche et l'autre voie s'interrompt, sans aiguillage.
+      const segs = T.segmentsDeTrain(), portee = 2 * ((T.EMPRISE || 4.5) + (T.DEBLAI_MAX || 13) / (T.TALUS_PENTE || 1));
+      const dSeg = (s, x, z) => { const dx = s.x1 - s.x0, dz = s.z1 - s.z0, l2 = dx * dx + dz * dz; const t = Math.max(0, Math.min(1, ((x - s.x0) * dx + (z - s.z0) * dz) / l2)); return Math.hypot(x - s.x0 - dx * t, z - s.z0 - dz * t); };
+      let paires = 0, pire = Infinity;
+      for (let i = 0; i < segs.length; i++) for (let j = i + 1; j < segs.length; j++) {
+        paires++;
+        const a = segs[i], n = Math.ceil(a.longueur);
+        for (let k = 0; k <= n; k++) pire = Math.min(pire, dSeg(segs[j], a.x0 + (a.x1 - a.x0) * k / n, a.z0 + (a.z1 - a.z0) * k / n));
+      }
+      verifier('deux lignes de train ne se croisent ni ne se rejoignent : leurs plates-formes restent séparées',
+        paires === 36 && pire > portee,
+        `${paires} paires de segments, la plus proche à ${pire.toFixed(1)} blocs pour ${portee} de plates-formes`);
+      // LA SURFACE DU BALLAST N'ENTERRE PAS LES TRAVERSES (v539) : la cote se
+      // lit au centre de la colonne, là où le sol continu pose son sommet.
+      const enterrees = (monde) => {
+        let lus = 0, n = 0;
+        const s = segs.find((q) => q.de === 'paris' && q.vers === 'lyon');
+        const L = s.longueur, ux = (s.x1 - s.x0) / L, uz = (s.z1 - s.z0) / L, nx = -uz, nz = ux;
+        for (let k = 100; k < 1100; k++) {
+          if (T.surViaduc(s, k, L)) continue;
+          for (const o of [-2.9, -2, -1.1, 1.1, 2, 2.9]) {
+            const sc = monde.solContinu(s.x0 + ux * (k + 0.5) + nx * o, s.z0 + uz * (k + 0.5) + nz * o);
+            if (sc === null) continue;
+            lus++; if (sc > T.coteContinue(s, (k + 0.5) / L) + T.TRAVERSE_HAUT + 0.005) n++;
+          }
+        }
+        return { lus, n };
+      };
+      const tNeuf = enterrees(new World());
+      let tAvant = null;
+      if (W.COTE_AU_CENTRE) { W.COTE_AU_CENTRE.actif = false; tAvant = enterrees(new World()); W.COTE_AU_CENTRE.actif = true; }
+      verifier('le ballast n\'enterre pas les traverses : la surface suit la voie au centre de chaque colonne',
+        tNeuf.lus > 3000 && tNeuf.n <= tNeuf.lus * 0.002 && tAvant && tAvant.n > tAvant.lus * 0.05,
+        `${tNeuf.n} point(s) de traverse sous la surface sur ${tNeuf.lus} · cote lue au coin : ${tAvant ? `${tAvant.n}/${tAvant.lus}` : 'absente (code d\'avant la v539)'}`);
+
+      // ET LE SOL CONTINU LIT LE BLOC QUE LE GÉNÉRATEUR A ÉCRIT (v539). La
+      // surface de la voie se lit au centre de la colonne, son ballast s'écrit
+      // au coin : sur une pente d'un tiers, `floor(cote) − 1` tombait un bloc
+      // au-dessus du ballast, dans l'air, et le mailleur jetait (« reading
+      // 'tiles' ») — sur le fil principal, la boucle de jeu s'arrêtait près
+      // d'une voie (le portail l'a dit : `monte.js` mort après le témoin du
+      // train). On maille les morceaux le long de toutes les voies.
+      {
+        const { buildChunkTampons } = await import('../src/mesher.js');
+        const w = new World(), vus = new Set();
+        let morceaux = 0, erreurs = 0; const ex = [];
+        const t1 = performance.now();
+        for (const s of T.segmentsDeTrain()) {
+          const L = s.longueur, ux = (s.x1 - s.x0) / L, uz = (s.z1 - s.z0) / L;
+          for (let k = 0; k < L; k += 12) {
+            const cx = Math.floor((s.x0 + ux * k) / 16), cz = Math.floor((s.z0 + uz * k) / 16);
+            if (vus.has(cx + ',' + cz)) continue;
+            vus.add(cx + ',' + cz); morceaux++;
+            try { buildChunkTampons(w, cx, cz); } catch (e) { erreurs++; if (ex.length < 3) ex.push(`${s.de}–${s.vers} (${cx}, ${cz}) : ${e.message}`); }
+          }
+          if (vus.size > 900) break;
+        }
+        verifier('le long des voies, chaque morceau se maille : le sol continu lit le ballast là où il est écrit',
+          morceaux > 300 && erreurs === 0,
+          `${morceaux} morceau(x) maillé(s), ${erreurs} erreur(s)${ex.length ? ' — ' + ex.join(' · ') : ''} (${((performance.now() - t1) / 1000).toFixed(1)} s)`);
       }
     }
   }

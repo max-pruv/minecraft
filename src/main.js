@@ -62,6 +62,7 @@ import { ALLURE_VOIE } from './circulation.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
+import { construireTrain, ECART_TRAIN } from './convoitrain.js';
 import { segmentsDeRoute, traceRoute, entreesDe } from './routes.js';
 import { raccordDe } from './raccords.js';
 import { ENTREES_PARIS } from './paris.js';
@@ -2291,6 +2292,12 @@ function updateChunks() {
       nom: `train ${seg.ligne.nom} ${seg.de}–${seg.vers}`,
       emoji: seg.ligne.emoji, teinte: seg.ligne.teinte,
       nb: 5, vitesse, rames, pause, arretsIndex: t.arretsIndex,
+      // UN TRAIN, PAS UNE RAME DE MÉTRO (v539) : motrice en tête, motrice en
+      // queue, des voitures à fenêtres entre les deux, et un écart qui se
+      // DÉDUIT des longueurs — la rame du métro posée tous les 7,6 blocs
+      // recouvrait sa voisine d'un demi-bloc à chaque attelage.
+      ecart: ECART_TRAIN,
+      modele: (i, teinte, nb) => construireTrain(i === 0 ? 'motrice' : i === nb - 1 ? 'queue' : 'voiture', teinte),
     });
   }
   // LA CIRCULATION INTERURBAINE (v300) : sur chaque corridor, une boucle de
