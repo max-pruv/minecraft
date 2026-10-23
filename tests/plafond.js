@@ -410,11 +410,12 @@ const MM_ECART = 2.2;
 // 44e54367…, la constante de la v529, au bit près ; et les 252 colonnes qui
 // diffèrent dans les morceaux de Londres sont toutes dans un aérodrome ou la
 // boîte d'un tronçon de piste — aucune ailleurs, aucun autre lieu touché.
-// Les rues à la GTA : 4cf5d456… → 564b2501…. Désarmées (MARGE_GTA à 0,4 dans
-// voirie.js, et la recherche des bouches de métro d'avant dans ville.js et
-// metromonde.js), la branche rend 4cf5d456…, la constante de la v531, au bit
-// près — rien d'autre n'a bougé.
-const EMPREINTE_MORCEAUX_V357 = '564b25013569ad64fbeb0fdc51b48fb0ac97920db500d832a7eaa2742dbe9cae';
+// Les rues à la GTA : 4cf5d456… → b44dcc32…. Désarmées (MARGE_GTA à 0,4 dans
+// voirie.js, la recherche des bouches de métro d'avant dans ville.js et
+// metromonde.js, la barre de partage des contours et le mobilier des entrées
+// dans villesmonde.js), la branche rend 4cf5d456…, la constante de la v531,
+// au bit près — rien d'autre n'a bougé.
+const EMPREINTE_MORCEAUX_V357 = 'b44dcc329d64fb1c5e7930d3b3d361f19e0a361a656dfbde233b368430821088';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -2667,7 +2668,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const hl = nf.terrainHeight(lot[0], lot[1]);
     const kl = `${lot[0]},${hl + 30},${lot[1]}`;
     const apres = monde({ [kl]: [5, W.DATE_PARIS_DOUBLE + 1000] });
-    const lotBati = [2, 3, 4, 6].some((dy) => apres.getBlock(lot[0], hl + dy, lot[1]) !== 0);
+    // Un immeuble est CREUX : sous le Paris de la v531, cette colonne tombe
+    // dans son intérieur (de l'air de +1 à +19, le toit à +20). On lit donc
+    // toute la hauteur sous le bloc posé, pas les quatre premiers étages.
+    let lotBati = false;
+    for (let dy = 2; dy < 30 && !lotBati; dy++) lotBati = apres.getBlock(lot[0], hl + dy, lot[1]) !== 0;
     return {
       absent: false, hRel, hBlocs,
       maison: maison.length === 27 && bas === gN + 1, bas, gN, ou: [nx, nz],
