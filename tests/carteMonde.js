@@ -4675,6 +4675,46 @@ const VRAIES_KM = [
       !longues.err && longues.fautes.length === 0,
       `${longues.err || ''} ${(longues.fautes || []).slice(0, 5).join(' · ')} — ${(longues.longueurs || []).join(', ')}`);
 
+    // LES PISTES SONT AUSSI LARGES QUE CE QUI S'Y POSE (v530). Max : « les
+    // pistes des aéroports sont extrêmement étroites ». La bande faisait neuf
+    // blocs (sept sur une base) pour un avion de ligne de 15,3 blocs
+    // d'envergure. Chaque piste des dix-neuf, lue par `pistesDe`, doit faire
+    // l'envergure du plus large de la flotte plus un bloc sous chaque saumon —
+    // et la barre se CALCULE sur la table des gabarits, elle ne s'écrit pas.
+    const larges = await tab.evaluate(async () => {
+      const A = await import('./src/aeroport.js');
+      const env = Math.max(...Object.values(A.GABARITS_AVION).map((g) => g.envergure));
+      const fautes = [], vus = [];
+      for (const a of A.AEROPORTS) {
+        for (const p of A.pistesDe(a)) {
+          const large = 2 * p.demi + 1;
+          vus.push(`${a.cle}${p.z0 ? '/' + p.z0 : ''} ${large}`);
+          if (large < env + 2) fautes.push(`${a.cle} z${p.z0} : ${large} blocs pour ${env} d'envergure`);
+        }
+      }
+      return { env, fautes, vus };
+    });
+    verifier('chaque piste fait l\'envergure du plus large appareil, plus un bloc sous chaque aile',
+      larges.fautes.length === 0, `envergure ${larges.env} · ${larges.fautes.slice(0, 6).join(' · ')} — ${[...new Set(larges.vus.map((v) => v.split(' ')[1]))].join('/')} blocs`);
+
+    // ET L'ON DÉCOLLE DE CHAQUE POSTE PAR LE BOUTON (v530). Max : « quand on
+    // veut décoller, on a des problèmes… une espèce de bloc de béton… il faut
+    // le circuler ». Sous node, avec le vrai joueur dans le vrai monde, un ✈️
+    // depuis chacun des soixante postes des dix-neuf aérodromes, puis plus
+    // rien : l'appareil doit être en vol. Sur l'ancien code, cinquante-trois
+    // s'écrasaient ou butaient sur le hangar posé dans l'axe de la rangée
+    // (x = 33), les autres décollaient sur l'aire en ligne droite par chance.
+    {
+      let r = null, err = null;
+      try { r = await require('./sonde-decollage-postes.cjs').mesurer(require('path').join(__dirname, '..', 'src')); }
+      catch (e) { err = String(e && e.message || e); }
+      const rates = (r || []).filter((l) => !l.decolle);
+      verifier('✈️ depuis chacun des soixante postes : l\'appareil roule jusqu\'à la piste et décolle sans rien heurter',
+        !err && r && r.length >= 57 && rates.length === 0,
+        `${err || ''} ${r ? `${r.length - rates.length}/${r.length} en vol` : ''} · ${rates.slice(0, 5).map((l) => `${l.cle} ${l.espece} → ${JSON.stringify(l.bute)} à ${l.ou.lx},${l.ou.lz}`).join(' · ')}`
+        + (r ? ` · roulage au plus ${Math.max(...r.map((l) => l.roulage || 0))} s de jeu` : ''));
+    }
+
     // ET L'OUVRAGE RESTE DANS SES BORNES MESURÉES (v280).
     //
     // La plate-forme va jusqu'à `r − 10` alors que `terrainHeight` ne vaut

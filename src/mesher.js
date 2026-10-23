@@ -7,7 +7,7 @@
 // ambiante coïncident, sans quoi le dégradé des coins serait détruit. Mesuré
 // sur du terrain, de la forêt et le château : 3,2 fois moins de triangles.
 
-import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
+import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI, METRO_LUMINEUX } from './blocks.js';
 import { tileUV, tileRect } from './tuiles.js';
 import { GeomBufferHD, SOL_HD, FACADE_HD, TOIT_HD, facadeHD, villeHD, murHD, rectHD, vitreAllumee, yBaie, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, morrisHD, bancHD, corbeilleHD, toitDessusHD, tirageHD, mobilierTrottoir, rejouerToitsAvant, rejouerFerAvant } from './facadeshd.js';
 
@@ -392,18 +392,25 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // (la signature d'un fût est `treeAt`, avec le climat du morceau quand il
   // est certain : redemandé par colonne, `climatReel` coûtait dix-huit
   // millisecondes par morceau de taïga)
-  const climatArbres = vraisArbres && vegetal && (hd || options.detail !== false) && world.climatDuMorceau ? world.climatDuMorceau(cx, cz) : undefined;
-  // Un morceau de campagne maillé SANS détail (le loin) ne reconnaît rien :
-  // ses arbres restent dans `solid`, et il dit seulement qu'il porte du bois
-  // ou des feuilles (`arbres: -1`) pour être redemandé avec son détail à
-  // l'approche — la reconnaissance coûtait 3,5 ms par morceau de forêt au loin.
-  const arbres = vraisArbres && vegetal && (hd || options.detail !== false)
+  const climatArbres = vraisArbres && vegetal && world.climatDuMorceau ? world.climatDuMorceau(cx, cz) : undefined;
+  // LES ARBRES SONT BEAUX PARTOUT (v528). Jusqu'à la v510, un morceau maillé
+  // SANS détail (le loin) ne reconnaissait rien et ses arbres restaient des
+  // cubes dans `solid` — Max, en vol : « au loin, ils sont en forme
+  // Minecraft ». Tout morceau qui porte du bois ou des feuilles reconnaît ses
+  // arbres ; leurs cubes ne s'émettent plus nulle part, et chaque arbre dont la
+  // base est ici part dans `arbresLoin` (`arbreLoin`, quelques cartes de sa
+  // couronne) — et, si le détail est demandé, dans `facades` (le proche, v499).
+  // `main.js` relaie l'un et l'autre (`montrerLeDetail`) : jamais les deux.
+  const arbres = vraisArbres && vegetal
     ? reconnaitreArbres(localGet, (lx, lz) => (world.treeAt ? world.treeAt(ox + lx, oz + lz, climatArbres) : null), CHUNK, vegLo - 10, vegHi + 1, HEIGHT) : null;
   const arbresDetail = !!arbres && arbres.liste.length > 0 && options.detail !== false;
-  const arbresAuLoin = !!arbres && arbres.cellules.size > 0 && (hd || options.detail !== false);
-  if (arbresAuLoin && !plat) plat = new GeomBuffer();
+  const arbresTus = !!arbres && arbres.cellules.size > 0;
   if (arbresDetail && !facades) facades = new GeomBufferHD();
-  const estArbre = arbresAuLoin ? (x, y, z) => arbres.cellules.has(x + z * CHUNK + y * CHUNK * CHUNK) : () => false;
+  const arbresLoin = arbres && arbres.liste.length > 0 ? new GeomBufferHD() : null;
+  const estArbre = arbresTus ? (x, y, z) => arbres.cellules.has(x + z * CHUNK + y * CHUNK * CHUNK) : () => false;
+  // les faces des cubes d'arbre qu'on n'émet plus : la preuve qu'on ne tait
+  // que ce que le modèle couvre se lit sur ce compte (plafond.js)
+  let facesArbresTues = 0;
 
   // --- fusion, face par face ------------------------------------------------
   const dims = [CHUNK, topY + 1, CHUNK];
@@ -468,7 +475,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           //   et laisse les bords intacts, au pixel près.
           const uniforme = !ao || (ao[0] === ao[1] && ao[1] === ao[2] && ao[2] === ao[3]);
           const bloqueV = vAxis === 1 && yTop !== 1;
-          const allume = VITRES.has(id) && vitreAllumee(ox + x, yBaie(id, y), oz + z);
+          const allume = METRO_LUMINEUX.has(id) || (VITRES.has(id) && vitreAllumee(ox + x, yBaie(id, y), oz + z));
           // Le sol HD : la face du dessus d'un sol de ville. La façade HD :
           // une face latérale d'un bloc de façade — elle va dans `plat`, et
           // son détail est émis plus bas, bloc par bloc.
@@ -480,7 +487,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           // La face d'un bloc de monument part dans le LOIN : de près, le
           // modèle d'auteur la remplace ; de loin, elle est le monument.
           const arbreHd = estArbre(x, y, z);
-          const facadeHd = monumentHd || arbreHd || (hd && ((face.slot === 1 && (FACADE_HD.has(id) || murHD(id, villeDuMorceau))) || (!vraisArbres && ARBRE_HD.has(id)) || toitHd));
+          const facadeHd = monumentHd || (hd && ((face.slot === 1 && (FACADE_HD.has(id) || murHD(id, villeDuMorceau))) || (!vraisArbres && ARBRE_HD.has(id)) || toitHd));
           const it = teintes && ((id === BLOCK.GRASS && face.slot === 0) || id === BLOCK.LEAVES) ? teintes[x + z * CHUNK] : 0;
           const teinte = it ? (id === BLOCK.LEAVES ? TEINTE_FEUILLES[it] : TEINTE_HERBE[it]) : null;
           // LA CLÉ DE FUSION EST UN NOMBRE (v352) : la chaîne qu'elle était
@@ -492,7 +499,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
             ? -1 - (u + v * nU)
             : (((((id * 3 + (yTop === 1 ? 0 : yTop === 0.5 ? 1 : 2)) * 5 + (ao ? AO_LEVELS.indexOf(ao[0]) : 4)) * 2
               + (allume ? 1 : 0)) * 2 + (monumentHd ? 1 : 0)) * 2 + (arbreHd ? 1 : 0)) * 256 + it;
-          masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z, solHD, facadeHd, teinte };
+          masque[u + v * nU] = { cle, id, yTop, ao, tile: BLOCK_INFO[id].tiles[face.slot], isWater, allume, x, y, z, solHD, facadeHd, teinte, arbreHd };
           vide = false;
         }
       }
@@ -531,6 +538,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
             sol.addFace(face, cel.x, cel.y, cel.z, rectHD(cel.solHD.tuile), cel.yTop + (cel.solHD.releve || 0), cel.ao, w, h, [cel.solHD.rugueux, cel.solHD.metal]);
             continue;
           }
+          if (cel.arbreHd) { facesArbresTues++; continue; }
           const buffer = cel.isWater ? water
             : cel.facadeHd ? (cel.allume ? platLumineux : plat)
               : (cel.allume ? lumineux : solid);
@@ -635,6 +643,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // le morceau, dans `facades`, avec l'essence que `treeAt` a plantée
   let arbresEmis = 0;
   if (arbresDetail) arbresEmis = emettreArbres(facades, arbres, ox, oz, CHUNK, teintes);
+  if (arbresLoin) emettreArbres(arbresLoin, arbres, ox, oz, CHUNK, teintes, true);
 
   const surface = grille ? emettreSolContinu(solid, world, cx, cz, CHUNK, grille, teintes) : null;
   // les tabliers des ponts et le marquage des routes (v300), avec la surface
@@ -675,7 +684,8 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     // (seulement quand les arbres sont armés : l'empreinte des 490 morceaux
     // hache aussi les champs scalaires du retour, et un champ neuf la change
     // sans qu'un sommet bouge — v421, le contenu neuf se retire par l'option)
-    ...(vraisArbres ? { arbres: arbres ? arbres.liste.length : (vegetal ? -1 : 0), arbresEmis } : {}),
+    ...(vraisArbres ? { arbres: arbres ? arbres.liste.length : 0, arbresEmis, facesArbresTues,
+      arbresLoin: arbresLoin ? arbresLoin.toTampons(false) : null } : {}),
     detail: detail || arbresDetail,
   };
 }

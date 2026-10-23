@@ -19,18 +19,21 @@
 //   coordonnées ne bougent pas (invariant 1, par construction). Il LIT les
 //   blocs et rend des tampons.
 // - ON NE TAIT QUE CE QUE LE MODÈLE COUVRE (v292). Les faces des blocs d'un
-//   arbre reconnu — son fût, et les feuilles CONNECTÉES à ce fût — partent dans
-//   `plat` (le loin) ; tout autre bloc de bois ou de feuilles — une cabane de
+//   arbre reconnu — son fût, et les feuilles CONNECTÉES à ce fût — se taisent
+//   (le mailleur les compte, `facesArbresTues`) ; tout autre bloc de bois ou de feuilles — une cabane de
 //   rondins, une haie posée par un enfant, le buis d'un jardin — reste dans
 //   `solid` et se voit. Un arbre est reconnu à son fût : un bloc de bois sans
 //   bois dessous, au moins deux de haut, avec au moins trois feuilles
 //   connectées dans sa fenêtre (`reconnaitreArbres`).
-// - LE LOIN RESTE LISIBLE : au-delà de `RAYON_HD`, le morceau est maillé sans
-//   détail et ses arbres restent les cubes d'avant, dans `solid`, au même prix
-//   qu'avant — zéro appel de dessin de plus. À portée, les arbres du morceau
-//   partent dans `facades`, le tampon de la couche HD : UN appel de dessin par
-//   morceau pour tous ses arbres, le même matériau que Paris, aucune clé de
-//   programme neuve (v246).
+// - LE LOIN A SES ARBRES AUSSI (v528). Jusqu'à la v510, au-delà de
+//   `RAYON_HD`, un morceau maillé sans détail gardait ses arbres en cubes —
+//   Max, en vol : « au loin, ils sont en forme Minecraft ». Tout morceau
+//   reconnaît désormais ses arbres ; leurs cubes ne s'émettent nulle part, et
+//   chacun a deux modèles : le PROCHE (`arbreVrai`, dans `facades`, à portée
+//   et sous le budget de la couche) et le LOIN (`arbreLoin`, quelques cartes
+//   de la même couronne, dans `arbresLoin`, toujours fabriqué). `main.js` les
+//   relaie (`montrerLeDetail`) : jamais les deux. Même matériau, aucune clé de
+//   programme neuve (v246), un appel de dessin par morceau.
 // - JAMAIS `Math.random()` (v450) : tout tirage se fait à la POSITION de
 //   l'arbre dans le monde (`tirageHD(wx, wz, sel)`), pour que le worker et le
 //   fil principal dessinent le même arbre, et deux tablettes aussi.
@@ -282,7 +285,7 @@ function fut(buf, p0, pm, p1, r0, r1, nSeg, nCotes, tuile, teinte) {
 // voisine de l'atlas, opaque et d'une autre couleur — une arête sombre sur
 // le bord de chaque carte.
 const RETRAIT = 3 / 1024;
-function carte(buf, c, U, V, n, tuile, teinte, uv) {
+function carte(buf, c, U, V, n, tuile, teinte, uv, nf = null) {
   const r = rectHD(tuile);
   const rect = [r[0] + RETRAIT, r[1] + RETRAIT, r[2] - 2 * RETRAIT, r[3] - 2 * RETRAIT];
   const u0 = rect[0] + (uv ? uv[0] : 0) * rect[2], u1 = rect[0] + (uv ? uv[2] : 1) * rect[2];
@@ -293,8 +296,9 @@ function carte(buf, c, U, V, n, tuile, teinte, uv) {
     [c[0] + U[0] + V[0], c[1] + U[1] + V[1], c[2] + U[2] + V[2]],
     [c[0] - U[0] + V[0], c[1] - U[1] + V[1], c[2] - U[2] + V[2]],
   ];
-  const a = sommet(buf, P[0], n, u0, v0, tuile, teinte), b = sommet(buf, P[1], n, u1, v0, tuile, teinte);
-  const cc = sommet(buf, P[2], n, u1, v1, tuile, teinte), d = sommet(buf, P[3], n, u0, v1, tuile, teinte);
+  const N = nf ? P.map(nf) : [n, n, n, n];
+  const a = sommet(buf, P[0], N[0], u0, v0, tuile, teinte), b = sommet(buf, P[1], N[1], u1, v0, tuile, teinte);
+  const cc = sommet(buf, P[2], N[2], u1, v1, tuile, teinte), d = sommet(buf, P[3], N[3], u0, v1, tuile, teinte);
   buf.quadIndices(a, b, cc, d);
   buf.quadIndices(a, d, cc, b);
 }
@@ -316,21 +320,29 @@ const ech = (t, k) => [t[0] * k, t[1] * k, t[2] * k];
 // (x, y, z) : la base du fût, locale au morceau ; `wx, wz` : la même colonne
 // dans le monde (le tirage) ; `h` : la hauteur du fût en blocs ; `boite` : les
 // feuilles, bornes incluses, locales ; `climat` : l'indice de teinte (0 : aucune).
-export function arbreVrai(buf, x, y, z, wx, wz, h, boite, essence, climat = 0) {
+// La couronne d'un arbre, lue sur la boîte de ses feuilles : le PROCHE
+// (`arbreVrai`) et le LOIN (`arbreLoin`) la lisent par la même fonction, pour
+// que le relais d'un niveau à l'autre ne change ni la place, ni la taille, ni
+// la couleur d'un arbre — seulement le nombre de ses cartes.
+function couronne(x, z, wx, wz, boite, essence, climat) {
   const E = ESSENCES[essence] || ESSENCES.chene;
   const g = (sel) => tirageHD(wx, wz, 900 + sel);
   const cx = x + 0.5, cz = z + 0.5;
   const teinte = TEINTE_CLIMAT[climat] ? mul(E.couleur, TEINTE_CLIMAT[climat]) : E.couleur;
-  const trunkMat = BLANC;
   // la couronne : son centre et ses demi-axes viennent de la boîte des feuilles
   const rx = Math.max(1.0, (boite.x1 - boite.x0 + 1) / 2), rz = Math.max(1.0, (boite.z1 - boite.z0 + 1) / 2);
   const ry = Math.max(0.9, (boite.y1 - boite.y0 + 1) / 2);
   const cy = (boite.y0 + boite.y1 + 1) / 2;
-  const crown = [cx, cy, cz];
   // un sommet lissé : la normale du volume, mêlée d'un peu de ciel
   const nVol = (p) => norm([(p[0] - cx) / rx, (p[1] - cy) / ry + 0.5, (p[2] - cz) / rz]);
   // la teinte d'un amas : plus sombre en bas de la couronne, un peu de variation
   const nuance = (p, k) => ech(teinte, (0.78 + 0.22 * Math.max(0, Math.min(1, (p[1] - (cy - ry)) / (2 * ry)))) * (0.88 + 0.24 * g(40 + k)));
+  return { E, g, cx, cz, rx, ry, rz, cy, nVol, nuance };
+}
+
+export function arbreVrai(buf, x, y, z, wx, wz, h, boite, essence, climat = 0) {
+  const { E, g, cx, cz, rx, ry, rz, cy, nVol, nuance } = couronne(x, z, wx, wz, boite, essence, climat);
+  const trunkMat = BLANC;
 
   if (E.palmes) {
     // LE PALMIER : le stipe penche d'un demi-bloc à un bloc, la couronne est au
@@ -441,18 +453,113 @@ export function arbreVrai(buf, x, y, z, wx, wz, h, boite, essence, climat = 0) {
   }
 }
 
+// --- un arbre au loin (v528) ------------------------------------------------------------
+//
+// Max, en vol au-dessus d'une forêt : « Au loin, les arbres sont moches, ils
+// sont en forme Minecraft. Au proche, ils sont beaux. » Au-delà du détail, un
+// arbre gardait ses cubes. Il garde désormais SA couronne (`couronne`, la même
+// place, la même taille, la même couleur que de près) en quelques grandes
+// cartes croisées, dont la tuile de feuilles est déjà un DISQUE (matierehd.js :
+// les feuilles sont semées dans un rond à 47 % de la tuile) : trois cartes
+// debout et deux couchées font une boule de feuillage vue de côté comme du
+// ciel, et un fût à trois pans. Mesuré sur le morceau de forêt le plus dense :
+// 304 sommets par arbre de près, 32 au loin (un chêne), et le morceau porte 40 Ko
+// de cartes contre 200 Ko de cubes avant — le loin coûte MOINS que les cubes
+// qu'il remplace. Les normales des cartes sont celles du VOLUME, coin par coin :
+// une carte entière est éclairée comme la boule qu'elle figure.
+export function arbreLoin(buf, x, y, z, wx, wz, h, boite, essence, climat = 0) {
+  const { E, g, cx, cz, rx, ry, rz, cy, nVol, nuance } = couronne(x, z, wx, wz, boite, essence, climat);
+  // la demi-largeur de la couronne dans la direction (ca, sa)
+  const r = (ca, sa) => Math.hypot(rx * ca, rz * sa);
+  const debout = (c, a, k, rh, rv, tuile) => {
+    const ca = Math.cos(a), sa = Math.sin(a), w = r(ca, sa) * rh;
+    carte(buf, c, [ca * w, 0, sa * w], [0, rv, 0], null, tuile, nuance(c, k), null, nVol);
+  };
+  const couche = (c, a, k, rh, tuile) => {
+    const ca = Math.cos(a), sa = Math.sin(a);
+    carte(buf, c, [ca * rx * rh, 0, sa * rx * rh], [-sa * rz * rh, 0, ca * rz * rh], null, tuile, nuance(c, k), null, nVol);
+  };
+
+  if (E.palmes) {
+    // le stipe penché, et cinq palmes de deux cartes (contre neuf de près), qui
+    // montent puis retombent comme de près
+    const lean = 0.35 + g(1) * 0.55, dir = g(2) * Math.PI * 2;
+    const p0 = [cx, y, cz], p1 = [cx + Math.cos(dir) * lean, y + h + 0.3, cz + Math.sin(dir) * lean];
+    const pm = [cx + Math.cos(dir) * lean * 0.3, y + h * 0.55, cz + Math.sin(dir) * lean * 0.3];
+    const top = fut(buf, p0, pm, p1, E.r0, E.r1, 1, 3, E.tronc, BLANC);
+    const n = 5, L = 1.5 + Math.min(1.2, (rx + rz) / 2 - 1) * 0.6;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + g(10 + i) * 0.5, ca = Math.cos(a), sa = Math.sin(a);
+      const up = 0.55 + g(20 + i) * 0.25, down = -0.45 - g(30 + i) * 0.35;
+      const m1 = [top[0] + ca * L * Math.cos(up), top[1] + L * Math.sin(up), top[2] + sa * L * Math.cos(up)];
+      const m2 = [m1[0] + ca * L * Math.cos(down), m1[1] + L * Math.sin(down), m1[2] + sa * L * Math.cos(down)];
+      const U = [-sa * 0.55, 0, ca * 0.55], n1 = norm([ca * 0.3, 1, sa * 0.3]);
+      const c1 = [(top[0] + m1[0]) / 2, (top[1] + m1[1]) / 2, (top[2] + m1[2]) / 2];
+      carte(buf, c1, U, [(m1[0] - top[0]) / 2, (m1[1] - top[1]) / 2, (m1[2] - top[2]) / 2], n1, E.feuille, nuance(c1, i), [0, 0, 1, 0.5]);
+      const c2 = [(m1[0] + m2[0]) / 2, (m1[1] + m2[1]) / 2, (m1[2] + m2[2]) / 2];
+      carte(buf, c2, U, [(m2[0] - m1[0]) / 2, (m2[1] - m1[1]) / 2, (m2[2] - m1[2]) / 2], n1, E.feuille, nuance(c2, i + 9), [0, 0.5, 1, 1]);
+    }
+    return;
+  }
+
+  if (E.conique) {
+    // le pin : le fût jusqu'à la pointe, et trois étages qui rétrécissent —
+    // chacun une carte couchée et deux debout croisées, comme les verticilles
+    const haut = boite.y1 + 1.3;
+    const p0 = [cx, y, cz], p1 = [cx + (g(1) - 0.5) * E.courbe, haut, cz + (g(2) - 0.5) * E.courbe];
+    fut(buf, p0, [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2 + 0.2, (p0[2] + p1[2]) / 2], p1, E.r0, E.r1, 1, 3, E.tronc, BLANC);
+    const rmax = Math.max(rx, rz) + 0.25, yb = boite.y0 - 0.2, yt = haut - 0.4;
+    const etages = 3;
+    for (let k = 0; k < etages; k++) {
+      const t = k / etages, yk = yb + (yt - yb) * (t + 0.1);
+      const rk = (rmax * Math.pow(1 - t, 0.75) + 0.35) * 1.25, a = g(60 + k) * Math.PI;
+      const c = [cx, yk, cz], ca = Math.cos(a), sa = Math.sin(a), hv = (yt - yb) / etages * 0.75;
+      carte(buf, c, [ca * rk, -rk * 0.12, sa * rk], [-sa * rk, -rk * 0.12, ca * rk], null, E.feuille, nuance(c, 70 + k), null, nVol);
+      carte(buf, c, [ca * rk, 0, sa * rk], [0, hv, 0], null, E.feuille, nuance(c, 80 + k), null, nVol);
+      carte(buf, c, [-sa * rk, 0, ca * rk], [0, hv, 0], null, E.feuille, nuance(c, 90 + k), null, nVol);
+    }
+    return;
+  }
+
+  // les feuillus : le fût jusqu'à la couronne, trois cartes debout et deux couchées
+  const dir = g(2) * Math.PI * 2;
+  const yTronc = E.plat ? boite.y0 + 0.4 : E.bas ? boite.y0 + 0.6 : cy - ry * 0.25;
+  const p1 = [cx + Math.cos(dir) * E.courbe, Math.max(y + h, yTronc), cz + Math.sin(dir) * E.courbe];
+  const pm = [cx + Math.cos(dir + 1.2) * E.courbe * 0.5, y + (p1[1] - y) * 0.5, cz + Math.sin(dir + 1.2) * E.courbe * 0.5];
+  fut(buf, [cx, y, cz], pm, p1, E.r0 * (0.9 + g(5) * 0.2), E.r1, 1, 3, E.tronc, BLANC);
+  const a0 = g(130) * Math.PI;
+  if (E.plat) {
+    // une ombrelle : large et basse
+    // (un peu plus haut que le centre de la boîte : de près, les amas du bout
+    // des branches relèvent l'ombrelle)
+    const ryc = Math.max(0.45, ry * 0.5), c = [cx, cy + 0.35, cz];
+    debout(c, a0, 0, 1.15, ryc * 1.3, E.feuille);
+    debout(c, a0 + Math.PI / 2, 1, 1.15, ryc * 1.3, E.feuille);
+    couche([cx, cy + 0.35 + ryc * 0.2, cz], a0, 2, 1.2, E.feuille);
+    couche([cx, cy + 0.35 + ryc * 0.6, cz], a0 + 0.8, 3, 0.8, E.feuille);
+    return;
+  }
+  // (les petites cartes de près — le bouleau — font une couronne plus serrée)
+  const c = [cx, cy, cz], rh = (E.carte || 1) < 0.9 ? 0.95 : 1.15;
+  for (let i = 0; i < 3; i++) debout(c, a0 + (i * Math.PI) / 3, i, rh, ry * 1.25, E.feuille);
+  couche([cx, cy + ry * 0.3, cz], a0, 3, rh * 0.92, E.feuille);
+  couche([cx, cy - ry * 0.25, cz], a0 + 0.7, 4, rh * 0.83, E.feuille);
+}
+
 // --- l'émission d'un morceau -----------------------------------------------------------------
 //
 // Pour chaque arbre reconnu dont la base est dans le morceau : l'essence (le
 // `kind` de sa signature, ou un arbre de ville), le climat, le modèle.
 // `climats` est la table de `teintesDuMorceau` (ou null).
-export function emettreArbres(buf, arbres, ox, oz, C, climats) {
+// `loin` : le modèle lointain (`arbreLoin`, v528) au lieu du proche.
+export function emettreArbres(buf, arbres, ox, oz, C, climats, loin = false) {
   let n = 0;
+  const modele = loin ? arbreLoin : arbreVrai;
   for (const a of arbres.liste) {
     const wx = ox + a.x, wz = oz + a.z;
     const climat = climats ? climats[a.x + a.z * C] : 0;
     const essence = essenceDe(a.kind, a.bloc, climat);
-    arbreVrai(buf, a.x, a.y, a.z, wx, wz, a.h, a.boite, essence, climat);
+    modele(buf, a.x, a.y, a.z, wx, wz, a.h, a.boite, essence, climat);
     n++;
   }
   return n;

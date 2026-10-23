@@ -271,6 +271,31 @@ let RAYON = 38;
       }, { yr: l1.yr });
       verifier('on tient debout sur le quai de la ligne 1', debout.sol && debout.tete, JSON.stringify(debout));
 
+      // LE NOM DE LA STATION SUR LE QUAI (v529) : la plaque bleue des
+      // piédroits, écrite par `stations.js` (sa place se prouve sous node,
+      // plafond.js). Ici : elle est dans la scène quand on est sur le quai, avec
+      // son nom à elle, dessinée sur un canevas. Rouge sur la v494 : aucun nom.
+      const nom = await (async () => {
+        const t0 = Date.now();
+        for (;;) {
+          const r = await tab.evaluate((attendu) => {
+            const g = window.__game;
+            if (!g.nomsDeStations) return { absent: true };
+            const m = [];
+            g.scene.traverse((o) => { if (o.name === 'nom-station' && o.visible) m.push(o); });
+            const ici = m.find((o) => o.userData.station === attendu);
+            return { stations: g.nomsDeStations.etat().map((s) => s.nom), ici: !!ici,
+              plaques: ici ? ici.geometry.index.count / 6 : 0,
+              canevas: !!(ici && ici.material.map && ici.material.map.image && ici.material.map.image.width >= 256) };
+          }, l1.nom);
+          if (r.absent || (r.ici && r.canevas) || Date.now() - t0 > 15000) return { ...r, ms: Date.now() - t0 };
+          await dormir(500);
+        }
+      })();
+      verifier('sur le quai, le nom de la station est écrit sur les plaques bleues',
+        !nom.absent && nom.ici && nom.plaques >= 4 && nom.canevas,
+        nom.absent ? 'aucun nom de station dans le jeu' : `${l1.nom} : ${nom.plaques} plaques, canevas ${nom.canevas}, stations nommées autour : ${nom.stations.join(', ')}, ${nom.ms} ms`);
+
       // la rame jaune se présente : 45 s de JEU, une fois et demie l'intervalle
       let vu = false, sim = 0, approche = null;
       for (let i = 0; i < 300 && !vu && sim < 45; i++) {
