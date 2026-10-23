@@ -193,6 +193,23 @@ v522 ne touche pas ; la distribution reste à faire.
   rendait trop peu d'images ce jour-là (v427 : `locator.click` attend deux
   images identiques).
   La livraison ne touchait que trois chaînes de bulles de `marlon.js`.
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v533 (la
+  minicarte toujours là).** `degats.js` rejouée SEULE deux fois sur la branche
+  et deux fois sur `origin/main` v531 (`git worktree`) :
+  - « les feux de détresse se posent SUR la carrosserie » : rouge 2 fois sur 2
+    des deux côtés, à l'identique — la Bugatti Bolide pose deux feux à 0,45
+    bloc de la tôle (les cinq autres modèles à −0,015). En production ; zone
+    véhicules (`posesDetresse`), que la v533 ne touche pas.
+  - « percuter une voiture de la rue l'abîme AUSSI » : 1 sur 2 sur la branche,
+    2 sur 2 sur `origin/main` (élan trouvé 13 à 15 blocs) ; « chez Alice
+    aussi… feux de détresse » le suit (`recues 0` quand le choc n'a pas eu
+    lieu) — un seul défaut, deux rouges (v291).
+  - `monte.js` au même portail : six rouges, cinq déjà déclarés (flâneur sur
+    la chaussée, feu qui pile, rue vide, mur de face, « Atterrissage vers »),
+    plus « à Rome aussi, en biais, un passant traverse sur le passage peint »
+    (déclaré sous la v402). La v533 ne touche que la minicarte et le badge du
+    temps libre.
+
 - [ ] **Deux rouges de portail mesurés des deux côtés au portail de la v530
   (les pistes larges).** Chacun rejoué SEUL sur la branche et sur `origin/main`
   v518 (`git worktree`), par une sonde qui recopie le passage du témoin :
