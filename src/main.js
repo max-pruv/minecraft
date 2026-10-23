@@ -4,6 +4,7 @@ import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTronco
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
+import { creerEffetSaison } from './saisons.js';
 // Les cadences de la synchronisation, sous tempo (`tempo.js`, v501) : au banc,
 // `?tempo=4` les divise par quatre ; en production elles valent leur valeur.
 import { t as enTempo, TEMPO } from './tempo.js';
@@ -48,6 +49,7 @@ import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
+import { creerNomsDeStations, chaufferStations } from './stations.js';
 import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
 import { traceAnneau, traceLigne1Paris, arretsLigne1Paris } from './ville.js';
 import { LIGNES_MONDE, traceLigneMonde } from './metromonde.js';
@@ -1053,6 +1055,8 @@ for (let i = 0; i < 4; i++) {
   scene.add(l);
   lampesRue.push(l);
 }
+// Le nom de chaque station de métro, écrit sur son quai (v529, stations.js).
+const nomsDeStations = creerNomsDeStations(scene);
 const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS, lamps: lampesRue});
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
@@ -1843,7 +1847,7 @@ function updateChunks() {
   // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v358) : un choc
   // contre une voiture de la rue ou du mobilier rebondit, un piéton et l'eau
   // arrêtent net, sans choc — personne n'est jamais touché (v259).
-  // ET UNE VOITURE GARÉE OU INVOQUÉE (v529) : une monture qui porte un
+  // ET UNE VOITURE GARÉE OU INVOQUÉE (v532) : une monture qui porte un
   // `gabarit` — pas un avion. Elle n'était un obstacle que pour les piétons
   // (v259) ; la voiture de l'enfant la traversait. Elle se POUSSE : c'est une
   // bête de cette tablette, rien de l'horloge partagée (v305).
@@ -3021,7 +3025,7 @@ function majEtatDePose() {
   etatPoseTexte = texte;
   etatPoseEl.classList.toggle('visible', !!e);
   etatPoseEl.dataset.quoi = e ? e.cle : '';
-  etatPoseEl.innerHTML = e ? `${e.cle === 'remise' ? ICONES.decoller : ICONES.atterrir}<span class="mot">${e.texte}</span>` : '';
+  etatPoseEl.innerHTML = e ? `${e.cle === 'remise' || e.cle === 'roulage' ? ICONES.decoller : ICONES.atterrir}<span class="mot">${e.texte}</span>` : '';
 }
 window.__majBoutonsVehicule = majBoutonsVehicule;
 
@@ -7949,64 +7953,34 @@ function animerPluie(dt) {
 }
 
 // --- seasons: the real-world calendar dresses the world ---------------------------
-// Winter snowflakes, spring petals, autumn leaves, summer fireflies.
+// Feuilles d'automne, pétales de printemps, lucioles d'été, flocons d'hiver.
+//
+// DES VRAIES FORMES, POSÉES SUR LE MONDE (v530). Le nuage de la v484 était un
+// `Points` de cent soixante CARRÉS, de −1 à +9 blocs au-dessus du sol sous
+// l'enfant : depuis une caméra de poursuite à trois blocs du sol, tout ce qui
+// la dépasse se projette au-dessus de l'horizon — les « carrés orange-jaune
+// dans le ciel » de la capture de Max au volant. Chaque particule vit
+// désormais sur SA colonne (`saisons.js`) : elle naît bas, tombe en planant,
+// se pose sur ce qui la porte, s'efface. Le sol se lit sur un morceau déjà
+// engendré seulement (v472).
+const effetSaison = creerEffetSaison();
+scene.add(effetSaison.mesh);
 
-const SEASON = (() => {
-  const m = new Date().getMonth(); // 0..11
-  if (m >= 2 && m <= 4) return { label: 'le printemps', emoji: '🌸', color: 0xf0a8c8, fall: 1.6 };
-  if (m >= 5 && m <= 7) return { label: "l'été", emoji: '✨', color: 0xf2e07a, fall: -0.4 };
-  if (m >= 8 && m <= 10) return { label: "l'automne", emoji: '🍂', color: 0xd8843a, fall: 2.2 };
-  return { label: "l'hiver", emoji: '❄️', color: 0xffffff, fall: 3, duCiel: true };
-})();
-
-// LE NUAGE DE SAISON EST POSÉ SUR LE SOL, PAS SUR L'ENFANT (v484). Il suivait
-// `player.pos` de −3 à +23 blocs : en vol, cent soixante carrés orange
-// flottaient autour de l'avion à cent blocs du sol — les « cubes orange dans
-// le ciel » vus sur les captures de Max et du banc depuis la v237, que la sonde
-// de scène ne trouvait pas parce que c'est UN objet `Points` collé à la caméra.
-// La neige tombe du ciel (bande haute) ; feuilles, pétales et lucioles restent
-// à hauteur d'arbre (bande basse). Au-dessus de la bande, rien ne se dessine.
-const BANDE_SAISON = SEASON.duCiel ? [-3, 23] : [-1, 9];
-const HAUT_SAISON = BANDE_SAISON[1] - BANDE_SAISON[0];
-
-const SEASON_COUNT = 160;
-const seasonGeo = new THREE.BufferGeometry();
-{
-  const pts = new Float32Array(SEASON_COUNT * 3);
-  for (let i = 0; i < SEASON_COUNT; i++) {
-    pts[i * 3] = (Math.random() - 0.5) * 60;
-    pts[i * 3 + 1] = BANDE_SAISON[0] + Math.random() * HAUT_SAISON;
-    pts[i * 3 + 2] = (Math.random() - 0.5) * 60;
-  }
-  seasonGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+function solSaison(x, z) {
+  const bx = Math.floor(x), bz = Math.floor(z);
+  if (!world.morceauxPrets(bx - 1, bz - 1, bx + 1, bz + 1)) return null;
+  // une feuille traverse le feuillage : elle se pose sous l'arbre, pas sur sa cime
+  let y = world.sommetColonne(bx, bz);
+  while (y > 0 && world.getBlock(bx, y, bz) === BLOCK.LEAVES) y--;
+  const haut = y + 1;
+  if (haut < WATER_LEVEL + 0.875) return WATER_LEVEL + 0.875;   // la surface de l'eau
+  const sc = world.solContinu(x, z);                             // la surface lisse, si elle passe là
+  return sc != null && Math.abs(sc - haut) < 1.2 ? sc : haut;
 }
-const seasonPoints = new THREE.Points(seasonGeo, new THREE.PointsMaterial({
-  color: SEASON.color, size: 0.24, transparent: true, opacity: 0.75, sizeAttenuation: true,
-}));
-scene.add(seasonPoints);
-
-let seasonTime = 0, seasonToastShown = false;
 
 function updateSeasons(dt) {
-  if (!seasonToastShown && running) {
-    seasonToastShown = true;
-  }
-  seasonTime += dt;
-  const pos = seasonGeo.attributes.position;
-  for (let i = 0; i < SEASON_COUNT; i++) {
-    let y = pos.getY(i) - SEASON.fall * dt;
-    if (y < BANDE_SAISON[0]) y += HAUT_SAISON;
-    if (y > BANDE_SAISON[1]) y -= HAUT_SAISON;
-    pos.setY(i, y);
-    pos.setX(i, pos.getX(i) + Math.sin(seasonTime * 1.3 + i) * dt * 0.8); // flutter
-  }
-  pos.needsUpdate = true;
-  // au-dessus d'un lac ou de la mer, c'est la surface de l'eau qui porte le nuage
-  const sol = Math.max(world.terrainHeight(Math.floor(player.pos.x), Math.floor(player.pos.z)), WATER_LEVEL) + 1;
-  seasonPoints.position.set(player.pos.x, sol, player.pos.z);
-  // plus haut que la bande (en vol), on ne voit le nuage que par en dessous :
-  // on ne le dessine pas
-  if (player.pos.y > sol + BANDE_SAISON[1] + 6) seasonPoints.visible = false;
+  const px = player.pos.x, pz = player.pos.z;
+  effetSaison.avancer(dt, { px, py: player.pos.y, pz, camera, sol: solSaison, solJoueur: solSaison(px, pz) });
 }
 
 const clouds = [];
@@ -8422,7 +8396,7 @@ const guides = creerGuides({
   maintenant: () => performance.now(),
 });
 window.__guides = guides;
-window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
+window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
   // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
@@ -8587,8 +8561,8 @@ function frame(now) {
   updateClouds(dt);
   updateBirds(dt);
   updatePlane(dt);
-  seasonPoints.visible=!renduDansManhattan;
-  if (!renduDansManhattan) updateSeasons(dt);
+  if (renduDansManhattan) effetSaison.mesh.visible = false;
+  else updateSeasons(dt);
   updateHud(dt);
   releverLeJournal();
   updateCreatureLabel();
@@ -8657,6 +8631,7 @@ function frame(now) {
 
   eclairerLaRue();
   reglerLesFeux();
+  nomsDeStations.update(player.pos);
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renduDansManhattan=villeRealiste.active;
   const debutRendu = performance.now();
@@ -8758,6 +8733,10 @@ requestAnimationFrame(() => {
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
     // les traces de pneus (v434) : un matériau neuf, son essaim exact
     try { fun.chaufferTraces(renderer, camera, scene); } catch (e) { console.warn('chauffe des traces', e); }
+    // le nom des stations de métro (v529) : un matériau à carte
+    try { chaufferStations(renderer, camera, scene); } catch (e) { console.warn('chauffe des stations', e); }
+    // les effets de saison (v530) : un essaim neuf, son matériau exact
+    try { effetSaison.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe de la saison', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };

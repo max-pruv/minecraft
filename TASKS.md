@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **Les chocs de la v529 (l'élan), ce qui reste, déclaré.** (1) Un avion
+- [ ] **Les chocs de la v532 (l'élan), ce qui reste, déclaré.** (1) Un avion
   au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
   `gareeContre` (main.js) écarte les fiches `pilote`, parce qu'une boîte de
   voiture (2,2 × gabarit/2) autour du fuselage serait fausse — il faut la boîte
@@ -15,6 +15,92 @@
   revoir si Max trouve que la voiture s'use trop vite contre un mur.
   (5) La glissade ne se voit pas chez l'ami autrement que par la position et
   la dérive (`p.v.r`) : la vrille passe par le cap, déjà envoyé.
+- [ ] **Monter en passager dans TOUT véhicule d'un ami, pas seulement sa
+  voiture (demande de Max, 20 octobre 2026).** « Pouvoir rentrer dans une
+  voiture, avion… en passager sur le jeu online si un autre joueur est déjà
+  conducteur. » Ce qui existe : la voiture seule (v253, portière v377, descente
+  v384, suivi de l'identité du conducteur v407, `net.estMoi` v410).
+  `vehiculeAmiProche` (fun.js) ne propose que ce dont la fiche porte `sieges`,
+  et seule la fiche `voiture` (montures.js:448) en a : un ami aux commandes d'un
+  avion, d'une bête montée ou d'un autre véhicule ne se rejoint pas. Ce qu'il
+  faut : des `sieges` mesurés dans les fiches des trois avions (cabine, pas le
+  cockpit ; le Concorde n'a pas de porte, v389) et des montures à deux places,
+  la montée par l'escalier de l'avion de l'ami (`monterAvion` rejoué sur le
+  maillage DISTANT, comme `monterChez` pour la portière), la caméra passager en
+  vol (le pilote garde les commandes, le passager regarde librement), la
+  descente au sol seulement (en vol : refus qui dit quoi faire). Témoins à deux
+  tablettes dans `reseau.js` : la parenté du maillage et le passager qui SUIT
+  l'avion de l'ami, sur `pos` ET `rpos` (v406). Zone : `fun.js`,
+  `embarquement.js`, `montures.js`, `avions.js` — se marche dessus avec la
+  conduite.
+- [ ] **Les autres joueurs bougent par saccades, surtout en voiture et en avion
+  (demande de Max, 20 octobre 2026).** « Tu le vois bouger de manière saccadée,
+  toutes les secondes il a avancé… c'est pas très real time. » Ce qui est dans
+  le code, pas encore mesuré : `startPosLoop` (net.js:1765) envoie la position
+  toutes les 120 ms, sans vitesse ; `updateRemotePlayers` (main.js:4881) court
+  après la DERNIÈRE position reçue par un lissage exponentiel (`dt × 10`) —
+  aucune interpolation entre deux relevés, aucune extrapolation. À 60 b/s un
+  relevé vaut 7 blocs : l'ami avance par marches puis s'arrête. Par le nuage
+  (`relaisnuage.js`, `SONDAGE_MS` 500, et l'hôte qui relaie `rpos`), les relevés
+  arrivent par paquets toutes les demi-secondes ou plus — c'est probablement le
+  « toutes les secondes » de Max. Pistes, dans l'ordre : (1) MESURER au banc et
+  sur la tablette (`?diag=1`) l'écart réel entre deux relevés reçus, chemin
+  direct, relayé et nuage ; (2) horodater chaque relevé à l'envoi (heure de la
+  rue, v305, partagée) et rejouer l'ami avec un retard fixe en INTERPOLANT entre
+  deux relevés (tampon de 2-3 relevés), extrapolation bornée (vitesse, 250 ms
+  au plus) quand le suivant manque ; (3) envoyer la vitesse (et le cap du
+  véhicule, pas seulement le regard) dans `pos` — champ neuf, l'ancienne
+  tablette l'ignore (le receveur cède) ; (4) cadence d'envoi plus serrée en
+  véhicule rapide seulement, si la mesure le demande. Règles : un champ ajouté à
+  `pos` a deux témoins (`pos` et `rpos`, v406) ; tout compte en temps réel,
+  jamais en `dt` (v226) ; le témoin mesure le PIRE saut de position par image
+  de l'ami chez l'autre tablette, au volant, sur chaque chemin. Zone : réseau
+  (`net.js`, `relaisnuage.js`) et `main.js` (`updateRemotePlayers`).
+
+- [ ] **Les rouges du portail de la v531 (vraies feuilles d'automne), 19 octobre
+  2026, sur un conteneur lent (1,7 à 2,0 s pour 3·10⁸ tours, charge nulle).**
+  Portail complet, 94 min : treize suites vertes. `maj.js` rouge sur le seul
+  badge (journal v531, `CACHE_VERSION` v530 avant le bump). `manhattan.js` « le
+  taxi roule avec les contrôles tactiles » (3 s de jeu en 244 s de montre),
+  déjà déclaré. `monte.js` : six rouges de la famille déclarée plus bas (rue
+  et circulation : passage peint de Rome, freinage au feu, rue vide ;
+  « minimap×edu-timer » aux deux tailles et « Atterrissage vers Saint-Dizier »
+  venus de `main`). Les quatre témoins des saisons sont VERTS au portail.
+  `reseau.js` : le trio et ce qui en dépend (compteur, prénoms sur la carte,
+  GPS d'un invité à travers l'hôte, puis le banc qui lâche sur `net.peer`
+  nul, Nina n'étant jamais entrée), c'est-à-dire « le jeu à plusieurs ne
+  tourne plus sur ce banc, des deux côtés », déclaré ci-dessous. Aucune de ces
+  suites, `monte.js` exceptée, ne lit `saisons.js`.
+- [ ] **Les rouges du portail de la v529, double mesure (rejoués seuls, branche
+  contre `origin/main` v522).** `monte.js` : 7 rouges des deux côtés, tous de la
+  rue et de la circulation (voisines d'un convoi, freinage au feu, rue vide,
+  voiture heurtée, flâneur, passage peint de Londres — la liste change d'un
+  passage à l'autre) plus deux venus de `main` (« minimap×edu-timer » en vol aux
+  deux tailles, « Atterrissage vers Saint-Dizier » absent à l'appui).
+  `maj.js` (le loader qui compte les fichiers) et `reseau.js` (le banc lâche en
+  fin de suite) : verts rejoués seuls sur la branche ; `reseau.js` rend sur
+  `origin/main` « la voiture de la rue qui arrive derrière… l'attend » un
+  passage sur deux. `degats.js` « percuter une voiture de la rue » : rouge sur
+  `origin/main`, déjà déclaré. `reglages.js` « un choix fait sur une
+  tablette » : même rouge des deux côtés, déjà déclaré.
+- [ ] **Les stations en virage (v529) : la voie croise les bouts du quai.**
+  À Washington, la trace d'une ligne est décalée de ±4 en suivant SON cap à
+  chaque point ; dans une station posée sur un virage (Smithsonian, McPherson
+  Square, Foggy Bottom, Arlington Cemetery, Metro Center, L'Enfant Plaza,
+  Gallery Place…), la voie converge vers l'axe et passe à 0,1–0,7 bloc de
+  l'axe du quai central vers les bouts (|le| 6 à 10, mesuré). Le gabarit,
+  creusé en dernier, ouvre alors le quai à ces bouts : la rame roule sur le
+  bord du quai, et il n'y a pas de place pour un pylône (cinq stations sans
+  pylône, leur nom n'est que sur le mur d'en face). Même chose, en plus petit,
+  au bout du quai de la Bastille à Paris. Remède : redresser la trace sur
+  ±DEMI_STATION autour de chaque arrêt — cela change les tunnels, la durée des
+  tours (l'Orange et l'Argent ont des tours de même durée, v468) et les portes
+  de la rame (v489) : une livraison à elle, à mesurer avant.
+- [ ] **Quelques cases à trois blocs d’air restent (v529)** : en haut de
+  chaque escalier, sous le bloc de la rue (on ne creuse jamais dans la rue),
+  et au-dessus des portillons. La sonde les compte (1 à 6 par station) ; le
+  vrai joueur passe aux deux sens. `DATE_STATIONS` (world.js) se relit à la
+  fusion.
 - [ ] **Rouges de portail de la v528 (les arbres au loin) : aucun de la
   livraison.** Seul rouge à moi : `parishd.js` lisait « cubes cachés » sur
   `plat` caché — repointé sur `arbresLoin`, vert. Restent `degats.js` (percuter
@@ -122,6 +208,42 @@ v522 ne touche pas ; la distribution reste à faire.
   rendait trop peu d'images ce jour-là (v427 : `locator.click` attend deux
   images identiques).
   La livraison ne touchait que trois chaînes de bulles de `marlon.js`.
+- [ ] **Deux rouges de portail mesurés des deux côtés au portail de la v530
+  (les pistes larges).** Chacun rejoué SEUL sur la branche et sur `origin/main`
+  v518 (`git worktree`), par une sonde qui recopie le passage du témoin :
+  - `monte.js` « ✈️ près de bas-sd : « Atterrissage vers <ville> » s'affiche
+    dès l'appui » (`apresAppui` vide) : rouge 1 fois sur 3 sur la branche,
+    2 fois sur 3 sur `origin/main`. La pose elle-même est verte. Un tirage de
+    cadence : la pilule est lue après un délai fixe.
+  - `reseau.js` « il le voit s'écraser : l'appareil de l'ami prend feu chez
+    lui » (au portail, Clara ne voit plus le véhicule à 3,8 s : Hugo déjà
+    déposé). Vert seul des deux côtés, feu vu en 1,8 s sur la branche et en
+    6,3 s sur `origin/main`, pour une fenêtre de 8 s. Hugo est déposé à
+    3,5 s : c'est une course entre la latence réseau et le dépôt. À démonter
+    en attendant le feu sur l'épave ET sur le véhicule, pas sur le véhicule
+    seul. La v530 ne touche ni `ecraserAvion` ni le réseau.
+  - Au portail rebasé sur la v528 (coupé à deux heures pendant `monte.js`) :
+    `parishd.js` « la voiture s'arrête devant une terrasse de café »
+    (`parcouru 0` en 5,1 s) et `plafond.js` « la campagne lointaine garde son
+    herbe… le relief arrive aussi vite » (51 images pour une barre de cadence)
+    — rejouées SEULES, vertes des deux côtés (157/157 et 189/189 sur la
+    branche ET sur `origin/main` v528 ; 10 et 11 images). La charge.
+  - `monte.js` rejouée SEULE : branche 6 rouges (passant lancé sur la voiture,
+    allure d'une ville, feu, rue vide, mur pris de face — familles déclarées
+    ci-dessous), `origin/main` v528 2 rouges (rue vide, passants posés quand
+    le monde est là). Le témoin neuf d'Orly est vert.
+  - **Non déclaré jusqu'ici :** `monte.js` « en vol (420 × 760), minicarte,
+    cadran de cap… ne se recouvrent pas » rend `minimap×edu-timer` : la
+    pastille du temps (`#edu-timer`, centrée) fait 170 px de large sur la
+    branche et 152 sur `origin/main`, mesurées à deux heures différentes
+    (01:00 et 02:00). Sa largeur suit son texte, qui suit l'heure (« Libre
+    jusqu'à … », v522) : à 170 px elle mord de 3 px sur la minicarte
+    (x 125 contre 128). La v530 ne touche ni `education.js` ni `index.html`.
+    À corriger côté interface : borner la pastille entre la colonne de
+    gauche et la minicarte ouverte (`--minimap-w`), comme `#file-centre`.
+  - `reseau.js` rejouée SEULE : 88 verts, 2 rouges, « un hôte sans courtier
+    est trouvé » et « il le REJOINT » — la famille du nuage déclarée à la v509.
+
 - [ ] **Rouges de portail mesurés des deux côtés au portail de la v516
   (« Atterrissage vers <ville> »)** — `monte.js` rejouée SEULE sur la branche
   et sur `origin/main` v504 (`git worktree`). Branche 23 rouges, `origin/main`

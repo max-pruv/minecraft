@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
-import { pisteVisee, guiderApproche, aerodromeLePlusProche, angle as angleAp, surUnePiste } from './approche.js';
+import { pisteVisee, guiderApproche, aerodromeLePlusProche, angle as angleAp, surUnePiste, pisteDeDecollage, guiderRoulage, VIRAGE_ROULAGE, MONTEE_DECOLLAGE } from './approche.js';
 import { jugerToucher } from './degats.js';
 import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, vitessePleine, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA, CONTACT_DOUX, dureeGlissade, vrilleDuChoc, pointDeContact, pasGlissade, DERIVE_MAX_MAIN } from './conduite.js';
 
@@ -63,7 +63,7 @@ const DEMI_LONG_VOITURE = 2.2;   // la moitié des 4,4 blocs d'une voiture (vehi
 const DEGAGEMENT_MARCHE = 0.7;
 const RAYON_MUR = 4.5;     // la façade se lit sur ce rayon autour du contact (v397)
 const FACES = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-const ANTI_REBOND = 0.35;        // s de jeu : un choc plus faible dans ce délai est le même accident (v529)
+const ANTI_REBOND = 0.35;        // s de jeu : un choc plus faible dans ce délai est le même accident (v532)
 const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un piéton   // ce qu'il faut avancer pour passer le bord d'une marche (v286)
 
 // LE VOL D'UN AVION — trois chiffres, et chacun a sa raison.
@@ -77,7 +77,8 @@ const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un pi�
 // PART_MONTEE : au manche, on monte au tiers de sa vitesse — un avion qui
 // grimperait aussi vite qu'il avance monterait à la verticale.
 const PALIER_DECOLLAGE = 20;
-const MONTEE_DECOLLAGE = 14;
+// (`MONTEE_DECOLLAGE` vit dans approche.js depuis la v530 : le roulage assisté
+// en tire la longueur de piste qu'il faut devant soi.)
 const PART_MONTEE = 0.33;
 const DESCENTE = 12;      // la perte d'altitude quand on se pose
 // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261). Max : « une vraie
@@ -221,8 +222,18 @@ export class Player {
       this.approche = null; this.remiseT = Date.now();
       return 'remise';
     }
+    // LE ROULAGE ASSISTÉ (v530) : sur un aérodrome, ✈️ au sol roule d'abord
+    // jusqu'à l'axe de la piste (`guiderRoulage`) ; le décollage part de là.
+    // Le second appui l'arrête, comme celui qui remet les gaz en approche —
+    // la porte de sortie de toute séquence imposée (v452).
+    if (etat === 'sol') {
+      if (this.roulage) { this.roulage = null; return 'roulageArrete'; }
+      const r = pisteDeDecollage(this.pos.x, this.pos.z, this.yaw, this.pilote);
+      if (r) { this.roulage = { ...r, t: 0, x: this.pos.x, z: this.pos.z }; return 'roulage'; }
+    }
     // au sol, ou encore en train de freiner : pleins gaz, le nez se lèvera
     // tout seul à la vitesse de rotation
+    this.roulage = null;
     this.avionEtat = 'decollage'; this.rotationFaite = false;
     this.altitudeDecollage = this.pos.y;
     return 'decollage';
@@ -392,7 +403,7 @@ export class Player {
   // le toucherait à chaque image et rien ne se lirait plus.
   publierChoc(force, dx, dz) {
     if (!(force >= 0.05)) return;
-    // UN REBOND NE PUBLIE PAS UN SECOND CHOC (v529) : la voiture renvoyée par
+    // UN REBOND NE PUBLIE PAS UN SECOND CHOC (v532) : la voiture renvoyée par
     // un mur, joystick tenu, y revient un quart de seconde plus tard ; ce
     // n'est pas un nouvel accident. Sur l'horloge du JEU (comme la glissade),
     // un choc plus faible que le précédent dans ANTI_REBOND ne se publie pas.
@@ -430,11 +441,11 @@ export class Player {
     }
     this.vitesseVoiture = v; this.derive = d;
     this.vel.x = wx; this.vel.z = wz;
-    // pendant une glissade, c'est elle qui porte la vitesse (v529)
+    // pendant une glissade, c'est elle qui porte la vitesse (v532)
     if (this.glissade) { this.glissade.vx = wx; this.glissade.vz = wz; }
   }
 
-  // APRÈS UN VRAI CHOC, LA GLISSADE (v529). La vitesse d'après le choc devient
+  // APRÈS UN VRAI CHOC, LA GLISSADE (v532). La vitesse d'après le choc devient
   // un VECTEUR libre que le joystick ne touche plus le temps de la glissade
   // (`dureeGlissade`) : on est renvoyé, dévié, on glisse quelques mètres en
   // perdant sa vitesse (`pasGlissade`), et la caisse tourne si l'impulsion ne
@@ -608,7 +619,7 @@ export class Player {
       const x = this.pos.x, y = this.pos.y, z = this.pos.z;
       const fam = this.obstacleVehicule ? this.obstacleVehicule(x + dx, z + dz, this.yaw + Math.PI, x, z) : false;
       if (fam === 'pieton' || fam === 'eau') {
-        // une glissade qui mènerait vers un piéton ou l'eau s'arrête net (v529)
+        // une glissade qui mènerait vers un piéton ou l'eau s'arrête net (v532)
         this.glissade = null;
         this.vitesseVoiture = 0; this.derive = 0; this.vel.x = 0; this.vel.z = 0;
         break;
@@ -649,7 +660,7 @@ export class Player {
       // aussi juste après une crête : plus vite qu'avant, la voiture décolle
       // d'une bosse et retombe devant la marche suivante sans être « au sol »
       // à l'image près ; tant qu'elle ne TOMBE pas, elle la gravit.
-      // ET PAS EN GLISSADE (v529) : renvoyée de biais le long d'un mur en
+      // ET PAS EN GLISSADE (v532) : renvoyée de biais le long d'un mur en
       // escalier, la voiture butait sur le coin d'une marche du mur et « la
       // franchissait » — montée d'un bloc dans la façade (mesuré au mur à 30°)
       if (!this.glissade && (etaitAuSol || this.vel.y > -4) && Math.abs(this.vitesseVoiture) > 0.5) {
@@ -698,7 +709,7 @@ export class Player {
     // sol continu ou une boîte a mangé le pas sans qu'un choc ne l'ait dit, on
     // ramène la vitesse à ce que la voiture a FAIT. Seulement quand elle est
     // bloquée (moins d'un quart du pas), jamais quand elle frotte.
-    // ET PAS DANS L'IMAGE D'UN CHOC (v529) : la voiture y a avancé PUIS rebondi,
+    // ET PAS DANS L'IMAGE D'UN CHOC (v532) : la voiture y a avancé PUIS rebondi,
     // son déplacement net est presque nul, et le filet mangeait le rebond —
     // mesuré, à 15 blocs/s contre un mur la voiture restait plantée net. Pendant
     // une glissade, c'est le vecteur de la glissade qu'on ramène.
@@ -931,7 +942,7 @@ export class Player {
     if (this.pilote) {
       const p = this.pilote;
       if (this.vitesseAvion === undefined) this.vitesseAvion = 0;
-      if (!this.avionEtat) this.avionEtat = this.avionEnVol ? 'vol' : 'sol';
+      if (!this.avionEtat) { this.avionEtat = this.avionEnVol ? 'vol' : 'sol'; this.roulage = null; }
       if (this.assietteAvion === undefined) this.assietteAvion = 0;
       if (this.trainSorti === undefined) this.trainSorti = 1;
       if (this.roulisAvion === undefined) this.roulisAvion = 0;
@@ -957,6 +968,23 @@ export class Player {
       //   joystick ↕      au sol : rouler · en vol : monter et descendre
       //   joystick ↔      au sol : la roue avant · en vol : tourner
       //   le regard       libre — on regarde le paysage sans changer de cap
+      // LE ROULAGE ASSISTÉ (v530) se juge AVANT l'état : aligné sur l'axe, on
+      // met les gaz, et c'est le décollage d'avant, parti de la piste. Le geste
+      // prime (v452) : tirer le joystick en arrière l'arrête.
+      let roule = null;
+      if (this.roulage && (this.avionEtat !== 'sol' || forward < -0.5)) this.roulage = null;
+      if (this.roulage) {
+        roule = guiderRoulage(this.roulage, this.pos, this.yaw, p);
+        if (roule.aligne) {
+          this.yaw = this.roulage.cap; this.roulage = null; roule = null;
+          this.avionEtat = 'decollage'; this.rotationFaite = false;
+          this.altitudeDecollage = this.pos.y;
+        } else if ((this.roulage.t += dt) > 5) {
+          // Bloqué cinq secondes sans avancer : on rend la main à l'enfant.
+          if (Math.hypot(this.pos.x - this.roulage.x, this.pos.z - this.roulage.z) < 1) { this.roulage = null; roule = null; }
+          else { this.roulage.t = 0; this.roulage.x = this.pos.x; this.roulage.z = this.pos.z; }
+        }
+      }
       const etat = this.avionEtat;
       const auSol = etat === 'sol' || etat === 'freinage' || (etat === 'decollage' && !this.rotationFaite);
       // LA VITESSE EST AUTOMATIQUE, et c'est elle qui garde le caractère de
@@ -992,6 +1020,8 @@ export class Player {
         if (forward < -0.5) {
           if (this.gaz != null) this.gaz = 0;
           cible = this.vitesseAvion > 0.5 ? 0 : forward * (p.roulage || 6) * RECUL;
+        } else if (roule) {
+          cible = roule.vitesse;
         } else {
           cible = (this.gaz != null ? this.gaz : Math.max(0, forward)) * (p.roulage || 6);
         }
@@ -1014,7 +1044,10 @@ export class Player {
       // trois fois plus court que le Concorde. Au sol, la ROUE AVANT : elle
       // ne tourne que si l'on roule, et de moins en moins à mesure qu'on va
       // vite — à pleine vitesse sur la piste on ne fait pas de tête-à-queue.
-      if (auSol) {
+      if (roule) {
+        const e = roule.ecart;
+        this.yaw += Math.sign(e) * Math.min(Math.abs(e), VIRAGE_ROULAGE * Math.min(1, Math.abs(v) / 2) * dt);
+      } else if (auSol) {
         // L'AMPLITUDE VIENT DE |v|, LE SENS DU SIGNE — en reculant, la roue
         // avant fait tourner l'appareil dans l'autre sens, exactement comme
         // le volant d'une voiture (v212). Sans `abs`, un `v` négatif rendait
@@ -1274,7 +1307,7 @@ export class Player {
       // qu'il agit (`freinMainTire`) pour qui voudrait le dessiner ou l'entendre.
       const freinMain = !!this.freinMain || k.has('Space');
       this.freinMainTire = freinMain && !inerte;
-      // APRÈS UN CHOC, LA GLISSADE D'ABORD (v529) : le joystick attend qu'elle
+      // APRÈS UN CHOC, LA GLISSADE D'ABORD (v532) : le joystick attend qu'elle
       // rende la main (`avancerGlissade`), puis la dynamique reprend.
       if (!this.avancerGlissade(dt)) {
         const r = pasVoiture(

@@ -7,7 +7,7 @@
 // ambiante coïncident, sans quoi le dégradé des coins serait détruit. Mesuré
 // sur du terrain, de la forêt et le château : 3,2 fois moins de triangles.
 
-import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI } from './blocks.js';
+import { BLOCK, BLOCK_INFO, isTransparent, isSlab, isProp, CITY_BLOCK, ARCHI, METRO_LUMINEUX } from './blocks.js';
 import { tileUV, tileRect } from './tuiles.js';
 import { GeomBufferHD, SOL_HD, FACADE_HD, TOIT_HD, facadeHD, villeHD, murHD, rectHD, vitreAllumee, yBaie, marquageHD, bordureHD, trottoirHD, arbreHD, poteletHD, terrasseHD, mitresHD, morrisHD, bancHD, corbeilleHD, toitDessusHD, tirageHD, mobilierTrottoir, rejouerToitsAvant, rejouerFerAvant } from './facadeshd.js';
 
@@ -475,7 +475,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           //   et laisse les bords intacts, au pixel près.
           const uniforme = !ao || (ao[0] === ao[1] && ao[1] === ao[2] && ao[2] === ao[3]);
           const bloqueV = vAxis === 1 && yTop !== 1;
-          const allume = VITRES.has(id) && vitreAllumee(ox + x, yBaie(id, y), oz + z);
+          const allume = METRO_LUMINEUX.has(id) || (VITRES.has(id) && vitreAllumee(ox + x, yBaie(id, y), oz + z));
           // Le sol HD : la face du dessus d'un sol de ville. La façade HD :
           // une face latérale d'un bloc de façade — elle va dans `plat`, et
           // son détail est émis plus bas, bloc par bloc.

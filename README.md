@@ -112,7 +112,11 @@ rendering budgets, licensing and limitations.
   vaults, mezzanines with fare gates. Trains **stop at every station**, and the
   Yellow Line does what the real one does: it surfaces in East Potomac Park and
   **crosses the Potomac on its own bridge**, in the open air, before diving
-  back down at the Pentagon.
+  back down at the Pentagon. Every station — Washington's twenty and the
+  sixteen of Paris line 1 — can be walked from the street to the platform and
+  back, standing up: stairs, a ticket hall with turnstiles, a corridor, and the
+  station's name on the platform (blue enamel plaques under the white tiled
+  vault in Paris, brown pylons in Washington).
 - **Fully offline** — the game is an installable PWA: open it once online,
   add it to the home screen (iPhone/iPad: Share → Add to Home Screen), and it
   runs entirely offline afterwards. When releasing changes, bump
@@ -221,6 +225,7 @@ src/cap.js        the pilot's heading dial: bearing, the city ahead, its distanc
 src/marlon.js     friendly NPCs (Marlon the companion, Professeur Cornichon)
 src/vie.js        city life; src/vehicules.js  métro trains (which stop at
                   stations) and F1 cars
+src/stations.js   the name of every metro station, written on its platform
 
   the places
 src/paris.js src/manhattan.js src/sanfrancisco.js src/nice.js src/lille.js

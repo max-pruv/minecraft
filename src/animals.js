@@ -278,7 +278,7 @@ class Animal {
     this.mesh.scale.setScalar(this.scale);
   }
 
-  // POUSSÉE PAR LA VOITURE DE L'ENFANT (v529) : une voiture garée ou invoquée
+  // POUSSÉE PAR LA VOITURE DE L'ENFANT (v532) : une voiture garée ou invoquée
   // part avec ce que le choc lui donne (`chocPoussable`, conduite.js) et glisse
   // en perdant sa vitesse, frein à main serré (FROTTEMENT_POUSSEE).
   // (vx, vz) est sa vitesse d'APRÈS le choc, pas une impulsion à ajouter :
