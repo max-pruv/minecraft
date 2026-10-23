@@ -908,6 +908,10 @@ export function plaquesParis() {
       const le0 = 12 * m + 8.5;          // le milieu des cases li 8 et 9
       if (Math.abs(le0) > L - 1) continue;
       for (const sg of [1, -1]) {
+        // un piédroit que le couloir d'une bouche perce ne porte pas de plaque
+        // (les rues à la GTA : la bouche de Reuilly–Diderot, rechoisie, y
+        // débouche juste à la case du nom)
+        if (BOUCHES_LIGNE1.some((b) => b && b.q === q && b.cote === sg && Math.abs(le0 - (b.a + (b.cq || 0))) < 1.5)) continue;
         const px = q.x + q.dx * le0 - q.dz * sg * MUR_QUAI, pz = q.z + q.dz * le0 + q.dx * sg * MUR_QUAI;
         const cases = [];                 // les cases de mur autour, et leurs coins
         for (let ix = Math.floor(px) - 4; ix <= Math.floor(px) + 4; ix++) {
