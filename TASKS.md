@@ -178,6 +178,12 @@ côtés) — ce dernier est neuf dans ce fichier : la branche ne touche ni
 `#minimap` ni `#edu-timer`, c'est donc de la production (minicarte à gauche
 v518 / v525 contre chrono de l'espace éducatif).
 
+Portail complet rejoué après l'intégration de la v532 (`cc81e55`) : treize
+suites vertes, quatre rouges, tous déjà déclarés — `degats.js` « percuter
+une voiture de la rue l'abîme AUSSI », `manhattan.js` le taxi tactile,
+`reseau.js` la portière droite (entrée, descente) et la voiture refaite
+pendant la marche, `monte.js` les rouges ci-dessus.
+
 - [ ] **La minicarte ouverte recouvre le chrono de l'espace éducatif en vol.**
   Boîtes mesurées : minicarte (8, 60, 120 × 120), chrono (125, 56, 179 × 24).
   Le chrono doit contourner la minicarte par `--minimap-w`, comme la file
