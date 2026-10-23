@@ -936,7 +936,7 @@ Trois règles.
   et `morceauxAvantClairieres` gardent les arbres du jour même ; la date se
   relit à la fusion (v309). L'empreinte des 490 morceaux se prouve bosquets
   désarmés.
-## Les feux de bord (v532) — ce qui brille sans éclairer partage la matière de la flamme
+## Les feux de bord (v533) — ce qui brille sans éclairer partage la matière de la flamme
 
 Revue d'écran, lignes 4, 7 et 8. Trois règles.
 

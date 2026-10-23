@@ -8563,7 +8563,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         return out;
       };
       const res = {};
-      // LA BOÎTE DU MODÈLE SEUL (v532), relevée à l'invocation, AVANT de monter :
+      // LA BOÎTE DU MODÈLE SEUL (v533), relevée à l'invocation, AVANT de monter :
       // monté, le véhicule porte l'enfant, et ce qui s'y accroche pendant la
       // séquence faisait passer le Concorde à ±13,5 au portail
       const boiteModele = (m, exclus = new Set()) => {
@@ -8624,7 +8624,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         res.flamme = { tuyeres: tuyeres.length, allumees: tuyeres.filter((f) => f.visible).length,
           cles: [...cles()].filter((k) => !avantFlamme.has(k)).map((k) => k.slice(0, 24)) };
         g.player.gaz = null;
-        // LES FEUX DE NAVIGATION (v532, revue d'écran ligne 8) : rouge au bout
+        // LES FEUX DE NAVIGATION (v533, revue d'écran ligne 8) : rouge au bout
         // de l'aile gauche (−x), vert au bout de la droite, un éclat blanc à la
         // queue qui clignote. Les bouts d'aile se remesurent ici, sur le
         // modèle sans ses feux ni ses flammes ; l'éclat se relève image par image.
@@ -8641,7 +8641,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       }
       await descendre();
       if (res.nav && !res.nav.err) { const nav = (am.animals.find((x) => x.def && x.def.key === 'concorde') || {}).mesh; res.nav.descendu = nav ? [nav.userData.feuxNav.rouge.visible, nav.userData.feuxNav.vert.visible, nav.userData.feuxNav.eclat.visible] : null; }
-      // LES PHARES (v532, revue d'écran ligne 8) : de nuit au volant, deux
+      // LES PHARES (v533, revue d'écran ligne 8) : de nuit au volant, deux
       // lueurs au nez de la voiture et leur pinceau ; éteints le jour et à la
       // descente ; et l'allumage ne compile rien (v363 : on lit les clés).
       // le compte des avions se clôt ici : la nuit qui suit allume les lucioles

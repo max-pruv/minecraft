@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v532 — Les phares, les feux de navigation, la manette et la pioche
+## v533 — Les phares, les feux de navigation, la manette et la pioche
 
 **Pourquoi.** La revue d'écran de la v506 a relevé trois défauts dans ce que
 l'enfant voit aux commandes. La nuit, la voiture roulait dans le noir, sans un

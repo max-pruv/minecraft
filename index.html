@@ -735,7 +735,7 @@
       position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
       background: linear-gradient(to top, rgba(88,176,76,0.85), rgba(255,215,94,0.85));
     }
-    /* LA MANETTE DIT CE QU'ELLE EST (v532). Revue d'écran, ligne 7 : « un
+    /* LA MANETTE DIT CE QU'ELLE EST (v533). Revue d'écran, ligne 7 : « un
        rectangle blanc vide, un rond tout en bas » — un enfant ne devine pas
        qu'il faut la pousser vers le haut. Un mot en haut, des chevrons dans la
        course. Enfants de la manette et `pointer-events: none` : le doigt touche
@@ -2204,7 +2204,7 @@
     body.hud-simple.construction { --bande-blocs: calc(72px + var(--safe-bottom)); }
     body.hud-simple.construction #construire-btn, body.hud-simple.construction #fly-btn,
     body.hud-simple.construction .fun-target { display: none !important; }
-    /* POSER, CASSER, SAUTER DANS UNE SEULE COLONNE (v532). Casser vivait à
+    /* POSER, CASSER, SAUTER DANS UNE SEULE COLONNE (v533). Casser vivait à
        76 px du bord, un cran plus haut : sur l'iPhone il sortait de la colonne
        (x 310 au lieu de 366, revue d'écran, ligne 4). Les trois ont le même x,
        du bas vers le haut. */
@@ -2212,11 +2212,11 @@
     body.hud-simple.construction #casser-btn { display: flex; right: 20px; bottom: calc(72px + var(--bande-blocs, 12px)); }
     body.hud-simple.construction #jump-btn { right: 20px; bottom: calc(128px + var(--bande-blocs, 12px)); }
     /* En vol, Sauter (monter) reste en haut et Descendre passe sous lui (v510),
-       dans la même colonne que Poser et Casser (v532). */
+       dans la même colonne que Poser et Casser (v533). */
     body.hud-simple.construction.en-vol #jump-btn { right: 20px; bottom: calc(184px + var(--bande-blocs, 12px)); }
     body.hud-simple.construction.en-vol #down-btn { right: 20px; bottom: calc(128px + var(--bande-blocs, 12px)); }
     body.hud-simple.tactile.construction #joy-repos { bottom: calc(40px + var(--bande-blocs, 12px)); }
-    /* L'OUTIL CHOISI GARDE LA PALETTE DES AUTRES BOUTONS (v532) : le même
+    /* L'OUTIL CHOISI GARDE LA PALETTE DES AUTRES BOUTONS (v533) : le même
        voile, l'icône blanche, et un ANNEAU corail autour. Le fond blanc d'avant
        le faisait passer pour un autre genre de bouton, et l'icône encre sur
        blanc se distinguait mal de Poser. */

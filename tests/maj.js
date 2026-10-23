@@ -1278,7 +1278,7 @@ function verifier(nom, ok, detail = '') {
         await att(400);
         const construction = releve();
         // POSER, CASSER, SAUTER DANS UNE COLONNE, ET L'OUTIL ACTIF DANS LA
-        // PALETTE DES AUTRES (v532, revue d'écran ligne 4) : les centres x, et
+        // PALETTE DES AUTRES (v533, revue d'écran ligne 4) : les centres x, et
         // la clarté du fond de Casser actif contre celle de Poser au repos.
         {
           const cx = (id) => { const b = document.getElementById(id); if (!b) return null; const r = b.getBoundingClientRect(); return r.width ? r.left + r.width / 2 : null; };
@@ -1477,7 +1477,7 @@ function verifier(nom, ok, detail = '') {
       P.pilote = { max: 95, kmh: 900 }; P.avionEtat = 'sol';
       window.__majBoutonsVehicule();
       const auSol = fly();
-      // LA MANETTE DIT CE QU'ELLE EST (v532, revue d'écran ligne 7) : un mot,
+      // LA MANETTE DIT CE QU'ELLE EST (v533, revue d'écran ligne 7) : un mot,
       // des chevrons dans la course, et le doigt tombe toujours sur la
       // manette elle-même, qui capture son pointeur (v262).
       const gb = document.getElementById('gaz-base'), gr = gb.getBoundingClientRect();

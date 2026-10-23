@@ -276,7 +276,7 @@ export function initFun(ctx) {
       // Les flammes s'éteignent avec le mode pilote : la monture quittée
       // n'est plus mise à jour, elle garderait sa dernière flamme (v264).
       for (const f of (quitte && quitte.mesh && quitte.mesh.userData.tuyeres) || []) f.visible = false;
-      // les feux de bord aussi (v532) : la monture quittée garderait ses phares
+      // les feux de bord aussi (v533) : la monture quittée garderait ses phares
       if (quitte && quitte.mesh) { eteindrePhares(quitte.mesh); eteindreFeuxNav(quitte.mesh); }
       // On rend la marche en descendant : sans cela l'enfant garderait la
       // physique de vol à pied. Même règle que le gabarit de la voiture, qui
@@ -1227,7 +1227,7 @@ export function initFun(ctx) {
         : etat === 'freinage' ? 0 : Math.min(1, v / max);
       const poussee = player.gaz != null ? player.gaz : assistee;
       moteurRegime(poussee);
-      // LES FEUX DE NAVIGATION (v532) : allumés aux commandes, l'éclat blanc
+      // LES FEUX DE NAVIGATION (v533) : allumés aux commandes, l'éclat blanc
       // de la queue clignote — un éclat bref, une fois par seconde.
       const nav = a.mesh.userData.feuxNav;
       if (nav) {
@@ -1249,7 +1249,7 @@ export function initFun(ctx) {
       for (const f of a.mesh.userData.tuyeres || []) f.visible = false;
       eteindreFeuxNav(a.mesh);
     }
-    // LES PHARES (v532) : au volant d'une voiture, dès que la nuit tombe.
+    // LES PHARES (v533) : au volant d'une voiture, dès que la nuit tombe.
     if (!player.pilote && a.def.moteur === 'voiture') allumerPhares(a.mesh, nuitDehors());
     // AU VOLANT, LE RÉGIME EST CE QUE LA VOITURE FAIT, pas ce qu'on demande :
     // moteur au ralenti à l'arrêt, qui monte avec l'allure. Le plafond vient

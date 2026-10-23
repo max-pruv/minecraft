@@ -119,9 +119,9 @@
   sous node (1,6 à 6,9 ms par morceau des deux côtés) — à relire sur l'iPhone
   (`?diag=1`, débit de maillage en vol au-dessus d'une forêt).
 
-## LES ROUGES DU PORTAIL DE LA v532 — tous déjà déclarés, ou intermittents mesurés des deux côtés
+## LES ROUGES DU PORTAIL DE LA v533 — tous déjà déclarés, ou intermittents mesurés des deux côtés
 
-La v532 (phares, feux de navigation, manette, pioche) a rendu au portail
+La v533 (phares, feux de navigation, manette, pioche) a rendu au portail
 complet treize suites vertes sur dix-sept. Les quatre rouges, un par un :
 
 | suite | témoin rouge | déjà là |
@@ -134,7 +134,7 @@ complet treize suites vertes sur dix-sept. Les quatre rouges, un par un :
 
 - [ ] **« Atterrissage vers <ville> » est une intermittence de portail.**
   Rejoué SEUL trois fois sur `origin/main` v520 (`git worktree`) et trois fois
-  sur la branche : 6 verts sur 6. La v532 ne touche ni l'approche ni le
+  sur la branche : 6 verts sur 6. La v533 ne touche ni l'approche ni le
   bandeau ; elle allume des feux sur le maillage de l'avion. À rejouer en
   distribution (v269) le jour où il revient, avec la cadence dans le message.
 - `reseau.js`, rejouée SEULE : verte sur la branche ; sur `origin/main` v506 le

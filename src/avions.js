@@ -280,7 +280,7 @@ function tuyere(a, t) {
 // à faux pour qu'elle reste vive sous la correspondance tonale — et AUCUNE
 // lumière ponctuelle : quatre lampes pour tout le jeu (v248), une de plus
 // recompilerait tous les programmes.
-// LA MATIÈRE DE CE QUI BRILLE SANS ÉCLAIRER (v532) : la flamme, les feux de
+// LA MATIÈRE DE CE QUI BRILLE SANS ÉCLAIRER (v533) : la flamme, les feux de
 // navigation, les phares. Une seule fonction, donc les mêmes réglages, donc
 // la MÊME clé de programme (v246) — la couleur et l'opacité sont des
 // uniformes. La flamme la chauffe à l'accueil (v491) : un feu de bord qui
@@ -293,7 +293,7 @@ export function matiereAdditive(couleur, opacite) {
   });
 }
 
-// LES FEUX DE NAVIGATION (v532). Revue d'écran, ligne 8 : en vol de nuit,
+// LES FEUX DE NAVIGATION (v533). Revue d'écran, ligne 8 : en vol de nuit,
 // l'avion n'avait aucun feu. Rouge en bout d'aile GAUCHE (−x, le nez en −z),
 // vert en bout d'aile droite, un éclat blanc à la queue. On ne les écrit pas
 // à côté des ailes : on les MESURE sur le modèle fini (le sommet le plus à
