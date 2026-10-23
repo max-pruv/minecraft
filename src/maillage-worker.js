@@ -40,6 +40,7 @@ self.onmessage = (e) => {
     // main laisserait le worker dessiner un monument qu'un enfant a creusé.
     monde.hd = m.hd || 0;
     monde.arbres = m.arbres || 0;   // les vrais arbres (v499), à portée du détail
+    monde.mobilierCasse = new Set(m.mobilierCasse || []);   // le mobilier HD écrasé (v536)
     monde.sansSolContinu = !!m.sansSolContinu;
     monde.installerEdits(m.edits, m.temps, m.ctx || 'local');
     return;
@@ -58,6 +59,9 @@ self.onmessage = (e) => {
     }
     return;
   }
+  // le mobilier de la couche HD qu'une voiture a écrasé (v536) : le prochain
+  // maillage de son morceau ne le dessine pas
+  if (m.type === 'casse') { monde.mobilierCasse = new Set(m.colonnes || []); return; }
   if (m.type === 'mailler') {
     const debutLot = performance.now();
     let inactif = finDuLot ? debutLot - finDuLot : 0;

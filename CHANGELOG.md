@@ -20,6 +20,55 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v536 — Le mobilier de rue se casse
+
+**Pourquoi.** Max : « quand tu roules avec les voitures, tout le mobilier
+urbain, poteau, feu rouge, il est hyper dur. Comme dans GTA, il devrait
+pouvoir tomber, s'écraser pour ne pas bloquer la voiture. C'est hyper dur de
+conduire parce que tout est méga étroit. » Mesuré avant d'écrire
+(`tests/sonde-mobilier-route.cjs`, la voiture de l'enfant roulée sous node
+sur les vrais circuits, décalée de 0 à 2 blocs vers le trottoir) : ce sur
+quoi elle bute, ce sont des réverbères, des feux et des jardinières — rien
+d'autre. Dans les villes engendrées, zéro pièce au milieu de la voie, mais
+**60 à 100 par kilomètre dès qu'on s'écarte d'un bloc** (Rome 85, Zurich 97,
+Berlin 84), soit une butée toutes les secondes à 15 b/s. À Londres, 35 par
+kilomètre au milieu même de la voie.
+
+**Et la largeur.** La chaussée des villes engendrées fait 6 à 7 blocs (médiane
+6,5) pour une voiture de 2,26 : 2,1 blocs de marge de chaque côté, et un
+trottoir de 1,5 bloc où le mobilier est à la bordure. Paris, 13 (médiane) ;
+Londres, 6,5, et 18 % sous 4,5 blocs. Les rues ne sont pas élargies ici —
+cela change le sol sous ce que les enfants ont bâti — : c'est une proposition
+à Max, chiffres dans la PR et dans `TASKS.md`.
+
+**Ce que ça change.**
+- **Lancée à plus de cinq blocs par seconde, la voiture renverse** un
+  réverbère ou un feu (il se couche dans le sens de la marche, au pied du
+  trottoir) et **écrase** une jardinière ; elle continue, en perdant 18 % de
+  sa vitesse. Ni rebond ni dégât : rien n'est publié dans `player.choc`.
+- À l'arrêt ou au pas, contre un poteau, rien ne tombe : il reste un obstacle.
+- À Paris, une terrasse, un banc ou une colonne Morris de la couche HD
+  s'écrasent aussi : son morceau se remaille sans eux, dans le worker.
+- Ce qui est tombé reste au sol au moins quarante secondes, puis se relève
+  quand l'enfant est à plus de 48 blocs. Un feu tombé s'éteint, une lanterne
+  tombée n'éclaire plus ; la circulation, elle, garde la règle du carrefour
+  (la rue est la même sur deux tablettes, v305).
+- Rien n'est écrit dans le monde ni dans le journal de l'enfant, et ce qu'un
+  enfant a posé lui-même ne se casse pas.
+
+**Ce qui le prouve.** Trois témoins dans `monte.js` (un réverbère de la ville
+à l'arrêt contre : obstacle ; lancée à 11 b/s : il tombe, haut du fût à 0,05,
+la voiture passe quatre blocs au-delà — sur `origin/main` elle s'arrête 2,3
+blocs avant ; zéro clé de programme neuve), le témoin de la v252 qui garde le
+réverbère posé par un enfant comme obstacle, et trois témoins purs dans
+`plafond.js` (les familles, le sens de la chute, le relèvement hors de vue),
+et celui de la terrasse de café (lancée, la voiture l'écrase ; au pas, elle
+s'arrête devant). Portail sur le code fusionné à la v531 : les rouges de
+`monte.js`, `degats.js`, `maj.js` et `reseau.js` sont ceux de `origin/main`,
+rejoués seuls des deux côtés (`TASKS.md`). Revue d'écran
+(`--etats=mobilier-tombe,volant-arret`, iPhone et iPad, jour et nuit) dans
+`docs/revue-ecran/v536/` : le réverbère couché au pied du trottoir se lit
+au premier regard.
 ## v534 — Un choc a de l'élan
 
 **Pourquoi.** Max : « Quand on fonce dans une voiture avec une autre voiture,

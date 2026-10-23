@@ -821,6 +821,46 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le mobilier se casse (v536) — un obstacle de rue est un geste, pas un mur
+
+Max : « tout le mobilier urbain, poteau, feu rouge, est hyper dur. Comme dans
+GTA, il devrait tomber pour ne pas bloquer la voiture. » `src/mobiliercasse.js`
+(pur) porte la règle et le registre ; `main.js` (`mobilierDevant`) l'applique.
+Cinq règles.
+
+- **ON MESURE SUR QUOI L'ON BUTE AVANT DE CHOISIR CE QUI CASSE.**
+  `sonde-mobilier-route.cjs` roule la voiture de l'enfant sur les vrais
+  circuits, décalée vers le trottoir : ce sont des blocs `RUE` (réverbère, feu,
+  jardinière), 60 à 100 par kilomètre à un bloc de la voie dans les villes
+  engendrées. Ce sont eux qui cassent (`faconDeCasser`) ; un meuble, un arbre,
+  ce qu'un ENFANT a posé (`world.edits`) restent des obstacles — décision à
+  confirmer par Max.
+- **ON NE CASSE QUE SUR LE PAS QU'ON FAIT, ET ASSEZ VITE.** `obstacleVehicule`
+  est aussi appelé loin devant (le regard du freinage piéton, v358) : la casse
+  n'arme que pour un pas de moins d'un bloc et demi, à `VITESSE_CASSE` (5 b/s)
+  ou plus. Au pas, un poteau reste un obstacle. La voiture perd `PERTE_CASSE`
+  de sa vitesse, sans `player.choc` : le contrat des dégâts (v343) ne voit que
+  les chocs que la physique publie — pas de double choc.
+- **RIEN N'EST ÉCRIT DANS LE MONDE, ET L'OBJET TOMBÉ EST LE MÊME MAILLAGE.** Le
+  bloc reste dans le morceau ; son maillage (`piecesParCle`) se couche autour de
+  son pied, dans le sens de la marche (`poseDeChute`), en temps réel — aucune
+  géométrie, aucun matériau, aucune clé de programme neuve (le témoin lit les
+  CLÉS après le vrai geste). Un morceau remaillé recouche ses pièces tombées.
+  Le cap d'origine et le feu vivent dans une `WeakMap`, jamais dans `userData`
+  (que `clone` recopie par JSON).
+- **UN FEU TOMBÉ S'ÉTEINT, LE CARREFOUR GARDE SA RÈGLE.** La casse est LOCALE à
+  la tablette ; la circulation est une fonction de l'horloge partagée (v305).
+  Si un feu tombé libérait le carrefour, deux amis n'auraient plus la même rue.
+  Une lanterne tombée n'a plus de lampe (`eclairerLaRue`).
+- **LE MOBILIER DE LA COUCHE HD S'ÉCRASE PAR UN REMAILLAGE.** Terrasse, banc,
+  colonne Morris n'ont pas de maillage à eux : la colonne écrasée entre dans
+  `world.mobilierCasse`, part au worker (`type: 'casse'`, et avec `edits` à la
+  resynchronisation), et le morceau se remaille sans elle. Ce qui est tombé se
+  relève après `DUREE_AU_SOL_MS`, hors de la vue de l'enfant (`LOIN_RELEVE`).
+  Manhattan (mobilier instancié par lots) et le réseau (la casse n'est pas
+  partagée) restent des dettes déclarées.
+
+
 ## Un choc a de l'élan (v534) — la vitesse d'après un choc est un vecteur que le joystick ne touche pas
 
 Max : « quand on fonce dans une voiture avec une autre voiture, la voiture

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 536,
+    titre: 'Les poteaux tombent',
+    puces: [
+      'La voiture renverse réverbères et feux',
+      'Les jardinières s\'écrasent',
+      'Tout se relève plus tard',
+    ],
+  },
+  {
     v: 534,
     titre: 'Un choc a de l\'élan',
     puces: [

@@ -1,5 +1,50 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DE LA v536 (mobilier cassable, fusionné à la v531) : aucun
+  rouge de la livraison.** Le portail n'a pas fini sous la limite de deux
+  heures (coupé dans `reseau.js`). Rejoués SEULS des deux côtés : `monte.js`
+  branche 258 / 5 (fabrication par tranches, voisines d'un convoi, feu « au
+  lieu de piler », rue vide, « Atterrissage vers ») contre `origin/main`
+  253 / 7 (les mêmes, plus mur de face et `minimap×edu-timer` aux deux
+  tailles) — au portail, la branche rendait aussi « chaque feuille vole bas
+  au-dessus de SA colonne » (v531, `ecartMax` 6,72 ; vert seul) ;
+  `degats.js` branche 46 / 2, `origin/main` 47 / 1 : « les feux de détresse
+  se posent SUR la carrosserie » rouge des deux côtés, déclaré entre-temps par la v533
+  (`bugatti-bolide.glb`, deux feux à 0,45 de la tôle), et « percuter une
+  voiture de la rue » rouge sur `ecart` 18,3 pour 20 (déjà déclaré : la
+  voiture de la rue repart pendant les 0,2 s de la pose, aucun mobilier sur
+  la dalle) ; `maj.js` trois passages de chaque côté, « en construction, on
+  marche au joystick » rouge une fois sur trois sur la branche (0,8 bloc),
+  zéro sur `origin/main` — le crochet du piéton rend le même verdict
+  (vrai/faux) qu'avant, à surveiller ; le loader qui compte les fichiers
+  rouge des deux côtés (déclaré) ; `reseau.js` branche 89 / 1 (la voiture
+  de la rue chez l'ami, déclaré). Second portail, refusionné à la v534 (et
+  renommé v536), JOUÉ JUSQU'AU BOUT (131 min) : `degats.js` 1 (feux de
+  détresse, déclaré par la v533), `maj.js` 1 (le loader qui compte les
+  fichiers, déclaré), `monte.js` 6 (passant de Rome, feu « au lieu de
+  piler », rue vide, `minimap×edu-timer` aux deux tailles, « Atterrissage
+  vers ») — tous rouges sur `origin/main` rejouée seule ci-dessus ; les
+  témoins du mobilier et ceux de la voiture garée (v534) verts.
+
+- [ ] **Le mobilier se casse (v536) : ce qui reste, et deux décisions pour
+  Max.** (1) LES RUES SONT ÉTROITES, ET C'EST MESURÉ
+  (`tests/sonde-mobilier-route.cjs`, le long des circuits) : chaussée médiane
+  6,5 blocs dans les villes engendrées (p10 6), 13 à Paris, 6,5 à Londres
+  (18 % sous 4,5) ; trottoir à droite 1,5 bloc (médiane), mobilier à la
+  bordure. Une voiture de 2,26 centrée sur sa voie garde 2,1 blocs de marge ;
+  à un bloc d'écart vers le trottoir, 60 à 100 pièces par kilomètre. Élargir
+  (pas de trame, chaussée, recul du mobilier) change le sol sous ce que les
+  enfants ont bâti : décision de Max, non faite. Piste moins chère, à mesurer :
+  reculer le seul mobilier de bordure d'un bloc dans les villes engendrées
+  (`mobilierVillesMonde`), ce qui ne touche que des blocs de décor. (2) Un
+  réverbère, un feu ou une jardinière qu'un ENFANT a posés ne se cassent pas
+  (restent des obstacles) : à confirmer par Max. Dettes : Manhattan garde ses
+  obstacles (mobilier instancié par lots, rien à coucher seul) ; la casse
+  n'est pas partagée en ligne (l'ami voit le poteau debout, et sa voiture y
+  bute chez lui) ; un fût tombé vers la chaussée peut y dépasser, et les
+  voitures de la rue passent au travers ; les arbres de rue (`LOG`) restent
+  durs.
+
 - [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
   au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
   `gareeContre` (main.js) écarte les fiches `pilote`, parce qu'une boîte de
