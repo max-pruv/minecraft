@@ -132,6 +132,21 @@ complet treize suites vertes sur dix-sept. Les quatre rouges, un par un :
 | `monte.js` | feu, rue vide, 60 b/s dans Paris, worker à sec (× 1,48), au-dessus d'une ville | déclarés (portails v516, v522) |
 | `monte.js` | ✈️ « Atterrissage vers <ville> » | **neuf ici** — voir ci-dessous |
 
+Et `monte.js` rejouée SEULE des deux côtés (23 octobre) : 6 rouges sur la
+branche, **10 sur `origin/main` v531** (`abad021`, `git worktree`). Les cinq
+rouges de la branche autres que l'atterrissage sont tous dans les dix :
+le feu qui pile, la rue vide, le mur pris de face (rebond −1,9 des deux
+côtés), et **la minicarte qui recouvre le chrono éducatif en vol**
+(`minimap×edu-timer`, 430 × 932 et 420 × 760, mêmes boîtes au pixel des deux
+côtés) — ce dernier est neuf dans ce fichier : la branche ne touche ni
+`#minimap` ni `#edu-timer`, c'est donc de la production (minicarte à gauche
+v518 / v525 contre chrono de l'espace éducatif).
+
+- [ ] **La minicarte ouverte recouvre le chrono de l'espace éducatif en vol.**
+  Boîtes mesurées : minicarte (8, 60, 120 × 120), chrono (125, 56, 179 × 24).
+  Le chrono doit contourner la minicarte par `--minimap-w`, comme la file
+  centrale (v445, v518).
+
 - [ ] **« Atterrissage vers <ville> » est une intermittence de portail.**
   Rejoué SEUL trois fois sur `origin/main` v520 (`git worktree`) et trois fois
   sur la branche : 6 verts sur 6. La v533 ne touche ni l'approche ni le
