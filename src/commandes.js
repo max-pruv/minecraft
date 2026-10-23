@@ -46,7 +46,7 @@ export const ICONES = {
   poser: T('<path d="M12 4.5v15M4.5 12h15"/>', 3.2),
   // CASSER : une pioche — le geste qu'un enfant connaît des jeux de blocs.
   // Un trait et un arc se lisaient « télécharger » (revue d'écran, ligne 4,
-  // v529) : le fer est désormais PLEIN, un croissant aux deux pointes en
+  // v532) : le fer est désormais PLEIN, un croissant aux deux pointes en
   // travers du manche, et le manche finit sur un pommeau. Rien d'une flèche.
   casser: T('<path d="M4.2 19.8 15.4 8.6"/><circle cx="4.2" cy="19.8" r="1.6" fill="currentColor" stroke="none"/>'
     + '<path fill="currentColor" stroke="none" d="M9.2 2.4Q20.6 1.2 21.6 14.8Q16.6 7.4 9.2 2.4z"/>', 2.8),

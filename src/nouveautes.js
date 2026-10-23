@@ -6,13 +6,41 @@
 
 export const NOUVEAUTES = [
   {
-    v: 529,
+    v: 532,
     titre: 'Phares, feux et manette',
     puces: [
       'La voiture allume ses phares la nuit',
       'L\'avion a ses feux rouge et vert',
       'La manette des gaz dit « Gaz »',
       'Une vraie pioche pour casser',
+    ],
+  },
+  {
+    v: 531,
+    titre: 'De vraies feuilles d\'automne',
+    puces: [
+      'Plus de carrés orange dans le ciel',
+      'Les feuilles tombent en tournant',
+      'Elles se posent sur le sol',
+    ],
+  },
+  {
+    v: 530,
+    titre: 'Des pistes larges',
+    puces: [
+      'Les pistes deux fois plus larges',
+      "L'avion roule tout seul jusqu'à la piste",
+      'Plus de hangar en travers du chemin',
+    ],
+  },
+  {
+    v: 529,
+    titre: 'De vraies stations de métro',
+    puces: [
+      'On descend et on remonte debout',
+      'Carreaux blancs à Paris, caissons à Washington',
+      'Le nom de la station sur le quai',
+      'Des portillons, des bancs, des affiches',
     ],
   },
   {

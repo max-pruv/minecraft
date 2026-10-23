@@ -397,7 +397,17 @@ const MM_ECART = 2.2;
 // place des Vosges sur sa chaussée (`traverse`). `reglageJardins.voies` à faux
 // et le Moulin Rouge neuf retiré (le champ `tour`), la branche rend fe1e5a37…,
 // la constante de la v504, au bit près.
-const EMPREINTE_MORCEAUX_V357 = '713d47041321fa80d68a54f7e1e3c501c108f6d548f291ef3ee1a218b2cb49d1';
+// v529 : les stations de métro de Paris et de Washington (deux des neuf lieux)
+// prennent leur voûte, leur décor et leurs couloirs neufs. Désarmées
+// (`METRO_PARIS.stations`, ville.js ; `METRO_DC.stations`, washington.js), la
+// branche rend 713d4704…, la constante de la v528, au bit près.
+// v530 : les pistes s'élargissent à l'envergure, et le prolongement de la
+// piste d'Heathrow passe dans les morceaux de Londres, un des neuf lieux.
+// `aeroport.js` d'origin/main remis dans une copie de src, la branche rend
+// 44e54367…, la constante de la v529, au bit près ; et les 252 colonnes qui
+// diffèrent dans les morceaux de Londres sont toutes dans un aérodrome ou la
+// boîte d'un tronçon de piste — aucune ailleurs, aucun autre lieu touché.
+const EMPREINTE_MORCEAUX_V357 = '4cf5d456835bbfc66e0ac1923cd43b2d961e52af65f84d8f2d0fd35ac9c06bbf';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -2987,6 +2997,35 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('les rames de la ligne A marquent leurs vingt-quatre arrêts au droit des quais',
       !!arrets && arrets.length === 24 && arrets.every((d) => d < MM_ECART + 0.2),
       arrets ? `écart au quai ${Math.max(...arrets).toFixed(2)} au plus, ${arrets.length} arrêts` : 'aucune ligne A');
+  }
+
+  // ON DESCEND DANS LE MÉTRO, ET L'ON EN REMONTE, DEBOUT (v529). Max : « on ne
+  // peut même pas marcher dedans, le personnage ne passe pas en hauteur ».
+  // `sonde-stations.cjs` (lue telle quelle) cherche le chemin de chaque bouche
+  // à son quai, dans les trente-cinq stations (Paris et Washington), puis y
+  // fait marcher le VRAI joueur de player.js — aller et retour, en sautant
+  // chaque marche qui monte. Rouge sur la v494 : 16 quais sur 35 (Hôtel de
+  // Ville sous Notre-Dame, et 18 de Washington), et 21 à 43 cases d'escalier
+  // sous trois blocs d'air par station à Paris.
+  {
+    const { mesurer } = (await import('./sonde-stations.cjs')).default;
+    const t0 = Date.now();
+    const r = await mesurer(require('path').resolve(__dirname, '..'));
+    const st = r.stations;
+    const rates = st.filter((x) => !(x.joueur && x.joueur.arrive && x.retour && x.retour.arrive));
+    verifier('de la rue au quai et du quai à la rue, le vrai joueur passe dans les trente-cinq stations',
+      st.length === 35 && rates.length === 0,
+      `${st.length - rates.length}/${st.length} stations ; ratées : ${rates.map((x) => `${x.ville} ${x.nom}${x.arrive ? (x.joueur && x.joueur.arrive ? ' (remontée ' + JSON.stringify(x.retour.bute) + ')' : ' (descente ' + JSON.stringify(x.joueur.bute) + ')') : ' (pas de chemin)'}`).join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
+    const bas = st.filter((x) => x.arrive && (x.hautMin < 3 || x.sous4 > 8 || x.sautsBas > 0 || x.sautsRetour > 2));
+    verifier('et la tête passe : jamais moins de trois blocs d\'air, quatre presque partout, aucun élan qui cogne en descendant',
+      st.length === 35 && bas.length === 0 && rates.length === 0,
+      `${bas.map((x) => `${x.nom} : plafond ${x.hautMin}, ${x.sous4} cases sous 4, élans cognés ${x.sautsBas}/${x.sautsRetour}`).join(' ; ') || 'partout'} (max cases sous 4 : ${Math.max(...st.filter((x) => x.arrive).map((x) => x.sous4))})`);
+    verifier('le passage des rames reste libre sur les deux réseaux',
+      r.lus > 10000 && r.gabarit === 0, `${r.gabarit} pleins sur ${r.lus} points`);
+    const n = r.noms;
+    verifier('chaque station a son nom sur le quai, et aucune plaque n\'entre dans un mur ni ne flotte',
+      n.absents.length === 0 && n.stations === 36 && n.plaques >= 4 * 36 && n.dans === 0 && n.flottants === 0,
+      `${n.stations}/36 stations nommées, ${n.plaques} plaques, ${n.dans} dans un bloc, ${n.flottants} sans appui${n.absents.length ? ' ; sans nom : ' + n.absents.slice(0, 6).join(', ') : ''}`);
   }
 
   // UNE BAIE SE SOUDE (v467). La couche HD de Paris pesait jusqu'à onze
