@@ -4109,6 +4109,33 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       verifier('le ballast n\'enterre pas les traverses : la surface suit la voie au centre de chaque colonne',
         tNeuf.lus > 3000 && tNeuf.n <= tNeuf.lus * 0.002 && tAvant && tAvant.n > tAvant.lus * 0.05,
         `${tNeuf.n} point(s) de traverse sous la surface sur ${tNeuf.lus} · cote lue au coin : ${tAvant ? `${tAvant.n}/${tAvant.lus}` : 'absente (code d\'avant la v532)'}`);
+
+      // ET LE SOL CONTINU LIT LE BLOC QUE LE GÉNÉRATEUR A ÉCRIT (v532). La
+      // surface de la voie se lit au centre de la colonne, son ballast s'écrit
+      // au coin : sur une pente d'un tiers, `floor(cote) − 1` tombait un bloc
+      // au-dessus du ballast, dans l'air, et le mailleur jetait (« reading
+      // 'tiles' ») — sur le fil principal, la boucle de jeu s'arrêtait près
+      // d'une voie (le portail l'a dit : `monte.js` mort après le témoin du
+      // train). On maille les morceaux le long de toutes les voies.
+      {
+        const { buildChunkTampons } = await import('../src/mesher.js');
+        const w = new World(), vus = new Set();
+        let morceaux = 0, erreurs = 0; const ex = [];
+        const t1 = performance.now();
+        for (const s of T.segmentsDeTrain()) {
+          const L = s.longueur, ux = (s.x1 - s.x0) / L, uz = (s.z1 - s.z0) / L;
+          for (let k = 0; k < L; k += 12) {
+            const cx = Math.floor((s.x0 + ux * k) / 16), cz = Math.floor((s.z0 + uz * k) / 16);
+            if (vus.has(cx + ',' + cz)) continue;
+            vus.add(cx + ',' + cz); morceaux++;
+            try { buildChunkTampons(w, cx, cz); } catch (e) { erreurs++; if (ex.length < 3) ex.push(`${s.de}–${s.vers} (${cx}, ${cz}) : ${e.message}`); }
+          }
+          if (vus.size > 900) break;
+        }
+        verifier('le long des voies, chaque morceau se maille : le sol continu lit le ballast là où il est écrit',
+          morceaux > 300 && erreurs === 0,
+          `${morceaux} morceau(x) maillé(s), ${erreurs} erreur(s)${ex.length ? ' — ' + ex.join(' · ') : ''} (${((performance.now() - t1) / 1000).toFixed(1)} s)`);
+      }
     }
   }
 

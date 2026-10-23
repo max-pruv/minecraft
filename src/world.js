@@ -3485,7 +3485,7 @@ export class World {
   // sol reste le sol.
   coteHorizon(x, z) {
     const r = this.corridorEn(x, z);
-    if (r && !r.ouvrage) return Math.floor(r.cote) - 1;
+    if (r && !r.ouvrage) return r.blocVoxel ?? Math.floor(r.cote) - 1;
     return this.terrainHeight(x, z);
   }
 
