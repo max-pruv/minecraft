@@ -304,7 +304,7 @@ async function panneau(p) {
         const ancien = { palier: 'bas', raison: '2 plantages de suite', surete: true, le: 1, sousChoix: 'haut' };
         const rAncien = PAL.palierRetenu({ choix: 'haut', mesure: ancien });
         const rAuto = PAL.palierRetenu({ choix: 'auto', mesure: J.suretePalier(2, null, 'moyen') });
-        // ET LA SÛRETÉ GARDE LE PAYSAGE LOINTAIN DE L'ÉTENDUE CHOISIE (v519). Max :
+        // ET LA SÛRETÉ GARDE LE PAYSAGE LOINTAIN DE L'ÉTENDUE CHOISIE (v532). Max :
       // « on ne voit pas du tout quatre fois plus loin » — « Loin » choisi, le
       // jeu en « Normal » par sûreté, donc sans couronne. Les morceaux restent
       // ceux du cran (rr 12, HD 3) ; la portée, elle, est celle de « Loin ».
@@ -502,7 +502,7 @@ async function panneau(p) {
         vu.palier === 'moyen' && vu.source === 'sûreté' && vu.etendue === 'haut'
           && !!(vu.aide && vu.aide.includes('Normal') && vu.aide.includes('réessayer')),
         JSON.stringify(vu));
-      // v519 : et la SCÈNE de cette page porte le paysage de « Loin » — les deux
+      // v532 : et la SCÈNE de cette page porte le paysage de « Loin » — les deux
       // couronnes nommées, le brouillard et le plan lointain reculés. C'est
       // l'état exact de l'iPhone de Max (journal_appareil, v509 à v512).
       const scene = await tab.evaluate(() => {

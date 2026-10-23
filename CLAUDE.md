@@ -821,6 +821,62 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les stations de métro (v529) — on juge une station avec le vrai joueur, à l'aller et au retour
+
+Max : « on ne peut même pas marcher dedans ». Sept règles.
+
+- **UNE SONDE DE MARCHE FAIT MARCHER `player.js`, DANS LES DEUX SENS.** La
+  sonde de la v473 marchait sur une grille et disait « 16 sur 16 » ; elle ne
+  voyait pas Washington (2 quais sur 20). `sonde-stations.cjs` cherche le
+  chemin case par case, puis le vrai joueur le suit, aller ET retour (monter
+  une marche, c'est sauter : 1,42 bloc, et la tête cogne sous trois blocs
+  d'air — il passe encore, de 0,2 bloc ; sous deux, plus du tout). La marge
+  voulue est quatre blocs ; la sonde compte les cases où on ne l'a pas. Et elle
+  ne descend que dans SA bouche et SA station : une bouche murée qu'on
+  contourne par l'escalier d'à côté n'est pas une bouche (c'est ce qui cachait
+  Hôtel de Ville).
+- **UNE TRÉMIE SE MESURE CONTRE LES REPÈRES, PUIS LES BOUCHES SE RECHOISISSENT
+  EN GARDANT CE QUI TENAIT.** Celle d'Hôtel de Ville (v473) débouchait dans le
+  parvis de Notre-Dame : les monuments se posent après le creusement. Le choix
+  (`choisirBouches`) garde le choix de la v473 tant qu'il est valide et ne
+  libère que le voisin qui gêne : deux bouches bougent sur quinze.
+- **UN ESCALIER DE QUAI CENTRAL SE POSE AU BOUT DU QUAI, LOIN DES VOIES.**
+  Washington a un quai central : une bouche de côté arrivait au-dessus de la
+  fosse, de l'autre côté des rails. On monte au bout du quai, par une
+  passerelle à la mezzanine ; le bout et la marche de départ se choisissent
+  contre les points de voie (`genes`) — dans une station en virage, la voie
+  croise les bouts du quai, et le gabarit, creusé en dernier, emportait les
+  marches. Les pylônes du nom se choisissent de même (`q.pylones`).
+- **CE QU'UNE RÈGLE DIT CREUSER « DANS L'EMPRISE » SE CREUSE DANS L'EMPRISE.**
+  La v485 écrivait `EMPRISE_METRO_DC` et `world.js` s'arrêtait à la zone : la
+  bouche de Pentagon y passait et finissait dans la terre. Dans la marge,
+  jamais creusée, sous ce qu'un enfant a bâti avant `DATE_STATIONS` on ne
+  creuse qu'à trois blocs et plus sous le sol.
+- **UN DÉCOR D'UN SEGMENT SE POSE DANS L'ESPACE D'UN AUTRE.** `apres` passe
+  après les vides de TOUS les segments d'une colonne : la lampe jaune du
+  tunnel voisin flottait au-dessus des voies de la Bastille. Un mobilier de
+  tunnel cède à une station (`dansStation1`). Toute pièce `apres` neuve se
+  demande dans quels segments voisins elle peut tomber.
+- **UN NOM EST UN PLAN DEVANT UNE CASE, PLACÉ PAR UNE RÈGLE PURE ET RELU CONTRE
+  LE MONDE.** `plaquesParis` (ville.js) et `plaquesDC` (washington.js) donnent
+  la place, `stations.js` dessine (un maillage, un canevas par station, à
+  70 blocs ; la chauffe du programme pendant l'accueil). Sur une trame en biais
+  le mur est un escalier de cases : le plan se pose devant la plus avancée sous
+  lui, jamais dans une autre ; et un mur que le tunnel voisin ou la station
+  voisine perce (Metro Center et McPherson Square sont à dix blocs) ne porte
+  pas de plaque. La sonde relit chaque plaque : aucune dans un bloc, aucune
+  sans appui.
+
+- **UN CHOIX CALCULÉ AU CHARGEMENT D'UN MODULE SE MESURE EN TEMPS DE
+  CHARGEMENT.** Le choix des escaliers de Washington (`genes`, `parRame`)
+  parcourait tous les points de voie pour chaque échantillon, à l'import de
+  `washington.js` : 17,3 s au lieu de 0,7, sur le fil principal ET dans le
+  worker. Aucun témoin de station ne le voyait ; ce sont `reglages.js` et
+  `manhattan.js` qui ont rougi, leur seconde tablette relancée n'ayant pas
+  encore de `__game`. Grille de cases (`voieProche`), même résultat au bit
+  près. Quand un module gagne un calcul à son chargement, on chronomètre
+  `import('./src/world.js')` des deux côtés.
+
 ## Montmartre et les jardins (v512) — une cote se lit sous la voiture, et une voie traverse un jardin déclaré
 
 Trois règles.
@@ -1185,7 +1241,7 @@ Max : « le mode Loin n'est pas assez loin ». Trois règles.
   comme la couronne deux sous la fine. `?loin=2560` rend la v504 au sommet
   près.
 
-## La sûreté garde le lointain (v525) — un disjoncteur ne retire que ce qui coûte ce qu'il protège
+## La sûreté garde le lointain (v532) — un disjoncteur ne retire que ce qui coûte ce qu'il protège
 
 Max : « on ne voit pas du tout quatre fois plus loin ». Deux règles.
 
@@ -1290,6 +1346,39 @@ sa couleur, lancer de rayon (`layers.enableAll()`) à travers chacun —
 `sonde` dans le brouillon de la v484, une exécution. Un effet d'ambiance se
 pose sur le MONDE (le sol, l'eau), jamais sur l'enfant : `BANDE_SAISON`
 (main.js), basse pour feuilles, pétales et lucioles, haute pour la neige.
+
+## De vraies feuilles d'automne (v531) — une ambiance vit sur SA colonne, et elle a une forme
+
+Max, capture d'iPhone au volant : des carrés orange-jaune dans le ciel. C'était
+encore le nuage de la v484 : un `Points` de carrés sans texture, de −1 à +9
+blocs au-dessus du sol SOUS L'ENFANT. Mesuré au banc sur `origin/main` : 16
+particules du champ sur 19 au-dessus de l'œil, et vu d'une caméra de voiture
+(trois blocs du sol, cap à l'horizon) 126 à 1 228 pixels de l'effet sur fond de
+ciel. Trois règles.
+
+- **« À HAUTEUR D'ARBRE » N'EST PAS « SOUS L'HORIZON ».** Une bande au-dessus du
+  sol de l'enfant se projette au-dessus de l'horizon dès qu'elle dépasse la
+  caméra, et une caméra de poursuite est à trois blocs. Chaque particule vit
+  sur SA colonne (`saisons.js`) : elle naît à moins de 3,4 blocs de ce qui la
+  porte, tombe en planant, relit ce qui la porte quand elle change de colonne
+  (sinon, quittant la cime d'un arbre, elle se pose en l'air), traverse le
+  feuillage, se pose (sol, toit, eau), s'efface. Le sol se lit sur un morceau
+  déjà engendré (`morceauxPrets`), jamais par un `getBlock` qui fabrique (v472).
+  La neige seule tombe du ciel.
+- **UNE AMBIANCE A UNE SILHOUETTE DESSINÉE ICI.** Feuille à nervures, pétale
+  échancré, flocon à six branches, luciole à halo : un canvas au chargement,
+  sans réseau (invariant 4). Un `InstancedMesh` de quads, la teinte par
+  instance (`setColorAt` dès la naissance), Lambert (les feuilles s'éteignent la
+  nuit ; la luciole est additive et hors correspondance tonale), aucune lampe.
+  `chauffer` compile l'essaim pendant l'accueil (chaîne `pas` de main.js) — et
+  un `scene.add` dans une scène de chauffe RETIRE l'objet de son parent : on
+  l'y remet, sinon l'effet disparaît du jeu (vu au premier jet).
+- **LE TÉMOIN LIT LES PIXELS SUR FOND DE CIEL, ET LA FORME PAR SA CARTE.**
+  `sonde-saison-ciel.cjs` (lue par `monte.js`) trouve l'effet par sa forme
+  (l'ancien `Points` de taille 0,24 ou l'essaim `saison-*`) : silhouette (plus
+  de 30 % de texels transparents), écart de chaque particule à ce qui la porte
+  (≤ 6 : une feuille qui tombe d'un talus garde sa hauteur), pixels ajoutés là où sans lui on voit le ciel (≤ 20). Trois rouges sur
+  `origin/main`, verts ici. `?saison=` force la saison.
 
 ## Les voitures de la rue se rendent (v495) — un prototype se marque partagé là où il naît
 
@@ -10803,6 +10892,42 @@ Les dix-neuf terminaux étaient praticables et vides. Trois règles.
   du fichier n'emploie) : c'est ce qui permet au témoin de compter le
   mobilier aérodrome par aérodrome sans le confondre avec un marquage.
 
+### Les pistes à l'envergure, et ✈️ roule jusqu'à elles (v530)
+
+Max : « les pistes sont extrêmement étroites… quand on veut décoller on a des
+problèmes… une espèce de bloc de béton… il faut le circuler ». Mesuré AVANT une
+ligne par `tests/sonde-decollage-postes.cjs` (le vrai joueur sous node, ✈️
+depuis chacun des soixante postes) : 7 en vol, 53 écrasés ou bloqués, presque
+tous sur le hangar posé dans l'axe de la rangée. Quatre règles.
+
+- **UNE LARGEUR DE PISTE SE CALCULE SUR L'ENVERGURE DE TOUTE LA FLOTTE.**
+  `DEMI_PISTE = ceil(ENVERGURE_MAX / 2 + MARGE_AILE)` (aeroport.js), lu par
+  le plan, Roissy, `pistesDe`, les tronçons et les témoins : tout appareil
+  peut se poser sur toute piste assez longue (v502), donc c'est le plus large
+  qui compte. Neuf blocs de bande devenaient dix-neuf.
+- **UN APPAREIL QUI PART DE SON POSTE BALAIE LA RANGÉE : RIEN NE S'Y POSE.**
+  Le hangar longeait l'aire à `STAND + AILE` ; il est à côté du terminal, la
+  tour du côté sans hangar (derrière, elle sortait du disque d'Orly). La
+  sonde est la mesure : un bâtiment neuf sur un aérodrome se rejoue par elle.
+- **✈️ AU SOL SUR UN AÉRODROME ROULE D'ABORD JUSQU'À L'AXE.** Un poste est
+  parallèle à la piste, à vingt blocs d'elle : pleins gaz tout droit, on ne
+  la rencontre jamais. `pisteDeDecollage` / `guiderRoulage` (approche.js,
+  purs) suivent l'axe par une carotte, devant soi s'il y a la place
+  (`longueurDecollage` : roulement plus de quoi monter de `H_DEGAGE` à
+  `MONTEE_DECOLLAGE`, que player.js lit là), sinon demi-tour, sinon on remonte
+  jusqu'au bout. Aligné, c'est le décollage d'avant. Second appui ou joystick
+  en arrière : arrêt (v452). L'état « Roulage vers la piste » passe par
+  `etatDePose` (v516). Hors d'un aérodrome, rien ne change.
+- **ÉLARGIR UN OUVRAGE DÉBORDE SUR CE QU'IL LONGEAIT.** Les prolongements
+  (v448) étaient mesurés pour neuf blocs ; dix-neuf débordent sur des flancs
+  de vallon et de mer jusqu'à quinze blocs sous le remblai. Hors du disque,
+  remblai `+ APPUI_PROLONGE` et tranchée `+ DEGAGE_CIME` (les couronnes
+  d'arbres suspendues au-dessus de la tranchée cassaient les avions qui
+  levaient le nez). Roissy perd ses deux pistes intérieures : élargis, deux
+  doublets ne tenaient plus dans son disque ; les axes extérieurs restent,
+  rapprochés de sept blocs (64 → 57) pour que chaque aile garée reste à douze
+  blocs du bord (le témoin de la v280), prolongements re-mesurés. La seconde piste des hubs passe de z 15 à 25.
+
 ### Les aérodromes (`aeroport.js`) — la piste prend le diamètre (v280)
 
 Max, trois demandes en une phrase : « supprime les avions qui ne volent pas, en
@@ -13495,3 +13620,37 @@ sont intactes (`world.arbres` n'est posé que par `main.js`, jamais sur
 Ce qui reste, déclaré dans `TASKS.md` : une demi-couronne possible à la
 frontière de `RAYON_HD` (un arbre à cheval sur deux morceaux dont un seul est
 détaillé), et l'ombre des façades HD de Paris.
+
+## Les arbres beaux partout (v528) — un niveau de détail lointain se mesure contre ce qu'il remplace
+
+Max, en vol : « Au loin, les arbres sont moches, ils sont en forme Minecraft. »
+Au-delà du détail (v499), un morceau ne reconnaissait pas ses arbres et gardait
+leurs cubes. Quatre règles.
+
+- **LE LOIN SE MESURE CONTRE LES CUBES QU'IL REMPLACE, PAS EN VALEUR BRUTE.**
+  Les cubes d'arbre d'un morceau de forêt dense pesaient 200 Ko ; les cartes
+  lointaines (`arbreLoin`, trois cartes debout, deux couchées, un fût à trois
+  pans : 32 sommets par chêne, contre 304 de près) en pèsent 40. Sur le disque
+  du palier moyen (rr 12, détail à 4), mesuré sous node, bosquets de la v513
+  compris : forêt tempérée 74,4 → 69,2 Mo de tampons, tropiques 111,2 → 78,8,
+  taïga 89,2 → 74,7. Le loin coûte MOINS que les cubes : il ne passe donc pas
+  sous `hdMo`, qui borne le proche. La reconnaissance (≈ 2 ms par morceau de
+  forêt dense) se fait désormais partout ; le temps de maillage par morceau
+  reste dans le bruit (1,6 à 6,9 ms des deux côtés, passages alternés). Copier
+  la fenêtre de blocs à plat avant la reconnaissance est un non-résultat mesuré.
+- **LE PROCHE ET LE LOIN LISENT LA MÊME COURONNE.** `couronne` (arbreshd.js)
+  rend centre, demi-axes, normales du volume et nuance ; un témoin de
+  `plafond.js` exige, essence par essence, la même boîte de feuillage (centre
+  à 0,7 bloc, étendues de 0,7 à 1,35 fois), la même couleur moyenne (15 %) et
+  moins d'un quart des sommets. La tuile de feuilles est un DISQUE : une carte
+  à la taille de la couronne en est la silhouette ronde, sans tuile neuve.
+- **LES CUBES D'UN ARBRE RECONNU NE S'ÉMETTENT NULLE PART.** Plus dans
+  `plat` : ce tampon se montre quand le détail est rendu (budget, marge de
+  `RAYON_HD`), et les cubes y reviendraient à côté des cartes. Le mailleur
+  compte ce qu'il tait (`facesArbresTues`) : c'est sur ce compte que se lit
+  « on ne tait que ce que le modèle couvre » (v292), cabane de rondins
+  comprise. `montrerLeDetail` relaie `facades` et `arbresLoin`, jamais les deux.
+- **CE QUI RESTE, DÉCLARÉ** : au bord du disque chargé, la part de couronne
+  d'un arbre dont la base est dans un morceau pas encore maillé manque (dans
+  le brouillard) ; le palier bas et le rendu logiciel gardent les cubes (pas de
+  couche HD) ; le paysage lointain (horizon.js) n'a pas d'arbres du tout.

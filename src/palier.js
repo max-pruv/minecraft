@@ -393,7 +393,7 @@ export function palierRetenu({ choix = null, mesure = null } = {}) {
   // (`sousChoix`, journal.js) ; il ne s'applique qu'à CE choix-là, et choisir
   // une autre étendue passe toujours devant.
   //
-  // ET LA SÛRETÉ NE RETIRE PAS LE PAYSAGE LOINTAIN (v519). Max : « on ne voit
+  // ET LA SÛRETÉ NE RETIRE PAS LE PAYSAGE LOINTAIN (v532). Max : « on ne voit
   // pas du tout quatre fois plus loin. » Son journal le dit : « Loin » choisi,
   // et le jeu joue `moyen` par sûreté depuis la v509 (`bas` avant), donc AUCUNE
   // couronne — `loin` n'est que dans la fiche `haut`. Depuis la v497 la

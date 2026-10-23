@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
-import { pisteVisee, guiderApproche, aerodromeLePlusProche, angle as angleAp, surUnePiste } from './approche.js';
+import { pisteVisee, guiderApproche, aerodromeLePlusProche, angle as angleAp, surUnePiste, pisteDeDecollage, guiderRoulage, VIRAGE_ROULAGE, MONTEE_DECOLLAGE } from './approche.js';
 import { jugerToucher } from './degats.js';
 import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, vitessePleine, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA } from './conduite.js';
 
@@ -76,7 +76,8 @@ const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un pi�
 // PART_MONTEE : au manche, on monte au tiers de sa vitesse — un avion qui
 // grimperait aussi vite qu'il avance monterait à la verticale.
 const PALIER_DECOLLAGE = 20;
-const MONTEE_DECOLLAGE = 14;
+// (`MONTEE_DECOLLAGE` vit dans approche.js depuis la v530 : le roulage assisté
+// en tire la longueur de piste qu'il faut devant soi.)
 const PART_MONTEE = 0.33;
 const DESCENTE = 12;      // la perte d'altitude quand on se pose
 // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261). Max : « une vraie
@@ -220,8 +221,18 @@ export class Player {
       this.approche = null; this.remiseT = Date.now();
       return 'remise';
     }
+    // LE ROULAGE ASSISTÉ (v530) : sur un aérodrome, ✈️ au sol roule d'abord
+    // jusqu'à l'axe de la piste (`guiderRoulage`) ; le décollage part de là.
+    // Le second appui l'arrête, comme celui qui remet les gaz en approche —
+    // la porte de sortie de toute séquence imposée (v452).
+    if (etat === 'sol') {
+      if (this.roulage) { this.roulage = null; return 'roulageArrete'; }
+      const r = pisteDeDecollage(this.pos.x, this.pos.z, this.yaw, this.pilote);
+      if (r) { this.roulage = { ...r, t: 0, x: this.pos.x, z: this.pos.z }; return 'roulage'; }
+    }
     // au sol, ou encore en train de freiner : pleins gaz, le nez se lèvera
     // tout seul à la vitesse de rotation
+    this.roulage = null;
     this.avionEtat = 'decollage'; this.rotationFaite = false;
     this.altitudeDecollage = this.pos.y;
     return 'decollage';
@@ -841,7 +852,7 @@ export class Player {
     if (this.pilote) {
       const p = this.pilote;
       if (this.vitesseAvion === undefined) this.vitesseAvion = 0;
-      if (!this.avionEtat) this.avionEtat = this.avionEnVol ? 'vol' : 'sol';
+      if (!this.avionEtat) { this.avionEtat = this.avionEnVol ? 'vol' : 'sol'; this.roulage = null; }
       if (this.assietteAvion === undefined) this.assietteAvion = 0;
       if (this.trainSorti === undefined) this.trainSorti = 1;
       if (this.roulisAvion === undefined) this.roulisAvion = 0;
@@ -867,6 +878,23 @@ export class Player {
       //   joystick ↕      au sol : rouler · en vol : monter et descendre
       //   joystick ↔      au sol : la roue avant · en vol : tourner
       //   le regard       libre — on regarde le paysage sans changer de cap
+      // LE ROULAGE ASSISTÉ (v530) se juge AVANT l'état : aligné sur l'axe, on
+      // met les gaz, et c'est le décollage d'avant, parti de la piste. Le geste
+      // prime (v452) : tirer le joystick en arrière l'arrête.
+      let roule = null;
+      if (this.roulage && (this.avionEtat !== 'sol' || forward < -0.5)) this.roulage = null;
+      if (this.roulage) {
+        roule = guiderRoulage(this.roulage, this.pos, this.yaw, p);
+        if (roule.aligne) {
+          this.yaw = this.roulage.cap; this.roulage = null; roule = null;
+          this.avionEtat = 'decollage'; this.rotationFaite = false;
+          this.altitudeDecollage = this.pos.y;
+        } else if ((this.roulage.t += dt) > 5) {
+          // Bloqué cinq secondes sans avancer : on rend la main à l'enfant.
+          if (Math.hypot(this.pos.x - this.roulage.x, this.pos.z - this.roulage.z) < 1) { this.roulage = null; roule = null; }
+          else { this.roulage.t = 0; this.roulage.x = this.pos.x; this.roulage.z = this.pos.z; }
+        }
+      }
       const etat = this.avionEtat;
       const auSol = etat === 'sol' || etat === 'freinage' || (etat === 'decollage' && !this.rotationFaite);
       // LA VITESSE EST AUTOMATIQUE, et c'est elle qui garde le caractère de
@@ -902,6 +930,8 @@ export class Player {
         if (forward < -0.5) {
           if (this.gaz != null) this.gaz = 0;
           cible = this.vitesseAvion > 0.5 ? 0 : forward * (p.roulage || 6) * RECUL;
+        } else if (roule) {
+          cible = roule.vitesse;
         } else {
           cible = (this.gaz != null ? this.gaz : Math.max(0, forward)) * (p.roulage || 6);
         }
@@ -924,7 +954,10 @@ export class Player {
       // trois fois plus court que le Concorde. Au sol, la ROUE AVANT : elle
       // ne tourne que si l'on roule, et de moins en moins à mesure qu'on va
       // vite — à pleine vitesse sur la piste on ne fait pas de tête-à-queue.
-      if (auSol) {
+      if (roule) {
+        const e = roule.ecart;
+        this.yaw += Math.sign(e) * Math.min(Math.abs(e), VIRAGE_ROULAGE * Math.min(1, Math.abs(v) / 2) * dt);
+      } else if (auSol) {
         // L'AMPLITUDE VIENT DE |v|, LE SENS DU SIGNE — en reculant, la roue
         // avant fait tourner l'appareil dans l'autre sens, exactement comme
         // le volant d'une voiture (v212). Sans `abs`, un `v` négatif rendait

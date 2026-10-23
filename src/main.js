@@ -4,6 +4,7 @@ import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTronco
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
+import { creerEffetSaison } from './saisons.js';
 // Les cadences de la synchronisation, sous tempo (`tempo.js`, v501) : au banc,
 // `?tempo=4` les divise par quatre ; en production elles valent leur valeur.
 import { t as enTempo, TEMPO } from './tempo.js';
@@ -48,6 +49,7 @@ import { createSiege } from './siege.js';
 import { createVie } from './vie.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
+import { creerNomsDeStations, chaufferStations } from './stations.js';
 import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
 import { traceAnneau, traceLigne1Paris, arretsLigne1Paris } from './ville.js';
 import { LIGNES_MONDE, traceLigneMonde } from './metromonde.js';
@@ -626,9 +628,10 @@ world.hd = RAYON_HD > 0 ? 1 : 0;
 // LES VRAIS ARBRES (v499, arbreshd.js) : à portée de `RAYON_HD`, les arbres
 // d'un morceau — campagne, villes, Paris — sont dessinés en relief (tronc qui
 // s'effile, branches, cartes de feuilles) dans le tampon `facades`, et leurs
-// cubes partent dans `plat`, le loin. Même portée, même budget, même matériau
-// que le détail de Paris : rien de neuf à compiler, un appel de dessin par
-// morceau. Coupés avec la couche (rendu logiciel, palier bas) ; `?arbres=0`
+// cubes se taisent ; au-delà, chaque arbre garde sa couronne en quelques
+// cartes (`arbresLoin`, v528) — plus un cube d'arbre à aucune distance.
+// Même portée, même budget, même matériau que le détail de Paris : rien de
+// neuf à compiler, un appel de dessin par morceau. Coupés avec la couche (rendu logiciel, palier bas) ; `?arbres=0`
 // les coupe seuls, pour mesurer ; `?hd=N&arbres=1` les force au banc.
 const ARBRES_DEMANDES = new URLSearchParams(location.search).get('arbres');
 world.arbres = RAYON_HD > 0 && ARBRES_DEMANDES !== '0' ? 1 : 0;
@@ -935,7 +938,7 @@ const enAttente = new Map();          // key -> { cx, cz, sale, detail, depuis }
 statsMaillage.enAttente = enAttente;  // la sonde lit l'âge des demandes (v360)
 // LE RÉGLAGE ENTRE DANS LA FICHE DU JOURNAL (v299) : ce que l'appareil joue,
 // pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
-// réglage lu au démarrage. Et la portée de la vue (v519) : sans elle, on a dû
+// réglage lu au démarrage. Et la portée de la vue (v532) : sans elle, on a dû
 // DÉDUIRE du palier que la couronne lointaine n'avait jamais tourné chez Max.
 journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576,
   palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null, etendue: ETENDUE_CHOISIE,
@@ -1053,6 +1056,8 @@ for (let i = 0; i < 4; i++) {
   scene.add(l);
   lampesRue.push(l);
 }
+// Le nom de chaque station de métro, écrit sur son quai (v529, stations.js).
+const nomsDeStations = creerNomsDeStations(scene);
 const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS, lamps: lampesRue});
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
@@ -1187,7 +1192,7 @@ function rebuildQueue() {
 
 function disposeChunkMesh(entry) {
   if (entry.facades) { detailTenu.octets -= entry.octetsFacades || 0; detailTenu.n--; }
-  for (const mesh of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux]) {
+  for (const mesh of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.arbresLoin]) {
     if (!mesh) continue;
     scene.remove(mesh);
     mesh.geometry.dispose();
@@ -1235,7 +1240,7 @@ function installerMorceau(cx, cz, tampons) {
   const solid = geometrieDepuisTampons(tampons.solid);
   const water = geometrieDepuisTampons(tampons.water);
   const lumineux = geometrieDepuisTampons(tampons.lumineux);
-  const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null,
+  const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null, arbresLoin: null,
     // ce morceau touche la couche HD (ou porte des arbres, v499), et il a été
     // maillé AVEC ses façades détaillées (v296)
     hd: !!tampons.hd || !!tampons.arbres, detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0) };
@@ -1255,15 +1260,18 @@ function installerMorceau(cx, cz, tampons) {
   // LA COUCHE HD DE PARIS (v287). Le sol HD est toujours montré ; le détail
   // des façades et leur tuile plate se relaient selon la distance — c'est
   // `montrerLeDetail` qui tranche, ici et à chaque changement de morceau.
-  if (tampons.sol || tampons.facades) {
+  // LES ARBRES AU LOIN (v528) : chaque arbre du morceau en quelques cartes de
+  // sa couronne, dans le même matériau que la couche HD (aucune clé de
+  // programme neuve), montrés quand le détail ne l'est pas (`montrerLeDetail`).
+  if (tampons.sol || tampons.facades || tampons.arbresLoin) {
     const materiau = materiauDeParis();
-    for (const [nom, t] of [['sol', tampons.sol], ['facades', tampons.facades]]) {
+    for (const [nom, t] of [['sol', tampons.sol], ['facades', tampons.facades], ['arbresLoin', tampons.arbresLoin]]) {
       const g = geometrieHD(t);
       if (!g) continue;
       if (nom === 'facades') { entry.octetsFacades = octetsDeTampons(t); detailTenu.octets += entry.octetsFacades; detailTenu.n++; }
       const m = new THREE.Mesh(g, materiau);
       m.position.set(cx * CHUNK, 0, cz * CHUNK);
-      m.castShadow = ombre && nom === 'facades';
+      m.castShadow = ombre && (nom === 'facades' || nom === 'arbresLoin');
       m.receiveShadow = true;
       entry[nom] = m;
       scene.add(decor(m));
@@ -1333,7 +1341,7 @@ function installerMorceau(cx, cz, tampons) {
   // morceau arrivé entre deux images y ajoute. APRÈS l'eau, les vitres et les
   // props : cette boucle passait avant leur création, et l'eau d'un morceau
   // arrivé entre deux images comptait pour une balle (fumée rouge, v300).
-  for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.props]) {
+  for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.arbresLoin, entry.props]) {
     if (m) m.userData.morceau = true;
   }
   chunkMeshes.set(key, entry);
@@ -1368,6 +1376,7 @@ function rendreLeDetail(entry) {
   entry.detail = false; entry.octetsFacades = 0;
   if (entry.plat) entry.plat.visible = true;
   if (entry.platLumineux) entry.platLumineux.visible = true;
+  if (entry.arbresLoin) entry.arbresLoin.visible = true;
 }
 // LE BUDGET S'APPLIQUE DU PLUS PROCHE AU PLUS LOIN (v299, `planDetail`) : ce
 // qui dépasse se rend, les candidats les plus proches se demandent, un tenu
@@ -1390,7 +1399,7 @@ function appliquerLeBudget(pcx, pcz, candidats) {
 // montre le relief, au-delà la tuile — et jamais les deux, sinon la face
 // plate au nu du mur cacherait la baie en retrait.
 function montrerLeDetail(entry, cx, cz, pcx, pcz) {
-  if (!entry.facades && !entry.plat && !entry.platLumineux) return;
+  if (!entry.facades && !entry.plat && !entry.platLumineux && !entry.arbresLoin) return;
   // Sans façades détaillées — pas encore fabriquées, ou rendues (v296) — le
   // morceau montre ses faces plates, quelle que soit la distance.
   // (un morceau détaillé dont le détail est vide — les feuilles d'un arbre
@@ -1400,6 +1409,9 @@ function montrerLeDetail(entry, cx, cz, pcx, pcz) {
   if (entry.facades) entry.facades.visible = pres;
   if (entry.plat) entry.plat.visible = !pres;
   if (entry.platLumineux) entry.platLumineux.visible = !pres;
+  // les arbres du loin (v528) se relaient avec leurs modèles proches, qui
+  // vivent dans `facades` : jamais les deux à la fois
+  if (entry.arbresLoin) entry.arbresLoin.visible = !pres;
 }
 
 // Faut-il fabriquer les façades détaillées de ce morceau ? (v296)
@@ -1585,6 +1597,7 @@ function updateChunks() {
         if (entry.solid) entry.solid.castShadow = ombre;
         if (entry.facades) entry.facades.castShadow = ombre;
         if (entry.plat) entry.plat.castShadow = ombre;
+        if (entry.arbresLoin) entry.arbresLoin.castShadow = ombre;
         montrerLeDetail(entry, cx, cz, pcx, pcz);
         gererLeDetail(entry, key, cx, cz, pcx, pcz, candidats);
       }
@@ -2989,7 +3002,7 @@ function majEtatDePose() {
   etatPoseTexte = texte;
   etatPoseEl.classList.toggle('visible', !!e);
   etatPoseEl.dataset.quoi = e ? e.cle : '';
-  etatPoseEl.innerHTML = e ? `${e.cle === 'remise' ? ICONES.decoller : ICONES.atterrir}<span class="mot">${e.texte}</span>` : '';
+  etatPoseEl.innerHTML = e ? `${e.cle === 'remise' || e.cle === 'roulage' ? ICONES.decoller : ICONES.atterrir}<span class="mot">${e.texte}</span>` : '';
 }
 window.__majBoutonsVehicule = majBoutonsVehicule;
 
@@ -7917,64 +7930,34 @@ function animerPluie(dt) {
 }
 
 // --- seasons: the real-world calendar dresses the world ---------------------------
-// Winter snowflakes, spring petals, autumn leaves, summer fireflies.
+// Feuilles d'automne, pétales de printemps, lucioles d'été, flocons d'hiver.
+//
+// DES VRAIES FORMES, POSÉES SUR LE MONDE (v530). Le nuage de la v484 était un
+// `Points` de cent soixante CARRÉS, de −1 à +9 blocs au-dessus du sol sous
+// l'enfant : depuis une caméra de poursuite à trois blocs du sol, tout ce qui
+// la dépasse se projette au-dessus de l'horizon — les « carrés orange-jaune
+// dans le ciel » de la capture de Max au volant. Chaque particule vit
+// désormais sur SA colonne (`saisons.js`) : elle naît bas, tombe en planant,
+// se pose sur ce qui la porte, s'efface. Le sol se lit sur un morceau déjà
+// engendré seulement (v472).
+const effetSaison = creerEffetSaison();
+scene.add(effetSaison.mesh);
 
-const SEASON = (() => {
-  const m = new Date().getMonth(); // 0..11
-  if (m >= 2 && m <= 4) return { label: 'le printemps', emoji: '🌸', color: 0xf0a8c8, fall: 1.6 };
-  if (m >= 5 && m <= 7) return { label: "l'été", emoji: '✨', color: 0xf2e07a, fall: -0.4 };
-  if (m >= 8 && m <= 10) return { label: "l'automne", emoji: '🍂', color: 0xd8843a, fall: 2.2 };
-  return { label: "l'hiver", emoji: '❄️', color: 0xffffff, fall: 3, duCiel: true };
-})();
-
-// LE NUAGE DE SAISON EST POSÉ SUR LE SOL, PAS SUR L'ENFANT (v484). Il suivait
-// `player.pos` de −3 à +23 blocs : en vol, cent soixante carrés orange
-// flottaient autour de l'avion à cent blocs du sol — les « cubes orange dans
-// le ciel » vus sur les captures de Max et du banc depuis la v237, que la sonde
-// de scène ne trouvait pas parce que c'est UN objet `Points` collé à la caméra.
-// La neige tombe du ciel (bande haute) ; feuilles, pétales et lucioles restent
-// à hauteur d'arbre (bande basse). Au-dessus de la bande, rien ne se dessine.
-const BANDE_SAISON = SEASON.duCiel ? [-3, 23] : [-1, 9];
-const HAUT_SAISON = BANDE_SAISON[1] - BANDE_SAISON[0];
-
-const SEASON_COUNT = 160;
-const seasonGeo = new THREE.BufferGeometry();
-{
-  const pts = new Float32Array(SEASON_COUNT * 3);
-  for (let i = 0; i < SEASON_COUNT; i++) {
-    pts[i * 3] = (Math.random() - 0.5) * 60;
-    pts[i * 3 + 1] = BANDE_SAISON[0] + Math.random() * HAUT_SAISON;
-    pts[i * 3 + 2] = (Math.random() - 0.5) * 60;
-  }
-  seasonGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+function solSaison(x, z) {
+  const bx = Math.floor(x), bz = Math.floor(z);
+  if (!world.morceauxPrets(bx - 1, bz - 1, bx + 1, bz + 1)) return null;
+  // une feuille traverse le feuillage : elle se pose sous l'arbre, pas sur sa cime
+  let y = world.sommetColonne(bx, bz);
+  while (y > 0 && world.getBlock(bx, y, bz) === BLOCK.LEAVES) y--;
+  const haut = y + 1;
+  if (haut < WATER_LEVEL + 0.875) return WATER_LEVEL + 0.875;   // la surface de l'eau
+  const sc = world.solContinu(x, z);                             // la surface lisse, si elle passe là
+  return sc != null && Math.abs(sc - haut) < 1.2 ? sc : haut;
 }
-const seasonPoints = new THREE.Points(seasonGeo, new THREE.PointsMaterial({
-  color: SEASON.color, size: 0.24, transparent: true, opacity: 0.75, sizeAttenuation: true,
-}));
-scene.add(seasonPoints);
-
-let seasonTime = 0, seasonToastShown = false;
 
 function updateSeasons(dt) {
-  if (!seasonToastShown && running) {
-    seasonToastShown = true;
-  }
-  seasonTime += dt;
-  const pos = seasonGeo.attributes.position;
-  for (let i = 0; i < SEASON_COUNT; i++) {
-    let y = pos.getY(i) - SEASON.fall * dt;
-    if (y < BANDE_SAISON[0]) y += HAUT_SAISON;
-    if (y > BANDE_SAISON[1]) y -= HAUT_SAISON;
-    pos.setY(i, y);
-    pos.setX(i, pos.getX(i) + Math.sin(seasonTime * 1.3 + i) * dt * 0.8); // flutter
-  }
-  pos.needsUpdate = true;
-  // au-dessus d'un lac ou de la mer, c'est la surface de l'eau qui porte le nuage
-  const sol = Math.max(world.terrainHeight(Math.floor(player.pos.x), Math.floor(player.pos.z)), WATER_LEVEL) + 1;
-  seasonPoints.position.set(player.pos.x, sol, player.pos.z);
-  // plus haut que la bande (en vol), on ne voit le nuage que par en dessous :
-  // on ne le dessine pas
-  if (player.pos.y > sol + BANDE_SAISON[1] + 6) seasonPoints.visible = false;
+  const px = player.pos.x, pz = player.pos.z;
+  effetSaison.avancer(dt, { px, py: player.pos.y, pz, camera, sol: solSaison, solJoueur: solSaison(px, pz) });
 }
 
 const clouds = [];
@@ -8390,7 +8373,7 @@ const guides = creerGuides({
   maintenant: () => performance.now(),
 });
 window.__guides = guides;
-window.__game = { fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
+window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
   // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
@@ -8555,8 +8538,8 @@ function frame(now) {
   updateClouds(dt);
   updateBirds(dt);
   updatePlane(dt);
-  seasonPoints.visible=!renduDansManhattan;
-  if (!renduDansManhattan) updateSeasons(dt);
+  if (renduDansManhattan) effetSaison.mesh.visible = false;
+  else updateSeasons(dt);
   updateHud(dt);
   releverLeJournal();
   updateCreatureLabel();
@@ -8625,6 +8608,7 @@ function frame(now) {
 
   eclairerLaRue();
   reglerLesFeux();
+  nomsDeStations.update(player.pos);
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renduDansManhattan=villeRealiste.active;
   const debutRendu = performance.now();
@@ -8726,6 +8710,10 @@ requestAnimationFrame(() => {
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
     // les traces de pneus (v434) : un matériau neuf, son essaim exact
     try { fun.chaufferTraces(renderer, camera, scene); } catch (e) { console.warn('chauffe des traces', e); }
+    // le nom des stations de métro (v529) : un matériau à carte
+    try { chaufferStations(renderer, camera, scene); } catch (e) { console.warn('chauffe des stations', e); }
+    // les effets de saison (v530) : un essaim neuf, son matériau exact
+    try { effetSaison.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe de la saison', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };

@@ -14,6 +14,11 @@ const TOUTES = [
   { nom: 'foret-pres', x: -1560, z: -2488, h: 1.6, pitch: 0.35, yaw: -0.6 },
   { nom: 'foret-vol', x: -1560, z: -2470, h: 22, pitch: -0.55, yaw: 0.2 },
   { nom: 'foret-ciel', x: -1560, z: -2440, h: 60, pitch: -0.9, yaw: 0.0 },
+  // (v528) en vol, le regard vers l'horizon : la forêt AU LOIN, au-delà du
+  // détail — là où Max voyait encore des cubes
+  { nom: 'foret-loin', x: -1560, z: -2440, h: 34, pitch: -0.22, yaw: 0.6 },
+  { nom: 'taiga-loin', lat: 52, lon: -72, h: 34, pitch: -0.22, yaw: 0.6 },
+  { nom: 'tropiques-loin', lat: 1, lon: 114, h: 34, pitch: -0.22, yaw: 0.6 },
   { nom: 'taiga-sol', lat: 52, lon: -72, h: 1.6, pitch: 0.15, yaw: 2.0 },
   { nom: 'taiga-vol', lat: 52, lon: -72, h: 24, pitch: -0.5, yaw: 0.6 },
   { nom: 'tropiques-sol', lat: 1, lon: 114, h: 1.6, pitch: 0.2, yaw: 2.0 },
@@ -32,7 +37,7 @@ const VUES = filtre ? TOUTES.filter((v) => filtre.split(',').some((f) => v.nom.s
   await banc.ouvrir();
   try {
     await souffler();
-    const page = await banc.jouerSeul('Arbres', { rr: 8, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=3' + (process.env.ARBRES === '0' ? '&arbres=0' : '') });
+    const page = await banc.jouerSeul('Arbres', { rr: Number(process.env.RR || 8), viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=3' + (process.env.ARBRES === '0' ? '&arbres=0' : '') });
     for (const v of VUES) {
       try {
         const info = await page.evaluate(async (v) => {

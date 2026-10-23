@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v525 — « Loin » voit loin, même quand le jeu s'allège par sûreté
+## v532 — « Loin » voit loin, même quand le jeu s'allège par sûreté
 
 **Pourquoi.** Max, sur la v518 : « On ne voit pas du tout quatre fois plus
 loin. » Le journal de bord de son iPhone (`journal_appareil`) l'explique : de
@@ -49,6 +49,183 @@ d'écran (`sonde-revue-ecran.cjs`, options neuves `--rr=` et `--params=`) à
 430 × 932 et 820 × 1180, jour et nuit, « Normal » contre « Normal + loin ».
 
 ---
+
+## v531 — De vraies feuilles d'automne, posées sur le monde
+
+**Pourquoi.** Max, capture d'iPhone au volant sur une autoroute : « Je ne sais
+pas ce que c'est que ces carrés orange-jaune dans le ciel, mais je veux enlever
+les trucs type Minecraft en carré. Si ce sont des feuilles qui volent parce que
+c'est l'automne, je veux voir des vraies feuilles, haute définition. » C'étaient
+les feuilles d'automne : un nuage de cent soixante carrés sans texture, posé de
+−1 à +9 blocs au-dessus du sol sous l'enfant. Vu d'une caméra de voiture à trois
+blocs du sol, tout ce qui la dépasse se projette au-dessus de l'horizon — la
+bande de la v484 ne pouvait pas l'empêcher. Mesuré sur `origin/main` : 16
+particules du champ sur 19 au-dessus de l'œil, 126 à 1 228 pixels de l'effet sur
+fond de ciel.
+
+**Ce que ça change.** Les feuilles sont de vraies feuilles : une silhouette à
+nervures et pétiole, sept teintes d'automne, qui tournent sur elles-mêmes en
+tombant, planent, se posent sur le sol (ou un toit, ou l'eau) et y restent
+quelques secondes avant de disparaître. Elles tombent bas, à hauteur d'arbre
+bas, au-dessus de leur propre coin de terrain : plus rien dans le ciel, ni en
+voiture ni en avion. Au printemps des pétales échancrés, en été des lucioles à
+halo, en hiver des flocons à six branches (la neige seule tombe du ciel).
+
+**Ce qui le prouve.** Quatre témoins dans `monte.js`, lus par
+`sonde-saison-ciel.cjs` : la silhouette (63 % de texels transparents, 0 sur
+l'ancien code), l'écart de chaque feuille à ce qui la porte (2,95 contre 12,08),
+les pixels de l'effet sur fond de ciel vus d'une caméra de voiture (0 contre
+126), et le vol (rien ne se dessine). Trois rouges sur `origin/main`. Un seul
+appel de dessin, aucune lampe, compilé pendant l'accueil ; coût en rendu
+logiciel dans le bruit (`sonde-saison-cout.cjs` : 17,6 contre 17,9 images par
+seconde, médianes ABBA).
+
+---
+## v530 — Des pistes larges, et l'avion roule jusqu'à elles
+
+**Pourquoi.** Max : « Les pistes des aéroports sont extrêmement étroites. Et
+quand on veut décoller, en fait, on a des problèmes. Il y a aussi une espèce de
+bloc de béton qui pose des problématiques pour manœuvrer l'avion. » Mesuré
+avant d'écrire une ligne, avec le vrai joueur sous node, ✈️ appuyé depuis
+chacun des soixante postes des dix-neuf aérodromes : **7 décollages sur 60**.
+Les cinquante-trois autres appareils s'écrasaient ou restaient bloqués, presque
+tous contre le « bloc de béton » : le hangar, posé dans l'axe de la rangée de
+stationnement. La bande de piste faisait 9 blocs de large, pour une envergure de
+quinze.
+
+**Ce que ça change.**
+- Les pistes ont la largeur du plus grand avion plus une marge : 19 blocs de
+  bande partout, avec des marques de seuil. Roissy garde deux pistes larges, et
+  la seconde piste des grands aéroports s'écarte de la première.
+- Le hangar quitte l'aire de stationnement et va à côté du terminal. La tour de
+  contrôle aussi : plus rien en travers du chemin d'un avion.
+- Au poste, ✈️ fait rouler l'avion tout seul jusqu'à la piste, l'aligne, puis
+  décolle. La pilule dit « Roulage vers la piste ». Un second appui arrête le
+  roulage, et tirer le joystick en arrière le reprend en main.
+- Les prolongements de piste et ce qu'ils bâtissent restent dans leurs bornes ;
+  `terrainHeight` ne bouge pas.
+
+**Ce qui le prouve.**
+- La sonde des soixante postes (`sonde-decollage-postes.cjs`) passe de 7/60 à
+  **60/60**. `carteMonde.js` la lit : un poste qui ne décolle plus la fait
+  rougir et le nomme.
+- `carteMonde.js` exige aussi que chaque piste soit plus large que l'envergure
+  plus deux blocs.
+- `monte.js` fait le trajet de l'enfant à Orly : il monte dans un Concorde garé,
+  appuie sur ✈️, la pilule « Roulage vers la piste » s'affiche, l'avion s'aligne
+  sur l'axe et vole. Sur l'ancien code, il s'écrase dans le hangar.
+- Les deux empreintes du relief de `plafond.js` n'ont pas bougé. L'empreinte des
+  490 morceaux, elle, change, et elle est prouvée désarmée : avec l'ancien
+  `aeroport.js`, on retrouve la constante d'avant. Les 252 colonnes qui
+  diffèrent sont toutes dans un aérodrome ou un tronçon de piste.
+- Le portail complet est vert, sauf des rouges déjà déclarés dans `TASKS.md`,
+  et deux rouges rejoués seuls des deux côtés avec la même distribution :
+  - le bandeau « Atterrissage vers <ville> » à Saint-Dizier (1 sur 3 sur la
+    branche, 2 sur 3 sur `origin/main`) ;
+  - l'avion de l'ami en feu (voir `TASKS.md`).
+
+## v529 — On marche dans les stations de métro
+
+**Pourquoi.** Max : « les stations de métro ne ressemblent pas du tout à des
+stations de métro, on ne peut même pas marcher dedans, le personnage ne passe
+pas en hauteur ». Mesuré avant d'écrire une ligne, station par station, avec
+le VRAI joueur de `player.js` sous node (`tests/sonde-stations.cjs` : un
+chemin case par case de chaque bouche à son quai, puis le joueur qui le suit,
+aller et retour, en sautant chaque marche qui monte) :
+
+| | quais atteints | rues retrouvées | cases sous 4 blocs d'air (par station) |
+| --- | --- | --- | --- |
+| Paris, v528 | 14 / 15 | 14 / 15 | 21 à 43 |
+| Paris, v529 | **15 / 15** | **15 / 15** | **2 à 6** |
+| Washington, v528 | 2 / 20 | 2 / 20 | 8 à 10 (plafond à 2 à Capitol South) |
+| Washington, v529 | **20 / 20** | **20 / 20** | **1 à 3** |
+
+Station par station en v528 : à Paris, Hôtel de Ville sans chemin (sa trémie
+débouchait dans le parvis de Notre-Dame, que le monument recouvre), et dans
+toutes les autres un escalier et un couloir à trois blocs de haut — la tête de
+l'enfant cogne au sommet de chaque saut. À Washington, seuls Capitol South et
+Dupont Circle : ailleurs l'escalier de la bouche arrivait au-dessus de la fosse
+des voies, de l'autre côté des rails d'un quai central ; à Smithsonian et dans
+les stations en virage le passage des rames emportait les marches ; et la
+bouche de Pentagon sortait de la zone où le métro se creuse, son couloir finissait
+dans la terre. Les stations, elles, n'avaient de la vraie que le nom : une
+voûte grise, un quai nu.
+
+**Ce que ça change.** On descend debout de la rue au quai et l'on remonte, dans
+les trente-cinq stations, avec quatre blocs d'air presque partout.
+- **Paris (ligne 1)** : une voûte elliptique en carreau blanc biseauté, la
+  bordure blanche du quai, la plaque bleue émaillée du nom sur les piédroits,
+  les cadres d'affiches, le plan du réseau au milieu du quai, des sièges
+  orange, la rampe lumineuse sous la voûte ; un couloir carrelé à quatre blocs
+  de haut, puis la salle des billets et sa rangée de portillons, au pied de
+  l'escalier. Hôtel de Ville a sa bouche hors du parvis ; Saint-Paul s'est
+  déplacée pour lui laisser la place.
+- **Washington** : la voûte à caissons de béton, la gorge lumineuse au pied des
+  murs, le quai central en carrelage hexagonal brun, la bordure de granit à
+  feux encastrés, les pylônes bruns ; de chaque quai, un escalier au bout du
+  quai, une passerelle au-dessus des voies à la mezzanine, un couloir et ses
+  portillons, puis l'escalier de la rue, qui n'a pas bougé.
+- **Le nom de chaque station est écrit sur le quai** : sur les plaques bleues à
+  Paris, en haut des pylônes et sur le mur d'en face à Washington.
+Tout est éclairé sans une lampe de plus (des blocs toujours allumés), en blocs
+(un appel de dessin par morceau), et sans logo ni charte d'exploitant.
+
+**Ce qui ne bouge pas.** Le relief : les deux empreintes de `plafond.js` sont
+intactes. Les bouches gardent leur place sauf deux (Hôtel de Ville, Saint-Paul),
+la clef de la voûte de Paris reste sous le lit de la Seine (v473), et le
+passage des rames se creuse en dernier (zéro bloc dans leur gabarit sur 12 701
+points). Sous ce qu'un enfant a bâti avant `DATE_STATIONS`, ce qui est à moins
+de trois blocs du sol reste au bloc près celui de la v528 (la règle de la v485).
+
+**Ce qui le prouve.** Quatre témoins de `plafond.js`, lus sur la sonde : les
+trente-cinq stations aller et retour par le vrai joueur, la tête qui passe
+(jamais moins de trois blocs, au plus huit cases sous quatre par station, aucun
+élan qui cogne en descendant), le passage des rames libre, et un nom sur chaque
+quai — 180 plaques relues contre le monde engendré, aucune dans un mur, aucune
+sans appui. Un témoin de `metro.js` voit la plaque nommée dans la scène quand on
+est sur le quai. L'empreinte des 490 morceaux change (Paris et Washington sont
+deux des neuf lieux) ; stations neuves désarmées, la branche rend la constante
+de la v522 au bit près.
+
+Deux témoins de `washington.js` repointés : le quai praticable se lit sur une
+case sans pylône, sans banc et hors de l'escalier du quai central ; la descente
+suit le chemin de la sonde (37 cases, neuf à onze blocs de descente) au lieu
+d'une ligne droite qui butait contre la mezzanine. Et le choix des escaliers
+de Washington coûtait dix-sept secondes au chargement du module : il lit
+désormais les points de voie par cases, même résultat au bit près, 1,1 s
+contre 0,7 sur `origin/main`.
+
+---
+
+## v528 — Les arbres sont beaux partout, même au loin
+
+**Pourquoi.** Max, en vol au-dessus d'une forêt, sur iPhone : « Au loin, les
+arbres sont moches, ils sont en forme Minecraft. Au proche, ils sont beaux. Il
+faut qu'ils soient beaux partout. » Les vrais arbres de la v499 ne vivaient
+qu'à portée du détail (trois morceaux autour de l'enfant) ; au-delà, chaque
+morceau gardait ses arbres en cubes de feuilles, et la frontière se voyait
+nettement depuis le ciel.
+
+**Ce que ça change.** Plus un arbre en cubes, à aucune distance (paliers moyen
+et haut). Au loin, chaque arbre garde sa couronne — même place, même taille,
+même essence, même couleur que de près — en quelques grandes cartes de
+feuillage : une boule ronde pour le chêne, des étages pour le pin, une ombrelle
+pour le pin parasol et l'acacia, des palmes pour le palmier. En approchant, il
+passe au vrai arbre de la v499 sans saut. Et c'est plus léger qu'avant : les
+cartes d'un morceau de forêt pèsent 40 Ko, les cubes qu'elles remplacent en
+pesaient 200.
+
+**Ce qui le prouve.** Mesuré sous node sur le disque du palier moyen (rr 12),
+bosquets de la v513 compris : tampons 74,4 → 69,2 Mo en forêt tempérée,
+111,2 → 78,8 aux tropiques, 89,2 → 74,7 en taïga ; le temps de maillage par
+morceau reste dans le bruit de la mesure (1,6 à 6,9 ms des deux côtés, passages
+alternés). Avant les bosquets : 106,7 → 85,1, 163,8 → 89,5, 177,1 → 107,8. Deux témoins neufs dans `plafond.js`, rouges sur
+l'ancien code : au loin, les cubes d'arbre se taisent et chaque arbre a son
+modèle lointain à moins d'un quart des sommets du proche ; et, essence par
+essence, le proche et le lointain ont la même boîte de feuillage et la même
+couleur. Les cinq témoins des vrais arbres repointés : on ne tait que ce que
+le modèle couvre (compté par `facesArbresTues`), une cabane de rondins reste en
+cubes, aucun bloc ne bouge.
 
 ## v522 — Les blocs parlent français, et deux bandeaux se lisent
 
@@ -132,6 +309,9 @@ centimètre et demi devant la tôle, aucun dans le vide. Deux témoins neufs dan
 qui clignotent, sans compiler un programme (les clés) ; et chez Alice, la
 voiture de la rue que Marlon percute s'arrête en détresse. Les deux sont
 rouges sur `origin/main`.
+
+---
+
 ## v518 — « Loin » voit plus loin, le garde-manger part, la minicarte à gauche
 
 Trois sujets, trois lignes au journal du jeu, un témoin pour chacun.
