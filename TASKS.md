@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **Rouges de portail de la v535 (les guides des villes) : aucun de la
+- [ ] **Rouges de portail de la v538 (les guides des villes) : aucun de la
   livraison.** Soupçonnant les guides devant « la rue roule à l'allure d'une
   ville » (médiane 0), une sonde sous node a trouvé quatre guides sur la
   chaussée — corrigé, et c'était un vrai défaut — mais le rouge revient au
@@ -15,7 +15,7 @@
   milliers de blocs de tout guide ; vert aux trois portails précédents du même
   code). `degats.js` « percuter une voiture de la rue » (déclaré).
   `reglages.js` « un choix fait sur une tablette » : vert seul des deux côtés.
-  **Portails de la v535 (après fusion de la v531), coupés deux fois à deux
+  **Portails de la v538 (après fusion de la v531), coupés deux fois à deux
   heures pendant `reseau.js`.** Un seul rouge de la livraison, corrigé : le
   regard de Capucine lu pendant un pas de côté (`ecart`, une voiture passe ;
   sonde à part, 1 fois sur 3). Le reste, déclaré : `monte.js` (tranches,
@@ -28,7 +28,7 @@
   seul de la branche (veille, reprise, hôte sans courtier), puis 91/91 vert
   ; `origin/main` 91/91 — et preuve structurelle : aucun guide ne naît à
   moins de 432 blocs du point d'apparition (`PORTEE_GUIDE` 150).
-  Troisième portail, sur la base v534 (renumérotée v535) : `monte.js` 11
+  Troisième portail, sur la base v534 (renumérotée v538) : `monte.js` 11
   rouges, dont trois intermittents jamais revus rejoué seul — « en virage, on
   voit son flanc », « un passant change de trottoir au feu », « Atterrissage
   vers Saint-Dizier » — et un neuf de la v531 : « au sol, chaque feuille vole
@@ -38,6 +38,51 @@
   voisines » et « au feu », tous deux déjà rouges sur `origin/main` ailleurs
   dans ce fichier.
 
+
+- [ ] **PORTAIL DE LA v536 (mobilier cassable, fusionné à la v531) : aucun
+  rouge de la livraison.** Le portail n'a pas fini sous la limite de deux
+  heures (coupé dans `reseau.js`). Rejoués SEULS des deux côtés : `monte.js`
+  branche 258 / 5 (fabrication par tranches, voisines d'un convoi, feu « au
+  lieu de piler », rue vide, « Atterrissage vers ») contre `origin/main`
+  253 / 7 (les mêmes, plus mur de face et `minimap×edu-timer` aux deux
+  tailles) — au portail, la branche rendait aussi « chaque feuille vole bas
+  au-dessus de SA colonne » (v531, `ecartMax` 6,72 ; vert seul) ;
+  `degats.js` branche 46 / 2, `origin/main` 47 / 1 : « les feux de détresse
+  se posent SUR la carrosserie » rouge des deux côtés, déclaré entre-temps par la v533
+  (`bugatti-bolide.glb`, deux feux à 0,45 de la tôle), et « percuter une
+  voiture de la rue » rouge sur `ecart` 18,3 pour 20 (déjà déclaré : la
+  voiture de la rue repart pendant les 0,2 s de la pose, aucun mobilier sur
+  la dalle) ; `maj.js` trois passages de chaque côté, « en construction, on
+  marche au joystick » rouge une fois sur trois sur la branche (0,8 bloc),
+  zéro sur `origin/main` — le crochet du piéton rend le même verdict
+  (vrai/faux) qu'avant, à surveiller ; le loader qui compte les fichiers
+  rouge des deux côtés (déclaré) ; `reseau.js` branche 89 / 1 (la voiture
+  de la rue chez l'ami, déclaré). Second portail, refusionné à la v534 (et
+  renommé v536), JOUÉ JUSQU'AU BOUT (131 min) : `degats.js` 1 (feux de
+  détresse, déclaré par la v533), `maj.js` 1 (le loader qui compte les
+  fichiers, déclaré), `monte.js` 6 (passant de Rome, feu « au lieu de
+  piler », rue vide, `minimap×edu-timer` aux deux tailles, « Atterrissage
+  vers ») — tous rouges sur `origin/main` rejouée seule ci-dessus ; les
+  témoins du mobilier et ceux de la voiture garée (v534) verts.
+
+- [ ] **Le mobilier se casse (v536) : ce qui reste, et deux décisions pour
+  Max.** (1) LES RUES SONT ÉTROITES, ET C'EST MESURÉ
+  (`tests/sonde-mobilier-route.cjs`, le long des circuits) : chaussée médiane
+  6,5 blocs dans les villes engendrées (p10 6), 13 à Paris, 6,5 à Londres
+  (18 % sous 4,5) ; trottoir à droite 1,5 bloc (médiane), mobilier à la
+  bordure. Une voiture de 2,26 centrée sur sa voie garde 2,1 blocs de marge ;
+  à un bloc d'écart vers le trottoir, 60 à 100 pièces par kilomètre. Élargir
+  (pas de trame, chaussée, recul du mobilier) change le sol sous ce que les
+  enfants ont bâti : décision de Max, non faite. Piste moins chère, à mesurer :
+  reculer le seul mobilier de bordure d'un bloc dans les villes engendrées
+  (`mobilierVillesMonde`), ce qui ne touche que des blocs de décor. (2) Un
+  réverbère, un feu ou une jardinière qu'un ENFANT a posés ne se cassent pas
+  (restent des obstacles) : à confirmer par Max. Dettes : Manhattan garde ses
+  obstacles (mobilier instancié par lots, rien à coucher seul) ; la casse
+  n'est pas partagée en ligne (l'ami voit le poteau debout, et sa voiture y
+  bute chez lui) ; un fût tombé vers la chaussée peut y dépasser, et les
+  voitures de la rue passent au travers ; les arbres de rue (`LOG`) restent
+  durs.
 
 - [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
   au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
@@ -8804,7 +8849,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   pied bute (sonde v470) : le rendre plat exige que `colonneNaturelle` sache
   qu'un dessus a été posé, zone du sol continu.
 
-- [ ] **Apprendre** — questions audio. *(Les guides dans les villes : v535,
+- [ ] **Apprendre** — questions audio. *(Les guides dans les villes : v538,
   vingt-deux guides au pied des monuments de Paris, Londres, Rome, New York et
   Washington, en français et en anglais.)* Ce qui reste des guides : la Statue
   de la Liberté, le Golden Gate et les monuments du catalogue qui attendent

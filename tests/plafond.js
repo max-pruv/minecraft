@@ -618,6 +618,38 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       !t.erreur && t.points > 50000 && t.trous === 0, t.erreur || JSON.stringify(t));
   }
 
+  // --- LE MOBILIER SE CASSE, PUR (v536) --------------------------------------
+  // La règle (`mobiliercasse.js`) : ce qui se casse, comment ça tombe, quand ça
+  // se relève. Sur l'ancien code le module n'existe pas, et le verdict le dit.
+  {
+    const M = await import('../src/mobiliercasse.js').catch(() => null);
+    const { RUE, MEUBLE_START } = await import('../src/blocks.js');
+    if (!M) verifier('mobilier cassable : la règle', false, 'mobiliercasse.js absent (ancien code)');
+    else {
+      verifier('mobilier cassable : réverbère et feu tombent, la jardinière s\'écrase, un meuble ne se casse pas',
+        M.faconDeCasser(RUE.REVERBERE) === 'tombe' && M.faconDeCasser(RUE.FEUX) === 'tombe' && M.faconDeCasser(RUE.JARDINIERE) === 'ecrase'
+        && M.faconDeCasser(MEUBLE_START) === null && M.VITESSE_CASSE > 2 && M.PERTE_CASSE > 0 && M.PERTE_CASSE < 0.5);
+      // un fût tombe DANS LE SENS de la marche : le haut, tourné autour de
+      // l'axe rendu, part vers (dx, dz) (Rodrigues : haut·cos θ + (a × haut)·sin θ)
+      const sens = [[1, 0], [0, 1], [-0.6, 0.8]];
+      const ecarts = sens.map(([dx, dz]) => {
+        const p = M.poseDeChute('tombe', dx, dz, 1);
+        const vx = -p.az * Math.sin(p.angle), vy = Math.cos(p.angle), vz = p.ax * Math.sin(p.angle);
+        return +(Math.hypot(vx - dx, vz - dz) + Math.abs(vy)).toFixed(3);
+      });
+      verifier('mobilier cassable : un fût tombe à plat, dans le sens où roulait la voiture', ecarts.every((e) => e < 0.1), JSON.stringify(ecarts));
+      const C = new M.Casses();
+      C.casser('1,2,3', { t: 0, x: 0, z: 0, dx: 1, dz: 0, facon: 'tombe' });
+      C.casser(M.cleHD(5, 6), { t: 0, x: 5, z: 6, dx: 1, dz: 0, facon: 'hd' });
+      const tot = C.aRelever(M.DUREE_AU_SOL_MS - 1, 999, 999).length;
+      const pres = C.aRelever(M.DUREE_AU_SOL_MS + 1, 10, 0).length;
+      const hd = [...C.colonnesHD()];
+      const loin = C.aRelever(M.DUREE_AU_SOL_MS + 1, 999, 999).length;
+      verifier('mobilier cassable : ce qui est tombé reste au sol, puis se relève hors de la vue de l\'enfant',
+        tot === 0 && pres === 0 && hd.length === 1 && hd[0] === '5,6' && loin === 2 && C.taille === 0, JSON.stringify({ tot, pres, hd, loin }));
+    }
+  }
+
   // --- LE MODÈLE DE CONDUITE, PUR (v358) -------------------------------------
   // `conduite.js` est lu sous node : ce que la voiture FAIT d'une commande et
   // d'un choc se vérifie ici en millisecondes, sans navigateur. Sur l'ancien

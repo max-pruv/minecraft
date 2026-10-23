@@ -6,13 +6,22 @@
 
 export const NOUVEAUTES = [
   {
-    v: 535,
+    v: 538,
     titre: 'Des guides dans les villes',
     puces: [
       'Un guide et son fanion orange',
       'Il raconte à voix haute',
       'Paris, Londres, Rome, New York, Washington',
       'En français ou en anglais',
+    ],
+  },
+  {
+    v: 536,
+    titre: 'Les poteaux tombent',
+    puces: [
+      'La voiture renverse réverbères et feux',
+      'Les jardinières s\'écrasent',
+      'Tout se relève plus tard',
     ],
   },
   {
