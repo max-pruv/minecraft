@@ -2,6 +2,19 @@
 
 ## v532 — RIEN NE TRAVERSE UNE VOIE : ce qui reste, mesuré
 
+- **Rouges du portail de la v532 : aucun de la livraison.** `degats.js`
+  (« percuter une voiture de la rue l'abîme AUSSI » et « les feux de détresse
+  se posent SUR la carrosserie » — la Bugatti Bolide rend 0,45 sur deux feux) :
+  rejouée SEULE, mêmes deux rouges sur la branche et sur `origin/main` v531.
+  `monte.js` (rue et circulation : fabrication par tranches, passage peint de
+  Rome, allure d'une ville, voiture heurtée, rue vide), `reglages.js` (un choix
+  fait sur une tablette) et `reseau.js` (la voiture qui arrive derrière, sans
+  courtier) : familles déjà déclarées ci-dessous. Le premier portail avait
+  rendu SOIXANTE rouges dans `monte.js` : le sol continu lisait le ballast dans
+  l'air et la boucle de jeu mourait près d'un train — corrigé, témoin ajouté.
+- **Les rails semblent ondulés en vue oblique** (profil en long d'un tiers de
+  pente) et **les fenêtres du train restent noires la nuit** : relevé de la
+  revue d'écran (`docs/revue-ecran.md`).
 - **Le journal de la session des captures n'est pas encore remonté** (il part
   au lancement suivant de l'iPhone). L'endroit a été retrouvé par la géométrie :
   le TGV Paris–Lyon, viaduc des pas 716 à 767 et tranchée du pas 786, vers
