@@ -28,6 +28,15 @@
   seul de la branche (veille, reprise, hôte sans courtier), puis 91/91 vert
   ; `origin/main` 91/91 — et preuve structurelle : aucun guide ne naît à
   moins de 432 blocs du point d'apparition (`PORTEE_GUIDE` 150).
+  Troisième portail, sur la base v534 (renumérotée v535) : `monte.js` 11
+  rouges, dont trois intermittents jamais revus rejoué seul — « en virage, on
+  voit son flanc », « un passant change de trottoir au feu », « Atterrissage
+  vers Saint-Dizier » — et un neuf de la v531 : « au sol, chaque feuille vole
+  bas au-dessus de SA colonne » (vu une fois au portail, vert dans les deux
+  rejeux seuls). `monte.js` rejouée SEULE : branche 257 / 6 rouges,
+  `origin/main` v534 258 / 5 ; propres à la branche ce passage-là : « deux
+  voisines » et « au feu », tous deux déjà rouges sur `origin/main` ailleurs
+  dans ce fichier.
 
 
 - [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
