@@ -22,7 +22,15 @@
   au milieu », « deux voisines d'un convoi », « rue vide », les deux mises en
   page en vol (`minimap×edu-timer`) — identiques des deux côtés ; « les
   feuilles d'automne » (campagne, `saisons.js` non touché) intermittent sur la
-  branche avant le rebase. « en virage, la caméra
+  branche avant le rebase. « un passant du trottoir qui s'écarte d'une voiture
+  en biais » trouvait 2 scénarios sur la branche contre 5 à 6 sur la v534 :
+  la sonde (Rome, des deux côtés) a montré que la règle de l'écart n'y est pour
+  rien — `__feux()` ne vient que des morceaux maillés, et les coins des
+  carrefours sont plus loin de leur feu ; le témoin cherche maintenant à ±5
+  blocs du feu, se déplace pour relever d'autres feux s'il en manque, et pose
+  l'enfant au barycentre d'un groupe de scénarios à 70 blocs au plus. Branche
+  3/3/3 scénarios et verts, v534 5/6/6 et verts : la branche reste au plancher
+  du verdict (trois), à surveiller. « en virage, la caméra
   laisse la voiture glisser… on voit son flanc » (v534) : rouge au portail sur
   la branche (deux signes, 22 relevés en mouvement), vert seul sur la branche
   (12°, un signe) et seul sur `origin/main` v534 (16°, un signe). Le témoin se
