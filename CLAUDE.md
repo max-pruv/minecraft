@@ -1525,7 +1525,7 @@ Deux règles.
 ## Rien ne traverse une voie (v532) — un ouvrage décidé sur l'axe se rejuge colonne par colonne
 
 Max, captures d'iPhone sur le TGV Paris–Lyon : « Those things should never
-happen ». Quatre règles.
+happen ». Cinq règles.
 
 - **UNE RIVE N'EST PAS UN PONT.** Le viaduc se décide sur l'AXE (de l'eau
   sous lui), mais toute la largeur du pas était « pont » : le générateur n'y
@@ -1551,6 +1551,14 @@ happen ». Quatre règles.
   désormais sa cote au centre, son BLOC au coin (`blocVoxel`, que
   `colonneRoute` lit) : le générateur garde son indice entier. Les routes
   portent le même décalage, déclaré dans `TASKS.md`.
+- **QUAND UNE SURFACE SE LIT AILLEURS QUE LE BLOC, LE BLOC VOYAGE AVEC
+  ELLE.** `corridorEn` rend `cote` (centre) ET `blocVoxel` (coin) ; tout
+  lecteur qui cherche le bloc écrit (`grilleSol`, `hauts`, `coteHorizon`,
+  `colonneRoute`) lit `blocVoxel`, jamais `floor(cote) − 1`. Le premier jet
+  le recalculait et tombait dans l'air sur 322 morceaux sur 758 : un mailleur
+  qui jette sur le fil principal arrête la boucle de jeu, et c'est une cascade
+  de soixante rouges dans `monte.js` qui l'a dit. Le témoin maille les
+  morceaux le long de toutes les voies.
 - **UN CONVOI A SON MODÈLE ET SON ÉCART SE DÉDUIT DES LONGUEURS.** Le train
   intervilles était la rame du métro (8,0 à 8,7 blocs) posée tous les 7,6 :
   les bouts se traversaient. `convoitrain.js` : motrice au nez effilé à

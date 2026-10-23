@@ -44,14 +44,19 @@ surface du ballast (7 520 sur 58 494).
   soufflet entre deux voitures. L'écart se déduit des longueurs : plus aucun
   recouvrement. Deux appels de dessin par voiture, aucun programme neuf.
 - Le ballast n'enterre plus les traverses : sa surface suit la voie au centre
-  de chaque colonne.
+  de chaque colonne. Et le sol continu lit le bloc de ballast là où le
+  générateur l'écrit (au coin) : le premier jet le cherchait un bloc trop haut,
+  dans l'air, sur 322 des 758 morceaux le long des voies — le mailleur jetait,
+  et sur le fil principal la boucle de jeu s'arrêtait près d'un train. Le
+  portail l'a dit (`monte.js` mort après le témoin du train), pas une capture.
 - Le relief ne bouge pas : les deux empreintes de `plafond.js` sont intactes.
 
-**Ce qui le prouve.** Quatre témoins. `plafond.js` : le gabarit des deux voies
+**Ce qui le prouve.** Cinq témoins. `plafond.js` : le gabarit des deux voies
 sur 113 050 points du réseau entier (0 bloc, 0 surface ; la règle d'avant rend
 506 blocs sur les seuls pas de viaduc) ; deux lignes ne se partagent jamais une
 colonne (36 paires, la plus proche à 141 blocs) ; les traverses (1 point sur
-5 628, contre 1 205 avec la cote lue au coin). `carteMonde.js` : le convoi rendu
+5 628, contre 1 205 avec la cote lue au coin) ; chaque morceau le long des voies
+se maille (758, zéro erreur, contre 322 sur le premier jet). `carteMonde.js` : le convoi rendu
 (motrice effilée aux deux bouts, jeu positif à chaque attelage, deux maillages
 par voiture). L'empreinte des 490 morceaux change ; corrections désarmées, elle
 rend la constante d'avant au bit près.
