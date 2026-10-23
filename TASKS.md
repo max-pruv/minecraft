@@ -378,6 +378,15 @@ v522 ne touche pas ; la distribution reste à faire.
   - Portail sur le code fusionné avec la v534 : quinze suites vertes ; `degats.js`
     seul rouge les feux de la Bugatti ; `monte.js` « la rue roule à l'allure d'une
     ville » (v472) et « rue vide » ; `reseau.js` rejouée seule 91 verts.
+  - Portail sur le code fusionné avec la v536 : `degats.js` les feux de la
+    Bugatti ; `maj.js` « le loader dit combien de fichiers » et `manhattan.js`
+    « le taxi roule avec les contrôles tactiles » (déclarés) ; `monte.js` cinq
+    rouges, dont « de nuit au volant, la voiture a ses phares » (`voiture.glb`,
+    une lueur à z 0,54). Rejouée SEULE : branche 263 verts / 3 rouges (rue par
+    tranches, passage peint de Rome, rue vide), `origin/main` v536 260 / 6
+    (les mêmes familles, plus « en vol… ne se recouvrent pas » en 430 × 932 et
+    420 × 760 — le badge du temps libre sur la minicarte, que la v537 corrige) ;
+    les phares verts des deux côtés : une intermittence de portail.
 - [ ] **Deux rouges de portail mesurés des deux côtés au portail de la v530
   (les pistes larges).** Chacun rejoué SEUL sur la branche et sur `origin/main`
   v518 (`git worktree`), par une sonde qui recopie le passage du témoin :
