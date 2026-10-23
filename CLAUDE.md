@@ -821,6 +821,52 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un choc a de l'élan (v534) — la vitesse d'après un choc est un vecteur que le joystick ne touche pas
+
+Max : « quand on fonce dans une voiture avec une autre voiture, la voiture
+s'arrête immédiatement alors qu'elle aurait été propulsée sur quelques
+mètres ». Cinq règles, toutes mesurées par `sonde-elan-chocs.cjs`.
+
+- **CE QUI FILE DE CÔTÉ SE PERD PAR FROTTEMENT, PAS PAR UN COEFFICIENT
+  D'ANGLE.** `reponseChoc` gardait un quart de (1 − c) de la vitesse tangente
+  dès 30° : un mur à 30° ou 45° était un choc de face. Le choc retire au plus
+  `FROTTEMENT_IMPACT` × l'impulsion normale (Coulomb) et rend `e` de la vitesse
+  normale ; la FORCE reste `−vn / vPleine` — le contrat des dégâts ne bouge
+  pas, et un témoin le garde.
+- **APRÈS UN VRAI CHOC, LE JOYSTICK ATTEND (`glissade`).** Tenu en avant, le
+  frein mangeait le rebond en un quart de seconde. Au-dessus de
+  `CONTACT_DOUX`, la vitesse d'après devient un vecteur libre
+  (`player.glissade`) qui s'use à `FROTTEMENT_GLISSADE`, tourne la caisse si
+  l'impulsion ne passe pas par son centre (`vrilleDuChoc`, le bras de levier
+  est le COIN qui touche, `pointDeContact`, pas le milieu de la face que
+  lisent les dégâts), et rend la main au bout de `dureeGlissade` ou presque à
+  l'arrêt. Un piéton ou l'eau l'arrêtent net (v259, v272). Pas de
+  `franchirEnRoulant` en glissade : renvoyée de biais contre un mur en
+  escalier, la voiture « franchissait » le coin d'une marche et montait dans
+  la façade.
+- **UN FILET QUI RAMÈNE LA VITESSE AU DÉPLACEMENT NE JUGE PAS L'IMAGE D'UN
+  CHOC.** Dans cette image la voiture avance puis rebondit : son déplacement
+  net est presque nul, et le filet de la v272 tuait le rebond (zéro bloc à
+  21 blocs/s, mesuré). `_chocImage` le désarme pour l'image du choc.
+- **CE QUI SE POUSSE EST CE QUI N'EST PAS DE L'HORLOGE PARTAGÉE.** Une voiture
+  garée ou invoquée (une monture à `gabarit`, pas un avion) est un obstacle de
+  la famille « voiture » (`gareeContre`, main.js — elle ne l'était que pour
+  les piétons, la voiture de l'enfant la traversait) et se POUSSE
+  (`chocPoussable` : deux masses égales, `REBOND_VOITURE` ; `Animal.pousser`,
+  freinée à `FROTTEMENT_POUSSEE`). Une voiture de la rue ne se pousse jamais
+  (v305) : la nôtre rebondit. La vitesse de l'autre peut être un vecteur
+  (`vx`, `vz` dans la boîte) : sans elle, la voiture qu'on vient de pousser,
+  pas encore déplacée dans l'image, était repoussée à chaque pas.
+- **UN REBOND NE PUBLIE PAS UN SECOND CHOC.** Dans `ANTI_REBOND` (0,35 s de
+  JEU, `horlogeJeu` — une sonde sous node tourne plus vite que la montre), un
+  choc plus faible que le précédent est le même accident. Revenir dans le mur
+  après la glissade, joystick tenu, en est un autre : il se publie.
+
+- **CE QU'UNE VOITURE DE LA RUE AVANÇAIT VERS NOUS NE NOUS EMPORTE PAS.** Elle
+  s'arrête au choc (`heurter`, v372) : sa composante vers nous se retire de la
+  vitesse de sortie, la force reste celle de la vitesse RELATIVE. Sans cela un
+  taxi de Manhattan pris de face rejetait l'enfant de sept blocs (et
+  `origin/main`, joystick lâché, de trente-neuf à cinquante et un).
 ## Les stations de métro (v529) — on juge une station avec le vrai joueur, à l'aller et au retour
 
 Max : « on ne peut même pas marcher dedans ». Sept règles.

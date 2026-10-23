@@ -1,5 +1,20 @@
 # Ce qui est en cours
 
+- [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
+  au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
+  `gareeContre` (main.js) écarte les fiches `pilote`, parce qu'une boîte de
+  voiture (2,2 × gabarit/2) autour du fuselage serait fausse — il faut la boîte
+  du modèle (`userData.envergure`, v278). (2) Une voiture de la rue percutée ne
+  bouge pas d'un bloc : sa place est une fonction de l'horloge partagée (v305) ;
+  un recul LOCAL, purement visuel, qui se résorbe, serait possible mais
+  dessinerait deux rues différentes sur deux tablettes pendant une seconde —
+  décision de Max. (3) Une voiture garée poussée ne voyage pas par le réseau :
+  les bêtes sont locales (v257), l'ami la voit à sa place. (4) Joystick tenu,
+  la voiture revient dans le mur après la glissade et publie un second choc
+  (+0,6 à 1,7 s, force 0,15 à 0,47) : c'est un nouvel accident, voulu — à
+  revoir si Max trouve que la voiture s'use trop vite contre un mur.
+  (5) La glissade ne se voit pas chez l'ami autrement que par la position et
+  la dérive (`p.v.r`) : la vrille passe par le cap, déjà envoyé.
 - [ ] **Rouges du portail de la v532 (la sûreté garde le lointain)** — premier
   portail (avant fusion de la v531) : 15 suites vertes, `maj.js` et `monte.js`
   rouges ; second portail (après fusion, 9 suites) : `monte.js` les cinq rouges

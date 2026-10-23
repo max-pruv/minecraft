@@ -387,7 +387,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         releves.push({ beta: +(beta * 180 / Math.PI).toFixed(1), recul: +d.toFixed(2),
           v: +Math.hypot(g.player.vel.x, g.player.vel.z).toFixed(1),
           avant: vv === undefined || vv > 1,
-          rebond: !!(choc && performance.now() - choc.t < 1500) });
+          // et pendant la glissade d'après un choc (v534), où le volant n'agit pas
+          rebond: !!(choc && performance.now() - choc.t < 1500) || !!g.player.glissade });
       }
       // ON NE JUGE QUE CE QUI ROULE : à l'arrêt le volant ne fait rien (v262),
       // donc il n'y a pas de virage et l'angle ne veut rien dire.
@@ -7904,7 +7905,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       await dormir(600);
       for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
       if (!auVolant()) { for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0); return { err: 'pas au volant' }; }
-      const enJeu = (n, cb) => new Promise((fin) => { let c = 0, p = performance.now(); const pas = (t) => { const d = Math.min(Math.max((t - p) / 1000, 0), 0.05); c += d; p = t; if (cb) cb(c, d); if (c >= n) fin(c); else requestAnimationFrame(pas); }; requestAnimationFrame(pas); });
+      const enJeu = (n, cb) => new Promise((fin) => { let c = 0, p = performance.now(); const pas = (t) => { const d = Math.min(Math.max((t - p) / 1000, 0), 0.05); c += d; p = t; const assez = cb ? cb(c, d) === true : false; if (c >= n || assez) fin(c); else requestAnimationFrame(pas); }; requestAnimationFrame(pas); });
       // LES DÉGÂTS (v343) comptent chaque choc : trois chocs à la suite
       // pourraient mettre la voiture en feu et déposer l'enfant au milieu de la
       // série. On la répare (le garage) avant chaque mesure — c'est la
@@ -7955,7 +7956,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       for (let z = -30; z <= 0; z++) for (let h = 1; h <= 3; h++) poser(x0 + 90, y0 + h, z0 + z);
       placer(50, -12, -Math.PI / 2, 22);
       P.choc = null; n0 = P.chocs || 0; let face = null, vMin = 0;
-      await enJeu(3, (c) => { if (!face && (P.chocs || 0) > n0) face = { t: +c.toFixed(2), choc: P.choc }; if (face) vMin = Math.min(vMin, P.vitesseVoiture || 0); });
+      // ON LIT L'ARRÊT UNE SECONDE ET DEMIE APRÈS LE CHOC (v534) : la voiture
+      // rebondit et glisse avant de s'arrêter (la glissade, conduite.js) ; lue
+      // à trois secondes fixes, un choc tombé à 2,3 s la trouvait encore en route
+      let tFace = null;
+      await enJeu(6, (c) => { if (!face && (P.chocs || 0) > n0) { face = { t: +c.toFixed(2), choc: P.choc }; tFace = c; } if (face) vMin = Math.min(vMin, P.vitesseVoiture || 0); return tFace != null && c > tFace + 1.5; });
       res.face = { face, rebond: +vMin.toFixed(2), x: +(P.pos.x - x0).toFixed(1), v: +(P.vitesseVoiture || 0).toFixed(2) };
       // — une voiture de la rue : la famille « voiture » du crochet de main.js,
       // posée à la main en travers à x = 70 (le crochet RÉEL est éprouvé plus
@@ -7967,6 +7972,34 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       await enJeu(3, (c) => { if (!rue && (P.chocs || 0) > n0) rue = { t: +c.toFixed(2), choc: P.choc, v: +(P.vitesseVoiture || 0).toFixed(2) }; });
       P.obstacleVehicule = vrai; P.touchMove.f = 0;
       res.rue = { rue, x: +(P.pos.x - x0).toFixed(1) };
+      // — UNE VOITURE GARÉE, PAR LE VRAI CROCHET (v534). Max : « quand on fonce
+      // dans une voiture avec une autre voiture, la voiture s'arrête
+      // immédiatement alors qu'elle aurait été propulsée sur quelques
+      // mètres ». Une berline invoquée en travers de la dalle (z − 25), la
+      // nôtre lancée à 30 blocs/s, joystick tenu jusqu'au choc puis lâché :
+      // l'invoquée part, la nôtre continue. Sur l'ancien code la voiture
+      // invoquée n'était même pas un obstacle — on la traversait. —
+      {
+        // l'enfant d'abord : le bestiaire retire une bête à plus de 70 blocs de lui
+        placer(150, -25, -Math.PI / 2, 0);
+        const garee = g.animalManager.invoquer('voiture', x0 + 200, z0 - 25, false, { flotte: 'berline-citadine' });
+        if (garee) garee.yaw = -Math.PI / 2;
+        await enJeu(0.3);
+        placer(150, -25, -Math.PI / 2, 30);
+        P.touchMove.f = 1; P.choc = null; n0 = P.chocs || 0;
+        const g0 = garee ? { x: garee.pos.x, z: garee.pos.z } : null;
+        let choc = null, xContact = null, vImpact = null, vAvant = 0;
+        await enJeu(3, () => {
+          if (!choc && (P.chocs || 0) > n0) { choc = P.choc; xContact = P.pos.x; vImpact = vAvant; P.touchMove.f = 0; }
+          vAvant = Math.hypot(P.vel.x, P.vel.z);
+        });
+        P.touchMove.f = 0;
+        res.garee = { choc: choc ? { force: choc.force } : null, vImpact: vImpact == null ? null : +vImpact.toFixed(1),
+          poussee: g0 && garee ? +Math.hypot(garee.pos.x - g0.x, garee.pos.z - g0.z).toFixed(2) : null,
+          nous: xContact == null ? null : +(P.pos.x - xContact).toFixed(2), traversee: xContact == null && P.pos.x - x0 > 205,
+          regle: C && C.FROTTEMENT_POUSSEE ? { e: C.REBOND_VOITURE, fp: C.FROTTEMENT_POUSSEE, f: C.FROTTEMENT_GLISSADE } : null };
+        if (garee) { g.animalManager.scene.remove(garee.mesh); g.animalManager.animals = g.animalManager.animals.filter((a) => a !== garee); }
+      }
       // — UNE VRAIE VOITURE DE LA RUE, PAR LE VRAI CROCHET (v397) : un convoi
       // d'une voiture garée (vitesse nulle) sur un anneau de la dalle. Une
       // voiture qui ROULE ne se rattrape pas au banc : la rue avance en temps
@@ -8111,6 +8144,18 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('une voiture de la rue percutée : choc publié, et la nôtre rebondit au lieu de la traverser',
       !cd.err && cd.rue && cd.rue.rue && cd.rue.rue.choc && cd.rue.rue.choc.force > 0.2 && cd.rue.x <= 66.01,
       JSON.stringify(cd.rue));
+    // la barre se CALCULE sur la règle (v237) : la moitié de l'arrêt d'une
+    // voiture partie à (1 + e)/2 de la vitesse d'impact, frein à main serré ;
+    // la nôtre, à (1 − e)/2, au frottement de la glissade
+    {
+      const gr = cd.garee || {}, rg = gr.regle || { e: 0.25, fp: 18, f: 8 };
+      const arret = (v, f) => (v * v) / (2 * f);
+      const barre = gr.vImpact ? 0.5 * arret((1 + rg.e) / 2 * gr.vImpact, rg.fp) : Infinity;
+      const barreNous = gr.vImpact ? 0.5 * arret((1 - rg.e) / 2 * gr.vImpact, rg.f) : Infinity;
+      verifier('on fonce dans une voiture garée : elle est propulsée sur quelques mètres, et la nôtre continue sur sa lancée',
+        !cd.err && !!gr.choc && gr.choc.force > 0.2 && gr.poussee >= barre && gr.nous >= barreNous,
+        `${JSON.stringify(gr)} · barres ${barre.toFixed(1)} et ${barreNous.toFixed(1)} blocs`);
+    }
     const va = cd.vraieArriere || {}, vf = cd.vraieFlanc || {};
     verifier('une vraie voiture de la rue, par le vrai crochet : son flanc frôlé ne nous arrête pas — un choc léger, sur NOTRE flanc, et l\'on continue',
       !cd.err && vf.lu && vf.c && vf.c.contact === 'voiture' && vf.c.force > 0.05 && vf.c.force < 0.4 && vf.c.v > 9 && vf.c.lat > 0.9 && Math.abs(vf.c.long) < 1.8,
