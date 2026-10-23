@@ -190,7 +190,11 @@
   (`bugatti-bolide.glb`, deux feux à 0,45 de la tôle), et « percuter une
   voiture de la rue » rouge sur `ecart` 18,3 pour 20 (déjà déclaré : la
   voiture de la rue repart pendant les 0,2 s de la pose, aucun mobilier sur
-  la dalle) ; `maj.js` trois passages de chaque côté, « en construction, on
+  la dalle) ; au portail 4, « chez Alice aussi, la voiture de la rue que
+  Marlon percute s'arrête feux de détresse allumés » rendait `recues 0`
+  (le `rue_choc` n'est pas arrivé chez Alice) — rejouée seule, branche 2/2
+  verte (`recues 1`), `origin/main` 1/2 rouge à l'identique (`recues 0`) :
+  intermittence de livraison du message, des deux côtés ; `maj.js` trois passages de chaque côté, « en construction, on
   marche au joystick » rouge une fois sur trois sur la branche (0,8 bloc),
   zéro sur `origin/main` — le crochet du piéton rend le même verdict
   (vrai/faux) qu'avant, à surveiller ; le loader qui compte les fichiers
