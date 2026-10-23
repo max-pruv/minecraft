@@ -30,6 +30,7 @@ import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensation
 import { brancherTraces, avancerTraces, chaufferTraces } from './traces.js';
 import { creerEmbarquement, ATTENTE_RAME_MIN } from './embarquement.js';
 import { chronoReel } from './cadence.js';
+import { allumerPhares, eteindrePhares } from './phares.js';
 import { ICONES, avecIcone, pastille } from './commandes.js';
 import { migrerRecordsCourse } from './sync.js';
 
@@ -60,6 +61,8 @@ export function initFun(ctx) {
   const { scene, world, player, animalManager, edu, cloud, canvas,
     renderNow, emojiBurst, myName, getNet, remotePlayers, isRunning,
     isNight, getWeather, getPosCtx, getVehicules, vehiculeDistant, photos: photosNuage } = ctx;
+  // la part de nuit de main.js (v248) : c'est elle qui allume les phares
+  const nuitDehors = ctx.nuitDehors || (() => 0);
 
   // ---- persistent state -----------------------------------------------------
   // Les records ne s'affichent plus (v255) mais se COMPTENT toujours. Ce
@@ -261,6 +264,11 @@ export function initFun(ctx) {
       animalManager.animals = animalManager.animals.filter((o) => o !== a);
     } });
 
+  function eteindreFeuxNav(m) {
+    const nav = m && m.userData.feuxNav;
+    if (nav) { nav.rouge.visible = false; nav.vert.visible = false; nav.eclat.visible = false; }
+  }
+
   function toggleRide(a, silencieux = false) {
     if (riding) {
       const quitte = riding;
@@ -268,6 +276,8 @@ export function initFun(ctx) {
       // Les flammes s'éteignent avec le mode pilote : la monture quittée
       // n'est plus mise à jour, elle garderait sa dernière flamme (v264).
       for (const f of (quitte && quitte.mesh && quitte.mesh.userData.tuyeres) || []) f.visible = false;
+      // les feux de bord aussi (v533) : la monture quittée garderait ses phares
+      if (quitte && quitte.mesh) { eteindrePhares(quitte.mesh); eteindreFeuxNav(quitte.mesh); }
       // On rend la marche en descendant : sans cela l'enfant garderait la
       // physique de vol à pied. Même règle que le gabarit de la voiture, qui
       // se rend aussi en descendant (v212).
@@ -1217,6 +1227,13 @@ export function initFun(ctx) {
         : etat === 'freinage' ? 0 : Math.min(1, v / max);
       const poussee = player.gaz != null ? player.gaz : assistee;
       moteurRegime(poussee);
+      // LES FEUX DE NAVIGATION (v533) : allumés aux commandes, l'éclat blanc
+      // de la queue clignote — un éclat bref, une fois par seconde.
+      const nav = a.mesh.userData.feuxNav;
+      if (nav) {
+        nav.rouge.visible = true; nav.vert.visible = true;
+        nav.eclat.visible = (performance.now() % 1000) < 180;
+      }
       const tuyeres = a.mesh.userData.tuyeres;
       if (tuyeres && tuyeres.length) {
         const allumee = poussee > 0.02 || v > 0.5;
@@ -1230,7 +1247,10 @@ export function initFun(ctx) {
       a.mesh.rotation.z = 0;      // on rend l'assiette en descendant
       a.mesh.rotation.x = 0;
       for (const f of a.mesh.userData.tuyeres || []) f.visible = false;
+      eteindreFeuxNav(a.mesh);
     }
+    // LES PHARES (v533) : au volant d'une voiture, dès que la nuit tombe.
+    if (!player.pilote && a.def.moteur === 'voiture') allumerPhares(a.mesh, nuitDehors());
     // AU VOLANT, LE RÉGIME EST CE QUE LA VOITURE FAIT, pas ce qu'on demande :
     // moteur au ralenti à l'arrêt, qui monte avec l'allure. Le plafond vient
     // de `player.js`, là où il se calcule — la classe du modèle le fixe

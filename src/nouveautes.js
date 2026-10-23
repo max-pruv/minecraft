@@ -6,12 +6,39 @@
 
 export const NOUVEAUTES = [
   {
-    v: 533,
+    v: 536,
     titre: 'La minicarte toujours là',
     puces: [
       'La minicarte s\'affiche toute seule',
       'La toucher ouvre la carte du monde',
       "La croix ne cache plus l'heure",
+    ],
+  },
+  {
+    v: 534,
+    titre: 'Un choc a de l\'élan',
+    puces: [
+      'La voiture rebondit et glisse',
+      'Une voiture garée est poussée',
+      'De biais, on file le long du mur',
+    ],
+  },
+  {
+    v: 533,
+    titre: 'Phares, feux et manette',
+    puces: [
+      'La voiture allume ses phares la nuit',
+      'L\'avion a ses feux rouge et vert',
+      'La manette des gaz dit « Gaz »',
+      'Une vraie pioche pour casser',
+    ],
+  },
+  {
+    v: 532,
+    titre: 'Loin, même par sûreté',
+    puces: [
+      '« Loin » montre enfin l\'horizon lointain',
+      'Même quand le jeu s\'allège par sûreté',
     ],
   },
   {
