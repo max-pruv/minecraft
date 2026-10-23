@@ -16,6 +16,14 @@ export const NOUVEAUTES = [
     ],
   },
   {
+    v: 532,
+    titre: 'Loin, même par sûreté',
+    puces: [
+      '« Loin » montre enfin l\'horizon lointain',
+      'Même quand le jeu s\'allège par sûreté',
+    ],
+  },
+  {
     v: 531,
     titre: 'De vraies feuilles d\'automne',
     puces: [
