@@ -821,7 +821,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les guides des villes (v533) — un guide est un rôle à part, et il se pose à ciel ouvert
+## Les guides des villes (v535) — un guide est un rôle à part, et il se pose à ciel ouvert
 
 Trois règles.
 
@@ -863,6 +863,53 @@ Trois règles.
   chauffé à l'accueil (v246). Un matériau neuf aurait compilé à l'arrivée au
   monument — et la présence (v241) en fait une variante transparente de plus.
 
+
+## Un choc a de l'élan (v534) — la vitesse d'après un choc est un vecteur que le joystick ne touche pas
+
+Max : « quand on fonce dans une voiture avec une autre voiture, la voiture
+s'arrête immédiatement alors qu'elle aurait été propulsée sur quelques
+mètres ». Cinq règles, toutes mesurées par `sonde-elan-chocs.cjs`.
+
+- **CE QUI FILE DE CÔTÉ SE PERD PAR FROTTEMENT, PAS PAR UN COEFFICIENT
+  D'ANGLE.** `reponseChoc` gardait un quart de (1 − c) de la vitesse tangente
+  dès 30° : un mur à 30° ou 45° était un choc de face. Le choc retire au plus
+  `FROTTEMENT_IMPACT` × l'impulsion normale (Coulomb) et rend `e` de la vitesse
+  normale ; la FORCE reste `−vn / vPleine` — le contrat des dégâts ne bouge
+  pas, et un témoin le garde.
+- **APRÈS UN VRAI CHOC, LE JOYSTICK ATTEND (`glissade`).** Tenu en avant, le
+  frein mangeait le rebond en un quart de seconde. Au-dessus de
+  `CONTACT_DOUX`, la vitesse d'après devient un vecteur libre
+  (`player.glissade`) qui s'use à `FROTTEMENT_GLISSADE`, tourne la caisse si
+  l'impulsion ne passe pas par son centre (`vrilleDuChoc`, le bras de levier
+  est le COIN qui touche, `pointDeContact`, pas le milieu de la face que
+  lisent les dégâts), et rend la main au bout de `dureeGlissade` ou presque à
+  l'arrêt. Un piéton ou l'eau l'arrêtent net (v259, v272). Pas de
+  `franchirEnRoulant` en glissade : renvoyée de biais contre un mur en
+  escalier, la voiture « franchissait » le coin d'une marche et montait dans
+  la façade.
+- **UN FILET QUI RAMÈNE LA VITESSE AU DÉPLACEMENT NE JUGE PAS L'IMAGE D'UN
+  CHOC.** Dans cette image la voiture avance puis rebondit : son déplacement
+  net est presque nul, et le filet de la v272 tuait le rebond (zéro bloc à
+  21 blocs/s, mesuré). `_chocImage` le désarme pour l'image du choc.
+- **CE QUI SE POUSSE EST CE QUI N'EST PAS DE L'HORLOGE PARTAGÉE.** Une voiture
+  garée ou invoquée (une monture à `gabarit`, pas un avion) est un obstacle de
+  la famille « voiture » (`gareeContre`, main.js — elle ne l'était que pour
+  les piétons, la voiture de l'enfant la traversait) et se POUSSE
+  (`chocPoussable` : deux masses égales, `REBOND_VOITURE` ; `Animal.pousser`,
+  freinée à `FROTTEMENT_POUSSEE`). Une voiture de la rue ne se pousse jamais
+  (v305) : la nôtre rebondit. La vitesse de l'autre peut être un vecteur
+  (`vx`, `vz` dans la boîte) : sans elle, la voiture qu'on vient de pousser,
+  pas encore déplacée dans l'image, était repoussée à chaque pas.
+- **UN REBOND NE PUBLIE PAS UN SECOND CHOC.** Dans `ANTI_REBOND` (0,35 s de
+  JEU, `horlogeJeu` — une sonde sous node tourne plus vite que la montre), un
+  choc plus faible que le précédent est le même accident. Revenir dans le mur
+  après la glissade, joystick tenu, en est un autre : il se publie.
+
+- **CE QU'UNE VOITURE DE LA RUE AVANÇAIT VERS NOUS NE NOUS EMPORTE PAS.** Elle
+  s'arrête au choc (`heurter`, v372) : sa composante vers nous se retire de la
+  vitesse de sortie, la force reste celle de la vitesse RELATIVE. Sans cela un
+  taxi de Manhattan pris de face rejetait l'enfant de sept blocs (et
+  `origin/main`, joystick lâché, de trente-neuf à cinquante et un).
 ## Les stations de métro (v529) — on juge une station avec le vrai joueur, à l'aller et au retour
 
 Max : « on ne peut même pas marcher dedans ». Sept règles.
@@ -978,6 +1025,30 @@ Trois règles.
   et `morceauxAvantClairieres` gardent les arbres du jour même ; la date se
   relit à la fusion (v309). L'empreinte des 490 morceaux se prouve bosquets
   désarmés.
+## Les feux de bord (v533) — ce qui brille sans éclairer partage la matière de la flamme
+
+Revue d'écran, lignes 4, 7 et 8. Trois règles.
+
+- **UN FEU QUI S'ALLUME EN JEU PREND `matiereAdditive` (avions.js).** La
+  flamme (v264), les feux de navigation et les phares (`src/phares.js`) ont
+  les MÊMES réglages de matériau, donc la même clé de programme, chauffée à
+  l'accueil avec la flamme (v491) : aucun programme ne naît à l'allumage, par
+  construction, et le témoin lit les clés (v363). Aucune lampe ponctuelle
+  (v248). Un feu neuf avec un autre réglage (opaque, une carte, un autre
+  côté) est une clé neuve : il se chauffe, ou il prend cette fonction.
+- **UN FEU SE MESURE SUR LE MODÈLE, IL NE S'ÉCRIT PAS (v230).** Les feux de
+  navigation sont posés par `fini` sur les sommets extrêmes du modèle (gauche,
+  droite, queue), AVANT les flammes ; les phares sur les blocs optiques nommés
+  de la flotte, sinon les deux tiers de la demi-largeur, au sommet le plus en
+  avant de la bande — une fois par modèle. Nés cachés ; `fun.js` les allume
+  aux commandes (phares : selon `nuitDehors`, passé par `initFun`) et la
+  descente les éteint, comme la flamme.
+- **CE QUI HABILLE LA MANETTE NE PREND PAS LE DOIGT.** Le mot et les chevrons
+  sont des enfants de `#gaz-base` en `pointer-events: none`, le curseur aussi :
+  `elementFromPoint` rend la manette en tout point de sa course, et sa capture
+  de pointeur (v262) n'a rien devant elle. En construction, Poser, Casser et
+  Sauter ont le même x, et l'outil actif est un ANNEAU sur le voile, jamais un
+  fond blanc.
 
 ## Les commandes simplifiées (v494) — une main pour bouger, une main pour agir
 
@@ -1282,6 +1353,24 @@ Max : « le mode Loin n'est pas assez loin ». Trois règles.
   troisième grille est seize blocs sous la couronne (`ABAISSE_TRES_LOIN`),
   comme la couronne deux sous la fine. `?loin=2560` rend la v504 au sommet
   près.
+
+## La sûreté garde le lointain (v532) — un disjoncteur ne retire que ce qui coûte ce qu'il protège
+
+Max : « on ne voit pas du tout quatre fois plus loin ». Deux règles.
+
+- **AVANT DE CHERCHER POURQUOI UNE FONCTIONNALITÉ NE SE VOIT PAS, ON LIT CE
+  QUE L'APPAREIL JOUAIT.** `journal_appareil` : « Loin » choisi, `moyen` par
+  sûreté depuis la v509 — la couronne (v497, v518) n'avait JAMAIS tourné sur
+  l'iPhone de Max. C'est la régression de réglage de la v291 une fois de plus,
+  et deux livraisons l'ont portée sans que rien ne le dise. La fiche porte
+  désormais `loin` (la portée de la vue).
+- **LA SÛRETÉ DESCEND LES MORCEAUX, PAS LE PAYSAGE.** Sous une étendue
+  choisie, `palierRetenu` garde le `loin` de cette étendue : la couronne lit
+  `terrainHeight` et ne fabrique aucun morceau, et aucun plantage de l'appareil
+  n'a tourné avec elle. Le prix est mesuré (+47 000 triangles, +5,2 Mo à
+  rr 12). Le jour où une étendue gagne un réglage, on se demande s'il coûte ce
+  que la sûreté protège (des morceaux, de la mémoire de façades) ; sinon il
+  survit à la sûreté.
 
 ## Le garde-manger retiré, la minicarte à gauche (v518)
 

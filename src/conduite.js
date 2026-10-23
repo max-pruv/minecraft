@@ -398,19 +398,104 @@ export const POINTE_PLEINE = 0.85;    // un mur pris à 85 % de la pointe : choc
 export function vitessePleine(fiche) {
   return fiche && fiche.vmax > 0 ? fiche.vmax * POINTE_PLEINE : CHOC_PLEIN;
 }
-export function reponseChoc(vx, vz, nx, nz, vPleine = CHOC_PLEIN) {
+// L'ÉLAN APRÈS LE CHOC (v534). Max : « quand on fonce dans une voiture avec
+// une autre voiture, la voiture s'arrête immédiatement alors qu'elle aurait été
+// propulsée sur quelques mètres. Idem sur d'autres types d'objets. » Mesuré
+// (`sonde-elan-chocs.cjs`) : la règle d'avant ne gardait de la vitesse
+// tangente qu'un quart de (1 − c) dès trente degrés — un mur pris à 30° ou à
+// 45° était un choc de face, la voiture plantée contre lui. Ce qui file de
+// côté se perd désormais par FROTTEMENT, comme deux surfaces qui se touchent
+// (loi de Coulomb : le choc ne peut pas retirer plus de `FROTTEMENT_IMPACT` ×
+// l'impulsion normale) ; ce qui revient, c'est `e` de la vitesse normale. Un
+// mur de face rebondit court (REBOND), un mur à 30° renvoie la voiture le long
+// de lui avec les deux tiers de sa vitesse. La FORCE ne change pas : c'est la
+// même vitesse d'impact normale, donc le même choc pour les dégâts.
+export const FROTTEMENT_IMPACT = 0.35;
+export function reponseChoc(vx, vz, nx, nz, vPleine = CHOC_PLEIN, e = REBOND) {
   const vn = vx * nx + vz * nz;
   const vit = Math.hypot(vx, vz);
   if (vn >= 0 || vit < 1e-6) return { vx, vz, force: 0, impact: 0, glisse: false };
-  const tx = vx - vn * nx, tz = vz - vn * nz;
+  const tx = vx - vn * nx, tz = vz - vn * nz, vt = Math.hypot(tx, tz);
   const c = -vn / vit;                                 // 1 de face, 0 tout à fait rasant
   const force = Math.min(1, -vn / vPleine), impact = -vn;
-  if (c < RASANT) {
-    const k = 1 - PERTE_GLISSE * c;
-    return { vx: tx * k, vz: tz * k, force, impact, glisse: true };
-  }
-  const k = 0.25 * (1 - c);                            // de face : presque rien ne file de côté
-  return { vx: tx * k - vn * REBOND * nx, vz: tz * k - vn * REBOND * nz, force, impact, glisse: false };
+  const kt = vt > 1e-9 ? Math.max(0, vt - FROTTEMENT_IMPACT * (1 + e) * -vn) / vt : 0;
+  // rasant (moins de 30° entre la vitesse et le mur) : on GLISSE le long, sans
+  // rebond — un rebond renverrait la voiture au milieu de la rue
+  const r = c < RASANT ? 0 : e;
+  return { vx: tx * kt - vn * r * nx, vz: tz * kt - vn * r * nz, force, impact, glisse: c < RASANT };
+}
+
+// LE CHOC CONTRE CE QUI SE POUSSE (v534) : une voiture garée ou invoquée (une
+// monture, rien de l'horloge partagée). Deux voitures de même masse, choc
+// d'élasticité `e` : la nôtre garde (1 − e)/2 de sa vitesse normale relative,
+// l'autre en prend (1 + e)/2 — c'est elle qui est « propulsée sur quelques
+// mètres ». Le frottement de contact se partage de même. (vx, vz) notre
+// vitesse, (ax, az) la sienne, n la normale tournée vers nous. Rend notre
+// vitesse d'après, la sienne, et la force (la même formule que tout choc :
+// la vitesse d'impact normale relative, rapportée à `vPleine`).
+export const REBOND_VOITURE = 0.25;
+export function chocPoussable(vx, vz, ax, az, nx, nz, vPleine = CHOC_PLEIN, e = REBOND_VOITURE) {
+  const wx = vx - ax, wz = vz - az;
+  const wn = wx * nx + wz * nz;
+  if (wn >= 0) return { vx, vz, autre: { vx: ax, vz: az }, force: 0, impact: 0, glisse: false };
+  const tx = wx - wn * nx, tz = wz - wn * nz, wt = Math.hypot(tx, tz);
+  const jn = (1 + e) / 2 * -wn;                       // l'impulsion normale, par unité de masse
+  const jt = wt > 1e-9 ? Math.min(wt / 2, FROTTEMENT_IMPACT * jn) / wt : 0;
+  const dx = nx * jn - tx * jt, dz = nz * jn - tz * jt;
+  const c = -wn / Math.max(1e-6, Math.hypot(wx, wz));
+  return { vx: vx + dx, vz: vz + dz, autre: { vx: ax - dx, vz: az - dz },
+    force: Math.min(1, -wn / vPleine), impact: -wn, glisse: c < RASANT };
+}
+
+// LA GLISSADE (v534) : après un vrai choc, la voiture n'obéit plus au
+// joystick le temps de reprendre ses appuis. Sans elle, le frein du joystick
+// tenu en avant mangeait le rebond en un quart de seconde (mesuré : 0,8 bloc
+// à 30 blocs/s contre une voiture garée) et la voiture « s'arrêtait
+// immédiatement ». Pendant la glissade, la vitesse est un VECTEUR libre — la
+// caisse peut partir de côté, en crabe, et tourner sur elle-même — qui
+// s'use au frottement des pneus (FROTTEMENT_GLISSADE, des pneus qui
+// ripent : un peu moins d'un g) ; elle dure selon la violence du choc, et
+// rend la main dès que la voiture est presque arrêtée.
+export const FROTTEMENT_GLISSADE = 8;   // blocs/s²
+export const GLISSADE_MIN = 0.35;       // s
+export const GLISSADE_MAX = 0.9;        // s
+export const GLISSADE_FIN = 1.5;        // blocs/s : sous ce seuil, on rend la main
+export const VRILLE = 0.5;              // part du moment de l'impulsion qui fait tourner la caisse
+export const VRILLE_MAX = 3;            // rad/s
+export const VRILLE_TAU = 0.45;         // s : la rotation s'éteint
+export const FROTTEMENT_POUSSEE = 18;   // blocs/s² : une voiture garée a son frein à main, ses pneus ripent de côté
+export function dureeGlissade(impact) {
+  return Math.min(GLISSADE_MAX, GLISSADE_MIN + Math.max(0, impact) / 60);
+}
+// La rotation que donne une impulsion (dvx, dvz) reçue au point (rx, rz) du
+// centre : le moment rapporté à l'inertie d'une boîte (a, b). Rend une vitesse
+// de lacet dans la convention de `player.yaw` (le nez en (−sin, −cos) : le cap
+// croît quand la voiture tourne à gauche), autour de +y.
+export function vrilleDuChoc(rx, rz, dvx, dvz, a = 2.2, b = 1.13) {
+  const inertie = (a * a + b * b) / 3;
+  const w = VRILLE * (rz * dvx - rx * dvz) / inertie;
+  return Math.max(-VRILLE_MAX, Math.min(VRILLE_MAX, w));
+}
+// LE BRAS DE LEVIER : le point de la caisse qui touche en premier quand on
+// est poussé vers (dx, dz), relatif au centre — un coin si l'on arrive en
+// biais, le milieu d'une face si l'on arrive droit (le poids passe de l'un à
+// l'autre sur un quart de la direction, sinon un choc de face pile ferait
+// tourner la caisse au hasard du signe). `pointDImpact` rend le milieu de la
+// face, ce que lisent les dégâts ; la rotation demande le coin.
+export function pointDeContact(cap, a, b, dx, dz) {
+  const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+  const n = Math.hypot(dx, dz) || 1, su = (dx * ux + dz * uz) / n, sv = (dx * vx + dz * vz) / n;
+  const pu = a * Math.sign(su) * Math.min(1, Math.abs(su) / 0.25);
+  const pv = b * Math.sign(sv) * Math.min(1, Math.abs(sv) / 0.25);
+  return { x: ux * pu + vx * pv, z: uz * pu + vz * pv };
+}
+// Un pas de glissade : la vitesse s'use au frottement (sans changer de
+// direction), la rotation s'éteint. Rend { vx, vz, w, fini }.
+export function pasGlissade(g, dt, frottement = FROTTEMENT_GLISSADE) {
+  const sp = Math.hypot(g.vx, g.vz);
+  const n = Math.max(0, sp - frottement * dt), k = sp > 1e-9 ? n / sp : 0;
+  const w = (g.w || 0) * Math.exp(-dt / VRILLE_TAU);
+  return { vx: g.vx * k, vz: g.vz * k, w, fini: n < GLISSADE_FIN };
 }
 
 // LES CASES SOUS UNE BOÎTE ORIENTÉE. La boîte : centre (x, z), cap (le sens
@@ -516,8 +601,30 @@ export function chocContreVoiture(moi, autre, vx, vz, vPleine = CHOC_PLEIN) {
   const n = normaleEntreBoites(moi, autre)
     || normaleEntreBoites({ ...moi, a: moi.a + MARGE_CONTACT, b: moi.b + MARGE_CONTACT }, autre);
   if (!n) return null;
-  const ax = (autre.v || 0) * autre.ux, az = (autre.v || 0) * autre.uz;
+  // sa vitesse : le long de son axe (la rue), ou un vecteur (une voiture
+  // poussée, qui file de côté)
+  const ax = autre.vx != null ? autre.vx : (autre.v || 0) * autre.ux;
+  const az = autre.vz != null ? autre.vz : (autre.v || 0) * autre.uz;
+  // une voiture garée ou invoquée se POUSSE (v534) ; une voiture de la rue
+  // non — sa place est une fonction de l'horloge partagée (v305)
+  if (autre.libre) {
+    const p = chocPoussable(vx, vz, ax, az, n.nx, n.nz, vPleine);
+    const force = p.impact < CONTACT_DOUX ? 0 : p.force;
+    return { vx: p.vx, vz: p.vz, force, impact: p.impact, glisse: p.glisse, nx: n.nx, nz: n.nz, pousse: p.autre };
+  }
   const r = reponseChoc(vx - ax, vz - az, n.nx, n.nz, vPleine);
+  // CE QU'ELLE AVANÇAIT VERS NOUS NE NOUS EMPORTE PAS (v534). Une voiture de
+  // la rue percutée s'arrête (`heurter`, vehicules.js, v372) ; prise de face
+  // en roulant, sa vitesse rendue à la nôtre la renvoyait sept blocs en
+  // arrière pendant la glissade (`manhattan.js`, le taxi). On garde ce qui
+  // s'éloigne (on la percute par l'arrière, on repart derrière elle) et ce qui
+  // file de côté ; la FORCE reste celle de la vitesse relative vraie.
+  const an = ax * n.nx + az * n.nz;
+  let out = r, bx = ax, bz = az;
+  if (an > 0) {
+    bx = ax - an * n.nx; bz = az - an * n.nz;
+    out = reponseChoc(vx - bx, vz - bz, n.nx, n.nz, vPleine);
+  }
   // pare-chocs contre pare-chocs à moins de CONTACT_DOUX : un contact, pas un
   // choc. Collé derrière une voiture plus lente, joystick en avant, on la
   // touche à chaque image ; publiées, ces caresses useraient la voiture
@@ -525,7 +632,7 @@ export function chocContreVoiture(moi, autre, vx, vz, vPleine = CHOC_PLEIN) {
   // Le seuil se lit en blocs/s (v424) : la force dépend désormais de la
   // classe, une caresse de trois blocs/s non.
   const force = r.impact < CONTACT_DOUX ? 0 : r.force;
-  return { vx: r.vx + ax, vz: r.vz + az, force, glisse: r.glisse, nx: n.nx, nz: n.nz };
+  return { vx: out.vx + bx, vz: out.vz + bz, force, impact: r.impact, glisse: out.glisse || r.glisse, nx: n.nx, nz: n.nz };
 }
 
 // LA NORMALE D'UN MUR FAIT DE CUBES. `cases` : les centres [x, z] des cases

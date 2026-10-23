@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **Rouges de portail de la v533 (les guides des villes) : aucun de la
+- [ ] **Rouges de portail de la v535 (les guides des villes) : aucun de la
   livraison.** Soupçonnant les guides devant « la rue roule à l'allure d'une
   ville » (médiane 0), une sonde sous node a trouvé quatre guides sur la
   chaussée — corrigé, et c'était un vrai défaut — mais le rouge revient au
@@ -15,7 +15,7 @@
   milliers de blocs de tout guide ; vert aux trois portails précédents du même
   code). `degats.js` « percuter une voiture de la rue » (déclaré).
   `reglages.js` « un choix fait sur une tablette » : vert seul des deux côtés.
-  **Portails de la v533 (après fusion de la v531), coupés deux fois à deux
+  **Portails de la v535 (après fusion de la v531), coupés deux fois à deux
   heures pendant `reseau.js`.** Un seul rouge de la livraison, corrigé : le
   regard de Capucine lu pendant un pas de côté (`ecart`, une voiture passe ;
   sonde à part, 1 fois sur 3). Le reste, déclaré : `monte.js` (tranches,
@@ -29,6 +29,58 @@
   ; `origin/main` 91/91 — et preuve structurelle : aucun guide ne naît à
   moins de 432 blocs du point d'apparition (`PORTEE_GUIDE` 150).
 
+
+- [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
+  au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
+  `gareeContre` (main.js) écarte les fiches `pilote`, parce qu'une boîte de
+  voiture (2,2 × gabarit/2) autour du fuselage serait fausse — il faut la boîte
+  du modèle (`userData.envergure`, v278). (2) Une voiture de la rue percutée ne
+  bouge pas d'un bloc : sa place est une fonction de l'horloge partagée (v305) ;
+  un recul LOCAL, purement visuel, qui se résorbe, serait possible mais
+  dessinerait deux rues différentes sur deux tablettes pendant une seconde —
+  décision de Max. (3) Une voiture garée poussée ne voyage pas par le réseau :
+  les bêtes sont locales (v257), l'ami la voit à sa place. (4) Joystick tenu,
+  la voiture revient dans le mur après la glissade et publie un second choc
+  (+0,6 à 1,7 s, force 0,15 à 0,47) : c'est un nouvel accident, voulu — à
+  revoir si Max trouve que la voiture s'use trop vite contre un mur.
+  (5) La glissade ne se voit pas chez l'ami autrement que par la position et
+  la dérive (`p.v.r`) : la vrille passe par le cap, déjà envoyé.
+- [ ] **Rouges du portail de la v532 (la sûreté garde le lointain)** — premier
+  portail (avant fusion de la v531) : 15 suites vertes, `maj.js` et `monte.js`
+  rouges ; second portail (après fusion, 9 suites) : `monte.js` les cinq rouges
+  déclarés ci-dessous des deux côtés, `reglages.js` (entrée suivante). Rejouées SEULES (branche, puis
+  `origin/main` v518 dans un arbre détaché) : `maj.js` 71 verts et ZÉRO rouge
+  des deux côtés (ses deux rouges de portail, « le loader dit combien de
+  fichiers » et « le loader ne s'efface… », sont ceux déclarés ci-dessous).
+  `monte.js` branche 248 verts / 9 rouges, `origin/main` 249 / 8 : des deux
+  côtés « la rue se fabrique par tranches », « un flâneur posé au milieu »,
+  « deux voisines d'un convoi », « au feu la voiture freine », « rue vide » ;
+  branche seule les tirages de passants déjà déclarés (Rome en biais, Londres,
+  « hors de Paris aussi », « un passant lancé sur la voiture de l'enfant ») ;
+  `origin/main` seul « la recharge à l'arrivée garde la cadence », « un mur
+  pris de face », « Atterrissage vers <ville> ». Preuve STRUCTURELLE (v291) :
+  ce que la v532 change n'est lu que sous une sûreté RANGÉE avec une étendue
+  choisie, et aucune page de `maj.js` ni de `monte.js` n'en range (le banc met
+  `rr=` dans toute adresse). Ses deux témoins (`parent.js`) sont verts.
+- [ ] **`reglages.js` « un choix fait sur une tablette part au serveur… ne le
+  défait pas un instant » — rouge au portail de la v532 ET seule sur la
+  branche (2/2), rouge 1 fois sur 2 sur `origin/main` v531 rejouée seule dans un
+  arbre détaché (même symptôme : « retours à l'ancienne langue » 1 à 3, serveur
+  resté à "fr").** Intermittence de la synchronisation des préférences, déjà
+  déclarée aux portails précédents ; la v532 ne touche ni `sync.js` ni `net.js`
+  (preuve structurelle : sa règle n'est lue que sous une sûreté rangée avec une
+  étendue choisie, qu'aucune page de `reglages.js` ne range). À démonter : la
+  course entre le battement de l'autre tablette et le clic (v374) semble revenue
+  — compter les écritures des deux tablettes par `sonde-reglages-deux.cjs`.
+- [ ] **Trou de ciel au bord des morceaux maillés, en vol** (revue d'écran
+  v532, relevé n° 19 de `docs/revue-ecran.md`) — visible avec et sans couronne ;
+  le brouillard reculé de « Loin » le rend plus visible. À sonder colonne par
+  colonne (découpe de la grille fine contre `chunkMeshes`).
+- [ ] **POUR MAX : la sûreté de son iPhone** — « Loin » choisi, il joue
+  « Normal » par sûreté depuis deux plantages de la v406–v411 ; aucun
+  plantage depuis (journal_appareil). Retoucher « Loin » dans les Réglages
+  lève la sûreté (v509) et rend `rr 16` et la HD 6 ; la v532 lui rend déjà le
+  paysage lointain sans cela.
 - [ ] **Monter en passager dans TOUT véhicule d'un ami, pas seulement sa
   voiture (demande de Max, 20 octobre 2026).** « Pouvoir rentrer dans une
   voiture, avion… en passager sur le jeu online si un autre joueur est déjà
@@ -147,6 +199,61 @@
   couche HD). (4) Coût worker de la reconnaissance partout : dans le bruit
   sous node (1,6 à 6,9 ms par morceau des deux côtés) — à relire sur l'iPhone
   (`?diag=1`, débit de maillage en vol au-dessus d'une forêt).
+
+## LES ROUGES DU PORTAIL DE LA v533 — tous déjà déclarés, ou intermittents mesurés des deux côtés
+
+La v533 (phares, feux de navigation, manette, pioche) a rendu au portail
+complet treize suites vertes sur dix-sept. Les quatre rouges, un par un :
+
+| suite | témoin rouge | déjà là |
+| --- | --- | --- |
+| `carte.js` | la flèche du GPS | déclaré plus bas |
+| `reglages.js` | un choix fait sur une tablette part au serveur | déclaré (course de battement, v374) |
+| `manhattan.js` | passants de Manhattan au long cap (débit 0,54) | déclaré (v496) |
+| `monte.js` | feu, rue vide, 60 b/s dans Paris, worker à sec (× 1,48), au-dessus d'une ville | déclarés (portails v516, v522) |
+| `monte.js` | ✈️ « Atterrissage vers <ville> » | **neuf ici** — voir ci-dessous |
+
+Et `monte.js` rejouée SEULE des deux côtés (23 octobre) : 6 rouges sur la
+branche, **10 sur `origin/main` v531** (`abad021`, `git worktree`). Les cinq
+rouges de la branche autres que l'atterrissage sont tous dans les dix :
+le feu qui pile, la rue vide, le mur pris de face (rebond −1,9 des deux
+côtés), et **la minicarte qui recouvre le chrono éducatif en vol**
+(`minimap×edu-timer`, 430 × 932 et 420 × 760, mêmes boîtes au pixel des deux
+côtés) — ce dernier est neuf dans ce fichier : la branche ne touche ni
+`#minimap` ni `#edu-timer`, c'est donc de la production (minicarte à gauche
+v518 / v525 contre chrono de l'espace éducatif).
+
+Portail complet rejoué après l'intégration de la v532 (`cc81e55`) : treize
+suites vertes, quatre rouges, tous déjà déclarés — `degats.js` « percuter
+une voiture de la rue l'abîme AUSSI », `manhattan.js` le taxi tactile,
+`reseau.js` la portière droite (entrée, descente) et la voiture refaite
+pendant la marche, `monte.js` les rouges ci-dessus.
+
+- [ ] **La minicarte ouverte recouvre le chrono de l'espace éducatif en vol.**
+  Boîtes mesurées : minicarte (8, 60, 120 × 120), chrono (125, 56, 179 × 24).
+  Le chrono doit contourner la minicarte par `--minimap-w`, comme la file
+  centrale (v445, v518).
+
+- [ ] **« Atterrissage vers <ville> » est une intermittence de portail.**
+  Rejoué SEUL trois fois sur `origin/main` v520 (`git worktree`) et trois fois
+  sur la branche : 6 verts sur 6. La v533 ne touche ni l'approche ni le
+  bandeau ; elle allume des feux sur le maillage de l'avion. À rejouer en
+  distribution (v269) le jour où il revient, avec la cadence dans le message.
+- [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » :
+  la Bugatti Bolide pose ses deux feux avant à 0,45 bloc de la tôle** (écarts
+  `[0.45, 0.45, −0.015, −0.015]`). Rejouée SEULE sur la branche (v533) ET sur
+  `origin/main` v531 (`git worktree`) : la même valeur au millième des deux
+  côtés — le défaut est en production, la v533 n'y est pour rien (elle ne touche
+  ni `vehicules.js` ni `degats.js`). Piste : le rayon de `posesDetresse` venu de
+  l'avant rate le capot très bas de la Bolide et accroche un bloc optique plus
+  en arrière ; à mesurer avec `sonde-detresse.cjs`, modèle seul.
+  Au même portail, `degats.js` « percuter une voiture de la rue » (déclaré) et
+  `monte.js` : par tranches, deux voisines, le feu, la voiture heurtée, la rue
+  vide, `minimap×edu-timer` aux deux tailles — tous déclarés ; `manhattan.js`
+  « le taxi roule » (déclaré).
+- `reseau.js`, rejouée SEULE : verte sur la branche ; sur `origin/main` v506 le
+  trio « à trois, chacun voit les deux autres », ses dépendants et le GPS
+  relayé sont rouges, puis la suite meurt (`null.peer`).
 
 ## LES ROUGES DU PORTAIL DE LA v522 — intermittents de `monte.js`, aucun causé par la livraison
 
@@ -8688,7 +8795,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   pied bute (sonde v470) : le rendre plat exige que `colonneNaturelle` sache
   qu'un dessus a été posé, zone du sol continu.
 
-- [ ] **Apprendre** — questions audio. *(Les guides dans les villes : v533,
+- [ ] **Apprendre** — questions audio. *(Les guides dans les villes : v535,
   vingt-deux guides au pied des monuments de Paris, Londres, Rome, New York et
   Washington, en français et en anglais.)* Ce qui reste des guides : la Statue
   de la Liberté, le Golden Gate et les monuments du catalogue qui attendent

@@ -1,4 +1,4 @@
-// LES GUIDES DES VILLES, AU NAVIGATEUR (v533).
+// LES GUIDES DES VILLES, AU NAVIGATEUR (v535).
 //   node tests/sonde-guides-villes.cjs [lieu…]   → une ligne par lieu
 // On se pose au-dessus du monument (le banc ne charge que deux morceaux autour de l'enfant), on attend que le guide naisse
 // (borné), puis l'on marche jusqu'à lui : où il est, s'il est dessiné, s'il
@@ -43,7 +43,7 @@ module.exports.visiter = async function visiter(tab, id, borneMs = 60000) {
     // Le regard se lit hors d'un pas de côté (v259) : le guide est un piéton,
     // et une voiture qui passe sur la rue voisine le fait s'écarter un instant,
     // dos à l'enfant. Lu à un instant fixe, c'était un tirage (vu au portail de
-    // la v533 : regard −0,7, `ecart` vrai). On attend le FAIT — pas d'écart en
+    // la v535 : regard −0,7, `ecart` vrai). On attend le FAIT — pas d'écart en
     // cours et le visage vers l'enfant —, borné, et l'on dit ce qu'on a vu.
     const lireRegard = () => {
       const dx = g.player.pos.x - guide.pos.x, dz = g.player.pos.z - guide.pos.z;

@@ -6,7 +6,7 @@ import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
 import { pisteVisee, guiderApproche, aerodromeLePlusProche, angle as angleAp, surUnePiste, pisteDeDecollage, guiderRoulage, VIRAGE_ROULAGE, MONTEE_DECOLLAGE } from './approche.js';
 import { jugerToucher } from './degats.js';
-import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, vitessePleine, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA } from './conduite.js';
+import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, vitessePleine, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA, CONTACT_DOUX, dureeGlissade, vrilleDuChoc, pointDeContact, pasGlissade, DERIVE_MAX_MAIN } from './conduite.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
 // LE GABARIT D'UN VÉHICULE CONDUIT (v212). Max, capture à l'appui : « cars
@@ -63,6 +63,7 @@ const DEMI_LONG_VOITURE = 2.2;   // la moitié des 4,4 blocs d'une voiture (vehi
 const DEGAGEMENT_MARCHE = 0.7;
 const RAYON_MUR = 4.5;     // la façade se lit sur ce rayon autour du contact (v397)
 const FACES = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const ANTI_REBOND = 0.35;        // s de jeu : un choc plus faible dans ce délai est le même accident (v534)
 const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un piéton   // ce qu'il faut avancer pour passer le bord d'une marche (v286)
 
 // LE VOL D'UN AVION — trois chiffres, et chacun a sa raison.
@@ -402,6 +403,13 @@ export class Player {
   // le toucherait à chaque image et rien ne se lirait plus.
   publierChoc(force, dx, dz) {
     if (!(force >= 0.05)) return;
+    // UN REBOND NE PUBLIE PAS UN SECOND CHOC (v534) : la voiture renvoyée par
+    // un mur, joystick tenu, y revient un quart de seconde plus tard ; ce
+    // n'est pas un nouvel accident. Sur l'horloge du JEU (comme la glissade),
+    // un choc plus faible que le précédent dans ANTI_REBOND ne se publie pas.
+    const tj = this.horlogeJeu || 0;
+    if (this._dernierChoc && tj - this._dernierChoc.t < ANTI_REBOND && force <= this._dernierChoc.force) return;
+    this._dernierChoc = { t: tj, force };
     const p = pointDImpact(this.pos.x, this.pos.z, this.yaw + Math.PI, DEMI_LONG_VOITURE, this.gabarit / 2, dx, dz);
     const t = typeof performance !== 'undefined' ? performance.now() : Date.now();
     this.choc = { force: +force.toFixed(3), t, x: p.x, z: p.z };
@@ -433,6 +441,70 @@ export class Player {
     }
     this.vitesseVoiture = v; this.derive = d;
     this.vel.x = wx; this.vel.z = wz;
+    // pendant une glissade, c'est elle qui porte la vitesse (v534)
+    if (this.glissade) { this.glissade.vx = wx; this.glissade.vz = wz; }
+  }
+
+  // APRÈS UN VRAI CHOC, LA GLISSADE (v534). La vitesse d'après le choc devient
+  // un VECTEUR libre que le joystick ne touche plus le temps de la glissade
+  // (`dureeGlissade`) : on est renvoyé, dévié, on glisse quelques mètres en
+  // perdant sa vitesse (`pasGlissade`), et la caisse tourne si l'impulsion ne
+  // passe pas par son centre (`vrilleDuChoc`). Sous CONTACT_DOUX, un contact
+  // n'est pas un choc : la règle d'avant (`vitesseApresChoc`).
+  apresChoc(vx, vz, nvx, nvz, impact, dx, dz) {
+    this._chocImage = true;
+    if (!(impact >= CONTACT_DOUX)) { this.vitesseApresChoc(nvx, nvz); return; }
+    const r = pointDeContact(this.yaw + Math.PI, DEMI_LONG_VOITURE, this.gabarit / 2, dx, dz);
+    const w = vrilleDuChoc(r.x, r.z, nvx - vx, nvz - vz, DEMI_LONG_VOITURE, this.gabarit / 2);
+    const g = this.glissade;
+    this.glissade = { vx: nvx, vz: nvz, w: (g ? g.w : 0) + w, t: Math.max(g ? g.t : 0, dureeGlissade(impact)) };
+    this.poserGlissade();
+  }
+  // ce que la voiture publie pendant la glissade : la vitesse signée le long
+  // du cap (le moteur, la caméra, les roues la lisent) et la dérive, l'angle
+  // entre la caisse et sa vitesse (les pneus crissent), dans sa borne large
+  poserGlissade() {
+    const g = this.glissade, sp = Math.hypot(g.vx, g.vz);
+    const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
+    const v = (g.vx * fx + g.vz * fz) >= 0 ? sp : -sp;
+    let d = 0;
+    if (sp > 0.3) { d = Math.atan2(-g.vx / v, -g.vz / v) - this.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); }
+    this.vitesseVoiture = v;
+    this.derive = Math.max(-DERIVE_MAX_MAIN, Math.min(DERIVE_MAX_MAIN, d));
+    this.vel.x = g.vx; this.vel.z = g.vz;
+    g.vPose = v; g.x = this.pos.x; g.z = this.pos.z;
+  }
+  // Un pas de glissade, ou false si l'on conduit. À la fin, la voiture reprend
+  // ce qui file le long de son cap : la main revient à l'enfant à presque
+  // l'arrêt, sans rien qui saute.
+  avancerGlissade(dt) {
+    const g = this.glissade;
+    if (!g) return false;
+    // UNE ÉCRITURE D'AUTORITÉ ARRÊTE LA GLISSADE : une téléportation (la carte,
+    // un témoin qui pose la voiture), une vitesse posée à la main. Sinon la
+    // voiture repartait glisser là où on l'a posée — mesuré au portail,
+    // `degats.js` : sept blocs en deux dixièmes de seconde après l'avoir arrêtée.
+    if (g.vPose !== undefined && (this.vitesseVoiture !== g.vPose
+      || Math.hypot(this.pos.x - g.x, this.pos.z - g.z) > Math.hypot(g.vx, g.vz) * Math.max(dt, 0.05) * 3 + 2)) {
+      this.glissade = null;
+      return false;
+    }
+    const n = pasGlissade(g, dt);
+    g.vx = n.vx; g.vz = n.vz; g.w = n.w; g.t -= dt;
+    if (g.w && Math.abs(g.w) > 1e-3) {
+      const avant = this.yaw;
+      const dedans = this.cellulesPleinesVoiture(this.pos.x, this.pos.y, this.pos.z, avant);
+      this.yaw += g.w * dt;
+      if (!this.poseVoitureLibre(this.pos.x, this.pos.y, this.pos.z, this.yaw, dedans)) { this.yaw = avant; g.w = 0; }
+    }
+    if (n.fini || g.t <= 0) {
+      const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
+      this.glissade = null;
+      this.vitesseVoiture = g.vx * fx + g.vz * fz; this.derive = 0;
+      return false;
+    }
+    this.poserGlissade();
+    return true;
   }
 
   // LES CASES DE SURFACE D'UN MUR AUTOUR DU CONTACT (v397). Les cases que la
@@ -516,6 +588,7 @@ export class Player {
   // l'horloge partagée (v305). C'est elle qui s'arrête — elle attend sans
   // limite devant la voiture de l'enfant (`cederLePassage`, v245).
   deplacerVoiture(dt) {
+    this._chocImage = false;
     const etaitAuSol = this.onGround;
     this.onGround = false;
     const avantX = this.pos.x, avantZ = this.pos.z;
@@ -546,6 +619,8 @@ export class Player {
       const x = this.pos.x, y = this.pos.y, z = this.pos.z;
       const fam = this.obstacleVehicule ? this.obstacleVehicule(x + dx, z + dz, this.yaw + Math.PI, x, z) : false;
       if (fam === 'pieton' || fam === 'eau') {
+        // une glissade qui mènerait vers un piéton ou l'eau s'arrête net (v534)
+        this.glissade = null;
         this.vitesseVoiture = 0; this.derive = 0; this.vel.x = 0; this.vel.z = 0;
         break;
       }
@@ -561,8 +636,11 @@ export class Player {
         if (rv) {
           this.contact = { famille: 'voiture', nx: rv.nx, nz: rv.nz, autre: { x: autre.x, z: autre.z } };
           this.publierChoc(rv.force, -rv.nx, -rv.nz);
-          this.vitesseApresChoc(rv.vx, rv.vz, rv.glisse);
+          // une voiture garée ou invoquée part avec ce que le choc lui donne
+          if (rv.pousse && autre.pousser) autre.pousser(rv.pousse.vx, rv.pousse.vz);
           const gl = rv.glisse || (vx * rv.nx + vz * rv.nz >= 0);
+          if (gl) this.vitesseApresChoc(rv.vx, rv.vz, rv.glisse);
+          else this.apresChoc(vx, vz, rv.vx, rv.vz, rv.impact, -rv.nx, -rv.nz);
           if (gl && !this.glisserLeLong(x, y, z, rv.vx * pas, rv.vz * pas, rv.nx, rv.nz) && !rv.glisse) break;
           continue;
         }
@@ -570,7 +648,7 @@ export class Player {
         const r = reponseChoc(vx, vz, -dx / n, -dz / n, vitessePleine(this.ficheVoiture));
         this.contact = { famille: fam, nx: -dx / n, nz: -dz / n };
         this.publierChoc(r.force, dx, dz);
-        this.vitesseApresChoc(r.vx, r.vz);
+        this.apresChoc(vx, vz, r.vx, r.vz, r.impact, dx, dz);
         continue;
       }
       const dedans = this.cellulesPleinesVoiture(x, y, z, this.yaw);
@@ -582,7 +660,10 @@ export class Player {
       // aussi juste après une crête : plus vite qu'avant, la voiture décolle
       // d'une bosse et retombe devant la marche suivante sans être « au sol »
       // à l'image près ; tant qu'elle ne TOMBE pas, elle la gravit.
-      if ((etaitAuSol || this.vel.y > -4) && Math.abs(this.vitesseVoiture) > 0.5) {
+      // ET PAS EN GLISSADE (v534) : renvoyée de biais le long d'un mur en
+      // escalier, la voiture butait sur le coin d'une marche du mur et « la
+      // franchissait » — montée d'un bloc dans la façade (mesuré au mur à 30°)
+      if (!this.glissade && (etaitAuSol || this.vel.y > -4) && Math.abs(this.vitesseVoiture) > 0.5) {
         const n = Math.hypot(dx, dz);
         if (this.franchirEnRoulant((dx / n) * DEGAGEMENT_MARCHE, (dz / n) * DEGAGEMENT_MARCHE)) { this._franchi = true; continue; }
       }
@@ -608,7 +689,8 @@ export class Player {
       const glisse = r.glisse || (vx * nx + vz * nz >= 0);
       this.contact = { famille: 'mur', nx, nz, ligne: !!mur };
       this.publierChoc(r.force, -nx, -nz);
-      this.vitesseApresChoc(r.vx, r.vz, glisse);
+      if (glisse) this.vitesseApresChoc(r.vx, r.vz, glisse);
+      else this.apresChoc(vx, vz, r.vx, r.vz, r.impact, -nx, -nz);
       // ce qui file le long du mur avance tout de suite, le long du mur
       if (glisse && !this.glisserLeLong(x, y, z, r.vx * pas, r.vz * pas, nx, nz) && !r.glisse) break;
     }
@@ -627,10 +709,17 @@ export class Player {
     // sol continu ou une boîte a mangé le pas sans qu'un choc ne l'ait dit, on
     // ramène la vitesse à ce que la voiture a FAIT. Seulement quand elle est
     // bloquée (moins d'un quart du pas), jamais quand elle frotte.
-    if (dt > 0 && this.vitesseVoiture) {
+    // ET PAS DANS L'IMAGE D'UN CHOC (v534) : la voiture y a avancé PUIS rebondi,
+    // son déplacement net est presque nul, et le filet mangeait le rebond —
+    // mesuré, à 15 blocs/s contre un mur la voiture restait plantée net. Pendant
+    // une glissade, c'est le vecteur de la glissade qu'on ramène.
+    if (dt > 0 && this.vitesseVoiture && !this._chocImage) {
       const demande = Math.abs(this.vitesseVoiture) * dt;
       const vraie = Math.hypot(this.pos.x - avantX, this.pos.z - avantZ);
-      if (demande > 1e-6 && vraie < demande * 0.25) this.vitesseVoiture = Math.sign(this.vitesseVoiture) * (vraie / dt);
+      if (demande > 1e-6 && vraie < demande * 0.25) {
+        this.vitesseVoiture = Math.sign(this.vitesseVoiture) * (vraie / dt);
+        if (this.glissade) { const k = vraie / demande; this.glissade.vx *= k; this.glissade.vz *= k; }
+      }
     }
   }
 
@@ -833,6 +922,7 @@ export class Player {
   }
 
   update(dt) {
+    this.horlogeJeu = (this.horlogeJeu || 0) + dt;
     const k = this.keys;
     const forward = (k.has('KeyW') ? 1 : 0) - (k.has('KeyS') ? 1 : 0) + this.touchMove.f;
     const strafe = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0) + this.touchMove.s;
@@ -1178,7 +1268,7 @@ export class Player {
     // neuve, aucun choc pendant le trajet, `direction −0,028` et un cap qui
     // tourne seul). On l'efface quand on monte ET quand on descend.
     const enVoiture = this.gabarit > 1 && !this.pilote;
-    if (enVoiture !== !!this._enVoiture) { this._derapage = null; this.choc = null; this.atterrissage = null; this.enLair = false; this._vol = null; this.tangage = 0; this._enVoiture = enVoiture; }
+    if (enVoiture !== !!this._enVoiture) { this._derapage = null; this.choc = null; this.glissade = null; this._dernierChoc = null; this.atterrissage = null; this.enLair = false; this._vol = null; this.tangage = 0; this._enVoiture = enVoiture; }
     if (this.gabarit > 1) {
       // AU VOLANT (conduite-physique, v358) : le modèle de véhicule de
       // `conduite.js` — l'accélération qui s'essouffle vers la pointe, le frein
@@ -1217,44 +1307,48 @@ export class Player {
       // qu'il agit (`freinMainTire`) pour qui voudrait le dessiner ou l'entendre.
       const freinMain = !!this.freinMain || k.has('Space');
       this.freinMainTire = freinMain && !inerte;
-      const r = pasVoiture(
-        { v: this.vitesseVoiture, braquage: this.braquage || 0, derive: this.derive || 0 },
-        { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte, pente: pente || 0, auSol: !this.enLair, freinMain,
-          plafond: gaz > 0 && !freinMain && !this.enLair ? this.suiviDevant() : null, freinSuivi: this.suivi ? this.suivi.frein : null },
-        fiche, dt);
-      // LA ROUE LIBRE SE RELÈVE (v397, `?diag=1`) : du lâcher du joystick, au
-      // dessus de cinq blocs/s, jusqu'à l'arrêt — sur l'horloge du JEU, comme
-      // la dynamique qu'elle mesure. Un nouvel appui l'abandonne.
-      if (gaz === 0 && !inerte && Math.abs(this.vitesseVoiture) > 5 && !this._roueLibre) this._roueLibre = { depuis: Math.abs(this.vitesseVoiture), s: 0 };
-      if (this._roueLibre) {
-        if (gaz !== 0 || inerte || freinMain) this._roueLibre = null;
-        else {
-          this._roueLibre.s += dt;
-          if (Math.abs(r.v) < 0.3) { this.roueLibre = this._roueLibre; this._roueLibre = null; }
+      // APRÈS UN CHOC, LA GLISSADE D'ABORD (v534) : le joystick attend qu'elle
+      // rende la main (`avancerGlissade`), puis la dynamique reprend.
+      if (!this.avancerGlissade(dt)) {
+        const r = pasVoiture(
+          { v: this.vitesseVoiture, braquage: this.braquage || 0, derive: this.derive || 0 },
+          { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte, pente: pente || 0, auSol: !this.enLair, freinMain,
+            plafond: gaz > 0 && !freinMain && !this.enLair ? this.suiviDevant() : null, freinSuivi: this.suivi ? this.suivi.frein : null },
+          fiche, dt);
+        // LA ROUE LIBRE SE RELÈVE (v397, `?diag=1`) : du lâcher du joystick, au
+        // dessus de cinq blocs/s, jusqu'à l'arrêt — sur l'horloge du JEU, comme
+        // la dynamique qu'elle mesure. Un nouvel appui l'abandonne.
+        if (gaz === 0 && !inerte && Math.abs(this.vitesseVoiture) > 5 && !this._roueLibre) this._roueLibre = { depuis: Math.abs(this.vitesseVoiture), s: 0 };
+        if (this._roueLibre) {
+          if (gaz !== 0 || inerte || freinMain) this._roueLibre = null;
+          else {
+            this._roueLibre.s += dt;
+            if (Math.abs(r.v) < 0.3) { this.roueLibre = this._roueLibre; this._roueLibre = null; }
+          }
         }
+        this.vitesseVoiture = r.v; this.braquage = r.braquage; this.derive = r.derive;
+        // LE DÉRAPAGE SE RELÈVE (palier C, `?diag=1`) : du frein à main tiré
+        // jusqu'au retour de la dérive sous sa borne ordinaire — l'angle le plus
+        // large et la durée, en temps de JEU comme la dynamique.
+        if (freinMain && !inerte && !this._derapage && Math.abs(r.v) > 3) this._derapage = { max: 0, s: 0 };
+        if (this._derapage) {
+          this._derapage.s += dt;
+          this._derapage.max = Math.max(this._derapage.max, Math.abs(r.derive));
+          if (!freinMain && Math.abs(r.derive) <= 0.29) { this.derapage = this._derapage; this._derapage = null; }
+        }
+        // LA CAISSE TOURNE — SAUF SI SON NEZ ENTRAIT DANS UN MUR. La boîte est
+        // orientée : tourner la fait balayer. Un nez contre une façade ne pivote
+        // pas dedans ; on garde le cap, et la vitesse fait le reste.
+        if (r.dCap) {
+          const avant = this.yaw;
+          const dedans = this.cellulesPleinesVoiture(this.pos.x, this.pos.y, this.pos.z, avant);
+          this.yaw += r.dCap;
+          if (!this.poseVoitureLibre(this.pos.x, this.pos.y, this.pos.z, this.yaw, dedans)) this.yaw = avant;
+        }
+        const h = this.yaw + this.derive;
+        this.vel.x = -Math.sin(h) * this.vitesseVoiture;
+        this.vel.z = -Math.cos(h) * this.vitesseVoiture;
       }
-      this.vitesseVoiture = r.v; this.braquage = r.braquage; this.derive = r.derive;
-      // LE DÉRAPAGE SE RELÈVE (palier C, `?diag=1`) : du frein à main tiré
-      // jusqu'au retour de la dérive sous sa borne ordinaire — l'angle le plus
-      // large et la durée, en temps de JEU comme la dynamique.
-      if (freinMain && !inerte && !this._derapage && Math.abs(r.v) > 3) this._derapage = { max: 0, s: 0 };
-      if (this._derapage) {
-        this._derapage.s += dt;
-        this._derapage.max = Math.max(this._derapage.max, Math.abs(r.derive));
-        if (!freinMain && Math.abs(r.derive) <= 0.29) { this.derapage = this._derapage; this._derapage = null; }
-      }
-      // LA CAISSE TOURNE — SAUF SI SON NEZ ENTRAIT DANS UN MUR. La boîte est
-      // orientée : tourner la fait balayer. Un nez contre une façade ne pivote
-      // pas dedans ; on garde le cap, et la vitesse fait le reste.
-      if (r.dCap) {
-        const avant = this.yaw;
-        const dedans = this.cellulesPleinesVoiture(this.pos.x, this.pos.y, this.pos.z, avant);
-        this.yaw += r.dCap;
-        if (!this.poseVoitureLibre(this.pos.x, this.pos.y, this.pos.z, this.yaw, dedans)) this.yaw = avant;
-      }
-      const h = this.yaw + this.derive;
-      this.vel.x = -Math.sin(h) * this.vitesseVoiture;
-      this.vel.z = -Math.cos(h) * this.vitesseVoiture;
     } else {
       this.vitesseVoiture = 0;
       this.vel.x = dx * speed;

@@ -37,7 +37,7 @@ import { creerGuides, parlerAVoixHaute } from './guides.js';
 import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN, PORTEE_COURONNE,
   ABAISSE_TRES_LOIN, rayonTresLoin } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
-import { mondeDevant, ligneDiagConduite } from './conduite.js';
+import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
@@ -939,10 +939,11 @@ const enAttente = new Map();          // key -> { cx, cz, sale, detail, depuis }
 statsMaillage.enAttente = enAttente;  // la sonde lit l'âge des demandes (v360)
 // LE RÉGLAGE ENTRE DANS LA FICHE DU JOURNAL (v299) : ce que l'appareil joue,
 // pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
-// réglage lu au démarrage.
+// réglage lu au démarrage. Et la portée de la vue (v532) : sans elle, on a dû
+// DÉDUIRE du palier que la couronne lointaine n'avait jamais tourné chez Max.
 journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576,
   palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null, etendue: ETENDUE_CHOISIE,
-  logiciel: renduLogiciel() });
+  loin: PORTEE_VUE, logiciel: renduLogiciel() });
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;
 function synchroniserLeWorker() {
@@ -1095,7 +1096,7 @@ let circulationsEnAttente = [];
 // cents blocs, ne se voit pas.
 const circulationPrete = cadence(125);
 let passants = null;
-let guidesVilles = null;   // les guides au pied des monuments (v533)
+let guidesVilles = null;   // les guides au pied des monuments (v535)
 let poissons = null;
 
 // Spawn on land near the origin.
@@ -1708,7 +1709,7 @@ function updateChunks() {
   npcs.push(...vie.npcs);
   // Les passants des villes : fabriqués à l'approche, jamais avant.
   passants = createPassants({ scene, world, player, toast: say, npcs });
-  // Les guides des villes : un par monument, nés à l'approche (v533).
+  // Les guides des villes : un par monument, nés à l'approche (v535).
   guidesVilles = createGuidesVilles({ scene, world, player, toast: say, npcs, lieux: TOUS_LES_GUIDES });
   // Les poissons : un petit banc entretenu autour de l'enfant, partout où
   // il y a de l'eau — océans du planisphère, fleuves des villes, lacs.
@@ -1851,8 +1852,25 @@ function updateChunks() {
   // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v358) : un choc
   // contre une voiture de la rue ou du mobilier rebondit, un piéton et l'eau
   // arrêtent net, sans choc — personne n'est jamais touché (v259).
+  // ET UNE VOITURE GARÉE OU INVOQUÉE (v534) : une monture qui porte un
+  // `gabarit` — pas un avion. Elle n'était un obstacle que pour les piétons
+  // (v259) ; la voiture de l'enfant la traversait. Elle se POUSSE : c'est une
+  // bête de cette tablette, rien de l'horloge partagée (v305).
+  const gareeContre = (x, z, cap) => {
+    const moi = boiteVoiture(x, z, cap, 2.2, Math.max(0.3, player.gabarit / 2));
+    for (const a of animalManager.animals) {
+      const g = a.def.gabarit;
+      if (!(g > 1) || a.def.pilote || a.montee || a.dying > 0 || Math.abs(a.pos.y - player.pos.y) > 2.5) continue;
+      if ((a.pos.x - x) ** 2 + (a.pos.z - z) ** 2 > 8 * 8) continue;
+      const B = boiteVoiture(a.pos.x, a.pos.z, a.yaw, 2.2, g / 2);
+      if (normaleEntreBoites(moi, B)) return { a, B };
+    }
+    return null;
+  };
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
     if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return 'voiture';
+    const g = gareeContre(x, z, cap);
+    if (g) { const avant = gareeContre(x0, z0, cap); if (!avant || avant.a !== g.a) return 'voiture'; }
     if (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
     // `arretDouxT` (v343) : s'arrêter devant un piéton ou au bord de l'eau
     // n'est PAS un choc — les dégâts ne comptent jamais un piéton touché.
@@ -1865,7 +1883,14 @@ function updateChunks() {
   // ET CONTRE QUELLE VOITURE (v397) : sa boîte et son allure, pour que le choc
   // prenne la normale de SON rectangle et la vitesse RELATIVE — un flanc frôlé
   // glisse, un choc par l'arrière pousse peu.
-  player.voitureContre = (x, z, cap) => vehicules.voitureContre(x, z, cap);
+  player.voitureContre = (x, z, cap) => {
+    const r = vehicules.voitureContre(x, z, cap);
+    if (r) return r;
+    const g = gareeContre(x, z, cap);
+    if (!g) return null;
+    const e = g.a.elan;
+    return { ...g.B, v: 0, vx: e ? e.vx : 0, vz: e ? e.vz : 0, libre: true, pousser: (ix, iz) => g.a.pousser(ix, iz) };
+  };
   // UNE VOITURE ARRIVE SUR CE POINT ? (v259) Ce qu'un piéton regarde pour
   // s'écarter : une voiture de la rue en marche, ou celle de l'enfant quand
   // elle roule, dont le couloir — sa largeur plus une marge, deux secondes de
@@ -3264,7 +3289,7 @@ function texteEtendue() {
     // aucun message (décision de Max, les commandes à icônes) : c'est ici
     // qu'on l'apprend. Toucher la même étendue la lève (`renderEtendue`).
     if (PALIER && PALIER.source === 'sûreté' && PALIER.sousChoix === choix) {
-      return `⚠️ « ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois : il joue en « ${mot(PALIER.nom)} » pour l'instant. Touche « ${mot(choix)} » pour réessayer, ou garde ça.`;
+      return `⚠️ « ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois : il joue en « ${mot(PALIER.nom)} » pour l'instant${PALIER.loin ? ', en gardant le paysage lointain' : ''}. Touche « ${mot(choix)} » pour réessayer, ou garde ça.`;
     }
     base = `Tu as choisi « ${mot(choix)} ».`;
   }
@@ -8256,6 +8281,7 @@ const fun = initFun({
   remotePlayers: () => remotePlayers,
   isRunning: () => running,
   isNight: () => Math.sin((dayTime / DAY_LENGTH) * Math.PI * 2) < -0.05,
+  nuitDehors: () => nuitDehors,
   getWeather: () => weather,
   getPosCtx: () => posCtx,
   // Les convois n'existent qu'une fois le monde bâti : on les demande au
@@ -8370,7 +8396,7 @@ window.__lumiere = () => ({
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 // Les panneaux à lire sur place : une fois par visite, en temps réel (v460).
-// Depuis la v533, dans les cinq grandes villes, dans la langue du profil, et
+// Depuis la v535, dans les cinq grandes villes, dans la langue du profil, et
 // raconté par le guide posé au pied du monument (`createGuidesVilles`).
 const guides = creerGuides({
   // Plus de bandeau pendant le jeu (v504) : le guide le dit à voix haute.
@@ -8563,7 +8589,7 @@ function frame(now) {
   fun.update(dt);
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
-  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux des guides (v460, v533)
+  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux des guides (v460, v535)
   majGPSAmi();             // la proposition d'un ami s'efface seule (v388)
   asseoirLeConducteur(dt);
   effects.update(dt);

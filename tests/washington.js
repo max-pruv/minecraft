@@ -288,7 +288,7 @@ const descendre = async (p, ms) => {
         + `deux lieux à la fois : ${temps.length} panneaux, ${ecart} ms d'écart ; rayons qui se recouvrent ${JSON.stringify(chevauchent)}`);
   }
 
-  // --- Les guides des villes : Paris, Londres, Rome, New York (v533) --------
+  // --- Les guides des villes : Paris, Londres, Rome, New York (v535) --------
   // Pur, sous node. Chaque lieu se trouve dans le registre des repères ; chaque
   // panneau a son français ET son anglais, deux ou trois phrases ; la langue du
   // profil choisit (en `both`, on alterne) ; aucun rayon n'en recouvre un autre ;
@@ -1054,7 +1054,7 @@ const descendre = async (p, ms) => {
         && vuPanneau.journal.filter((id) => id === 'lincoln').length === 1,
       `${vuPanneau.affiches} affichage(s), journal ${JSON.stringify(vuPanneau.journal)}, « ${vuPanneau.texte} »`);
 
-    // --- Les guides des villes, au navigateur (v533) ------------------------
+    // --- Les guides des villes, au navigateur (v535) ------------------------
     // On se pose au-dessus du monument, le guide naît (borné à une minute), on
     // descend à trois blocs de lui : il est dessiné, il regarde l'enfant, et
     // son panneau signé passe — en français, puis en anglais une fois la
