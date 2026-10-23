@@ -1,0 +1,42 @@
+· iphone menu prêt en 1 s {"ouvert":true}
+📸 iphone-menu-jour
+📸 iphone-menu-nuit
+· iphone paris prêt en 32 s {"monde":"32 s"}
+📸 iphone-paris-jour
+📸 iphone-paris-nuit
+· iphone minicarte prêt en 31 s {"affichee":"block"}
+📸 iphone-minicarte-jour
+📸 iphone-minicarte-nuit
+· iphone carte-monde prêt en 12 s {"ouverte":true}
+📸 iphone-carte-monde-jour
+📸 iphone-carte-monde-nuit
+· iphone volant-roule prêt en 14 s {"auVolant":true,"v":7.9}
+📸 iphone-volant-roule-jour
+📸 iphone-volant-roule-nuit
+· iphone avion-vol prêt en 25 s {"pilote":true,"etat":"vol"}
+📸 iphone-avion-vol-jour
+📸 iphone-avion-vol-nuit
+· iphone construction prêt en 27 s {"construction":true}
+📸 iphone-construction-jour
+📸 iphone-construction-nuit
+· banc menu prêt en 1 s {"ouvert":true}
+📸 banc-menu-jour
+📸 banc-menu-nuit
+· banc paris prêt en 31 s {"monde":"31 s"}
+📸 banc-paris-jour
+📸 banc-paris-nuit
+· banc minicarte prêt en 28 s {"affichee":"block"}
+📸 banc-minicarte-jour
+📸 banc-minicarte-nuit
+· banc carte-monde prêt en 12 s {"ouverte":true}
+📸 banc-carte-monde-jour
+📸 banc-carte-monde-nuit
+· banc volant-roule prêt en 14 s {"auVolant":true,"v":9.3}
+📸 banc-volant-roule-jour
+📸 banc-volant-roule-nuit
+· banc avion-vol prêt en 25 s {"pilote":true,"etat":"vol"}
+📸 banc-avion-vol-jour
+📸 banc-avion-vol-nuit
+· banc construction prêt en 26 s {"construction":true}
+📸 banc-construction-jour
+📸 banc-construction-nuit

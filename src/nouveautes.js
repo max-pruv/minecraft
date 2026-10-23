@@ -11,6 +11,7 @@ export const NOUVEAUTES = [
     puces: [
       'La minicarte s\'affiche toute seule',
       'La toucher ouvre la carte du monde',
+      "La croix ne cache plus l'heure",
     ],
   },
   {

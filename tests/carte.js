@@ -2296,7 +2296,7 @@ const position = (p) => p.evaluate(() => ({
       JSON.stringify(couche.erreurs));
     await couche.close();
 
-    // LA MINICARTE EST TOUJOURS LÀ (v530). Max : « il faut trouver une
+    // LA MINICARTE EST TOUJOURS LÀ (v533). Max : « il faut trouver une
     // solution pour mettre la mini-carte toujours visible. » Elle ne
     // s'affichait qu'après un appui sur son bouton. Le témoin entre en jeu
     // SANS UN GESTE, puis la lit dans chaque mode — à pied, en construction,
@@ -2319,6 +2319,11 @@ const position = (p) => p.evaluate(() => ({
             : { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) }; };
         // l'état d'entrée, AVANT tout geste du témoin
         const entree = vis(mm);
+        // LA CROIX DU BADGE NE BARRE PAS SON TEXTE (v533, vu en revue d'écran :
+        // « 21 h 1✕ ») : sur téléphone, `padding: 3px 10px` écrasait la place
+        // réservée à la croix. On lit les deux boîtes, et l'écart entre elles.
+        const txtB = vis(document.getElementById('edu-timer-txt')), crxB = vis(document.getElementById('edu-timer-close'));
+        const badge = txtB && crxB ? { txt: txtB, croix: crxB, mord: txtB.x + txtB.w - crxB.x - 10 } : null;
         const HUD = ['menu-btn', 'map-btn', 'edu-timer', 'gps', 'cap-avion', 'fun-target', 'construction-pill', 'construction-fin',
           'hotbar', 'jump-btn', 'fly-btn', 'down-btn', 'construire-btn', 'poser-btn', 'casser-btn', 'ride-btn', 'train-btn',
           'gaz-base', 'gaz-val', 'cmd-vol', 'joy-repos', 'link-banner', 'gps-ami', 'manhattan-adresse'];
@@ -2401,12 +2406,14 @@ const position = (p) => p.evaluate(() => ({
         // pendant un quiz (invariant 2), elle se cache, et revient après
         g.edu.startQuiz(); await att(600);
         const quiz = { actif: !!g.edu.quizActive, cachee: !vis(mm) };
-        return { saut, entree, modes, sousMenu, carte, quiz, bouton: !!vis(document.getElementById('map-btn')), vue: [innerWidth, innerHeight] };
+        return { saut, badge, entree, modes, sousMenu, carte, quiz, bouton: !!vis(document.getElementById('map-btn')), vue: [innerWidth, innerHeight] };
       });
       await mc.close();
       const T = `minicarte (${vue.width} × ${vue.height})`;
       verifier(`${T} : visible dès l'entrée en jeu, sans un geste, et son ancien bouton n'est plus à l'écran`,
         !r.err && !!r.entree && !r.bouton, JSON.stringify({ entree: r.entree, bouton: r.bouton }));
+      verifier(`${T} : la croix du badge du temps libre ne barre pas son texte`,
+        !r.err && !!r.badge && r.badge.mord <= 0, JSON.stringify(r.badge));
       const fautes = (r.modes || []).filter((m) => !m.b || m.dessus.length || m.recouvre.length || m.joy || m.horsCanvas.length || m.pris === false);
       verifier(`${T} : à pied, en construction, au volant et en avion — visible, rien par-dessus, elle ne recouvre rien, et le quart du joystick reste au canvas`,
         !r.err && (r.modes || []).length === 4 && fautes.length === 0, JSON.stringify(fautes.length ? fautes : r.modes));

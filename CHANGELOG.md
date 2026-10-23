@@ -37,6 +37,9 @@ qu'un enfant de sept ans n'a aucune raison de chercher.
   que les bandes qui repassent remettent au propre ; un point que le jeu
   repeindrait à l'identique est sauté. Après une téléportation, le fond de nuit
   se repeint en quelques secondes. `?minicarte=0` la coupe, pour mesurer.
+- Le badge « Libre jusqu'à … » se centre à droite de la minicarte, et sur
+  téléphone sa croix ne barre plus l'heure (« 21 h 1✕ », vu en revue d'écran,
+  là depuis la v522).
 
 **Ce qui le prouve.**
 - `sonde-minicarte-cout.cjs` (chasseur pleins gaz, rr 12, iPhone, ordre
@@ -46,7 +49,12 @@ qu'un enfant de sept ans n'a aucune raison de chercher.
   sans geste ; dans les quatre modes rien par-dessus, aucun recouvrement du HUD,
   le quart du joystick reste au canvas ; voilée sous le menu ; la toucher ouvre
   la carte du monde, où elle se cache puis revient ; un quiz la cache ; après
-  un saut de 4 000 blocs, le fond de nuit retombe sous un cinquième des points.
+  un saut de 4 000 blocs, le fond de nuit retombe sous un cinquième des points ;
+  la croix du badge ne mord pas son texte (rouge sans la correction : 21 px).
+- Revue d'écran (`docs/revue-ecran/v533`) à 430 × 932, 420 × 760 et
+  820 × 1180, de jour et de nuit.
+- Portail : les rouges de `degats.js` et `monte.js` sont rejoués des deux côtés
+  ou déjà déclarés (`TASKS.md`).
 - Témoins repointés : `monte.js` (en tête de la colonne), `maj.js`,
   `reseau.js`, `banc.ouvrirLaCarte`, `sonde-revue-ecran.cjs`.
 

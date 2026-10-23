@@ -36,6 +36,7 @@ fs.mkdirSync(dossier, { recursive: true });
 const VUES = {
   iphone: { width: 430, height: 932 },
   ipad: { width: 820, height: 1180 },
+  banc: { width: 420, height: 760 },
 };
 // 0,75 est minuit (0,0 est le lever du soleil : un ciel rose et des façades en
 // plein jour — c'est la première passe de cette sonde qui l'a montré).

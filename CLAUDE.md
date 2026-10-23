@@ -1287,6 +1287,9 @@ Max : « mettre la mini-carte toujours visible ». Trois règles.
   430 px de large : il se centre sur l'espace à sa droite
   (`(100vw + --rail-x + --minimap-w) / 2`). Un élément neuf posé en haut au
   milieu entre dans la liste du témoin de `carte.js`, ou il rougit.
+  Et sur téléphone, une règle de `padding` en raccourci écrasait la place de
+  sa croix (« 21 h 1✕ ») : un élément qui réserve une place à un bouton se
+  relit dans les `@media` qui réécrivent son `padding`.
 
 ## ✈️ se pose devant (v502) — une approche assistée va là où le nez pointe
 
