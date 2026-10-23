@@ -369,6 +369,7 @@ const PAS_RUE = 28;
 const LOCALE_GTA = sectionGTA('locale');
 const DEMI_EMPRISE = (Math.floor(LOCALE_DC.chaussee) >> 1) + Math.floor(LOCALE_DC.trottoir);   // 3 : sept colonnes
 const DEMI_CHAUSSEE = Math.min(DEMI_EMPRISE - 1, Math.floor(LOCALE_GTA.chaussee) >> 1);        // 2 : cinq colonnes
+const DEMI_CHAUSSEE_V531 = Math.floor(LOCALE_DC.chaussee) >> 1;                                 // 1 : trois colonnes
 const MAISON = 9;                                                          // la maison de la v161
 const RUELLE = Math.floor(sectionDeRue('ruelle').chaussee);                // 3
 // La position d'une colonne dans la trame, sur un axe : `m` dans le pas,
@@ -500,8 +501,18 @@ const AVENUES = [
 // entre les rangées de musées (v205, leurs façades à v = ±15), la 3e Rue entre
 // le Mall et le parc du Capitole. Élargies, elles entreraient dans les musées.
 const SERREES_DC = new Set(['Independence Avenue', 'Constitution Avenue', 'Constitution Avenue (ouest)', '3e Rue']);
+// LA SECTION D'AVANT, GARDÉE DANS CE MODULE (et pas dans une copie figée) :
+// sous ce qu'un enfant a bâti avant les rues à la GTA, `world.js` demande
+// `solWashingtonV531` et `batirColonneWashingtonV531`. Une copie de ce
+// fichier aurait coûté 335 ms au chargement (le choix des escaliers du métro,
+// v529) pour un métro identique au bloc près — seule la section change, et un
+// témoin de `plafond.js` compare cette variante au `solWashington` de
+// `origin/main` colonne par colonne.
+const AVENUES_V531 = AVENUES.map((a) => (a.liaison ? { ...a, l: 1.5, t: 2 } : { ...a }));
 for (const a of AVENUES) if (!a.liaison && !SERREES_DC.has(a.nom)) a.l += ELARGI_GTA;
-const BANDES_AVENUES = rangerVoies(AVENUES);
+const BANDES_AVENUES_GTA = rangerVoies(AVENUES);
+const BANDES_AVENUES_V531 = rangerVoies(AVENUES_V531);
+export const VOIES_CIRCUITS_DC_V531 = AVENUES_V531;
 
 // LES PONTS DE L'ANACOSTIA (v444). L'I-95 Sud entre par le quartier au sud de
 // la rivière (u 20–66, v 60–96), et ce quartier n'avait AUCUN pont vers le
@@ -518,13 +529,14 @@ const PONTS = [
   { nom: 'Pont Sousa', ...LIAISON, pts: [[56, 38], [56, 66]] },
 ];
 const BANDES_PONTS = rangerVoies(PONTS);
+const BANDES_PONTS_V531 = rangerVoies(PONTS.map((p) => ({ ...p, l: 1.5, t: 2 })));
 export const PONTS_DC = PONTS;
 // La cote du tablier : celle de la rue (`BASE`, 33), écrite au-dessus du lit.
 export const COTE_PONT_DC = 33;
 export function pontWashington(x, z) {
   const u = x - WASHINGTON.x, v = z - WASHINGTON.z;
   if (u < 18 || u > 66 || v < 38 || v > 86) return null;
-  return solDesVoies(BANDES_PONTS, u, v, BITUME, TROTTOIR);
+  return solDesVoies(VAR.ponts, u, v, BITUME, TROTTOIR);
 }
 
 // Les ronds-points. À Washington, une avenue diagonale ne coupe pas la grille :
@@ -736,10 +748,22 @@ function tirage(a, b, sel) {
 // fois — pour elle-même, puis comme voisine de ses quatre voisines, puis par
 // la carte — et chaque calcul refait cinq polylignes de fleuve. Sans ce mémo,
 // un morceau du Mall coûtait vingt-cinq millisecondes ; avec, huit.
-const MEMO_SOL = new Map();
+// La variante qu'on lit : la ville d'aujourd'hui, ou celle d'avant la GTA.
+const VAR_GTA = { bandes: BANDES_AVENUES_GTA, ponts: BANDES_PONTS, demi: DEMI_CHAUSSEE, memoSol: new Map(), memoLot: new Map() };
+const VAR_V531 = { bandes: BANDES_AVENUES_V531, ponts: BANDES_PONTS_V531, demi: DEMI_CHAUSSEE_V531, memoSol: new Map(), memoLot: new Map() };
+let VAR = VAR_GTA;
+function enV531(f) {
+  const avant = VAR;
+  VAR = VAR_V531;
+  try { return f(); } finally { VAR = avant; }
+}
+export const solWashingtonV531 = (x, z) => enV531(() => solWashington(x, z));
+export const lotWashingtonLibreV531 = (x, z) => enV531(() => lotWashingtonLibre(x, z));
+export const pontWashingtonV531 = (x, z) => enV531(() => pontWashington(x, z));
+export const batirColonneWashingtonV531 = (x, z, h, poser, gardeMetro) => enV531(() => batirColonneWashington(x, z, h, poser, gardeMetro));
 export function solWashington(x, z) {
   const cle = x * 4096 + z;
-  const memo = MEMO_SOL.get(cle);
+  const memo = VAR.memoSol.get(cle);
   if (memo !== undefined) return memo;
   let sol = solWashingtonCalcul(x, z);
   // Les ponts de l'Anacostia (v444) passent avant l'eau, la berge et ce qui
@@ -750,8 +774,8 @@ export function solWashington(x, z) {
     const pont = pontWashington(x, z);
     if (pont !== null && (sol !== TROTTOIR || pont === BITUME)) sol = pont;
   }
-  if (MEMO_SOL.size > 40000) MEMO_SOL.clear();
-  MEMO_SOL.set(cle, sol);
+  if (VAR.memoSol.size > 40000) VAR.memoSol.clear();
+  VAR.memoSol.set(cle, sol);
   return sol;
 }
 
@@ -812,7 +836,7 @@ function solWashingtonCalcul(x, z) {
   if (dansWestPotomacPark(u, v)) {
     // Independence et la 17e Rue traversent le parc — comme dans la vraie
     // ville, où l'on fait le tour du Mall en voiture.
-    const av = solDesVoies(BANDES_AVENUES, u, v, BITUME, TROTTOIR);
+    const av = solDesVoies(VAR.bandes, u, v, BITUME, TROTTOIR);
     if (av !== null) return av;
     if (tirage(u, v, 41) < 0.1) return arbreOu(u, v, HERBE);
     return tirage(u, v, 42) < 0.06 ? GRAVIER : HERBE;
@@ -832,8 +856,8 @@ function solWashingtonCalcul(x, z) {
       return tirage(u, v, c.jardin ? 37 : 38) < (c.jardin ? 0.3 : 0.22) ? arbreOu(u, v, HERBE) : HERBE;
     }
     if (d < c.r - ANNEAU_DEHORS) return BITUME;                    // l'anneau qui roule
-    if (solDesVoies(BANDES_AVENUES, u, v, BITUME, TROTTOIR) === BITUME) return BITUME;
-    if (trameDC(u).d <= DEMI_CHAUSSEE || trameDC(v).d <= DEMI_CHAUSSEE) return BITUME;
+    if (solDesVoies(VAR.bandes, u, v, BITUME, TROTTOIR) === BITUME) return BITUME;
+    if (trameDC(u).d <= VAR.demi || trameDC(v).d <= VAR.demi) return BITUME;
     return TROTTOIR;                                               // le trottoir du tour
   }
   // Le parc de Rock Creek se lit APRÈS les ronds-points : Washington Circle,
@@ -850,13 +874,13 @@ function solWashingtonCalcul(x, z) {
 
   // Les avenues d'État, tracées avant la grille : à Washington la diagonale
   // gagne toujours sur la rue ordinaire.
-  const av2 = solDesVoies(BANDES_AVENUES, u, v, BITUME, TROTTOIR);
+  const av2 = solDesVoies(VAR.bandes, u, v, BITUME, TROTTOIR);
   if (av2 !== null) {
     if (av2 === BITUME && (((u + v) % 9) + 9) % 9 === 0) return LIGNE;
     // Le trottoir d'une voie ne coupe pas la chaussée d'une rue de la grille
     // qu'elle croise (v370) : la bretelle de l'I-295 fermait la rue v = 84.
     if (av2 === TROTTOIR && enVille
-      && (trameDC(u).d <= DEMI_CHAUSSEE || trameDC(v).d <= DEMI_CHAUSSEE)) return BITUME;
+      && (trameDC(u).d <= VAR.demi || trameDC(v).d <= VAR.demi)) return BITUME;
     return av2;
   }
 
@@ -869,7 +893,7 @@ function solWashingtonCalcul(x, z) {
   // passage piéton est sur la chaussée, là où le trottoir de la rue qui
   // croise la traverse — à larges bandes dans le sens de la marche.
   const tu = trameDC(u), tv = trameDC(v);
-  const chNS = tu.d <= DEMI_CHAUSSEE, chEO = tv.d <= DEMI_CHAUSSEE;
+  const chNS = tu.d <= VAR.demi, chEO = tv.d <= VAR.demi;
   if (chNS || chEO) {
     if (chNS && chEO) return BITUME;
     if (chNS && tv.d <= DEMI_EMPRISE) return (u & 1) === 0 ? PASSAGE : BITUME;
@@ -890,10 +914,9 @@ function solWashingtonCalcul(x, z) {
 // Mémorisé : chaque colonne bâtie interroge ses quatre voisines, qui
 // l'interrogent en retour — et surMonument compare trente-cinq boîtes à
 // chaque fois. Une réponse par colonne suffit.
-const MEMO_LOT = new Map();
 export function lotWashingtonLibre(x, z) {
   const cle = x * 4096 + z;
-  const memo = MEMO_LOT.get(cle);
+  const memo = VAR.memoLot.get(cle);
   if (memo !== undefined) return memo;
   const u = x - WASHINGTON.x, v = z - WASHINGTON.z;
   let libre = true;
@@ -901,8 +924,8 @@ export function lotWashingtonLibre(x, z) {
   else if (solWashington(x, z) !== null) libre = false;
   else if (surMonument(u, v)) libre = false;
   else if (surBouche(u, v)) libre = false;
-  if (MEMO_LOT.size > 40000) MEMO_LOT.clear();
-  MEMO_LOT.set(cle, libre);
+  if (VAR.memoLot.size > 40000) VAR.memoLot.clear();
+  VAR.memoLot.set(cle, libre);
   return libre;
 }
 
