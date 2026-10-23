@@ -215,6 +215,14 @@ v522 ne touche pas ; la distribution reste à faire.
     déclarées : « un train s'arrête devant la voiture de l'enfant » (v440) et
     « deux voisines d'un convoi gardent leur longueur d'écart » (vertes au
     premier portail du même code).
+  - Troisième portail (après la croix du badge, `index.html`) : en plus,
+    `reglages.js` « un choix fait sur une tablette part au serveur » — rejouée
+    SEULE, rouge à l'identique sur la branche ET sur `origin/main` v531 (72
+    verts, 1 rouge des deux côtés) : en production ; et `manhattan.js` « les
+    deux clients restent sans erreur de jeu » (PeerJS « Lost connection to
+    server ») — rejouée seule : verte sur la branche, rouge sur `origin/main`,
+    le courtier local. `reseau.js` rejouée seule (coupée deux fois par la borne
+    de deux heures du terminal) : 91 verts, 0 rouge.
 
 - [ ] **Deux rouges de portail mesurés des deux côtés au portail de la v530
   (les pistes larges).** Chacun rejoué SEUL sur la branche et sur `origin/main`
