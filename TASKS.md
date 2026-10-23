@@ -1,5 +1,25 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DE LA v533 (mobilier cassable, fusionné à la v531) : aucun
+  rouge de la livraison.** Le portail n'a pas fini sous la limite de deux
+  heures (coupé dans `reseau.js`). Rejoués SEULS des deux côtés : `monte.js`
+  branche 258 / 5 (fabrication par tranches, voisines d'un convoi, feu « au
+  lieu de piler », rue vide, « Atterrissage vers ») contre `origin/main`
+  253 / 7 (les mêmes, plus mur de face et `minimap×edu-timer` aux deux
+  tailles) — au portail, la branche rendait aussi « chaque feuille vole bas
+  au-dessus de SA colonne » (v531, `ecartMax` 6,72 ; vert seul) ;
+  `degats.js` branche 46 / 2, `origin/main` 47 / 1 : « les feux de détresse
+  se posent SUR la carrosserie » rouge des deux côtés, NON DÉCLARÉ jusqu'ici
+  (`bugatti-bolide.glb`, deux feux à 0,45 de la tôle), et « percuter une
+  voiture de la rue » rouge sur `ecart` 18,3 pour 20 (déjà déclaré : la
+  voiture de la rue repart pendant les 0,2 s de la pose, aucun mobilier sur
+  la dalle) ; `maj.js` trois passages de chaque côté, « en construction, on
+  marche au joystick » rouge une fois sur trois sur la branche (0,8 bloc),
+  zéro sur `origin/main` — le crochet du piéton rend le même verdict
+  (vrai/faux) qu'avant, à surveiller ; le loader qui compte les fichiers
+  rouge des deux côtés (déclaré) ; `reseau.js` branche 89 / 1 (la voiture
+  de la rue chez l'ami, déclaré).
+
 - [ ] **Le mobilier se casse (v533) : ce qui reste, et deux décisions pour
   Max.** (1) LES RUES SONT ÉTROITES, ET C'EST MESURÉ
   (`tests/sonde-mobilier-route.cjs`, le long des circuits) : chaussée médiane

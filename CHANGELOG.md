@@ -61,7 +61,14 @@ cela change le sol sous ce que les enfants ont bâti — : c'est une proposition
 la voiture passe quatre blocs au-delà — sur `origin/main` elle s'arrête 2,3
 blocs avant ; zéro clé de programme neuve), le témoin de la v252 qui garde le
 réverbère posé par un enfant comme obstacle, et trois témoins purs dans
-`plafond.js` (les familles, le sens de la chute, le relèvement hors de vue).
+`plafond.js` (les familles, le sens de la chute, le relèvement hors de vue),
+et celui de la terrasse de café (lancée, la voiture l'écrase ; au pas, elle
+s'arrête devant). Portail sur le code fusionné à la v531 : les rouges de
+`monte.js`, `degats.js`, `maj.js` et `reseau.js` sont ceux de `origin/main`,
+rejoués seuls des deux côtés (`TASKS.md`). Revue d'écran
+(`--etats=mobilier-tombe,volant-arret`, iPhone et iPad, jour et nuit) dans
+`docs/revue-ecran/v533/` : le réverbère couché au pied du trottoir se lit
+au premier regard.
 
 ---
 
