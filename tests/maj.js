@@ -1277,6 +1277,20 @@ function verifier(nom, ok, detail = '') {
         C.construire(true); C.outil(true);
         await att(400);
         const construction = releve();
+        // POSER, CASSER, SAUTER DANS UNE COLONNE, ET L'OUTIL ACTIF DANS LA
+        // PALETTE DES AUTRES (v533, revue d'écran ligne 4) : les centres x, et
+        // la clarté du fond de Casser actif contre celle de Poser au repos.
+        {
+          const cx = (id) => { const b = document.getElementById(id); if (!b) return null; const r = b.getBoundingClientRect(); return r.width ? r.left + r.width / 2 : null; };
+          const fond = (id) => {
+            const c = getComputedStyle(document.getElementById(id)).backgroundColor.match(/[\d.]+/g) || [0, 0, 0, 0];
+            return { lum: +(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]).toFixed(0), a: c.length > 3 ? +c[3] : 1 };
+          };
+          construction.outils = { poser: cx('poser-btn'), casser: cx('casser-btn'), sauter: cx('jump-btn'),
+            actif: document.getElementById('casser-btn').classList.contains('actif'),
+            fondActif: fond('casser-btn'), fondRepos: fond('poser-btn'),
+            plein: !!document.querySelector('#casser-btn svg [fill="currentColor"]') };
+        }
         const n2 = await tap();
         const volCMs = await enVol(true);
         const volConstruction = releve();
@@ -1356,6 +1370,14 @@ function verifier(nom, ok, detail = '') {
         && !!r.construction.R.hotbar && !!r.construction.R['poser-btn'] && !!r.construction.R['casser-btn']
         && !!r.construction.R['construction-pill'] && !r.construction.R['construire-btn'] && !r.enConstruction,
         `${r.err || ''} ${JSON.stringify(co)} ${JSON.stringify(r.construction && r.construction.R)} terminé ${!r.enConstruction}`);
+      {
+        const O = (r.construction && r.construction.outils) || {};
+        const aligne = [O.casser, O.sauter].every((x) => x != null && O.poser != null && Math.abs(x - O.poser) < 2);
+        const fa = O.fondActif || {}, fr = O.fondRepos || {};
+        verifier(`commandes (${vue.width} × ${vue.height}) : en construction, Poser, Casser et Sauter ont le même x, et Casser actif garde le voile des autres boutons (un anneau, pas un fond blanc) — revue d'écran ligne 4`,
+          !r.err && aligne && O.actif && O.plein && Math.abs((fa.lum || 0) - (fr.lum || 0)) < 30 && Math.abs((fa.a || 0) - (fr.a || 0)) < 0.2,
+          `${r.err || ''} ${JSON.stringify(O)}`);
+      }
       const B = r.barre || {}, bd = B.bande || {}, F = B.fin || {};
       const R2 = (r.construction && r.construction.R) || {};
       const finCroise = ['hotbar', 'poser-btn', 'casser-btn', 'jump-btn', 'down-btn'].filter((n) => R2[n] && B.fin && croise(B.fin, R2[n]));
@@ -1455,6 +1477,13 @@ function verifier(nom, ok, detail = '') {
       P.pilote = { max: 95, kmh: 900 }; P.avionEtat = 'sol';
       window.__majBoutonsVehicule();
       const auSol = fly();
+      // LA MANETTE DIT CE QU'ELLE EST (v533, revue d'écran ligne 7) : un mot,
+      // des chevrons dans la course, et le doigt tombe toujours sur la
+      // manette elle-même, qui capture son pointeur (v262).
+      const gb = document.getElementById('gaz-base'), gr = gb.getBoundingClientRect();
+      const doigts = [0.08, 0.3, 0.5, 0.7, 0.92].map((f) => document.elementFromPoint(gr.left + gr.width / 2, gr.top + gr.height * f));
+      const gaz = { mot: (gb.textContent || '').trim(), chevrons: gb.querySelectorAll('svg path').length,
+        voit: gr.width > 0 && gr.height > 0, doigt: doigts.map((e) => (e ? e.id || e.tagName : null)) };
       P.avionEtat = 'vol';
       window.__majBoutonsVehicule();
       const enVol = fly();
@@ -1465,10 +1494,14 @@ function verifier(nom, ok, detail = '') {
       await att(300);
       const menuEmoji = avecEmoji();
       document.getElementById('menu-reprendre').click();
-      return { emojis: avecEmoji(), menuEmoji, traits, pilule,
+      return { emojis: avecEmoji(), menuEmoji, traits, pilule, gaz,
         voler: { aPied: !!aPied, auSol: auSol !== aPied && !!auSol, enVol: enVol !== auSol && enVol !== aPied && !!enVol, retour: retour === aPied } };
     });
     await ico.close();
+    verifier('la manette des gaz porte son mot et ses chevrons, et le doigt tombe sur elle partout — revue d\'écran ligne 7',
+      !!icones.gaz && icones.gaz.voit && /Gaz/.test(icones.gaz.mot) && icones.gaz.chevrons >= 1
+        && icones.gaz.doigt.every((d) => d === 'gaz-base'),
+      JSON.stringify(icones.gaz));
     verifier('plus un emoji sur un bouton du jeu — HUD, pilules, menu et panneaux',
       icones.emojis.length === 0 && icones.menuEmoji.length === 0,
       JSON.stringify({ emojis: icones.emojis.slice(0, 12), menu: icones.menuEmoji.slice(0, 6) }));

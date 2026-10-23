@@ -38,7 +38,7 @@ import { creerGuides, DUREE_PANNEAU_MS } from './guides.js';
 import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN, PORTEE_COURONNE,
   ABAISSE_TRES_LOIN, rayonTresLoin } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
-import { mondeDevant, ligneDiagConduite } from './conduite.js';
+import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
@@ -939,10 +939,11 @@ const enAttente = new Map();          // key -> { cx, cz, sale, detail, depuis }
 statsMaillage.enAttente = enAttente;  // la sonde lit l'âge des demandes (v360)
 // LE RÉGLAGE ENTRE DANS LA FICHE DU JOURNAL (v299) : ce que l'appareil joue,
 // pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
-// réglage lu au démarrage.
+// réglage lu au démarrage. Et la portée de la vue (v532) : sans elle, on a dû
+// DÉDUIRE du palier que la couronne lointaine n'avait jamais tourné chez Max.
 journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576,
   palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null, etendue: ETENDUE_CHOISIE,
-  logiciel: renduLogiciel() });
+  loin: PORTEE_VUE, logiciel: renduLogiciel() });
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;
 function synchroniserLeWorker() {
@@ -1230,7 +1231,7 @@ function meshChunk(cx, cz) {
   statsMaillage.locaux++;
 }
 
-// LE MOBILIER QUI EST TOMBÉ (v533, `mobiliercasse.js`). Le registre vit ici,
+// LE MOBILIER QUI EST TOMBÉ (v535, `mobiliercasse.js`). Le registre vit ici,
 // à côté des morceaux : un morceau remaillé retrouve ses pièces couchées, et
 // une pièce se relève quand l'enfant est loin. `parCle` mène d'une clé de bloc
 // à son maillage, pour l'animer sans parcourir la scène.
@@ -1339,7 +1340,7 @@ function installerMorceau(cx, cz, tampons) {
       if (!mesh) continue;
       mesh.position.set(cx * CHUNK + p.x + 0.5, p.y, cz * CHUNK + p.z + 0.5);
       group.add(mesh);
-      // la clé du bloc (v533) : un morceau remaillé retrouve ses pièces tombées
+      // la clé du bloc (v535) : un morceau remaillé retrouve ses pièces tombées
       const cleP = cleBloc(cx * CHUNK + p.x, p.y, cz * CHUNK + p.z);
       if (faconDeCasser(p.id)) { mesh.userData.cle = cleP; piecesParCle.set(cleP, mesh); }
       // LA LANTERNE D'UN RÉVERBÈRE EST UNE LAMPE POSSIBLE (v248) : sa place
@@ -1353,7 +1354,7 @@ function installerMorceau(cx, cz, tampons) {
         const lan = new THREE.Vector3(
           mesh.position.x + 0.5 * Math.cos(mesh.rotation.y), p.y + 2.7,
           mesh.position.z - 0.5 * Math.sin(mesh.rotation.y));
-        lan.cle = cleP;                 // une lanterne tombée n'éclaire plus (v533)
+        lan.cle = cleP;                 // une lanterne tombée n'éclaire plus (v535)
         lanternes.push(lan);
       }
       // LE FEU TRICOLORE REGARDE LA RUE QU'IL COMMANDE (v273), et l'on note
@@ -1793,7 +1794,7 @@ function updateChunks() {
   // demande la règle qui les pose (`world.mobilierVu`, v425 — seulement le
   // mobilier MONTRÉ, sinon une tablette sans couche HD aurait des tables
   // invisibles qui arrêtent), une fois par colonne couverte.
-  // ET LE MOBILIER DE RUE SE CASSE (v533). `casser` (le sens de la marche)
+  // ET LE MOBILIER DE RUE SE CASSE (v535). `casser` (le sens de la marche)
   // n'est donné que pour le PAS que la voiture fait vraiment, assez vite : ce
   // qu'elle touche alors et qui sait tomber (`faconDeCasser`) tombe, et cesse
   // d'arrêter. Ce qui est déjà tombé n'arrête plus rien. Un bloc qu'un enfant
@@ -1931,6 +1932,21 @@ function updateChunks() {
   // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v358) : un choc
   // contre une voiture de la rue ou du mobilier rebondit, un piéton et l'eau
   // arrêtent net, sans choc — personne n'est jamais touché (v259).
+  // ET UNE VOITURE GARÉE OU INVOQUÉE (v534) : une monture qui porte un
+  // `gabarit` — pas un avion. Elle n'était un obstacle que pour les piétons
+  // (v259) ; la voiture de l'enfant la traversait. Elle se POUSSE : c'est une
+  // bête de cette tablette, rien de l'horloge partagée (v305).
+  const gareeContre = (x, z, cap) => {
+    const moi = boiteVoiture(x, z, cap, 2.2, Math.max(0.3, player.gabarit / 2));
+    for (const a of animalManager.animals) {
+      const g = a.def.gabarit;
+      if (!(g > 1) || a.def.pilote || a.montee || a.dying > 0 || Math.abs(a.pos.y - player.pos.y) > 2.5) continue;
+      if ((a.pos.x - x) ** 2 + (a.pos.z - z) ** 2 > 8 * 8) continue;
+      const B = boiteVoiture(a.pos.x, a.pos.z, a.yaw, 2.2, g / 2);
+      if (normaleEntreBoites(moi, B)) return { a, B };
+    }
+    return null;
+  };
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
     if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return 'voiture';
     // on ne casse que sur le pas qu'on fait vraiment (pas sur le regard au
@@ -1938,6 +1954,8 @@ function updateChunks() {
     const pas = Math.hypot(x - x0, z - z0);
     const sp = Math.abs(player.vitesseVoiture || 0);
     const sens = sp >= VITESSE_CASSE && pas > 1e-6 && pas < 1.5 ? { dx: (x - x0) / pas, dz: (z - z0) / pas } : null;
+    const g = gareeContre(x, z, cap);
+    if (g) { const avant = gareeContre(x0, z0, cap); if (!avant || avant.a !== g.a) return 'voiture'; }
     if (mobilierDevant(x, z, cap, sens) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
     // `arretDouxT` (v343) : s'arrêter devant un piéton ou au bord de l'eau
     // n'est PAS un choc — les dégâts ne comptent jamais un piéton touché.
@@ -1950,7 +1968,14 @@ function updateChunks() {
   // ET CONTRE QUELLE VOITURE (v397) : sa boîte et son allure, pour que le choc
   // prenne la normale de SON rectangle et la vitesse RELATIVE — un flanc frôlé
   // glisse, un choc par l'arrière pousse peu.
-  player.voitureContre = (x, z, cap) => vehicules.voitureContre(x, z, cap);
+  player.voitureContre = (x, z, cap) => {
+    const r = vehicules.voitureContre(x, z, cap);
+    if (r) return r;
+    const g = gareeContre(x, z, cap);
+    if (!g) return null;
+    const e = g.a.elan;
+    return { ...g.B, v: 0, vx: e ? e.vx : 0, vz: e ? e.vz : 0, libre: true, pousser: (ix, iz) => g.a.pousser(ix, iz) };
+  };
   // UNE VOITURE ARRIVE SUR CE POINT ? (v259) Ce qu'un piéton regarde pour
   // s'écarter : une voiture de la rue en marche, ou celle de l'enfant quand
   // elle roule, dont le couloir — sa largeur plus une marge, deux secondes de
@@ -2000,7 +2025,7 @@ function updateChunks() {
   // mailleur dessine (`mobilierTrottoir`) ; on ne bute que sur ce qui est
   // MONTRÉ — le détail du morceau visible (`montrerLeDetail`) —, sinon un
   // appareil sans couche HD aurait des tables invisibles qui arrêtent.
-  // rend le GENRE de la pièce (vrai), ou faux ; une pièce écrasée (v533) n'est plus là
+  // rend le GENRE de la pièce (vrai), ou faux ; une pièce écrasée (v535) n'est plus là
   const mobilierVu = (x, z, y) => {
     const bx = Math.floor(x), bz = Math.floor(z);
     if (casses.taille && casses.has(cleHD(bx, bz))) return false;
@@ -3351,7 +3376,7 @@ function texteEtendue() {
     // aucun message (décision de Max, les commandes à icônes) : c'est ici
     // qu'on l'apprend. Toucher la même étendue la lève (`renderEtendue`).
     if (PALIER && PALIER.source === 'sûreté' && PALIER.sousChoix === choix) {
-      return `⚠️ « ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois : il joue en « ${mot(PALIER.nom)} » pour l'instant. Touche « ${mot(choix)} » pour réessayer, ou garde ça.`;
+      return `⚠️ « ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois : il joue en « ${mot(PALIER.nom)} » pour l'instant${PALIER.loin ? ', en gardant le paysage lointain' : ''}. Touche « ${mot(choix)} » pour réessayer, ou garde ça.`;
     }
     base = `Tu as choisi « ${mot(choix)} ».`;
   }
@@ -7832,7 +7857,7 @@ function placeAssise(a, siege) {
 // qui suffit à un enfant qui marche à trois blocs par seconde, et rien à
 // faire tant qu'il fait jour. Une lampe sans lanterne s'éteint.
 const lampesPretes = cadence(500);
-// LE MOBILIER TOMBÉ (v533) : chaque image, les pièces qui tombent encore
+// LE MOBILIER TOMBÉ (v535) : chaque image, les pièces qui tombent encore
 // avancent leur chute (temps réel) ; une fois par seconde, ce qui a assez
 // duré au sol et que l'enfant ne voit plus se relève.
 const statsCasse = { n: 0, releves: 0 };
@@ -7929,7 +7954,7 @@ function reglerLesFeux() {
       if (!e || !e.feux) continue;
       for (const f of e.feux) {
         const etat = etatFeu(f.axe, t);
-        // UN FEU TOMBÉ S'ÉTEINT, MAIS LE CARREFOUR GARDE SA RÈGLE (v533) : la
+        // UN FEU TOMBÉ S'ÉTEINT, MAIS LE CARREFOUR GARDE SA RÈGLE (v535) : la
         // circulation est une fonction de l'horloge que deux tablettes
         // partagent (v305), et la casse est LOCALE — si le feu tombé laissait
         // passer les voitures ici, la rue de l'ami ne serait plus la même.
@@ -8388,6 +8413,7 @@ const fun = initFun({
   remotePlayers: () => remotePlayers,
   isRunning: () => running,
   isNight: () => Math.sin((dayTime / DAY_LENGTH) * Math.PI * 2) < -0.05,
+  nuitDehors: () => nuitDehors,
   getWeather: () => weather,
   getPosCtx: () => posCtx,
   // Les convois n'existent qu'une fois le monde bâti : on les demande au
@@ -8515,7 +8541,7 @@ window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fi
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
   get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage,
-  // le mobilier tombé (v533) : le registre, les comptes, et le maillage d'une pièce
+  // le mobilier tombé (v535) : le registre, les comptes, et le maillage d'une pièce
   mobilierCasse: { casses, stats: statsCasse, piece: (cle) => piecesParCle.get(cle) || null }, horizonLoin, horizonTresLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,

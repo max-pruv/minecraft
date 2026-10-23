@@ -280,6 +280,61 @@ function tuyere(a, t) {
 // à faux pour qu'elle reste vive sous la correspondance tonale — et AUCUNE
 // lumière ponctuelle : quatre lampes pour tout le jeu (v248), une de plus
 // recompilerait tous les programmes.
+// LA MATIÈRE DE CE QUI BRILLE SANS ÉCLAIRER (v533) : la flamme, les feux de
+// navigation, les phares. Une seule fonction, donc les mêmes réglages, donc
+// la MÊME clé de programme (v246) — la couleur et l'opacité sont des
+// uniformes. La flamme la chauffe à l'accueil (v491) : un feu de bord qui
+// s'allume en jeu ne compile rien, par construction, et le témoin lit les
+// clés (v363).
+export function matiereAdditive(couleur, opacite) {
+  return new THREE.MeshBasicMaterial({
+    color: couleur, transparent: true, opacity: opacite, blending: THREE.AdditiveBlending,
+    depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+  });
+}
+
+// LES FEUX DE NAVIGATION (v533). Revue d'écran, ligne 8 : en vol de nuit,
+// l'avion n'avait aucun feu. Rouge en bout d'aile GAUCHE (−x, le nez en −z),
+// vert en bout d'aile droite, un éclat blanc à la queue. On ne les écrit pas
+// à côté des ailes : on les MESURE sur le modèle fini (le sommet le plus à
+// gauche, le plus à droite, le plus en arrière), comme `normaliserVoiture`
+// mesure une voiture (v230) — trois appareils, trois envergures, et une aile
+// qu'on redessine ne laisse pas un feu dans le vide. Nés cachés, comme la
+// flamme : `fun.js` les allume aux commandes, l'éclat clignote, et la
+// descente les éteint. Aucune lampe (v248).
+function feuxNavigation(g) {
+  g.updateMatrixWorld(true);
+  const v = new THREE.Vector3();
+  let gauche = null, droite = null, queue = null;
+  g.traverse((o) => {
+    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+    const pos = o.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+      if (!gauche || v.x < gauche.x) gauche = v.clone();
+      if (!droite || v.x > droite.x) droite = v.clone();
+      if (!queue || v.z > queue.z + 1e-3 || (Math.abs(v.z - queue.z) <= 1e-3 && v.y > queue.y)) queue = v.clone();
+    }
+  });
+  if (!gauche) return null;
+  // rentrés de leur rayon : un feu ne doit pas allonger ni élargir le modèle,
+  // dont les postes de l'aéroport lisent la longueur et l'envergure (v278)
+  const feu = (p, couleur, r, dx, dz) => {
+    const geo = new THREE.SphereGeometry(r, 10, 8);
+    const m = new THREE.Mesh(geo, matiereAdditive(couleur, 0.95));
+    m.position.set(p.x + dx * r, p.y, p.z + dz * r);
+    m.frustumCulled = false;
+    m.visible = false;
+    g.add(m);
+    return m;
+  };
+  return {
+    rouge: feu(gauche, 0xff1000, 0.3, 1, 0),
+    vert: feu(droite, 0x00ff30, 0.3, -1, 0),
+    eclat: feu(queue, 0xffffff, 0.3, 0, -1),
+  };
+}
+
 function flamme(t) {
   const groupe = new THREE.Group();
   groupe.position.set(t.x, t.y, t.z);
@@ -287,11 +342,7 @@ function flamme(t) {
     const geo = new THREE.ConeGeometry(rayon, 1, 10, 1, true);
     geo.translate(0, 0.5, 0);            // base en 0, pointe en +1
     geo.rotateX(Math.PI / 2);            // la pointe part vers +z, la queue
-    const mat = new THREE.MeshBasicMaterial({
-      color: couleur, transparent: true, opacity: opacite, blending: THREE.AdditiveBlending,
-      depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
-    });
-    const m = new THREE.Mesh(geo, mat);
+    const m = new THREE.Mesh(geo, matiereAdditive(couleur, opacite));
     m.frustumCulled = false;
     return m;
   };
@@ -331,6 +382,8 @@ function fini(a, zPrincipal = 0, porte = null) {
   const g = a.finir();
   g.userData.porte = porte;
   // une flamme par tuyère déclarée, enfant de la racine
+  // les feux de navigation se mesurent AVANT les flammes, qui dépassent la queue
+  g.userData.feuxNav = feuxNavigation(g);
   g.userData.tuyeres = (a.tuyeres || []).map((t) => { const f = flamme(t); g.add(f); return f; });
   // `legs` doit exister même vide : la boucle de monte la parcourt pour faire
   // balancer les pattes, et un avion n'en a pas. Même contrat que la voiture.

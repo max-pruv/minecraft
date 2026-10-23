@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v533 — Le mobilier de rue se casse
+## v535 — Le mobilier de rue se casse
 
 **Pourquoi.** Max : « quand tu roules avec les voitures, tout le mobilier
 urbain, poteau, feu rouge, il est hyper dur. Comme dans GTA, il devrait
@@ -67,8 +67,110 @@ s'arrête devant). Portail sur le code fusionné à la v531 : les rouges de
 `monte.js`, `degats.js`, `maj.js` et `reseau.js` sont ceux de `origin/main`,
 rejoués seuls des deux côtés (`TASKS.md`). Revue d'écran
 (`--etats=mobilier-tombe,volant-arret`, iPhone et iPad, jour et nuit) dans
-`docs/revue-ecran/v533/` : le réverbère couché au pied du trottoir se lit
+`docs/revue-ecran/v535/` : le réverbère couché au pied du trottoir se lit
 au premier regard.
+## v534 — Un choc a de l'élan
+
+**Pourquoi.** Max : « Quand on fonce dans une voiture avec une autre voiture,
+la voiture s'arrête immédiatement alors qu'elle aurait été propulsée sur
+quelques mètres. Idem sur d'autres types d'objets. » Mesuré sous node avec le
+vrai joueur (`sonde-elan-chocs.cjs`), une hypercar contre un mur, un mur pris à
+30°, une voiture garée, une voiture de la rue, un réverbère : à 21 blocs/s
+contre un mur, **zéro bloc de rebond** (le filet de la v272, qui ramène la
+vitesse au déplacement de l'image, mangeait le rebond dans l'image du choc) ;
+joystick tenu, le frein reprenait tout en un quart de seconde (0,3 à 4 blocs) ;
+un mur pris à 30° était un choc de face — la voiture plantée contre lui ; un
+second choc était publié 0,15 s après le premier. Et une voiture garée ou
+invoquée n'était **pas un obstacle du tout** pour la voiture de l'enfant : on
+la traversait.
+
+**Ce que ça change.** Un choc renvoie la voiture : de face, un rebond court
+et franc ; en biais, elle est déviée et glisse le long du mur ou de la
+voiture, quelques mètres, en perdant sa vitesse, et la caisse tourne si on
+tape un coin. Pendant ces quelques dixièmes de seconde le joystick n'agit
+plus — les pneus ripent —, puis la main revient. Une voiture garée ou invoquée
+se pousse : on la propulse sur quelques mètres (6 blocs à 80 km/h, 28 à
+180 km/h) et la nôtre continue sur sa lancée. Une voiture de la rue ne se
+pousse pas (la rue est la même sur toutes les tablettes) : on rebondit dessus.
+Une voiture de la rue qui arrive EN FACE s'arrête au choc : elle ne nous
+emporte plus en arrière (39 à 51 blocs sur `origin/main`, un taxi de
+Manhattan rejeté de sept blocs au premier jet de cette livraison).
+Un rebond qui mènerait vers un passant ou dans l'eau s'arrête net, comme
+avant. Les dégâts reçoivent exactement la même force pour un même choc.
+
+**Ce qui le prouve.** Sept témoins neufs. Dans `plafond.js`, sous node,
+barres calculées sur la règle (rebond, frottement de glissade, partage de deux
+masses égales) : le rebond de face à trois vitesses et trois obstacles,
+joystick lâché ou tenu (rouge sur `origin/main` : 0 bloc à 21 blocs/s) ; le
+mur à 30° (0 bloc avant, 16,7 après) ; la voiture garée propulsée (0 bloc
+avant) ; aucun second choc dans la glissade (+0,15 s avant) ; la force
+inchangée et le piéton jamais touché, verts des deux côtés à dessein. Dans
+`monte.js`, le trajet de l'enfant : il fonce dans une berline invoquée par le
+vrai crochet du jeu, elle part, la sienne continue. Deux témoins voisins
+repointés, chacun mesuré sur `origin/main` : la voiture de la rue percutée
+(`degats.js`) juge à la vitesse du choc et non à un élan de vingt blocs que
+la rue, en temps réel, défait (rouge 1 sur 3 sur `origin/main`) ; le virage
+de la caméra (`monte.js`) ne compte pas les images d'une glissade.
+Portail complet : quatorze suites vertes ; `monte.js` et `reseau.js` rendent
+des rouges déjà déclarés dans `TASKS.md` avec leur double mesure (la rue, la
+partie à trois) ; `degats.js` rendait un seul rouge, les feux de détresse de
+la Bugatti Bolide, identique rejoué seul sur `origin/main` — la v533 l'a
+corrigé, et après sa fusion `degats.js` (49), `plafond.js` (199) et la fumée
+(40) sont entièrement verts.
+## v533 — Les phares, les feux de navigation, la manette et la pioche
+
+**Pourquoi.** La revue d'écran de la v506 a relevé trois défauts dans ce que
+l'enfant voit aux commandes. La nuit, la voiture roulait dans le noir, sans un
+phare, et l'avion volait sans aucun feu (ligne 8). La manette des gaz était un
+rectangle blanc vide : rien ne disait qu'il fallait la pousser vers le haut
+(ligne 7). En construction, la pioche de Casser se lisait comme une flèche
+« télécharger », et le bouton actif, blanc, sortait de sa colonne (ligne 4).
+
+**Ce que ça change.** De nuit au volant, la voiture allume deux phares au nez
+et leur pinceau de lumière sur la route ; ils s'éteignent au jour et à la
+descente. Aux commandes d'un avion, un feu rouge au bout de l'aile gauche, un
+vert au bout de la droite, et un éclat blanc qui clignote à la queue. La
+manette porte le mot « Gaz » et des chevrons dans sa course. La pioche a un fer
+plein, et Poser, Casser et Sauter sont dans la même colonne ; l'outil choisi
+garde le voile des autres boutons, avec un anneau corail.
+
+**Ce qui le prouve.** Quatre témoins, tous vérifiés rouges sur `origin/main`
+(sonde rejouée sur les deux arbres) : `maj.js` lit la colonne et le fond de
+l'outil actif, et le mot, les chevrons et le doigt de la manette (le doigt
+tombe sur `#gaz-base` en cinq points de la course) ; `monte.js` remesure les
+bouts d'aile sur le modèle et relève l'éclat image par image, puis monte de
+nuit dans une voiture et lit les deux lueurs au nez, le pinceau, l'extinction
+au jour et à la descente — et les CLÉS de programme : aucune neuve. Les
+captures de `sonde-revue-ecran.cjs` (avion au sol et en vol, voiture, construction,
+jour et nuit, iPhone et iPad) sont dans la PR, avant et après.
+
+## v532 — « Loin » voit loin, même quand le jeu s'allège par sûreté
+
+**Pourquoi.** Max, sur la v518 : « On ne voit pas du tout quatre fois plus
+loin. » Le journal de bord de son iPhone (`journal_appareil`) l'explique : de
+la v506 à la v512, chaque session porte `etendue: haut` (« Loin » choisi) et
+`palier: moyen, source: sûreté` — `bas` avant la v509. La couronne lointaine
+(v497) et le troisième étage (v518) ne vivent QUE dans la fiche `haut` : sous
+la sûreté, le jeu les retirait avec le reste. Ils n'ont jamais tourné sur son
+appareil, et ne peuvent pas avoir causé ses plantages : tous datent de la v406
+à la v411, avant eux, et il n'y en a plus eu depuis.
+
+**Ce que ça change.** « Loin » choisi, le paysage lointain va jusqu'à 10 240
+blocs même quand le jeu joue « Normal » par sûreté : le brouillard et le plan
+lointain reculent, la côte et la mer apparaissent à l'horizon en vol. Les
+morceaux, la file et la couche HD restent ceux du cran de sûreté — la couronne
+ne fabrique aucun morceau, elle lit le relief. Les Réglages le disent (« en
+gardant le paysage lointain »), et la fiche du journal de bord porte désormais
+la portée de la vue (`loin`), pour qu'on n'ait plus à la déduire.
+
+**Ce qui le prouve.** Deux témoins, rouges sur `origin/main` : la règle pure
+(`parent.js` : sous « Loin » par sûreté, `loin` 10 240 et rr, file, HD de
+« Normal » ; « Auto » et « Normal » choisis gardent `loin` 0), et la scène
+d'une page rechargée dans l'état exact de l'iPhone (les deux couronnes
+nommées, brouillard ≥ 10 000). Coût mesuré au banc à rr 12 : +47 000
+triangles, +5,2 Mo de géométrie, +3 appels de dessin. Captures de revue
+d'écran (`sonde-revue-ecran.cjs`, options neuves `--rr=` et `--params=`) à
+430 × 932 et 820 × 1180, jour et nuit, « Normal » contre « Normal + loin ».
 
 ---
 
@@ -248,6 +350,8 @@ essence, le proche et le lointain ont la même boîte de feuillage et la même
 couleur. Les cinq témoins des vrais arbres repointés : on ne tait que ce que
 le modèle couvre (compté par `facesArbresTues`), une cabane de rondins reste en
 cubes, aucun bloc ne bouge.
+
+---
 
 ## v522 — Les blocs parlent français, et deux bandeaux se lisent
 
