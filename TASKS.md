@@ -20,6 +20,11 @@
   modèle de voiture : à mesurer modèle par modèle dans la zone des phares.
   `monte.js` sur `origin/main` rejouée seule : mêmes familles (rue vide, feu,
   mur de face, minicarte en vol, flâneur, voisines d'un convoi).
+  Après l'intégration de la v536 : `reseau.js` rejouée SEULE deux fois de
+  chaque côté — branche 1 rouge sur 2 (veille sans retour, reprise d'hôte,
+  compteur après le départ de l'hôte : la famille qui va et vient, déclarée
+  plus bas), `origin/main` 0 sur 2. La livraison ne touche ni `net.js` ni
+  `sync.js`.
 - **Les rails semblent ondulés en vue oblique** (profil en long d'un tiers de
   pente) et **les fenêtres du train restent noires la nuit** : relevé de la
   revue d'écran (`docs/revue-ecran.md`).
