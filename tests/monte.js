@@ -10,6 +10,7 @@
 //
 //     cd tests && npm install && npm run monte
 
+const { mesurerSaison } = require('./sonde-saison-ciel.cjs');
 const { Banc, dormir, souffler } = require('./banc.js');
 const { passage: passageRendre, juger: jugerRendre } = require('./sonde-rendre-convois.cjs');
 const { mesurerSensations } = require('./sensations-mesure.js');
@@ -8978,6 +8979,66 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         `${r.err || ''} ${JSON.stringify(ps)} · ${r.s} s`);
     }
 
+    // ✈️ AU POSTE : ON ROULE JUSQU'À LA PISTE, PUIS ON DÉCOLLE (v530). Max :
+    // « quand on veut décoller, on a des problèmes… une espèce de bloc de
+    // béton… il faut le circuler ». L'appareil garé au poste de la rangée,
+    // l'enfant monte, appuie UNE fois sur ✈️ et lâche tout : l'état
+    // « Roulage vers la piste » s'affiche, les gaz se mettent sur l'AXE d'une
+    // piste, et l'appareil est en vol — jamais une épave. Sur l'ancien code, il
+    // part tout droit sur l'aire et s'écrase sur le hangar. Durée de montre
+    // bornée (le banc rend peu d'images), dans le message.
+    for (const [espece, cle] of [['concorde', 'orly']]) {
+      if (!tab.isClosed()) await banc.mettreDeCote(tab);
+      const dePage = await banc.jouerSeul('MonteDecollage' + espece, { rr: 2 });
+      const r = await dePage.evaluate(async ({ espece, cle }) => {
+        const g = window.__game, am = g.animalManager, P = g.player;
+        const att = (ms) => new Promise((f) => setTimeout(f, ms));
+        const A = await import('./src/aeroport.js');
+        const a = A.AEROPORTS.find((q) => q.cle === cle);
+        const q = A.postesAvion(a.profil, a.r).find((u) => u.espece === espece);
+        for (const b of [...am.animals]) am.scene.remove(b.mesh);
+        am.animals.length = 0;
+        const x = a.x + q.du + 0.5, z = a.z + q.dv + 0.5;
+        // l'enfant à pied, à trois blocs du flanc, face à l'appareil
+        P.pos.set(x, a.sol + 1.05, z - 3); P.yaw = Math.PI;
+        await att(1500);
+        const ne = am.invoquer(espece, Math.floor(x), Math.floor(z));
+        if (ne) ne.yaw = q.cap;
+        await att(800);
+        for (let e = 0; e < 8 && !P.pilote; e++) { document.getElementById('ride-btn').click(); await att(500); }
+        if (!P.pilote) return { err: 'pas aux commandes' };
+        // aux commandes, nez le long de l'aérogare, comme au poste
+        P.pos.set(x, a.sol + 1.05, z); P.yaw = q.cap + Math.PI;
+        P.avionEtat = 'sol'; P.avionEnVol = false; P.vitesseAvion = 0; P.touchMove = { f: 0, s: 0 };
+        await att(500);
+        let pistes = [];
+        try { pistes = (await import('./src/approche.js')).pistesDuMonde().filter((u) => u.cle === cle); } catch { /* ancien code */ }
+        const lire = () => { const el = document.getElementById('etat-pose');
+          return el && getComputedStyle(el).display !== 'none' ? el.textContent.trim() : ''; };
+        document.getElementById('fly-btn').dispatchEvent(new TouchEvent('touchstart', { cancelable: true, bubbles: true }));
+        const t0 = performance.now(), textes = new Set();
+        let gaz = null, etat = P.avionEtat, y0 = P.pos.y;
+        while (performance.now() - t0 < 240000) {
+          await att(100);
+          const t = lire(); if (t) textes.add(t);
+          if (!gaz && P.avionEtat === 'decollage') {
+            const pi = pistes.find((u) => Math.abs(P.pos.z - u.z) <= u.demi && P.pos.x >= u.x0 && P.pos.x <= u.x1);
+            gaz = { lx: +(P.pos.x - a.x).toFixed(1), lz: +(P.pos.z - a.z).toFixed(1), surPiste: !!pi, lat: pi ? +(P.pos.z - pi.z).toFixed(2) : null };
+          }
+          etat = P.avionEtat;
+          if (etat === 'vol' || etat === 'epave' || !P.pilote) break;
+        }
+        return { etat, gaz, textes: [...textes], monte: +(P.pos.y - y0).toFixed(1),
+          crash: P.crash ? P.crash.raison : null, ou: { lx: +(P.pos.x - a.x).toFixed(1), lz: +(P.pos.z - a.z).toFixed(1) },
+          s: Math.round((performance.now() - t0) / 1000) };
+      }, { espece, cle });
+      await dePage.close();
+      if (!tab.isClosed()) await banc.ramener(tab);
+      verifier(`✈️ au poste de ${cle} : le ${espece} roule jusqu'à la piste, met les gaz sur son axe et décolle`,
+        !r.err && r.etat === 'vol' && r.gaz && r.gaz.surPiste && Math.abs(r.gaz.lat) < 1 && r.textes.includes('Roulage vers la piste'),
+        `${r.err || ''} ${JSON.stringify(r)}`);
+    }
+
     // LES TROIS ÉTATS DE LA POSE, ET UN NOM DE VILLE PAR AÉRODROME (v516), sous
     // node : la pose sur place sans piste, la remise qui passe devant, et pour
     // chaque aérodrome un nom qu'un enfant lit (ni tiret, ni « Aéroport », ni
@@ -9085,42 +9146,28 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         JSON.stringify(r));
     }
 
-    // --- LES CUBES ORANGE DU CIEL (v484) --------------------------------------
-    // Le nuage de saison (feuilles d'automne, pétales, lucioles, neige) suivait
-    // l'enfant de −3 à +23 blocs : en vol, cent soixante carrés de couleur
-    // flottaient autour de lui dans le ciel. On le trouve par sa forme (un
-    // `Points` de taille 0,24, le seul du jeu), sans rien demander au module,
-    // pour mesurer la même chose sur l'ancien code. Page à part, fermée après.
+    // --- LES CUBES ORANGE DU CIEL (v484), PUIS DE VRAIES FEUILLES (v531) ----
+    // Le nuage de saison était un `Points` de carrés sans texture, posé de −1 à
+    // +9 blocs au-dessus du sol SOUS L'ENFANT : vu d'une caméra de voiture, tout
+    // ce qui la dépasse se projette dans le ciel (capture de Max au volant). On
+    // le trouve par sa FORME — le `Points` de taille 0,24 de l'ancien code, ou
+    // l'essaim `saison-*` du neuf — pour mesurer la même chose des deux côtés,
+    // en automne forcé (`?saison=`, que l'ancien code ignore : c'est l'automne
+    // en octobre, et le témoin le dit). Page à part, fermée après.
     if (!tab.isClosed()) await banc.mettreDeCote(tab);
-    const saisonPage = await banc.jouerSeul('MonteSaison', { rr: 2 });
-    const saison = await saisonPage.evaluate(async () => {
-      const g = window.__game, P = g.player;
-      let nuage = null;
-      g.scene.traverse((o) => { if (o.isPoints && o.material && Math.abs(o.material.size - 0.24) < 1e-6) nuage = o; });
-      if (!nuage) return { err: 'pas de nuage de saison' };
-      const images = (n) => new Promise((fin) => { const i0 = g.renderer.info.render.frame; const pas = () => (g.renderer.info.render.frame - i0 >= n ? fin() : requestAnimationFrame(pas)); requestAnimationFrame(pas); });
-      const x = 30000.5, z = 30000.5, sol = Math.max(g.world.terrainHeight(30000, 30000), 30) + 1; // le couloir de la v237 est en mer : l'eau (30) porte le nuage
-      const mesurer = () => {
-        nuage.updateMatrixWorld(true);
-        const pos = nuage.geometry.attributes.position, v = new nuage.position.constructor();
-        let haut = -Infinity;
-        for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(nuage.matrixWorld); haut = Math.max(haut, v.y - sol); }
-        return { visible: nuage.visible, haut: +haut.toFixed(1) };
-      };
-      P.flying = true; P.vel.set(0, 0, 0);
-      P.pos.set(x, sol + 60, z); await images(6);
-      const enVol = mesurer();
-      P.pos.set(x, sol + 0.1, z); await images(6);
-      const auSol = mesurer();
-      const m = new Date().getMonth();
-      return { enVol, auSol, hiver: !(m >= 2 && m <= 10) };
-    });
+    const saisonPage = await banc.jouerSeul('MonteSaison', { rr: 3, params: '&saison=automne' });
+    const saison = await mesurerSaison(saisonPage);
     await saisonPage.close();
     if (!tab.isClosed()) await banc.ramener(tab);
+    const sj = JSON.stringify(saison);
     verifier('en vol à soixante blocs du sol, aucune particule de saison ne flotte dans le ciel autour de l\'enfant',
-      !saison.err && (!saison.enVol.visible || saison.enVol.haut < 30), JSON.stringify(saison));
-    verifier('au sol, feuilles, pétales et lucioles restent à hauteur d\'arbre (la neige seule tombe du ciel)',
-      !saison.err && saison.auSol.visible && (saison.hiver || saison.auSol.haut <= 10), JSON.stringify(saison));
+      !saison.err && (!saison.enVol.visible || saison.enVol.haut === null || saison.enVol.haut < 30), sj);
+    verifier('les feuilles d\'automne ont une silhouette de feuille, pas un carré plein',
+      !saison.err && saison.forme.carte && saison.forme.transparents > 0.3, sj);
+    verifier('au sol, chaque feuille vole bas au-dessus de SA colonne et s\'y pose (moins de 4 blocs)',
+      !saison.err && saison.auSol.visible && saison.auSol.nb > 20 && saison.auSol.ecartMax <= 6, sj);
+    verifier('vue d\'une caméra de voiture, aucune feuille ne se découpe sur le ciel',
+      !saison.err && saison.pixels.ciel + saison.pixels.ailleurs > 0 && saison.pixels.ciel <= 20, sj);
     // CE QUI SE COMPTE EN SECONDES DE LA VRAIE VIE NE RALENTIT PAS AVEC
     // L'IMAGE (v483). La naissance des bêtes (une cadence de ménage, v226) et
     // le chronomètre de la course du parc — qui écrit un RECORD que Marlon et

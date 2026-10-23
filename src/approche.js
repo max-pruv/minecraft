@@ -68,6 +68,7 @@ export const REMISE_AFFICHEE_MS = 4000;
 export function etatDePose(j, maintenant) {
   if (!j || !j.pilote) return null;
   if (j.remiseT && maintenant - j.remiseT < REMISE_AFFICHEE_MS) return { cle: 'remise', texte: 'Remise des gaz' };
+  if (j.roulage) return { cle: 'roulage', texte: 'Roulage vers la piste' };
   if (j.avionEtat !== 'atterrissage') return null;
   if (j.approche && j.approche.piste) return { cle: 'vers', texte: `Atterrissage vers ${j.approche.piste.ville || villeDeLAerodrome(j.approche.piste)}` };
   return { cle: 'place', texte: 'Atterrissage sur place' };
@@ -380,4 +381,81 @@ function changerDePiste(ap, pos, yaw, fiche) {
 export function angle(a) {
   a = ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
   return a === -Math.PI ? Math.PI : a;
+}
+
+// LE ROULAGE ASSISTÉ (v530). Max : « quand on veut décoller, en fait, on a des
+// problèmes… il faut le circuler ». Un appareil garé l'est LE LONG de
+// l'aérogare (v228), donc parallèle à la piste et à vingt blocs d'elle : ✈️
+// le lançait pleins gaz tout droit sur l'aire, et il ne rencontrait jamais la
+// piste — il s'écrasait sur le hangar, ou sur ce qui borde le disque. Sur un
+// aérodrome, ✈️ au sol fait donc d'abord ce que fait un vrai pilote : il ROULE
+// jusqu'à l'axe de la piste, s'y aligne, puis met les gaz.
+//
+// La règle est pure, comme l'approche : `pisteDeDecollage` choisit la piste
+// et le sens, `guiderRoulage` rend le cap et la vitesse à chaque image. Le
+// guidage suit l'axe par une « carotte » à `VISEE_ROULAGE` blocs devant : de
+// côté, l'appareil fait une S vers l'axe ; à contresens, il fait demi-tour du
+// côté de la piste. Le sens préféré est celui où l'appareil regarde, s'il y a
+// devant lui la place de décoller.
+export const VISEE_ROULAGE = 8;       // blocs : la carotte sur l'axe
+export const VIRAGE_ROULAGE = 1.0;    // rad/s, guidé — un rayon de six blocs à l'allure de roulage
+export const PORTEE_ROULAGE = 120;
+export const VITESSE_ROULAGE = 15; // blocs/s, en ligne droite    // au-delà de l'axe d'une piste, on n'est pas sur son aérodrome
+// Ce qu'il faut de piste devant soi : le roulement jusqu'à la rotation
+// (`rotation² / 2·poussée`, la règle de la v261) et quarante blocs pour monter
+// au-dessus de ce qui borde la piste.
+export function longueurDecollage(fiche) {
+  const r = fiche.rotation || fiche.decrochage * 1.4;
+  return Math.ceil(r * r / (2 * fiche.poussee)) + Math.ceil(H_DEGAGE / MONTEE_DECOLLAGE * fiche.max);
+}
+// Ce qu'il faut AU-DELÀ de la rotation pour passer ce qui borde la piste.
+// L'appareil monte de `MONTEE_DECOLLAGE` blocs par seconde quelle que soit sa
+// vitesse (player.js la lit ici) : plus il va vite, plus il lui faut de piste
+// pour gagner `H_DEGAGE` blocs. Mesuré : à Francfort la piste finit sur une
+// colline, à Los Angeles sur un ravin de huit blocs, et avec une marge fixe de
+// quarante blocs le Concorde les prenait de face.
+export const MONTEE_DECOLLAGE = 14;
+export const H_DEGAGE = 16;
+// Où l'on s'aligne quand il faut toute la piste : douze blocs après le bout.
+export const SEUIL_ROULAGE = 12;
+export function pisteDeDecollage(x, z, yaw, fiche) {
+  const besoin = longueurDecollage(fiche), fx = -Math.sin(yaw);
+  let best = null;
+  for (const p of pistesDuMonde()) {
+    const lat = Math.abs(z - p.z);
+    if (lat > PORTEE_ROULAGE || x < p.x0 - 40 || x > p.x1 + 40) continue;
+    if (best && lat >= best.lat) continue;
+    const place = (s) => (s > 0 ? p.x1 - x : x - p.x0);
+    const face = fx >= 0 ? 1 : -1;
+    // Devant soi s'il y a la place, sinon derrière (un demi-tour) ; sinon on
+    // REMONTE la piste jusqu'à son bout, on y fait demi-tour, et l'on part de
+    // là — c'est ce que fait un vrai appareil, et la piste entière sert.
+    let sens, phase = 'ligne';
+    if (place(face) >= besoin) sens = face;
+    else if (place(-face) >= besoin) sens = -face;
+    else { sens = -face; phase = 'remonter'; }
+    best = { piste: p, sens, cap: capDuSens(sens), phase, lat };
+  }
+  return best;
+}
+export function guiderRoulage(r, pos, yaw, fiche) {
+  const p = r.piste;
+  if (r.phase === 'remonter' && (r.sens > 0 ? pos.x <= p.x0 + SEUIL_ROULAGE : pos.x >= p.x1 - SEUIL_ROULAGE)) r.phase = 'ligne';
+  const s = r.phase === 'remonter' ? -r.sens : r.sens;
+  const lat = pos.z - p.z;
+  // la direction voulue : le long de l'axe, et vers lui de `lat / VISEE`
+  const dz = Math.max(-2.5, Math.min(2.5, -lat / VISEE_ROULAGE));
+  const capVise = Math.atan2(-s, -dz);
+  let e = angle(capVise - yaw);
+  // À contresens, le plus court est ambigu : on tourne du côté où l'appareil
+  // se rapproche de l'axe (dériver le cap de +δ déplace le nez de (−cos, sin)).
+  if (Math.abs(e) > 2.6 && Math.abs(lat) > 0.5) e = Math.sign(Math.sin(yaw) * -lat || 1) * Math.abs(e);
+  // On vire au pas : à moitié de l'allure de roulage, un demi-tour tient dans
+  // la largeur de la piste (rayon de trois blocs).
+  // En ligne droite on roule à `VITESSE_ROULAGE` (le chemin vers le bout
+  // peut faire cent blocs, et un enfant n'attend pas vingt secondes).
+  const vitesse = Math.abs(e) > 0.6 ? (fiche.roulage || 6) * 0.5 : Math.max(fiche.roulage || 6, VITESSE_ROULAGE);
+  const aligne = r.phase === 'ligne' && Math.abs(lat) < 0.7 && Math.abs(angle(r.cap - yaw)) < 0.08
+    && pos.x >= p.x0 && pos.x <= p.x1;
+  return { capVise, ecart: e, vitesse, aligne, lat, phase: r.phase };
 }

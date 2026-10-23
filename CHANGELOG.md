@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v530 — La minicarte toujours là
+## v532 — La minicarte toujours là
 
 **Pourquoi.** Max : « Il faut trouver une solution pour mettre la mini-carte
 toujours visible. » Elle ne s'affichait qu'après un appui sur le bouton carte,
@@ -51,6 +51,80 @@ qu'un enfant de sept ans n'a aucune raison de chercher.
   `reseau.js`, `banc.ouvrirLaCarte`, `sonde-revue-ecran.cjs`.
 
 ---
+
+## v531 — De vraies feuilles d'automne, posées sur le monde
+
+**Pourquoi.** Max, capture d'iPhone au volant sur une autoroute : « Je ne sais
+pas ce que c'est que ces carrés orange-jaune dans le ciel, mais je veux enlever
+les trucs type Minecraft en carré. Si ce sont des feuilles qui volent parce que
+c'est l'automne, je veux voir des vraies feuilles, haute définition. » C'étaient
+les feuilles d'automne : un nuage de cent soixante carrés sans texture, posé de
+−1 à +9 blocs au-dessus du sol sous l'enfant. Vu d'une caméra de voiture à trois
+blocs du sol, tout ce qui la dépasse se projette au-dessus de l'horizon — la
+bande de la v484 ne pouvait pas l'empêcher. Mesuré sur `origin/main` : 16
+particules du champ sur 19 au-dessus de l'œil, 126 à 1 228 pixels de l'effet sur
+fond de ciel.
+
+**Ce que ça change.** Les feuilles sont de vraies feuilles : une silhouette à
+nervures et pétiole, sept teintes d'automne, qui tournent sur elles-mêmes en
+tombant, planent, se posent sur le sol (ou un toit, ou l'eau) et y restent
+quelques secondes avant de disparaître. Elles tombent bas, à hauteur d'arbre
+bas, au-dessus de leur propre coin de terrain : plus rien dans le ciel, ni en
+voiture ni en avion. Au printemps des pétales échancrés, en été des lucioles à
+halo, en hiver des flocons à six branches (la neige seule tombe du ciel).
+
+**Ce qui le prouve.** Quatre témoins dans `monte.js`, lus par
+`sonde-saison-ciel.cjs` : la silhouette (63 % de texels transparents, 0 sur
+l'ancien code), l'écart de chaque feuille à ce qui la porte (2,95 contre 12,08),
+les pixels de l'effet sur fond de ciel vus d'une caméra de voiture (0 contre
+126), et le vol (rien ne se dessine). Trois rouges sur `origin/main`. Un seul
+appel de dessin, aucune lampe, compilé pendant l'accueil ; coût en rendu
+logiciel dans le bruit (`sonde-saison-cout.cjs` : 17,6 contre 17,9 images par
+seconde, médianes ABBA).
+
+---
+## v530 — Des pistes larges, et l'avion roule jusqu'à elles
+
+**Pourquoi.** Max : « Les pistes des aéroports sont extrêmement étroites. Et
+quand on veut décoller, en fait, on a des problèmes. Il y a aussi une espèce de
+bloc de béton qui pose des problématiques pour manœuvrer l'avion. » Mesuré
+avant d'écrire une ligne, avec le vrai joueur sous node, ✈️ appuyé depuis
+chacun des soixante postes des dix-neuf aérodromes : **7 décollages sur 60**.
+Les cinquante-trois autres appareils s'écrasaient ou restaient bloqués, presque
+tous contre le « bloc de béton » : le hangar, posé dans l'axe de la rangée de
+stationnement. La bande de piste faisait 9 blocs de large, pour une envergure de
+quinze.
+
+**Ce que ça change.**
+- Les pistes ont la largeur du plus grand avion plus une marge : 19 blocs de
+  bande partout, avec des marques de seuil. Roissy garde deux pistes larges, et
+  la seconde piste des grands aéroports s'écarte de la première.
+- Le hangar quitte l'aire de stationnement et va à côté du terminal. La tour de
+  contrôle aussi : plus rien en travers du chemin d'un avion.
+- Au poste, ✈️ fait rouler l'avion tout seul jusqu'à la piste, l'aligne, puis
+  décolle. La pilule dit « Roulage vers la piste ». Un second appui arrête le
+  roulage, et tirer le joystick en arrière le reprend en main.
+- Les prolongements de piste et ce qu'ils bâtissent restent dans leurs bornes ;
+  `terrainHeight` ne bouge pas.
+
+**Ce qui le prouve.**
+- La sonde des soixante postes (`sonde-decollage-postes.cjs`) passe de 7/60 à
+  **60/60**. `carteMonde.js` la lit : un poste qui ne décolle plus la fait
+  rougir et le nomme.
+- `carteMonde.js` exige aussi que chaque piste soit plus large que l'envergure
+  plus deux blocs.
+- `monte.js` fait le trajet de l'enfant à Orly : il monte dans un Concorde garé,
+  appuie sur ✈️, la pilule « Roulage vers la piste » s'affiche, l'avion s'aligne
+  sur l'axe et vole. Sur l'ancien code, il s'écrase dans le hangar.
+- Les deux empreintes du relief de `plafond.js` n'ont pas bougé. L'empreinte des
+  490 morceaux, elle, change, et elle est prouvée désarmée : avec l'ancien
+  `aeroport.js`, on retrouve la constante d'avant. Les 252 colonnes qui
+  diffèrent sont toutes dans un aérodrome ou un tronçon de piste.
+- Le portail complet est vert, sauf des rouges déjà déclarés dans `TASKS.md`,
+  et deux rouges rejoués seuls des deux côtés avec la même distribution :
+  - le bandeau « Atterrissage vers <ville> » à Saint-Dizier (1 sur 3 sur la
+    branche, 2 sur 3 sur `origin/main`) ;
+  - l'avion de l'ami en feu (voir `TASKS.md`).
 
 ## v529 — On marche dans les stations de métro
 
@@ -237,6 +311,9 @@ centimètre et demi devant la tôle, aucun dans le vide. Deux témoins neufs dan
 qui clignotent, sans compiler un programme (les clés) ; et chez Alice, la
 voiture de la rue que Marlon percute s'arrête en détresse. Les deux sont
 rouges sur `origin/main`.
+
+---
+
 ## v518 — « Loin » voit plus loin, le garde-manger part, la minicarte à gauche
 
 Trois sujets, trois lignes au journal du jeu, un témoin pour chacun.

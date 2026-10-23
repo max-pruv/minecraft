@@ -401,7 +401,13 @@ const MM_ECART = 2.2;
 // prennent leur voûte, leur décor et leurs couloirs neufs. Désarmées
 // (`METRO_PARIS.stations`, ville.js ; `METRO_DC.stations`, washington.js), la
 // branche rend 713d4704…, la constante de la v528, au bit près.
-const EMPREINTE_MORCEAUX_V357 = '44e543673d4ce0e329d13593714740c84991a688685208c752d4cd9c86a3e771';
+// v530 : les pistes s'élargissent à l'envergure, et le prolongement de la
+// piste d'Heathrow passe dans les morceaux de Londres, un des neuf lieux.
+// `aeroport.js` d'origin/main remis dans une copie de src, la branche rend
+// 44e54367…, la constante de la v529, au bit près ; et les 252 colonnes qui
+// diffèrent dans les morceaux de Londres sont toutes dans un aérodrome ou la
+// boîte d'un tronçon de piste — aucune ailleurs, aucun autre lieu touché.
+const EMPREINTE_MORCEAUX_V357 = '4cf5d456835bbfc66e0ac1923cd43b2d961e52af65f84d8f2d0fd35ac9c06bbf';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

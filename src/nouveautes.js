@@ -6,11 +6,29 @@
 
 export const NOUVEAUTES = [
   {
-    v: 530,
+    v: 532,
     titre: 'La minicarte toujours là',
     puces: [
       'La minicarte s\'affiche toute seule',
       'La toucher ouvre la carte du monde',
+    ],
+  },
+  {
+    v: 531,
+    titre: 'De vraies feuilles d\'automne',
+    puces: [
+      'Plus de carrés orange dans le ciel',
+      'Les feuilles tombent en tournant',
+      'Elles se posent sur le sol',
+    ],
+  },
+  {
+    v: 530,
+    titre: 'Des pistes larges',
+    puces: [
+      'Les pistes deux fois plus larges',
+      "L'avion roule tout seul jusqu'à la piste",
+      'Plus de hangar en travers du chemin',
     ],
   },
   {
