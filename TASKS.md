@@ -209,6 +209,12 @@ v522 ne touche pas ; la distribution reste à faire.
     plus « à Rome aussi, en biais, un passant traverse sur le passage peint »
     (déclaré sous la v402). La v533 ne touche que la minicarte et le badge du
     temps libre.
+  - Portail repris (reprise, `degats.js`, `monte.js`, `reseau.js`) : `reseau.js`
+    verte ; `degats.js` les deux mêmes rouges ; `monte.js` sept rouges, le
+    passage peint de Rome redevenu vert, et deux autres intermittences déjà
+    déclarées : « un train s'arrête devant la voiture de l'enfant » (v440) et
+    « deux voisines d'un convoi gardent leur longueur d'écart » (vertes au
+    premier portail du même code).
 
 - [ ] **Deux rouges de portail mesurés des deux côtés au portail de la v530
   (les pistes larges).** Chacun rejoué SEUL sur la branche et sur `origin/main`
