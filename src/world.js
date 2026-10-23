@@ -3043,7 +3043,7 @@ export class JournalBlocs extends Map {
   }
 }
 
-// `COTE_AU_CENTRE.actif` à faux rejoue la surface de la voie d'avant la v535
+// `COTE_AU_CENTRE.actif` à faux rejoue la surface de la voie d'avant la v537
 // (cote lue au coin) — pour la sonde et le témoin, jamais un réglage.
 export const COTE_AU_CENTRE = { actif: true };
 
@@ -3401,7 +3401,7 @@ export class World {
     if (r) return r;
     const v = voieEn(x, z);
     if (!v) return null;
-    // LA COTE DU BALLAST SE LIT LÀ OÙ LA SURFACE LA POSE (v535). Le sol
+    // LA COTE DU BALLAST SE LIT LÀ OÙ LA SURFACE LA POSE (v537). Le sol
     // continu met le sommet d'une colonne en son CENTRE (x + ½, z + ½), et
     // lisait la cote de la voie au COIN : sur une pente d'un tiers, la surface
     // passait jusqu'à 0,15 bloc au-dessus des traverses — 7 520 points de

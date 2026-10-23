@@ -279,6 +279,7 @@ const GARDIENS = {
   'src/sky.js': ['carte.js', 'monte.js', 'manhattan.js'],
   'src/effects.js': ['monte.js', 'carte.js'],
   'src/props.js': ['monte.js', 'carte.js'],
+  'src/mobiliercasse.js': ['monte.js', 'plafond.js'],
   'src/modeles.js': ['monte.js'],
   'src/betes.js': ['monte.js'],
   // LE BANDEAU DU JEU (v285). Il vivait dans `creatures.js` — retiré avec le mode

@@ -76,7 +76,7 @@ const dessusNaturel = (id) => DESSUS_NATUREL.has(id) || isProp(id);
 export const SOL_ROUTE = new Set([CITY_BLOCK.ASPHALT, BLOCK.GRASS, BLOCK.DIRT, BLOCK.SAND, BLOCK.GRAVEL]);
 export function colonneRoute(world, x, z, r) {
   // le bloc que le générateur a ÉCRIT (une voie ferrée le publie : sa cote de
-  // surface se lit au centre de la colonne, son bloc au coin — v535)
+  // surface se lit au centre de la colonne, son bloc au coin — v537)
   const t = r.blocVoxel ?? Math.floor(r.cote) - 1;
   if (!SOL_ROUTE.has(world.getBlock(x, t, z))) return false;
   return dessusNaturel(world.getBlock(x, t + 1, z));
@@ -233,7 +233,7 @@ export function grilleSol(world, cx, cz, chunk) {
   const cote = new Float32Array(N * N);
   // le bloc que le générateur a ÉCRIT au sommet, quand il n'est pas
   // `floor(cote) − 1` : la voie ferrée lit sa surface au centre de la colonne
-  // et écrit son ballast au coin (v535) — un tiers de bloc de pente suffit à
+  // et écrit son ballast au coin (v537) — un tiers de bloc de pente suffit à
   // les séparer d'un bloc, et le mailleur lisait alors de l'air
   const blocs = new Int16Array(N * N).fill(-1);
   const idx = (lx, lz) => (lx + 1) + (lz + 1) * N;

@@ -89,9 +89,9 @@ dans `docs/revue-ecran/`.
   lointain, traces). Ce que la sonde montre est très proche de la tablette, mais
   pas identique.
 
-## Le relevé de la v535 (le rail), 23 octobre 2026
+## Le relevé de la v537 (le rail), 23 octobre 2026
 
-Captures dans `docs/revue-ecran/v535/` : le TGV Paris–Lyon aux deux endroits
+Captures dans `docs/revue-ecran/v537/` : le TGV Paris–Lyon aux deux endroits
 des captures de Max (viaduc du pas 716, tranchée du pas 786), iPhone et iPad,
 jour et nuit, et le train vu de près.
 

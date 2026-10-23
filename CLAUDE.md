@@ -821,6 +821,92 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Le mobilier se casse (v536) — un obstacle de rue est un geste, pas un mur
+
+Max : « tout le mobilier urbain, poteau, feu rouge, est hyper dur. Comme dans
+GTA, il devrait tomber pour ne pas bloquer la voiture. » `src/mobiliercasse.js`
+(pur) porte la règle et le registre ; `main.js` (`mobilierDevant`) l'applique.
+Cinq règles.
+
+- **ON MESURE SUR QUOI L'ON BUTE AVANT DE CHOISIR CE QUI CASSE.**
+  `sonde-mobilier-route.cjs` roule la voiture de l'enfant sur les vrais
+  circuits, décalée vers le trottoir : ce sont des blocs `RUE` (réverbère, feu,
+  jardinière), 60 à 100 par kilomètre à un bloc de la voie dans les villes
+  engendrées. Ce sont eux qui cassent (`faconDeCasser`) ; un meuble, un arbre,
+  ce qu'un ENFANT a posé (`world.edits`) restent des obstacles — décision à
+  confirmer par Max.
+- **ON NE CASSE QUE SUR LE PAS QU'ON FAIT, ET ASSEZ VITE.** `obstacleVehicule`
+  est aussi appelé loin devant (le regard du freinage piéton, v358) : la casse
+  n'arme que pour un pas de moins d'un bloc et demi, à `VITESSE_CASSE` (5 b/s)
+  ou plus. Au pas, un poteau reste un obstacle. La voiture perd `PERTE_CASSE`
+  de sa vitesse, sans `player.choc` : le contrat des dégâts (v343) ne voit que
+  les chocs que la physique publie — pas de double choc.
+- **RIEN N'EST ÉCRIT DANS LE MONDE, ET L'OBJET TOMBÉ EST LE MÊME MAILLAGE.** Le
+  bloc reste dans le morceau ; son maillage (`piecesParCle`) se couche autour de
+  son pied, dans le sens de la marche (`poseDeChute`), en temps réel — aucune
+  géométrie, aucun matériau, aucune clé de programme neuve (le témoin lit les
+  CLÉS après le vrai geste). Un morceau remaillé recouche ses pièces tombées.
+  Le cap d'origine et le feu vivent dans une `WeakMap`, jamais dans `userData`
+  (que `clone` recopie par JSON).
+- **UN FEU TOMBÉ S'ÉTEINT, LE CARREFOUR GARDE SA RÈGLE.** La casse est LOCALE à
+  la tablette ; la circulation est une fonction de l'horloge partagée (v305).
+  Si un feu tombé libérait le carrefour, deux amis n'auraient plus la même rue.
+  Une lanterne tombée n'a plus de lampe (`eclairerLaRue`).
+- **LE MOBILIER DE LA COUCHE HD S'ÉCRASE PAR UN REMAILLAGE.** Terrasse, banc,
+  colonne Morris n'ont pas de maillage à eux : la colonne écrasée entre dans
+  `world.mobilierCasse`, part au worker (`type: 'casse'`, et avec `edits` à la
+  resynchronisation), et le morceau se remaille sans elle. Ce qui est tombé se
+  relève après `DUREE_AU_SOL_MS`, hors de la vue de l'enfant (`LOIN_RELEVE`).
+  Manhattan (mobilier instancié par lots) et le réseau (la casse n'est pas
+  partagée) restent des dettes déclarées.
+
+
+## Un choc a de l'élan (v534) — la vitesse d'après un choc est un vecteur que le joystick ne touche pas
+
+Max : « quand on fonce dans une voiture avec une autre voiture, la voiture
+s'arrête immédiatement alors qu'elle aurait été propulsée sur quelques
+mètres ». Cinq règles, toutes mesurées par `sonde-elan-chocs.cjs`.
+
+- **CE QUI FILE DE CÔTÉ SE PERD PAR FROTTEMENT, PAS PAR UN COEFFICIENT
+  D'ANGLE.** `reponseChoc` gardait un quart de (1 − c) de la vitesse tangente
+  dès 30° : un mur à 30° ou 45° était un choc de face. Le choc retire au plus
+  `FROTTEMENT_IMPACT` × l'impulsion normale (Coulomb) et rend `e` de la vitesse
+  normale ; la FORCE reste `−vn / vPleine` — le contrat des dégâts ne bouge
+  pas, et un témoin le garde.
+- **APRÈS UN VRAI CHOC, LE JOYSTICK ATTEND (`glissade`).** Tenu en avant, le
+  frein mangeait le rebond en un quart de seconde. Au-dessus de
+  `CONTACT_DOUX`, la vitesse d'après devient un vecteur libre
+  (`player.glissade`) qui s'use à `FROTTEMENT_GLISSADE`, tourne la caisse si
+  l'impulsion ne passe pas par son centre (`vrilleDuChoc`, le bras de levier
+  est le COIN qui touche, `pointDeContact`, pas le milieu de la face que
+  lisent les dégâts), et rend la main au bout de `dureeGlissade` ou presque à
+  l'arrêt. Un piéton ou l'eau l'arrêtent net (v259, v272). Pas de
+  `franchirEnRoulant` en glissade : renvoyée de biais contre un mur en
+  escalier, la voiture « franchissait » le coin d'une marche et montait dans
+  la façade.
+- **UN FILET QUI RAMÈNE LA VITESSE AU DÉPLACEMENT NE JUGE PAS L'IMAGE D'UN
+  CHOC.** Dans cette image la voiture avance puis rebondit : son déplacement
+  net est presque nul, et le filet de la v272 tuait le rebond (zéro bloc à
+  21 blocs/s, mesuré). `_chocImage` le désarme pour l'image du choc.
+- **CE QUI SE POUSSE EST CE QUI N'EST PAS DE L'HORLOGE PARTAGÉE.** Une voiture
+  garée ou invoquée (une monture à `gabarit`, pas un avion) est un obstacle de
+  la famille « voiture » (`gareeContre`, main.js — elle ne l'était que pour
+  les piétons, la voiture de l'enfant la traversait) et se POUSSE
+  (`chocPoussable` : deux masses égales, `REBOND_VOITURE` ; `Animal.pousser`,
+  freinée à `FROTTEMENT_POUSSEE`). Une voiture de la rue ne se pousse jamais
+  (v305) : la nôtre rebondit. La vitesse de l'autre peut être un vecteur
+  (`vx`, `vz` dans la boîte) : sans elle, la voiture qu'on vient de pousser,
+  pas encore déplacée dans l'image, était repoussée à chaque pas.
+- **UN REBOND NE PUBLIE PAS UN SECOND CHOC.** Dans `ANTI_REBOND` (0,35 s de
+  JEU, `horlogeJeu` — une sonde sous node tourne plus vite que la montre), un
+  choc plus faible que le précédent est le même accident. Revenir dans le mur
+  après la glissade, joystick tenu, en est un autre : il se publie.
+
+- **CE QU'UNE VOITURE DE LA RUE AVANÇAIT VERS NOUS NE NOUS EMPORTE PAS.** Elle
+  s'arrête au choc (`heurter`, v372) : sa composante vers nous se retire de la
+  vitesse de sortie, la force reste celle de la vitesse RELATIVE. Sans cela un
+  taxi de Manhattan pris de face rejetait l'enfant de sept blocs (et
+  `origin/main`, joystick lâché, de trente-neuf à cinquante et un).
 ## Les stations de métro (v529) — on juge une station avec le vrai joueur, à l'aller et au retour
 
 Max : « on ne peut même pas marcher dedans ». Sept règles.
@@ -1564,7 +1650,7 @@ Deux règles.
   de `GARDE_GARE` pas d'un bout, et un témoin compare les dix-huit gares à
   `viaducs(false)` (zéro déplacée). La rampe à terre, elle, bouge (deux blocs au
   plus) : déclarée dans `TASKS.md`.
-## Rien ne traverse une voie (v535) — un ouvrage décidé sur l'axe se rejuge colonne par colonne
+## Rien ne traverse une voie (v537) — un ouvrage décidé sur l'axe se rejuge colonne par colonne
 
 Max, captures d'iPhone sur le TGV Paris–Lyon : « Those things should never
 happen ». Cinq règles.

@@ -618,6 +618,38 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       !t.erreur && t.points > 50000 && t.trous === 0, t.erreur || JSON.stringify(t));
   }
 
+  // --- LE MOBILIER SE CASSE, PUR (v536) --------------------------------------
+  // La règle (`mobiliercasse.js`) : ce qui se casse, comment ça tombe, quand ça
+  // se relève. Sur l'ancien code le module n'existe pas, et le verdict le dit.
+  {
+    const M = await import('../src/mobiliercasse.js').catch(() => null);
+    const { RUE, MEUBLE_START } = await import('../src/blocks.js');
+    if (!M) verifier('mobilier cassable : la règle', false, 'mobiliercasse.js absent (ancien code)');
+    else {
+      verifier('mobilier cassable : réverbère et feu tombent, la jardinière s\'écrase, un meuble ne se casse pas',
+        M.faconDeCasser(RUE.REVERBERE) === 'tombe' && M.faconDeCasser(RUE.FEUX) === 'tombe' && M.faconDeCasser(RUE.JARDINIERE) === 'ecrase'
+        && M.faconDeCasser(MEUBLE_START) === null && M.VITESSE_CASSE > 2 && M.PERTE_CASSE > 0 && M.PERTE_CASSE < 0.5);
+      // un fût tombe DANS LE SENS de la marche : le haut, tourné autour de
+      // l'axe rendu, part vers (dx, dz) (Rodrigues : haut·cos θ + (a × haut)·sin θ)
+      const sens = [[1, 0], [0, 1], [-0.6, 0.8]];
+      const ecarts = sens.map(([dx, dz]) => {
+        const p = M.poseDeChute('tombe', dx, dz, 1);
+        const vx = -p.az * Math.sin(p.angle), vy = Math.cos(p.angle), vz = p.ax * Math.sin(p.angle);
+        return +(Math.hypot(vx - dx, vz - dz) + Math.abs(vy)).toFixed(3);
+      });
+      verifier('mobilier cassable : un fût tombe à plat, dans le sens où roulait la voiture', ecarts.every((e) => e < 0.1), JSON.stringify(ecarts));
+      const C = new M.Casses();
+      C.casser('1,2,3', { t: 0, x: 0, z: 0, dx: 1, dz: 0, facon: 'tombe' });
+      C.casser(M.cleHD(5, 6), { t: 0, x: 5, z: 6, dx: 1, dz: 0, facon: 'hd' });
+      const tot = C.aRelever(M.DUREE_AU_SOL_MS - 1, 999, 999).length;
+      const pres = C.aRelever(M.DUREE_AU_SOL_MS + 1, 10, 0).length;
+      const hd = [...C.colonnesHD()];
+      const loin = C.aRelever(M.DUREE_AU_SOL_MS + 1, 999, 999).length;
+      verifier('mobilier cassable : ce qui est tombé reste au sol, puis se relève hors de la vue de l\'enfant',
+        tot === 0 && pres === 0 && hd.length === 1 && hd[0] === '5,6' && loin === 2 && C.taille === 0, JSON.stringify({ tot, pres, hd, loin }));
+    }
+  }
+
   // --- LE MODÈLE DE CONDUITE, PUR (v358) -------------------------------------
   // `conduite.js` est lu sous node : ce que la voiture FAIT d'une commande et
   // d'un choc se vérifie ici en millisecondes, sans navigateur. Sur l'ancien
@@ -775,6 +807,68 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // le compte vient de la table (huit classes depuis les utilitaires, v438)
       lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
+  }
+  // --- L'ÉLAN APRÈS UN CHOC (v534) ------------------------------------------
+  // Max : « quand on fonce dans une voiture avec une autre voiture, la voiture
+  // s'arrête immédiatement alors qu'elle aurait été propulsée sur quelques
+  // mètres ». Le VRAI joueur sous node (`sonde-elan-chocs.cjs`) : une hypercar
+  // lancée contre un mur de face, un mur à 30°, une voiture garée, une voiture
+  // de la rue, un réverbère, joystick lâché ou tenu après le choc. Mesuré sur
+  // `origin/main` : à 21 blocs/s contre un mur, 0 bloc de rebond (le filet de
+  // la v272 le mangeait) ; joystick tenu, 0,3 à 4 blocs ; un mur à 30° plantait
+  // la voiture (0 bloc lâché) ; la voiture garée jamais poussée ; un second
+  // choc publié 0,15 s après le premier. Les barres se CALCULENT sur la règle
+  // (rebond e·v, frottement de glissade, partage de deux masses égales), à la
+  // moitié (v237) — les valeurs de repli sont celles de la règle, pour juger
+  // l'ancien code à la même barre.
+  {
+    let t = null, err = '';
+    try { t = await require('./sonde-elan-chocs.cjs').mesurer(require('path').resolve(__dirname, '..')); } catch (e) { err = String(e && e.message || e); }
+    const C = await import('../src/conduite.js').catch(() => ({}));
+    const F = C.FROTTEMENT_GLISSADE || 8, E = C.REBOND || 0.18, MU = C.FROTTEMENT_IMPACT || 0.35;
+    const EV = C.REBOND_VOITURE || 0.25, FP = C.FROTTEMENT_POUSSEE || 18, AR = C.GLISSADE_MIN || 0.35;
+    const vP = 0.85 * ((C.CLASSES && C.CLASSES.hypercar && C.CLASSES.hypercar.vmax) || 55);
+    const arret = (v, f) => (v * v) / (2 * f);
+    const L = (k) => (t && t[k]) || null;
+    const vitesses = [15, 30, 50];
+    const face = [], biais = [], pousse = [], force = [], rebonds = [], pietons = [];
+    if (t) {
+      for (const cas of ['mur', 'rue', 'enFace', 'mobilier']) for (const v of vitesses) {
+        const r = L(`${cas}@${v}`), d = arret(E * r.lache.vImpact, F);
+        face.push(`${cas}@${v} lâché ${r.lache.chemin} · tenu ${r.tenu.chemin} (règle ${d.toFixed(2)})`);
+        if (!(r.lache.chemin >= 0.5 * d && r.tenu.chemin >= 0.5 * d && r.lache.chemin <= 2 * d + 1)) face.ok = false;
+      }
+      for (const v of vitesses) {
+        const r = L(`mur30@${v}`), vt = r.lache.vImpact * (Math.cos(Math.PI / 6) - MU * (1 + E) * Math.sin(Math.PI / 6));
+        biais.push(`${v}: ${r.lache.chemin} b (règle ${arret(vt, F).toFixed(1)})`);
+        if (!(r.lache.chemin >= 0.5 * arret(vt, F))) biais.ok = false;
+        const g = L(`garee@${v}`), vI = g.lache.vImpact;
+        pousse.push(`${v}: poussée ${g.lache.poussee} b (règle ${arret((1 + EV) / 2 * vI, FP).toFixed(1)}), nous ${g.lache.dx} b`);
+        if (!(g.lache.poussee >= 0.5 * arret((1 + EV) / 2 * vI, FP) && g.lache.dx > 0.5 * arret((1 - EV) / 2 * vI, F))) pousse.ok = false;
+      }
+      for (const [k, r] of Object.entries(t)) {
+        const cos = k.startsWith('mur30') ? 0.5 : 1;
+        // en face, l'impact est la vitesse RELATIVE : la sienne (10 b/s) s'ajoute
+        const attendu = Math.min(1, (r.lache.vImpact + (k.startsWith('enFace') ? 10 : 0)) * cos / vP);
+        if (!k.startsWith('traverse') && Math.abs(r.lache.forces[0] - attendu) > 0.02) force.push(`${k} ${r.lache.forces[0]} pour ${attendu.toFixed(3)}`);
+        for (const b of ['lache', 'tenu']) if (r[b].ecart != null && r[b].ecart < AR) rebonds.push(`${k} ${b} +${r[b].ecart} s`);
+        if (r.lache.pietonTouche || r.tenu.pietonTouche) pietons.push(k);
+      }
+    }
+    verifier('conduite : de face, la voiture rebondit — un mur, une voiture de la rue arrêtée ou qui arrive en face, un réverbère — à toutes les vitesses, court, et le joystick tenu ne mange plus le rebond',
+      !!t && face.ok !== false, t ? face.join(' · ') : `sonde : ${err}`);
+    verifier('conduite : un mur pris à 30° renvoie la voiture le long de lui, elle glisse au lieu de se planter',
+      !!t && biais.ok !== false, t ? biais.join(' · ') : `sonde : ${err}`);
+    verifier('conduite : une voiture garée est propulsée par le choc, et la nôtre continue sur sa lancée',
+      !!t && pousse.ok !== false, t ? pousse.join(' · ') : `sonde : ${err}`);
+    verifier('conduite : la force publiée est celle de l\'impact — l\'élan ne change pas ce que les dégâts reçoivent',
+      !!t && force.length === 0, t ? (force.join(' · ') || 'toutes les forces sont celles de la vitesse normale d\'impact') : `sonde : ${err}`);
+    verifier('conduite : un rebond ne publie pas un second choc (aucun choc dans la glissade du précédent)',
+      !!t && rebonds.length === 0, t ? (rebonds.join(' · ') || 'aucun') : `sonde : ${err}`);
+    // vert des deux côtés à dessein (v220) : il garde ce qu'un rebond ne doit
+    // jamais faire — envoyer la voiture sur un passant
+    verifier('conduite : un rebond qui mènerait vers un piéton s\'arrête devant lui',
+      !!t && pietons.length === 0, t ? (pietons.join(' · ') || 'piéton jamais touché, trois vitesses, lâché et tenu') : `sonde : ${err}`);
   }
   // --- LES RACCORDS D'AUTOROUTE NE ROULENT PAS DANS LA VOIE D'UN ANNEAU (v442)
   // Dix-neuf des quarante-six raccords route/ville engendrée partageaient la
@@ -3927,7 +4021,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           // marche est un bloc plus haut
           const bloc = v.bloc !== undefined ? v.bloc : v.cote;
           let cote = v.bloc !== undefined ? v.cote : v.cote + 1;
-          // LA SURFACE DU BALLAST SE LIT AU CENTRE DE LA COLONNE (v535), là
+          // LA SURFACE DU BALLAST SE LIT AU CENTRE DE LA COLONNE (v537), là
           // où le sol continu pose son sommet ; le talus garde la sienne.
           if (w.corridorEn && v.piece === 'ballast' && !v.ouvrage) { const r = w.corridorEn(x, z); if (r) cote = r.cote; }
           colonnes++; if (v.piece === 'talus') talus++;
@@ -4023,7 +4117,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
     }
 
-    // RIEN NE TRAVERSE UNE VOIE (v535). Max, deux captures d'iPhone sur le TGV
+    // RIEN NE TRAVERSE UNE VOIE (v537). Max, deux captures d'iPhone sur le TGV
     // Paris–Lyon : « Those things should never happen » — une dalle d'herbe qui
     // coupe le train, des piliers de pierre entre les rails. Le viaduc (v465)
     // se décidait sur l'AXE, et toute la largeur d'un pas de viaduc était
@@ -4071,7 +4165,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       if (T.rivesCreusees) { T.rivesCreusees(false); avant = balayer(new World(), true); T.rivesCreusees(true); }
       verifier('rien ne traverse une voie : le gabarit des DEUX voies est dégagé partout, sur les ponts comme ailleurs',
         neuf.lus > 100000 && neuf.blocs === 0 && neuf.surface === 0 && avant && avant.blocs > 100,
-        `${neuf.blocs} bloc(s) et ${neuf.surface} point(s) de surface dans le gabarit sur ${neuf.lus} lus${neuf.ex.length ? ' — ' + neuf.ex.join(' · ') : ''} · règle d'avant sur les pas de viaduc : ${avant ? `${avant.blocs} bloc(s), ${avant.surface} de surface` : 'absente (code d\'avant la v535)'} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+        `${neuf.blocs} bloc(s) et ${neuf.surface} point(s) de surface dans le gabarit sur ${neuf.lus} lus${neuf.ex.length ? ' — ' + neuf.ex.join(' · ') : ''} · règle d'avant sur les pas de viaduc : ${avant ? `${avant.blocs} bloc(s), ${avant.surface} de surface` : 'absente (code d\'avant la v537)'} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
       // DEUX LIGNES NE SE PARTAGENT JAMAIS UNE COLONNE. Chaque segment est une
       // droite de gare à gare, et deux plates-formes talus compris ne doivent
       // jamais se toucher : sinon `voieEn` donne la colonne au segment le plus
@@ -4087,7 +4181,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       verifier('deux lignes de train ne se croisent ni ne se rejoignent : leurs plates-formes restent séparées',
         paires === 36 && pire > portee,
         `${paires} paires de segments, la plus proche à ${pire.toFixed(1)} blocs pour ${portee} de plates-formes`);
-      // LA SURFACE DU BALLAST N'ENTERRE PAS LES TRAVERSES (v535) : la cote se
+      // LA SURFACE DU BALLAST N'ENTERRE PAS LES TRAVERSES (v537) : la cote se
       // lit au centre de la colonne, là où le sol continu pose son sommet.
       const enterrees = (monde) => {
         let lus = 0, n = 0;
@@ -4108,9 +4202,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       if (W.COTE_AU_CENTRE) { W.COTE_AU_CENTRE.actif = false; tAvant = enterrees(new World()); W.COTE_AU_CENTRE.actif = true; }
       verifier('le ballast n\'enterre pas les traverses : la surface suit la voie au centre de chaque colonne',
         tNeuf.lus > 3000 && tNeuf.n <= tNeuf.lus * 0.002 && tAvant && tAvant.n > tAvant.lus * 0.05,
-        `${tNeuf.n} point(s) de traverse sous la surface sur ${tNeuf.lus} · cote lue au coin : ${tAvant ? `${tAvant.n}/${tAvant.lus}` : 'absente (code d\'avant la v535)'}`);
+        `${tNeuf.n} point(s) de traverse sous la surface sur ${tNeuf.lus} · cote lue au coin : ${tAvant ? `${tAvant.n}/${tAvant.lus}` : 'absente (code d\'avant la v537)'}`);
 
-      // ET LE SOL CONTINU LIT LE BLOC QUE LE GÉNÉRATEUR A ÉCRIT (v535). La
+      // ET LE SOL CONTINU LIT LE BLOC QUE LE GÉNÉRATEUR A ÉCRIT (v537). La
       // surface de la voie se lit au centre de la colonne, son ballast s'écrit
       // au coin : sur une pente d'un tiers, `floor(cote) − 1` tombait un bloc
       // au-dessus du ballast, dans l'air, et le mailleur jetait (« reading

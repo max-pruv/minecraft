@@ -387,7 +387,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         releves.push({ beta: +(beta * 180 / Math.PI).toFixed(1), recul: +d.toFixed(2),
           v: +Math.hypot(g.player.vel.x, g.player.vel.z).toFixed(1),
           avant: vv === undefined || vv > 1,
-          rebond: !!(choc && performance.now() - choc.t < 1500) });
+          // et pendant la glissade d'après un choc (v534), où le volant n'agit pas
+          rebond: !!(choc && performance.now() - choc.t < 1500) || !!g.player.glissade });
       }
       // ON NE JUGE QUE CE QUI ROULE : à l'arrêt le volant ne fait rien (v262),
       // donc il n'y a pas de virage et l'angle ne veut rien dire.
@@ -4717,6 +4718,105 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et une table de Times Square est un obstacle pour sa voiture',
       table.notee && (table.contre === true || table.contre === 'mobilier') && table.libre === false,
       JSON.stringify(table));
+
+    // ---- LE MOBILIER DE RUE SE CASSE (v536) ---------------------------------
+    //
+    // Max : « tout le mobilier urbain, poteau, feu rouge, est hyper dur. Comme
+    // dans GTA, il devrait tomber pour ne pas bloquer la voiture. » Un réverbère
+    // de la VILLE (écrit dans le morceau comme le générateur l'écrit, pas dans
+    // le journal de l'enfant : celui qu'un enfant pose reste un obstacle, et
+    // c'est le témoin juste au-dessus qui le garde), dix blocs devant, sur la
+    // ligne de la voiture. On accélère : à l'impact la voiture roule à plus de
+    // cinq blocs par seconde, le réverbère tombe (son maillage se couche dans
+    // le sens de la marche) et la voiture CONTINUE au-delà. Aucune clé de
+    // programme neuve (le même maillage, tourné). Sur l'ancien code elle
+    // s'arrête devant, comme avant.
+    const tombe = await mobPage.evaluate(async () => {
+      const g = window.__game, w = g.world, p = g.player;
+      const { RUE } = await import('./src/blocks.js');
+      const { CHAUSSEE, World, CHUNK } = await import('./src/world.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      // on descend de la voiture du témoin d'avant, on retire les bêtes
+      if (g.fun.montureConduite && g.fun.montureConduite()) { document.getElementById('ride-btn').click(); await dodo(800); }
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const { positionDe } = await import('./src/mondes.js');
+      const P = positionDe('paris');
+      window.__carte.surTeleport(P.x + 40, P.z + 60);
+      await dodo(9000);
+      const px = Math.round(p.pos.x), pz = Math.round(p.pos.z);
+      const sol = (x, z) => w.sommetColonne(x, z);
+      const route = (x, z) => CHAUSSEE.has(w.getBlock(x, sol(x, z), z));
+      let lieu = null;
+      for (let r = 0; r < 40 && !lieu; r++) for (let dx = -r; dx <= r && !lieu; dx++) for (let dz = -r; dz <= r && !lieu; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+        const x = px + dx, z = pz + dz;
+        if (!route(x, z)) continue;
+        for (const [ax, az, yaw] of [[1, 0, -Math.PI / 2], [0, 1, Math.PI], [-1, 0, Math.PI / 2], [0, -1, 0]]) {
+          let ok = true;
+          for (let k = -4; k <= 22 && ok; k++) for (const l of [-1, 0, 1]) {
+            const qx = x + ax * k + az * l, qz = z + az * k + ax * l;
+            if (!route(qx, qz) || Math.abs(sol(qx, qz) - sol(x, z)) > 0) { ok = false; break; }
+          }
+          if (!ok) continue;
+          if (g.vehicules.placeProche({ x: x + 0.5, y: sol(x, z) + 1, z: z + 0.5 }, 16)) continue;
+          lieu = { x, z, ax, az, yaw };
+          break;
+        }
+      }
+      if (!lieu) return { lieu: null };
+      const { x, z, ax, az, yaw } = lieu;
+      const lx = x + ax * 10, lz = z + az * 10, ly = sol(lx, lz) + 1;
+      // le réverbère de la ville : dans le morceau, PAS dans le journal
+      const cx = Math.floor(lx / CHUNK), cz = Math.floor(lz / CHUNK);
+      const data = w.ensureChunk(cx, cz);
+      data[World.index(lx - cx * CHUNK, ly, lz - cz * CHUNK)] = RUE.REVERBERE;
+      w.dirty.add(World.key(cx, cz));
+      const cle = `${lx},${ly},${lz}`;
+      let t = performance.now();
+      while (!(g.mobilierCasse && g.mobilierCasse.piece(cle)) && performance.now() - t < 8000) await dodo(150);
+      const piecePrete = !!(g.mobilierCasse && g.mobilierCasse.piece(cle));
+      p.pos.set(x + 0.5, sol(x, z) + 1.01, z + 0.5); p.vel.set(0, 0, 0);
+      p.yaw = yaw; p.pitch = 0; p.flying = false;
+      // à l'arrêt contre : rien ne tombe, c'est un obstacle (le crochet, à la vitesse nulle)
+      const cap = yaw + Math.PI;
+      p.gabarit = 2.2; p.vitesseVoiture = 0;
+      const contreArret = p.obstacleVehicule(lx + 0.5 - ax * 2.3, lz + 0.5 - az * 2.3, cap, lx + 0.5 - ax * 3, lz + 0.5 - az * 3);
+      const tombeArret = !!(g.mobilierCasse && g.mobilierCasse.casses.has(cle));
+      p.gabarit = 0.6;
+      const cles = () => new Set(g.renderer.info.programs.map((q) => q.cacheKey));
+      const avant = cles();
+      g.animalManager.invoquer('voiture', p.pos.x + ax * 2.5, p.pos.z + az * 2.5);
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 8 && !auVolant(); e++) { await dodo(e ? 0 : 1500); document.getElementById('ride-btn').click(); const t2 = performance.now(); while (!auVolant() && performance.now() - t2 < 2500) await dodo(150); }
+      p.pos.set(x + 0.5, sol(x, z) + 1.01, z + 0.5); p.yaw = yaw; p.vel.set(0, 0, 0); p.vitesseVoiture = 0;
+      const depart = { x: p.pos.x, z: p.pos.z };
+      p.keys.add('KeyW');
+      let vImpact = null, depasse = 0;
+      t = performance.now();
+      while (performance.now() - t < 40000) {
+        await dodo(80);
+        const avance = (p.pos.x - depart.x) * ax + (p.pos.z - depart.z) * az;
+        if (vImpact === null && avance >= 7) vImpact = Math.abs(p.vitesseVoiture || 0);
+        depasse = avance - 10;
+        if (depasse > 4) break;
+      }
+      p.keys.delete('KeyW');
+      const tombe = !!(g.mobilierCasse && g.mobilierCasse.casses.has(cle));
+      await dodo(1500);
+      const mesh = g.mobilierCasse ? g.mobilierCasse.piece(cle) : null;
+      let haut = null;
+      if (mesh) { const q = mesh.quaternion; haut = +(1 - 2 * (q.x * q.x + q.z * q.z)).toFixed(2); }   // le haut du fût, rendu par son quaternion
+      const neuves = [...cles()].filter((k) => !avant.has(k)).length;
+      return { lieu: { x, z }, piecePrete, contreArret, tombeArret, auVolant: auVolant(), vImpact: vImpact && +vImpact.toFixed(1), depasse: +depasse.toFixed(1), tombe, haut, neuves, n: g.mobilierCasse ? g.mobilierCasse.stats.n : 'absent', duree: Math.round(performance.now() - t) };
+    });
+    verifier('à l\'arrêt contre un réverbère de la ville, rien ne tombe : c\'est un obstacle',
+      tombe.lieu && tombe.contreArret === 'mobilier' && !tombe.tombeArret, JSON.stringify(tombe));
+    verifier('lancée, la voiture renverse un réverbère de la ville et continue sa route (v536)',
+      tombe.lieu && tombe.auVolant && tombe.tombe && tombe.depasse > 2 && tombe.haut !== null && tombe.haut < 0.3,
+      JSON.stringify(tombe));
+    verifier('et le réverbère qui tombe ne compile aucun programme',
+      tombe.lieu && tombe.tombe && tombe.neuves === 0, JSON.stringify(tombe));
     await mobPage.close();
     await banc.ramener(tab);
 
@@ -7904,7 +8004,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       await dormir(600);
       for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
       if (!auVolant()) { for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0); return { err: 'pas au volant' }; }
-      const enJeu = (n, cb) => new Promise((fin) => { let c = 0, p = performance.now(); const pas = (t) => { const d = Math.min(Math.max((t - p) / 1000, 0), 0.05); c += d; p = t; if (cb) cb(c, d); if (c >= n) fin(c); else requestAnimationFrame(pas); }; requestAnimationFrame(pas); });
+      const enJeu = (n, cb) => new Promise((fin) => { let c = 0, p = performance.now(); const pas = (t) => { const d = Math.min(Math.max((t - p) / 1000, 0), 0.05); c += d; p = t; const assez = cb ? cb(c, d) === true : false; if (c >= n || assez) fin(c); else requestAnimationFrame(pas); }; requestAnimationFrame(pas); });
       // LES DÉGÂTS (v343) comptent chaque choc : trois chocs à la suite
       // pourraient mettre la voiture en feu et déposer l'enfant au milieu de la
       // série. On la répare (le garage) avant chaque mesure — c'est la
@@ -7955,7 +8055,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       for (let z = -30; z <= 0; z++) for (let h = 1; h <= 3; h++) poser(x0 + 90, y0 + h, z0 + z);
       placer(50, -12, -Math.PI / 2, 22);
       P.choc = null; n0 = P.chocs || 0; let face = null, vMin = 0;
-      await enJeu(3, (c) => { if (!face && (P.chocs || 0) > n0) face = { t: +c.toFixed(2), choc: P.choc }; if (face) vMin = Math.min(vMin, P.vitesseVoiture || 0); });
+      // ON LIT L'ARRÊT UNE SECONDE ET DEMIE APRÈS LE CHOC (v534) : la voiture
+      // rebondit et glisse avant de s'arrêter (la glissade, conduite.js) ; lue
+      // à trois secondes fixes, un choc tombé à 2,3 s la trouvait encore en route
+      let tFace = null;
+      await enJeu(6, (c) => { if (!face && (P.chocs || 0) > n0) { face = { t: +c.toFixed(2), choc: P.choc }; tFace = c; } if (face) vMin = Math.min(vMin, P.vitesseVoiture || 0); return tFace != null && c > tFace + 1.5; });
       res.face = { face, rebond: +vMin.toFixed(2), x: +(P.pos.x - x0).toFixed(1), v: +(P.vitesseVoiture || 0).toFixed(2) };
       // — une voiture de la rue : la famille « voiture » du crochet de main.js,
       // posée à la main en travers à x = 70 (le crochet RÉEL est éprouvé plus
@@ -7967,6 +8071,34 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       await enJeu(3, (c) => { if (!rue && (P.chocs || 0) > n0) rue = { t: +c.toFixed(2), choc: P.choc, v: +(P.vitesseVoiture || 0).toFixed(2) }; });
       P.obstacleVehicule = vrai; P.touchMove.f = 0;
       res.rue = { rue, x: +(P.pos.x - x0).toFixed(1) };
+      // — UNE VOITURE GARÉE, PAR LE VRAI CROCHET (v534). Max : « quand on fonce
+      // dans une voiture avec une autre voiture, la voiture s'arrête
+      // immédiatement alors qu'elle aurait été propulsée sur quelques
+      // mètres ». Une berline invoquée en travers de la dalle (z − 25), la
+      // nôtre lancée à 30 blocs/s, joystick tenu jusqu'au choc puis lâché :
+      // l'invoquée part, la nôtre continue. Sur l'ancien code la voiture
+      // invoquée n'était même pas un obstacle — on la traversait. —
+      {
+        // l'enfant d'abord : le bestiaire retire une bête à plus de 70 blocs de lui
+        placer(150, -25, -Math.PI / 2, 0);
+        const garee = g.animalManager.invoquer('voiture', x0 + 200, z0 - 25, false, { flotte: 'berline-citadine' });
+        if (garee) garee.yaw = -Math.PI / 2;
+        await enJeu(0.3);
+        placer(150, -25, -Math.PI / 2, 30);
+        P.touchMove.f = 1; P.choc = null; n0 = P.chocs || 0;
+        const g0 = garee ? { x: garee.pos.x, z: garee.pos.z } : null;
+        let choc = null, xContact = null, vImpact = null, vAvant = 0;
+        await enJeu(3, () => {
+          if (!choc && (P.chocs || 0) > n0) { choc = P.choc; xContact = P.pos.x; vImpact = vAvant; P.touchMove.f = 0; }
+          vAvant = Math.hypot(P.vel.x, P.vel.z);
+        });
+        P.touchMove.f = 0;
+        res.garee = { choc: choc ? { force: choc.force } : null, vImpact: vImpact == null ? null : +vImpact.toFixed(1),
+          poussee: g0 && garee ? +Math.hypot(garee.pos.x - g0.x, garee.pos.z - g0.z).toFixed(2) : null,
+          nous: xContact == null ? null : +(P.pos.x - xContact).toFixed(2), traversee: xContact == null && P.pos.x - x0 > 205,
+          regle: C && C.FROTTEMENT_POUSSEE ? { e: C.REBOND_VOITURE, fp: C.FROTTEMENT_POUSSEE, f: C.FROTTEMENT_GLISSADE } : null };
+        if (garee) { g.animalManager.scene.remove(garee.mesh); g.animalManager.animals = g.animalManager.animals.filter((a) => a !== garee); }
+      }
       // — UNE VRAIE VOITURE DE LA RUE, PAR LE VRAI CROCHET (v397) : un convoi
       // d'une voiture garée (vitesse nulle) sur un anneau de la dalle. Une
       // voiture qui ROULE ne se rattrape pas au banc : la rue avance en temps
@@ -8111,6 +8243,18 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('une voiture de la rue percutée : choc publié, et la nôtre rebondit au lieu de la traverser',
       !cd.err && cd.rue && cd.rue.rue && cd.rue.rue.choc && cd.rue.rue.choc.force > 0.2 && cd.rue.x <= 66.01,
       JSON.stringify(cd.rue));
+    // la barre se CALCULE sur la règle (v237) : la moitié de l'arrêt d'une
+    // voiture partie à (1 + e)/2 de la vitesse d'impact, frein à main serré ;
+    // la nôtre, à (1 − e)/2, au frottement de la glissade
+    {
+      const gr = cd.garee || {}, rg = gr.regle || { e: 0.25, fp: 18, f: 8 };
+      const arret = (v, f) => (v * v) / (2 * f);
+      const barre = gr.vImpact ? 0.5 * arret((1 + rg.e) / 2 * gr.vImpact, rg.fp) : Infinity;
+      const barreNous = gr.vImpact ? 0.5 * arret((1 - rg.e) / 2 * gr.vImpact, rg.f) : Infinity;
+      verifier('on fonce dans une voiture garée : elle est propulsée sur quelques mètres, et la nôtre continue sur sa lancée',
+        !cd.err && !!gr.choc && gr.choc.force > 0.2 && gr.poussee >= barre && gr.nous >= barreNous,
+        `${JSON.stringify(gr)} · barres ${barre.toFixed(1)} et ${barreNous.toFixed(1)} blocs`);
+    }
     const va = cd.vraieArriere || {}, vf = cd.vraieFlanc || {};
     verifier('une vraie voiture de la rue, par le vrai crochet : son flanc frôlé ne nous arrête pas — un choc léger, sur NOTRE flanc, et l\'on continue',
       !cd.err && vf.lu && vf.c && vf.c.contact === 'voiture' && vf.c.force > 0.05 && vf.c.force < 0.4 && vf.c.v > 9 && vf.c.lat > 0.9 && Math.abs(vf.c.long) < 1.8,

@@ -525,7 +525,7 @@ const VRAIES_KM = [
       JSON.stringify(rails.absent ? rails : { dedans: rails.dedans, viaduc: rails.viaduc }));
 
     // LE TRAIN SE LIT COMME UN TRAIN, ET SES VOITURES NE SE RECOUVRENT PAS
-    // (v535). Le convoi était la rame du métro, posée tous les 7,6 blocs pour
+    // (v537). Le convoi était la rame du métro, posée tous les 7,6 blocs pour
     // 8,0 à 8,7 blocs de caisse : les bouts arrondis de deux voitures voisines
     // se traversaient. On mesure les modèles RENDUS (leur boîte le long de la
     // voie) et l'écart que portent les trains de la page : la queue d'une

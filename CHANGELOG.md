@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v535 — Rien ne traverse une voie, et le train est un train
+## v537 — Rien ne traverse une voie, et le train est un train
 
 **Pourquoi.** Max, deux captures d'iPhone en vol bas au-dessus du TGV
 Paris–Lyon : « Those things should never happen ». Une dalle d'herbe et de terre
@@ -60,6 +60,103 @@ se maille (758, zéro erreur, contre 322 sur le premier jet). `carteMonde.js` : 
 (motrice effilée aux deux bouts, jeu positif à chaque attelage, deux maillages
 par voiture). L'empreinte des 490 morceaux change ; corrections désarmées, elle
 rend la constante d'avant au bit près.
+## v536 — Le mobilier de rue se casse
+
+**Pourquoi.** Max : « quand tu roules avec les voitures, tout le mobilier
+urbain, poteau, feu rouge, il est hyper dur. Comme dans GTA, il devrait
+pouvoir tomber, s'écraser pour ne pas bloquer la voiture. C'est hyper dur de
+conduire parce que tout est méga étroit. » Mesuré avant d'écrire
+(`tests/sonde-mobilier-route.cjs`, la voiture de l'enfant roulée sous node
+sur les vrais circuits, décalée de 0 à 2 blocs vers le trottoir) : ce sur
+quoi elle bute, ce sont des réverbères, des feux et des jardinières — rien
+d'autre. Dans les villes engendrées, zéro pièce au milieu de la voie, mais
+**60 à 100 par kilomètre dès qu'on s'écarte d'un bloc** (Rome 85, Zurich 97,
+Berlin 84), soit une butée toutes les secondes à 15 b/s. À Londres, 35 par
+kilomètre au milieu même de la voie.
+
+**Et la largeur.** La chaussée des villes engendrées fait 6 à 7 blocs (médiane
+6,5) pour une voiture de 2,26 : 2,1 blocs de marge de chaque côté, et un
+trottoir de 1,5 bloc où le mobilier est à la bordure. Paris, 13 (médiane) ;
+Londres, 6,5, et 18 % sous 4,5 blocs. Les rues ne sont pas élargies ici —
+cela change le sol sous ce que les enfants ont bâti — : c'est une proposition
+à Max, chiffres dans la PR et dans `TASKS.md`.
+
+**Ce que ça change.**
+- **Lancée à plus de cinq blocs par seconde, la voiture renverse** un
+  réverbère ou un feu (il se couche dans le sens de la marche, au pied du
+  trottoir) et **écrase** une jardinière ; elle continue, en perdant 18 % de
+  sa vitesse. Ni rebond ni dégât : rien n'est publié dans `player.choc`.
+- À l'arrêt ou au pas, contre un poteau, rien ne tombe : il reste un obstacle.
+- À Paris, une terrasse, un banc ou une colonne Morris de la couche HD
+  s'écrasent aussi : son morceau se remaille sans eux, dans le worker.
+- Ce qui est tombé reste au sol au moins quarante secondes, puis se relève
+  quand l'enfant est à plus de 48 blocs. Un feu tombé s'éteint, une lanterne
+  tombée n'éclaire plus ; la circulation, elle, garde la règle du carrefour
+  (la rue est la même sur deux tablettes, v305).
+- Rien n'est écrit dans le monde ni dans le journal de l'enfant, et ce qu'un
+  enfant a posé lui-même ne se casse pas.
+
+**Ce qui le prouve.** Trois témoins dans `monte.js` (un réverbère de la ville
+à l'arrêt contre : obstacle ; lancée à 11 b/s : il tombe, haut du fût à 0,05,
+la voiture passe quatre blocs au-delà — sur `origin/main` elle s'arrête 2,3
+blocs avant ; zéro clé de programme neuve), le témoin de la v252 qui garde le
+réverbère posé par un enfant comme obstacle, et trois témoins purs dans
+`plafond.js` (les familles, le sens de la chute, le relèvement hors de vue),
+et celui de la terrasse de café (lancée, la voiture l'écrase ; au pas, elle
+s'arrête devant). Portail sur le code fusionné à la v531 : les rouges de
+`monte.js`, `degats.js`, `maj.js` et `reseau.js` sont ceux de `origin/main`,
+rejoués seuls des deux côtés (`TASKS.md`). Revue d'écran
+(`--etats=mobilier-tombe,volant-arret`, iPhone et iPad, jour et nuit) dans
+`docs/revue-ecran/v536/` : le réverbère couché au pied du trottoir se lit
+au premier regard.
+## v534 — Un choc a de l'élan
+
+**Pourquoi.** Max : « Quand on fonce dans une voiture avec une autre voiture,
+la voiture s'arrête immédiatement alors qu'elle aurait été propulsée sur
+quelques mètres. Idem sur d'autres types d'objets. » Mesuré sous node avec le
+vrai joueur (`sonde-elan-chocs.cjs`), une hypercar contre un mur, un mur pris à
+30°, une voiture garée, une voiture de la rue, un réverbère : à 21 blocs/s
+contre un mur, **zéro bloc de rebond** (le filet de la v272, qui ramène la
+vitesse au déplacement de l'image, mangeait le rebond dans l'image du choc) ;
+joystick tenu, le frein reprenait tout en un quart de seconde (0,3 à 4 blocs) ;
+un mur pris à 30° était un choc de face — la voiture plantée contre lui ; un
+second choc était publié 0,15 s après le premier. Et une voiture garée ou
+invoquée n'était **pas un obstacle du tout** pour la voiture de l'enfant : on
+la traversait.
+
+**Ce que ça change.** Un choc renvoie la voiture : de face, un rebond court
+et franc ; en biais, elle est déviée et glisse le long du mur ou de la
+voiture, quelques mètres, en perdant sa vitesse, et la caisse tourne si on
+tape un coin. Pendant ces quelques dixièmes de seconde le joystick n'agit
+plus — les pneus ripent —, puis la main revient. Une voiture garée ou invoquée
+se pousse : on la propulse sur quelques mètres (6 blocs à 80 km/h, 28 à
+180 km/h) et la nôtre continue sur sa lancée. Une voiture de la rue ne se
+pousse pas (la rue est la même sur toutes les tablettes) : on rebondit dessus.
+Une voiture de la rue qui arrive EN FACE s'arrête au choc : elle ne nous
+emporte plus en arrière (39 à 51 blocs sur `origin/main`, un taxi de
+Manhattan rejeté de sept blocs au premier jet de cette livraison).
+Un rebond qui mènerait vers un passant ou dans l'eau s'arrête net, comme
+avant. Les dégâts reçoivent exactement la même force pour un même choc.
+
+**Ce qui le prouve.** Sept témoins neufs. Dans `plafond.js`, sous node,
+barres calculées sur la règle (rebond, frottement de glissade, partage de deux
+masses égales) : le rebond de face à trois vitesses et trois obstacles,
+joystick lâché ou tenu (rouge sur `origin/main` : 0 bloc à 21 blocs/s) ; le
+mur à 30° (0 bloc avant, 16,7 après) ; la voiture garée propulsée (0 bloc
+avant) ; aucun second choc dans la glissade (+0,15 s avant) ; la force
+inchangée et le piéton jamais touché, verts des deux côtés à dessein. Dans
+`monte.js`, le trajet de l'enfant : il fonce dans une berline invoquée par le
+vrai crochet du jeu, elle part, la sienne continue. Deux témoins voisins
+repointés, chacun mesuré sur `origin/main` : la voiture de la rue percutée
+(`degats.js`) juge à la vitesse du choc et non à un élan de vingt blocs que
+la rue, en temps réel, défait (rouge 1 sur 3 sur `origin/main`) ; le virage
+de la caméra (`monte.js`) ne compte pas les images d'une glissade.
+Portail complet : quatorze suites vertes ; `monte.js` et `reseau.js` rendent
+des rouges déjà déclarés dans `TASKS.md` avec leur double mesure (la rue, la
+partie à trois) ; `degats.js` rendait un seul rouge, les feux de détresse de
+la Bugatti Bolide, identique rejoué seul sur `origin/main` — la v533 l'a
+corrigé, et après sa fusion `degats.js` (49), `plafond.js` (199) et la fumée
+(40) sont entièrement verts.
 ## v533 — Les phares, les feux de navigation, la manette et la pioche
 
 **Pourquoi.** La revue d'écran de la v506 a relevé trois défauts dans ce que
