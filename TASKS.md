@@ -18,7 +18,13 @@
   zéro sur `origin/main` — le crochet du piéton rend le même verdict
   (vrai/faux) qu'avant, à surveiller ; le loader qui compte les fichiers
   rouge des deux côtés (déclaré) ; `reseau.js` branche 89 / 1 (la voiture
-  de la rue chez l'ami, déclaré).
+  de la rue chez l'ami, déclaré). Second portail, refusionné à la v534 (et
+  renommé v535), JOUÉ JUSQU'AU BOUT (131 min) : `degats.js` 1 (feux de
+  détresse, déclaré par la v533), `maj.js` 1 (le loader qui compte les
+  fichiers, déclaré), `monte.js` 6 (passant de Rome, feu « au lieu de
+  piler », rue vide, `minimap×edu-timer` aux deux tailles, « Atterrissage
+  vers ») — tous rouges sur `origin/main` rejouée seule ci-dessus ; les
+  témoins du mobilier et ceux de la voiture garée (v534) verts.
 
 - [ ] **Le mobilier se casse (v535) : ce qui reste, et deux décisions pour
   Max.** (1) LES RUES SONT ÉTROITES, ET C'EST MESURÉ
