@@ -2360,7 +2360,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (scenarios.length >= 6) break;
         const k = Math.floor(p.x) + ',' + Math.floor(p.z);
         if (pris.has(k)) continue;
-        cherche: for (const sens of [1, -1]) for (const phi of [-60, -45, -30, -15, 15, 30, 45, 60]) for (const dP of [1.5, 2.5, 3.5]) {
+        // jusqu'à 5,5 blocs du trottoir : depuis les rues à la GTA la chaussée
+        // fait 8,5 blocs, et la voie d'en face est à 6,4 de la bordure — trois
+        // et demi n'en trouvaient plus que deux à Rome (mesuré au portail)
+        cherche: for (const sens of [1, -1]) for (const phi of [-60, -45, -30, -15, 15, 30, 45, 60]) for (const dP of [1.5, 2.5, 3.5, 4.5, 5.5]) {
           const sc = { p, Px: p.x + p.ux * dP, Pz: p.z + p.uz * dP, a: Math.atan2(-p.ux * sens, p.uz * sens) + phi * Math.PI / 180 };
           // une voiture roule sur la chaussée : son centre y reste au passage
           let surRue = true;

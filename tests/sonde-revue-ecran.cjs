@@ -226,6 +226,17 @@ const ETATS = [
     await dormir(3500);
     return { ...r, v: await tab.evaluate(() => +(window.__game.player.vitesseVoiture || 0).toFixed(1)) };
   }, apres: (tab) => tab.evaluate(() => window.__game.player.keys.delete('KeyW')) },
+  // Au volant dans une rue de Paris (les rues à la GTA) : la chaussée vue de la
+  // place du conducteur, là où la voiture devait tenir dans sa voie.
+  { nom: 'volant-ville', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const { adresseParis } = await import('./src/paris.js');
+      const [x, z] = adresseParis(-0.8, -0.9);
+      return { x, z };
+    });
+    await poserEt(tab, { x: p.x, z: p.z, yaw: Math.PI / 2, pitch: 0.02 });
+    return monterEnVoiture(tab);
+  } },
   { nom: 'voiture-rue-percutee', async prep(tab) {
     // Dans Paris : on va au volant à côté d'une voiture de la rue et l'on publie
     // le choc comme la physique le ferait (degats.js, v363).
