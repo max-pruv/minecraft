@@ -15,6 +15,19 @@
   milliers de blocs de tout guide ; vert aux trois portails précédents du même
   code). `degats.js` « percuter une voiture de la rue » (déclaré).
   `reglages.js` « un choix fait sur une tablette » : vert seul des deux côtés.
+  **Portails de la v533 (après fusion de la v531), coupés deux fois à deux
+  heures pendant `reseau.js`.** Un seul rouge de la livraison, corrigé : le
+  regard de Capucine lu pendant un pas de côté (`ecart`, une voiture passe ;
+  sonde à part, 1 fois sur 3). Le reste, déclaré : `monte.js` (tranches,
+  voisines, rue vide, mur de face, `minimap×edu-timer`, passage peint de Rome,
+  au feu), `maj.js` (les deux loaders), `manhattan.js` (taxi tactile, PeerJS).
+  NEUF et pas à la livraison : `degats.js` « les feux de détresse se posent
+  SUR la carrosserie » — Bugatti Bolide, deux feux à 0,45 bloc de la tôle
+  (`ecarts [0.45,0.45,…]`) ; rejouée seule, branche 2/2 verte, `origin/main`
+  v531 1 rouge sur 2 à l'identique. `reseau.js` : 6 rouges au premier rejeu
+  seul de la branche (veille, reprise, hôte sans courtier), puis 91/91 vert
+  ; `origin/main` 91/91 — et preuve structurelle : aucun guide ne naît à
+  moins de 432 blocs du point d'apparition (`PORTEE_GUIDE` 150).
 
 - [ ] **Monter en passager dans TOUT véhicule d'un ami, pas seulement sa
   voiture (demande de Max, 20 octobre 2026).** « Pouvoir rentrer dans une

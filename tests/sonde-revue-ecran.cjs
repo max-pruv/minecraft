@@ -112,6 +112,46 @@ const ETATS = [
     const s = await poserEt(tab, { x: p.x, z: p.z, yaw: Math.PI / 2, pitch: 0.02 });
     return { monde: s + ' s' };
   } },
+  // Un guide au pied de son monument (v533) : Capucine sous la tour Eiffel,
+  // vue à cinq blocs, face à elle — le corps, le fanion, ce qui l'entoure.
+  { nom: 'guide', async prep(tab) {
+    const { visiter } = require('./sonde-guides-villes.cjs');
+    const r = await visiter(tab, 'eiffel');
+    await tab.evaluate(() => {
+      const g = window.__game, gd = window.__guidesVilles().nes.get('eiffel');
+      // un poste D'OÙ L'ON VOIT (v292) : la ligne de vue jusqu'au guide est
+      // libre à hauteur d'yeux, ni arbre ni mobilier entre les deux
+      const libre = (x0, z0) => {
+        for (let k = 0; k <= 20; k++) {
+          const x = x0 + (gd.pos.x - x0) * k / 20, z = z0 + (gd.pos.z - z0) * k / 20;
+          for (const dy of [0.5, 1.6, 2.6]) {
+            if (g.world.getBlock(Math.floor(x), Math.floor(gd.pos.y + dy), Math.floor(z))) return false;
+          }
+        }
+        return true;
+      };
+      let x = gd.pos.x + 5, z = gd.pos.z;
+      for (let i = 0; i < 32; i++) {
+        const a = i * Math.PI / 16, r = 4 + (i % 3);
+        const cx = gd.pos.x + Math.cos(a) * r, cz = gd.pos.z + Math.sin(a) * r;
+        if (libre(cx, cz)) { x = cx; z = cz; break; }
+      }
+      g.player.pos.set(x, gd.pos.y + 0.2, z);
+      g.player.yaw = Math.atan2(-(gd.pos.x - x), -(gd.pos.z - z));
+      g.player.pitch = 0.05;
+    });
+    // la présence (v241) le fait apparaître en fondu, au rythme des images :
+    // on capture une fois pleinement là, borné, et l'on dit ce qu'on a lu
+    const t0 = Date.now();
+    let presence = 0;
+    while (Date.now() - t0 < 30000) {
+      presence = await tab.evaluate(() => window.__guidesVilles().nes.get('eiffel').presence?.valeur ?? 1);
+      if (presence >= 0.999) break;
+      await dormir(500);
+    }
+    await dormir(1500);
+    return { ne: r.ne, regard: r.regard, visible: r.visible, presence, msPresence: Date.now() - t0 };
+  } },
   { nom: 'minicarte', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
     await tab.evaluate(() => document.getElementById('map-btn').click());
