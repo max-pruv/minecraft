@@ -89,6 +89,7 @@ const ASSETS = [
   './src/siege.js',
   './src/sons.js',
   './src/sensations.js',
+  './src/phares.js',
   './src/traces.js',
   './src/saisons.js',
   './src/villandry.js',

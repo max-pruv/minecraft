@@ -176,6 +176,61 @@
   sous node (1,6 à 6,9 ms par morceau des deux côtés) — à relire sur l'iPhone
   (`?diag=1`, débit de maillage en vol au-dessus d'une forêt).
 
+## LES ROUGES DU PORTAIL DE LA v533 — tous déjà déclarés, ou intermittents mesurés des deux côtés
+
+La v533 (phares, feux de navigation, manette, pioche) a rendu au portail
+complet treize suites vertes sur dix-sept. Les quatre rouges, un par un :
+
+| suite | témoin rouge | déjà là |
+| --- | --- | --- |
+| `carte.js` | la flèche du GPS | déclaré plus bas |
+| `reglages.js` | un choix fait sur une tablette part au serveur | déclaré (course de battement, v374) |
+| `manhattan.js` | passants de Manhattan au long cap (débit 0,54) | déclaré (v496) |
+| `monte.js` | feu, rue vide, 60 b/s dans Paris, worker à sec (× 1,48), au-dessus d'une ville | déclarés (portails v516, v522) |
+| `monte.js` | ✈️ « Atterrissage vers <ville> » | **neuf ici** — voir ci-dessous |
+
+Et `monte.js` rejouée SEULE des deux côtés (23 octobre) : 6 rouges sur la
+branche, **10 sur `origin/main` v531** (`abad021`, `git worktree`). Les cinq
+rouges de la branche autres que l'atterrissage sont tous dans les dix :
+le feu qui pile, la rue vide, le mur pris de face (rebond −1,9 des deux
+côtés), et **la minicarte qui recouvre le chrono éducatif en vol**
+(`minimap×edu-timer`, 430 × 932 et 420 × 760, mêmes boîtes au pixel des deux
+côtés) — ce dernier est neuf dans ce fichier : la branche ne touche ni
+`#minimap` ni `#edu-timer`, c'est donc de la production (minicarte à gauche
+v518 / v525 contre chrono de l'espace éducatif).
+
+Portail complet rejoué après l'intégration de la v532 (`cc81e55`) : treize
+suites vertes, quatre rouges, tous déjà déclarés — `degats.js` « percuter
+une voiture de la rue l'abîme AUSSI », `manhattan.js` le taxi tactile,
+`reseau.js` la portière droite (entrée, descente) et la voiture refaite
+pendant la marche, `monte.js` les rouges ci-dessus.
+
+- [ ] **La minicarte ouverte recouvre le chrono de l'espace éducatif en vol.**
+  Boîtes mesurées : minicarte (8, 60, 120 × 120), chrono (125, 56, 179 × 24).
+  Le chrono doit contourner la minicarte par `--minimap-w`, comme la file
+  centrale (v445, v518).
+
+- [ ] **« Atterrissage vers <ville> » est une intermittence de portail.**
+  Rejoué SEUL trois fois sur `origin/main` v520 (`git worktree`) et trois fois
+  sur la branche : 6 verts sur 6. La v533 ne touche ni l'approche ni le
+  bandeau ; elle allume des feux sur le maillage de l'avion. À rejouer en
+  distribution (v269) le jour où il revient, avec la cadence dans le message.
+- [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » :
+  la Bugatti Bolide pose ses deux feux avant à 0,45 bloc de la tôle** (écarts
+  `[0.45, 0.45, −0.015, −0.015]`). Rejouée SEULE sur la branche (v533) ET sur
+  `origin/main` v531 (`git worktree`) : la même valeur au millième des deux
+  côtés — le défaut est en production, la v533 n'y est pour rien (elle ne touche
+  ni `vehicules.js` ni `degats.js`). Piste : le rayon de `posesDetresse` venu de
+  l'avant rate le capot très bas de la Bolide et accroche un bloc optique plus
+  en arrière ; à mesurer avec `sonde-detresse.cjs`, modèle seul.
+  Au même portail, `degats.js` « percuter une voiture de la rue » (déclaré) et
+  `monte.js` : par tranches, deux voisines, le feu, la voiture heurtée, la rue
+  vide, `minimap×edu-timer` aux deux tailles — tous déclarés ; `manhattan.js`
+  « le taxi roule » (déclaré).
+- `reseau.js`, rejouée SEULE : verte sur la branche ; sur `origin/main` v506 le
+  trio « à trois, chacun voit les deux autres », ses dépendants et le GPS
+  relayé sont rouges, puis la suite meurt (`null.peer`).
+
 ## LES ROUGES DU PORTAIL DE LA v522 — intermittents de `monte.js`, aucun causé par la livraison
 
 La v522 ne change que des TEXTES affichés (noms de blocs, bandeau « Donne le
