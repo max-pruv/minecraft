@@ -1,5 +1,37 @@
 # Ce qui est en cours
 
+- [ ] **Les rues à la GTA (v541), ce qui reste, déclaré.** (1) Les convois des
+  villes bâties à la main roulent à `DECALAGE_AVENUE` (1,3 bloc) de l'axe
+  (v372) quand le milieu de la voie GTA est à 2,13 : recentrer touche les tours
+  de monuments (`VOIE_DE_DROITE`, paris.js), les raccords et la jumelle
+  (voiesdoubles.js), à remesurer ensemble. (2) San Diego retombe à un circuit :
+  son contresens roulerait à 34,1 blocs du centre, sur 46 blocs le long de la
+  baie (33,6 sur la v531, même géographie). (3) Le grand anneau de Shanghai
+  passe 32 pas sur le quai de granit du Huangpu (0 sur la v531). (4) Québec ne
+  voit que 17 blocs à l'entrée de l'A20 (20 sur la v531). (5) Paris Hôtel de
+  Ville et Rome Lepanto n'ont plus de bouche de métro (le trottoir élargi ne
+  laisse pas de place hors des lots et des voies) ; à Reuilly–Diderot la bouche
+  rechoisie perce le piédroit à la case du nom, la plaque de ce côté est retirée
+  (179 au lieu de 180). (6) Nice Masséna : part de lots 8,6 → 0,9 % (le quartier
+  des places et jardins est traversé par les collectrices) — question pour Max.
+  (7) Los Angeles : l'hôtel de ville à 21 blocs pour une médiane de toits de 22.
+  (8) Le partage aux coins rentrants d'un contour se mesure maintenant avec la
+  voie (`barreContour = PARTAGE_MAX − t.w`) : neuf villes changent un anneau,
+  817 → 815. (9) Rouges de portail, double mesure (`monte.js` seule, branche et
+  `origin/main` v534) : « la rue se fabrique par tranches », « un flâneur posé
+  au milieu », « deux voisines d'un convoi », « rue vide », les deux mises en
+  page en vol (`minimap×edu-timer`) — identiques des deux côtés ; « les
+  feuilles d'automne » (campagne, `saisons.js` non touché) intermittent sur la
+  branche avant le rebase. « en virage, la caméra
+  laisse la voiture glisser… on voit son flanc » (v534) : rouge au portail sur
+  la branche (deux signes, 22 relevés en mouvement), vert seul sur la branche
+  (12°, un signe) et seul sur `origin/main` v534 (16°, un signe). Le témoin se
+  joue à la campagne près du point d'apparition, que la livraison ne touche
+  pas, et `capDegage(tab, 16)` y rend `null` des deux côtés : la voiture
+  tourne contre des murs et des arbres, et la glissade d'après choc de la v534
+  y rend parfois les deux signes. À reprendre : le témoin doit se placer
+  lui-même (un couloir plat et dégagé, v285).
+
 ## v543 — LA VOITURE COMME DANS GTA : les rouges du portail
 
 - [ ] **Rouges du portail de la v543 (la voiture comme dans GTA), tous déjà

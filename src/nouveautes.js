@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 542,
+    titre: 'Des rues larges pour rouler',
+    puces: [
+      'Toutes les rues sont plus larges',
+      'Une voiture et un bloc de chaque côté',
+      'Ce que tu as bâti ne bouge pas',
+      'Aux feux, les voitures ne s\'emboîtent plus',
+    ],
+  },
+  {
     v: 543,
     titre: 'La voiture, comme dans GTA',
     puces: [
