@@ -22,7 +22,7 @@ import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, reculDesAvenues } from './voies.js';
 import { positionDe } from './mondes.js';
 import { entreesDe } from './routes.js';
-import { sectionDeRue } from './voirie.js';
+import { sectionDeRue, sectionGTA } from './voirie.js';
 
 const uni = (c) => DECOR_START + c * 10;
 const damier = (c) => DECOR_START + c * 10 + 3;
@@ -57,8 +57,13 @@ const K = BLOCS_PAR_KM / 10;
 const k = (n) => n * K;
 const pk = ([u, v]) => [k(u), k(v)];
 // La section des rues, demandée au kit (v359) — voir `ARTERES` plus bas.
-const COLLECTRICE = sectionDeRue('collecteur');
-const LOCALE = sectionDeRue('locale');
+// LES RUES À LA GTA : la voie a la voiture plus un bloc de chaque côté
+// (`sectionGTA`). La chaussée s'élargit sur le front des lots ; le PAS de la
+// trame, lui, se lit encore sur la section du kit (`sectionDeRue`) — les
+// circuits restent sur les mêmes axes, et un îlot ne perd que la largeur
+// gagnée par la rue.
+const COLLECTRICE = sectionGTA('collecteur');
+const LOCALE = sectionGTA('locale');
 export const SECTIONS_NICE = { collecteur: COLLECTRICE, locale: LOCALE };
 export const PORTEE_FEUX_NICE = Math.ceil(Math.SQRT2 * (COLLECTRICE.chaussee / 2 + 1.5));
 // La place Masséna : le point où tout se croise, et d'où tout se mesure.
@@ -236,7 +241,8 @@ export const lieuxDeNice = () => LIEUX_NICE
 // rapport.
 const trameALaRegle = (t, sec) => {
   const w = sec.chaussee / 2, s = w + sec.trottoir;
-  return { ...t, type: sec.type, w, s, pu: t.pu * s / t.s, pv: t.pv * s / t.s };
+  const kit = sectionDeRue(sec.type), sk = kit.chaussee / 2 + kit.trottoir;
+  return { ...t, type: sec.type, w, s, pu: t.pu * sk / t.s, pv: t.pv * sk / t.s };
 };
 const TRAMES = {
   vieux: trameALaRegle({ ang: 0.34, pu: 5, pv: 4.5, cu: k(5), cv: k(3), w: 0.6, s: 1.1 }, LOCALE),

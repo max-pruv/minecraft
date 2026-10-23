@@ -25,7 +25,7 @@
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, reculDesAvenues } from './voies.js';
 import { positionDe } from './mondes.js';
-import { sectionDeRue } from './voirie.js';
+import { sectionDeRue, sectionGTA } from './voirie.js';
 import { entreesDe } from './routes.js';
 
 const uni = (c) => DECOR_START + c * 10;
@@ -71,8 +71,13 @@ const K = BLOCS_PAR_KM / 9;
 const k = (n) => n * K;
 const kr = (n) => Math.round(n * K);
 // La section des rues, demandée au kit (v361) — voir `ARTERES` plus bas.
-const COLLECTRICE = sectionDeRue('collecteur');
-const LOCALE = sectionDeRue('locale');
+// LES RUES À LA GTA : la voie a la voiture plus un bloc de chaque côté
+// (`sectionGTA`). La chaussée s'élargit sur le front des lots ; le PAS de la
+// trame, lui, se lit encore sur la section du kit (`sectionDeRue`) — les
+// circuits restent sur les mêmes axes, et un îlot ne perd que la largeur
+// gagnée par la rue.
+const COLLECTRICE = sectionGTA('collecteur');
+const LOCALE = sectionGTA('locale');
 export const SECTIONS_SF = { collecteur: COLLECTRICE, locale: LOCALE };
 export const PORTEE_FEUX_SF = Math.ceil(Math.SQRT2 * (COLLECTRICE.chaussee / 2 + 1.5));
 
@@ -290,7 +295,8 @@ const AVEC_TROTTOIR = 1.9;    // et jusqu'au bord du trottoir
 // valeurs écrites ici sont celles de la v192 et ne donnent plus que le rapport.
 const trameALaRegle = (t, sec) => {
   const w = sec.chaussee / 2, s = w + sec.trottoir;
-  return { ...t, type: sec.type, w, s, pu: t.pu * s / t.s, pv: t.pv * s / t.s };
+  const kit = sectionDeRue(sec.type), sk = kit.chaussee / 2 + kit.trottoir;
+  return { ...t, type: sec.type, w, s, pu: t.pu * sk / t.s, pv: t.pv * sk / t.s };
 };
 const TRAMES = {
   // le centre, la Chine, North Beach : la trame de 1847, en biais

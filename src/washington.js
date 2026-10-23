@@ -60,7 +60,7 @@
 import { BLOCK, CITY_BLOCK, DECOR_START, PROP_START, ARCHI, METRO_BLOCK } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds } from './voies.js';
 import { positionDe } from './mondes.js';
-import { sectionDeRue } from './voirie.js';
+import { sectionDeRue, sectionGTA } from './voirie.js';
 
 const uni = (c) => DECOR_START + c * 10;
 
@@ -361,8 +361,14 @@ export function hauteurWashington(x, z, h) {
 // Capitol.
 const LOCALE_DC = sectionDeRue('locale');
 const PAS_RUE = 28;
-const DEMI_CHAUSSEE = Math.floor(LOCALE_DC.chaussee) >> 1;                 // 1 : trois colonnes
-const DEMI_EMPRISE = DEMI_CHAUSSEE + Math.floor(LOCALE_DC.trottoir);       // 3 : sept colonnes
+// LES RUES À LA GTA : la voie a la voiture plus un bloc de chaque côté
+// (`sectionGTA`, 4,26 blocs) — cinq colonnes de chaussée au lieu de trois. La
+// maison de neuf, la ruelle et le pas de 28 ne bougent pas (les quatorze
+// circuits restent sur leurs axes) : la rue prend donc sur le TROTTOIR, qui
+// passe de deux colonnes à une. L'emprise reste de sept colonnes.
+const LOCALE_GTA = sectionGTA('locale');
+const DEMI_EMPRISE = (Math.floor(LOCALE_DC.chaussee) >> 1) + Math.floor(LOCALE_DC.trottoir);   // 3 : sept colonnes
+const DEMI_CHAUSSEE = Math.min(DEMI_EMPRISE - 1, Math.floor(LOCALE_GTA.chaussee) >> 1);        // 2 : cinq colonnes
 const MAISON = 9;                                                          // la maison de la v161
 const RUELLE = Math.floor(sectionDeRue('ruelle').chaussee);                // 3
 // La position d'une colonne dans la trame, sur un axe : `m` dans le pas,
@@ -387,7 +393,11 @@ const ANNEAU_DEHORS = 1;         // …la chaussée tourne jusqu'à r − 1, pui
 // défilés d'investiture, et L'Enfant l'a voulue ainsi pour que le président et
 // le Congrès se voient d'un bout à l'autre.
 // La section d'une rue de liaison : celle de la grille (`LOCALE_DC`).
-const LIAISON = { l: 1.5, t: 2, sol: BITUME };
+// Et les avenues gagnent ce que gagne une voie à la GTA (`ELARGI_GTA`, la
+// moitié de l'écart entre la collectrice GTA et celle du kit, 1,06 bloc par
+// côté) : leurs `l` écrits plus bas sont ceux d'avant, relus à l'import.
+const ELARGI_GTA = (sectionGTA('collecteur').chaussee - sectionDeRue('collecteur').chaussee) / 2;
+const LIAISON = { l: LOCALE_GTA.chaussee / 2, t: 1, sol: BITUME, liaison: true };
 
 const AVENUES = [
   // Pennsylvania part de la 3e Rue, là où elle se détache de Constitution —
@@ -486,6 +496,11 @@ const AVENUES = [
   { nom: 'Bretelle de l\'I-295', ...LIAISON, pts: [[37, 97], [37, 84]] },
 ];
 
+// Sauf là où le plan n'a pas la place : Independence et Constitution passent
+// entre les rangées de musées (v205, leurs façades à v = ±15), la 3e Rue entre
+// le Mall et le parc du Capitole. Élargies, elles entreraient dans les musées.
+const SERREES_DC = new Set(['Independence Avenue', 'Constitution Avenue', 'Constitution Avenue (ouest)', '3e Rue']);
+for (const a of AVENUES) if (!a.liaison && !SERREES_DC.has(a.nom)) a.l += ELARGI_GTA;
 const BANDES_AVENUES = rangerVoies(AVENUES);
 
 // LES PONTS DE L'ANACOSTIA (v444). L'I-95 Sud entre par le quartier au sud de
