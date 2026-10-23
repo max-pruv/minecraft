@@ -127,6 +127,40 @@ const ETATS = [
     await dormir(4000);
     return { ouverte: true };
   } },
+  // LE MOBILIER TOMBÉ (v536) : un réverbère et un feu de Paris renversés
+  // comme une voiture lancée les renverse, vus du trottoir — la nuit, la
+  // lanterne couchée ne doit plus éclairer la rue
+  { nom: 'mobilier-tombe', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const { adresseParis } = await import('./src/paris.js');
+      const [x, z] = adresseParis(-0.8, -0.9);
+      return { x, z };
+    });
+    await poserEt(tab, { x: p.x, z: p.z });
+    const r = await tab.evaluate(async (p) => {
+      const g = window.__game, w = g.world;
+      const { RUE } = await import('./src/blocks.js');
+      const pieces = [];
+      for (let d = 0; d < 50 && pieces.length < 2; d++) for (let dx = -d; dx <= d; dx++) for (let dz = -d; dz <= d; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== d) continue;
+        const x = p.x + dx, z = p.z + dz, y = w.sommetColonne(x, z) + 1;
+        const id = w.getBlock(x, y, z);
+        if ((id === RUE.REVERBERE && !pieces.some((q) => q.id === id)) || (id === RUE.FEUX && !pieces.some((q) => q.id === id))) {
+          const cle = `${x},${y},${z}`;
+          if (!w.edits.has(cle) && g.mobilierCasse.piece(cle)) pieces.push({ x, y, z, id, cle });
+        }
+      }
+      if (!pieces.length) return { pieces: 0 };
+      for (const q of pieces) g.mobilierCasse.casses.casser(q.cle, { t: performance.now() - 2000, x: q.x + 0.5, z: q.z + 0.5, dx: 1, dz: 0, facon: 'tombe' });
+      const q = pieces[0];
+      g.player.pos.set(q.x - 4.5, w.sommetColonne(q.x - 5, q.z + 4) + 1.01, q.z + 4.5);
+      g.player.yaw = Math.atan2(-(q.x + 1 - g.player.pos.x), -(q.z + 0.5 - g.player.pos.z));
+      g.player.pitch = -0.25;
+      return { pieces: pieces.map((q) => q.id === RUE.FEUX ? 'feu' : 'réverbère') };
+    }, p);
+    await attendreMonde(tab);
+    return r;
+  } },
   { nom: 'volant-arret', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
     return monterEnVoiture(tab);

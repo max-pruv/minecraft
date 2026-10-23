@@ -6,12 +6,21 @@
 
 export const NOUVEAUTES = [
   {
-    v: 536,
+    v: 537,
     titre: 'La minicarte toujours là',
     puces: [
       'La minicarte s\'affiche toute seule',
       'La toucher ouvre la carte du monde',
       "La croix ne cache plus l'heure",
+    ],
+  },
+  {
+    v: 536,
+    titre: 'Les poteaux tombent',
+    puces: [
+      'La voiture renverse réverbères et feux',
+      'Les jardinières s\'écrasent',
+      'Tout se relève plus tard',
     ],
   },
   {

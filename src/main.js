@@ -15,6 +15,7 @@ import { circuitsSF, ENTREES_SF } from './sanfrancisco.js';
 import { circuitsNice, ENTREES_NICE } from './nice.js';
 import { circuitsLille } from './lille.js';
 import { buildPropMesh } from './props.js';
+import { Casses, faconDeCasser, poseDeChute, cleBloc, cleHD, VITESSE_CASSE, PERTE_CASSE, DUREE_CHUTE_MS, GENRES_HD_CASSABLES } from './mobiliercasse.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
@@ -949,7 +950,7 @@ function synchroniserLeWorker() {
   if (!maillageDistant) return;
   generationDistante++;
   enAttente.clear();
-  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, arbres: world.arbres, sansSolContinu: world.sansSolContinu });
+  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, arbres: world.arbres, sansSolContinu: world.sansSolContinu, mobilierCasse: world.mobilierCasse ? [...world.mobilierCasse] : [] });
 }
 // L'ENFANT ATTEND SON MORCEAU, IL NE LE FABRIQUE PAS (v436).
 //
@@ -1198,7 +1199,10 @@ function disposeChunkMesh(entry) {
     mesh.geometry.dispose();
   }
   // prop groups share template geometry — just detach them
-  if (entry.props) scene.remove(entry.props);
+  if (entry.props) {
+    scene.remove(entry.props);
+    for (const m of entry.props.children) if (m.userData.cle && piecesParCle.get(m.userData.cle) === m) piecesParCle.delete(m.userData.cle);
+  }
 }
 
 // Une BufferGeometry depuis les tampons du mailleur (v251) : une
@@ -1225,6 +1229,35 @@ function meshChunk(cx, cz) {
   installerMorceau(cx, cz, buildChunkTampons(world, cx, cz, { detail: detailVoulu(cx, cz, pcx, pcz) }));
   statsMaillage.principalMs += performance.now() - t0;
   statsMaillage.locaux++;
+}
+
+// LE MOBILIER QUI EST TOMBÉ (v536, `mobiliercasse.js`). Le registre vit ici,
+// à côté des morceaux : un morceau remaillé retrouve ses pièces couchées, et
+// une pièce se relève quand l'enfant est loin. `parCle` mène d'une clé de bloc
+// à son maillage, pour l'animer sans parcourir la scène.
+const casses = new Casses();
+const piecesParCle = new Map();
+// (le cap d'origine et le feu d'une pièce vivent hors de `userData`, que
+// `clone` recopie par JSON)
+const etatPiece = new WeakMap();
+const _qTip = new THREE.Quaternion(), _axe = new THREE.Vector3();
+function poserLaChute(mesh, c, maintenant) {
+  let e = etatPiece.get(mesh);
+  if (!e) etatPiece.set(mesh, e = {});
+  if (!e.q0) e.q0 = mesh.quaternion.clone();
+  const p = c ? Math.min(1, (maintenant - c.t) / DUREE_CHUTE_MS) : 0;
+  if (!c) {
+    mesh.quaternion.copy(e.q0); mesh.scale.y = mesh.scale.x;
+  } else {
+    const pose = poseDeChute(c.facon, c.dx, c.dz, p);
+    _qTip.setFromAxisAngle(_axe.set(pose.ax, 0, pose.az), pose.angle);
+    mesh.quaternion.copy(_qTip).multiply(e.q0);
+    mesh.scale.y = mesh.scale.x * pose.echelleY;
+  }
+  // un feu tombé s'éteint, une lanterne tombée aussi (son verre reste dessiné)
+  if (c && e.feu) { for (const l of e.feu.lampes) l.visible = false; e.feu.etat = 'tombe'; }
+  else if (!c && e.feu) e.feu.etat = null;       // le prochain tour de `reglerLesFeux` le rallume
+  return p;
 }
 
 // les dates d'installation, pour le débit que `?diag=1` affiche en roulant (v380)
@@ -1307,6 +1340,9 @@ function installerMorceau(cx, cz, tampons) {
       if (!mesh) continue;
       mesh.position.set(cx * CHUNK + p.x + 0.5, p.y, cz * CHUNK + p.z + 0.5);
       group.add(mesh);
+      // la clé du bloc (v536) : un morceau remaillé retrouve ses pièces tombées
+      const cleP = cleBloc(cx * CHUNK + p.x, p.y, cz * CHUNK + p.z);
+      if (faconDeCasser(p.id)) { mesh.userData.cle = cleP; piecesParCle.set(cleP, mesh); }
       // LA LANTERNE D'UN RÉVERBÈRE EST UNE LAMPE POSSIBLE (v248) : sa place
       // est celle du bloc de lanterne du modèle (props.js), un demi-bloc en
       // avant du fût et à trois blocs du sol. `eclairerLaRue` y pose une des
@@ -1315,9 +1351,11 @@ function installerMorceau(cx, cz, tampons) {
       // de quel côté du fût est la chaussée.
       if (p.id === RUE.REVERBERE) {
         mesh.rotation.y = versLaRue(cx * CHUNK + p.x, p.y - 1, cz * CHUNK + p.z);
-        lanternes.push(new THREE.Vector3(
+        const lan = new THREE.Vector3(
           mesh.position.x + 0.5 * Math.cos(mesh.rotation.y), p.y + 2.7,
-          mesh.position.z - 0.5 * Math.sin(mesh.rotation.y)));
+          mesh.position.z - 0.5 * Math.sin(mesh.rotation.y));
+        lan.cle = cleP;                 // une lanterne tombée n'éclaire plus (v536)
+        lanternes.push(lan);
       }
       // LE FEU TRICOLORE REGARDE LA RUE QU'IL COMMANDE (v273), et l'on note
       // ses trois lentilles vives pour n'en montrer qu'une. Elles se
@@ -1328,8 +1366,15 @@ function installerMorceau(cx, cz, tampons) {
         const axe = axeDuFeu(wx, wz);
         mesh.rotation.y = versLaRueAxe(wx, p.y - 1, wz, axe);
         const lampes = ['feu-rouge', 'feu-orange', 'feu-vert'].map((n) => mesh.getObjectByName(n));
-        if (lampes.every(Boolean)) feux.push({ x: wx + 0.5, z: wz + 0.5, axe, lampes, etat: null });
+        if (lampes.every(Boolean)) {
+          const f = { x: wx + 0.5, z: wz + 0.5, axe, lampes, etat: null, cle: cleP };
+          feux.push(f);
+          etatPiece.set(mesh, { feu: f });
+        }
       }
+      // déjà tombé avant que le morceau ne se remaille : couché d'emblée
+      const tombe = mesh.userData.cle && casses.get(mesh.userData.cle);
+      if (tombe) poserLaChute(mesh, tombe, Infinity);
     }
     entry.props = group;
     if (lanternes.length) entry.lanternes = lanternes;
@@ -1749,23 +1794,62 @@ function updateChunks() {
   // demande la règle qui les pose (`world.mobilierVu`, v425 — seulement le
   // mobilier MONTRÉ, sinon une tablette sans couche HD aurait des tables
   // invisibles qui arrêtent), une fois par colonne couverte.
-  const mobilierDevant = (x, z, cap) => {
+  // ET LE MOBILIER DE RUE SE CASSE (v536). `casser` (le sens de la marche)
+  // n'est donné que pour le PAS que la voiture fait vraiment, assez vite : ce
+  // qu'elle touche alors et qui sait tomber (`faconDeCasser`) tombe, et cesse
+  // d'arrêter. Ce qui est déjà tombé n'arrête plus rien. Un bloc qu'un enfant
+  // a posé (`world.edits`) ne se casse pas. Manhattan garde ses obstacles
+  // (instanciés par lots : rien à coucher seul, dette déclarée).
+  const mobilierDevant = (x, z, cap, casser = null) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
     const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
     const y0 = Math.floor(player.pos.y + 0.1);
     const vu = world.mobilierVu, lues = vu ? new Set() : null;
+    let bloque = false;
     for (let a = -demiLong; a <= demiLong + 1e-6; a += 0.5)
       for (let b = -demiLarg; b <= demiLarg + 1e-6; b += 0.5) {
         const sx = x + ux * a + vx * b, sz = z + uz * a + vz * b;
         if (villeRealiste.obstacleA(sx, sz)) return true;
         const bx = Math.floor(sx), bz = Math.floor(sz);
-        if (isProp(world.getBlock(bx, y0, bz)) || isProp(world.getBlock(bx, y0 + 1, bz))) return true;
+        for (const yy of [y0, y0 + 1]) {
+          const id = world.getBlock(bx, yy, bz);
+          if (!isProp(id)) continue;
+          const cle = cleBloc(bx, yy, bz);
+          if (casses.has(cle)) continue;
+          if (casser && faconDeCasser(id) && !world.edits.has(cle)) { casserPiece(cle, bx, bz, faconDeCasser(id), casser); continue; }
+          bloque = true;
+        }
         if (vu) {
           const k = bx * 65536 + bz;
-          if (!lues.has(k)) { lues.add(k); if (vu(bx + 0.5, bz + 0.5, player.pos.y)) return true; }
+          if (!lues.has(k)) {
+            lues.add(k);
+            const g = vu(bx + 0.5, bz + 0.5, player.pos.y);
+            if (g) {
+              if (casser && GENRES_HD_CASSABLES.has(g)) casserHD(bx, bz, casser);
+              else bloque = true;
+            }
+          }
         }
       }
-    return false;
+    return bloque;
+  };
+  // Une pièce tombe : le registre, la voiture qui perd un peu d'élan, et le
+  // compte que lisent `?diag=1` et les témoins (`__game.mobilierCasse`).
+  const freinerLaCasse = () => {
+    const k = 1 - PERTE_CASSE;
+    player.vitesseVoiture *= k; player.vel.x *= k; player.vel.z *= k;
+    statsCasse.n++;
+  };
+  const casserPiece = (cle, bx, bz, facon, sens) => {
+    casses.casser(cle, { t: performance.now(), x: bx + 0.5, z: bz + 0.5, dx: sens.dx, dz: sens.dz, facon });
+    freinerLaCasse();
+  };
+  const casserHD = (bx, bz, sens) => {
+    const cle = cleHD(bx, bz);
+    if (casses.has(cle)) return;
+    casses.casser(cle, { t: performance.now(), x: bx + 0.5, z: bz + 0.5, dx: sens.dx, dz: sens.dz, facon: 'hd' });
+    freinerLaCasse();
+    remaillerSansLaPiece(bx, bz);
   };
   // « Pas si l'on est déjà dedans » se juge PAR FAMILLE : une voiture de la
   // rue collée à la nôtre (obstacleDevant vrai ici ET là) ne désarme pas le
@@ -1865,9 +1949,14 @@ function updateChunks() {
   };
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
     if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return 'voiture';
+    // on ne casse que sur le pas qu'on fait vraiment (pas sur le regard au
+    // loin que `player.js` jette pour freiner devant un piéton), et assez vite
+    const pas = Math.hypot(x - x0, z - z0);
+    const sp = Math.abs(player.vitesseVoiture || 0);
+    const sens = sp >= VITESSE_CASSE && pas > 1e-6 && pas < 1.5 ? { dx: (x - x0) / pas, dz: (z - z0) / pas } : null;
     const g = gareeContre(x, z, cap);
     if (g) { const avant = gareeContre(x0, z0, cap); if (!avant || avant.a !== g.a) return 'voiture'; }
-    if (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
+    if (mobilierDevant(x, z, cap, sens) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
     // `arretDouxT` (v343) : s'arrêter devant un piéton ou au bord de l'eau
     // n'est PAS un choc — les dégâts ne comptent jamais un piéton touché.
     if (pietonDevant(x, z, cap, x0, z0)) { player.arretDouxT = performance.now(); return 'pieton'; }
@@ -1936,8 +2025,10 @@ function updateChunks() {
   // mailleur dessine (`mobilierTrottoir`) ; on ne bute que sur ce qui est
   // MONTRÉ — le détail du morceau visible (`montrerLeDetail`) —, sinon un
   // appareil sans couche HD aurait des tables invisibles qui arrêtent.
+  // rend le GENRE de la pièce (vrai), ou faux ; une pièce écrasée (v536) n'est plus là
   const mobilierVu = (x, z, y) => {
     const bx = Math.floor(x), bz = Math.floor(z);
+    if (casses.taille && casses.has(cleHD(bx, bz))) return false;
     const cx = Math.floor(bx / CHUNK), cz = Math.floor(bz / CHUNK);
     const e = chunkMeshes.get(cx + ',' + cz);
     if (!e || !e.facades || !e.facades.visible) return false;
@@ -1946,7 +2037,7 @@ function updateChunks() {
     const v = villeHD(cx, cz, CHUNK);
     if (!v || v.mobilier === false) return false;
     const m = mobilierTrottoir((dx, dy, dz) => world.getBlock(bx + dx, by + dy, bz + dz), bx, bz);
-    return !!m && MOBILIER_OBSTACLE.has(m.genre);
+    return m && MOBILIER_OBSTACLE.has(m.genre) ? m.genre : false;
   };
   world.mobilierVu = mobilierVu;
   world.obstaclePieton = (x, z, y) => {
@@ -7823,6 +7914,43 @@ function placeAssise(a, siege) {
 // qui suffit à un enfant qui marche à trois blocs par seconde, et rien à
 // faire tant qu'il fait jour. Une lampe sans lanterne s'éteint.
 const lampesPretes = cadence(500);
+// LE MOBILIER TOMBÉ (v536) : chaque image, les pièces qui tombent encore
+// avancent leur chute (temps réel) ; une fois par seconde, ce qui a assez
+// duré au sol et que l'enfant ne voit plus se relève.
+const statsCasse = { n: 0, releves: 0 };
+const relevePret = cadence(1000);
+function animerLesCasses() {
+  const maintenant = performance.now();
+  if (casses.taille) {
+    for (const [cle, c] of casses.m) {
+      if (c.facon === 'hd' || c.fini) continue;
+      const mesh = piecesParCle.get(cle);
+      if (!mesh) continue;
+      if (poserLaChute(mesh, c, maintenant) >= 1) c.fini = true;
+    }
+  }
+  if (!relevePret() || !casses.taille) return;
+  for (const cle of casses.aRelever(maintenant, player.pos.x, player.pos.z)) {
+    statsCasse.releves++;
+    if (cle[0] === 'h') {
+      const [bx, bz] = cle.slice(1).split(',').map(Number);
+      remaillerSansLaPiece(bx, bz);
+      continue;
+    }
+    const mesh = piecesParCle.get(cle);
+    if (mesh) poserLaChute(mesh, null, maintenant);
+  }
+}
+// UNE PIÈCE DE LA COUCHE HD S'ÉCRASE : son morceau se remaille sans elle. Le
+// mailleur lit `world.mobilierCasse` (les colonnes écrasées), et le worker en
+// reçoit la liste avant de remailler — hors du fil principal, comme tout
+// morceau détaillé.
+function remaillerSansLaPiece(bx, bz) {
+  world.mobilierCasse = casses.colonnesHD();
+  if (maillageDistant) maillageDistant.postMessage({ type: 'casse', colonnes: [...world.mobilierCasse] });
+  const cx = Math.floor(bx / CHUNK), cz = Math.floor(bz / CHUNK);
+  redemanderLeDetail(cx, cz, World.key(cx, cz));
+}
 function eclairerLaRue() {
   if (renduDansManhattan || !lampesPretes()) return;
   if (!LAMPES_ACTIVES) { for (const l of lampesRue) l.intensity = 0; return; }
@@ -7835,6 +7963,7 @@ function eclairerLaRue() {
         const e = chunkMeshes.get((pcx + dx) + ',' + (pcz + dz));
         if (!e || !e.lanternes) continue;
         for (const l of e.lanternes) {
+          if (l.cle && casses.has(l.cle)) continue;
           const d = (l.x - px) * (l.x - px) + (l.z - pz) * (l.z - pz);
           if (d < 40 * 40) proches.push({ l, d });
         }
@@ -7882,6 +8011,14 @@ function reglerLesFeux() {
       if (!e || !e.feux) continue;
       for (const f of e.feux) {
         const etat = etatFeu(f.axe, t);
+        // UN FEU TOMBÉ S'ÉTEINT, MAIS LE CARREFOUR GARDE SA RÈGLE (v536) : la
+        // circulation est une fonction de l'horloge que deux tablettes
+        // partagent (v305), et la casse est LOCALE — si le feu tombé laissait
+        // passer les voitures ici, la rue de l'ami ne serait plus la même.
+        if (f.etat === 'tombe' && casses.has(f.cle)) {
+          if ((f.x - px) * (f.x - px) + (f.z - pz) * (f.z - pz) < PORTEE_FEU * PORTEE_FEU) proches.push(f);
+          continue;
+        }
         if (etat !== f.etat) {
           f.etat = etat;
           f.lampes[0].visible = etat === 'rouge';
@@ -8460,7 +8597,9 @@ window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fi
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
-  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, horizonLoin, horizonTresLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
+  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage,
+  // le mobilier tombé (v536) : le registre, les comptes, et le maillage d'une pièce
+  mobilierCasse: { casses, stats: statsCasse, piece: (cle) => piecesParCle.get(cle) || null }, horizonLoin, horizonTresLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
@@ -8692,6 +8831,7 @@ function frame(now) {
   }
   avancerReflets(renderer, scene);
 
+  animerLesCasses();
   eclairerLaRue();
   reglerLesFeux();
   nomsDeStations.update(player.pos);

@@ -1,5 +1,50 @@
 # Ce qui est en cours
 
+- [ ] **PORTAIL DE LA v536 (mobilier cassable, fusionné à la v531) : aucun
+  rouge de la livraison.** Le portail n'a pas fini sous la limite de deux
+  heures (coupé dans `reseau.js`). Rejoués SEULS des deux côtés : `monte.js`
+  branche 258 / 5 (fabrication par tranches, voisines d'un convoi, feu « au
+  lieu de piler », rue vide, « Atterrissage vers ») contre `origin/main`
+  253 / 7 (les mêmes, plus mur de face et `minimap×edu-timer` aux deux
+  tailles) — au portail, la branche rendait aussi « chaque feuille vole bas
+  au-dessus de SA colonne » (v531, `ecartMax` 6,72 ; vert seul) ;
+  `degats.js` branche 46 / 2, `origin/main` 47 / 1 : « les feux de détresse
+  se posent SUR la carrosserie » rouge des deux côtés, déclaré entre-temps par la v533
+  (`bugatti-bolide.glb`, deux feux à 0,45 de la tôle), et « percuter une
+  voiture de la rue » rouge sur `ecart` 18,3 pour 20 (déjà déclaré : la
+  voiture de la rue repart pendant les 0,2 s de la pose, aucun mobilier sur
+  la dalle) ; `maj.js` trois passages de chaque côté, « en construction, on
+  marche au joystick » rouge une fois sur trois sur la branche (0,8 bloc),
+  zéro sur `origin/main` — le crochet du piéton rend le même verdict
+  (vrai/faux) qu'avant, à surveiller ; le loader qui compte les fichiers
+  rouge des deux côtés (déclaré) ; `reseau.js` branche 89 / 1 (la voiture
+  de la rue chez l'ami, déclaré). Second portail, refusionné à la v534 (et
+  renommé v536), JOUÉ JUSQU'AU BOUT (131 min) : `degats.js` 1 (feux de
+  détresse, déclaré par la v533), `maj.js` 1 (le loader qui compte les
+  fichiers, déclaré), `monte.js` 6 (passant de Rome, feu « au lieu de
+  piler », rue vide, `minimap×edu-timer` aux deux tailles, « Atterrissage
+  vers ») — tous rouges sur `origin/main` rejouée seule ci-dessus ; les
+  témoins du mobilier et ceux de la voiture garée (v534) verts.
+
+- [ ] **Le mobilier se casse (v536) : ce qui reste, et deux décisions pour
+  Max.** (1) LES RUES SONT ÉTROITES, ET C'EST MESURÉ
+  (`tests/sonde-mobilier-route.cjs`, le long des circuits) : chaussée médiane
+  6,5 blocs dans les villes engendrées (p10 6), 13 à Paris, 6,5 à Londres
+  (18 % sous 4,5) ; trottoir à droite 1,5 bloc (médiane), mobilier à la
+  bordure. Une voiture de 2,26 centrée sur sa voie garde 2,1 blocs de marge ;
+  à un bloc d'écart vers le trottoir, 60 à 100 pièces par kilomètre. Élargir
+  (pas de trame, chaussée, recul du mobilier) change le sol sous ce que les
+  enfants ont bâti : décision de Max, non faite. Piste moins chère, à mesurer :
+  reculer le seul mobilier de bordure d'un bloc dans les villes engendrées
+  (`mobilierVillesMonde`), ce qui ne touche que des blocs de décor. (2) Un
+  réverbère, un feu ou une jardinière qu'un ENFANT a posés ne se cassent pas
+  (restent des obstacles) : à confirmer par Max. Dettes : Manhattan garde ses
+  obstacles (mobilier instancié par lots, rien à coucher seul) ; la casse
+  n'est pas partagée en ligne (l'ami voit le poteau debout, et sa voiture y
+  bute chez lui) ; un fût tombé vers la chaussée peut y dépasser, et les
+  voitures de la rue passent au travers ; les arbres de rue (`LOG`) restent
+  durs.
+
 - [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
   au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
   `gareeContre` (main.js) écarte les fiches `pilote`, parce qu'une boîte de
@@ -299,13 +344,13 @@ v522 ne touche pas ; la distribution reste à faire.
   rendait trop peu d'images ce jour-là (v427 : `locator.click` attend deux
   images identiques).
   La livraison ne touchait que trois chaînes de bulles de `marlon.js`.
-- [ ] **Rouges de portail mesurés des deux côtés au portail de la v536 (la
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v537 (la
   minicarte toujours là).** `degats.js` rejouée SEULE deux fois sur la branche
   et deux fois sur `origin/main` v531 (`git worktree`) :
   - « les feux de détresse se posent SUR la carrosserie » : rouge 2 fois sur 2
     des deux côtés, à l'identique — la Bugatti Bolide pose deux feux à 0,45
     bloc de la tôle (les cinq autres modèles à −0,015). En production ; zone
-    véhicules (`posesDetresse`), que la v536 ne touche pas.
+    véhicules (`posesDetresse`), que la v537 ne touche pas.
   - « percuter une voiture de la rue l'abîme AUSSI » : 1 sur 2 sur la branche,
     2 sur 2 sur `origin/main` (élan trouvé 13 à 15 blocs) ; « chez Alice
     aussi… feux de détresse » le suit (`recues 0` quand le choc n'a pas eu
@@ -313,7 +358,7 @@ v522 ne touche pas ; la distribution reste à faire.
   - `monte.js` au même portail : six rouges, cinq déjà déclarés (flâneur sur
     la chaussée, feu qui pile, rue vide, mur de face, « Atterrissage vers »),
     plus « à Rome aussi, en biais, un passant traverse sur le passage peint »
-    (déclaré sous la v402). La v536 ne touche que la minicarte et le badge du
+    (déclaré sous la v402). La v537 ne touche que la minicarte et le badge du
     temps libre.
   - Portail repris (reprise, `degats.js`, `monte.js`, `reseau.js`) : `reseau.js`
     verte ; `degats.js` les deux mêmes rouges ; `monte.js` sept rouges, le
@@ -330,6 +375,9 @@ v522 ne touche pas ; la distribution reste à faire.
     le courtier local. `reseau.js` rejouée seule (coupée deux fois par la borne
     de deux heures du terminal) : 91 verts, 0 rouge.
 
+  - Portail sur le code fusionné avec la v534 : quinze suites vertes ; `degats.js`
+    seul rouge les feux de la Bugatti ; `monte.js` « la rue roule à l'allure d'une
+    ville » (v472) et « rue vide » ; `reseau.js` rejouée seule 91 verts.
 - [ ] **Deux rouges de portail mesurés des deux côtés au portail de la v530
   (les pistes larges).** Chacun rejoué SEUL sur la branche et sur `origin/main`
   v518 (`git worktree`), par une sonde qui recopie le passage du témoin :
