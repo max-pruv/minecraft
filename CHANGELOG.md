@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v524 — Des guides au pied des monuments
+## v533 — Des guides au pied des monuments
 
 **Pourquoi.** Apprendre dans les villes s'arrêtait à Washington : sept panneaux
 (v460), en français seulement, et personne pour les dire. Paris, Londres, Rome
@@ -59,11 +59,14 @@ captures : Capucine sous la tour Eiffel, Livia devant le Colisée, Jasmine sur
 le trottoir de la Cinquième Avenue au pied de l'Empire State — le fanion
 d'abord sorti rouille a été avivé, et Jasmine avait un corps d'homme (le
 modèle se tirait sur l'identifiant du lieu, il suit désormais le prénom).
+Et le regard du guide se lit hors d'un pas de côté : un guide est un piéton, une
+voiture qui passe sur la rue voisine le fait s'écarter un instant, dos à
+l'enfant (vu au portail : regard −0,7, écart en cours ; une sonde à part l'a
+séparé en une exécution). Le témoin attend que l'écart soit fini, borné à huit
+secondes, et dit combien il en a vu.
 
 ---
 
-
----
 ## v531 — De vraies feuilles d'automne, posées sur le monde
 
 **Pourquoi.** Max, capture d'iPhone au volant sur une autoroute : « Je ne sais

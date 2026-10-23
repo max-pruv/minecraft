@@ -1,4 +1,4 @@
-// LES GUIDES DES VILLES — Paris, Londres, Rome, New York (v524).
+// LES GUIDES DES VILLES — Paris, Londres, Rome, New York (v533).
 //
 // Les panneaux de Washington (v460, `guides.js`) racontaient la ville quand
 // l'enfant arrive quelque part. Ce module en donne autant aux quatre autres

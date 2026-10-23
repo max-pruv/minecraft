@@ -821,7 +821,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les guides des villes (v524) — un guide est un rôle à part, et il se pose à ciel ouvert
+## Les guides des villes (v533) — un guide est un rôle à part, et il se pose à ciel ouvert
 
 Trois règles.
 
@@ -855,6 +855,9 @@ Trois règles.
   revient sans eux. `essaiParBlocs` refuse `CHAUSSEE`.
   **Tout personnage qui se tient immobile se pose hors de la chaussée**, sinon
   il arrête une file pour toujours.
+  Et il reste un piéton : une voiture qui passe le fait s'écarter (v259), dos
+  à l'enfant. Un témoin de regard lit hors d'un écart (`guide.ecart` faux),
+  borné, jamais à un instant fixe.
 - **UN ACCESSOIRE DE PERSONNAGE SE FABRIQUE À L'ATELIER.** Le fanion du guide
   est fait avec `Atelier` (`matiereVivante`) : le programme des corps sculptés,
   chauffé à l'accueil (v246). Un matériau neuf aurait compilé à l'arrivée au

@@ -46,7 +46,7 @@ const georgetown = () => {
 };
 
 // Les rayons couvrent l'emprise du lieu et un peu de parvis ; deux rayons
-// voisins ne se recouvrent pas (vérifié par le témoin). Depuis la v524 chaque
+// voisins ne se recouvrent pas (vérifié par le témoin). Depuis la v533 chaque
 // panneau a sa version anglaise (la famille est franco-américaine, et le
 // profil a une langue : 'fr', 'en' ou 'both') et un guide qui le raconte.
 export const GUIDES_DC = [
@@ -80,11 +80,11 @@ export const GUIDES_DC = [
   }, 'Ruth'),
 ].filter(Boolean);
 
-// LA LANGUE DU PANNEAU (v524). `fr`, `en`, ou `both` — le réglage du profil,
+// LA LANGUE DU PANNEAU (v533). `fr`, `en`, ou `both` — le réglage du profil,
 // le même que celui du quiz. En `both`, les panneaux alternent d'une visite à
 // l'autre : deux langues dans un même bandeau feraient six phrases, trop pour
 // un enfant qui lit en marchant. Un texte écrit en une seule chaîne (un lieu
-// d'avant la v524) se dit tel quel dans les deux langues.
+// d'avant la v533) se dit tel quel dans les deux langues.
 export function langueDuGuide(langue, rang = 0) {
   return langue === 'en' ? 'en' : langue === 'fr' ? 'fr' : (rang % 2 ? 'en' : 'fr');
 }

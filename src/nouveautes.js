@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 524,
+    v: 533,
     titre: 'Des guides dans les villes',
     puces: [
       'Un guide et son fanion orange',

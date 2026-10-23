@@ -1,4 +1,4 @@
-// LES GUIDES DES VILLES, AU NAVIGATEUR (v524).
+// LES GUIDES DES VILLES, AU NAVIGATEUR (v533).
 //   node tests/sonde-guides-villes.cjs [lieu…]   → une ligne par lieu
 // On se pose au-dessus du monument (le banc ne charge que deux morceaux autour de l'enfant), on attend que le guide naisse
 // (borné), puis l'on marche jusqu'à lui : où il est, s'il est dessiné, s'il
@@ -40,13 +40,27 @@ module.exports.visiter = async function visiter(tab, id, borneMs = 60000) {
       const j = window.__guides.journal.filter((e) => e.id === id);
       if (j.length) { dit = j[j.length - 1].texte; break; }
     }
-    await dormir(1500);
-    const dx = g.player.pos.x - guide.pos.x, dz = g.player.pos.z - guide.pos.z;
-    const regard = Math.cos(guide.yaw - Math.atan2(-dx, -dz));
+    // Le regard se lit hors d'un pas de côté (v259) : le guide est un piéton,
+    // et une voiture qui passe sur la rue voisine le fait s'écarter un instant,
+    // dos à l'enfant. Lu à un instant fixe, c'était un tirage (vu au portail de
+    // la v533 : regard −0,7, `ecart` vrai). On attend le FAIT — pas d'écart en
+    // cours et le visage vers l'enfant —, borné, et l'on dit ce qu'on a vu.
+    const lireRegard = () => {
+      const dx = g.player.pos.x - guide.pos.x, dz = g.player.pos.z - guide.pos.z;
+      return Math.cos(guide.yaw - Math.atan2(-dx, -dz));
+    };
+    let regard = lireRegard(), ecarts = 0;
+    const t2 = performance.now();
+    do {
+      await dormir(250);
+      if (guide.ecart) ecarts++;
+      regard = lireRegard();
+    } while ((guide.ecart || regard <= 0.9) && performance.now() - t2 < 8000);
+    const msRegard = Math.round(performance.now() - t2);
     return {
       id, ne, d: Math.round(Math.hypot(guide.pos.x - l.x, guide.pos.z - l.z) * 10) / 10,
       y: Math.round(guide.pos.y * 10) / 10, visible: guide.mesh.visible,
-      regard: Math.round(regard * 100) / 100, dit, toast: el ? el.textContent.slice(0, 80) : null,
+      regard: Math.round(regard * 100) / 100, ecarts, msRegard, dit, toast: el ? el.textContent.slice(0, 80) : null,
       affiche: !!el && el.style.opacity === '1' && el.textContent.includes(l.guide),
       parle: window.__voixEntendue.slice(entendues0).pop() || null,
     };

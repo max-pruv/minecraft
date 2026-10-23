@@ -1095,7 +1095,7 @@ let circulationsEnAttente = [];
 // cents blocs, ne se voit pas.
 const circulationPrete = cadence(125);
 let passants = null;
-let guidesVilles = null;   // les guides au pied des monuments (v524)
+let guidesVilles = null;   // les guides au pied des monuments (v533)
 let poissons = null;
 
 // Spawn on land near the origin.
@@ -1708,7 +1708,7 @@ function updateChunks() {
   npcs.push(...vie.npcs);
   // Les passants des villes : fabriqués à l'approche, jamais avant.
   passants = createPassants({ scene, world, player, toast: say, npcs });
-  // Les guides des villes : un par monument, nés à l'approche (v524).
+  // Les guides des villes : un par monument, nés à l'approche (v533).
   guidesVilles = createGuidesVilles({ scene, world, player, toast: say, npcs, lieux: TOUS_LES_GUIDES });
   // Les poissons : un petit banc entretenu autour de l'enfant, partout où
   // il y a de l'eau — océans du planisphère, fleuves des villes, lacs.
@@ -8370,7 +8370,7 @@ window.__lumiere = () => ({
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 // Les panneaux à lire sur place : une fois par visite, en temps réel (v460).
-// Depuis la v524, dans les cinq grandes villes, dans la langue du profil, et
+// Depuis la v533, dans les cinq grandes villes, dans la langue du profil, et
 // raconté par le guide posé au pied du monument (`createGuidesVilles`).
 const guides = creerGuides({
   // Plus de bandeau pendant le jeu (v504) : le guide le dit à voix haute.
@@ -8563,7 +8563,7 @@ function frame(now) {
   fun.update(dt);
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
-  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux des guides (v460, v524)
+  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux des guides (v460, v533)
   majGPSAmi();             // la proposition d'un ami s'efface seule (v388)
   asseoirLeConducteur(dt);
   effects.update(dt);

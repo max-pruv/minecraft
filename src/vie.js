@@ -1348,7 +1348,7 @@ export function createVie({ scene, world, player, toast }) {
   };
 }
 
-// --- les guides des villes (v524) --------------------------------------------
+// --- les guides des villes (v533) --------------------------------------------
 //
 // Un guide n'est pas un passant. Le passant ne s'arrête pas pour l'enfant
 // (v243) ; le guide, si : c'est son métier. Il tient son poste au pied du

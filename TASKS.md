@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **Rouges de portail de la v524 (les guides des villes) : aucun de la
+- [ ] **Rouges de portail de la v533 (les guides des villes) : aucun de la
   livraison.** Soupçonnant les guides devant « la rue roule à l'allure d'une
   ville » (médiane 0), une sonde sous node a trouvé quatre guides sur la
   chaussée — corrigé, et c'était un vrai défaut — mais le rouge revient au
@@ -8675,7 +8675,7 @@ l'embarquement a eu lieu, pas par une hypothèse.
   pied bute (sonde v470) : le rendre plat exige que `colonneNaturelle` sache
   qu'un dessus a été posé, zone du sol continu.
 
-- [ ] **Apprendre** — questions audio. *(Les guides dans les villes : v524,
+- [ ] **Apprendre** — questions audio. *(Les guides dans les villes : v533,
   vingt-deux guides au pied des monuments de Paris, Londres, Rome, New York et
   Washington, en français et en anglais.)* Ce qui reste des guides : la Statue
   de la Liberté, le Golden Gate et les monuments du catalogue qui attendent
