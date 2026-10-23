@@ -8563,6 +8563,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         return out;
       };
       const res = {};
+      // LA BOÎTE DU MODÈLE SEUL (v533), relevée à l'invocation, AVANT de monter :
+      // monté, le véhicule porte l'enfant, et ce qui s'y accroche pendant la
+      // séquence faisait passer le Concorde à ±13,5 au portail
+      const boiteModele = (m, exclus = new Set()) => {
+        const b = new THREE.Box3(), bb = new THREE.Box3();
+        m.updateMatrixWorld(true);
+        const inv = m.matrixWorld.clone().invert();
+        m.traverse((o) => {
+          for (let p = o; p; p = p.parent) if (exclus.has(p) || p.name === 'phares' || p.name === 'detresse' || (p.userData && p.userData.arms)) return;
+          if (!o.isMesh || o.isSkinnedMesh || !o.geometry) return;
+          if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+          bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld).applyMatrix4(inv); b.union(bb);
+        });
+        return b;
+      };
       const avant = cles(), blocs = g.world.edits.size;
       for (const [key, dx] of [['avionligne', 30], ['chasseur', -30]]) {
         const a = await poser(key, dx);
@@ -8595,6 +8610,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // le Concorde n'a pas de porte : il monte d'un coup
       {
         const a = await poser('concorde', 30);
+        const nav0 = a.mesh.userData.feuxNav;
+        const boiteConcorde = boiteModele(a.mesh, new Set([...(nav0 ? [nav0.rouge, nav0.vert, nav0.eclat] : []), ...(a.mesh.userData.tuyeres || [])]));
         bouton(); await images(2);
         res.concorde = { porte: a.mesh.userData.porte === undefined ? 'absent' : a.mesh.userData.porte, auVolant: auVolant(), ph: g.player.embarquement ? g.player.embarquement.phase : null };
         // LA FLAMME EST CHAUFFÉE À L'ACCUEIL (v502) : aux commandes, on pousse
@@ -8607,10 +8624,67 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         res.flamme = { tuyeres: tuyeres.length, allumees: tuyeres.filter((f) => f.visible).length,
           cles: [...cles()].filter((k) => !avantFlamme.has(k)).map((k) => k.slice(0, 24)) };
         g.player.gaz = null;
+        // LES FEUX DE NAVIGATION (v533, revue d'écran ligne 8) : rouge au bout
+        // de l'aile gauche (−x), vert au bout de la droite, un éclat blanc à la
+        // queue qui clignote. Les bouts d'aile se remesurent ici, sur le
+        // modèle sans ses feux ni ses flammes ; l'éclat se relève image par image.
+        const nav = a.mesh.userData.feuxNav;
+        if (!nav) res.nav = { err: 'aucun feu de navigation' };
+        else {
+          const b = boiteConcorde;
+          const eclats = new Set();
+          for (let i = 0; i < 160 && eclats.size < 2; i++) { eclats.add(nav.eclat.visible); await dodo(50); }
+          res.nav = { rouge: +nav.rouge.position.x.toFixed(2), vert: +nav.vert.position.x.toFixed(2),
+            gauche: +b.min.x.toFixed(2), droite: +b.max.x.toFixed(2), queue: +nav.eclat.position.z.toFixed(2), arriere: +b.max.z.toFixed(2),
+            allumes: nav.rouge.visible && nav.vert.visible, eclats: [...eclats] };
+        }
+      }
+      await descendre();
+      if (res.nav && !res.nav.err) { const nav = (am.animals.find((x) => x.def && x.def.key === 'concorde') || {}).mesh; res.nav.descendu = nav ? [nav.userData.feuxNav.rouge.visible, nav.userData.feuxNav.vert.visible, nav.userData.feuxNav.eclat.visible] : null; }
+      // LES PHARES (v533, revue d'écran ligne 8) : de nuit au volant, deux
+      // lueurs au nez de la voiture et leur pinceau ; éteints le jour et à la
+      // descente ; et l'allumage ne compile rien (v363 : on lit les clés).
+      // le compte des avions se clôt ici : la nuit qui suit allume les lucioles
+      res.clesNeuves = [...cles()].filter((k) => !avant.has(k)).length;
+      {
+        vider();
+        g.player.pilote = null; g.player.avionEtat = undefined; g.player.avionEnVol = undefined; g.player.flying = false;
+        window.__setDayTime(0.75);
+        await images(4);
+        const v = am.invoquer('voiture', x0 + 5, z0 - 5, false);
+        const t0 = performance.now();
+        while (v && !v.mesh.userData.roues && performance.now() - t0 < 15000) await dodo(100);
+        if (v) { v.pos.set(g.player.pos.x - Math.sin(g.player.yaw) * 3, g.player.pos.y, g.player.pos.z - Math.cos(g.player.yaw) * 3); v.mesh.position.copy(v.pos); }
+        await images(4);
+        const boiteVoiture = v ? boiteModele(v.mesh) : null;
+        const avantPhares = cles();
+        for (let i = 0; i < 4 && !auVolant(); i++) { bouton(); await images(3); }
+        await images(8);
+        const ph = v && v.mesh.userData.phares;
+        const lire = () => {
+          if (!ph) return null;
+          const b = boiteVoiture;
+          return { visible: ph.visible, lueurs: ph.userData.lueurs.map((l) => [+l.position.x.toFixed(2), +l.position.y.toFixed(2), +l.position.z.toFixed(2)]),
+            pinceau: ph.userData.pinceaux.map((p) => +p.material.opacity.toFixed(3)),
+            avant: +b.min.z.toFixed(2), arriere: +b.max.z.toFixed(2), bas: +b.min.y.toFixed(2), haut: +b.max.y.toFixed(2), large: +Math.max(-b.min.x, b.max.x).toFixed(2) };
+        };
+        // les clés des programmes des PHARES eux-mêmes : la nuit allume aussi
+        // les lucioles (`BANDE_SAISON`, un nuage de points), un autre programme
+        const clePhares = ph ? [...ph.userData.lueurs, ...ph.userData.pinceaux].map((o) => {
+          const pr = g.renderer.properties.get(o.material).currentProgram;
+          return pr ? pr.cacheKey : 'non rendu';
+        }) : [];
+        res.phares = { auVolant: auVolant(), modele: v && v.mesh.userData.flotte, nuit: lire(),
+          cles: clePhares.filter((k) => !avantPhares.has(k)).map((k) => k.slice(0, 24)) };
+        window.__setDayTime(0.42); await images(4);
+        res.phares.jour = ph ? ph.visible : null;
+        window.__setDayTime(0.75); await images(4);
+        await descendre(); await images(3);
+        res.phares.descendu = ph ? ph.visible : null;
+        window.__setDayTime(0.42);
       }
       await descendre(); vider();
       g.player.pilote = null; g.player.avionEtat = undefined; g.player.avionEnVol = undefined; g.player.flying = false;
-      res.clesNeuves = [...cles()].filter((k) => !avant.has(k)).length;
       res.blocs = g.world.edits.size - blocs;
       return res;
     });
@@ -8629,6 +8703,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         JSON.stringify({ cles: r.clesNeuves, blocs: r.blocs, parAvion: [r.avionligne && r.avionligne.clesNeuves, r.chasseur && r.chasseur.clesNeuves] }));
       verifier('allumer les réacteurs ne compile aucun programme : la flamme est chauffée à l\'accueil',
         r.flamme && r.flamme.allumees > 0 && r.flamme.cles.length === 0, JSON.stringify(r.flamme));
+      {
+        const n = r.nav || {};
+        verifier('en vol, l\'avion porte ses feux de navigation : rouge au bout de l\'aile gauche, vert au bout de la droite, un éclat blanc qui clignote à la queue, éteints à la descente — revue d\'écran ligne 8',
+          !n.err && n.rouge < 0 && n.vert > 0 && Math.abs(n.rouge - n.gauche) < 0.35 && Math.abs(n.vert - n.droite) < 0.35
+            && n.queue > n.arriere - 0.35 && n.allumes && n.eclats.length === 2
+            && Array.isArray(n.descendu) && n.descendu.every((x) => !x),
+          JSON.stringify(n));
+        const p = r.phares || {}, nu = p.nuit || {};
+        const auNez = (nu.lueurs || []).length === 2 && nu.lueurs.every(([x, y, z]) => z < nu.avant + (nu.arriere - nu.avant) * 0.2 && y > nu.bas && y < nu.haut && Math.abs(x) < nu.large)
+          && nu.lueurs[0][0] < 0 && nu.lueurs[1][0] > 0;
+        verifier('de nuit au volant, la voiture a ses phares — deux lueurs au nez, mesurées sur le modèle, et leur pinceau — éteints le jour et à la descente, sans compiler un programme — revue d\'écran ligne 8',
+          p.auVolant && nu.visible && auNez && (nu.pinceau || []).every((o) => o > 0.05)
+            && p.jour === false && p.descendu === false && (p.cles || []).length === 0,
+          JSON.stringify(p));
+      }
     }
     // ON DESCEND D'UN AVION PAR SON ESCALIER (v400). Les avions descendaient
     // d'un coup, au milieu du fuselage. Le passage vit dans

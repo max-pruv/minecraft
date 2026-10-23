@@ -264,6 +264,7 @@ const GARDIENS = {
   // le réglage qui coupe tout dans `reglages.js`, et le carillon du chat
   // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
+  'src/phares.js': ['monte.js'],
   'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/traces.js': ['monte.js', 'reglages.js', 'reseau.js'],
   // les effets de saison en vraies formes (v505) : le témoin des cubes du ciel

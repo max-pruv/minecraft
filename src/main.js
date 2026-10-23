@@ -939,10 +939,11 @@ const enAttente = new Map();          // key -> { cx, cz, sale, detail, depuis }
 statsMaillage.enAttente = enAttente;  // la sonde lit l'âge des demandes (v360)
 // LE RÉGLAGE ENTRE DANS LA FICHE DU JOURNAL (v299) : ce que l'appareil joue,
 // pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
-// réglage lu au démarrage.
+// réglage lu au démarrage. Et la portée de la vue (v532) : sans elle, on a dû
+// DÉDUIRE du palier que la couronne lointaine n'avait jamais tourné chez Max.
 journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576,
   palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null, etendue: ETENDUE_CHOISIE,
-  logiciel: renduLogiciel() });
+  loin: PORTEE_VUE, logiciel: renduLogiciel() });
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;
 function synchroniserLeWorker() {
@@ -2172,7 +2173,7 @@ function updateChunks() {
       nom: `train ${seg.ligne.nom} ${seg.de}–${seg.vers}`,
       emoji: seg.ligne.emoji, teinte: seg.ligne.teinte,
       nb: 5, vitesse, rames, pause, arretsIndex: t.arretsIndex,
-      // UN TRAIN, PAS UNE RAME DE MÉTRO (v532) : motrice en tête, motrice en
+      // UN TRAIN, PAS UNE RAME DE MÉTRO (v535) : motrice en tête, motrice en
       // queue, des voitures à fenêtres entre les deux, et un écart qui se
       // DÉDUIT des longueurs — la rame du métro posée tous les 7,6 blocs
       // recouvrait sa voisine d'un demi-bloc à chaque attelage.
@@ -3267,7 +3268,7 @@ function texteEtendue() {
     // aucun message (décision de Max, les commandes à icônes) : c'est ici
     // qu'on l'apprend. Toucher la même étendue la lève (`renderEtendue`).
     if (PALIER && PALIER.source === 'sûreté' && PALIER.sousChoix === choix) {
-      return `⚠️ « ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois : il joue en « ${mot(PALIER.nom)} » pour l'instant. Touche « ${mot(choix)} » pour réessayer, ou garde ça.`;
+      return `⚠️ « ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois : il joue en « ${mot(PALIER.nom)} » pour l'instant${PALIER.loin ? ', en gardant le paysage lointain' : ''}. Touche « ${mot(choix)} » pour réessayer, ou garde ça.`;
     }
     base = `Tu as choisi « ${mot(choix)} ».`;
   }
@@ -8258,6 +8259,7 @@ const fun = initFun({
   remotePlayers: () => remotePlayers,
   isRunning: () => running,
   isNight: () => Math.sin((dayTime / DAY_LENGTH) * Math.PI * 2) < -0.05,
+  nuitDehors: () => nuitDehors,
   getWeather: () => weather,
   getPosCtx: () => posCtx,
   // Les convois n'existent qu'une fois le monde bâti : on les demande au

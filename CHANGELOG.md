@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v532 — Rien ne traverse une voie, et le train est un train
+## v535 — Rien ne traverse une voie, et le train est un train
 
 **Pourquoi.** Max, deux captures d'iPhone en vol bas au-dessus du TGV
 Paris–Lyon : « Those things should never happen ». Une dalle d'herbe et de terre
@@ -60,6 +60,60 @@ se maille (758, zéro erreur, contre 322 sur le premier jet). `carteMonde.js` : 
 (motrice effilée aux deux bouts, jeu positif à chaque attelage, deux maillages
 par voiture). L'empreinte des 490 morceaux change ; corrections désarmées, elle
 rend la constante d'avant au bit près.
+## v533 — Les phares, les feux de navigation, la manette et la pioche
+
+**Pourquoi.** La revue d'écran de la v506 a relevé trois défauts dans ce que
+l'enfant voit aux commandes. La nuit, la voiture roulait dans le noir, sans un
+phare, et l'avion volait sans aucun feu (ligne 8). La manette des gaz était un
+rectangle blanc vide : rien ne disait qu'il fallait la pousser vers le haut
+(ligne 7). En construction, la pioche de Casser se lisait comme une flèche
+« télécharger », et le bouton actif, blanc, sortait de sa colonne (ligne 4).
+
+**Ce que ça change.** De nuit au volant, la voiture allume deux phares au nez
+et leur pinceau de lumière sur la route ; ils s'éteignent au jour et à la
+descente. Aux commandes d'un avion, un feu rouge au bout de l'aile gauche, un
+vert au bout de la droite, et un éclat blanc qui clignote à la queue. La
+manette porte le mot « Gaz » et des chevrons dans sa course. La pioche a un fer
+plein, et Poser, Casser et Sauter sont dans la même colonne ; l'outil choisi
+garde le voile des autres boutons, avec un anneau corail.
+
+**Ce qui le prouve.** Quatre témoins, tous vérifiés rouges sur `origin/main`
+(sonde rejouée sur les deux arbres) : `maj.js` lit la colonne et le fond de
+l'outil actif, et le mot, les chevrons et le doigt de la manette (le doigt
+tombe sur `#gaz-base` en cinq points de la course) ; `monte.js` remesure les
+bouts d'aile sur le modèle et relève l'éclat image par image, puis monte de
+nuit dans une voiture et lit les deux lueurs au nez, le pinceau, l'extinction
+au jour et à la descente — et les CLÉS de programme : aucune neuve. Les
+captures de `sonde-revue-ecran.cjs` (avion au sol et en vol, voiture, construction,
+jour et nuit, iPhone et iPad) sont dans la PR, avant et après.
+
+## v532 — « Loin » voit loin, même quand le jeu s'allège par sûreté
+
+**Pourquoi.** Max, sur la v518 : « On ne voit pas du tout quatre fois plus
+loin. » Le journal de bord de son iPhone (`journal_appareil`) l'explique : de
+la v506 à la v512, chaque session porte `etendue: haut` (« Loin » choisi) et
+`palier: moyen, source: sûreté` — `bas` avant la v509. La couronne lointaine
+(v497) et le troisième étage (v518) ne vivent QUE dans la fiche `haut` : sous
+la sûreté, le jeu les retirait avec le reste. Ils n'ont jamais tourné sur son
+appareil, et ne peuvent pas avoir causé ses plantages : tous datent de la v406
+à la v411, avant eux, et il n'y en a plus eu depuis.
+
+**Ce que ça change.** « Loin » choisi, le paysage lointain va jusqu'à 10 240
+blocs même quand le jeu joue « Normal » par sûreté : le brouillard et le plan
+lointain reculent, la côte et la mer apparaissent à l'horizon en vol. Les
+morceaux, la file et la couche HD restent ceux du cran de sûreté — la couronne
+ne fabrique aucun morceau, elle lit le relief. Les Réglages le disent (« en
+gardant le paysage lointain »), et la fiche du journal de bord porte désormais
+la portée de la vue (`loin`), pour qu'on n'ait plus à la déduire.
+
+**Ce qui le prouve.** Deux témoins, rouges sur `origin/main` : la règle pure
+(`parent.js` : sous « Loin » par sûreté, `loin` 10 240 et rr, file, HD de
+« Normal » ; « Auto » et « Normal » choisis gardent `loin` 0), et la scène
+d'une page rechargée dans l'état exact de l'iPhone (les deux couronnes
+nommées, brouillard ≥ 10 000). Coût mesuré au banc à rr 12 : +47 000
+triangles, +5,2 Mo de géométrie, +3 appels de dessin. Captures de revue
+d'écran (`sonde-revue-ecran.cjs`, options neuves `--rr=` et `--params=`) à
+430 × 932 et 820 × 1180, jour et nuit, « Normal » contre « Normal + loin ».
 
 ---
 
@@ -239,6 +293,8 @@ essence, le proche et le lointain ont la même boîte de feuillage et la même
 couleur. Les cinq témoins des vrais arbres repointés : on ne tait que ce que
 le modèle couvre (compté par `facesArbresTues`), une cabane de rondins reste en
 cubes, aucun bloc ne bouge.
+
+---
 
 ## v522 — Les blocs parlent français, et deux bandeaux se lisent
 

@@ -936,6 +936,30 @@ Trois règles.
   et `morceauxAvantClairieres` gardent les arbres du jour même ; la date se
   relit à la fusion (v309). L'empreinte des 490 morceaux se prouve bosquets
   désarmés.
+## Les feux de bord (v533) — ce qui brille sans éclairer partage la matière de la flamme
+
+Revue d'écran, lignes 4, 7 et 8. Trois règles.
+
+- **UN FEU QUI S'ALLUME EN JEU PREND `matiereAdditive` (avions.js).** La
+  flamme (v264), les feux de navigation et les phares (`src/phares.js`) ont
+  les MÊMES réglages de matériau, donc la même clé de programme, chauffée à
+  l'accueil avec la flamme (v491) : aucun programme ne naît à l'allumage, par
+  construction, et le témoin lit les clés (v363). Aucune lampe ponctuelle
+  (v248). Un feu neuf avec un autre réglage (opaque, une carte, un autre
+  côté) est une clé neuve : il se chauffe, ou il prend cette fonction.
+- **UN FEU SE MESURE SUR LE MODÈLE, IL NE S'ÉCRIT PAS (v230).** Les feux de
+  navigation sont posés par `fini` sur les sommets extrêmes du modèle (gauche,
+  droite, queue), AVANT les flammes ; les phares sur les blocs optiques nommés
+  de la flotte, sinon les deux tiers de la demi-largeur, au sommet le plus en
+  avant de la bande — une fois par modèle. Nés cachés ; `fun.js` les allume
+  aux commandes (phares : selon `nuitDehors`, passé par `initFun`) et la
+  descente les éteint, comme la flamme.
+- **CE QUI HABILLE LA MANETTE NE PREND PAS LE DOIGT.** Le mot et les chevrons
+  sont des enfants de `#gaz-base` en `pointer-events: none`, le curseur aussi :
+  `elementFromPoint` rend la manette en tout point de sa course, et sa capture
+  de pointeur (v262) n'a rien devant elle. En construction, Poser, Casser et
+  Sauter ont le même x, et l'outil actif est un ANNEAU sur le voile, jamais un
+  fond blanc.
 
 ## Les commandes simplifiées (v494) — une main pour bouger, une main pour agir
 
@@ -1241,6 +1265,24 @@ Max : « le mode Loin n'est pas assez loin ». Trois règles.
   comme la couronne deux sous la fine. `?loin=2560` rend la v504 au sommet
   près.
 
+## La sûreté garde le lointain (v532) — un disjoncteur ne retire que ce qui coûte ce qu'il protège
+
+Max : « on ne voit pas du tout quatre fois plus loin ». Deux règles.
+
+- **AVANT DE CHERCHER POURQUOI UNE FONCTIONNALITÉ NE SE VOIT PAS, ON LIT CE
+  QUE L'APPAREIL JOUAIT.** `journal_appareil` : « Loin » choisi, `moyen` par
+  sûreté depuis la v509 — la couronne (v497, v518) n'avait JAMAIS tourné sur
+  l'iPhone de Max. C'est la régression de réglage de la v291 une fois de plus,
+  et deux livraisons l'ont portée sans que rien ne le dise. La fiche porte
+  désormais `loin` (la portée de la vue).
+- **LA SÛRETÉ DESCEND LES MORCEAUX, PAS LE PAYSAGE.** Sous une étendue
+  choisie, `palierRetenu` garde le `loin` de cette étendue : la couronne lit
+  `terrainHeight` et ne fabrique aucun morceau, et aucun plantage de l'appareil
+  n'a tourné avec elle. Le prix est mesuré (+47 000 triangles, +5,2 Mo à
+  rr 12). Le jour où une étendue gagne un réglage, on se demande s'il coûte ce
+  que la sûreté protège (des morceaux, de la mémoire de façades) ; sinon il
+  survit à la sûreté.
+
 ## Le garde-manger retiré, la minicarte à gauche (v518)
 
 Deux règles.
@@ -1522,7 +1564,7 @@ Deux règles.
   de `GARDE_GARE` pas d'un bout, et un témoin compare les dix-huit gares à
   `viaducs(false)` (zéro déplacée). La rampe à terre, elle, bouge (deux blocs au
   plus) : déclarée dans `TASKS.md`.
-## Rien ne traverse une voie (v532) — un ouvrage décidé sur l'axe se rejuge colonne par colonne
+## Rien ne traverse une voie (v535) — un ouvrage décidé sur l'axe se rejuge colonne par colonne
 
 Max, captures d'iPhone sur le TGV Paris–Lyon : « Those things should never
 happen ». Cinq règles.
