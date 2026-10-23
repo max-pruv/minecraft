@@ -43,6 +43,18 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START, RUE } from './blocks.js';
 import { VILLES_MONDE, solVillesMonde, eauVillesMonde, mobilierVillesMonde, coteDeVille } from './villesmonde.js';
+import * as VM_V531 from './villesmonde-v531.js';
+// LES BOUCHES SE CHOISISSENT CONTRE UNE VILLE (les rues à la GTA) : les
+// trottoirs ont bougé avec la chaussée, et deux bouches de Rome sur douze avec
+// eux. Sous ce qu'un enfant a bâti avant `DATE_RUES_GTA`, le monde garde la
+// ville de la v531 et le métro qu'on y creusait : ses bouches se choisissent
+// par la même règle contre le sol d'alors (`surVilleV531`).
+let VMLU = { solVillesMonde, eauVillesMonde, mobilierVillesMonde };
+const VM_LU_V531 = { solVillesMonde: VM_V531.solVillesMonde, eauVillesMonde: VM_V531.eauVillesMonde, mobilierVillesMonde: VM_V531.mobilierVillesMonde };
+function surVilleV531(f) {
+  const a = VMLU; VMLU = VM_LU_V531;
+  try { return f(); } finally { VMLU = a; }
+}
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 const BETON = BLOCK.STONEBRICK;
@@ -112,14 +124,14 @@ export const cleCol = (x, z) => Math.floor(x) * 65536 + Math.floor(z);
 // (aucun circuit muré), jamais un lot (aucun immeuble éventré), jamais la cour
 // d'un îlot (herbe enfermée par les façades : on n'y arriverait pas de la rue),
 // jamais la place (les anneaux de voitures peuvent la contourner au plus près).
-export const praticable = (x, z) => solVillesMonde(Math.floor(x), Math.floor(z)) === CITY_BLOCK.SIDEWALK;
+export const praticable = (x, z) => VMLU.solVillesMonde(Math.floor(x), Math.floor(z)) === CITY_BLOCK.SIDEWALK;
 // Et jamais sur un feu : le feu d'un carrefour est ce que lit la circulation.
 const feuIci = (x, z) => {
   let feu = false;
-  mobilierVillesMonde(Math.floor(x), Math.floor(z), (dy, id) => { if (id === RUE.FEUX) feu = true; });
+  VMLU.mobilierVillesMonde(Math.floor(x), Math.floor(z), (dy, id) => { if (id === RUE.FEUX) feu = true; });
   return feu;
 };
-export const pasDEau = ([x, z]) => !eauVillesMonde(Math.floor(x), Math.floor(z));
+export const pasDEau = ([x, z]) => !VMLU.eauVillesMonde(Math.floor(x), Math.floor(z));
 
 const sensEn = (pts, i) => {
   const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
@@ -229,7 +241,7 @@ function construireLigne(def) {
   // colonne qui voit de la chaussée selon les DEUX axes de la trame, à trois
   // blocs, est un coin : la trémie ne s'y ouvre pas, et la rambarde et le mât
   // ne s'y dressent pas.
-  const rueSur = (x, z) => { const t = solVillesMonde(Math.floor(x), Math.floor(z)); return t !== CITY_BLOCK.SIDEWALK && t !== 'lot'; };
+  const rueSur = (x, z) => { const t = VMLU.solVillesMonde(Math.floor(x), Math.floor(z)); return t !== CITY_BLOCK.SIDEWALK && t !== 'lot'; };
   const coin = (x, z) => {
     const cx = x + 0.5, cz = z + 0.5;
     const voit = ([ex, ez]) => {
@@ -250,24 +262,29 @@ function construireLigne(def) {
     for (let t = G.demiVoute; t <= b.o + 1; t++) for (let d = -2; d <= 2; d++) out.add(cleCol(...vers(q, b.a + d, t * b.cote)));
     return out;
   };
-  const refus = [];
-  // le sol d'une colonne se lit une fois pour toute la recherche
-  const solMemo = new Map();
+  const refus = [], refusV531 = [];
+  // le sol d'une colonne se lit une fois pour toute la recherche — une mémoire
+  // par ville lue (la ville neuve, la ville de la v531 : `surVilleV531`)
+  const memos = new Map();
+  const memoDe = (nom) => {
+    let m = memos.get(VMLU);
+    if (!m) memos.set(VMLU, m = { sol: new Map(), feu: new Map(), eau: new Map() });
+    return m[nom];
+  };
   const praticableMemo = (x, z) => {
-    const c = cleCol(x, z);
+    const c = cleCol(x, z), solMemo = memoDe('sol');
     let v = solMemo.get(c);
     if (v === undefined) { v = praticable(x, z); solMemo.set(c, v); }
     return v;
   };
-  const feuMemo = new Map(), eauMemo = new Map();
   const feuIciMemo = (x, z) => {
-    const c = cleCol(x, z);
+    const c = cleCol(x, z), feuMemo = memoDe('feu');
     let v = feuMemo.get(c);
     if (v === undefined) { v = feuIci(x, z); feuMemo.set(c, v); }
     return v;
   };
   const pasDEauMemo = ([x, z]) => {
-    const c = cleCol(x, z);
+    const c = cleCol(x, z), eauMemo = memoDe('eau');
     let v = eauMemo.get(c);
     if (v === undefined) { v = pasDEau([x, z]); eauMemo.set(c, v); }
     return v;
@@ -296,7 +313,7 @@ function construireLigne(def) {
     // la trémie sur le trottoir ; sa rambarde et son mât (un bloc de plus de
     // chaque côté) jamais sur un feu
     // les refus se comptent par raison : une station sans bouche dit pourquoi
-    const r = refus[k] = { rue: 0, feu: 0, eau: 0, sousTerre: 0 };
+    const r = (VMLU === VM_LU_V531 ? refusV531 : refus)[k] = { rue: 0, feu: 0, eau: 0, sousTerre: 0 };
     const tient = (b) => {
       // l'axe de la montée d'abord : ses colonnes sont dans `rue`, et c'est là
       // que presque tous les candidats tombent (sur un lot, sur la chaussée) —
@@ -317,7 +334,10 @@ function construireLigne(def) {
     const out = [];
     // l'escalier droit vers le trottoir (en travers de la ligne), puis les
     // axes de la trame : l'ordre dit la préférence
-    for (let o = G.demiVoute + 2; o <= 20; o += 0.5) {
+    // les rues à la GTA éloignent le trottoir : la ville neuve cherche plus
+    // loin (Spagna, mesuré) ; celle de la v531 garde sa recherche d'avant
+    const oMax = VMLU === VM_LU_V531 ? 20 : 26;
+    for (let o = G.demiVoute + 2; o <= oMax; o += 0.5) {
       for (const cote of [1, -1]) {
         const n = [-q.dz * cote, q.dx * cote];
         for (const [ex, ez] of [n, ...AXES]) {
@@ -402,11 +422,17 @@ function construireLigne(def) {
   // peut-être pas. Le tracé, les quais et les voies, eux, sont prêts tout de
   // suite (la rame naît au démarrage). Le choix est pur : le worker et le fil
   // principal, qui le font chacun de leur côté, trouvent les mêmes bouches.
-  const L = { def, f, sol, voie, stations, trace, quais, voies, arrets, refus, coin, _bouches: null };
+  const L = { def, f, sol, voie, stations, trace, quais, voies, arrets, refus, coin, _bouches: null, _bouchesV531: null };
   Object.defineProperty(L, 'bouches', {
     get() {
       if (!this._bouches) { this._bouches = choisirBouches(); rangerBouches(this); }
       return this._bouches;
+    },
+  });
+  Object.defineProperty(L, 'bouchesV531', {
+    get() {
+      if (!this._bouchesV531) { this._bouchesV531 = surVilleV531(() => choisirBouches()); rangerBouches(this, true); }
+      return this._bouchesV531;
     },
   });
   return L;
@@ -421,14 +447,15 @@ export function traceLigneMonde(L) {
 // Rangement par cases de huit, comme à Washington et à Paris.
 const CASE = 8;
 const GRILLE = new Map();
+const GRILLE_V531 = new Map();   // les bouches choisies contre la ville de la v531, seules
 const ZONES = new Map();
 const cle = (bx, bz) => bx * 65536 + bz;
-function ranger(x0, x1, z0, z1, obj) {
+function ranger(x0, x1, z0, z1, obj, g = GRILLE) {
   for (let bx = Math.floor(x0 / CASE); bx <= Math.floor(x1 / CASE); bx++) {
     for (let bz = Math.floor(z0 / CASE); bz <= Math.floor(z1 / CASE); bz++) {
       const k = cle(bx, bz);
-      if (!GRILLE.has(k)) GRILLE.set(k, []);
-      GRILLE.get(k).push(obj);
+      if (!g.has(k)) g.set(k, []);
+      g.get(k).push(obj);
     }
   }
 }
@@ -462,11 +489,11 @@ for (const L of LIGNES_MONDE) {
     }
   }
 }
-function rangerBouches(L) {
-  for (const b of L._bouches) {
+function rangerBouches(L, v531 = false) {
+  for (const b of v531 ? L._bouchesV531 : L._bouches) {
     if (!b) continue;
     const r = Math.abs(b.a) + LONG_ESC + 6 + b.o;
-    ranger(b.q.x - r, b.q.x + r, b.q.z - r, b.q.z + r, { quoi: 'bouche', L, ...b });
+    ranger(b.q.x - r, b.q.x + r, b.q.z - r, b.q.z + r, { quoi: 'bouche', L, ...b }, v531 ? GRILLE_V531 : GRILLE);
   }
 }
 
@@ -493,13 +520,17 @@ export function metroMondePres(x, z) {
 
 // Une colonne : (x, z) le coin du bloc, h le sommet de la colonne (la rue),
 // `poser(y, id)` en cote ABSOLUE. Rend vrai si elle a creusé.
-export function creuserMetroMonde(x, z, h, poser) {
+// `v531` : les bouches choisies contre la ville de la v531, sous une colonne où
+// un enfant a bâti avant les rues à la GTA.
+export function creuserMetroMonde(x, z, h, poser, v531 = false) {
+  if (v531 && VMLU !== VM_LU_V531) return surVilleV531(() => creuserMetroMonde(x, z, h, poser, true));
   if (!METRO_MONDE.actif) return false;
   const k = cle(Math.floor(x / CASE), Math.floor(z / CASE));
   const zone = ZONES.get(k);
-  if (zone) for (const L of zone) if (!L._bouches) void L.bouches;
-  const segs = GRILLE.get(k);
-  if (!segs) return false;
+  if (zone) for (const L of zone) if (v531 ? !L._bouchesV531 : !L._bouches) void (v531 ? L.bouchesV531 : L.bouches);
+  const tous = GRILLE.get(k);
+  const segs = v531 ? [...(tous || []).filter((o) => o.quoi !== 'bouche'), ...(GRILLE_V531.get(k) || [])] : tous;
+  if (!segs || !segs.length) return false;
   const cx = x + 0.5, cz = z + 0.5;
   const vides = [], pleins = [], apres = [], gabarit = [];
   const creuser = (y0, y1) => { if (y1 >= y0) vides.push([y0, y1]); };

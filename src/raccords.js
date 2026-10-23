@@ -31,13 +31,14 @@
 import { DEMI_VILLE } from './routes.js';
 
 // « route|ville » → distance (blocs, depuis la porte) où l'avenue s'arrête.
-// Relevé par `node tests/sonde-rue-dense.cjs raccords` (ligne TABLE).
+// Relevé par `node tests/sonde-rue-dense.cjs raccords` (ligne TABLE). Remesurée
+// avec les rues à la GTA : onze raccords ont bougé d'un à huit blocs.
 export const RACCORDS_COURTS = {
-  'E19|amsterdam': 10.5, 'A20|quebec': 0.5, 'A-4|madrid': 29, 'A3|cologne': 0,
-  'A3|francfort': 0, 'E1|kyoto': 25.5, 'A4|turin': 0, 'Yamuna|delhi': 34.5,
-  'Yamuna|agra': 29, 'A1 Sud|naples': 0, 'M1|budapest': 0, 'A1 Nord|milan': 0,
-  '401|toronto': 39, 'Hansalinie|cologne': 8, 'Hansalinie|hambourg': 0,
-  'I-95|boston': 7.5, 'Tōmei|tokyo': 1, 'A8|marseille': 0, 'US-101|losangeles': 7.5,
+  'E19|amsterdam': 11.5, 'A20|quebec': 0, 'A-4|madrid': 29.5, 'A3|cologne': 0,
+  'A3|francfort': 0, 'E1|kyoto': 18, 'A4|turin': 0, 'Yamuna|delhi': 34,
+  'Yamuna|agra': 29.5, 'A1 Sud|naples': 0, 'M1|budapest': 0, 'A1 Nord|milan': 0,
+  '401|toronto': 39, 'Hansalinie|cologne': 4.5, 'Hansalinie|hambourg': 0,
+  'I-95|boston': 5, 'Tōmei|tokyo': 1.5, 'A8|marseille': 0.5, 'US-101|losangeles': 8.5,
   // les villes bâties à la main (v450) : leur entrée finit sur une avenue
   // nommée que des circuits roulent — Lille dès la rue de Paris
   'A1|paris': 262.5, 'A6|paris': 202, 'A1|lille': 11.5, 'A8|nice': 17.5,
