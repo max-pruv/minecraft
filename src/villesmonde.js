@@ -48,7 +48,7 @@ import { positionDe, K_VILLES, MONDES } from './mondes.js';
 import { monumentBati } from './monuments.js';
 import { surTerreReelle } from './terre.js';
 import { VILLES_GENEREES } from './villes200.js';
-import { sectionDeRue } from './voirie.js';
+import { sectionDeRue, sectionGTA } from './voirie.js';
 
 // LES RUES DES VILLES ENGENDRÉES À LA RÈGLE DU KIT (v307). Max, après Paris :
 // « Pourquoi tu n'as pas fait le reste du monde ? » La v303 avait appliqué
@@ -65,8 +65,16 @@ import { sectionDeRue } from './voirie.js';
 // la règle, et c'est déclaré : la section `ruelle` du kit (trois mètres, sans
 // trottoir) ôterait tous leurs réverbères à Venise, Fès et Marrakech — une
 // décision de Max, pas un réglage.
-export const RUE_VILLE = sectionDeRue('collecteur');
-export const BOULEVARD_VILLE = sectionDeRue('boulevard');
+// LES RUES À LA GTA : la voie a la voiture plus un bloc de chaque côté
+// (`sectionGTA`) — 8,5 blocs de chaussée pour une rue, 17 pour la croix. Le
+// PAS de la trame, lui, se lit encore sur la section du kit (`RUE_KIT`, plus
+// bas) : recomposé sur la section GTA il grandissait d'un cinquième, et la
+// sélection des anneaux de voitures n'y trouvait plus rien dans trente-deux
+// villes (mesuré : 822 anneaux → 595). La chaussée gagne donc sur le front
+// des lots, et un îlot ne descend jamais sous `ILOT_MIN` et demi.
+export const RUE_VILLE = sectionGTA('collecteur');
+export const BOULEVARD_VILLE = sectionGTA('boulevard');
+const RUE_KIT = sectionDeRue('collecteur');
 // La demi-emprise de la v271 (`t.s` = 4,8) : c'est elle qui donne le RAPPORT
 // des emprises, donc de combien le pas de trame grandit.
 const FACE_V271 = 4.8;
@@ -484,8 +492,12 @@ function fabrique(cle, fiche) {
       // grandissait et la part bâtie tombait de 18,2 à 14,5 % ; le pas gardé et
       // l'îlot à sa largeur (la méthode de la v294, « l'îlot ne perd rien »)
       // la faisait tomber à 14,7. Les deux ensemble la rendent : 18,5 %.
-      const kEmprise = t.s / FACE_V271;
+      const kEmprise = (RUE_KIT.chaussee / 2 + RUE_KIT.trottoir) / FACE_V271;
       t.pu = Math.round(t.pu * kEmprise); t.pv = Math.round(t.pv * kEmprise);
+      {
+        const pm = Math.ceil(2 * t.s + ILOT_MIN + 0.5);
+        t.pu = Math.max(t.pu, pm); t.pv = Math.max(t.pv, pm);
+      }
       if (t.couronne) t.couronne *= kEmprise;
       // LA CROIX CENTRALE EST UN BOULEVARD DANS UNE GRANDE VILLE, ET LÀ OÙ
       // ELLE LAISSE UN ÎLOT. Le type d'une rue se lit à sa FONCTION (v303) :

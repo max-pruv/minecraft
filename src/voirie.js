@@ -52,3 +52,20 @@ export function sectionDeRue(type, { u = UNITES_PAR_METRE, vehicule = LARGEUR_VO
   const trottoir = p.trottoirM * u;
   return { type, voies: p.voies, voie, chaussee, trottoir, emprise: chaussee + 2 * trottoir };
 }
+
+// LA VOIE À LA GTA (les rues à la GTA). Max : élargir la chaussée de toutes
+// les villes, pour qu'on puisse rouler. Le kit donne à une voie la largeur de
+// la voiture plus quarante centimètres de chaque côté : 3,1 à 3,2 blocs pour
+// une carrosserie de 2,26, soit quatre dixièmes de bloc entre le flanc et le
+// caniveau — une voie qu'on tient au joystick à condition de ne jamais
+// dévier, et une rue locale de trois colonnes où la voiture frotte les deux
+// trottoirs (mesuré : 41 % de la chaussée de San Francisco, 46 % de celle de
+// Washington). Dans un jeu de conduite à la GTA, la voie a la voiture plus un
+// bloc de chaque côté : 4,26 blocs. C'est la seule entorse au kit, et elle
+// vit ici, à côté de lui, pour toutes les villes à la fois — la règle du kit
+// elle-même (`sectionDeRue`) ne change pas d'une valeur, parce que les villes
+// figées (`*-v531.js` et leurs aînées) la lisent encore.
+export const MARGE_GTA = 1;
+export function sectionGTA(type, opts = {}) {
+  return sectionDeRue(type, { degagementM: MARGE_GTA, ...opts });
+}

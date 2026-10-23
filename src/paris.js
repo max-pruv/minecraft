@@ -34,7 +34,7 @@ import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit, chainerVoies, VOIE_CIRCUIT } from './voies.js';
 import { positionDe } from './mondes.js';
 import { entreesDe } from './routes.js';
-import { sectionDeRue } from './voirie.js';
+import { sectionDeRue, sectionGTA } from './voirie.js';
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
@@ -432,10 +432,17 @@ const pk = (u, v) => [k(u), k(v)];
 // quais, et les Champs-Élysées gardent en plus le stationnement des deux
 // côtés. L'ancien `a(l)` de chaque ligne a disparu : une largeur écrite à côté
 // de la règle finirait par la contredire.
-const BOULEVARD = sectionDeRue('boulevard');
-const COLLECTRICE = sectionDeRue('collecteur');
-const LOCALE = sectionDeRue('locale');
-const CHAMPS = sectionDeRue('boulevard', { stationnement: 2 });
+// LES RUES À LA GTA : la voie a la voiture plus un bloc de chaque côté
+// (`sectionGTA`). La chaussée s'élargit sur le front des lots ; le PAS des
+// quartiers, lui, se lit encore sur la section du kit (`*_KIT`, plus bas) —
+// les tours de quartier, les feux et les bouches de métro restent sur les
+// mêmes axes, et un îlot ne perd que la largeur gagnée par la rue.
+const BOULEVARD = sectionGTA('boulevard');
+const COLLECTRICE = sectionGTA('collecteur');
+const LOCALE = sectionGTA('locale');
+const CHAMPS = sectionGTA('boulevard', { stationnement: 2 });
+const COLLECTRICE_KIT = sectionDeRue('collecteur');
+const LOCALE_KIT = sectionDeRue('locale');
 export const SECTIONS_PARIS = { boulevard: BOULEVARD, collecteur: COLLECTRICE, locale: LOCALE, champs: CHAMPS };
 // OÙ L'ON CHERCHE LES COINS D'UN CARREFOUR (v306). `world.js` les cherchait
 // à sept blocs du croisement des axes, chiffre des rues d'avant : un boulevard
@@ -948,8 +955,9 @@ const solDuPont = (u) => {
 // elles ne servent plus qu'à donner le rapport.
 const aLaRegle = (t) => {
   const sec = t.desordre >= 2 ? LOCALE : COLLECTRICE;
+  const kit = t.desordre >= 2 ? LOCALE_KIT : COLLECTRICE_KIT;
   const rue = sec.chaussee / 2, face = rue + sec.trottoir;
-  return { ...t, type: sec.type, rue, face, pas: t.pas * face / t.face };
+  return { ...t, type: sec.type, rue, face, pas: t.pas * (kit.chaussee / 2 + kit.trottoir) / t.face };
 };
 const Q = (nom, dx, dz, r0, t0) => {
   const t = aLaRegle(t0);
