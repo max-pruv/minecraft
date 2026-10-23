@@ -1,5 +1,44 @@
 # Ce qui est en cours
 
+- [ ] **Rouges de portail de la v538 (les guides des villes) : aucun de la
+  livraison.** Soupçonnant les guides devant « la rue roule à l'allure d'une
+  ville » (médiane 0), une sonde sous node a trouvé quatre guides sur la
+  chaussée — corrigé, et c'était un vrai défaut — mais le rouge revient au
+  portail suivant sans eux : c'est le bouchon déclaré plus bas. Au dernier
+  portail aussi, déclarés : « à Londres, un passant traverse sur le passage
+  peint », « feux de détresse », « un mur pris de face ». `monte.js` rejouée SEULE : branche 246
+  verts / 6 rouges, `origin/main` v515 249 / 3. Des deux côtés : « la rue se
+  fabrique par tranches », « au feu… piler », « rue vide ». Branche seule :
+  « un flâneur posé au milieu de la chaussée » et « deux voisines d'un
+  convoi » (déjà vus branche seule en v504, sans guides), et « les roues avant
+  braquent » (`braque: null`, joué dans le couloir vide (30 600, 30 600), à des
+  milliers de blocs de tout guide ; vert aux trois portails précédents du même
+  code). `degats.js` « percuter une voiture de la rue » (déclaré).
+  `reglages.js` « un choix fait sur une tablette » : vert seul des deux côtés.
+  **Portails de la v538 (après fusion de la v531), coupés deux fois à deux
+  heures pendant `reseau.js`.** Un seul rouge de la livraison, corrigé : le
+  regard de Capucine lu pendant un pas de côté (`ecart`, une voiture passe ;
+  sonde à part, 1 fois sur 3). Le reste, déclaré : `monte.js` (tranches,
+  voisines, rue vide, mur de face, `minimap×edu-timer`, passage peint de Rome,
+  au feu), `maj.js` (les deux loaders), `manhattan.js` (taxi tactile, PeerJS).
+  NEUF et pas à la livraison : `degats.js` « les feux de détresse se posent
+  SUR la carrosserie » — Bugatti Bolide, deux feux à 0,45 bloc de la tôle
+  (`ecarts [0.45,0.45,…]`) ; rejouée seule, branche 2/2 verte, `origin/main`
+  v531 1 rouge sur 2 à l'identique. `reseau.js` : 6 rouges au premier rejeu
+  seul de la branche (veille, reprise, hôte sans courtier), puis 91/91 vert
+  ; `origin/main` 91/91 — et preuve structurelle : aucun guide ne naît à
+  moins de 432 blocs du point d'apparition (`PORTEE_GUIDE` 150).
+  Troisième portail, sur la base v534 (renumérotée v538) : `monte.js` 11
+  rouges, dont trois intermittents jamais revus rejoué seul — « en virage, on
+  voit son flanc », « un passant change de trottoir au feu », « Atterrissage
+  vers Saint-Dizier » — et un neuf de la v531 : « au sol, chaque feuille vole
+  bas au-dessus de SA colonne » (vu une fois au portail, vert dans les deux
+  rejeux seuls). `monte.js` rejouée SEULE : branche 257 / 6 rouges,
+  `origin/main` v534 258 / 5 ; propres à la branche ce passage-là : « deux
+  voisines » et « au feu », tous deux déjà rouges sur `origin/main` ailleurs
+  dans ce fichier.
+
+
 - [ ] **PORTAIL DE LA v536 (mobilier cassable, fusionné à la v531) : aucun
   rouge de la livraison.** Le portail n'a pas fini sous la limite de deux
   heures (coupé dans `reseau.js`). Rejoués SEULS des deux côtés : `monte.js`
@@ -8810,7 +8849,20 @@ l'embarquement a eu lieu, pas par une hypothèse.
   pied bute (sonde v470) : le rendre plat exige que `colonneNaturelle` sache
   qu'un dessus a été posé, zone du sol continu.
 
-- [ ] **Apprendre** — guides dans les villes, questions audio.
+- [ ] **Apprendre** — questions audio. *(Les guides dans les villes : v538,
+  vingt-deux guides au pied des monuments de Paris, Londres, Rome, New York et
+  Washington, en français et en anglais.)* Ce qui reste des guides : la Statue
+  de la Liberté, le Golden Gate et les monuments du catalogue qui attendent
+  leur adresse (ci-dessus) n'en ont pas, faute de repère ; les villes
+  engendrées (Berlin, Tokyo…) non plus — une liste de faits vérifiés par
+  ville est un travail de rédaction à part, pas un réglage. Le guide ne fait
+  pas de geste (les corps Rocketbox ne se pilotent qu'en pose complète) : il
+  se tourne et lève son fanion, c'est tout. Le guide PARLE (synthèse vocale du
+  navigateur), puisque la v504 retire tout texte en jeu : la voix n'a été
+  éprouvée qu'au banc (un enregistreur à la place de `speechSynthesis`) —
+  POUR MAX, SUR LA TABLETTE : aller à la tour Eiffel, son allumé, et écouter
+  Capucine ; une voix de synthèse qui ne plaît pas se coupe d'une ligne
+  (`dire` dans main.js).
 
 - [ ] **Notifications push** — l'invitation atteint l'application fermée.
 
