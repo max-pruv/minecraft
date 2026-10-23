@@ -64,9 +64,10 @@ la rue, en temps réel, défait (rouge 1 sur 3 sur `origin/main`) ; le virage
 de la caméra (`monte.js`) ne compte pas les images d'une glissade.
 Portail complet : quatorze suites vertes ; `monte.js` et `reseau.js` rendent
 des rouges déjà déclarés dans `TASKS.md` avec leur double mesure (la rue, la
-partie à trois) ; `degats.js` rend un seul rouge, les feux de détresse de la
-Bugatti Bolide, identique rejoué seul sur `origin/main` (47 verts des deux
-côtés) — déclaré.
+partie à trois) ; `degats.js` rendait un seul rouge, les feux de détresse de
+la Bugatti Bolide, identique rejoué seul sur `origin/main` — la v533 l'a
+corrigé, et après sa fusion `degats.js` (49), `plafond.js` (199) et la fumée
+(40) sont entièrement verts.
 ## v533 — Les phares, les feux de navigation, la manette et la pioche
 
 **Pourquoi.** La revue d'écran de la v506 a relevé trois défauts dans ce que

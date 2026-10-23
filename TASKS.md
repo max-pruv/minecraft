@@ -1,11 +1,5 @@
 # Ce qui est en cours
 
-- [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » :
-  rouge des deux côtés (portail de la v534, rejoué seul sur la branche et sur
-  `origin/main` v532, 47 verts et ce seul rouge chacun).** La Bugatti Bolide
-  pose deux feux à 0,45 bloc devant la tôle (`ecarts` [0.45, 0.45, −0.015,
-  −0.015]) : `posesDetresse` (vehicules.js, v519) rate la tôle sur deux coins
-  de ce modèle. Zone : `vehicules.js`.
 - [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
   au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
   `gareeContre` (main.js) écarte les fiches `pilote`, parce qu'une boîte de
