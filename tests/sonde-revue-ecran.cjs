@@ -128,7 +128,7 @@ const ETATS = [
     await dormir(4000);
     return { ouverte: true };
   } },
-  // LE MOBILIER TOMBÉ (v523) : un réverbère et un feu de Paris renversés
+  // LE MOBILIER TOMBÉ (v533) : un réverbère et un feu de Paris renversés
   // comme une voiture lancée les renverse, vus du trottoir — la nuit, la
   // lanterne couchée ne doit plus éclairer la rue
   { nom: 'mobilier-tombe', async prep(tab) {
@@ -255,6 +255,35 @@ const ETATS = [
       const P = window.__game.player;
       return P.approche ? (P.guideApproche && P.guideApproche.phase) || P.approche.phase : 'aucune';
     }) };
+  } },
+  // L'AÉROPORT (v530) : au poste, aux commandes, ✈️ appuyé — l'appareil roule
+  // vers la piste élargie (« Roulage vers la piste ») ; puis Orly vu du ciel.
+  { nom: 'aeroport-roulage', async prep(tab) {
+    const q = await tab.evaluate(async () => {
+      const A = await import('./src/aeroport.js');
+      const a = A.AEROPORTS.find((x) => x.cle === 'orly');
+      const p = A.postesAvion(a.profil, a.r).find((u) => u.espece === 'avionligne');
+      return { x: a.x + p.du, z: a.z + p.dv - 3, sol: a.sol };
+    });
+    await poserEt(tab, { x: q.x, z: q.z, y: q.sol + 1.05, yaw: Math.PI });
+    const r = await monterEnAvion(tab);
+    await tab.evaluate(() => {
+      const P = window.__game.player;
+      P.yaw = -Math.PI / 2; P.pitch = -0.1;
+      P.avionEtat = 'sol'; P.avionEnVol = false; P.vitesseAvion = 0;
+      document.getElementById('fly-btn').dispatchEvent(new TouchEvent('touchstart', { cancelable: true, bubbles: true }));
+    });
+    await dormir(5000);
+    return { ...r, roulage: await tab.evaluate(() => !!window.__game.player.roulage) };
+  } },
+  { nom: 'aeroport-ciel', async prep(tab) {
+    const a = await tab.evaluate(async () => {
+      const { AEROPORTS } = await import('./src/aeroport.js');
+      const q = AEROPORTS.find((x) => x.cle === 'orly');
+      return { x: q.x, z: q.z - 70, y: q.sol + 70 };
+    });
+    await poserEt(tab, { x: a.x, z: a.z, y: a.y, yaw: Math.PI, pitch: -0.75, vol: true });
+    return { vole: await tab.evaluate(() => window.__game.player.flying) };
   } },
   { nom: 'construction', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });

@@ -1,4 +1,4 @@
-// LE MOBILIER SE CASSE (v523). Max : « quand tu roules, tout le mobilier
+// LE MOBILIER SE CASSE (v533). Max : « quand tu roules, tout le mobilier
 // urbain, poteau, feu rouge, est hyper dur. Comme dans GTA, il devrait pouvoir
 // tomber, s'écraser pour ne pas bloquer la voiture. »
 //

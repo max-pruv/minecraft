@@ -1,4 +1,4 @@
-// SONDE — LE MOBILIER SE CASSE (v523) : le scénario du témoin de monte.js,
+// SONDE — LE MOBILIER SE CASSE (v533) : le scénario du témoin de monte.js,
 // seul, pour itérer vite. Lu par personne.
 //   node tests/sonde-mobilier-casse.cjs
 const { Banc } = require('./banc.js');

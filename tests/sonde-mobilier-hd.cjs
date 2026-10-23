@@ -1,4 +1,4 @@
-// SONDE — LE MOBILIER DE LA COUCHE HD S'ÉCRASE (v523) : une terrasse, un banc
+// SONDE — LE MOBILIER DE LA COUCHE HD S'ÉCRASE (v533) : une terrasse, un banc
 // ou une colonne Morris de Paris touchés à plus de cinq blocs par seconde
 // cessent d'arrêter la voiture, et leur morceau se remaille sans eux.
 // Lu par personne.   node tests/sonde-mobilier-hd.cjs
