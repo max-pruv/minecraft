@@ -936,6 +936,30 @@ Trois règles.
   et `morceauxAvantClairieres` gardent les arbres du jour même ; la date se
   relit à la fusion (v309). L'empreinte des 490 morceaux se prouve bosquets
   désarmés.
+## Les feux de bord (v533) — ce qui brille sans éclairer partage la matière de la flamme
+
+Revue d'écran, lignes 4, 7 et 8. Trois règles.
+
+- **UN FEU QUI S'ALLUME EN JEU PREND `matiereAdditive` (avions.js).** La
+  flamme (v264), les feux de navigation et les phares (`src/phares.js`) ont
+  les MÊMES réglages de matériau, donc la même clé de programme, chauffée à
+  l'accueil avec la flamme (v491) : aucun programme ne naît à l'allumage, par
+  construction, et le témoin lit les clés (v363). Aucune lampe ponctuelle
+  (v248). Un feu neuf avec un autre réglage (opaque, une carte, un autre
+  côté) est une clé neuve : il se chauffe, ou il prend cette fonction.
+- **UN FEU SE MESURE SUR LE MODÈLE, IL NE S'ÉCRIT PAS (v230).** Les feux de
+  navigation sont posés par `fini` sur les sommets extrêmes du modèle (gauche,
+  droite, queue), AVANT les flammes ; les phares sur les blocs optiques nommés
+  de la flotte, sinon les deux tiers de la demi-largeur, au sommet le plus en
+  avant de la bande — une fois par modèle. Nés cachés ; `fun.js` les allume
+  aux commandes (phares : selon `nuitDehors`, passé par `initFun`) et la
+  descente les éteint, comme la flamme.
+- **CE QUI HABILLE LA MANETTE NE PREND PAS LE DOIGT.** Le mot et les chevrons
+  sont des enfants de `#gaz-base` en `pointer-events: none`, le curseur aussi :
+  `elementFromPoint` rend la manette en tout point de sa course, et sa capture
+  de pointeur (v262) n'a rien devant elle. En construction, Poser, Casser et
+  Sauter ont le même x, et l'outil actif est un ANNEAU sur le voile, jamais un
+  fond blanc.
 
 ## Les commandes simplifiées (v494) — une main pour bouger, une main pour agir
 
