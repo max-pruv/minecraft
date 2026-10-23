@@ -12,6 +12,14 @@
   courtier) : familles déjà déclarées ci-dessous. Le premier portail avait
   rendu SOIXANTE rouges dans `monte.js` : le sol continu lisait le ballast dans
   l'air et la boucle de jeu mourait près d'un train — corrigé, témoin ajouté.
+  Après l'intégration de la v533 : `maj.js` (« en construction, on marche au
+  joystick », puis « le loader compte les fichiers ») vert rejoué SEUL sur la
+  branche et sur `origin/main` ; « de nuit, la voiture a ses phares » rouge une
+  fois sur `voiture.glb` (une lueur à z 0,54), vert sur `origin/main` rejoué
+  seul — le témoin tire un modèle au hasard, et la livraison ne touche aucun
+  modèle de voiture : à mesurer modèle par modèle dans la zone des phares.
+  `monte.js` sur `origin/main` rejouée seule : mêmes familles (rue vide, feu,
+  mur de face, minicarte en vol, flâneur, voisines d'un convoi).
 - **Les rails semblent ondulés en vue oblique** (profil en long d'un tiers de
   pente) et **les fenêtres du train restent noires la nuit** : relevé de la
   revue d'écran (`docs/revue-ecran.md`).
