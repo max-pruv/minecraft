@@ -168,7 +168,10 @@ const GARDIENS = {
   // commissariat.
   'src/ville.js': ['metro.js', 'carte.js', 'plafond.js'],
   'src/metromonde.js': ['plafond.js', 'metro.js', 'monte.js', 'carteMonde.js'],
-  'src/player.js': ['plafond.js', 'monte.js', 'manhattan.js'],
+  // le nom de chaque station de métro, écrit sur le quai (v529) : la place
+  // des plaques se relit sous node (`plafond.js`), leur dessin en jeu (`metro.js`)
+  'src/stations.js': ['metro.js', 'plafond.js', 'maj.js'],
+  'src/player.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carteMonde.js'],
   'src/conduite.js': ['plafond.js', 'monte.js', 'manhattan.js', 'carteMonde.js', 'washington.js', 'metro.js'],
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],
@@ -263,6 +266,8 @@ const GARDIENS = {
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/traces.js': ['monte.js', 'reglages.js', 'reseau.js'],
+  // les effets de saison en vraies formes (v505) : le témoin des cubes du ciel
+  'src/saisons.js': ['monte.js'],
   // Le socle du rendu : un registre de blocs, un atlas ou un mailleur faux
   // n'abîme pas une ville, il les abîme toutes.
   'src/blocks.js': SUITES,

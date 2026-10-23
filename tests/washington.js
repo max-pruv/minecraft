@@ -16,6 +16,7 @@
 //     cd tests && npm install && npm run washington
 
 const { Banc, dormir } = require('./banc.js');
+const path = require('path');
 
 const echecs = [];
 function verifier(nom, ok, detail = '') {
@@ -192,8 +193,22 @@ const descendre = async (p, ms) => {
       murs.length === 0, murs.join(', ') || 'zéro point de voie avec un bloc dans le gabarit');
     // Le quai : à deux blocs du centre le long de la voie (ni pylône, ni banc),
     // un sol de carrelage et deux blocs d'air au-dessus.
+    // Depuis la v529 les pylônes du nom et les bancs se choisissent contre
+    // les points de voie (`q.pylones`, `q.bancs`) et peuvent tomber à deux
+    // blocs du centre : on prend la case la plus proche qui n'en porte aucun.
+    const libre = (q) => {
+      // et, sur un quai central, l'escalier qui monte à la passerelle occupe
+      // l'axe de `k0 − 1` à `k0 + 6` (`libreK`, washington.js)
+      const occ = [...(q.pylones || []), ...(q.bancs || [])];
+      const k0 = q.k0 ?? -99;
+      return [2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7].find((le) => {
+        const kk = le * (q.fin || 1);
+        return occ.every((k) => Math.abs(k - kk) > 1) && (kk < k0 - 1 || kk > k0 + 6);
+      }) ?? 2;
+    };
     const quais = D.QUAIS_METRO.filter((q) => {
-      const x = D.WASHINGTON.x + Math.round(q.u + q.du * 2), z = D.WASHINGTON.z + Math.round(q.v + q.dv * 2);
+      const le = libre(q);
+      const x = D.WASHINGTON.x + Math.round(q.u + q.du * le), z = D.WASHINGTON.z + Math.round(q.v + q.dv * le);
       return isSolid(w.getBlock(x, q.y + 2, z)) || isSolid(w.getBlock(x, q.y + 3, z))
         || w.getBlock(x, q.y + 1, z) === BLOCK.STONE;
     });
@@ -561,11 +576,43 @@ const descendre = async (p, ms) => {
     // lignes plus haut — ce qui était déjà la leçon citée ci-dessus, appliquée à
     // la mauvaise grandeur. Un mur arrête le déplacement ; un palier n'arrête
     // que la descente.
+    //
+    // ET L'ESCALIER TOURNE (v529). Depuis la v529 la bouche descend à une
+    // mezzanine, et une passerelle mène au bout du quai : marcher tout droit
+    // s'arrêtait sept blocs plus bas, contre le mur de la mezzanine. On suit
+    // donc le chemin que `sonde-stations.cjs` trace case par case dans le
+    // monde (celui que le vrai joueur y parcourt sous node, aux deux sens), et
+    // l'on vise à chaque pas la case qui suit la plus proche.
+    let pts = null;
+    try {
+      const { mesurer } = require('./sonde-stations.cjs');
+      const m = await mesurer(path.resolve(__dirname, '..'), { joueur: false, seul: /^Smithsonian$/, garderPts: true });
+      pts = (m.stations.find((s) => s.ville === 'Washington' && s.arrive) || {}).pts || null;
+    } catch (e) { pts = null; }
+    if (pts) await poserLe(tab, pts[0][0], pts[0][1] + 0.01, pts[0][2], capVersQuai);
+    const viser = async () => {
+      if (!pts) return false;
+      const ici = await pose(tab);
+      let i0 = 0, d0 = Infinity;
+      pts.forEach(([x, y, z], i) => {
+        const d = Math.hypot(x + 0.5 - ici.x, z + 0.5 - ici.z) + Math.abs(y - ici.y) * 2;
+        if (d < d0) { d0 = d; i0 = i; }
+      });
+      // la case suivante, sauf si l'on est déjà dessus
+      let j = Math.min(pts.length - 1, i0 + 1);
+      if (Math.hypot(pts[j][0] + 0.5 - ici.x, pts[j][2] + 0.5 - ici.z) < 0.4) j = Math.min(pts.length - 1, j + 1);
+      const [nx, ny, nz] = pts[j];
+      await tab.evaluate((yaw) => { window.__game.player.yaw = yaw; },
+        capVers(nx + 0.5 - ici.x, nz + 0.5 - ici.z));
+      // on ne saute que pour MONTER une marche, comme la sonde
+      return ny > Math.floor(ici.y + 0.01);
+    };
     let enBas = await pose(tab);
     let immobileBas = 0, avance = 0;
-    for (let i = 0; i < 24 && enBas.y >= solBouche - 8; i++) {
+    for (let i = 0; i < 60 && enBas.y >= solBouche - 8; i++) {
       const avantPas = enBas;
-      await descendre(tab, 1400);
+      const monte = await viser();
+      if (monte) await avancer(tab, 1400); else await descendre(tab, 1400);
       enBas = await pose(tab);
       const pas = Math.hypot(enBas.x - avantPas.x, enBas.z - avantPas.z);
       avance += pas;
@@ -576,7 +623,9 @@ const descendre = async (p, ms) => {
       enBas.y < solBouche - 8,
       `descendu de ${(solBouche - enBas.y).toFixed(1)} blocs`
       + ` · avancé de ${avance.toFixed(1)} blocs dans le couloir`
-      + (immobileBas >= 3 ? ' · bloqué : trois pas sans avancer ni descendre' : ''));
+      + (immobileBas >= 3 ? ' · bloqué : trois pas sans avancer ni descendre' : '')
+      + (pts ? ` · chemin de la sonde (${pts.length} cases)` : ' · sans chemin de sonde, tout droit')
+      + ` · arrêté en (${Math.floor(enBas.x)}, ${enBas.y.toFixed(1)}, ${Math.floor(enBas.z)})`);
     // On laisse l'enfant se poser avant de regarder en l'air : mesuré en pleine
     // chute, le plafond change d'un bloc d'une exécution à l'autre.
     await dormir(900);

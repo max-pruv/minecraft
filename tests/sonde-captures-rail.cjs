@@ -1,4 +1,4 @@
-// CAPTURES DE LA VOIE FERRÉE (v529) : le TGV Paris–Lyon vu en vol bas, à la
+// CAPTURES DE LA VOIE FERRÉE (v532) : le TGV Paris–Lyon vu en vol bas, à la
 // taille de l'iPhone de Max, aux endroits de ses deux captures (le viaduc du
 // pas 716, la tranchée du pas 786). Usage :
 //   node tests/sonde-captures-rail.cjs <dossier> [k,k,…] [segment=1]

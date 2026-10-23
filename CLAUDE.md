@@ -821,6 +821,62 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les stations de métro (v529) — on juge une station avec le vrai joueur, à l'aller et au retour
+
+Max : « on ne peut même pas marcher dedans ». Sept règles.
+
+- **UNE SONDE DE MARCHE FAIT MARCHER `player.js`, DANS LES DEUX SENS.** La
+  sonde de la v473 marchait sur une grille et disait « 16 sur 16 » ; elle ne
+  voyait pas Washington (2 quais sur 20). `sonde-stations.cjs` cherche le
+  chemin case par case, puis le vrai joueur le suit, aller ET retour (monter
+  une marche, c'est sauter : 1,42 bloc, et la tête cogne sous trois blocs
+  d'air — il passe encore, de 0,2 bloc ; sous deux, plus du tout). La marge
+  voulue est quatre blocs ; la sonde compte les cases où on ne l'a pas. Et elle
+  ne descend que dans SA bouche et SA station : une bouche murée qu'on
+  contourne par l'escalier d'à côté n'est pas une bouche (c'est ce qui cachait
+  Hôtel de Ville).
+- **UNE TRÉMIE SE MESURE CONTRE LES REPÈRES, PUIS LES BOUCHES SE RECHOISISSENT
+  EN GARDANT CE QUI TENAIT.** Celle d'Hôtel de Ville (v473) débouchait dans le
+  parvis de Notre-Dame : les monuments se posent après le creusement. Le choix
+  (`choisirBouches`) garde le choix de la v473 tant qu'il est valide et ne
+  libère que le voisin qui gêne : deux bouches bougent sur quinze.
+- **UN ESCALIER DE QUAI CENTRAL SE POSE AU BOUT DU QUAI, LOIN DES VOIES.**
+  Washington a un quai central : une bouche de côté arrivait au-dessus de la
+  fosse, de l'autre côté des rails. On monte au bout du quai, par une
+  passerelle à la mezzanine ; le bout et la marche de départ se choisissent
+  contre les points de voie (`genes`) — dans une station en virage, la voie
+  croise les bouts du quai, et le gabarit, creusé en dernier, emportait les
+  marches. Les pylônes du nom se choisissent de même (`q.pylones`).
+- **CE QU'UNE RÈGLE DIT CREUSER « DANS L'EMPRISE » SE CREUSE DANS L'EMPRISE.**
+  La v485 écrivait `EMPRISE_METRO_DC` et `world.js` s'arrêtait à la zone : la
+  bouche de Pentagon y passait et finissait dans la terre. Dans la marge,
+  jamais creusée, sous ce qu'un enfant a bâti avant `DATE_STATIONS` on ne
+  creuse qu'à trois blocs et plus sous le sol.
+- **UN DÉCOR D'UN SEGMENT SE POSE DANS L'ESPACE D'UN AUTRE.** `apres` passe
+  après les vides de TOUS les segments d'une colonne : la lampe jaune du
+  tunnel voisin flottait au-dessus des voies de la Bastille. Un mobilier de
+  tunnel cède à une station (`dansStation1`). Toute pièce `apres` neuve se
+  demande dans quels segments voisins elle peut tomber.
+- **UN NOM EST UN PLAN DEVANT UNE CASE, PLACÉ PAR UNE RÈGLE PURE ET RELU CONTRE
+  LE MONDE.** `plaquesParis` (ville.js) et `plaquesDC` (washington.js) donnent
+  la place, `stations.js` dessine (un maillage, un canevas par station, à
+  70 blocs ; la chauffe du programme pendant l'accueil). Sur une trame en biais
+  le mur est un escalier de cases : le plan se pose devant la plus avancée sous
+  lui, jamais dans une autre ; et un mur que le tunnel voisin ou la station
+  voisine perce (Metro Center et McPherson Square sont à dix blocs) ne porte
+  pas de plaque. La sonde relit chaque plaque : aucune dans un bloc, aucune
+  sans appui.
+
+- **UN CHOIX CALCULÉ AU CHARGEMENT D'UN MODULE SE MESURE EN TEMPS DE
+  CHARGEMENT.** Le choix des escaliers de Washington (`genes`, `parRame`)
+  parcourait tous les points de voie pour chaque échantillon, à l'import de
+  `washington.js` : 17,3 s au lieu de 0,7, sur le fil principal ET dans le
+  worker. Aucun témoin de station ne le voyait ; ce sont `reglages.js` et
+  `manhattan.js` qui ont rougi, leur seconde tablette relancée n'ayant pas
+  encore de `__game`. Grille de cases (`voieProche`), même résultat au bit
+  près. Quand un module gagne un calcul à son chargement, on chronomètre
+  `import('./src/world.js')` des deux côtés.
+
 ## Montmartre et les jardins (v512) — une cote se lit sous la voiture, et une voie traverse un jardin déclaré
 
 Trois règles.
@@ -1273,6 +1329,39 @@ sa couleur, lancer de rayon (`layers.enableAll()`) à travers chacun —
 pose sur le MONDE (le sol, l'eau), jamais sur l'enfant : `BANDE_SAISON`
 (main.js), basse pour feuilles, pétales et lucioles, haute pour la neige.
 
+## De vraies feuilles d'automne (v531) — une ambiance vit sur SA colonne, et elle a une forme
+
+Max, capture d'iPhone au volant : des carrés orange-jaune dans le ciel. C'était
+encore le nuage de la v484 : un `Points` de carrés sans texture, de −1 à +9
+blocs au-dessus du sol SOUS L'ENFANT. Mesuré au banc sur `origin/main` : 16
+particules du champ sur 19 au-dessus de l'œil, et vu d'une caméra de voiture
+(trois blocs du sol, cap à l'horizon) 126 à 1 228 pixels de l'effet sur fond de
+ciel. Trois règles.
+
+- **« À HAUTEUR D'ARBRE » N'EST PAS « SOUS L'HORIZON ».** Une bande au-dessus du
+  sol de l'enfant se projette au-dessus de l'horizon dès qu'elle dépasse la
+  caméra, et une caméra de poursuite est à trois blocs. Chaque particule vit
+  sur SA colonne (`saisons.js`) : elle naît à moins de 3,4 blocs de ce qui la
+  porte, tombe en planant, relit ce qui la porte quand elle change de colonne
+  (sinon, quittant la cime d'un arbre, elle se pose en l'air), traverse le
+  feuillage, se pose (sol, toit, eau), s'efface. Le sol se lit sur un morceau
+  déjà engendré (`morceauxPrets`), jamais par un `getBlock` qui fabrique (v472).
+  La neige seule tombe du ciel.
+- **UNE AMBIANCE A UNE SILHOUETTE DESSINÉE ICI.** Feuille à nervures, pétale
+  échancré, flocon à six branches, luciole à halo : un canvas au chargement,
+  sans réseau (invariant 4). Un `InstancedMesh` de quads, la teinte par
+  instance (`setColorAt` dès la naissance), Lambert (les feuilles s'éteignent la
+  nuit ; la luciole est additive et hors correspondance tonale), aucune lampe.
+  `chauffer` compile l'essaim pendant l'accueil (chaîne `pas` de main.js) — et
+  un `scene.add` dans une scène de chauffe RETIRE l'objet de son parent : on
+  l'y remet, sinon l'effet disparaît du jeu (vu au premier jet).
+- **LE TÉMOIN LIT LES PIXELS SUR FOND DE CIEL, ET LA FORME PAR SA CARTE.**
+  `sonde-saison-ciel.cjs` (lue par `monte.js`) trouve l'effet par sa forme
+  (l'ancien `Points` de taille 0,24 ou l'essaim `saison-*`) : silhouette (plus
+  de 30 % de texels transparents), écart de chaque particule à ce qui la porte
+  (≤ 6 : une feuille qui tombe d'un talus garde sa hauteur), pixels ajoutés là où sans lui on voit le ciel (≤ 20). Trois rouges sur
+  `origin/main`, verts ici. `?saison=` force la saison.
+
 ## Les voitures de la rue se rendent (v495) — un prototype se marque partagé là où il naît
 
 Trois règles.
@@ -1433,7 +1522,7 @@ Deux règles.
   de `GARDE_GARE` pas d'un bout, et un témoin compare les dix-huit gares à
   `viaducs(false)` (zéro déplacée). La rampe à terre, elle, bouge (deux blocs au
   plus) : déclarée dans `TASKS.md`.
-## Rien ne traverse une voie (v529) — un ouvrage décidé sur l'axe se rejuge colonne par colonne
+## Rien ne traverse une voie (v532) — un ouvrage décidé sur l'axe se rejuge colonne par colonne
 
 Max, captures d'iPhone sur le TGV Paris–Lyon : « Those things should never
 happen ». Quatre règles.
@@ -10822,6 +10911,42 @@ Les dix-neuf terminaux étaient praticables et vides. Trois règles.
 - **CHAQUE PIÈCE A SON BLOC À ELLE** (`MOBILIER`, des motifs que rien d'autre
   du fichier n'emploie) : c'est ce qui permet au témoin de compter le
   mobilier aérodrome par aérodrome sans le confondre avec un marquage.
+
+### Les pistes à l'envergure, et ✈️ roule jusqu'à elles (v530)
+
+Max : « les pistes sont extrêmement étroites… quand on veut décoller on a des
+problèmes… une espèce de bloc de béton… il faut le circuler ». Mesuré AVANT une
+ligne par `tests/sonde-decollage-postes.cjs` (le vrai joueur sous node, ✈️
+depuis chacun des soixante postes) : 7 en vol, 53 écrasés ou bloqués, presque
+tous sur le hangar posé dans l'axe de la rangée. Quatre règles.
+
+- **UNE LARGEUR DE PISTE SE CALCULE SUR L'ENVERGURE DE TOUTE LA FLOTTE.**
+  `DEMI_PISTE = ceil(ENVERGURE_MAX / 2 + MARGE_AILE)` (aeroport.js), lu par
+  le plan, Roissy, `pistesDe`, les tronçons et les témoins : tout appareil
+  peut se poser sur toute piste assez longue (v502), donc c'est le plus large
+  qui compte. Neuf blocs de bande devenaient dix-neuf.
+- **UN APPAREIL QUI PART DE SON POSTE BALAIE LA RANGÉE : RIEN NE S'Y POSE.**
+  Le hangar longeait l'aire à `STAND + AILE` ; il est à côté du terminal, la
+  tour du côté sans hangar (derrière, elle sortait du disque d'Orly). La
+  sonde est la mesure : un bâtiment neuf sur un aérodrome se rejoue par elle.
+- **✈️ AU SOL SUR UN AÉRODROME ROULE D'ABORD JUSQU'À L'AXE.** Un poste est
+  parallèle à la piste, à vingt blocs d'elle : pleins gaz tout droit, on ne
+  la rencontre jamais. `pisteDeDecollage` / `guiderRoulage` (approche.js,
+  purs) suivent l'axe par une carotte, devant soi s'il y a la place
+  (`longueurDecollage` : roulement plus de quoi monter de `H_DEGAGE` à
+  `MONTEE_DECOLLAGE`, que player.js lit là), sinon demi-tour, sinon on remonte
+  jusqu'au bout. Aligné, c'est le décollage d'avant. Second appui ou joystick
+  en arrière : arrêt (v452). L'état « Roulage vers la piste » passe par
+  `etatDePose` (v516). Hors d'un aérodrome, rien ne change.
+- **ÉLARGIR UN OUVRAGE DÉBORDE SUR CE QU'IL LONGEAIT.** Les prolongements
+  (v448) étaient mesurés pour neuf blocs ; dix-neuf débordent sur des flancs
+  de vallon et de mer jusqu'à quinze blocs sous le remblai. Hors du disque,
+  remblai `+ APPUI_PROLONGE` et tranchée `+ DEGAGE_CIME` (les couronnes
+  d'arbres suspendues au-dessus de la tranchée cassaient les avions qui
+  levaient le nez). Roissy perd ses deux pistes intérieures : élargis, deux
+  doublets ne tenaient plus dans son disque ; les axes extérieurs restent,
+  rapprochés de sept blocs (64 → 57) pour que chaque aile garée reste à douze
+  blocs du bord (le témoin de la v280), prolongements re-mesurés. La seconde piste des hubs passe de z 15 à 25.
 
 ### Les aérodromes (`aeroport.js`) — la piste prend le diamètre (v280)
 

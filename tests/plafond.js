@@ -397,7 +397,17 @@ const MM_ECART = 2.2;
 // place des Vosges sur sa chaussée (`traverse`). `reglageJardins.voies` à faux
 // et le Moulin Rouge neuf retiré (le champ `tour`), la branche rend fe1e5a37…,
 // la constante de la v504, au bit près.
-const EMPREINTE_MORCEAUX_V357 = '713d47041321fa80d68a54f7e1e3c501c108f6d548f291ef3ee1a218b2cb49d1';
+// v529 : les stations de métro de Paris et de Washington (deux des neuf lieux)
+// prennent leur voûte, leur décor et leurs couloirs neufs. Désarmées
+// (`METRO_PARIS.stations`, ville.js ; `METRO_DC.stations`, washington.js), la
+// branche rend 713d4704…, la constante de la v528, au bit près.
+// v530 : les pistes s'élargissent à l'envergure, et le prolongement de la
+// piste d'Heathrow passe dans les morceaux de Londres, un des neuf lieux.
+// `aeroport.js` d'origin/main remis dans une copie de src, la branche rend
+// 44e54367…, la constante de la v529, au bit près ; et les 252 colonnes qui
+// diffèrent dans les morceaux de Londres sont toutes dans un aérodrome ou la
+// boîte d'un tronçon de piste — aucune ailleurs, aucun autre lieu touché.
+const EMPREINTE_MORCEAUX_V357 = '4cf5d456835bbfc66e0ac1923cd43b2d961e52af65f84d8f2d0fd35ac9c06bbf';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -2989,6 +2999,35 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       arrets ? `écart au quai ${Math.max(...arrets).toFixed(2)} au plus, ${arrets.length} arrêts` : 'aucune ligne A');
   }
 
+  // ON DESCEND DANS LE MÉTRO, ET L'ON EN REMONTE, DEBOUT (v529). Max : « on ne
+  // peut même pas marcher dedans, le personnage ne passe pas en hauteur ».
+  // `sonde-stations.cjs` (lue telle quelle) cherche le chemin de chaque bouche
+  // à son quai, dans les trente-cinq stations (Paris et Washington), puis y
+  // fait marcher le VRAI joueur de player.js — aller et retour, en sautant
+  // chaque marche qui monte. Rouge sur la v494 : 16 quais sur 35 (Hôtel de
+  // Ville sous Notre-Dame, et 18 de Washington), et 21 à 43 cases d'escalier
+  // sous trois blocs d'air par station à Paris.
+  {
+    const { mesurer } = (await import('./sonde-stations.cjs')).default;
+    const t0 = Date.now();
+    const r = await mesurer(require('path').resolve(__dirname, '..'));
+    const st = r.stations;
+    const rates = st.filter((x) => !(x.joueur && x.joueur.arrive && x.retour && x.retour.arrive));
+    verifier('de la rue au quai et du quai à la rue, le vrai joueur passe dans les trente-cinq stations',
+      st.length === 35 && rates.length === 0,
+      `${st.length - rates.length}/${st.length} stations ; ratées : ${rates.map((x) => `${x.ville} ${x.nom}${x.arrive ? (x.joueur && x.joueur.arrive ? ' (remontée ' + JSON.stringify(x.retour.bute) + ')' : ' (descente ' + JSON.stringify(x.joueur.bute) + ')') : ' (pas de chemin)'}`).join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
+    const bas = st.filter((x) => x.arrive && (x.hautMin < 3 || x.sous4 > 8 || x.sautsBas > 0 || x.sautsRetour > 2));
+    verifier('et la tête passe : jamais moins de trois blocs d\'air, quatre presque partout, aucun élan qui cogne en descendant',
+      st.length === 35 && bas.length === 0 && rates.length === 0,
+      `${bas.map((x) => `${x.nom} : plafond ${x.hautMin}, ${x.sous4} cases sous 4, élans cognés ${x.sautsBas}/${x.sautsRetour}`).join(' ; ') || 'partout'} (max cases sous 4 : ${Math.max(...st.filter((x) => x.arrive).map((x) => x.sous4))})`);
+    verifier('le passage des rames reste libre sur les deux réseaux',
+      r.lus > 10000 && r.gabarit === 0, `${r.gabarit} pleins sur ${r.lus} points`);
+    const n = r.noms;
+    verifier('chaque station a son nom sur le quai, et aucune plaque n\'entre dans un mur ni ne flotte',
+      n.absents.length === 0 && n.stations === 36 && n.plaques >= 4 * 36 && n.dans === 0 && n.flottants === 0,
+      `${n.stations}/36 stations nommées, ${n.plaques} plaques, ${n.dans} dans un bloc, ${n.flottants} sans appui${n.absents.length ? ' ; sans nom : ' + n.absents.slice(0, 6).join(', ') : ''}`);
+  }
+
   // UNE BAIE SE SOUDE (v467). La couche HD de Paris pesait jusqu'à onze
   // mégaoctets par morceau dense de l'ouest (v299 : l'iPhone de Max tué par la
   // mémoire), et c'est le NOMBRE DE SOMMETS qui décide. Un sommet sur six y
@@ -3888,7 +3927,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           // marche est un bloc plus haut
           const bloc = v.bloc !== undefined ? v.bloc : v.cote;
           let cote = v.bloc !== undefined ? v.cote : v.cote + 1;
-          // LA SURFACE DU BALLAST SE LIT AU CENTRE DE LA COLONNE (v529), là
+          // LA SURFACE DU BALLAST SE LIT AU CENTRE DE LA COLONNE (v532), là
           // où le sol continu pose son sommet ; le talus garde la sienne.
           if (w.corridorEn && v.piece === 'ballast' && !v.ouvrage) { const r = w.corridorEn(x, z); if (r) cote = r.cote; }
           colonnes++; if (v.piece === 'talus') talus++;
@@ -3984,7 +4023,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
     }
 
-    // RIEN NE TRAVERSE UNE VOIE (v529). Max, deux captures d'iPhone sur le TGV
+    // RIEN NE TRAVERSE UNE VOIE (v532). Max, deux captures d'iPhone sur le TGV
     // Paris–Lyon : « Those things should never happen » — une dalle d'herbe qui
     // coupe le train, des piliers de pierre entre les rails. Le viaduc (v465)
     // se décidait sur l'AXE, et toute la largeur d'un pas de viaduc était
@@ -4032,7 +4071,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       if (T.rivesCreusees) { T.rivesCreusees(false); avant = balayer(new World(), true); T.rivesCreusees(true); }
       verifier('rien ne traverse une voie : le gabarit des DEUX voies est dégagé partout, sur les ponts comme ailleurs',
         neuf.lus > 100000 && neuf.blocs === 0 && neuf.surface === 0 && avant && avant.blocs > 100,
-        `${neuf.blocs} bloc(s) et ${neuf.surface} point(s) de surface dans le gabarit sur ${neuf.lus} lus${neuf.ex.length ? ' — ' + neuf.ex.join(' · ') : ''} · règle d'avant sur les pas de viaduc : ${avant ? `${avant.blocs} bloc(s), ${avant.surface} de surface` : 'absente (code d\'avant la v529)'} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+        `${neuf.blocs} bloc(s) et ${neuf.surface} point(s) de surface dans le gabarit sur ${neuf.lus} lus${neuf.ex.length ? ' — ' + neuf.ex.join(' · ') : ''} · règle d'avant sur les pas de viaduc : ${avant ? `${avant.blocs} bloc(s), ${avant.surface} de surface` : 'absente (code d\'avant la v532)'} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
       // DEUX LIGNES NE SE PARTAGENT JAMAIS UNE COLONNE. Chaque segment est une
       // droite de gare à gare, et deux plates-formes talus compris ne doivent
       // jamais se toucher : sinon `voieEn` donne la colonne au segment le plus
@@ -4048,7 +4087,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       verifier('deux lignes de train ne se croisent ni ne se rejoignent : leurs plates-formes restent séparées',
         paires === 36 && pire > portee,
         `${paires} paires de segments, la plus proche à ${pire.toFixed(1)} blocs pour ${portee} de plates-formes`);
-      // LA SURFACE DU BALLAST N'ENTERRE PAS LES TRAVERSES (v529) : la cote se
+      // LA SURFACE DU BALLAST N'ENTERRE PAS LES TRAVERSES (v532) : la cote se
       // lit au centre de la colonne, là où le sol continu pose son sommet.
       const enterrees = (monde) => {
         let lus = 0, n = 0;
@@ -4069,7 +4108,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       if (W.COTE_AU_CENTRE) { W.COTE_AU_CENTRE.actif = false; tAvant = enterrees(new World()); W.COTE_AU_CENTRE.actif = true; }
       verifier('le ballast n\'enterre pas les traverses : la surface suit la voie au centre de chaque colonne',
         tNeuf.lus > 3000 && tNeuf.n <= tNeuf.lus * 0.002 && tAvant && tAvant.n > tAvant.lus * 0.05,
-        `${tNeuf.n} point(s) de traverse sous la surface sur ${tNeuf.lus} · cote lue au coin : ${tAvant ? `${tAvant.n}/${tAvant.lus}` : 'absente (code d\'avant la v529)'}`);
+        `${tNeuf.n} point(s) de traverse sous la surface sur ${tNeuf.lus} · cote lue au coin : ${tAvant ? `${tAvant.n}/${tAvant.lus}` : 'absente (code d\'avant la v532)'}`);
     }
   }
 
