@@ -251,7 +251,7 @@ const CULEE = 2;
 const GARDE_GARE = 7 + 16;   // `GARE_LONG` (déclaré plus bas) et seize pas de rampe
 let VIADUC_ACTIF = true;
 export function viaducs(actif) { VIADUC_ACTIF = !!actif; PROFILS.clear(); }
-// `RIVES_CREUSEES` à faux rejoue la règle d'avant la v537 (toute la largeur
+// `RIVES_CREUSEES` à faux rejoue la règle d'avant la v539 (toute la largeur
 // d'un pas de viaduc est « pont ») — pour la sonde et le témoin, jamais un
 // réglage.
 let RIVES_CREUSEES = true;
@@ -295,7 +295,7 @@ export function voieEn(x, z) {
     // Sur un viaduc (v465), la plate-forme est le TABLIER, un ruban : la
     // colonne n'a ni ballast ni talus, l'eau reste dessous.
     const pr = profilDe(s), kv = Math.round(t * (pr.length - 1));
-    // UNE RIVE N'EST PAS UN PONT (v537). Le viaduc se décide sur l'AXE (l'eau
+    // UNE RIVE N'EST PAS UN PONT (v539). Le viaduc se décide sur l'AXE (l'eau
     // sous lui) ; à trois blocs de côté, la berge peut monter AU-DESSUS du
     // tablier. La colonne était quand même « pont » : le générateur n'y
     // creusait rien, et la berge restait en travers des voies — Max, capture

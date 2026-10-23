@@ -288,6 +288,57 @@ const descendre = async (p, ms) => {
         + `deux lieux à la fois : ${temps.length} panneaux, ${ecart} ms d'écart ; rayons qui se recouvrent ${JSON.stringify(chevauchent)}`);
   }
 
+  // --- Les guides des villes : Paris, Londres, Rome, New York (v538) --------
+  // Pur, sous node. Chaque lieu se trouve dans le registre des repères ; chaque
+  // panneau a son français ET son anglais, deux ou trois phrases ; la langue du
+  // profil choisit (en `both`, on alterne) ; aucun rayon n'en recouvre un autre ;
+  // et, hors de Manhattan (dont le plan n'est pas fait de blocs, éprouvé au
+  // navigateur plus bas), chaque guide trouve un sol à ciel ouvert, au niveau
+  // de la rue, dans le rayon de son panneau. Sur l'ancien code le module
+  // n'existe pas : rouge propre.
+  const GV = await import('../src/guidesvilles.js').catch(() => null);
+  if (!GV) {
+    verifier('des guides racontent Paris, Londres, Rome et New York', false, 'src/guidesvilles.js est absent');
+  } else {
+    const parVille = {};
+    for (const l of GV.GUIDES_VILLES) parVille[l.ville] = (parVille[l.ville] || 0) + 1;
+    const phrases = (t) => (t.match(/[.!?](\s|$)/g) || []).length;
+    const fautes = GV.TOUS_LES_GUIDES.filter((l) => !l.guide || typeof l.texte !== 'object'
+      || !l.texte.fr || !l.texte.en || phrases(l.texte.fr) < 1 || phrases(l.texte.fr) > 3
+      || phrases(l.texte.en) > 3 || l.texte.fr.length > 230 || l.texte.en.length > 230).map((l) => l.id);
+    verifier('des guides racontent Paris, Londres, Rome et New York',
+      ['Paris', 'Londres', 'Rome', 'New York'].every((v) => parVille[v] >= 3) && fautes.length === 0,
+      `${JSON.stringify(parVille)} ; panneaux sans guide, sans anglais ou trop longs ${JSON.stringify(fautes)}`);
+    const eif = GV.GUIDES_VILLES.find((l) => l.id === 'eiffel');
+    const fr = G.texteDuGuide(eif, 'fr'), en = G.texteDuGuide(eif, 'en');
+    const both = [0, 1, 2].map((k) => G.texteDuGuide(eif, 'both', k));
+    verifier('le guide parle la langue du profil, et alterne en « les deux »',
+      fr.includes('tour Eiffel') && fr.includes('Capucine') && en.includes('Eiffel Tower')
+        && both[0] === fr && both[1] === en && both[2] === fr,
+      `fr « ${fr.slice(0, 40)}… » · en « ${en.slice(0, 40)}… » · alternance ${both.map((t) => (t === fr ? 'fr' : t === en ? 'en' : '?')).join('-')}`);
+    const recouvrent = [];
+    for (const a of GV.TOUS_LES_GUIDES) for (const b of GV.TOUS_LES_GUIDES) {
+      if (a.id < b.id && Math.hypot(a.x - b.x, a.z - b.z) < a.r + b.r) recouvrent.push(`${a.id}/${b.id}`);
+    }
+    const { World, CHAUSSEE } = await import('../src/world.js');
+    const { isSolid } = await import('../src/blocks.js');
+    const w = new World();
+    // La règle du jeu (vie.js) : sol plein, à ciel ouvert, et jamais la chaussée.
+    const essai = GV.essaiParBlocs((x, y, z) => w.getBlock(x, y, z), (x, z) => w.terrainHeight(x, z), isSolid,
+      (id) => CHAUSSEE.has(id));
+    const sansPoste = [], couverts = [], surLaRue = [];
+    for (const l of GV.TOUS_LES_GUIDES) {
+      if (l.ville === 'New York') continue;
+      const p = GV.posteDuGuide(l, essai);
+      if (!p || Math.hypot(p.x - l.x, p.z - l.z) > l.r) { sansPoste.push(l.id); continue; }
+      for (let y = p.y; y < p.y + 40; y++) if (w.getBlock(Math.floor(p.x), y, Math.floor(p.z)) !== 0) { couverts.push(l.id); break; }
+      if (CHAUSSEE.has(w.getBlock(Math.floor(p.x), p.y - 1, Math.floor(p.z)))) surLaRue.push(l.id);
+    }
+    verifier('chaque guide a sa place au pied de son monument, à ciel ouvert, hors de la chaussée',
+      recouvrent.length === 0 && sansPoste.length === 0 && couverts.length === 0 && surLaRue.length === 0,
+      `rayons qui se recouvrent ${JSON.stringify(recouvrent)} ; sans poste ${JSON.stringify(sansPoste)} ; sous une voûte ${JSON.stringify(couverts)} ; sur la chaussée ${JSON.stringify(surLaRue)}`);
+  }
+
   const banc = new Banc({ portJeu: 8331, portPairs: 9331 });
   await banc.ouvrir();
   try {
@@ -1002,6 +1053,40 @@ const descendre = async (p, ms) => {
       vuPanneau.affiches === 0 && !!vuPanneau.journal
         && vuPanneau.journal.filter((id) => id === 'lincoln').length === 1,
       `${vuPanneau.affiches} affichage(s), journal ${JSON.stringify(vuPanneau.journal)}, « ${vuPanneau.texte} »`);
+
+    // --- Les guides des villes, au navigateur (v538) ------------------------
+    // On se pose au-dessus du monument, le guide naît (borné à une minute), on
+    // descend à trois blocs de lui : il est dessiné, il regarde l'enfant, et
+    // son panneau signé passe — en français, puis en anglais une fois la
+    // langue changée par le bouton des Réglages. Et à Manhattan, dont le plan
+    // n'est pas fait de blocs, le guide de l'Empire State trouve son trottoir.
+    // Le passage vit dans la sonde (`visiter`) : une copie finirait par
+    // diverger (v400).
+    const { visiter } = require('./sonde-guides-villes.cjs');
+    const langue = (l) => tab.evaluate((l) => document.querySelector(`.pb-toggle[data-lang="${l}"]`)?.click(), l);
+    const pret = await tab.evaluate(() => typeof window.__guidesVilles === 'function');
+    if (!pret) {
+      verifier('à la tour Eiffel, Capucine raconte la tour', false, 'pas de guides des villes dans la page');
+    } else {
+      await langue('fr');
+      const eif = await visiter(tab, 'eiffel');
+      verifier('à la tour Eiffel, Capucine raconte la tour — à voix haute, sans bandeau',
+        !!eif.dit && eif.dit.includes('Capucine') && eif.dit.includes('Eiffel') && eif.visible && eif.regard > 0.9
+          && !!eif.parle && eif.parle.lang === 'fr-FR' && eif.parle.text.includes('Capucine')
+          && !/\p{Extended_Pictographic}/u.test(eif.parle.text) && !eif.affiche,
+        JSON.stringify(eif));
+      await langue('en');
+      const arc = await visiter(tab, 'arc');
+      verifier('et en anglais à l\'Arc de Triomphe, si le profil parle anglais',
+        !!arc.dit && arc.dit.includes('Napoleon') && arc.dit.includes('Paris guide')
+          && !!arc.parle && arc.parle.lang === 'en-US',
+        JSON.stringify(arc));
+      await langue('both');
+      const emp = await visiter(tab, 'empire');
+      verifier('à New York, le guide de l\'Empire State trouve son trottoir',
+        emp.d !== undefined && emp.visible && !!emp.dit && emp.dit.includes('Jasmine'),
+        JSON.stringify(emp));
+    }
   } finally {
     await banc.fermer();
   }

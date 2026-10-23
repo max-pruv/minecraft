@@ -75,6 +75,7 @@ dans `docs/revue-ecran/`.
 | 17 | à vérifier | voiture de la rue percutée, Paris | [12](revue-ecran/12-louvre-chaussee.png) | La **pyramide du Louvre** a l'air posée sur une chaussée marquée, avec des lignes de voie qui y entrent. Cela peut aussi être la cour pavée vue de loin. | Une capture au sol de la cour Napoléon, puis la carte ASCII des colonnes autour du repère (v493). | `src/paris.js`, `src/monuments.js` |
 | 18 | à vérifier | témoin de contraste (`maj.js`) | — | Le témoin « les commandes se lisent sur le ciel de midi comme sur la nuit » rend `ciel: 87ceeb` **à minuit comme à midi** : il lit la couleur du ciel avant que le ciel ait tourné (v291), et ne mesure donc pas la nuit. | Attendre le fait du monde (le soleil sous l'horizon) avant de lire la couleur du ciel, durée dans le message. | `tests/maj.js` |
 | 19 | à vérifier | avion en vol, campagne (v532, iPad et iPhone) | — | Au bord des morceaux maillés, sous l'aile, un **trou bleu pâle** (le fond du ciel) entre le monde chargé et le paysage lointain. Visible avec et sans couronne (liseré plus fin sans) : la couronne ne le crée pas, le brouillard reculé le rend plus visible. | Une sonde qui lit, colonne par colonne au bord du disque maillé, ce que la grille fine dessine (découpe de `horizon.js` contre `chunkMeshes`). | `src/horizon.js`, `src/main.js` |
+| 20 | mineur | guide, tour Eiffel (v538, état `guide`) | [20](revue-ecran/20-guide-eiffel-iphone-jour.png) | Le fanion de Capucine, à l'ombre des platanes du Champ-de-Mars, tire sur le **rouille** plutôt que l'orange vif, même avivé : on le lit, mais il se cherche moins des yeux qu'en plein soleil. Et la nuit de la sonde (`0.75`) donne ici une rue encore claire. | Juger le fanion sur la tablette ; s'il se perd, un bord clair ou un orange plus saturé dans `fanion()`. | `src/vie.js` |
 
 ## Ce que la sonde ne couvre pas encore
 
@@ -89,9 +90,9 @@ dans `docs/revue-ecran/`.
   lointain, traces). Ce que la sonde montre est très proche de la tablette, mais
   pas identique.
 
-## Le relevé de la v537 (le rail), 23 octobre 2026
+## Le relevé de la v539 (le rail), 23 octobre 2026
 
-Captures dans `docs/revue-ecran/v537/` : le TGV Paris–Lyon aux deux endroits
+Captures dans `docs/revue-ecran/v539/` : le TGV Paris–Lyon aux deux endroits
 des captures de Max (viaduc du pas 716, tranchée du pas 786), iPhone et iPad,
 jour et nuit, et le train vu de près.
 

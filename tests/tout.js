@@ -287,10 +287,11 @@ const GARDIENS = {
   // allégée », « un parent vient de changer tes réglages ». Ses gardiens sont donc
   // ceux de `main.js`, plus les suites où un message est lui-même un verdict.
   'src/guides.js': ['washington.js'],
+  'src/guidesvilles.js': ['washington.js'],
   'src/bandeau.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js',
     'maj.js', 'reglages.js', 'reseau.js'],
   'src/personnages.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
-  'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js'],
+  'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js', 'washington.js'],
   'src/marlon.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/pietons.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/passages.js': ['plafond.js', 'monte.js', 'carteMonde.js'],   // les passages en biais (v421)

@@ -46,7 +46,7 @@ export const ROUTES_RELEVEES = ['A1', 'E429', 'E19', 'A20', 'BR-116', 'A-4', 'A1
 
 export async function empreinteMorceaux(src) {
   const { World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu } = await charger(src);
-  // LES RIVES DU VIADUC ET LA COTE DU BALLAST (v537) sont des corrections de
+  // LES RIVES DU VIADUC ET LA COTE DU BALLAST (v539) sont des corrections de
   // contenu (rien ne traverse une voie) : désarmées, la branche rend la
   // constante d'avant (l'ancien code n'a pas ces interrupteurs).
   const T = await import(src + '/trains.js'), Wm = await import(src + '/world.js');

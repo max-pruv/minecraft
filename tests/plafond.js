@@ -4021,7 +4021,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           // marche est un bloc plus haut
           const bloc = v.bloc !== undefined ? v.bloc : v.cote;
           let cote = v.bloc !== undefined ? v.cote : v.cote + 1;
-          // LA SURFACE DU BALLAST SE LIT AU CENTRE DE LA COLONNE (v537), là
+          // LA SURFACE DU BALLAST SE LIT AU CENTRE DE LA COLONNE (v539), là
           // où le sol continu pose son sommet ; le talus garde la sienne.
           if (w.corridorEn && v.piece === 'ballast' && !v.ouvrage) { const r = w.corridorEn(x, z); if (r) cote = r.cote; }
           colonnes++; if (v.piece === 'talus') talus++;
@@ -4117,7 +4117,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
     }
 
-    // RIEN NE TRAVERSE UNE VOIE (v537). Max, deux captures d'iPhone sur le TGV
+    // RIEN NE TRAVERSE UNE VOIE (v539). Max, deux captures d'iPhone sur le TGV
     // Paris–Lyon : « Those things should never happen » — une dalle d'herbe qui
     // coupe le train, des piliers de pierre entre les rails. Le viaduc (v465)
     // se décidait sur l'AXE, et toute la largeur d'un pas de viaduc était
@@ -4165,7 +4165,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       if (T.rivesCreusees) { T.rivesCreusees(false); avant = balayer(new World(), true); T.rivesCreusees(true); }
       verifier('rien ne traverse une voie : le gabarit des DEUX voies est dégagé partout, sur les ponts comme ailleurs',
         neuf.lus > 100000 && neuf.blocs === 0 && neuf.surface === 0 && avant && avant.blocs > 100,
-        `${neuf.blocs} bloc(s) et ${neuf.surface} point(s) de surface dans le gabarit sur ${neuf.lus} lus${neuf.ex.length ? ' — ' + neuf.ex.join(' · ') : ''} · règle d'avant sur les pas de viaduc : ${avant ? `${avant.blocs} bloc(s), ${avant.surface} de surface` : 'absente (code d\'avant la v537)'} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+        `${neuf.blocs} bloc(s) et ${neuf.surface} point(s) de surface dans le gabarit sur ${neuf.lus} lus${neuf.ex.length ? ' — ' + neuf.ex.join(' · ') : ''} · règle d'avant sur les pas de viaduc : ${avant ? `${avant.blocs} bloc(s), ${avant.surface} de surface` : 'absente (code d\'avant la v539)'} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
       // DEUX LIGNES NE SE PARTAGENT JAMAIS UNE COLONNE. Chaque segment est une
       // droite de gare à gare, et deux plates-formes talus compris ne doivent
       // jamais se toucher : sinon `voieEn` donne la colonne au segment le plus
@@ -4181,7 +4181,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       verifier('deux lignes de train ne se croisent ni ne se rejoignent : leurs plates-formes restent séparées',
         paires === 36 && pire > portee,
         `${paires} paires de segments, la plus proche à ${pire.toFixed(1)} blocs pour ${portee} de plates-formes`);
-      // LA SURFACE DU BALLAST N'ENTERRE PAS LES TRAVERSES (v537) : la cote se
+      // LA SURFACE DU BALLAST N'ENTERRE PAS LES TRAVERSES (v539) : la cote se
       // lit au centre de la colonne, là où le sol continu pose son sommet.
       const enterrees = (monde) => {
         let lus = 0, n = 0;
@@ -4202,9 +4202,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       if (W.COTE_AU_CENTRE) { W.COTE_AU_CENTRE.actif = false; tAvant = enterrees(new World()); W.COTE_AU_CENTRE.actif = true; }
       verifier('le ballast n\'enterre pas les traverses : la surface suit la voie au centre de chaque colonne',
         tNeuf.lus > 3000 && tNeuf.n <= tNeuf.lus * 0.002 && tAvant && tAvant.n > tAvant.lus * 0.05,
-        `${tNeuf.n} point(s) de traverse sous la surface sur ${tNeuf.lus} · cote lue au coin : ${tAvant ? `${tAvant.n}/${tAvant.lus}` : 'absente (code d\'avant la v537)'}`);
+        `${tNeuf.n} point(s) de traverse sous la surface sur ${tNeuf.lus} · cote lue au coin : ${tAvant ? `${tAvant.n}/${tAvant.lus}` : 'absente (code d\'avant la v539)'}`);
 
-      // ET LE SOL CONTINU LIT LE BLOC QUE LE GÉNÉRATEUR A ÉCRIT (v537). La
+      // ET LE SOL CONTINU LIT LE BLOC QUE LE GÉNÉRATEUR A ÉCRIT (v539). La
       // surface de la voie se lit au centre de la colonne, son ballast s'écrit
       // au coin : sur une pente d'un tiers, `floor(cote) − 1` tombait un bloc
       // au-dessus du ballast, dans l'air, et le mailleur jetait (« reading
