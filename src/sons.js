@@ -24,6 +24,8 @@
 //   3. LA MUSIQUE EST ORIGINALE. Invariant 4 : aucune propriété
 //      intellectuelle. Trois stations écrites ici, en degrés de gamme.
 
+import { STATIONS, programme, evenements, dureePas, pasDuMorceau, titreEnCours, stationSuivante } from './radio.js';
+
 let ctx = null;
 let maitre = null;          // le gain général, qu'un réglage peut fermer
 let actif = true;
@@ -117,7 +119,7 @@ export function appelEnCours(oui) {
   enAppel = oui;
   if (!ctx) return;              // le contexte naîtra à la bonne fréquence au premier besoin
   const typeMoteur = moteur ? moteur.type : null;
-  const station = radio ? STATIONS.indexOf(radio.station) : -1;
+  const station = radio ? radio.indice : -1;
   if (moteur) { arreterMoteur(moteur); moteur = null; }
   if (radio) { clearInterval(radio.minuteur); radio = null; }
   const vieux = ctx;
@@ -224,7 +226,20 @@ export function moteurDemarre(type = 'voiture') {
     sp.start(); sif.start(); trem.start();
     pneus = { sp, sif, trem, gain };
   }
-  moteur = { type, r, source, filtre, gainS, osc1, osc2, gainH, siffle, gainSif, toux, pneus,
+  // LE ROULEMENT (v535) : ce que les roues font entendre de la ROUTE. Sur
+  // l'asphalte, rien ; sur l'herbe, le gravier, le sable, un grondement
+  // sourd qui monte avec la vitesse — du bruit rose passé bas, séparé du
+  // souffle du moteur pour qu'une voiture au ralenti dans un champ se taise.
+  let roulement = null;
+  if (type === 'voiture') {
+    const sr = c.createBufferSource(); sr.buffer = tamponDeBruit(c); sr.loop = true;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 240; lp.Q.value = 0.9;
+    const gr = c.createGain(); gr.gain.value = 0.0001;
+    sr.connect(lp).connect(gr).connect(sortie);
+    sr.start();
+    roulement = { sr, lp, gain: gr };
+  }
+  moteur = { type, r, source, filtre, gainS, osc1, osc2, gainH, siffle, gainSif, toux, pneus, roulement,
     prochaineToux: 0, feu: null };
   moteurRegime(0);
   return true;
@@ -241,11 +256,18 @@ export function moteurDemarre(type = 'voiture') {
 //   sante       0..1, le moteur abîmé tousse d'autant plus souvent
 //   panne       le moteur se tait
 //   feu         le crépitement des flammes
-export function voitureSons({ regime = 0, charge = 0, crissement = 0, sante = 1, panne = false, feu = false } = {}) {
+//   roulement   0..1, le grondement de la route sous les roues (v535) —
+//               déjà mis à l'échelle de la vitesse par celui qui appelle
+export function voitureSons({ regime = 0, charge = 0, crissement = 0, sante = 1, panne = false, feu = false, roulement = 0 } = {}) {
   if (!moteur || !ctx) return;
   moteurRegime(regime, charge);
   const t = ctx.currentTime;
   if (moteur.pneus) moteur.pneus.gain.gain.setTargetAtTime(0.0001 + 0.11 * Math.max(0, Math.min(1, crissement)), t, 0.05);
+  if (moteur.roulement) {
+    const r = Math.max(0, Math.min(1, roulement));
+    moteur.roulement.gain.gain.setTargetAtTime(0.0001 + 0.5 * r, t, 0.08);
+    moteur.roulement.lp.frequency.setTargetAtTime(180 + 260 * r, t, 0.08);
+  }
   // LA PANNE TAIT LE MOTEUR, LA TOUX LE COUPE PAR À-COUPS. Un moteur à moitié
   // mort tousse toutes les une à deux secondes ; à peine touché, presque
   // jamais. Chaque toux est une coupure de deux dixièmes, programmée.
@@ -359,7 +381,7 @@ export function moteurRegime(regime, charge = null) {
 
 function arreterMoteur(m) {
   for (const n of [m.source, m.osc1, m.osc2, m.siffle,
-    m.pneus && m.pneus.sp, m.pneus && m.pneus.sif, m.pneus && m.pneus.trem,
+    m.pneus && m.pneus.sp, m.pneus && m.pneus.sif, m.pneus && m.pneus.trem, m.roulement && m.roulement.sr,
     m.feu && m.feu.s, m.feu && m.feu.sg]) {
     if (n) { try { n.stop(); } catch { /* déjà arrêté */ } }
   }
@@ -374,45 +396,41 @@ export function moteurCoupe() {
   const m = moteur;
   moteur = null;
   if (m.pneus) m.pneus.gain.gain.setTargetAtTime(0.0001, t, 0.06);
+  if (m.roulement) m.roulement.gain.gain.setTargetAtTime(0.0001, t, 0.06);
   if (m.feu) { m.feu.g.gain.cancelScheduledValues(t); m.feu.g.gain.setTargetAtTime(0.0001, t, 0.06); m.feu.gg.gain.setTargetAtTime(0.0001, t, 0.06); }
   setTimeout(() => arreterMoteur(m), 400);
 }
 
 // --- la radio ----------------------------------------------------------------
 
-// TROIS STATIONS, ÉCRITES ICI (invariant 4 : rien qui appartienne à
-// quelqu'un). Chacune est une gamme, une suite d'accords en degrés, un motif
-// de basse et un motif de percussion. C'est peu de chose et ça suffit : ce
-// qu'on veut, c'est qu'il se passe quelque chose quand la portière se ferme.
-const GAMME = [0, 2, 3, 5, 7, 8, 10];          // mineur naturel
-const MAJEURE = [0, 2, 4, 5, 7, 9, 11];
-export const STATIONS = [
-  { nom: 'Radio Bloc',    tempo: 104, gamme: MAJEURE, racine: 55,
-    accords: [0, 5, 3, 4], basse: [0, 0, 4, 0, 2, 0, 4, 0], onde: 'triangle', melodie: [4, 2, 0, 2, 4, 5, 4, 2] },
-  { nom: 'Nuit Cubique',  tempo: 92,  gamme: GAMME,   racine: 49,
-    accords: [0, 3, 4, 3], basse: [0, 0, 0, 3, 2, 2, 4, 4], onde: 'square', melodie: [0, 3, 4, 3, 2, 0, -3, 0] },
-  { nom: 'Grand Large',   tempo: 118, gamme: MAJEURE, racine: 57,
-    accords: [0, 4, 5, 3], basse: [0, 4, 2, 4, 0, 4, 5, 4], onde: 'sawtooth', melodie: [2, 4, 5, 4, 2, 0, 2, 4] },
-];
+// LE PROGRAMME VIT DANS `radio.js` (v535), pur : cinq stations, trois morceaux
+// chacune, un jingle devant chaque morceau, et une horloge — `programme(st,
+// t)` dit où en est la station à l'heure réelle `t`, comme une vraie radio
+// qui joue même quand on ne l'écoute pas. Ici on ne fait que JOUER ce que le
+// programme dit, contre l'horloge du contexte audio. Invariant 4 : les airs
+// sont écrits dans le dépôt, rien n'appartient à personne.
+export { STATIONS };
 
-const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
-const degre = (st, d) => {
-  const g = st.gamme, o = Math.floor(d / g.length), i = ((d % g.length) + g.length) % g.length;
-  return st.racine + g[i] + 12 * o;
-};
+let radio = null;   // { station, indice, gain, prochain, morceau, pas, minuteur }
+// LA STATION CHOISIE SE GARDE pour la prochaine voiture, sur cette tablette
+// (`mémoire`, posée par `radioChoisir`) ; `null`, c'est la radio éteinte,
+// qui se garde aussi — qui a coupé la musique ne veut pas qu'elle revienne
+// à la portière suivante. Avant tout choix : une station au hasard.
+let memoire;        // undefined : jamais choisi ; null : éteinte ; n : station
 
-let radio = null;   // { station, gain, prochain, pas, minuteur }
-
-export function radioDemarre(indice = null) {
+function radioAllumer(indice) {
   const c = contexteAudio();
   if (!c) return null;
   radioCoupe();
-  const station = STATIONS[indice == null ? Math.floor(Math.random() * STATIONS.length) : indice % STATIONS.length];
+  const station = STATIONS[((indice % STATIONS.length) + STATIONS.length) % STATIONS.length];
   const gain = c.createGain();
   gain.gain.value = 0.0001;
   gain.connect(sortieAudio());
-  gain.gain.setTargetAtTime(0.5, c.currentTime + 0.25, 0.25);
-  radio = { station, gain, prochain: c.currentTime + 0.3, pas: 0, minuteur: null };
+  gain.gain.setTargetAtTime(0.65, c.currentTime + 0.25, 0.25);
+  // là où en est la station à cette heure-ci : on tombe DANS un morceau, pas
+  // à son début — sauf au jingle, qu'on laisse finir
+  const p = programme(station, Date.now() / 1000);
+  radio = { station, indice: STATIONS.indexOf(station), gain, prochain: c.currentTime + 0.3, morceau: p.morceau, pas: p.pas, minuteur: null };
   grésillement(c, gain);
   // L'ORDONNANCEUR REGARDE L'HORLOGE DU SON, PAS CELLE DE L'ÉCRAN. Il
   // programme un quart de seconde d'avance toutes les cent millisecondes :
@@ -422,6 +440,28 @@ export function radioDemarre(indice = null) {
   avancerRadio();
   return station.nom;
 }
+
+// À la montée : la station gardée, ou une au hasard la première fois ; rien
+// si la radio a été éteinte exprès.
+export function radioDemarre(indice = null) {
+  if (indice == null) {
+    if (memoire === null) return null;
+    indice = memoire == null ? Math.floor(Math.random() * STATIONS.length) : memoire;
+  }
+  return radioAllumer(indice);
+}
+// LE BOUTON DE LA RADIO : la station suivante, et le silence après la
+// dernière (`stationSuivante`, radio.js). Rend le nom de la station, ou null.
+export function radioChoisir(indice) {
+  memoire = indice == null ? null : ((indice % STATIONS.length) + STATIONS.length) % STATIONS.length;
+  if (memoire == null) { radioCoupe(); return null; }
+  return radioAllumer(memoire);
+}
+export function radioSuivante() { return radioChoisir(stationSuivante(radio ? radio.indice : null)); }
+export function radioIndice() { return radio ? radio.indice : null; }
+export function radioMemoire() { return memoire; }
+export function radioRestaurer(m) { memoire = m === null || m === undefined ? m : (Number.isInteger(m) && m >= 0 && m < STATIONS.length ? m : undefined); }
+export function radioTitre() { return radio ? titreEnCours(radio.station, radio.morceau) : null; }
 
 // Le petit souffle d'une radio qu'on allume — deux dixièmes de seconde de
 // bruit qui s'éteint, avant la première note.
@@ -450,15 +490,19 @@ function note(c, sortie, freq, debut, duree, onde, volume) {
   o.start(debut); o.stop(debut + duree + 0.03);
 }
 
-function percussion(c, sortie, debut, fort) {
+// La batterie : la grosse caisse est un souffle grave, le charleston un
+// souffle aigu très court, la caisse claire (v535) un souffle du milieu, un
+// peu plus long — c'est elle qui fait le « boum-tchak ».
+function percussion(c, sortie, debut, quoi) {
   const s = c.createBufferSource();
   s.buffer = tamponDeBruit(c);
   const f = c.createBiquadFilter();
-  f.type = fort ? 'lowpass' : 'highpass';
-  f.frequency.value = fort ? 160 : 5000;
+  if (quoi === 'grosse') { f.type = 'lowpass'; f.frequency.value = 160; }
+  else if (quoi === 'caisse') { f.type = 'bandpass'; f.frequency.value = 1900; f.Q.value = 0.8; }
+  else { f.type = 'highpass'; f.frequency.value = 5000; }
   const g = c.createGain();
-  g.gain.setValueAtTime(fort ? 0.34 : 0.10, debut);
-  g.gain.exponentialRampToValueAtTime(0.0001, debut + (fort ? 0.16 : 0.06));
+  g.gain.setValueAtTime(quoi === 'grosse' ? 0.34 : quoi === 'caisse' ? 0.22 : 0.10, debut);
+  g.gain.exponentialRampToValueAtTime(0.0001, debut + (quoi === 'grosse' ? 0.16 : quoi === 'caisse' ? 0.11 : 0.06));
   s.connect(f).connect(g).connect(sortie);
   s.start(debut); s.stop(debut + 0.2);
 }
@@ -466,24 +510,16 @@ function percussion(c, sortie, debut, fort) {
 function avancerRadio() {
   if (!radio || !ctx) return;
   const c = ctx, st = radio.station;
-  const croche = 30 / st.tempo;              // une croche, en secondes
+  const croche = dureePas(st);
   while (radio.prochain < c.currentTime + 0.25) {
-    const t = radio.prochain, i = radio.pas;
-    const accord = st.accords[Math.floor(i / 8) % st.accords.length];
-    // la basse, une croche sur deux
-    if (i % 2 === 0) {
-      const d = accord + st.basse[i % st.basse.length];
-      note(c, radio.gain, midi(degre(st, d) - 12), t, croche * 1.7, 'triangle', 0.10);
+    const t = radio.prochain;
+    for (const e of evenements(st, radio.morceau, radio.pas)) {
+      if (e.quoi === 'grosse' || e.quoi === 'caisse' || e.quoi === 'charley') percussion(c, radio.gain, t, e.quoi);
+      else note(c, radio.gain, e.note, t, croche * e.duree, e.quoi === 'basse' ? 'triangle' : st.onde, e.volume);
     }
-    // la mélodie, sur les temps faibles : c'est ce qui donne l'air
-    if (i % 2 === 1) {
-      const d = accord + st.melodie[i % st.melodie.length];
-      note(c, radio.gain, midi(degre(st, d)), t, croche * 1.2, st.onde, 0.045);
-    }
-    // et une batterie très simple : grosse caisse sur 1 et 3, charleston partout
-    percussion(c, radio.gain, t, i % 4 === 0);
     radio.prochain += croche;
     radio.pas++;
+    if (radio.pas >= pasDuMorceau(st.morceaux[radio.morceau])) { radio.pas = 0; radio.morceau = (radio.morceau + 1) % st.morceaux.length; }
   }
 }
 
@@ -498,6 +534,70 @@ export function radioCoupe() {
 
 export function radioEnCours() { return radio ? radio.station.nom : null; }
 
+// --- le klaxon ----------------------------------------------------------------
+
+// LE KLAXON (v535). Deux tons tenus — une tierce, comme un vrai avertisseur
+// de voiture —, des dents de scie passées dans un filtre résonant autour du
+// kilohertz, qui leur donne le nasillement du cornet. Tenu tant que le doigt
+// est sur le bouton (`klaxonTenir(true)`), coupé en soixante millisecondes
+// au lâcher. Un seul graphe, monté au premier appui, réglé par ses gains.
+let klaxon = null;   // { o1, o2, gain, tenu }
+export const KLAXON_HZ = [392, 494];      // sol 4, si 4
+function monterKlaxon(c, ton = 1) {
+  const g = c.createGain(); g.gain.value = 0.0001;
+  const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1050 * ton; f.Q.value = 1.4;
+  const o1 = c.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = KLAXON_HZ[0] * ton;
+  const o2 = c.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = KLAXON_HZ[1] * ton;
+  o1.connect(f); o2.connect(f); f.connect(g);
+  o1.start(); o2.start();
+  return { o1, o2, gain: g };
+}
+export function klaxonTenir(oui) {
+  const c = contexteAudio();
+  if (!c) return false;
+  if (oui) {
+    if (!klaxon) { klaxon = { ...monterKlaxon(c), tenu: true }; klaxon.gain.connect(sortieAudio()); }
+    klaxon.tenu = true;
+    klaxon.gain.gain.cancelScheduledValues(c.currentTime);
+    klaxon.gain.gain.setTargetAtTime(0.22, c.currentTime, 0.015);
+    return true;
+  }
+  if (!klaxon) return false;
+  klaxon.tenu = false;
+  klaxon.gain.gain.setTargetAtTime(0.0001, c.currentTime, 0.04);
+  return true;
+}
+export const klaxonTenu = () => !!(klaxon && klaxon.tenu);
+
+// LE KLAXON D'UNE VOITURE DE LA RUE (v535) : un coup bref, placé dans
+// l'espace — plus loin, plus doux ; à gauche ou à droite de l'enfant
+// (`pan`, −1 à 1, calculé par celui qui sait où est l'enfant et où il
+// regarde). Chaque voiture a son ton (`ton`, autour de 1) : deux klaxons ne
+// se ressemblent pas. C'est un ÉVÉNEMENT, comme une note : il monte ses
+// nœuds, les programme, les laisse s'éteindre.
+let klaxonsRue = 0;
+export function klaxonRue({ distance = 10, pan = 0, ton = 1, duree = 0.45 } = {}) {
+  const c = contexteAudio();
+  if (!c) return false;
+  const t = c.currentTime;
+  const k = monterKlaxon(c, ton);
+  const vol = 0.2 / (1 + distance / 16) ** 2;
+  let sortie = sortieAudio();
+  if (c.createStereoPanner) {
+    const p = c.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan));
+    p.connect(sortie); sortie = p;
+  }
+  k.gain.connect(sortie);
+  k.gain.gain.setValueAtTime(0.0001, t);
+  k.gain.gain.exponentialRampToValueAtTime(Math.max(0.001, vol), t + 0.02);
+  k.gain.gain.setValueAtTime(Math.max(0.001, vol), t + duree);
+  k.gain.gain.exponentialRampToValueAtTime(0.0001, t + duree + 0.06);
+  k.o1.stop(t + duree + 0.1); k.o2.stop(t + duree + 0.1);
+  klaxonsRue++;
+  return true;
+}
+export const klaxonsRueJoues = () => klaxonsRue;
+
 // Ce qu'une sonde peut lire — et ce n'est PAS ce qu'un témoin doit croire :
 // un témoin de son lit des ÉCHANTILLONS (voir `tests/monte.js`), jamais ce
 // drapeau. Il sert à la mise au point et aux captures.
@@ -506,5 +606,7 @@ export function etatSon() {
     contexte: ctx ? ctx.state : null, actif, appel: enAppel, generation,
     moteur: moteur ? moteur.type : null,
     radio: radio ? radio.station.nom : null,
+    titre: radio ? titreEnCours(radio.station, radio.morceau) : null,
+    klaxon: klaxonTenu(), klaxonGain: klaxon ? +klaxon.gain.gain.value.toFixed(4) : null, klaxonsRue,
   };
 }

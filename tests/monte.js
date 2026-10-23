@@ -7494,6 +7494,186 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
 
+    // LA CONDUITE À LA GTA (v535). Max : « améliore la conduite pour qu'elle
+    // ressemble à GTA — comment elle réagit à l'environnement, aux autres
+    // voitures, la musique, le son, jusqu'au design des voitures ». Quatre
+    // sujets, sur une page et une dalle : la radio à stations (radio.js, le
+    // bouton, la pilule, la mémoire de l'appareil), le klaxon (tenu, lâché,
+    // l'événement que lit un passant), la route sous les roues (l'adhérence
+    // de l'herbe contre la pierre, le grondement, la vibration), les feux
+    // stop et de recul, et la rue qui klaxonne derrière l'enfant. Un témoin de
+    // son lit des ÉCHANTILLONS dans une BANDE (v268), jamais un drapeau. Sur
+    // l'ancien code, le bloc rend « pas de radio à stations » : rouge, et il
+    // le dit.
+    const gtaV = await tab.evaluate(async () => {
+      const g = window.__game, P = g.player, out = {};
+      if (!window.__sons || !window.__sons.suivante) return { err: 'pas de radio à stations' };
+      const { BLOCK } = await import('./src/blocks.js');
+      const C = await import('./src/conduite.js');
+      const tenir = (n) => new Promise((fin) => { let cumul = 0, prec = performance.now(); const pas = (t) => { cumul += (t - prec) / 1000; prec = t; if (cumul >= n) fin(); else requestAnimationFrame(pas); }; requestAnimationFrame(pas); });
+      const ctx = window.__sons.contexte(), sortie = window.__sons.sortie();
+      if (!ctx || !sortie) return { err: 'pas de contexte audio' };
+      // UN ANALYSEUR LISSE SON SPECTRE DANS LE TEMPS (smoothingTimeConstant
+      // 0,8 par défaut) : lu six dixièmes après le lâcher du klaxon, il
+      // rendait encore le klaxon — mesuré, le gain était à zéro depuis trois
+      // dixièmes. On lit l'instant, pas la mémoire de l'analyseur.
+      const an = ctx.createAnalyser(); an.fftSize = 4096; an.smoothingTimeConstant = 0; sortie.connect(an);
+      const fbuf = new Float32Array(an.frequencyBinCount);
+      const pasHz = ctx.sampleRate / an.fftSize;
+      // LE PLUS FORT D'UNE BANDE SUR UNE FENÊTRE, en décibels : une note de
+      // radio, un coup de klaxon, un grondement ont chacun leur bande, et le
+      // pire d'une fenêtre (v233) sépare ce qui sonne de ce qui se tait.
+      const bandeMax = async (s, f0, f1) => {
+        let m = -200;
+        for (let t = 0; t < s; t += 0.1) {
+          an.getFloatFrequencyData(fbuf);
+          for (let k = Math.floor(f0 / pasHz); k <= Math.ceil(f1 / pasHz); k++) m = Math.max(m, fbuf[k]);
+          await tenir(0.1);
+        }
+        return +m.toFixed(1);
+      };
+      // UNE DALLE DE PIERRE ET UN CHAMP D'HERBE côte à côte, loin de tout :
+      // l'ouest en pierre (z < 0), l'est en herbe — la même cote, pour que
+      // seule la matière change sous les roues.
+      const x0 = 30000, z0 = 31400;
+      let y0 = 0;
+      for (let d = -6; d <= 80; d += 2) for (let w = -12; w <= 12; w += 2) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 2;
+      for (let d = -6; d <= 80; d++) for (let w = -12; w <= 12; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, w < 0 ? BLOCK.STONE : BLOCK.GRASS);
+        for (let h = 1; h <= 4; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+      }
+      P.keys.clear(); P.pilote = null; P.avionEnVol = false; P.avionEtat = undefined; P.vitesseAvion = undefined;
+      P.flying = false; P.gaz = null; P.yaw = -Math.PI / 2; P.pitch = 0; P.pos.set(x0, y0 + 1.01, z0 - 6); P.vel.set(0, 0, 0);
+      await tenir(1);
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
+      for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
+      g.animalManager.animals.length = 0;
+      g.animalManager.invoquer('voiture', x0 + 3, z0 - 6);
+      await tenir(0.5);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(0.5); }
+      if (!auVolant()) return { err: 'on n\'est pas au volant' };
+      const a = g.fun.montureConduite();
+      await tenir(1);
+      // — LA RADIO : les boutons sont là, à droite ; le bouton fait le tour des
+      // stations et finit au silence ; la pilule dit la station et le titre ;
+      // le choix se garde sur l'appareil ; une station s'entend contre le silence —
+      const rect = (id) => { const el = document.getElementById(id); if (!el) return null; const r = el.getBoundingClientRect(); return { x: +r.x.toFixed(0), y: +r.y.toFixed(0), w: +r.width.toFixed(0), h: +r.height.toFixed(0), vis: getComputedStyle(el).display }; };
+      out.boutons = { klaxon: rect('klaxon-btn'), radio: rect('radio-btn'), fm: rect('fm-btn'), ride: rect('ride-btn'), vue: [innerWidth, innerHeight] };
+      out.radio = { montee: window.__sons.station(), titre: window.__sons.titre(), pilule: document.getElementById('radio-etat') ? document.getElementById('radio-etat').textContent : null };
+      // la station de la montée est au hasard : on va d'abord jusqu'au
+      // silence, puis un tour entier — cinq stations, et le silence
+      for (let k = 0; k < 6 && window.__sons.station() !== null; k++) { document.getElementById('radio-btn').click(); await tenir(0.2); }
+      const tour = [];
+      for (let k = 0; k < 6; k++) {
+        document.getElementById('radio-btn').click(); await tenir(0.25);
+        tour.push([window.__sons.station(), window.__sons.titre(), (document.getElementById('radio-etat') || {}).textContent]);
+      }
+      out.radio.tour = tour; out.radio.stock = localStorage.getItem('web-minecraft-radio-v1');
+      // le silence d'abord (le tour finit là), puis une station : la bande des notes
+      out.radio.sans = await bandeMax(1.6, 250, 1600);
+      document.getElementById('radio-btn').click(); await tenir(0.8);
+      out.radio.station = window.__sons.station();
+      out.radio.avec = await bandeMax(1.6, 250, 1600);
+      // et l'on coupe pour la suite
+      for (let k = 0; k < 6 && window.__sons.station() !== null; k++) { document.getElementById('radio-btn').click(); await tenir(0.2); }
+      out.radio.coupee = window.__sons.station();
+      await tenir(0.6);
+      // — LE KLAXON : tenu, il sonne (sol-si, 392 et 494 Hz) ; lâché, il se
+      // tait ; le premier appui publie un événement daté que lit un passant
+      // posé à dix blocs — il se retourne (`klaxonsEntendus`) —
+      const passant = (g.npcs || []).find((q) => q.name === 'passant' && q.pos && typeof q.update === 'function');
+      if (passant) { passant.pos.set(x0 + 10, y0 + 1, z0 - 6); passant.ecart = null; passant.traversee = null; passant.klaxonsEntendus = 0; }
+      await tenir(0.4);
+      const avantK = await bandeMax(0.8, 350, 560);
+      P.keys.add('KeyH'); await tenir(0.3);
+      const pendantK = await bandeMax(0.8, 350, 560);
+      const ev = P.klaxon;
+      P.keys.delete('KeyH'); await tenir(0.6);
+      const apresK = await bandeMax(0.8, 350, 560);
+      out.klaxon = { avant: avantK, pendant: pendantK, apres: apresK, evenement: !!(ev && typeof ev.t === 'number'), passant: passant ? passant.klaxonsEntendus : null };
+      // — LA ROUTE SOUS LES ROUES : la pierre tient (1), l'herbe moins ; à
+      // vingt blocs par seconde l'herbe gronde (60-300 Hz) et la caméra
+      // tremble ; la pierre, non —
+      const placer = (dz, v) => { P.pos.set(x0 + 2, y0 + 1.05, z0 + dz); P.yaw = -Math.PI / 2; P.vitesseVoiture = v; P.vel.set(0, 0, 0); P.derive = 0; P.braquage = 0; P.glissade = null; a.pos.copy(P.pos); a.mesh.position.copy(P.pos); };
+      placer(-6, 0); await tenir(0.3);
+      out.surface = { pierre: { s: P.surface, adh: P.adherence } };
+      placer(6, 0); await tenir(0.3);
+      out.surface.herbe = { s: P.surface, adh: P.adherence, regle: C.adherenceDeSurface('herbe') };
+      const rouler = async (dz) => { placer(dz, 20); P.touchMove.f = 1; await tenir(0.6); const b = await bandeMax(1.2, 60, 300); const r = { bande: b, vib: a.sens ? +a.sens.vibration.toFixed(4) : null, v: +(P.vitesseVoiture || 0).toFixed(1), s: P.surface }; P.touchMove.f = 0; return r; };
+      out.surface.roulePierre = await rouler(-6);
+      out.surface.rouleHerbe = await rouler(6);
+      // — LES FEUX STOP ET DE RECUL : en roulant rien, au freinage le rouge,
+      // en marche arrière le blanc, à l'arrêt lâché plus rien —
+      const feux = () => { const fa = a.mesh.userData.feuxArriere; return fa ? { vis: fa.visible, stops: fa.userData.stops.map((s) => s.visible), reculs: fa.userData.reculs.map((s) => s.visible), n: fa.userData.stops.length } : { vis: false, stops: [], reculs: [], n: 0 }; };
+      const allume = (f, quoi) => f.vis && f[quoi].length > 0 && f[quoi].every(Boolean);
+      placer(-6, 0); P.touchMove.f = 1; await tenir(1.2);
+      out.feux = { gaz: feux(), v1: +P.vitesseVoiture.toFixed(1) };
+      P.touchMove.f = -1; await tenir(0.4);
+      out.feux.frein = feux(); out.feux.v2 = +P.vitesseVoiture.toFixed(1);
+      await tenir(2);
+      out.feux.recul = feux(); out.feux.v3 = +P.vitesseVoiture.toFixed(1);
+      P.touchMove.f = 0;
+      for (let k = 0; k < 20 && Math.abs(P.vitesseVoiture) > 0.2; k++) await tenir(0.2);
+      await tenir(0.6);
+      out.feux.lache = feux(); out.feux.v4 = +P.vitesseVoiture.toFixed(1);
+      out.feux.ok = { gaz: !allume(out.feux.gaz, 'stops') && !allume(out.feux.gaz, 'reculs'), frein: allume(out.feux.frein, 'stops'), recul: allume(out.feux.recul, 'reculs') && !allume(out.feux.recul, 'stops'), lache: !allume(out.feux.lache, 'stops') && !allume(out.feux.lache, 'reculs') };
+      // — LA RUE KLAXONNE : un convoi d'une voiture sur un anneau de la
+      // dalle, l'enfant arrêté sur sa voie. Elle freine (feux stop), s'arrête
+      // derrière lui (v245), et klaxonne — au plus tard trente secondes après
+      // l'arrêt. Le klaxon de la rue se compte à sa sortie (`klaxonsRue`). —
+      const zr = z0 - 6;
+      const anneau = [[60, 0], [-4, 0], [-4, -4], [60, -4], [60, 0]].map(([dx, dz]) => ({ x: x0 + dx, y: y0 + 1, z: zr + dz }));
+      const conv = g.vehicules.circulation(anneau, 78, { nb: 1, vitesse: 8 });
+      placer(0, 0); P.pos.set(x0 + 28, y0 + 1.05, zr); a.pos.copy(P.pos); a.mesh.position.copy(P.pos);
+      const k0 = window.__sons.etat().klaxonsRue, t0 = performance.now();
+      let arret = null, freineRue = false, klaxons = 0;
+      while (performance.now() - t0 < 45000) {
+        await tenir(0.25);
+        const q = conv.place(0), m = conv.elements[0];
+        if (!arret && q && conv.vLoc[0] >= 0 && conv.vLoc[0] < 0.3 && Math.abs(q.x - P.pos.x) < 14) arret = +((performance.now() - t0) / 1000).toFixed(1);
+        if (arret && m && m.userData.freine) freineRue = true;
+        klaxons = window.__sons.etat().klaxonsRue - k0;
+        if (arret && klaxons >= 1 && (performance.now() - t0) / 1000 > arret + 1) break;
+      }
+      out.rue = { klaxons, arret, freineRue, secondes: +((performance.now() - t0) / 1000).toFixed(1) };
+      try { sortie.disconnect(an); } catch { /* déjà */ }
+      // on range : la radio revient au premier choix (une station), la voiture s'arrête
+      P.touchMove.f = 0; P.keys.delete('KeyH');
+      return out;
+    });
+    const gR = gtaV.radio || {}, gB = gtaV.boutons || {};
+    const noms = (gR.tour || []).map((t) => t[0]);
+    verifier('au volant, le bouton de la radio fait le tour des stations puis se tait, la pilule dit la station et le titre, et le choix se garde sur l\'appareil',
+      !gtaV.err && !!gR.montee && new Set(noms.filter(Boolean)).size === 5 && noms[noms.length - 1] === null && noms.length === 6
+        && (gR.tour || []).every(([n, t, p]) => (n ? p === `${n} · ${t}` : p === 'Radio éteinte')) && gR.stock === 'off',
+      `${gtaV.err || ''} ${JSON.stringify(gR)}`);
+    verifier('une station s\'entend, et la radio éteinte se tait',
+      !gtaV.err && !!gR.station && gR.coupee === null && gR.avec - gR.sans >= 8,
+      `${gtaV.err || ''} sans ${gR.sans} dB, avec ${gR.avec} dB (${gR.station})`);
+    const gK = gtaV.klaxon || {};
+    verifier('le klaxon sonne tant qu\'on le tient, se tait au lâcher, publie un événement daté, et le passant d\'à côté se retourne',
+      !gtaV.err && gK.pendant - gK.avant >= 12 && gK.pendant - gK.apres >= 10 && gK.evenement && (gK.passant === null || gK.passant >= 1),
+      `${gtaV.err || ''} ${JSON.stringify(gK)}`);
+    const gS = gtaV.surface || {};
+    verifier('la route sous les roues : la pierre tient, l\'herbe moins — et sur l\'herbe la voiture gronde et tremble',
+      !gtaV.err && gS.pierre && gS.pierre.s === 'route' && gS.pierre.adh === 1 && gS.herbe && gS.herbe.s === 'herbe' && gS.herbe.adh === gS.herbe.regle && gS.herbe.adh < 0.8
+        && gS.rouleHerbe.bande - gS.roulePierre.bande >= 5 && gS.rouleHerbe.vib > 0.02 && gS.roulePierre.vib < 0.005 && gS.rouleHerbe.v < gS.roulePierre.v,
+      `${gtaV.err || ''} ${JSON.stringify(gS)}`);
+    const gF = gtaV.feux || {};
+    verifier('les feux stop s\'allument au freinage, les feux de recul en marche arrière, et rien en roulant ni à l\'arrêt — posés sur les coins arrière du modèle',
+      !gtaV.err && gF.ok && gF.ok.gaz && gF.ok.frein && gF.ok.recul && gF.ok.lache && gF.frein.n === 2,
+      `${gtaV.err || ''} ${JSON.stringify(gF)}`);
+    const gRu = gtaV.rue || {};
+    verifier('une voiture de la rue arrêtée derrière la voiture de l\'enfant freine feux allumés, puis klaxonne',
+      !gtaV.err && gRu.arret != null && gRu.freineRue && gRu.klaxons >= 1,
+      `${gtaV.err || ''} ${JSON.stringify(gRu)}`);
+    verifier('le klaxon et la radio sont dans la colonne de droite, hors du quart du joystick, au-dessus de « Descendre »',
+      !gtaV.err && gB.klaxon && gB.radio && gB.ride && gB.klaxon.vis !== 'none' && gB.radio.vis !== 'none'
+        && gB.klaxon.x > gB.vue[0] * 0.55 && gB.radio.x > gB.vue[0] * 0.55 && gB.klaxon.y + gB.klaxon.h <= gB.ride.y + 1 && gB.radio.y + gB.radio.h <= gB.klaxon.y + 1,
+      `${gtaV.err || ''} ${JSON.stringify(gB)}`);
+
     // LES SENSATIONS AU VOLANT (v422).
     //
     // Max : « l'impression de conduire dans GTA ». La caméra de poursuite

@@ -19,7 +19,7 @@ import { liberer, partagerTout } from './liberer.js';
 import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { CLASSES, MARCHE } from './conduite.js';
-import { flammeDeChauffe } from './avions.js';
+import { flammeDeChauffe, matiereAdditive } from './avions.js';
 
 // --- les reflets --------------------------------------------------------------
 //
@@ -2172,7 +2172,17 @@ class Convoi {
         m.rotation.z = roulis;
       }
       m.visible = true;
-      if (this.routier) feuxDeDetresse(m, this.heurte[i] > 0);
+      if (this.routier) {
+        feuxDeDetresse(m, this.heurte[i] > 0);
+        // LES FEUX STOP DE LA RUE (v535) : une voiture qui attend (un feu,
+        // l'enfant, une file) ou qui perd de la vitesse freine ; une voiture
+        // heurtée aussi. On lit sa vitesse LOCALE d'une image à l'autre.
+        const vl = this.vLoc[i] >= 0 ? this.vLoc[i] : this.vGrilleDe(i);
+        const vp = m.userData.vPrec == null ? vl : m.userData.vPrec;
+        m.userData.vPrec = vl;
+        const freine = this.heurte[i] > 0 || (this.attend[i] === 1 && vl < this.vGrilleDe(i) - 0.5) || (this.dernierDt > 0 && vl < vp - 1.5 * this.dernierDt);
+        if (freine !== !!m.userData.freine) { m.userData.freine = freine; feuxArriere(m, { frein: freine }); }
+      }
       // LES ROUES TOURNENT AUSSI EN VILLE. Le long d'un tracé on connaît la
       // distance exacte parcourue depuis la dernière image : l'angle en
       // découle sans rien mesurer. Une voiture qui glisse sans que ses roues
@@ -2351,6 +2361,54 @@ export function feuxDeDetresse(m, allumes) {
     m.add(g); m.userData.detresse = g;
   }
   g.visible = detresseAllumee();
+}
+// LES FEUX STOP ET DE RECUL (v535). Max : « jusqu'au design des voitures ».
+// Une voiture qui freine s'allume en rouge à l'arrière, une qui recule en
+// blanc : c'est ce qu'on lit sur une voiture devant soi, et rien dans le jeu
+// ne le disait. Les lentilles se posent sur les DEUX poses arrière de
+// `posesDetresse` — mesurées sur le modèle, jamais écrites (v230) —, le feu
+// stop un peu plus grand par-dessus, le feu de recul plus petit vers l'axe.
+// `matiereAdditive` (avions.js), la matière des phares et de la flamme :
+// même clé de programme, chauffée à l'accueil (v491), rien ne compile au
+// premier freinage. Pour la voiture de l'enfant (fun.js) comme pour celles
+// de la rue (`montrer`) : le même geste, les mêmes lentilles.
+let geoStop = null, geoRecul = null, matStop = null, matRecul = null;
+function materielArriere() {
+  if (geoStop) return;
+  geoStop = new THREE.CircleGeometry(0.15, 14); geoStop.userData.partagee = true;
+  geoRecul = new THREE.CircleGeometry(0.085, 12); geoRecul.userData.partagee = true;
+  matStop = matiereAdditive(0xff2a18, 0.95); matStop.userData.partagee = true;
+  matRecul = matiereAdditive(0xfff4e0, 0.95); matRecul.userData.partagee = true;
+}
+export function feuxArriere(m, { frein = false, recul = false } = {}) {
+  let g = m.userData.feuxArriere;
+  if (!frein && !recul) { if (g) g.visible = false; return g || null; }
+  const cle = m.userData.roues ? 'modele' : 'attente';
+  if (g && g.userData.cle !== cle) { m.remove(g); g = null; }
+  if (!g) {
+    materielArriere();
+    g = new THREE.Group(); g.name = 'feux-arriere'; g.userData.cle = cle;
+    g.userData.stops = []; g.userData.reculs = [];
+    const poses = posesDetresse(m).filter((p) => p.nz > 0.3);
+    for (const p of poses) {
+      const stop = new THREE.Mesh(geoStop, matStop);
+      stop.name = 'feu-stop';
+      stop.position.set(p.x, p.y, p.z);
+      stop.lookAt(p.x + p.nx, p.y + p.ny, p.z + p.nz);
+      g.add(stop); g.userData.stops.push(stop);
+      const r = new THREE.Mesh(geoRecul, matRecul);
+      r.name = 'feu-recul';
+      // vers l'axe, un peu plus bas : à côté du feu stop, pas dessus
+      r.position.set(p.x - Math.sign(p.x || 1) * 0.2, p.y - 0.06, p.z + 0.004);
+      r.lookAt(r.position.x + p.nx, r.position.y + p.ny, r.position.z + p.nz);
+      g.add(r); g.userData.reculs.push(r);
+    }
+    m.add(g); m.userData.feuxArriere = g;
+  }
+  g.visible = true;
+  for (const f of g.userData.stops) f.visible = !!frein;
+  for (const f of g.userData.reculs) f.visible = !!recul;
+  return g;
 }
 // LE FEU DE DÉTRESSE QUE L'AMI A ALLUMÉ (v519). Un choc de la rue reçu par le
 // réseau (`degats3d.recevoirRue`) marque la voiture de ce nom ; le convoi la
@@ -2538,6 +2596,18 @@ const memeLigne = (x, y) => x === y || (!!x && !!y && (x.jumeauDe === y || y.jum
 
 export function voituresDuCircuit(longueur) {
   return Math.max(6, Math.min(60, Math.round(longueur / 18)));
+}
+
+// Le klaxon de la rue (v535) : la patience avant le premier coup, l'écart
+// entre deux, et le ton d'une voiture, tiré de sa clé et de son rang pour
+// que deux klaxons ne se ressemblent pas (0,86 à 1,14).
+export const KLAXON_PATIENCE = 2.5;   // secondes réelles derrière l'enfant
+export const KLAXON_RELANCE = 5;      // secondes avant de recommencer, ± 30 %
+let klaxonneur = null;
+export function tonDeKlaxon(cle, i) {
+  let h = 2166136261;
+  for (const ch of `${cle}#${i}`) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+  return 0.86 + 0.28 * ((h % 1000) / 999);
 }
 
 export function createVehicules({ scene, player }) {
@@ -3439,6 +3509,20 @@ export function createVehicules({ scene, player }) {
       c.cible[i] = cible;
       c.urgence[i] = a.contact && cible === a.cible ? 1 : 0;
       c.cause[i] = a.cause === 'feu' || a.cause === 'file-feu' ? 1 : a.cause ? 2 : 0;
+      // LA RUE KLAXONNE (v535). Une voiture arrêtée derrière la voiture de
+      // l'ENFANT (pas un ami, pas un piéton, pas un feu) s'impatiente : au
+      // bout de `KLAXON_PATIENCE` secondes réelles, un coup de klaxon, puis
+      // elle attend encore avant le suivant. Elle n'avance pas pour autant
+      // (elle cède sans limite, v245) : elle le DIT. `klaxonneur` est branché
+      // par main.js, qui sait où est l'enfant et où il regarde.
+      if (!c.klaxonDepuis) { c.klaxonDepuis = new Float32Array(c.elements.length); }
+      if (a.cause === 'enfant' && v < 0.3 && cible === a.cible) {
+        c.klaxonDepuis[i] += dt;
+        if (c.klaxonDepuis[i] >= KLAXON_PATIENCE && klaxonneur) {
+          klaxonneur(a.x, a.z, tonDeKlaxon(c.cle, i), i);
+          c.klaxonDepuis[i] = KLAXON_PATIENCE - KLAXON_RELANCE * (0.7 + 0.6 * tonDeKlaxon(c.cle, i + 7));
+        }
+      } else if (c.klaxonDepuis[i] > 0) c.klaxonDepuis[i] = Math.max(0, Math.min(c.klaxonDepuis[i], KLAXON_PATIENCE * 0.6) - dt);
       a.parPieton = !!(a.bloquant && a.bloquant.pieton && cible === a.cible);
       c.attend[i] = cible < c.vGrilleDe(i) - 0.05 ? 1 : 0;
     }
@@ -3877,6 +3961,8 @@ export function createVehicules({ scene, player }) {
     },
     // pour les tests : heurter la voiture de la rue la plus proche d'un point
     heurter,
+    // LE KLAXON DE LA RUE (v535) : main.js branche ce qui le fait entendre
+    brancherKlaxon(fn) { klaxonneur = fn; },
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
     point: (ci, avance = 0) => (convois[ci] ? convois[ci].place(0, avance) : null),
