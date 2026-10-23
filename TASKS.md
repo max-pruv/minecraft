@@ -137,6 +137,18 @@ complet treize suites vertes sur dix-sept. Les quatre rouges, un par un :
   sur la branche : 6 verts sur 6. La v533 ne touche ni l'approche ni le
   bandeau ; elle allume des feux sur le maillage de l'avion. À rejouer en
   distribution (v269) le jour où il revient, avec la cadence dans le message.
+- [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » :
+  la Bugatti Bolide pose ses deux feux avant à 0,45 bloc de la tôle** (écarts
+  `[0.45, 0.45, −0.015, −0.015]`). Rejouée SEULE sur la branche (v533) ET sur
+  `origin/main` v531 (`git worktree`) : la même valeur au millième des deux
+  côtés — le défaut est en production, la v533 n'y est pour rien (elle ne touche
+  ni `vehicules.js` ni `degats.js`). Piste : le rayon de `posesDetresse` venu de
+  l'avant rate le capot très bas de la Bolide et accroche un bloc optique plus
+  en arrière ; à mesurer avec `sonde-detresse.cjs`, modèle seul.
+  Au même portail, `degats.js` « percuter une voiture de la rue » (déclaré) et
+  `monte.js` : par tranches, deux voisines, le feu, la voiture heurtée, la rue
+  vide, `minimap×edu-timer` aux deux tailles — tous déclarés ; `manhattan.js`
+  « le taxi roule » (déclaré).
 - `reseau.js`, rejouée SEULE : verte sur la branche ; sur `origin/main` v506 le
   trio « à trois, chacun voit les deux autres », ses dépendants et le GPS
   relayé sont rouges, puis la suite meurt (`null.peer`).
