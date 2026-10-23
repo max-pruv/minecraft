@@ -398,7 +398,9 @@ const ANNEAU_DEHORS = 1;         // …la chaussée tourne jusqu'à r − 1, pui
 // moitié de l'écart entre la collectrice GTA et celle du kit, 1,06 bloc par
 // côté) : leurs `l` écrits plus bas sont ceux d'avant, relus à l'import.
 const ELARGI_GTA = (sectionGTA('collecteur').chaussee - sectionDeRue('collecteur').chaussee) / 2;
-const LIAISON = { l: LOCALE_GTA.chaussee / 2, t: 1, sol: BITUME, liaison: true };
+// Une liaison garde son bord extérieur (l + t de la v531, 3,5) : la chaussée
+// s'élargit de ce que gagne la grille, le trottoir rend la même largeur.
+const LIAISON = { l: 1.5 + (DEMI_CHAUSSEE - DEMI_CHAUSSEE_V531), t: 2 - (DEMI_CHAUSSEE - DEMI_CHAUSSEE_V531), sol: BITUME, liaison: true };
 
 const AVENUES = [
   // Pennsylvania part de la 3e Rue, là où elle se détache de Constitution —

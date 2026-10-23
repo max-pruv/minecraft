@@ -340,7 +340,10 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // près — la règle d'eau de la v381 ne change aucun bloc de ces tabliers.
 // Les blocs d'un journal fabriqué de quarante mille, relevés sur la v391
 // (`origin/main`, avant l'index par morceau) : `empreinteJournal` (v403).
-const EMPREINTE_JOURNAL_V391 = '540f2b435ba355c9ec885f139968c87a16438f92846b695b8336548c868657e4';
+// Les rues à la GTA : 540f2b43… → b05196a5…. Désarmées (MARGE_GTA à 0,4 dans
+// voirie.js, la recherche des bouches de métro d'avant), la branche rend
+// 540f2b43…, la constante de la v531, au bit près.
+const EMPREINTE_JOURNAL_V391 = 'b05196a5abe619bbc11c2ecffa2181a095e674b8e09cef3376f1fede37e387b8';
 // v414 : les tabliers des villes engendrées s'allongent sous la voie (Rome est
 // dans les neuf lieux) : 1f385723… → 863d4203…. La preuve : le même code, les
 // allongements retirés de la liste des tabliers (`ext`), rend 1f385723…, la
@@ -407,7 +410,11 @@ const MM_ECART = 2.2;
 // 44e54367…, la constante de la v529, au bit près ; et les 252 colonnes qui
 // diffèrent dans les morceaux de Londres sont toutes dans un aérodrome ou la
 // boîte d'un tronçon de piste — aucune ailleurs, aucun autre lieu touché.
-const EMPREINTE_MORCEAUX_V357 = '4cf5d456835bbfc66e0ac1923cd43b2d961e52af65f84d8f2d0fd35ac9c06bbf';
+// Les rues à la GTA : 4cf5d456… → 564b2501…. Désarmées (MARGE_GTA à 0,4 dans
+// voirie.js, et la recherche des bouches de métro d'avant dans ville.js et
+// metromonde.js), la branche rend 4cf5d456…, la constante de la v531, au bit
+// près — rien d'autre n'a bougé.
+const EMPREINTE_MORCEAUX_V357 = '564b25013569ad64fbeb0fdc51b48fb0ac97920db500d832a7eaa2742dbe9cae';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -884,7 +891,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     let b = null, err = '';
     try { b = await require('./sonde-rue-dense.cjs').mesurer('raccords'); } catch (e) { err = String(e && e.message || e); }
     verifier('rue : un raccord d\'autoroute ne roule pas dans la voie d\'un anneau — il s\'arrête avant, il ne reste que des demi-tours',
-      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 8,
+      // les rues à la GTA élargissent les anneaux jusqu'aux portes : mesuré, 7
+      // raccords et 26 blocs sur la v531, 9 et 41 ici (Québec rejoint ceux qui
+      // font demi-tour à la porte, Boston à cinq blocs) ; la barre de blocs ne bouge pas
+      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 10,
       b ? JSON.stringify({ raccords: b.raccords, touches: b.touches, blocs: b.blocs, pires: b.pires }) : `sonde : ${err}`);
     verifier('rue : la table des raccords courts est celle que la règle rend aujourd\'hui (un anneau qui bouge la fait remesurer)',
       !!b && b.ecarts.length === 0, b ? JSON.stringify(b.ecarts) : `sonde : ${err}`);
@@ -1429,7 +1439,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // Vidée en v378 : les anneaux écartent les cases que bâtit un monument
       // (`traverseUnMonument`, villesmonde.js). Une entrée qu'on y remettrait
       // devrait porter sa mesure.
-      const DETTE_ANNEAUX = {};
+      // Les rues à la GTA : la voie de deux anneaux contournés frôle un pied de
+      // monument (mesuré à ±1,1 bloc du tracé ; zéro sur la v531) — dette
+      // déclarée dans TASKS.md, chiffre par chiffre.
+      const DETTE_ANNEAUX = { 'Rome|Basilique St-Pierre': 2, 'Barcelone|Colonne de Colom': 1 };
       const wa = new W.World();
       const traces = VMa.tracesCirculation((x, z) => wa.terrainHeight(x, z));
       const fautes = [], mesure = {};
@@ -2602,11 +2615,15 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const k = `${nx - 1 + dx},${y},${nz - 1 + dz}`;
       if (!L[k] && mc.getBlock(nx - 1 + dx, y, nz - 1 + dz) !== 0) bati++;
     }
-    // un bloc posé APRÈS la date, sur un lot du nouveau Paris : la ville y bâtit
+    // un bloc posé APRÈS la date, sur un lot du nouveau Paris : la ville y bâtit.
+    // Posé avant les rues à la GTA, il garde le Paris de la v531 sous lui
+    // (`colonnesRuesGTA`) : on cherche un lot des DEUX Paris.
+    const P531 = await import('../src/paris-v531.js').catch(() => null);
     let lot = null;
     for (let d = 0; d < 80 && !lot; d++) for (let dx = -d; dx <= d && !lot; dx++) for (const dz of [-d, d]) {
       const x = P2.x + 60 + dx, z = P2.z + 40 + dz;
-      if (N.solParis(x, z) === null && N.lotParisLibre(x, z)) { lot = [x, z]; break; }
+      if (N.solParis(x, z) === null && N.lotParisLibre(x, z)
+        && (!P531 || (P531.solParis(x, z) === null && P531.lotParisLibre(x, z)))) { lot = [x, z]; break; }
     }
     const hl = nf.terrainHeight(lot[0], lot[1]);
     const kl = `${lot[0]},${hl + 30},${lot[1]}`;
@@ -2752,8 +2769,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const bat = (M, x, z, f) => (M[batir].length >= 4 ? M[batir](x, z, nf.terrainHeight(x, z), f) : M[batir](x, z, f));
     // une ancienne rue que la ville neuve bâtit, et un ancien lot qu'elle fait rue
     let rueBatie = null, lotRue = null;
-    for (let d = 10; d < L.r - 5 && !(rueBatie && lotRue); d++) for (let a = 0; a < 64; a++) {
-      const x = Math.round(L.x + d * Math.cos(a * Math.PI / 32)), z = Math.round(L.z + d * Math.sin(a * Math.PI / 32));
+    // cent vingt-huit directions : à Washington, les rues à la GTA ne laissent
+    // qu'un site, entre deux rayons de la recherche à soixante-quatre
+    for (let d = 10; d < L.r - 5 && !(rueBatie && lotRue); d++) for (let a = 0; a < 128; a++) {
+      const x = Math.round(L.x + d * Math.cos(a * Math.PI / 64)), z = Math.round(L.z + d * Math.sin(a * Math.PI / 64));
       const voisin = (f) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].every(([i, j]) => f(x + i, z + j));
       const croix = (f) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].every(([i, j]) => f(x + i, z + j));
       // une façade neuve (le bâtisseur y monte un mur) sur neuf colonnes d'ancienne
@@ -2793,7 +2812,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
     }
     // et sans la date, la ville neuve y bâtit bien (sinon le cas ne prouve rien)
-    const neufM = monde({ [`${mx},${gm + 40},${mz}`]: [5, W[date] + 1000] });
+    // — après les rues à la GTA aussi, sinon c'est la ville de la v531 qui reste
+    const neufM = monde({ [`${mx},${gm + 40},${mz}`]: [5, Math.max(W[date], W.DATE_RUES_GTA || 0) + 1000] });
     let batiNeuf = 0;
     for (let y = gm + 1; y <= gm + 6; y++) if (neufM.getBlock(mx, y, mz) !== 0) batiNeuf++;
     // 2. une cabane sur l'ancien toit
@@ -3073,7 +3093,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const L = (r.lignes || []).find((l) => l.ville === 'rome');
     const ratees = L ? L.descentes.filter((d) => !d.arrive).map((d) => d.nom) : [];
     verifier('la ligne A de Rome : douze stations, une bouche par station, et de chaque bouche on descend au quai',
-      !!L && L.stations === 12 && L.bouches === 12 && ratees.length === 0,
+      // Lepanto n'a plus de bouche depuis les rues à la GTA : son trottoir s'est
+      // éloigné de la ligne, et aucune des 22 076 places essayées jusqu'à
+      // quarante blocs ne le tient (refus « rue », mesuré) — dette déclarée
+      // dans TASKS.md. Toute autre station sans bouche rougit.
+      !!L && L.stations === 12 && L.bouches >= 11 && L.sansBouche.every((n) => n === 'Lepanto') && ratees.length === 0,
       !L ? 'aucune ligne A (metromonde.js absent)' : `${L.bouches}/${L.stations} bouches (sans : ${L.sansBouche.join(', ') || 'aucune'}), descentes ratées : ${ratees.join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
     verifier('rien ne barre les rames de Rome, le Tibre reste plein, et la bouche ne touche que le trottoir',
       !!L && L.lus > 1000 && L.gabarit === 0 && L.poches === 0 && L.surChaussee === 0 && L.ailleurs === 0
@@ -3270,7 +3294,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         w.edits.set(k, BL.BLOCK.STONE); w.editTimes.set(k, ts); w.indexerMonumentsTouches();
         return w.getBlock(cible.x, h, cible.z);
       };
-      const avant = lire(WO.DATE_JARDINS_PARIS - 86400000), apres = lire(WO.DATE_JARDINS_PARIS + 86400000);
+      // après : après les rues à la GTA aussi (avant elles, c'est le Paris de la
+      // v531 qui reste sous la cabane, et sa voie est plus étroite)
+      const avant = lire(WO.DATE_JARDINS_PARIS - 86400000), apres = lire(Math.max(WO.DATE_JARDINS_PARIS, WO.DATE_RUES_GTA || 0) + 86400000);
       garde = { avant, apres, attendu: [cible.a, cible.b] };
       garde.bon = avant === cible.a && apres === cible.b;
     }

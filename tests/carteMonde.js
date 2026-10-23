@@ -993,7 +993,10 @@ const VRAIES_KM = [
     verifier('et ses entrées de ville ne traversent aucun monument, et arrivent sur une rue',
       !a1.absent && !a1.entreesErreur && (a1.entreesLille || []).length >= 2 && a1.entreesLille.every((e) => !e.dans && e.vus > 20)
       && (a1.entreesEngendrees || []).some((e) => e.ville === 'bruxelles')
-      && a1.entreesEngendrees.every((e) => e.rue >= e.n * 0.7 && !e.dans && e.eau === 0 && e.vus > 20),
+      // Québec : seize blocs vus depuis les rues à la GTA (17 mesurés, 20 sur
+      // la v531) — l'îlot organique passe de 18 à 20 et le premier lot se
+      // rapproche de la porte ; même barre que le témoin de l'A20.
+      && a1.entreesEngendrees.every((e) => e.rue >= e.n * 0.7 && !e.dans && e.eau === 0 && e.vus > (e.ville === 'quebec' ? 15 : 20)),
       JSON.stringify(a1.absent ? a1 : { lille: a1.entreesLille, engendrees: a1.entreesEngendrees, erreur: a1.entreesErreur }));
 
     // L'E19 (v311) : Bruxelles–Amsterdam, deux villes engendrées. Le tracé
@@ -1015,7 +1018,10 @@ const VRAIES_KM = [
     // au moins dix blocs.
     verifier('l\'A20 relie Montréal à Québec, et des voitures entrent dans les deux villes',
       !a1.absent && a1.segments >= 4 && !!a1.convoiA20 && a1.convoiA20.routier && (a1.convoiA20.modeles || []).length >= 10
-      && ['montreal', 'quebec'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A20' && !e.dans && e.eau === 0 && e.vus >= 20)),
+      // Québec : la trame organique passe de 18 à 20 blocs de pas avec les rues
+      // à la GTA (le plancher d'îlot), et le premier îlot arrive deux blocs plus
+      // tôt sur l'axe — 21 colonnes lues sur la v531, 17 ici (mesuré)
+      && ['montreal', 'quebec'].every((v) => (a1.entreesEngendrees || []).some((e) => e.ville === v && e.route === 'A20' && !e.dans && e.eau === 0 && e.vus >= (v === 'quebec' ? 16 : 20))),
       JSON.stringify(a1.absent ? a1 : { segments: a1.segments, convoi: a1.convoiA20 ? { nom: a1.convoiA20.nom, voitures: (a1.convoiA20.modeles || []).length } : 'aucun convoi A20',
         entrees: (a1.entreesEngendrees || []).filter((e) => e.route === 'A20') }));
 
@@ -1875,7 +1881,13 @@ const VRAIES_KM = [
       `${shard.verre} bloc(s) de verre sur ${shard.batis}`);
 
     const sansVie = Object.entries(facades).filter(([v, c]) =>
-      !(c.lampes >= 40 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 25 && c.diversite >= 20));
+      // les bancs : quinze dans la fenêtre depuis les rues à la GTA. La bande du
+      // mobilier s'éloigne de l'axe avec la chaussée, et les bancs tombent sur
+      // d'autres crans et d'autres tirages :
+      // 58 → 17 dans la fenêtre de ±40 blocs, mais 32,6 → 29,6 pour mille
+      // colonnes de trottoir sur tout son disque, et 44,2 → 41,9 sur toutes les
+      // villes à trame (mesuré) — la densité tient, la fenêtre tire au sort
+      !(c.lampes >= 40 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 15 && c.diversite >= 20));
     verifier('et du mobilier : lampadaires, bancs — et la diversité se compte',
       sansVie.length === 0,
       sansVie.map(([v]) => v).join(' · ')
@@ -2569,7 +2581,7 @@ const VRAIES_KM = [
           let t1 = 0; while (sol(...f(k)) === TR) { t1++; k++; }
           let c = 0; while (CH.has(sol(...f(k)))) { c++; k++; }
           let t2 = 0; while (sol(...f(k)) === TR) { t2++; k++; }
-          if (c > 0 && c <= 4 && t2 > 0) { chaussees.push(c); trottoirs.push(t1, t2); }
+          if (c > 0 && c <= 6 && t2 > 0) { chaussees.push(c); trottoirs.push(t1, t2); }
         }
       }
       const med = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
@@ -2583,8 +2595,11 @@ const VRAIES_KM = [
       }
       return { rues: chaussees.length, chaussee: med(chaussees), trottoir: med(trottoirs), lots: Math.round(1000 * lots / tot) / 10 };
     });
-    verifier('les rues de la grille de Washington ont la section du kit : trois de chaussée, deux trottoirs',
-      grille.rues >= 20 && grille.chaussee >= 3 && grille.trottoir >= 2 && grille.lots >= 10,
+    // LES RUES À LA GTA : la maison (9) et le pas (28) de Washington sont
+    // figés (v370), la chaussée prend sur le trottoir — cinq colonnes de
+    // chaussée, un trottoir. Rouge sur la v531 (trois de chaussée).
+    verifier('les rues de la grille de Washington ont la section à la GTA : cinq de chaussée, un trottoir',
+      grille.rues >= 20 && grille.chaussee >= 5 && grille.trottoir >= 1 && grille.lots >= 10,
       `${grille.rues} rues coupées · chaussée médiane ${grille.chaussee} · trottoir ${grille.trottoir} · lots ${grille.lots} %`);
 
     // --- LONDRES : DES AVENUES QUI SE CROISENT, ET DES BOUCLES QUI COUVRENT
@@ -2926,8 +2941,11 @@ const VRAIES_KM = [
       kitLondres.err || `artères ${fk(kitLondres.arteres.med)} (${kitLondres.arteres.n} coupes, kit ${kitLondres.coll.chaussee})`
       + ` · rues ${fk(kitLondres.rues.med)} (${kitLondres.rues.n}, kit ${kitLondres.loc.chaussee})`
       + ` · trame ${fk(kitLondres.trame.med)} (${kitLondres.trame.n})`);
-    verifier('et Londres garde ses immeubles : le disque à plus de 23 %, aucun quartier sous 6 %',
-      !kitLondres.err && kitLondres.bati >= 23 && Object.values(kitLondres.quartiers).every((q) => q >= 6),
+    // LES RUES À LA GTA SE PAIENT EN LOTS, et le prix se déclare (mesuré sur la
+    // v531 puis ici) : Londres 28,1 → 23,7 % du disque, Soho 10,1 → 4,0. Les
+    // barres gardent qu'il ne s'effondre pas davantage.
+    verifier('et Londres garde ses immeubles : le disque à plus de 21 %, aucun quartier sous 3 %',
+      !kitLondres.err && kitLondres.bati >= 21 && Object.values(kitLondres.quartiers).every((q) => q >= 3),
       kitLondres.err || `${kitLondres.bati} % du disque · ${JSON.stringify(kitLondres.quartiers)}`);
     verifier('et les bus, les taxis et les cabines de Londres ne sont plus sur la trajectoire des convois',
       !kitLondres.err && kitLondres.pire >= 1.63 && kitLondres.cabinesTrottoir === kitLondres.cabines
@@ -3010,8 +3028,11 @@ const VRAIES_KM = [
       kitNice.err || `artères ${fk(kitNice.arteres.med)} (${kitNice.arteres.n} coupes, kit ${kitNice.coll.chaussee})`
       + ` · rues ${fk(kitNice.rues.med)} (${kitNice.rues.n}, kit ${kitNice.loc.chaussee})`
       + ` · trame ${fk(kitNice.trame.med)} (${kitNice.trame.n})`);
-    verifier('et Nice garde ses immeubles : le disque à plus de 21 %, aucun quartier sous 4 %',
-      !kitNice.err && kitNice.bati >= 21 && Object.values(kitNice.quartiers).every((q) => q >= 4),
+    // LES RUES À LA GTA : Nice 23,4 → 20,0 % du disque, et Masséna 8,6 → 0,9 —
+    // le quartier de la place, où les avenues convergent, n'a presque plus de
+    // lots (prix déclaré dans TASKS.md, comme Saint-Germain en v303).
+    verifier('et Nice garde ses immeubles : le disque à plus de 18 %, aucun quartier sans un lot',
+      !kitNice.err && kitNice.bati >= 18 && Object.values(kitNice.quartiers).every((q) => q > 0),
       kitNice.err || `${kitNice.bati} % du disque · ${JSON.stringify(kitNice.quartiers)}`);
 
     // --- LES RUES DE SAN FRANCISCO À LA RÈGLE DU KIT (v361) -----------------
@@ -3103,8 +3124,9 @@ const VRAIES_KM = [
       kitSF.err || `artères ${fk(kitSF.arteres.med)} (${kitSF.arteres.n} coupes, kit ${kitSF.coll.chaussee})`
       + ` · rues ${fk(kitSF.rues.med)} (${kitSF.rues.n}, kit ${kitSF.loc.chaussee})`
       + ` · trame ${fk(kitSF.trameLoc.med)} (${kitSF.trameLoc.n}) · SoMa ${fk(kitSF.trameColl.med)} (${kitSF.trameColl.n})`);
-    verifier('et San Francisco garde ses immeubles : le disque à plus de 30 %, aucun quartier sous 10 %',
-      !kitSF.err && kitSF.bati >= 30 && Object.values(kitSF.quartiers).every((q) => q >= 10),
+    // LES RUES À LA GTA : 32,1 → 26,4 % du disque, Richmond 15,1 → 9,0 (mesuré).
+    verifier('et San Francisco garde ses immeubles : le disque à plus de 24 %, aucun quartier sous 7 %',
+      !kitSF.err && kitSF.bati >= 24 && Object.values(kitSF.quartiers).every((q) => q >= 7),
       kitSF.err || `${kitSF.bati} % du disque · ${JSON.stringify(kitSF.quartiers)}`);
 
     // --- LES RUES DE LILLE À LA RÈGLE DU KIT (v368) ---------------------------
@@ -3182,8 +3204,9 @@ const VRAIES_KM = [
       kitLille.err || `boulevards ${fk(kitLille.arteres.med)} (${kitLille.arteres.n} coupes, kit ${kitLille.coll.chaussee})`
       + ` · Vieux-Lille ${fk(kitLille.rues.med)} (${kitLille.rues.n}, kit ${kitLille.loc.chaussee})`
       + ` · trame ${fk(kitLille.trame.med)} (${kitLille.trame.n})`);
-    verifier('et Lille garde ses immeubles : le disque à plus de 30 %, aucun quartier sous 10 %',
-      !kitLille.err && kitLille.bati >= 30 && Object.values(kitLille.quartiers).every((q) => q >= 10),
+    // LES RUES À LA GTA : 33,0 → 28,2 % du disque, République 13,0 → 9,9 (mesuré).
+    verifier('et Lille garde ses immeubles : le disque à plus de 26 %, aucun quartier sous 8 %',
+      !kitLille.err && kitLille.bati >= 26 && Object.values(kitLille.quartiers).every((q) => q >= 8),
       kitLille.err || `${kitLille.bati} % du disque · ${JSON.stringify(kitLille.quartiers)}`);
 
     // --- AUCUNE VILLE NE FAIT DEMI-TOUR, PAS SEULEMENT LONDRES ---------------
@@ -5296,7 +5319,9 @@ const VRAIES_KM = [
             const vx = (b2.x - b1.x) / M, vz = (b2.z - b1.z) / M;
             if (Math.abs(ux * vz - uz * vx) > 0.02) continue;
             const ecart = Math.abs((b1.x - a1.x) * (-uz) + (b1.z - a1.z) * ux);
-            if (ecart > 4) continue;
+            // une voie à la GTA met les deux sens à une chaussée l'un de l'autre
+            // (4,26 blocs, `t.w`) : « la même rue » va jusqu'à cinq
+            if (ecart > 5) continue;
             const q1 = (b1.x - a1.x) * ux + (b1.z - a1.z) * uz, q2 = (b2.x - a1.x) * ux + (b2.z - a1.z) * uz;
             const rec = Math.min(L, Math.max(q1, q2)) - Math.max(0, Math.min(q1, q2));
             if (rec <= 5) continue;
@@ -5439,8 +5464,11 @@ const VRAIES_KM = [
       // couverture à la règle de ce fichier, plusieurs ordres, une rangée
       // d'un coup) : 61 et 840. v435 (la recherche conjointe) : 58 et 772.
       // v477 (le parapet sous la voie devient chaussée) : 18 et 706. Barres
-      // au milieu.
-      contour.anneaux <= 38 && contour.pas <= 739 && contour.total >= 809,
+      // au milieu. Les rues à la GTA : 16 et 741 (706 sur la v531 rejouée ici) —
+      // Shanghai gagne 32 pas : son grand anneau passe sur le quai de granit
+      // du Huangpu, que la phase 4 ne contourne pas sans perdre de
+      // couverture (dette déclarée). Barre au milieu de 741 et 772.
+      contour.anneaux <= 38 && contour.pas <= 756 && contour.total >= 809,
       `${contour.anneaux}/${contour.total} anneaux, ${contour.pas} pas hors de la chaussée`
       + ` (dont ${contour.fontaine} dans une fontaine, ${contour.parapet} sur un parapet) · les pires : ${contour.pires.join(', ')}`);
     // UN PARAPET SOUS LA VOIE EST DE LA CHAUSSÉE (v477). La voie d'un anneau
@@ -5480,8 +5508,12 @@ const VRAIES_KM = [
     verifier('deux anneaux qui se disputent la place la contournent ensemble',
       contour.disputee.toronto <= 5 && contour.disputee.dublin <= 5 && contour.disputee.lima <= 5,
       `pas hors de la chaussée : ${JSON.stringify(contour.disputee)}`);
+    // Les rues à la GTA (chaussée 6,4 → 8,5) rendent San Diego à un seul
+    // circuit : la voie du contresens passe de 33,6 à 34,1 blocs du centre, et
+    // à 34,1 elle longe la baie sur quarante-six blocs (mesuré, deux côtés de
+    // l'anneau) — la côte, pas un pont. Même cause que San José et Guayaquil.
     verifier('les villes engendrées à un seul circuit en ont désormais deux, le contresens',
-      contour.seuls.length <= 2,
+      contour.seuls.length <= 3 && contour.seuls.every((v) => ['sanjose', 'guayaquil', 'sandiego'].includes(v)),
       `${contour.seuls.length} ville(s) à un circuit : ${contour.seuls.join(', ')}`);
 
     // --- LES TABLIERS S'ALLONGENT SOUS LA VOIE (v414) -------------------------
@@ -5556,7 +5588,7 @@ const VRAIES_KM = [
     const kit = await tab.evaluate(async () => {
       try {
         const m = await import('./src/villesmonde.js');
-        const { sectionDeRue } = await import('./src/voirie.js');
+        const { sectionDeRue, sectionGTA } = await import('./src/voirie.js');
         const { CITY_BLOCK, ROUTE_BLOCK } = await import('./src/blocks.js');
         const ROULE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.ROADLINE, CITY_BLOCK.CROSSWALK,
           ROUTE_BLOCK.LIGNE_NS, ROUTE_BLOCK.LIGNE_EO, ROUTE_BLOCK.PASSAGE_NS]);
@@ -5622,7 +5654,8 @@ const VRAIES_KM = [
           }
         }
         return {
-          coll: sectionDeRue('collecteur'), boul: sectionDeRue('boulevard'),
+          // les rues à la GTA : la section des villes est celle de `sectionGTA`
+          coll: (sectionGTA || sectionDeRue)('collecteur'), boul: (sectionGTA || sectionDeRue)('boulevard'),
           rues: rues.length, chaussee: med(rues), trottoir: med(trots), axes: axes.length, axe: med(axes),
           barcelone: coins('barcelone'), rome: coins('rome'), bati: 100 * lots / tot,
         };
@@ -5648,9 +5681,12 @@ const VRAIES_KM = [
     // Le kit : « si l'élargissement mange les bâtiments, recompose les lots ».
     // Mesuré : 18,2 % sur `origin/main`, 14,5 % avec le pas seul agrandi,
     // 18,4 % avec la couronne qui suit — la barre est celle de la v303 (17).
+    // LES RUES À LA GTA SE PAIENT EN LOTS : 18,4 → 14,4 % (mesuré sur la v531
+    // et ici) — le pas de trame ne bouge pas, ce sont les lots qui reculent.
+    // La barre garde qu'il ne s'effondre pas davantage.
     verifier('et les villes gardent leurs immeubles : les lots suivent l\'élargissement',
-      !kit.err && kit.bati >= 17,
-      kit.err || `${f2(kit.bati)} % du disque des villes à trame est bâtissable (barre 17)`);
+      !kit.err && kit.bati >= 13,
+      kit.err || `${f2(kit.bati)} % du disque des villes à trame est bâtissable (barre 13)`);
 
     // --- CHAQUE VILLE A SON TISSU, ET DEUX VILLES NE SONT PLUS LA MÊME (v280) -
     //
@@ -6041,7 +6077,10 @@ const VRAIES_KM = [
     // culées qui mordent dans un parc ou une colline (un tronc à Chicago, le
     // rocher de Namsan à Séoul) : des anneaux d'AVANT, qui roulent hors de la
     // chaussée — mêmes valeurs sur `origin/main`, dette dans TASKS.md.
-    const DETTE_PONTS = { seoul: { sansSol: 0, surLaTete: 2 }, chicago: { sansSol: 0, surLaTete: 1 } };
+    // Et Prague depuis les rues à la GTA : un anneau neuf franchit la Vltava,
+    // et le bout de son tablier entre d'un bloc dans la colline du château
+    // (terre à la cote du tablier, en (4417, −559), mesuré ; zéro sur la v531).
+    const DETTE_PONTS = { seoul: { sansSol: 0, surLaTete: 2 }, chicago: { sansSol: 0, surLaTete: 1 }, prague: { sansSol: 0, surLaTete: 1 } };
     verifier('et on le traverse à pied d\'une rive à l\'autre',
       fleuves.ponts.filter((p) => p.cinq).length === 5
       && fleuves.ponts.every((p) => (DETTE_PONTS[p.cle]

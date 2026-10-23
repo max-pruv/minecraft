@@ -4224,16 +4224,14 @@ export class World {
           // le métro de Washington. Seulement dans le monde d'aujourd'hui.
           if (this.conf.metroParis && !this.conf.parisAvant) {
             const ecrire = (wy, id) => { if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id; };
+            // sous ce qu'un enfant a bâti avant les rues à la GTA, le métro du
+            // Paris de la v531 : ses bouches suivaient les trottoirs d'alors
+            const v531 = PV === PARIS_GTA_AVANT;
             if (this.colonnesStations.size > 0 && this.colonnesStations.has(cleColonneParis(wx, wz))) {
               // sous ce qu'un enfant a bâti : la v473 près du sol (v529)
-              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy <= h + SURFACE_STATIONS) ecrire(wy, id); });
-              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy > h + SURFACE_STATIONS) ecrire(wy, id); }, true);
-            } else if (PV === PARIS_GTA_AVANT) {
-              // sous ce qu'un enfant a bâti avant les rues à la GTA, les bouches
-              // ont pu changer de trottoir : rien de neuf à moins de trois blocs
-              // du sol, sa maison garde ce qui la portait
-              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy <= h + SURFACE_STATIONS) ecrire(wy, id); });
-            } else creuserMetroParis(wx, wz, h, ecrire);
+              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy <= h + SURFACE_STATIONS) ecrire(wy, id); }, false, v531);
+              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy > h + SURFACE_STATIONS) ecrire(wy, id); }, true, v531);
+            } else creuserMetroParis(wx, wz, h, ecrire, false, v531);
           }
           continue;
         }
@@ -4450,13 +4448,11 @@ export class World {
           const wx = baseX + x, wz = baseZ + z;
           if (!metroMondePres(wx, wz)) continue;
           const h = reliefs ? reliefs[(x + 1) + (z + 1) * N2] : this.terrainHeight(wx, wz);
-          // sous ce qu'un enfant a bâti avant les rues à la GTA : rien à moins
-          // de trois blocs du sol (les bouches suivent les trottoirs, v500)
-          const garde = this.ruesAvantGTA(wx, wz);
+          // sous ce qu'un enfant a bâti avant les rues à la GTA : le métro de
+          // la ville de la v531 (ses bouches suivaient les trottoirs d'alors)
           creuserMetroMonde(wx, wz, h, (wy, id) => {
-            if (garde && wy > h + SURFACE_STATIONS) return;
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
-          });
+          }, this.ruesAvantGTA(wx, wz));
         }
       }
     }

@@ -44,6 +44,7 @@
 // colline, le Burj al Arab sur son île.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, RUE, ARCHI, ROUTE_BLOCK } from './blocks.js';
+import { entreesDe } from './routes.js';
 import { positionDe, K_VILLES, MONDES } from './mondes.js';
 import { monumentBati } from './monuments.js';
 import { surTerreReelle } from './terre.js';
@@ -4009,6 +4010,27 @@ export function batirColonneVillesMonde(x, z, poser) {
 // d'accord — jamais un commentaire.
 export const DEGAGEMENT_VOITURE = 1.13;
 
+// L'AXE D'UNE ENTRÉE DE VILLE NE PORTE NI BANC NI JARDINIÈRE (les rues à la
+// GTA). L'avenue d'entrée suit la droite de la porte au centre (v312) : elle
+// traverse des trottoirs avant le premier îlot, et la bande du mobilier s'y
+// est déplacée avec la chaussée — Rome et Cologne roulaient dans un banc,
+// mesuré. À moins d'une demi-voiture et d'un demi-bloc de l'axe, on ne pose
+// rien de solide.
+const _entreesDeVille = new Map();
+function surUneEntree(f, x, z) {
+  let segs = _entreesDeVille.get(f.cle);
+  if (!segs) {
+    segs = entreesDe(f.cle).map((e) => [e.x, e.z, f.ancre.x, f.ancre.z]);
+    _entreesDeVille.set(f.cle, segs);
+  }
+  for (const [ax, az, bx, bz] of segs) {
+    const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz;
+    const t = l2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2)) : 0;
+    if (Math.hypot(x - (ax + dx * t), z - (az + dz * t)) < 1.7) return true;
+  }
+  return false;
+}
+
 export function mobilierVillesMonde(x, z, poser) {
   for (const f of villesPres(x, z)) {
     if (Math.hypot(x - f.ancre.x, z - f.ancre.z) > f.rayon) continue;
@@ -4108,8 +4130,8 @@ export function mobilierVillesMonde(x, z, poser) {
       // noir à chapeau doré de la capture de Moscou.
       if (cran === 4) { poser(1, RUE.REVERBERE); return; }
       // LE BANC, et LA JARDINIÈRE — assez rares pour rester des trouvailles.
-      if (cran === 0 && tirage(a, b, 263) < 0.5) { poser(1, BOIS_BANC); return; }
-      if (cran === 7 && tirage(a, b, 269) < 0.5) { poser(1, RUE.JARDINIERE); return; }
+      if (cran === 0 && tirage(a, b, 263) < 0.5) { if (!surUneEntree(f, x + 0.5, z + 0.5)) poser(1, BOIS_BANC); return; }
+      if (cran === 7 && tirage(a, b, 269) < 0.5) { if (!surUneEntree(f, x + 0.5, z + 0.5)) poser(1, RUE.JARDINIERE); return; }
     }
     return;
   }
@@ -4185,6 +4207,14 @@ function partageDAretes(A, B) {
 // carrefour. Publiée pour que le témoin mesure CE QUE LE JEU APPLIQUE, jamais
 // un chiffre recopié.
 export const PARTAGE_MAX = 20;
+// UN CONTOUR SE JUGE SUR SA VOIE, PAS SUR L'AXE (les rues à la GTA). Le partage
+// se lit sur l'axe des rues ; la voiture roule à une demi-chaussée de lui, et
+// à un coin RENTRANT d'un contour sa voie déborde de l'axe d'une demi-chaussée
+// de chaque côté. Vingt blocs sur l'axe en faisaient 24,3 dans la voie à Tunis
+// et à Kyoto, mesuré, quand la chaussée est passée de 6,4 à 8,5 blocs. Un
+// contour retire donc la chaussée de la barre ; un rectangle n'a pas de coin
+// rentrant, sa barre ne change pas.
+const barreContour = (t) => PARTAGE_MAX - t.w;
 
 // CE QUE L'ENFANT VOIT EN ARRIVANT, ET NON UN COMPTE D'ANNEAUX (v270).
 // Une voiture ne se DESSINE qu'à quarante-cinq blocs (`vu: 45` du convoi,
@@ -5069,7 +5099,7 @@ function contourner(f, c, ponts, quai = true, autres = [], accepte = null) {
   const etat = (ilots, h1, h2, bord, change) => {
     const fautifs = bloques(bord);
     const k = fautifs.length ? null : forme(bord);
-    const exces = k ? Math.max(0, partageDAretes(k.aretes, autres) - PARTAGE_MAX) : 0;
+    const exces = k ? Math.max(0, partageDAretes(k.aretes, autres) - barreContour(t)) : 0;
     return { ilots, h1, h2, bord, change, fautifs, k, exces };
   };
   const bord0 = bordDIlots(depart);
@@ -5289,7 +5319,7 @@ function contournerEnsemble(f, gardes, ponts, accepte) {
   // Le contresens d'un anneau ne peut pas changer de sens : il roulerait
   // alors avec son jumeau.
   const jumeau = gardes.map((g) => gardes.some((h) => h !== g && h.cU === g.cU && h.cV === g.cV && h.Ru === g.Ru && h.Rv === g.Rv));
-  const exces = (as) => as.map((a, r) => Math.max(0, partageDAretes(a.aretes, as.flatMap((b, m) => (m === r ? [] : b.aretes))) - PARTAGE_MAX));
+  const exces = (as) => as.map((a, r) => Math.max(0, partageDAretes(a.aretes, as.flatMap((b, m) => (m === r ? [] : b.aretes))) - barreContour(t)));
   const noter = (as, change) => {
     const ex = exces(as);
     return { as, change, f: as.reduce((n, a) => n + a.fautifs.length, 0), x: ex.reduce((n, e) => n + e, 0), ex };
