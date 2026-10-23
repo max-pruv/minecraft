@@ -398,7 +398,7 @@ export const POINTE_PLEINE = 0.85;    // un mur pris à 85 % de la pointe : choc
 export function vitessePleine(fiche) {
   return fiche && fiche.vmax > 0 ? fiche.vmax * POINTE_PLEINE : CHOC_PLEIN;
 }
-// L'ÉLAN APRÈS LE CHOC (v532). Max : « quand on fonce dans une voiture avec
+// L'ÉLAN APRÈS LE CHOC (v534). Max : « quand on fonce dans une voiture avec
 // une autre voiture, la voiture s'arrête immédiatement alors qu'elle aurait été
 // propulsée sur quelques mètres. Idem sur d'autres types d'objets. » Mesuré
 // (`sonde-elan-chocs.cjs`) : la règle d'avant ne gardait de la vitesse
@@ -425,7 +425,7 @@ export function reponseChoc(vx, vz, nx, nz, vPleine = CHOC_PLEIN, e = REBOND) {
   return { vx: tx * kt - vn * r * nx, vz: tz * kt - vn * r * nz, force, impact, glisse: c < RASANT };
 }
 
-// LE CHOC CONTRE CE QUI SE POUSSE (v532) : une voiture garée ou invoquée (une
+// LE CHOC CONTRE CE QUI SE POUSSE (v534) : une voiture garée ou invoquée (une
 // monture, rien de l'horloge partagée). Deux voitures de même masse, choc
 // d'élasticité `e` : la nôtre garde (1 − e)/2 de sa vitesse normale relative,
 // l'autre en prend (1 + e)/2 — c'est elle qui est « propulsée sur quelques
@@ -447,7 +447,7 @@ export function chocPoussable(vx, vz, ax, az, nx, nz, vPleine = CHOC_PLEIN, e = 
     force: Math.min(1, -wn / vPleine), impact: -wn, glisse: c < RASANT };
 }
 
-// LA GLISSADE (v532) : après un vrai choc, la voiture n'obéit plus au
+// LA GLISSADE (v534) : après un vrai choc, la voiture n'obéit plus au
 // joystick le temps de reprendre ses appuis. Sans elle, le frein du joystick
 // tenu en avant mangeait le rebond en un quart de seconde (mesuré : 0,8 bloc
 // à 30 blocs/s contre une voiture garée) et la voiture « s'arrêtait
@@ -605,7 +605,7 @@ export function chocContreVoiture(moi, autre, vx, vz, vPleine = CHOC_PLEIN) {
   // poussée, qui file de côté)
   const ax = autre.vx != null ? autre.vx : (autre.v || 0) * autre.ux;
   const az = autre.vz != null ? autre.vz : (autre.v || 0) * autre.uz;
-  // une voiture garée ou invoquée se POUSSE (v532) ; une voiture de la rue
+  // une voiture garée ou invoquée se POUSSE (v534) ; une voiture de la rue
   // non — sa place est une fonction de l'horloge partagée (v305)
   if (autre.libre) {
     const p = chocPoussable(vx, vz, ax, az, n.nx, n.nz, vPleine);
@@ -613,7 +613,7 @@ export function chocContreVoiture(moi, autre, vx, vz, vPleine = CHOC_PLEIN) {
     return { vx: p.vx, vz: p.vz, force, impact: p.impact, glisse: p.glisse, nx: n.nx, nz: n.nz, pousse: p.autre };
   }
   const r = reponseChoc(vx - ax, vz - az, n.nx, n.nz, vPleine);
-  // CE QU'ELLE AVANÇAIT VERS NOUS NE NOUS EMPORTE PAS (v532). Une voiture de
+  // CE QU'ELLE AVANÇAIT VERS NOUS NE NOUS EMPORTE PAS (v534). Une voiture de
   // la rue percutée s'arrête (`heurter`, vehicules.js, v372) ; prise de face
   // en roulant, sa vitesse rendue à la nôtre la renvoyait sept blocs en
   // arrière pendant la glissade (`manhattan.js`, le taxi). On garde ce qui

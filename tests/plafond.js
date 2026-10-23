@@ -776,7 +776,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
   }
-  // --- L'ÉLAN APRÈS UN CHOC (v532) ------------------------------------------
+  // --- L'ÉLAN APRÈS UN CHOC (v534) ------------------------------------------
   // Max : « quand on fonce dans une voiture avec une autre voiture, la voiture
   // s'arrête immédiatement alors qu'elle aurait été propulsée sur quelques
   // mètres ». Le VRAI joueur sous node (`sonde-elan-chocs.cjs`) : une hypercar

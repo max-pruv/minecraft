@@ -63,7 +63,7 @@ const DEMI_LONG_VOITURE = 2.2;   // la moitié des 4,4 blocs d'une voiture (vehi
 const DEGAGEMENT_MARCHE = 0.7;
 const RAYON_MUR = 4.5;     // la façade se lit sur ce rayon autour du contact (v397)
 const FACES = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-const ANTI_REBOND = 0.35;        // s de jeu : un choc plus faible dans ce délai est le même accident (v532)
+const ANTI_REBOND = 0.35;        // s de jeu : un choc plus faible dans ce délai est le même accident (v534)
 const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un piéton   // ce qu'il faut avancer pour passer le bord d'une marche (v286)
 
 // LE VOL D'UN AVION — trois chiffres, et chacun a sa raison.
@@ -403,7 +403,7 @@ export class Player {
   // le toucherait à chaque image et rien ne se lirait plus.
   publierChoc(force, dx, dz) {
     if (!(force >= 0.05)) return;
-    // UN REBOND NE PUBLIE PAS UN SECOND CHOC (v532) : la voiture renvoyée par
+    // UN REBOND NE PUBLIE PAS UN SECOND CHOC (v534) : la voiture renvoyée par
     // un mur, joystick tenu, y revient un quart de seconde plus tard ; ce
     // n'est pas un nouvel accident. Sur l'horloge du JEU (comme la glissade),
     // un choc plus faible que le précédent dans ANTI_REBOND ne se publie pas.
@@ -441,11 +441,11 @@ export class Player {
     }
     this.vitesseVoiture = v; this.derive = d;
     this.vel.x = wx; this.vel.z = wz;
-    // pendant une glissade, c'est elle qui porte la vitesse (v532)
+    // pendant une glissade, c'est elle qui porte la vitesse (v534)
     if (this.glissade) { this.glissade.vx = wx; this.glissade.vz = wz; }
   }
 
-  // APRÈS UN VRAI CHOC, LA GLISSADE (v532). La vitesse d'après le choc devient
+  // APRÈS UN VRAI CHOC, LA GLISSADE (v534). La vitesse d'après le choc devient
   // un VECTEUR libre que le joystick ne touche plus le temps de la glissade
   // (`dureeGlissade`) : on est renvoyé, dévié, on glisse quelques mètres en
   // perdant sa vitesse (`pasGlissade`), et la caisse tourne si l'impulsion ne
@@ -619,7 +619,7 @@ export class Player {
       const x = this.pos.x, y = this.pos.y, z = this.pos.z;
       const fam = this.obstacleVehicule ? this.obstacleVehicule(x + dx, z + dz, this.yaw + Math.PI, x, z) : false;
       if (fam === 'pieton' || fam === 'eau') {
-        // une glissade qui mènerait vers un piéton ou l'eau s'arrête net (v532)
+        // une glissade qui mènerait vers un piéton ou l'eau s'arrête net (v534)
         this.glissade = null;
         this.vitesseVoiture = 0; this.derive = 0; this.vel.x = 0; this.vel.z = 0;
         break;
@@ -660,7 +660,7 @@ export class Player {
       // aussi juste après une crête : plus vite qu'avant, la voiture décolle
       // d'une bosse et retombe devant la marche suivante sans être « au sol »
       // à l'image près ; tant qu'elle ne TOMBE pas, elle la gravit.
-      // ET PAS EN GLISSADE (v532) : renvoyée de biais le long d'un mur en
+      // ET PAS EN GLISSADE (v534) : renvoyée de biais le long d'un mur en
       // escalier, la voiture butait sur le coin d'une marche du mur et « la
       // franchissait » — montée d'un bloc dans la façade (mesuré au mur à 30°)
       if (!this.glissade && (etaitAuSol || this.vel.y > -4) && Math.abs(this.vitesseVoiture) > 0.5) {
@@ -709,7 +709,7 @@ export class Player {
     // sol continu ou une boîte a mangé le pas sans qu'un choc ne l'ait dit, on
     // ramène la vitesse à ce que la voiture a FAIT. Seulement quand elle est
     // bloquée (moins d'un quart du pas), jamais quand elle frotte.
-    // ET PAS DANS L'IMAGE D'UN CHOC (v532) : la voiture y a avancé PUIS rebondi,
+    // ET PAS DANS L'IMAGE D'UN CHOC (v534) : la voiture y a avancé PUIS rebondi,
     // son déplacement net est presque nul, et le filet mangeait le rebond —
     // mesuré, à 15 blocs/s contre un mur la voiture restait plantée net. Pendant
     // une glissade, c'est le vecteur de la glissade qu'on ramène.
@@ -1307,7 +1307,7 @@ export class Player {
       // qu'il agit (`freinMainTire`) pour qui voudrait le dessiner ou l'entendre.
       const freinMain = !!this.freinMain || k.has('Space');
       this.freinMainTire = freinMain && !inerte;
-      // APRÈS UN CHOC, LA GLISSADE D'ABORD (v532) : le joystick attend qu'elle
+      // APRÈS UN CHOC, LA GLISSADE D'ABORD (v534) : le joystick attend qu'elle
       // rende la main (`avancerGlissade`), puis la dynamique reprend.
       if (!this.avancerGlissade(dt)) {
         const r = pasVoiture(

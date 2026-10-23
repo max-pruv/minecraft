@@ -19,7 +19,7 @@
 // échoue NOMME son échec et la sonde passe au suivant (v288 : une sonde qui
 // avale ses erreurs prend trois vues sur cinq et se dit verte).
 //
-//     cd tests && node sonde-revue-ecran.cjs [dossier] [--etats=a,b] [--vues=iphone,ipad] [--sans-nuit|--sans-jour] [--en-ligne]
+//     cd tests && node sonde-revue-ecran.cjs [dossier] [--etats=a,b] [--vues=iphone,ipad] [--sans-nuit|--sans-jour] [--en-ligne] [--rr=12] [--params=&loin=10240]
 //
 // Le dossier par défaut est HORS du dépôt. La grille de lecture des captures
 // est dans docs/revue-ecran.md, et CLAUDE.md dit quand la jouer.
@@ -29,7 +29,7 @@ const fs = require('fs');
 const os = require('os');
 
 const args = process.argv.slice(2);
-const opt = (n) => { const a = args.find((x) => x.startsWith(`--${n}=`)); return a ? a.split('=')[1].split(',') : null; };
+const opt = (n) => { const a = args.find((x) => x.startsWith(`--${n}=`)); return a ? a.slice(n.length + 3).split(',') : null; };
 const dossier = args.find((a) => !a.startsWith('--')) || path.join(os.tmpdir(), 'revue-ecran');
 fs.mkdirSync(dossier, { recursive: true });
 
@@ -327,15 +327,18 @@ async function monterEnAvion(tab, espece = 'avionligne') {
   try {
     for (const [vue, viewport] of Object.entries(VUES)) {
       if (filtreVues && !filtreVues.includes(vue)) continue;
-      const params = '&ombres=1&hd=3';
+      // `--params=&loin=10240` ajoute des paramètres d'adresse ; `--rr=12` change la
+      // distance d'affichage (v532 : « Normal » contre « Loin », même page).
+      const params = '&ombres=1&hd=3' + ((opt('params') || []).join(','));
+      const rr = Number((opt('rr') || [])[0]) || 9;
       // l'accueil se capture AVANT « Jouer » : une page à elle
       if (!filtreEtats || filtreEtats.includes('accueil')) {
-        const p0 = await banc.joueur('Accueil' + vue, { tactile: true, viewport, rr: 9, params, prep: 1 });
+        const p0 = await banc.joueur('Accueil' + vue, { tactile: true, viewport, rr, params, prep: 1 });
         await dormir(12000);
         await prendre(p0, `${vue}-accueil`);
         await p0.close().catch(() => {});
       }
-      const tab = await banc.jouerSeul('Revue' + vue, { tactile: true, viewport, rr: 9, params, pret: true });
+      const tab = await banc.jouerSeul('Revue' + vue, { tactile: true, viewport, rr, params, pret: true });
       const depart = await tab.evaluate(() => {
         const P = window.__game.player.pos; return { x: Math.floor(P.x), z: Math.floor(P.z), yaw: window.__game.player.yaw };
       });
@@ -347,6 +350,13 @@ async function monterEnAvion(tab, espece = 'avionligne') {
           const t0 = Date.now();
           const r = await e.prep(tab, { depart });
           noter(`· ${vue} ${e.nom} prêt en ${Math.round((Date.now() - t0) / 1000)} s ${JSON.stringify(r || {})}`);
+          // Ce que la scène porte au loin (v532) : brouillard, plan lointain, couronnes.
+          const loin = await tab.evaluate(() => {
+            const g = window.__game;
+            return { brouillard: Math.round(g.scene.fog.far), planLointain: Math.round(g.camera.far),
+              couronnes: ['horizon-loin', 'horizon-tres-loin'].filter((n) => g.scene.getObjectByName(n)) };
+          }).catch(() => null);
+          noter(`  loin ${JSON.stringify(loin)}`);
           for (const [nomH, h] of HEURES) {
             await tab.evaluate((h) => window.__setDayTime(h), h);
             await dormir(2500);   // le ciel tourne à l'image suivante (v291)

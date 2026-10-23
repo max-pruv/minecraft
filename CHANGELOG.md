@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v532 — Un choc a de l'élan
+## v534 — Un choc a de l'élan
 
 **Pourquoi.** Max : « Quand on fonce dans une voiture avec une autre voiture,
 la voiture s'arrête immédiatement alors qu'elle aurait été propulsée sur
@@ -62,6 +62,41 @@ repointés, chacun mesuré sur `origin/main` : la voiture de la rue percutée
 (`degats.js`) juge à la vitesse du choc et non à un élan de vingt blocs que
 la rue, en temps réel, défait (rouge 1 sur 3 sur `origin/main`) ; le virage
 de la caméra (`monte.js`) ne compte pas les images d'une glissade.
+Portail complet : quatorze suites vertes ; `monte.js` et `reseau.js` rendent
+des rouges déjà déclarés dans `TASKS.md` avec leur double mesure (la rue, la
+partie à trois) ; `degats.js` rend un seul rouge, les feux de détresse de la
+Bugatti Bolide, identique rejoué seul sur `origin/main` (47 verts des deux
+côtés) — déclaré.
+## v532 — « Loin » voit loin, même quand le jeu s'allège par sûreté
+
+**Pourquoi.** Max, sur la v518 : « On ne voit pas du tout quatre fois plus
+loin. » Le journal de bord de son iPhone (`journal_appareil`) l'explique : de
+la v506 à la v512, chaque session porte `etendue: haut` (« Loin » choisi) et
+`palier: moyen, source: sûreté` — `bas` avant la v509. La couronne lointaine
+(v497) et le troisième étage (v518) ne vivent QUE dans la fiche `haut` : sous
+la sûreté, le jeu les retirait avec le reste. Ils n'ont jamais tourné sur son
+appareil, et ne peuvent pas avoir causé ses plantages : tous datent de la v406
+à la v411, avant eux, et il n'y en a plus eu depuis.
+
+**Ce que ça change.** « Loin » choisi, le paysage lointain va jusqu'à 10 240
+blocs même quand le jeu joue « Normal » par sûreté : le brouillard et le plan
+lointain reculent, la côte et la mer apparaissent à l'horizon en vol. Les
+morceaux, la file et la couche HD restent ceux du cran de sûreté — la couronne
+ne fabrique aucun morceau, elle lit le relief. Les Réglages le disent (« en
+gardant le paysage lointain »), et la fiche du journal de bord porte désormais
+la portée de la vue (`loin`), pour qu'on n'ait plus à la déduire.
+
+**Ce qui le prouve.** Deux témoins, rouges sur `origin/main` : la règle pure
+(`parent.js` : sous « Loin » par sûreté, `loin` 10 240 et rr, file, HD de
+« Normal » ; « Auto » et « Normal » choisis gardent `loin` 0), et la scène
+d'une page rechargée dans l'état exact de l'iPhone (les deux couronnes
+nommées, brouillard ≥ 10 000). Coût mesuré au banc à rr 12 : +47 000
+triangles, +5,2 Mo de géométrie, +3 appels de dessin. Captures de revue
+d'écran (`sonde-revue-ecran.cjs`, options neuves `--rr=` et `--params=`) à
+430 × 932 et 820 × 1180, jour et nuit, « Normal » contre « Normal + loin ».
+
+---
+
 ## v531 — De vraies feuilles d'automne, posées sur le monde
 
 **Pourquoi.** Max, capture d'iPhone au volant sur une autoroute : « Je ne sais

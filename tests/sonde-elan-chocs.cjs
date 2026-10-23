@@ -1,4 +1,4 @@
-// L'ÉLAN APRÈS UN CHOC (v532). Max : « Quand on fonce dans une voiture avec une
+// L'ÉLAN APRÈS UN CHOC (v534). Max : « Quand on fonce dans une voiture avec une
 // autre voiture, la voiture s'arrête immédiatement alors qu'elle aurait été
 // propulsée sur quelques mètres. Idem sur d'autres types d'objets. »
 //

@@ -938,10 +938,11 @@ const enAttente = new Map();          // key -> { cx, cz, sale, detail, depuis }
 statsMaillage.enAttente = enAttente;  // la sonde lit l'âge des demandes (v360)
 // LE RÉGLAGE ENTRE DANS LA FICHE DU JOURNAL (v299) : ce que l'appareil joue,
 // pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
-// réglage lu au démarrage.
+// réglage lu au démarrage. Et la portée de la vue (v532) : sans elle, on a dû
+// DÉDUIRE du palier que la couronne lointaine n'avait jamais tourné chez Max.
 journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576,
   palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null, etendue: ETENDUE_CHOISIE,
-  logiciel: renduLogiciel() });
+  loin: PORTEE_VUE, logiciel: renduLogiciel() });
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
 let maillageDistant = null;
 function synchroniserLeWorker() {
@@ -1847,7 +1848,7 @@ function updateChunks() {
   // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v358) : un choc
   // contre une voiture de la rue ou du mobilier rebondit, un piéton et l'eau
   // arrêtent net, sans choc — personne n'est jamais touché (v259).
-  // ET UNE VOITURE GARÉE OU INVOQUÉE (v532) : une monture qui porte un
+  // ET UNE VOITURE GARÉE OU INVOQUÉE (v534) : une monture qui porte un
   // `gabarit` — pas un avion. Elle n'était un obstacle que pour les piétons
   // (v259) ; la voiture de l'enfant la traversait. Elle se POUSSE : c'est une
   // bête de cette tablette, rien de l'horloge partagée (v305).
@@ -3284,7 +3285,7 @@ function texteEtendue() {
     // aucun message (décision de Max, les commandes à icônes) : c'est ici
     // qu'on l'apprend. Toucher la même étendue la lève (`renderEtendue`).
     if (PALIER && PALIER.source === 'sûreté' && PALIER.sousChoix === choix) {
-      return `⚠️ « ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois : il joue en « ${mot(PALIER.nom)} » pour l'instant. Touche « ${mot(choix)} » pour réessayer, ou garde ça.`;
+      return `⚠️ « ${mot(choix)} » a arrêté le jeu ${PLANTAGES_SURETE} fois : il joue en « ${mot(PALIER.nom)} » pour l'instant${PALIER.loin ? ', en gardant le paysage lointain' : ''}. Touche « ${mot(choix)} » pour réessayer, ou garde ça.`;
     }
     base = `Tu as choisi « ${mot(choix)} ».`;
   }

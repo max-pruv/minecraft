@@ -387,7 +387,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         releves.push({ beta: +(beta * 180 / Math.PI).toFixed(1), recul: +d.toFixed(2),
           v: +Math.hypot(g.player.vel.x, g.player.vel.z).toFixed(1),
           avant: vv === undefined || vv > 1,
-          // et pendant la glissade d'après un choc (v532), où le volant n'agit pas
+          // et pendant la glissade d'après un choc (v534), où le volant n'agit pas
           rebond: !!(choc && performance.now() - choc.t < 1500) || !!g.player.glissade });
       }
       // ON NE JUGE QUE CE QUI ROULE : à l'arrêt le volant ne fait rien (v262),
@@ -7956,7 +7956,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       for (let z = -30; z <= 0; z++) for (let h = 1; h <= 3; h++) poser(x0 + 90, y0 + h, z0 + z);
       placer(50, -12, -Math.PI / 2, 22);
       P.choc = null; n0 = P.chocs || 0; let face = null, vMin = 0;
-      // ON LIT L'ARRÊT UNE SECONDE ET DEMIE APRÈS LE CHOC (v532) : la voiture
+      // ON LIT L'ARRÊT UNE SECONDE ET DEMIE APRÈS LE CHOC (v534) : la voiture
       // rebondit et glisse avant de s'arrêter (la glissade, conduite.js) ; lue
       // à trois secondes fixes, un choc tombé à 2,3 s la trouvait encore en route
       let tFace = null;
@@ -7972,7 +7972,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       await enJeu(3, (c) => { if (!rue && (P.chocs || 0) > n0) rue = { t: +c.toFixed(2), choc: P.choc, v: +(P.vitesseVoiture || 0).toFixed(2) }; });
       P.obstacleVehicule = vrai; P.touchMove.f = 0;
       res.rue = { rue, x: +(P.pos.x - x0).toFixed(1) };
-      // — UNE VOITURE GARÉE, PAR LE VRAI CROCHET (v532). Max : « quand on fonce
+      // — UNE VOITURE GARÉE, PAR LE VRAI CROCHET (v534). Max : « quand on fonce
       // dans une voiture avec une autre voiture, la voiture s'arrête
       // immédiatement alors qu'elle aurait été propulsée sur quelques
       // mètres ». Une berline invoquée en travers de la dalle (z − 25), la

@@ -753,7 +753,7 @@ function verifier(nom, ok, detail = '') {
         clones: propres.length, communs: propres.filter((pc) => pc.mesh.geometry === pc.geoOrig).length, partagees,
         notreSante: nous ? Math.round(nous.sante * 10000) / 10000 : 1 };
     });
-    // L'ÉLAN SE JUGE À LA VITESSE DU CHOC, PAS À LA DISTANCE (v532). Reculé à
+    // L'ÉLAN SE JUGE À LA VITESSE DU CHOC, PAS À LA DISTANCE (v534). Reculé à
     // vingt-six blocs, l'enfant libère la voiture de la rue, qui roule en temps
     // RÉEL (v305) : une image de 517 ms (mesurée) la fait avancer de sept blocs
     // pendant les deux dixièmes de seconde du témoin, et l'écart tombait à 18 —
