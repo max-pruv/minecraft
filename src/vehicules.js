@@ -2286,9 +2286,18 @@ export function posesDetresse(m) {
   m.position.set(0, 0, 0); m.quaternion.identity(); m.updateMatrixWorld(true);
   const meshes = [], feux = { av: new THREE.Box3(), ar: new THREE.Box3() };
   const boite = new THREE.Box3(), b = new THREE.Box3();
+  // UNE TÔLE FROISSÉE NE FAIT PAS LA RÈGLE DU MODÈLE (v541). Les poses se
+  // gardent par modèle ; mesurées sur une voiture de la rue déjà enfoncée
+  // (`degats3d` lui donne une géométrie à elle, sans la marque `partagee` du
+  // prototype), elles tombaient dans la bosse, et toutes les voitures neuves
+  // de ce modèle portaient ensuite leurs feux dans le vide (la Bolide en v540,
+  // la F40 quand les feux stop ont lu le cache plus tôt). On mesure, mais on
+  // ne garde que ce qui a été mesuré sur une carrosserie intacte.
+  let intacte = true;
   m.traverse((o) => {
     if (!o.isMesh || o.name === 'detresse-lentille' || !o.geometry) return;
-    for (let p = o; p && p !== m; p = p.parent) if (p.name === 'detresse' || p.visible === false) return;
+    for (let p = o; p && p !== m; p = p.parent) if (p.name === 'detresse' || p.name === 'feux-arriere' || p.visible === false) return;
+    if (!(o.geometry.userData && o.geometry.userData.partagee)) intacte = false;
     meshes.push(o);
     if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
     b.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
@@ -2309,7 +2318,7 @@ export function posesDetresse(m) {
   m.position.copy(pos); m.quaternion.copy(quat);
   if (parent) parent.add(m);
   m.updateMatrixWorld(true);
-  if (cle) posesParModele.set(cle, poses);
+  if (cle && intacte) posesParModele.set(cle, poses);
   return poses;
 }
 const _v3 = new THREE.Vector3(), _o3 = new THREE.Vector3(), _d3 = new THREE.Vector3();
