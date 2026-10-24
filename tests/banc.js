@@ -609,12 +609,10 @@ class Banc {
 
   // Ouvrir la carte comme l'enfant : le bouton, puis la vignette.
   async ouvrirLaCarte(p) {
-    await p.evaluate(() => {
-      if (document.getElementById('minimap').style.display !== 'block') {
-        document.getElementById('map-btn').click();
-      }
-      document.getElementById('minimap').click();
-    });
+    // La minicarte est toujours là en jeu (v530) : on attend qu'elle le soit
+    // (une image après l'entrée), puis on la touche.
+    await p.waitForFunction(() => document.getElementById('minimap').style.display === 'block', null, { timeout: 30000 }).catch(() => {});
+    await p.evaluate(() => document.getElementById('minimap').click());
     // MÊME BUDGET QUE L'ATTENTE QUI PRÉCÈDE. `joueur()` accorde trente
     // secondes pour que la partie démarre ; ouvrir la carte juste après n'en
     // avait que dix, sur le même conteneur et souvent après quatre suites.

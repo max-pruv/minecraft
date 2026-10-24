@@ -6,6 +6,43 @@
 
 export const NOUVEAUTES = [
   {
+    v: 540,
+    titre: 'La minicarte toujours là',
+    puces: [
+      'La minicarte s\'affiche toute seule',
+      'La toucher ouvre la carte du monde',
+      "La croix ne cache plus l'heure",
+    ],
+  },
+  {
+    v: 539,
+    titre: 'Plus rien sur les rails',
+    puces: [
+      'Les berges ne coupent plus le train',
+      'Un vrai train : motrice et fenêtres',
+      'Les wagons ne se touchent plus',
+    ],
+  },
+  {
+    v: 538,
+    titre: 'Des guides dans les villes',
+    puces: [
+      'Un guide et son fanion orange',
+      'Il raconte à voix haute',
+      'Paris, Londres, Rome, New York, Washington',
+      'En français ou en anglais',
+    ],
+  },
+  {
+    v: 536,
+    titre: 'Les poteaux tombent',
+    puces: [
+      'La voiture renverse réverbères et feux',
+      'Les jardinières s\'écrasent',
+      'Tout se relève plus tard',
+    ],
+  },
+  {
     v: 535,
     titre: 'La voiture, comme dans GTA',
     puces: [

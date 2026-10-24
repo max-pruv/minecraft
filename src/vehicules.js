@@ -2668,7 +2668,10 @@ export function createVehicules({ scene, player }) {
         // on voit le quai par la fenêtre (revue d'écran #3)
         oeil: OEIL_RAME,
         arrets, pause: opts.pause, souterrain: opts.souterrain, decouvert: opts.decouvert, rail: true,
-        modele: (i) => construireRame(i === 0, teintes[k % teintes.length]),
+        // un modèle à elle (v539 : le train intervilles, `convoitrain.js`),
+        // sinon la rame du métro
+        modele: opts.modele ? (i) => opts.modele(i, teintes[k % teintes.length], opts.nb ?? 4)
+          : (i) => construireRame(i === 0, teintes[k % teintes.length]),
       });
     }
   }
@@ -3981,6 +3984,7 @@ export function createVehicules({ scene, player }) {
       // géométrie d'une voie ne dépend pas du nom qu'on donne au train.
       longueur: Math.round(c.parcours.longueur),
       nbArrets: c.arrets.length,
+      ecart: c.ecart,   // l'écart entre deux voitures, le long du tracé (v539)
       y: Math.round((c.elements[0] ? c.elements[0].position.y : 0) * 10) / 10,
       vitesse: Math.round((c.freine ? c.vitesseActuelle : c.vitesse) * 10) / 10,
       distance: Math.round(c.distance),

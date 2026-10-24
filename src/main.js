@@ -15,6 +15,7 @@ import { circuitsSF, ENTREES_SF } from './sanfrancisco.js';
 import { circuitsNice, ENTREES_NICE } from './nice.js';
 import { circuitsLille } from './lille.js';
 import { buildPropMesh } from './props.js';
+import { Casses, faconDeCasser, poseDeChute, cleBloc, cleHD, VITESSE_CASSE, PERTE_CASSE, DUREE_CHUTE_MS, GENRES_HD_CASSABLES } from './mobiliercasse.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
@@ -33,7 +34,7 @@ import { buildChunkTampons } from './mesher.js';
 import { materiauHD, geometrieHD } from './matierehd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
-import { creerGuides, DUREE_PANNEAU_MS } from './guides.js';
+import { creerGuides, parlerAVoixHaute } from './guides.js';
 import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN, PORTEE_COURONNE,
   ABAISSE_TRES_LOIN, rayonTresLoin } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
@@ -46,7 +47,8 @@ import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
 import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
-import { createVie } from './vie.js';
+import { createVie, createGuidesVilles } from './vie.js';
+import { TOUS_LES_GUIDES } from './guidesvilles.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
 import { creerNomsDeStations, chaufferStations } from './stations.js';
@@ -60,6 +62,7 @@ import { ALLURE_VOIE } from './circulation.js';
 import { createPassants } from './passants.js';
 import { createPoissons } from './poissons.js';
 import { segmentsDeTrain, traceSegment } from './trains.js';
+import { construireTrain, ECART_TRAIN } from './convoitrain.js';
 import { segmentsDeRoute, traceRoute, entreesDe } from './routes.js';
 import { raccordDe } from './raccords.js';
 import { ENTREES_PARIS } from './paris.js';
@@ -959,7 +962,7 @@ function synchroniserLeWorker() {
   if (!maillageDistant) return;
   generationDistante++;
   enAttente.clear();
-  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, arbres: world.arbres, sansSolContinu: world.sansSolContinu });
+  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, arbres: world.arbres, sansSolContinu: world.sansSolContinu, mobilierCasse: world.mobilierCasse ? [...world.mobilierCasse] : [] });
 }
 // L'ENFANT ATTEND SON MORCEAU, IL NE LE FABRIQUE PAS (v436).
 //
@@ -1105,6 +1108,7 @@ let circulationsEnAttente = [];
 // cents blocs, ne se voit pas.
 const circulationPrete = cadence(125);
 let passants = null;
+let guidesVilles = null;   // les guides au pied des monuments (v538)
 let poissons = null;
 
 // Spawn on land near the origin.
@@ -1208,7 +1212,10 @@ function disposeChunkMesh(entry) {
     mesh.geometry.dispose();
   }
   // prop groups share template geometry — just detach them
-  if (entry.props) scene.remove(entry.props);
+  if (entry.props) {
+    scene.remove(entry.props);
+    for (const m of entry.props.children) if (m.userData.cle && piecesParCle.get(m.userData.cle) === m) piecesParCle.delete(m.userData.cle);
+  }
 }
 
 // Une BufferGeometry depuis les tampons du mailleur (v251) : une
@@ -1235,6 +1242,35 @@ function meshChunk(cx, cz) {
   installerMorceau(cx, cz, buildChunkTampons(world, cx, cz, { detail: detailVoulu(cx, cz, pcx, pcz) }));
   statsMaillage.principalMs += performance.now() - t0;
   statsMaillage.locaux++;
+}
+
+// LE MOBILIER QUI EST TOMBÉ (v536, `mobiliercasse.js`). Le registre vit ici,
+// à côté des morceaux : un morceau remaillé retrouve ses pièces couchées, et
+// une pièce se relève quand l'enfant est loin. `parCle` mène d'une clé de bloc
+// à son maillage, pour l'animer sans parcourir la scène.
+const casses = new Casses();
+const piecesParCle = new Map();
+// (le cap d'origine et le feu d'une pièce vivent hors de `userData`, que
+// `clone` recopie par JSON)
+const etatPiece = new WeakMap();
+const _qTip = new THREE.Quaternion(), _axe = new THREE.Vector3();
+function poserLaChute(mesh, c, maintenant) {
+  let e = etatPiece.get(mesh);
+  if (!e) etatPiece.set(mesh, e = {});
+  if (!e.q0) e.q0 = mesh.quaternion.clone();
+  const p = c ? Math.min(1, (maintenant - c.t) / DUREE_CHUTE_MS) : 0;
+  if (!c) {
+    mesh.quaternion.copy(e.q0); mesh.scale.y = mesh.scale.x;
+  } else {
+    const pose = poseDeChute(c.facon, c.dx, c.dz, p);
+    _qTip.setFromAxisAngle(_axe.set(pose.ax, 0, pose.az), pose.angle);
+    mesh.quaternion.copy(_qTip).multiply(e.q0);
+    mesh.scale.y = mesh.scale.x * pose.echelleY;
+  }
+  // un feu tombé s'éteint, une lanterne tombée aussi (son verre reste dessiné)
+  if (c && e.feu) { for (const l of e.feu.lampes) l.visible = false; e.feu.etat = 'tombe'; }
+  else if (!c && e.feu) e.feu.etat = null;       // le prochain tour de `reglerLesFeux` le rallume
+  return p;
 }
 
 // les dates d'installation, pour le débit que `?diag=1` affiche en roulant (v380)
@@ -1317,6 +1353,9 @@ function installerMorceau(cx, cz, tampons) {
       if (!mesh) continue;
       mesh.position.set(cx * CHUNK + p.x + 0.5, p.y, cz * CHUNK + p.z + 0.5);
       group.add(mesh);
+      // la clé du bloc (v536) : un morceau remaillé retrouve ses pièces tombées
+      const cleP = cleBloc(cx * CHUNK + p.x, p.y, cz * CHUNK + p.z);
+      if (faconDeCasser(p.id)) { mesh.userData.cle = cleP; piecesParCle.set(cleP, mesh); }
       // LA LANTERNE D'UN RÉVERBÈRE EST UNE LAMPE POSSIBLE (v248) : sa place
       // est celle du bloc de lanterne du modèle (props.js), un demi-bloc en
       // avant du fût et à trois blocs du sol. `eclairerLaRue` y pose une des
@@ -1325,9 +1364,11 @@ function installerMorceau(cx, cz, tampons) {
       // de quel côté du fût est la chaussée.
       if (p.id === RUE.REVERBERE) {
         mesh.rotation.y = versLaRue(cx * CHUNK + p.x, p.y - 1, cz * CHUNK + p.z);
-        lanternes.push(new THREE.Vector3(
+        const lan = new THREE.Vector3(
           mesh.position.x + 0.5 * Math.cos(mesh.rotation.y), p.y + 2.7,
-          mesh.position.z - 0.5 * Math.sin(mesh.rotation.y)));
+          mesh.position.z - 0.5 * Math.sin(mesh.rotation.y));
+        lan.cle = cleP;                 // une lanterne tombée n'éclaire plus (v536)
+        lanternes.push(lan);
       }
       // LE FEU TRICOLORE REGARDE LA RUE QU'IL COMMANDE (v273), et l'on note
       // ses trois lentilles vives pour n'en montrer qu'une. Elles se
@@ -1338,8 +1379,15 @@ function installerMorceau(cx, cz, tampons) {
         const axe = axeDuFeu(wx, wz);
         mesh.rotation.y = versLaRueAxe(wx, p.y - 1, wz, axe);
         const lampes = ['feu-rouge', 'feu-orange', 'feu-vert'].map((n) => mesh.getObjectByName(n));
-        if (lampes.every(Boolean)) feux.push({ x: wx + 0.5, z: wz + 0.5, axe, lampes, etat: null });
+        if (lampes.every(Boolean)) {
+          const f = { x: wx + 0.5, z: wz + 0.5, axe, lampes, etat: null, cle: cleP };
+          feux.push(f);
+          etatPiece.set(mesh, { feu: f });
+        }
       }
+      // déjà tombé avant que le morceau ne se remaille : couché d'emblée
+      const tombe = mesh.userData.cle && casses.get(mesh.userData.cle);
+      if (tombe) poserLaChute(mesh, tombe, Infinity);
     }
     entry.props = group;
     if (lanternes.length) entry.lanternes = lanternes;
@@ -1717,6 +1765,8 @@ function updateChunks() {
   npcs.push(...vie.npcs);
   // Les passants des villes : fabriqués à l'approche, jamais avant.
   passants = createPassants({ scene, world, player, toast: say, npcs });
+  // Les guides des villes : un par monument, nés à l'approche (v538).
+  guidesVilles = createGuidesVilles({ scene, world, player, toast: say, npcs, lieux: TOUS_LES_GUIDES });
   // Les poissons : un petit banc entretenu autour de l'enfant, partout où
   // il y a de l'eau — océans du planisphère, fleuves des villes, lacs.
   poissons = createPoissons({ scene, world, player });
@@ -1767,23 +1817,62 @@ function updateChunks() {
   // demande la règle qui les pose (`world.mobilierVu`, v425 — seulement le
   // mobilier MONTRÉ, sinon une tablette sans couche HD aurait des tables
   // invisibles qui arrêtent), une fois par colonne couverte.
-  const mobilierDevant = (x, z, cap) => {
+  // ET LE MOBILIER DE RUE SE CASSE (v536). `casser` (le sens de la marche)
+  // n'est donné que pour le PAS que la voiture fait vraiment, assez vite : ce
+  // qu'elle touche alors et qui sait tomber (`faconDeCasser`) tombe, et cesse
+  // d'arrêter. Ce qui est déjà tombé n'arrête plus rien. Un bloc qu'un enfant
+  // a posé (`world.edits`) ne se casse pas. Manhattan garde ses obstacles
+  // (instanciés par lots : rien à coucher seul, dette déclarée).
+  const mobilierDevant = (x, z, cap, casser = null) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
     const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
     const y0 = Math.floor(player.pos.y + 0.1);
     const vu = world.mobilierVu, lues = vu ? new Set() : null;
+    let bloque = false;
     for (let a = -demiLong; a <= demiLong + 1e-6; a += 0.5)
       for (let b = -demiLarg; b <= demiLarg + 1e-6; b += 0.5) {
         const sx = x + ux * a + vx * b, sz = z + uz * a + vz * b;
         if (villeRealiste.obstacleA(sx, sz)) return true;
         const bx = Math.floor(sx), bz = Math.floor(sz);
-        if (isProp(world.getBlock(bx, y0, bz)) || isProp(world.getBlock(bx, y0 + 1, bz))) return true;
+        for (const yy of [y0, y0 + 1]) {
+          const id = world.getBlock(bx, yy, bz);
+          if (!isProp(id)) continue;
+          const cle = cleBloc(bx, yy, bz);
+          if (casses.has(cle)) continue;
+          if (casser && faconDeCasser(id) && !world.edits.has(cle)) { casserPiece(cle, bx, bz, faconDeCasser(id), casser); continue; }
+          bloque = true;
+        }
         if (vu) {
           const k = bx * 65536 + bz;
-          if (!lues.has(k)) { lues.add(k); if (vu(bx + 0.5, bz + 0.5, player.pos.y)) return true; }
+          if (!lues.has(k)) {
+            lues.add(k);
+            const g = vu(bx + 0.5, bz + 0.5, player.pos.y);
+            if (g) {
+              if (casser && GENRES_HD_CASSABLES.has(g)) casserHD(bx, bz, casser);
+              else bloque = true;
+            }
+          }
         }
       }
-    return false;
+    return bloque;
+  };
+  // Une pièce tombe : le registre, la voiture qui perd un peu d'élan, et le
+  // compte que lisent `?diag=1` et les témoins (`__game.mobilierCasse`).
+  const freinerLaCasse = () => {
+    const k = 1 - PERTE_CASSE;
+    player.vitesseVoiture *= k; player.vel.x *= k; player.vel.z *= k;
+    statsCasse.n++;
+  };
+  const casserPiece = (cle, bx, bz, facon, sens) => {
+    casses.casser(cle, { t: performance.now(), x: bx + 0.5, z: bz + 0.5, dx: sens.dx, dz: sens.dz, facon });
+    freinerLaCasse();
+  };
+  const casserHD = (bx, bz, sens) => {
+    const cle = cleHD(bx, bz);
+    if (casses.has(cle)) return;
+    casses.casser(cle, { t: performance.now(), x: bx + 0.5, z: bz + 0.5, dx: sens.dx, dz: sens.dz, facon: 'hd' });
+    freinerLaCasse();
+    remaillerSansLaPiece(bx, bz);
   };
   // « Pas si l'on est déjà dedans » se juge PAR FAMILLE : une voiture de la
   // rue collée à la nôtre (obstacleDevant vrai ici ET là) ne désarme pas le
@@ -1883,9 +1972,14 @@ function updateChunks() {
   };
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
     if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return 'voiture';
+    // on ne casse que sur le pas qu'on fait vraiment (pas sur le regard au
+    // loin que `player.js` jette pour freiner devant un piéton), et assez vite
+    const pas = Math.hypot(x - x0, z - z0);
+    const sp = Math.abs(player.vitesseVoiture || 0);
+    const sens = sp >= VITESSE_CASSE && pas > 1e-6 && pas < 1.5 ? { dx: (x - x0) / pas, dz: (z - z0) / pas } : null;
     const g = gareeContre(x, z, cap);
     if (g) { const avant = gareeContre(x0, z0, cap); if (!avant || avant.a !== g.a) return 'voiture'; }
-    if (mobilierDevant(x, z, cap) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
+    if (mobilierDevant(x, z, cap, sens) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
     // `arretDouxT` (v343) : s'arrêter devant un piéton ou au bord de l'eau
     // n'est PAS un choc — les dégâts ne comptent jamais un piéton touché.
     if (pietonDevant(x, z, cap, x0, z0)) { player.arretDouxT = performance.now(); return 'pieton'; }
@@ -1954,8 +2048,10 @@ function updateChunks() {
   // mailleur dessine (`mobilierTrottoir`) ; on ne bute que sur ce qui est
   // MONTRÉ — le détail du morceau visible (`montrerLeDetail`) —, sinon un
   // appareil sans couche HD aurait des tables invisibles qui arrêtent.
+  // rend le GENRE de la pièce (vrai), ou faux ; une pièce écrasée (v536) n'est plus là
   const mobilierVu = (x, z, y) => {
     const bx = Math.floor(x), bz = Math.floor(z);
+    if (casses.taille && casses.has(cleHD(bx, bz))) return false;
     const cx = Math.floor(bx / CHUNK), cz = Math.floor(bz / CHUNK);
     const e = chunkMeshes.get(cx + ',' + cz);
     if (!e || !e.facades || !e.facades.visible) return false;
@@ -1964,7 +2060,7 @@ function updateChunks() {
     const v = villeHD(cx, cz, CHUNK);
     if (!v || v.mobilier === false) return false;
     const m = mobilierTrottoir((dx, dy, dz) => world.getBlock(bx + dx, by + dy, bz + dz), bx, bz);
-    return !!m && MOBILIER_OBSTACLE.has(m.genre);
+    return m && MOBILIER_OBSTACLE.has(m.genre) ? m.genre : false;
   };
   world.mobilierVu = mobilierVu;
   world.obstaclePieton = (x, z, y) => {
@@ -2214,6 +2310,12 @@ function updateChunks() {
       nom: `train ${seg.ligne.nom} ${seg.de}–${seg.vers}`,
       emoji: seg.ligne.emoji, teinte: seg.ligne.teinte,
       nb: 5, vitesse, rames, pause, arretsIndex: t.arretsIndex,
+      // UN TRAIN, PAS UNE RAME DE MÉTRO (v539) : motrice en tête, motrice en
+      // queue, des voitures à fenêtres entre les deux, et un écart qui se
+      // DÉDUIT des longueurs — la rame du métro posée tous les 7,6 blocs
+      // recouvrait sa voisine d'un demi-bloc à chaque attelage.
+      ecart: ECART_TRAIN,
+      modele: (i, teinte, nb) => construireTrain(i === 0 ? 'motrice' : i === nb - 1 ? 'queue' : 'voiture', teinte),
     });
   }
   // LA CIRCULATION INTERURBAINE (v300) : sur chaque corridor, une boucle de
@@ -3546,6 +3648,7 @@ const CIRCULATION_MS_PAR_SECONDE = 120;
 let circulationEnCours = null, circulationT = 0;
 function animerLesVilles(dt) {
   if (passants) passants.update(dt);
+  if (guidesVilles) guidesVilles.update();
   if (poissons) poissons.update(dt);
   if (!vehicules) return;
   const t0 = performance.now(), ecoule = circulationT ? (t0 - circulationT) / 1000 : 0;
@@ -7035,7 +7138,7 @@ const RELIEF_CARTE = 96;
 // ET LE FOND ENTIER SE REFAIT QUAND MÊME, lentement. Un bloc posé par l'enfant
 // tombe dans la partie recopiée, que rien ne recalculerait jamais.
 let carteRaster = null;         // le fond, un point par bloc
-let carteReel = null;           // 1 : peint d'après les vrais blocs ; 0 : d'après le relief (morceau absent)
+let carteReel = null;           // 1 : peint d'après les vrais blocs ; 0 : d'après le relief (morceau absent) ; 2 : esquissé, 3 : pas encore peint (v530)
 let carteRasterCx = 0, carteRasterCz = 0, carteRasterR = 0;
 let carteHorsSol = null;        // le canevas intermédiaire, à la taille du raster
 let carteBande = 0;             // la prochaine ligne du raster à repeindre
@@ -7070,7 +7173,10 @@ function assurerRasterCarte(radius) {
   if (neuf || Math.abs(dx) >= N || Math.abs(dz) >= N) {
     // rien à recopier : le fond de nuit, que les bandes remplacent en une seconde
     for (let o = 0; o < carteRaster.length; o += 4) { carteRaster[o] = 20; carteRaster[o + 1] = 26; carteRaster[o + 2] = 40; carteRaster[o + 3] = 255; }
-    carteReel.fill(0);
+    // 3 : pas encore peint du tout. Surtout pas 0 (« peint d'après le
+    // relief ») : la bande sauterait ces points tant que leur morceau manque,
+    // et une arrivée laissait la minicarte bleu nuit (vu en capture, v530).
+    carteReel.fill(3);
     carteBande = 0; carteBandeI = 0; carteTours = 0;
   } else if (dx !== 0 || dz !== 0) {
     decalerCarte(carteRaster, N, dx, dz);
@@ -7078,8 +7184,30 @@ function assurerRasterCarte(radius) {
     // la bande neuve, et elle seule : c'est tout le gain
     const i0 = dx > 0 ? N - dx : 0, i1 = dx > 0 ? N : -dx;
     const j0 = dz > 0 ? N - dz : 0, j1 = dz > 0 ? N : -dz;
-    for (let j = 0; j < N; j++) for (let i = i0; i < i1; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius, carteReel);
-    for (let j = j0; j < j1; j++) for (let i = 0; i < N; i++) peindreCarte(carteRaster, N, i, j, pcx, pcz, radius, carteReel);
+    // UNE BANDE LARGE S'ESQUISSE (v530). La minicarte est toujours là
+    // désormais, et en vol le bord neuf coûtait 87 ms par seconde au fil
+    // principal (sonde-minicarte-cout.cjs) : à 120 blocs par seconde, 23 000
+    // points dont le morceau n'est pas encore là, chacun peint par la couleur
+    // de la carte du monde. Au-delà de trois blocs d'avance, on peint un point
+    // sur quatre et on le recopie sur ses voisins ; ils portent la marque 2
+    // (« esquissé »), et les bandes qui repassent (v258) les repeignent un à
+    // un. Un carré de deux points fait 1,7 pixel sur l'écran de l'iPhone.
+    const pas = Math.max(i1 - i0, j1 - j0) >= 3 ? 2 : 1;
+    const zone = (ia, ib, ja, jb) => {
+      for (let j = ja; j < jb; j += pas) for (let i = ia; i < ib; i += pas) {
+        peindreCarte(carteRaster, N, i, j, pcx, pcz, radius, carteReel);
+        if (pas === 1) continue;
+        const o = (j * N + i) * 4;
+        for (const [a, b] of [[1, 0], [0, 1], [1, 1]]) {
+          if (i + a >= ib || j + b >= jb) continue;
+          const q = ((j + b) * N + i + a);
+          carteRaster.copyWithin(q * 4, o, o + 4);
+          carteReel[q] = 2;
+        }
+      }
+    };
+    if (i1 > i0) zone(i0, i1, 0, N);
+    if (j1 > j0) zone(dx > 0 ? 0 : i1, dx > 0 ? i0 : N, j0, j1);
   }
   carteRasterCx = pcx; carteRasterCz = pcz;
 }
@@ -7101,7 +7229,13 @@ function repeindreBandeCarte(lignes, budgetMs) {
   const fin = performance.now() + budgetMs;
   let faites = 0;
   for (;;) {
-    peindreCarte(carteRaster, N, carteBandeI, carteBande, carteRasterCx, carteRasterCz, carteRasterR, carteReel);
+    // Un point peint d'après le relief dont le morceau n'est toujours pas
+    // là rendrait EXACTEMENT la même couleur : on ne le repeint pas (v530).
+    const p = carteBande * N + carteBandeI;
+    if (carteReel[p] !== 0 || world.chunks.has(Math.floor((carteRasterCx + carteBandeI - carteRasterR) / CHUNK) + ','
+        + Math.floor((carteRasterCz + carteBande - carteRasterR) / CHUNK))) {
+      peindreCarte(carteRaster, N, carteBandeI, carteBande, carteRasterCx, carteRasterCz, carteRasterR, carteReel);
+    }
     if (++carteBandeI >= N) {
       carteBandeI = 0; carteBande = (carteBande + 1) % N;
       if (carteBande === 0) carteTours++;
@@ -7203,6 +7337,7 @@ function decalerCarte(buf, N, dx, dz, canaux = 4) {
   }
 }
 
+let carteImage = null;          // l'image du fond, réutilisée d'un dessin à l'autre (v530)
 function drawMap(mapCanvas, radius) {
   const ctx = mapCanvas.getContext('2d');
   const size = mapCanvas.width;
@@ -7210,7 +7345,8 @@ function drawMap(mapCanvas, radius) {
   const N = radius * 2 + 1;
   assurerRasterCarte(radius);
   const hctx = carteHorsSol.getContext('2d');
-  const img = hctx.createImageData(N, N);
+  if (!carteImage || carteImage.width !== N) carteImage = hctx.createImageData(N, N);
+  const img = carteImage;
   img.data.set(carteRaster);
   hctx.putImageData(img, 0, 0);
   ctx.imageSmoothingEnabled = false;
@@ -7546,16 +7682,40 @@ mapModalCanvas.addEventListener('pointerdown', () => { listeLieux.style.display 
 document.getElementById('map-moi').addEventListener('click', () => carte.centrerSurJoueur(0.6));
 document.getElementById('map-tout').addEventListener('click', () => carte.toutVoir());
 
-document.getElementById('map-btn').addEventListener('click', () => {
-  minimapVisible = !minimapVisible;
-  minimapCanvas.style.display = minimapVisible ? 'block' : 'none';
-  // la file centrale se range à droite de la minicarte ouverte (aviation)
-  document.body.classList.toggle('minicarte-ouverte', minimapVisible);
-  if (minimapVisible) {
+// LA MINICARTE EST TOUJOURS LÀ (v530). Max : « il faut trouver une solution
+// pour mettre la mini-carte toujours visible. » Elle s'allume dès que la
+// partie est à l'écran — à pied, au volant, en vol, en construction, menu ☰
+// ouvert compris (le voile la couvre comme le reste) — et ne s'éteint que
+// sous la carte du monde et pendant un quiz (invariant 2). Son ancien bouton
+// ne bascule plus rien : il ouvrirait une carte déjà ouverte, et un bouton
+// qui ne fait rien est pire qu'un bouton qui refuse (v228). Il est retiré de
+// l'écran (CSS) et, s'il est appuyé, ouvre la carte du monde, comme la
+// minicarte elle-même. La décision est dans `minicarteVoulue`, lue à chaque
+// image ; le DOM ne s'écrit que quand elle change.
+// `?minicarte=0` l'éteint, pour mesurer ce qu'elle coûte (sonde-minicarte-cout.cjs).
+const MINICARTE_COUPEE = PARAMS_JEU.get('minicarte') === '0';
+// La partie est à l'écran quand l'accueil est fermé : on ne lit PAS `en-jeu`,
+// qui demande aussi le bouton pause — au bureau, souris verrouillée, il ne
+// s'affiche jamais (Échap fait pause), et la minicarte ne venait pas.
+function minicarteVoulue() {
+  return !MINICARTE_COUPEE && overlay.style.display === 'none' && !carteOuverte && !edu.quizActive;
+}
+function majMinicarte() {
+  const voulue = minicarteVoulue();
+  if (voulue === minimapVisible) return;
+  minimapVisible = voulue;
+  minimapCanvas.style.display = voulue ? 'block' : 'none';
+  // la file centrale se range à droite de la minicarte (v445)
+  document.body.classList.toggle('minicarte-ouverte', voulue);
+  if (voulue) {
     drawMap(minimapCanvas, 96);
     carteVue = { x: player.pos.x, z: player.pos.z };
   }
-});
+}
+// ce qu'elle coûte au fil principal, cumulé : la sonde en fait un débit
+const coutMinicarte = { ms: 0, dessins: 0 };
+window.__minicarte = () => ({ visible: minimapVisible, voulue: minicarteVoulue(), ms: +coutMinicarte.ms.toFixed(1), dessins: coutMinicarte.dessins });
+document.getElementById('map-btn').addEventListener('click', ouvrirCarte);
 minimapCanvas.addEventListener('click', ouvrirCarte);
 document.getElementById('map-modal-close').addEventListener('click', fermerCarte);
 mapModal.addEventListener('click', (e) => {
@@ -7830,6 +7990,43 @@ function placeAssise(a, siege) {
 // qui suffit à un enfant qui marche à trois blocs par seconde, et rien à
 // faire tant qu'il fait jour. Une lampe sans lanterne s'éteint.
 const lampesPretes = cadence(500);
+// LE MOBILIER TOMBÉ (v536) : chaque image, les pièces qui tombent encore
+// avancent leur chute (temps réel) ; une fois par seconde, ce qui a assez
+// duré au sol et que l'enfant ne voit plus se relève.
+const statsCasse = { n: 0, releves: 0 };
+const relevePret = cadence(1000);
+function animerLesCasses() {
+  const maintenant = performance.now();
+  if (casses.taille) {
+    for (const [cle, c] of casses.m) {
+      if (c.facon === 'hd' || c.fini) continue;
+      const mesh = piecesParCle.get(cle);
+      if (!mesh) continue;
+      if (poserLaChute(mesh, c, maintenant) >= 1) c.fini = true;
+    }
+  }
+  if (!relevePret() || !casses.taille) return;
+  for (const cle of casses.aRelever(maintenant, player.pos.x, player.pos.z)) {
+    statsCasse.releves++;
+    if (cle[0] === 'h') {
+      const [bx, bz] = cle.slice(1).split(',').map(Number);
+      remaillerSansLaPiece(bx, bz);
+      continue;
+    }
+    const mesh = piecesParCle.get(cle);
+    if (mesh) poserLaChute(mesh, null, maintenant);
+  }
+}
+// UNE PIÈCE DE LA COUCHE HD S'ÉCRASE : son morceau se remaille sans elle. Le
+// mailleur lit `world.mobilierCasse` (les colonnes écrasées), et le worker en
+// reçoit la liste avant de remailler — hors du fil principal, comme tout
+// morceau détaillé.
+function remaillerSansLaPiece(bx, bz) {
+  world.mobilierCasse = casses.colonnesHD();
+  if (maillageDistant) maillageDistant.postMessage({ type: 'casse', colonnes: [...world.mobilierCasse] });
+  const cx = Math.floor(bx / CHUNK), cz = Math.floor(bz / CHUNK);
+  redemanderLeDetail(cx, cz, World.key(cx, cz));
+}
 function eclairerLaRue() {
   if (renduDansManhattan || !lampesPretes()) return;
   if (!LAMPES_ACTIVES) { for (const l of lampesRue) l.intensity = 0; return; }
@@ -7842,6 +8039,7 @@ function eclairerLaRue() {
         const e = chunkMeshes.get((pcx + dx) + ',' + (pcz + dz));
         if (!e || !e.lanternes) continue;
         for (const l of e.lanternes) {
+          if (l.cle && casses.has(l.cle)) continue;
           const d = (l.x - px) * (l.x - px) + (l.z - pz) * (l.z - pz);
           if (d < 40 * 40) proches.push({ l, d });
         }
@@ -7889,6 +8087,14 @@ function reglerLesFeux() {
       if (!e || !e.feux) continue;
       for (const f of e.feux) {
         const etat = etatFeu(f.axe, t);
+        // UN FEU TOMBÉ S'ÉTEINT, MAIS LE CARREFOUR GARDE SA RÈGLE (v536) : la
+        // circulation est une fonction de l'horloge que deux tablettes
+        // partagent (v305), et la casse est LOCALE — si le feu tombé laissait
+        // passer les voitures ici, la rue de l'ami ne serait plus la même.
+        if (f.etat === 'tombe' && casses.has(f.cle)) {
+          if ((f.x - px) * (f.x - px) + (f.z - pz) * (f.z - pz) < PORTEE_FEU * PORTEE_FEU) proches.push(f);
+          continue;
+        }
         if (etat !== f.etat) {
           f.etat = etat;
           f.lampes[0].visible = etat === 'rouge';
@@ -8455,19 +8661,25 @@ window.__lumiere = () => ({
 window.__proposerNotifs = proposerNotifs;
 window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) };
 // Les panneaux à lire sur place : une fois par visite, en temps réel (v460).
+// Depuis la v538, dans les cinq grandes villes, dans la langue du profil, et
+// raconté par le guide posé au pied du monument (`createGuidesVilles`).
 const guides = creerGuides({
-  // Les panneaux des monuments ne passent plus à l'écran (v504, Max) : la
-  // mécanique reste (une fois par visite), elle ne dit plus rien.
-  dire: () => {},
+  // Plus de bandeau pendant le jeu (v504) : le guide le dit à voix haute.
+  dire: (texte, lieu, l) => { if (sonActif()) parlerAVoixHaute(texte, l); },
   maintenant: () => performance.now(),
+  guides: TOUS_LES_GUIDES,
+  langue: () => playerProfile.lang,
 });
 window.__guides = guides;
+window.__guidesVilles = () => guidesVilles;
 window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
   // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
   // la lit au banc, où le rendu est toujours logiciel
-  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage, horizonLoin, horizonTresLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
+  get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage,
+  // le mobilier tombé (v536) : le registre, les comptes, et le maillage d'une pièce
+  mobilierCasse: { casses, stats: statsCasse, piece: (cle) => piecesParCle.get(cle) || null }, horizonLoin, horizonTresLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
@@ -8644,7 +8856,7 @@ function frame(now) {
   fun.update(dt);
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
-  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux de Washington (v460)
+  if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux des guides (v460, v538)
   majGPSAmi();             // la proposition d'un ami s'efface seule (v388)
   asseoirLeConducteur(dt);
   effects.update(dt);
@@ -8654,7 +8866,9 @@ function frame(now) {
   // quand même ; en vol, une seconde d'horloge valait soixante-quatorze blocs
   // de retard. Le déclencheur est donc la DISTANCE, bornée par une cadence en
   // temps réel — jamais en `dt`, qui ralentit avec l'affichage (leçon v226).
+  majMinicarte();
   if (minimapVisible) {
+    const tMini = performance.now();
     const bouge = !carteVue
       || Math.hypot(player.pos.x - carteVue.x, player.pos.z - carteVue.z) >= CARTE_PAS;
     // le fond se repeint par bandes à chaque image (v258), et l'affichage se
@@ -8664,7 +8878,9 @@ function frame(now) {
     if (bouge || carteSuivre()) {
       drawMap(minimapCanvas, 96);
       carteVue = { x: player.pos.x, z: player.pos.z };
+      coutMinicarte.dessins++;
     }
+    coutMinicarte.ms += performance.now() - tMini;
   } else if (!running && PREPARER && PARAMS_JEU.get('prepmini') !== '0') {
     // à l'accueil, la minicarte se prépare autour de l'enfant (v258) : son
     // premier fond, 37 000 colonnes, ne coûte rien à l'image où on l'allume.
@@ -8695,6 +8911,7 @@ function frame(now) {
   }
   avancerReflets(renderer, scene);
 
+  animerLesCasses();
   eclairerLaRue();
   reglerLesFeux();
   nomsDeStations.update(player.pos);

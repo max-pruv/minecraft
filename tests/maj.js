@@ -1455,7 +1455,7 @@ function verifier(nom, ok, detail = '') {
         const w = Math.max(...[svg, ...svg.querySelectorAll('[stroke-width]')].map((n) => +(n.getAttribute('stroke-width') || 0)));
         return plein ? Math.max(w, 9) : w;
       };
-      const RONDS = ['menu-btn', 'map-btn', 'jump-btn', 'fly-btn', 'down-btn', 'construire-btn', 'poser-btn', 'casser-btn', 'fm-btn', 'train-btn'];
+      const RONDS = ['menu-btn', 'jump-btn', 'fly-btn', 'down-btn', 'construire-btn', 'poser-btn', 'casser-btn', 'fm-btn', 'train-btn'];
       const traits = Object.fromEntries(RONDS.map((id) => [id, epaisseur(document.getElementById(id))]));
       // Les pilules : une monture devant soi, puis on lit la pilule.
       const am = g.animalManager;
@@ -1544,7 +1544,7 @@ function verifier(nom, ok, detail = '') {
       };
       // « Terminer » porte une icône (3:1) ET son mot écrit (4,5:1) depuis la
       // v520.
-      const icones = ['menu-btn', 'map-btn', 'jump-btn', 'fly-btn', 'construire-btn', 'construction-fin'];
+      const icones = ['menu-btn', 'jump-btn', 'fly-btn', 'construire-btn', 'construction-fin'];
       const textes = [['fun-target button', '#ride-btn'], ['gps', '#gps-texte'], ['terminer', '#construction-fin .lb']];
       const out = {};
       for (const [moment, fr] of [['midi', 0.25], ['minuit', 0.75]]) {

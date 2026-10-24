@@ -36,6 +36,7 @@ fs.mkdirSync(dossier, { recursive: true });
 const VUES = {
   iphone: { width: 430, height: 932 },
   ipad: { width: 820, height: 1180 },
+  banc: { width: 420, height: 760 },
 };
 // 0,75 est minuit (0,0 est le lever du soleil : un ciel rose et des façades en
 // plein jour — c'est la première passe de cette sonde qui l'a montré).
@@ -59,8 +60,7 @@ const aPied = (tab) => tab.evaluate(async () => {
   for (const k of ['KeyW', 'KeyA', 'KeyD']) g.player.keys.delete(k);
   g.player.touchMove = { f: 0, s: 0 };
   if (g.player.flying) g.player.toggleFly();
-  const mini = document.getElementById('minimap');
-  if (mini && mini.style.display === 'block') document.getElementById('map-btn').click();
+  // la minicarte est toujours là en jeu (v530) : on ne la ferme plus
   g.running = true;
 });
 
@@ -112,21 +112,94 @@ const ETATS = [
     const s = await poserEt(tab, { x: p.x, z: p.z, yaw: Math.PI / 2, pitch: 0.02 });
     return { monde: s + ' s' };
   } },
+  // Un guide au pied de son monument (v538) : Capucine sous la tour Eiffel,
+  // vue à cinq blocs, face à elle — le corps, le fanion, ce qui l'entoure.
+  { nom: 'guide', async prep(tab) {
+    const { visiter } = require('./sonde-guides-villes.cjs');
+    const r = await visiter(tab, 'eiffel');
+    await tab.evaluate(() => {
+      const g = window.__game, gd = window.__guidesVilles().nes.get('eiffel');
+      // un poste D'OÙ L'ON VOIT (v292) : la ligne de vue jusqu'au guide est
+      // libre à hauteur d'yeux, ni arbre ni mobilier entre les deux
+      const libre = (x0, z0) => {
+        for (let k = 0; k <= 20; k++) {
+          const x = x0 + (gd.pos.x - x0) * k / 20, z = z0 + (gd.pos.z - z0) * k / 20;
+          for (const dy of [0.5, 1.6, 2.6]) {
+            if (g.world.getBlock(Math.floor(x), Math.floor(gd.pos.y + dy), Math.floor(z))) return false;
+          }
+        }
+        return true;
+      };
+      let x = gd.pos.x + 5, z = gd.pos.z;
+      for (let i = 0; i < 32; i++) {
+        const a = i * Math.PI / 16, r = 4 + (i % 3);
+        const cx = gd.pos.x + Math.cos(a) * r, cz = gd.pos.z + Math.sin(a) * r;
+        if (libre(cx, cz)) { x = cx; z = cz; break; }
+      }
+      g.player.pos.set(x, gd.pos.y + 0.2, z);
+      g.player.yaw = Math.atan2(-(gd.pos.x - x), -(gd.pos.z - z));
+      g.player.pitch = 0.05;
+    });
+    // la présence (v241) le fait apparaître en fondu, au rythme des images :
+    // on capture une fois pleinement là, borné, et l'on dit ce qu'on a lu
+    const t0 = Date.now();
+    let presence = 0;
+    while (Date.now() - t0 < 30000) {
+      presence = await tab.evaluate(() => window.__guidesVilles().nes.get('eiffel').presence?.valeur ?? 1);
+      if (presence >= 0.999) break;
+      await dormir(500);
+    }
+    await dormir(1500);
+    return { ne: r.ne, regard: r.regard, visible: r.visible, presence, msPresence: Date.now() - t0 };
+  } },
   { nom: 'minicarte', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
-    await tab.evaluate(() => document.getElementById('map-btn').click());
+    // toujours là depuis la v530 : on ne l'ouvre pas, on la regarde
     await dormir(2500);
     return tab.evaluate(() => ({ affichee: document.getElementById('minimap').style.display }));
   } },
   { nom: 'carte-monde', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
     await tab.evaluate(() => {
-      if (document.getElementById('minimap').style.display !== 'block') document.getElementById('map-btn').click();
       document.getElementById('minimap').click();
     });
     await tab.waitForFunction(() => window.__carte && window.__carte.ouverte, null, { timeout: 30000 });
     await dormir(4000);
     return { ouverte: true };
+  } },
+  // LE MOBILIER TOMBÉ (v536) : un réverbère et un feu de Paris renversés
+  // comme une voiture lancée les renverse, vus du trottoir — la nuit, la
+  // lanterne couchée ne doit plus éclairer la rue
+  { nom: 'mobilier-tombe', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const { adresseParis } = await import('./src/paris.js');
+      const [x, z] = adresseParis(-0.8, -0.9);
+      return { x, z };
+    });
+    await poserEt(tab, { x: p.x, z: p.z });
+    const r = await tab.evaluate(async (p) => {
+      const g = window.__game, w = g.world;
+      const { RUE } = await import('./src/blocks.js');
+      const pieces = [];
+      for (let d = 0; d < 50 && pieces.length < 2; d++) for (let dx = -d; dx <= d; dx++) for (let dz = -d; dz <= d; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== d) continue;
+        const x = p.x + dx, z = p.z + dz, y = w.sommetColonne(x, z) + 1;
+        const id = w.getBlock(x, y, z);
+        if ((id === RUE.REVERBERE && !pieces.some((q) => q.id === id)) || (id === RUE.FEUX && !pieces.some((q) => q.id === id))) {
+          const cle = `${x},${y},${z}`;
+          if (!w.edits.has(cle) && g.mobilierCasse.piece(cle)) pieces.push({ x, y, z, id, cle });
+        }
+      }
+      if (!pieces.length) return { pieces: 0 };
+      for (const q of pieces) g.mobilierCasse.casses.casser(q.cle, { t: performance.now() - 2000, x: q.x + 0.5, z: q.z + 0.5, dx: 1, dz: 0, facon: 'tombe' });
+      const q = pieces[0];
+      g.player.pos.set(q.x - 4.5, w.sommetColonne(q.x - 5, q.z + 4) + 1.01, q.z + 4.5);
+      g.player.yaw = Math.atan2(-(q.x + 1 - g.player.pos.x), -(q.z + 0.5 - g.player.pos.z));
+      g.player.pitch = -0.25;
+      return { pieces: pieces.map((q) => q.id === RUE.FEUX ? 'feu' : 'réverbère') };
+    }, p);
+    await attendreMonde(tab);
+    return r;
   } },
   { nom: 'volant-arret', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });

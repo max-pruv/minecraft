@@ -75,6 +75,8 @@ dans `docs/revue-ecran/`.
 | 17 | à vérifier | voiture de la rue percutée, Paris | [12](revue-ecran/12-louvre-chaussee.png) | La **pyramide du Louvre** a l'air posée sur une chaussée marquée, avec des lignes de voie qui y entrent. Cela peut aussi être la cour pavée vue de loin. | Une capture au sol de la cour Napoléon, puis la carte ASCII des colonnes autour du repère (v493). | `src/paris.js`, `src/monuments.js` |
 | 18 | à vérifier | témoin de contraste (`maj.js`) | — | Le témoin « les commandes se lisent sur le ciel de midi comme sur la nuit » rend `ciel: 87ceeb` **à minuit comme à midi** : il lit la couleur du ciel avant que le ciel ait tourné (v291), et ne mesure donc pas la nuit. | Attendre le fait du monde (le soleil sous l'horizon) avant de lire la couleur du ciel, durée dans le message. | `tests/maj.js` |
 | 19 | à vérifier | avion en vol, campagne (v532, iPad et iPhone) | — | Au bord des morceaux maillés, sous l'aile, un **trou bleu pâle** (le fond du ciel) entre le monde chargé et le paysage lointain. Visible avec et sans couronne (liseré plus fin sans) : la couronne ne le crée pas, le brouillard reculé le rend plus visible. | Une sonde qui lit, colonne par colonne au bord du disque maillé, ce que la grille fine dessine (découpe de `horizon.js` contre `chunkMeshes`). | `src/horizon.js`, `src/main.js` |
+| 20 | mineur | guide, tour Eiffel (v538, état `guide`) | [20](revue-ecran/20-guide-eiffel-iphone-jour.png) | Le fanion de Capucine, à l'ombre des platanes du Champ-de-Mars, tire sur le **rouille** plutôt que l'orange vif, même avivé : on le lit, mais il se cherche moins des yeux qu'en plein soleil. Et la nuit de la sonde (`0.75`) donne ici une rue encore claire. | Juger le fanion sur la tablette ; s'il se perd, un bord clair ou un orange plus saturé dans `fanion()`. | `src/vie.js` |
+| 21 | basse | minicarte toujours là (v540), juste après un saut | [v540](revue-ecran/v540-minicarte/iphone-paris-nuit.jpg) | La moitié basse de la minicarte est encore **le fond de nuit** : un raster neuf se remplit quatre lignes par image, des dizaines de secondes au banc (une à deux images par seconde), moins d'une seconde à 60 images par seconde. | Mesurer le temps de remplissage sur la tablette (`?diag=1`) ; s'il se voit, remplir plus de lignes par image à l'arrivée d'un saut. | `src/main.js` (`repeindreBandeCarte`) |
 
 ## Ce que la sonde ne couvre pas encore
 
@@ -88,3 +90,18 @@ dans `docs/revue-ecran/`.
 - **Le rendu logiciel** coupe certaines parures (ombres hors forçage, bâti
   lointain, traces). Ce que la sonde montre est très proche de la tablette, mais
   pas identique.
+
+## Le relevé de la v539 (le rail), 23 octobre 2026
+
+Captures dans `docs/revue-ecran/v539/` : le TGV Paris–Lyon aux deux endroits
+des captures de Max (viaduc du pas 716, tranchée du pas 786), iPhone et iPad,
+jour et nuit, et le train vu de près.
+
+- Corrigé : plus de dalle d'herbe ni de pilier dans le gabarit, les traverses
+  sont visibles d'un bout à l'autre, les voitures du train ne se recouvrent plus.
+- Vu, non corrigé : les rails ont l'air ondulés en vue oblique. C'est le profil
+  en long (un tiers de bloc de pente, lissé en cône) projeté de biais, pas un
+  défaut de tracé ; un profil plus doux est une décision de terrain (déblais
+  plus profonds), à poser à Max.
+- Vu, non corrigé : la nuit, les fenêtres du train sont noires (aucune vitre
+  allumée), alors que celles des villes s'allument.

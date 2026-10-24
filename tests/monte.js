@@ -4718,6 +4718,105 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et une table de Times Square est un obstacle pour sa voiture',
       table.notee && (table.contre === true || table.contre === 'mobilier') && table.libre === false,
       JSON.stringify(table));
+
+    // ---- LE MOBILIER DE RUE SE CASSE (v536) ---------------------------------
+    //
+    // Max : « tout le mobilier urbain, poteau, feu rouge, est hyper dur. Comme
+    // dans GTA, il devrait tomber pour ne pas bloquer la voiture. » Un réverbère
+    // de la VILLE (écrit dans le morceau comme le générateur l'écrit, pas dans
+    // le journal de l'enfant : celui qu'un enfant pose reste un obstacle, et
+    // c'est le témoin juste au-dessus qui le garde), dix blocs devant, sur la
+    // ligne de la voiture. On accélère : à l'impact la voiture roule à plus de
+    // cinq blocs par seconde, le réverbère tombe (son maillage se couche dans
+    // le sens de la marche) et la voiture CONTINUE au-delà. Aucune clé de
+    // programme neuve (le même maillage, tourné). Sur l'ancien code elle
+    // s'arrête devant, comme avant.
+    const tombe = await mobPage.evaluate(async () => {
+      const g = window.__game, w = g.world, p = g.player;
+      const { RUE } = await import('./src/blocks.js');
+      const { CHAUSSEE, World, CHUNK } = await import('./src/world.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      // on descend de la voiture du témoin d'avant, on retire les bêtes
+      if (g.fun.montureConduite && g.fun.montureConduite()) { document.getElementById('ride-btn').click(); await dodo(800); }
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const { positionDe } = await import('./src/mondes.js');
+      const P = positionDe('paris');
+      window.__carte.surTeleport(P.x + 40, P.z + 60);
+      await dodo(9000);
+      const px = Math.round(p.pos.x), pz = Math.round(p.pos.z);
+      const sol = (x, z) => w.sommetColonne(x, z);
+      const route = (x, z) => CHAUSSEE.has(w.getBlock(x, sol(x, z), z));
+      let lieu = null;
+      for (let r = 0; r < 40 && !lieu; r++) for (let dx = -r; dx <= r && !lieu; dx++) for (let dz = -r; dz <= r && !lieu; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+        const x = px + dx, z = pz + dz;
+        if (!route(x, z)) continue;
+        for (const [ax, az, yaw] of [[1, 0, -Math.PI / 2], [0, 1, Math.PI], [-1, 0, Math.PI / 2], [0, -1, 0]]) {
+          let ok = true;
+          for (let k = -4; k <= 22 && ok; k++) for (const l of [-1, 0, 1]) {
+            const qx = x + ax * k + az * l, qz = z + az * k + ax * l;
+            if (!route(qx, qz) || Math.abs(sol(qx, qz) - sol(x, z)) > 0) { ok = false; break; }
+          }
+          if (!ok) continue;
+          if (g.vehicules.placeProche({ x: x + 0.5, y: sol(x, z) + 1, z: z + 0.5 }, 16)) continue;
+          lieu = { x, z, ax, az, yaw };
+          break;
+        }
+      }
+      if (!lieu) return { lieu: null };
+      const { x, z, ax, az, yaw } = lieu;
+      const lx = x + ax * 10, lz = z + az * 10, ly = sol(lx, lz) + 1;
+      // le réverbère de la ville : dans le morceau, PAS dans le journal
+      const cx = Math.floor(lx / CHUNK), cz = Math.floor(lz / CHUNK);
+      const data = w.ensureChunk(cx, cz);
+      data[World.index(lx - cx * CHUNK, ly, lz - cz * CHUNK)] = RUE.REVERBERE;
+      w.dirty.add(World.key(cx, cz));
+      const cle = `${lx},${ly},${lz}`;
+      let t = performance.now();
+      while (!(g.mobilierCasse && g.mobilierCasse.piece(cle)) && performance.now() - t < 8000) await dodo(150);
+      const piecePrete = !!(g.mobilierCasse && g.mobilierCasse.piece(cle));
+      p.pos.set(x + 0.5, sol(x, z) + 1.01, z + 0.5); p.vel.set(0, 0, 0);
+      p.yaw = yaw; p.pitch = 0; p.flying = false;
+      // à l'arrêt contre : rien ne tombe, c'est un obstacle (le crochet, à la vitesse nulle)
+      const cap = yaw + Math.PI;
+      p.gabarit = 2.2; p.vitesseVoiture = 0;
+      const contreArret = p.obstacleVehicule(lx + 0.5 - ax * 2.3, lz + 0.5 - az * 2.3, cap, lx + 0.5 - ax * 3, lz + 0.5 - az * 3);
+      const tombeArret = !!(g.mobilierCasse && g.mobilierCasse.casses.has(cle));
+      p.gabarit = 0.6;
+      const cles = () => new Set(g.renderer.info.programs.map((q) => q.cacheKey));
+      const avant = cles();
+      g.animalManager.invoquer('voiture', p.pos.x + ax * 2.5, p.pos.z + az * 2.5);
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 8 && !auVolant(); e++) { await dodo(e ? 0 : 1500); document.getElementById('ride-btn').click(); const t2 = performance.now(); while (!auVolant() && performance.now() - t2 < 2500) await dodo(150); }
+      p.pos.set(x + 0.5, sol(x, z) + 1.01, z + 0.5); p.yaw = yaw; p.vel.set(0, 0, 0); p.vitesseVoiture = 0;
+      const depart = { x: p.pos.x, z: p.pos.z };
+      p.keys.add('KeyW');
+      let vImpact = null, depasse = 0;
+      t = performance.now();
+      while (performance.now() - t < 40000) {
+        await dodo(80);
+        const avance = (p.pos.x - depart.x) * ax + (p.pos.z - depart.z) * az;
+        if (vImpact === null && avance >= 7) vImpact = Math.abs(p.vitesseVoiture || 0);
+        depasse = avance - 10;
+        if (depasse > 4) break;
+      }
+      p.keys.delete('KeyW');
+      const tombe = !!(g.mobilierCasse && g.mobilierCasse.casses.has(cle));
+      await dodo(1500);
+      const mesh = g.mobilierCasse ? g.mobilierCasse.piece(cle) : null;
+      let haut = null;
+      if (mesh) { const q = mesh.quaternion; haut = +(1 - 2 * (q.x * q.x + q.z * q.z)).toFixed(2); }   // le haut du fût, rendu par son quaternion
+      const neuves = [...cles()].filter((k) => !avant.has(k)).length;
+      return { lieu: { x, z }, piecePrete, contreArret, tombeArret, auVolant: auVolant(), vImpact: vImpact && +vImpact.toFixed(1), depasse: +depasse.toFixed(1), tombe, haut, neuves, n: g.mobilierCasse ? g.mobilierCasse.stats.n : 'absent', duree: Math.round(performance.now() - t) };
+    });
+    verifier('à l\'arrêt contre un réverbère de la ville, rien ne tombe : c\'est un obstacle',
+      tombe.lieu && tombe.contreArret === 'mobilier' && !tombe.tombeArret, JSON.stringify(tombe));
+    verifier('lancée, la voiture renverse un réverbère de la ville et continue sa route (v536)',
+      tombe.lieu && tombe.auVolant && tombe.tombe && tombe.depasse > 2 && tombe.haut !== null && tombe.haut < 0.3,
+      JSON.stringify(tombe));
+    verifier('et le réverbère qui tombe ne compile aucun programme',
+      tombe.lieu && tombe.tombe && tombe.neuves === 0, JSON.stringify(tombe));
     await mobPage.close();
     await banc.ramener(tab);
 
@@ -5599,11 +5698,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const m = await import('./src/montures.js');
       const toile = document.getElementById('minimap');
       if (!toile) return { err: 'pas de minicarte' };
-      if (toile.style.display !== 'block') {
-        const bouton = document.getElementById('map-btn');
-        if (bouton && bouton.click) bouton.click();
-      }
-      if (toile.style.display !== 'block') return { err: 'la minicarte ne s\'ouvre pas' };
+      // TOUJOURS LÀ DEPUIS LA v530 : on ne touche plus le bouton carte (il
+      // ouvre la carte du monde, sous laquelle la minicarte se cache) ; on
+      // attend qu'elle s'affiche d'elle-même, dix secondes au plus.
+      const tMini = performance.now();
+      while (toile.style.display !== 'block' && performance.now() - tMini < 10000) await new Promise((f) => setTimeout(f, 100));
+      if (toile.style.display !== 'block') return { err: 'la minicarte ne s\'affiche pas', etat: window.__minicarte ? window.__minicarte() : null, classes: document.body.className };
       const def = m.MONTURES.find((d) => d.key === 'avionligne');
       if (!def || !def.pilote) return { err: 'pas d\'avion de ligne' };
       // Un couloir vierge, loin de tout — ET SUR TERRE. À (−40 000, 40 000)
@@ -9103,7 +9203,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await att(500); }
         if (!g.player.pilote) return { err: 'pas aux commandes' };
         g.player.pos.y += 60; g.player.avionEtat = 'vol'; g.player.avionEnVol = true; g.player.vitesseAvion = 100;
-        if (getComputedStyle(document.getElementById('minimap')).display === 'none') document.getElementById('map-btn').click();
+        // la minicarte est toujours là (v530) : aucun geste pour l'ouvrir
         if (window.__gpsVers) window.__gpsVers(x0 + 2000, z0 - 9000, 'Minneapolis');
         else if (g.carte && g.carte.surGPS) g.carte.surGPS(x0 + 2000, z0 - 9000, 'Minneapolis');
         const { toast } = await import('./src/bandeau.js');
@@ -9120,9 +9220,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const ids = ['cap-avion', 'minimap', 'gps', 'toast', 'math-pop', 'fun-target', 'fly-btn', 'train-btn', 'gaz-base', 'gaz-val', 'edu-timer', 'left-rail', 'pause-btn'];
         const R = {};
         for (const id of ids) R[id] = boite(id);
-        // la colonne de gauche (v518) : le bouton carte, et où s'ouvre ce qui
+        // la colonne de gauche (v518) : son haut, et où s'ouvre ce qui
         // vit sous la carte (les émotes) quand elle est ouverte
-        const colonne = { carte: boite('map-btn'),
+        const colonne = { haut: Math.round(document.getElementById('left-rail').getBoundingClientRect().top),
           sousCarte: Math.round(document.getElementById('left-rail-bottom').getBoundingClientRect().top),
           fileCentre: Math.round(document.getElementById('file-centre').getBoundingClientRect().left) };
         if (mp) mp.style.display = 'none';
@@ -9148,19 +9248,19 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier(`en vol (${vue.width} × ${vue.height}), minicarte, cadran de cap, GPS, bandeau et défi de Cornichon ne se recouvrent pas, ni les commandes de bord`,
         !hud.err && manquants.length === 0 && recouvre.length === 0,
         `${hud.err || ''} manquants ${JSON.stringify(manquants)} recouvrements ${JSON.stringify(recouvre)} ${JSON.stringify(R)}`);
-      // LA MINICARTE EST DANS LA COLONNE DE GAUCHE (v518). Max : « la carte
-      // est mal placée, elle pourrait être bien à gauche » — elle flottait à
-      // droite du bouton carte. Formulé sans dimension (v265) : même x que le
-      // bouton carte, juste sous lui (moins d'une hauteur de bouton d'écart),
-      // ce qui vit sous la carte descend sous elle, la file centrale passe à
-      // sa droite, et rien dans le quart du joystick (v272). Rouge sur
-      // l'ancien code : x de la minicarte = x du bouton + sa largeur + 10.
+      // LA MINICARTE EST DANS LA COLONNE DE GAUCHE (v518), ET TOUJOURS LÀ
+      // (v530). Max : « la carte est mal placée, elle pourrait être bien à
+      // gauche », puis « toujours visible ». Elle a pris la place de son
+      // bouton, en tête de la colonne. Formulé sans dimension (v265) : visible
+      // en vol SANS un geste, à gauche (son bord au x de la colonne, moins
+      // d'une demi-largeur de bouton), son haut à celui de la colonne, ce qui
+      // vit sous la carte descend sous elle, la file centrale passe à sa
+      // droite, et rien dans le quart du joystick (v272).
       {
-        const mm = R.minimap, cb = hud.colonne && hud.colonne.carte, c = hud.colonne || {};
+        const mm = R.minimap, c = hud.colonne || {};
         const dans = (b) => b.x < hud.vue.w * 0.45 && b.y + b.h > hud.vue.h * 0.4;
-        verifier(`(${vue.width} × ${vue.height}) la minicarte s'ouvre à gauche, sous le bouton carte, sans rien recouvrir ni entrer dans le quart du joystick`,
-          !hud.err && !!mm && !!cb && Math.abs(mm.x - cb.x) <= 1
-            && mm.y >= cb.y + cb.h && mm.y - (cb.y + cb.h) < cb.h
+        verifier(`(${vue.width} × ${vue.height}) la minicarte est là sans geste, en tête de la colonne de gauche, sans rien recouvrir ni entrer dans le quart du joystick`,
+          !hud.err && !!mm && mm.x <= 22 && Math.abs(mm.y - c.haut) <= 2
             && c.sousCarte >= mm.y + mm.h && c.fileCentre >= mm.x + mm.w && !dans(mm),
           `${hud.err || ''} ${JSON.stringify({ minicarte: mm, colonne: c, vue: hud.vue })}`);
       }
