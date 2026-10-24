@@ -105,3 +105,7 @@ jour et nuit, et le train vu de près.
   plus profonds), à poser à Max.
 - Vu, non corrigé : la nuit, les fenêtres du train sont noires (aucune vitre
   allumée), alors que celles des villes s'allument.
+| 22 | moyenne | au volant (v541), iPhone et iPad | [v541](revue-ecran/v541-volant/iphone-volant-arret-jour.jpg) | L'icône du **klaxon** est un haut-parleur : un enfant peut la lire comme « le son », pas comme l'avertisseur. Le mot est dans `aria-label`, pas à l'écran. | Un cornet d'avertisseur dessiné (`ICONES.klaxon`), jugé sur une capture à 430 × 932. | `src/commandes.js` |
+| 23 | moyenne | au volant de nuit (v533, revu en v541) | [v541](revue-ecran/v541-volant/iphone-volant-roule-nuit.jpg) | Vus de la caméra de poursuite, les **cônes des phares** dessinent deux triangles clairs qui flottent au-dessus du capot, et les deux lentilles se lisent comme des ronds blancs posés sur le toit. | Raccourcir ou estomper le cône près de la voiture, ou ne pas le dessiner quand la caméra est derrière. | `src/phares.js` |
+| 24 | basse | voiture de la rue percutée, de nuit (v541) | [v541](revue-ecran/v541-volant/iphone-voiture-rue-percutee-nuit.jpg) | Sur la carrosserie blanche de la fourgonnette, les **feux de détresse** additifs virent au rose saumon : ils sont sur la tôle, mais on les lit mal comme des clignotants orange. | Une teinte plus saturée (moins de rouge additif sur fond clair), jugée sur la même capture. | `src/vehicules.js` (`feuxDeDetresse`) |
+
