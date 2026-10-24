@@ -339,6 +339,10 @@ export const ECHELLES_MAIN = Object.freeze({
 // sont une DETTE DÉCLARÉE, elles doivent disparaître.
 export const BAS_DECLARES = Object.freeze({
   // Dans la vraie ville aussi, ils sont plus bas que ce qui les entoure.
+  // Une dette des rues à la GTA : moins de lots, et les immeubles qui restent
+  // autour de l'hôtel de ville sont les tours du centre — médiane 22 pour 21
+  // (mesuré ; 21 juste au-dessus sur la v531). Il se remet au ciel de sa ville.
+  'Los Angeles|L\'hôtel de ville': { lot: 'rues à la GTA : à remettre au ciel de Los Angeles (21 pour une médiane de 22)' },
   'Paris|Pyramide du Louvre': { vrai: 'la pyramide (21,6 m) est plus basse que le palais du Louvre qui l\'entoure' },
   'New York|Bourse de New York': { vrai: 'la Bourse est un temple de six étages au pied des tours de Wall Street' },
   'San Francisco|Lombard Street': { vrai: 'c\'est une rue' },
@@ -370,7 +374,8 @@ export const BAS_DECLARES = Object.freeze({
   'Prague|Le pont Charles': { vrai: 'c\'est un pont' },
   'Florence|Le Ponte Vecchio': { vrai: 'c\'est un pont' },
   'Le Cap|Le château de Bonne-Espérance': { vrai: 'une forteresse aux murs bas' },
-  'La Havane|El Morro': { vrai: 'une forteresse sur son rocher' },
+  // (El Morro n'y est plus : avec les rues à la GTA, moins de quarante
+  // immeubles l'entourent, il n'est plus mesuré.)
   'Tokyo|Le palais impérial': { vrai: 'un palais bas dans ses jardins, au pied des tours de Marunouchi' },
   'Séoul|Gyeongbokgung': { vrai: 'un palais bas, au pied des tours de Gwanghwamun' },
   'Séoul|Namdaemun': { vrai: 'une porte de ville au milieu des tours' },
