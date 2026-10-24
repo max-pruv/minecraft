@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v541 — Des rues à la GTA : une voie, c'est la voiture et un bloc de chaque côté
+## v542 — Des rues à la GTA : une voie, c'est la voiture et un bloc de chaque côté
 
 **Pourquoi.** Max veut rouler dans les villes comme dans GTA. Mesuré avant une
 ligne : la marge du kit (`voirie.js`, 0,4 m de chaque côté de la voiture) dans
@@ -77,7 +77,7 @@ de ville) ont été remesurés des deux côtés et repointés, la mesure dans le
 commentaire.
 
 Revue d'écran (`--etats=paris,volant-ville,voiture-rue-percutee,metro`, iPhone
-et iPad, jour et nuit) dans `docs/revue-ecran/v541/` : la voiture de l'enfant
+et iPad, jour et nuit) dans `docs/revue-ecran/v542/` : la voiture de l'enfant
 tient dans sa voie avec un bloc de chaque côté. Deux défauts vus, d'avant la
 livraison et identiques sur la v534 — la caméra traverse un voyageur du métro
 et un bus — entrent au relevé (`docs/revue-ecran.md`, ligne 22).
