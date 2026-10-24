@@ -52,7 +52,7 @@ import { TOUS_LES_GUIDES } from './guidesvilles.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
 import { creerNomsDeStations, chaufferStations } from './stations.js';
-import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
+import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio, radioSuivante, radioTitre, radioIndice, radioMemoire, radioRestaurer, klaxonTenir, klaxonRue } from './sons.js';
 import { traceAnneau, traceLigne1Paris, arretsLigne1Paris } from './ville.js';
 import { LIGNES_MONDE, traceLigneMonde } from './metromonde.js';
 import { traceCourse } from './circuit.js';
@@ -400,6 +400,16 @@ function sonVoulu() {
   try { return localStorage.getItem(SON_CLE) !== 'off'; } catch { return true; }
 }
 reglerSon(sonVoulu());
+// LA STATION DE RADIO SE GARDE SUR L'APPAREIL (v541), comme le son : celle
+// qu'on a choisie au volant revient dans la voiture suivante, et une radio
+// éteinte exprès reste éteinte. `null` est l'arrêt, un entier la station.
+const RADIO_CLE = 'web-minecraft-radio-v1';
+try { const v = localStorage.getItem(RADIO_CLE); if (v != null) radioRestaurer(v === 'off' ? null : Number(v)); } catch { /* mode privé */ }
+function changerDeStation() {
+  const nom = radioSuivante();
+  try { const m = radioMemoire(); localStorage.setItem(RADIO_CLE, m == null ? 'off' : String(m)); } catch { /* mode privé */ }
+  return nom;
+}
 
 const OMBRES_DEMANDEES = PARAMS_JEU.get('ombres');
 // ET LA PAGE LE SAIT, POUR SA PARURE DE FOND (v277). Deux calques plein écran
@@ -1785,6 +1795,14 @@ function updateChunks() {
   // dans la rue : la circulation, qui attend sans limite devant un piéton, ne
   // l'attend pas — sinon ses files se nouaient aux feux pendant l'arrivée
   vehicules.brancherPietons(() => npcs.filter((h) => !h.attendLeMonde));
+  // LA RUE KLAXONNE (v541) : une voiture arrêtée derrière l'enfant le dit.
+  // Plus loin, plus doux ; à gauche ou à droite de là où il regarde (pan).
+  vehicules.brancherKlaxon((x, z, ton) => {
+    const dx = x - player.pos.x, dz = z - player.pos.z, d = Math.hypot(dx, dz);
+    if (d > 70) return;
+    const rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);   // la droite de l'enfant
+    klaxonRue({ distance: d, pan: d > 0.5 ? (dx * rx + dz * rz) / d : 0, ton });
+  });
   // la voiture de l'enfant s'arrête devant la circulation (player.js, v245)
   // ET LE MOBILIER NON PLUS (v252). Un réverbère, une jardinière, un banc,
   // une table de Times Square sont des props NON SOLIDES pour la marche —
@@ -2709,6 +2727,7 @@ document.addEventListener('keydown', (e) => {
   player.keys.add(e.code);
   if (e.code === 'KeyF') refuserOuVoler();
   if (e.code === 'KeyE') openInventory();
+  if (e.code === 'KeyR' && !e.repeat && auVolantDUneVoiture()) changerDeStation();
   if (e.code.startsWith('Digit')) {
     const n = Number(e.code.slice(5));
     if (n >= 1 && n <= HOTBAR_BLOCKS.length) selectSlot(n - 1);
@@ -2912,6 +2931,14 @@ bindHoldButton('down-btn', 'KeyC');
 // main (player.js) ; le bouton 🛑 de la colonne de droite la tient comme ⤒ la
 // tient à pied. Une seule commande, deux gestes.
 bindHoldButton('fm-btn', 'Space');
+// LE KLAXON (v541) : tenu du pouce, comme le frein à main — la touche H au
+// clavier. LA RADIO : un appui passe à la station suivante, puis au silence
+// (touche R). Les deux ne vivent qu'au volant d'une voiture (index.html).
+bindHoldButton('klaxon-btn', 'KeyH');
+document.getElementById('radio-btn').addEventListener('click', () => { if (auVolantDUneVoiture()) changerDeStation(); });
+function auVolantDUneVoiture() {
+  try { const a = fun && fun.montureConduite && fun.montureConduite(); return !!(a && a.def && a.def.radio); } catch { return false; }
+}
 
 document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
@@ -3016,9 +3043,41 @@ trainBtn.addEventListener('click', () => {
 // LES BOUTONS DE LA MARCHE S'EFFACENT EN VÉHICULE — saut, pioche, capture,
 // coffre — et reviennent à pied (Max). La classe du `body` fait le tri en CSS.
 let etatVehicule = '';
+// LE KLAXON ET L'ÉTAT DE LA RADIO, À CHAQUE IMAGE (v541). Le klaxon suit la
+// touche (bouton tenu ou H) : il sonne tant qu'elle est tenue, et le premier
+// appui publie `player.klaxon = { t, x, z }` — un ÉVÉNEMENT daté, comme le
+// choc (v358), que les passants lisent pour se retourner. La radio dit sa
+// station et son titre dans une pilule de la file du centre (`#radio-etat`),
+// trois secondes après chaque changement : un ÉTAT affiché (v516), pas un
+// message.
+let klaxonEtat = false, radioVu = '', radioJusqua = 0;
+const radioEtat = document.getElementById('radio-etat');
+function majKlaxonEtRadio(enVoiture) {
+  const tenu = enVoiture && player.keys.has('KeyH');
+  if (tenu !== klaxonEtat) {
+    klaxonEtat = tenu;
+    klaxonTenir(tenu);
+    if (tenu) player.klaxon = { t: performance.now(), x: player.pos.x, z: player.pos.z };
+  }
+  const station = enVoiture ? radioEnCours() : null;
+  const cle = enVoiture ? `${station || ''}|${station ? radioTitre() : ''}` : '';
+  const t = performance.now();
+  if (cle !== radioVu) {
+    radioVu = cle;
+    if (radioEtat) {
+      if (!enVoiture) radioEtat.classList.remove('visible');
+      else {
+        radioEtat.textContent = station ? `${station} · ${radioTitre() || ''}` : 'Radio éteinte';
+        radioEtat.classList.add('visible');
+        radioJusqua = t + 3000;
+      }
+    }
+  } else if (radioJusqua && t > radioJusqua) { radioJusqua = 0; if (radioEtat) radioEtat.classList.remove('visible'); }
+}
 function majBoutonsVehicule() {
   const enAvion = running && !!player.pilote;
   const enVehicule = running && (enAvion || player.gabarit > 1);
+  majKlaxonEtRadio(enVehicule && !enAvion);
   // `en-jeu` : la partie est à l'écran (le menu ouvert la met en pause sans
   // la quitter) ; `en-vol` : l'enfant vole à pied.
   const enJeu = overlay.style.display === 'none' && pauseBtn.style.display === 'block';
@@ -3476,7 +3535,9 @@ if (sonToggle) {
 // oscillateur n'était branché. C'est la leçon de `__lumiere()`, morte deux
 // fois pour avoir publié un mécanisme au lieu de ce qui s'entend.
 window.__sons = { etat: etatSon, contexte: contexteAudio, sortie: sortieAudio,
-  station: radioEnCours, regler: reglerSon, actif: sonActif, generation: generationAudio };
+  station: radioEnCours, regler: reglerSon, actif: sonActif, generation: generationAudio,
+  // la radio et le klaxon (v541), pour les témoins et les captures
+  suivante: changerDeStation, titre: radioTitre, indice: radioIndice, klaxon: klaxonTenir };
 
 // iOS only delivers orientation events after an explicit permission request,
 // and the request must come from a user gesture.
@@ -7766,6 +7827,9 @@ let dansMars = false;
 
 let weather = 'clear';
 let weatherTimer = 90;
+// LA PLUIE MOUILLE LA ROUTE (v541) : la physique de la conduite demande ici
+// s'il pleut, et l'adhérence baisse d'un cinquième (`adherenceDeSurface`).
+player.pluie = () => weather === 'rain';
 
 const RAIN_COUNT = 700;
 const rainGeo = new THREE.BufferGeometry();

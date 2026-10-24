@@ -6,7 +6,7 @@ import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { HEIGHT, WATER_LEVEL } from './world.js';
 import { pisteVisee, guiderApproche, aerodromeLePlusProche, angle as angleAp, surUnePiste, pisteDeDecollage, guiderRoulage, VIRAGE_ROULAGE, MONTEE_DECOLLAGE } from './approche.js';
 import { jugerToucher } from './degats.js';
-import { ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, vitessePleine, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA, CONTACT_DOUX, dureeGlissade, vrilleDuChoc, pointDeContact, pasGlissade, DERIVE_MAX_MAIN } from './conduite.js';
+import { adherenceDeSurface, surfaceDuBloc, ficheDeVitesse, pasVoiture, reponseChoc, casesSousBoite, pointDImpact, DERIVE_MAX, boiteVoiture, chocContreVoiture, vitessePleine, normaleDeMur, sousLaCaisse, forceAtterrissage, DEBATTEMENT, RAPPEL, ENFONCE, vitesseDeSuivi, freinDeSuivi, PORTEE_SUIVI, SUIVI_DELTA, CONTACT_DOUX, dureeGlissade, vrilleDuChoc, pointDeContact, pasGlissade, DERIVE_MAX_MAIN } from './conduite.js';
 
 const WIDTH = 0.6;        // player AABB width (x and z)
 // LE GABARIT D'UN VÉHICULE CONDUIT (v212). Max, capture à l'appui : « cars
@@ -733,6 +733,30 @@ export class Player {
     const r = this.lectureCaisse();
     return r ? r.pente : null;
   }
+  // LA ROUTE SOUS LES ROUES (v541) : le bloc que les roues touchent, sous le
+  // milieu de la caisse et sous le nez (la plus mauvaise des deux surfaces
+  // compte — on freine dès que le nez quitte la route). Un tablier est une
+  // route. On descend jusqu'à trois blocs sous les pieds : la surface
+  // continue porte la voiture un demi-bloc au-dessus du cube (v297), et une
+  // colonne couverte garde son bloc dans les données.
+  surfaceSousLaCaisse() {
+    const w = this.world;
+    if (!w.getBlock) return null;
+    const lire = (x, z) => {
+      if (w.tablierSousLePoint && w.tablierSousLePoint(x, z) !== null) return 'route';
+      const bx = Math.floor(x), bz = Math.floor(z);
+      for (let y = Math.floor(this.pos.y - 0.05); y >= Math.floor(this.pos.y) - 3; y--) {
+        const id = w.getBlock(bx, y, bz);
+        if (id) return surfaceDuBloc(id);
+      }
+      return null;
+    };
+    const s0 = lire(this.pos.x, this.pos.z);
+    const s1 = lire(this.pos.x - Math.sin(this.yaw) * 1.6, this.pos.z - Math.cos(this.yaw) * 1.6);
+    if (s0 == null) return s1;
+    if (s1 == null) return s0;
+    return adherenceDeSurface(s1) < adherenceDeSurface(s0) ? s1 : s0;
+  }
 
   // LA BOSSE ET L'ATTERRISSAGE (palier 3). Le point-masse de la caisse sur la
   // surface lissée (`sousLaCaisse`) : au sol il prend la vitesse verticale que
@@ -1307,12 +1331,20 @@ export class Player {
       // qu'il agit (`freinMainTire`) pour qui voudrait le dessiner ou l'entendre.
       const freinMain = !!this.freinMain || k.has('Space');
       this.freinMainTire = freinMain && !inerte;
+      // LA ROUTE SOUS LES ROUES ET LA PLUIE (v541) : la surface se lit sous
+      // la caisse, la pluie se demande à main.js (`pluie`, lu si présent), et
+      // l'adhérence qui en sort entre dans la dynamique. Publiés pour qui
+      // veut l'entendre (le roulement) ou le voir (`?diag=1`).
+      const surface = this.enLair ? null : this.surfaceSousLaCaisse();
+      this.surface = surface;
+      const pluie = !!(this.pluie && this.pluie());
+      this.adherence = adherenceDeSurface(surface, pluie);
       // APRÈS UN CHOC, LA GLISSADE D'ABORD (v534) : le joystick attend qu'elle
       // rende la main (`avancerGlissade`), puis la dynamique reprend.
       if (!this.avancerGlissade(dt)) {
         const r = pasVoiture(
           { v: this.vitesseVoiture, braquage: this.braquage || 0, derive: this.derive || 0 },
-          { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte, pente: pente || 0, auSol: !this.enLair, freinMain,
+          { gaz, volant: strafe, moteur, direction: ev ? ev.direction || 0 : 0, inerte, pente: pente || 0, auSol: !this.enLair, freinMain, adherence: this.adherence,
             plafond: gaz > 0 && !freinMain && !this.enLair ? this.suiviDevant() : null, freinSuivi: this.suivi ? this.suivi.frein : null },
           fiche, dt);
         // LA ROUE LIBRE SE RELÈVE (v397, `?diag=1`) : du lâcher du joystick, au

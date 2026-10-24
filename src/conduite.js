@@ -32,6 +32,7 @@
 // elle vient d'un virage serré pris vite, et se rattrape sans rien faire.
 
 import { VITESSE_SOL_MAX } from './plafond-sol.js';
+import { BLOCK, CITY_BLOCK, ARCHI } from './blocks.js';
 
 export const MARCHE = 3.2;            // WALK_SPEED de player.js : l'unité des allures
 export const EMPATTEMENT = 2.7;       // L, blocs (une voiture de 4,4)
@@ -104,6 +105,55 @@ export const GLISSE_MAIN = 0.45;      // part du frottement de dérive : on glis
 // que l'allure (`player.boost`, multiple de la marche) : la classe se
 // retrouve à sa pointe, qui est unique par classe. Une pointe inconnue
 // (une bête de secours) prend la fiche la plus proche, à sa pointe à elle.
+// LA ROUTE SOUS LES ROUES (v541). Max : « que la conduite réagisse à
+// l'environnement, comme GTA ». Jusqu'ici l'adhérence ne venait que de la
+// classe : une sportive tenait la même pointe et le même virage sur
+// l'asphalte, l'herbe, le sable et la neige. `surfaceDuBloc` classe le bloc
+// que les roues touchent, `adherenceDeSurface` en fait un facteur (1 sur la
+// route, moins ailleurs, moins encore sous la pluie) que `pasVoiture` lit
+// dans `entree.adherence` : il réduit la traction, l'adhérence latérale et
+// le freinage, et ajoute la résistance au roulement. À 1, la dynamique est
+// celle d'avant AU BIT PRÈS — c'est ce que le témoin de `plafond.js` exige.
+export const SURFACES = {
+  route: 1,       // asphalte, marquages, passages, tabliers, béton
+  pave: 0.95,     // les pavés de Paris et les dalles
+  gravier: 0.8,
+  terre: 0.78,
+  herbe: 0.72,
+  sable: 0.55,
+  neige: 0.42,
+};
+export const MOUILLE = 0.8;           // sous la pluie, la route et les pavés perdent un cinquième
+const ROUTE = new Set([CITY_BLOCK.ASPHALT, CITY_BLOCK.ROADLINE, CITY_BLOCK.CROSSWALK, CITY_BLOCK.SIDEWALK,
+  CITY_BLOCK.GRANITE, BLOCK.STONE, BLOCK.STONEBRICK, BLOCK.PLANK, BLOCK.SLAB_STONE, BLOCK.SLAB_PLANK]
+  .concat([BLOCK.CONCRETE, BLOCK.BRICK, BLOCK.SLAB_COBBLE, ARCHI.BORDURE].filter((x) => x != null)));
+const PAVE = new Set([BLOCK.COBBLE, ARCHI.PAVE, BLOCK.SLAB_COBBLE].filter((x) => x != null));
+const HERBE = new Set([BLOCK.GRASS, BLOCK.LEAVES].filter((x) => x != null));
+const TERRE = new Set([BLOCK.DIRT, BLOCK.WOOD, BLOCK.LOG].filter((x) => x != null));
+export function surfaceDuBloc(id) {
+  if (id == null || id === 0) return null;
+  if (ROUTE.has(id)) return 'route';
+  if (PAVE.has(id)) return 'pave';
+  if (id === BLOCK.SAND) return 'sable';
+  if (id === BLOCK.SNOW) return 'neige';
+  if (id === BLOCK.GRAVEL) return 'gravier';
+  if (HERBE.has(id)) return 'herbe';
+  if (TERRE.has(id)) return 'terre';
+  // ce qu'on ne connaît pas (un bloc posé, une tuile de ville) se roule comme
+  // une route : on ne punit pas une rue de ville dont le bloc est neuf
+  return 'route';
+}
+export function adherenceDeSurface(surface, pluie = false) {
+  const a = SURFACES[surface] != null ? SURFACES[surface] : 1;
+  // la pluie mouille ce qui est dur ; sur l'herbe et la terre, elle fait de la boue
+  return pluie ? a * (surface === 'herbe' || surface === 'terre' ? 0.85 : MOUILLE) : a;
+}
+// Le roulement qu'on entend et qu'on sent : nul sur la route, plein sur ce
+// qui n'en est pas (0..1).
+export function rugositeDeSurface(surface) {
+  return surface === 'route' || surface == null ? 0 : surface === 'pave' ? 0.3 : surface === 'gravier' ? 0.8 : 1;
+}
+
 export function ficheDeVitesse(vmax) {
   let best = null, ecart = Infinity;
   for (const [nom, f] of Object.entries(CLASSES)) {
@@ -293,6 +343,13 @@ export function pasVoiture(e, entree, fiche, dt) {
   if (Math.abs(gaz) < ZONE_MORTE) gaz = 0;
   const volant = inerte ? 0 : borne(entree.volant || 0, 1);
   const main = !inerte && !!entree.freinMain;
+  // L'ADHÉRENCE DE LA SURFACE (v541) : 1 sur la route (rien ne change), moins
+  // sur l'herbe, le sable, la neige. La traction et le freinage suivent, la
+  // tenue latérale aussi (`grip`), et ce qui n'est pas une route résiste au
+  // roulement — on ralentit tout seul dans un champ, pas sur l'asphalte.
+  const adh = entree.adherence == null ? 1 : Math.max(0.2, Math.min(1, entree.adherence));
+  const frein = FREIN * (0.55 + 0.45 * adh);
+  const resistance = FREIN_MOTEUR * (1 + 2.5 * (1 - adh));
 
   // — longitudinal —
   const roule = (a) => {   // frein moteur et air : vers zéro, sans le franchir
@@ -308,22 +365,23 @@ export function pasVoiture(e, entree, fiche, dt) {
     v = Math.max(plafond, v - (entree.freinSuivi || FREIN_SUIVI) * dt);
   } else if (gaz > 0) {
     if (v < -0.3) {
-      v = Math.min(0, v + FREIN * gaz * dt);           // on freine la marche arrière
+      v = Math.min(0, v + frein * gaz * dt);           // on freine la marche arrière
     } else {
-      const cible = Math.min(gaz * vmax, plafond);
-      if (v < cible) v = Math.min(cible, v + accelVoiture(Math.max(0, v), vmax, a0) * dt);
-      else roule(FREIN_MOTEUR + TRAINEE * v * v);
+      // hors de la route, la pointe baisse aussi : les roues patinent
+      const cible = Math.min(gaz * vmax * (0.6 + 0.4 * adh), plafond);
+      if (v < cible) v = Math.min(cible, v + accelVoiture(Math.max(0, v), vmax, a0 * adh) * dt);
+      else roule(resistance + TRAINEE * v * v);
     }
   } else if (gaz < 0) {
     if (v > 0.5) {
-      v = Math.max(0, v + FREIN * gaz * dt);           // on freine d'abord
+      v = Math.max(0, v + frein * gaz * dt);           // on freine d'abord
     } else {
       const cible = gaz * RECUL_MAX;                   // puis l'on recule
-      if (v > cible) v = Math.max(cible, v - ACCEL_RECUL * dt);
-      else roule(FREIN_MOTEUR);
+      if (v > cible) v = Math.max(cible, v - ACCEL_RECUL * adh * dt);
+      else roule(resistance);
     }
   } else {
-    roule(FREIN_MOTEUR + TRAINEE * v * v);
+    roule(resistance + TRAINEE * v * v);
   }
   // LA PENTE (palier 3) : la montée ralentit, la descente accélère. La
   // composante de la pesanteur le long de la caisse, pente prise nez en haut.
@@ -345,7 +403,7 @@ export function pasVoiture(e, entree, fiche, dt) {
   // la direction de la vitesse suit le corps, et rattrape la dérive…
   let vitesseCap = corps - derive / (main ? DERIVE_TAU_MAIN : DERIVE_TAU);
   // … dans la limite de l'adhérence
-  const grip = fiche.mu * (main ? GRIP_MAIN : 1) / Math.max(a, 0.5);
+  const grip = fiche.mu * adh * (main ? GRIP_MAIN : 1) / Math.max(a, 0.5);
   vitesseCap = borne(vitesseCap, grip);
   if (a < 0.3) { vitesseCap = corps; }
   let nouvelle = derive + (vitesseCap - corps) * dt;

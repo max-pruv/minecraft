@@ -1043,6 +1043,45 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // tourne bien plus que le volant ne le dit ; lâché, elle se remet dans l'axe
   // PEU À PEU. Sur l'ancien code le frein à main n'existe pas : la caisse
   // tourne comme au seul volant (rapport 1).
+  // LA ROUTE SOUS LES ROUES (v541). `pasVoiture` lit `entree.adherence` :
+  // 1 sur la route, moins sur l'herbe, le sable, la neige, et moins encore
+  // sous la pluie (`adherenceDeSurface`). Deux promesses, et la première est
+  // celle qui garde tout le reste : SANS adhérence donnée (l'appelant
+  // d'avant), la dynamique est celle de la v534 AU BIT PRÈS — on compare
+  // `adherence: 1` et `adherence` absente sur des milliers de pas tirés
+  // (classes, gaz, volant, pente, frein à main, en l'air) ; et AVEC, la
+  // pointe à plein gaz baisse de la route à l'herbe, au sable, à la neige,
+  // la dérive en virage monte, et la route mouillée tient moins que la sèche.
+  // Sur l'ancien code `adherenceDeSurface` n'existe pas : rouge, et dit.
+  {
+    const C = await import('../src/conduite.js').catch(() => null);
+    if (!C || !C.adherenceDeSurface) verifier('conduite : la route sous les roues change l\'adhérence, et sans elle rien ne change', false, 'conduite.js n\'a pas adherenceDeSurface');
+    else {
+      let g = 97531; const rnd = () => ((g = (Math.imul(g, 1103515245) + 12345) >>> 0) / 4294967296);
+      let ecarts = 0, n = 0;
+      for (const nom of Object.keys(C.CLASSES)) {
+        let ea = { v: 0, braquage: 0, derive: 0 }, eb = { ...ea };
+        for (let k = 0; k < 4000; k++) {
+          const e = { gaz: rnd() * 2 - 1, volant: rnd() * 2 - 1, moteur: rnd() < 0.9 ? 1 : rnd(), pente: rnd() < 0.8 ? 0 : rnd() - 0.5, freinMain: rnd() < 0.05, auSol: rnd() > 0.03, plafond: rnd() < 0.9 ? null : rnd() * 30 };
+          const dt = 0.02 + rnd() * 0.06;
+          const ra = C.pasVoiture(ea, e, C.CLASSES[nom], dt), rb = C.pasVoiture(eb, { ...e, adherence: 1 }, C.CLASSES[nom], dt);
+          for (const c of ['v', 'braquage', 'derive', 'dCap']) { n++; if (ra[c] !== rb[c]) ecarts++; }
+          ea = { v: ra.v, braquage: ra.braquage, derive: ra.derive }; eb = { v: rb.v, braquage: rb.braquage, derive: rb.derive };
+        }
+      }
+      const pointe = (adh) => { let e = { v: 0, braquage: 0, derive: 0 }; for (let k = 0; k < 400; k++) e = { ...e, ...C.pasVoiture(e, { gaz: 1, volant: 0, adherence: adh }, C.CLASSES.sportive, 0.05) }; return +e.v.toFixed(2); };
+      const derive = (adh) => { let e = { v: 30, braquage: 0, derive: 0 }, pire = 0; for (let k = 0; k < 60; k++) { e = { ...e, ...C.pasVoiture(e, { gaz: 1, volant: 1, adherence: adh }, C.CLASSES.sportive, 0.05) }; pire = Math.max(pire, Math.abs(e.derive)); } return +pire.toFixed(3); };
+      const A = (s, pluie) => C.adherenceDeSurface(s, pluie);
+      const p = { route: pointe(1), herbe: pointe(A('herbe')), sable: pointe(A('sable')), neige: pointe(A('neige')), mouillee: pointe(A('route', true)) };
+      const d = { route: derive(1), herbe: derive(A('herbe')), sable: derive(A('sable')) };
+      const blocs = [C.surfaceDuBloc(562), C.surfaceDuBloc(1), C.surfaceDuBloc(4), C.surfaceDuBloc(629), C.surfaceDuBloc(14)];
+      verifier('conduite : la route sous les roues change l\'adhérence, et sans elle rien ne change',
+        ecarts === 0 && n > 100000 && A('route') === 1 && A('herbe') < 0.8 && A('sable') < A('herbe') && A('neige') < A('sable') && A('route', true) < 1
+          && p.route > p.herbe && p.herbe > p.sable && p.sable > p.neige && p.mouillee < p.route && d.herbe > d.route
+          && JSON.stringify(blocs) === JSON.stringify(['route', 'herbe', 'sable', 'pave', 'gravier']),
+        `identité ${ecarts} écarts sur ${n} · pointes ${JSON.stringify(p)} · dérives ${JSON.stringify(d)} · blocs ${JSON.stringify(blocs)}`);
+    }
+  }
   {
     const C = await import('../src/conduite.js').catch(() => null);
     if (!C || !C.pasVoiture) verifier('conduite : le frein à main fait déraper la voiture', false, 'conduite.js ne se charge pas');

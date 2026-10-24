@@ -136,6 +136,22 @@
   bute chez lui) ; un fût tombé vers la chaussée peut y dépasser, et les
   voitures de la rue passent au travers ; les arbres de rue (`LOG`) restent
   durs.
+- [ ] **La conduite à la GTA (v541), ce qui reste, déclaré.** (1) Le klaxon
+  de l'enfant ne voyage pas par le réseau : un ami ne l'entend pas (un message
+  court `klaxon`, nom neuf, l'hôte relaie, le receveur cède — comme
+  `portiere`, v377). (2) Les feux stop de la voiture d'un AMI ne s'allument
+  pas chez les autres : `p.v` ne porte pas le freinage (une lettre de plus
+  dans `p.v`, lue sur `pos` ET `rpos`, v388). (3) Les voitures de la rue n'ont
+  pas de phares la nuit : deux lueurs par voiture, c'est deux appels de dessin
+  par voiture visible, le goulot de l'iPad (v196) — à mesurer sur la tablette
+  avant de décider ; les feux stop, eux, ne se dessinent que quand la voiture
+  freine. (4) La radio d'un ami n'est pas la nôtre : deux tablettes sur la
+  même station entendent le même programme (l'heure réelle), mais rien ne
+  partage le CHOIX. (5) Un klaxon de rue se place à gauche ou à droite
+  (`StereoPannerNode`), pas devant ou derrière : un vrai panoramique
+  (`PannerNode` HRTF) coûterait un nœud par voiture. (6) La surface se lit
+  sous le milieu et sous le nez de la caisse, pas sous chaque roue : une
+  voiture à cheval sur le bord de la route prend la plus mauvaise des deux.
 
 - [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
   au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :

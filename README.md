@@ -54,8 +54,11 @@ rendering budgets, licensing and limitations.
 - **Day/night cycle** with sky, fog and light level transitions.
 - **Synthesized sound** — nothing is downloaded: engines (a filtered noise bed
   plus harmonics that track the throttle), jet spool-up, block and chime sounds
-  are all built with the Web Audio API, and the car radio plays three original
-  stations written in scale degrees. One audio context for the whole game; the
+  are all built with the Web Audio API, and the car radio plays five original
+  stations of three songs each, written in scale degrees with a jingle before
+  every song and a programme that follows the real clock (`src/radio.js`).
+  The horn is two held sawtooth tones through a resonant filter; a street car
+  stuck behind you honks back. One audio context for the whole game; the
   🔊 setting suspends it outright.
 - **Mobile support** — one hand to move, one to act: a virtual joystick on the
   left, a contextual action pill and at most three round buttons on the right,
@@ -179,6 +182,9 @@ the invariants a change must not break.
 | Shift | Sprint |
 | 1–9 or mouse wheel | Select hotbar slot |
 | F | Toggle fly mode (Space up, C down) |
+| H (in a car) | Horn |
+| R (in a car) | Next radio station, then silence |
+| Space (in a car) | Handbrake |
 | Esc | Pause |
 
 On touch devices: left thumb summons a joystick, right thumb looks around,
@@ -188,7 +194,10 @@ menu in the top-right corner pauses and gathers everything else.
 
 In a car the joystick is both accelerator and steering wheel — push forward to
 speed up, pull back to brake and then reverse — and the walking buttons step
-aside. A plane additionally gets a throttle dial and a speed readout on the
+aside; the right column holds the handbrake, the horn and the radio button.
+Grass, gravel, sand and snow grip less than tarmac (and rain wets the road),
+the car rumbles and the camera shakes off-road, brake lights come on when you
+brake and reverse lights when you back up — on street cars too. A plane additionally gets a throttle dial and a speed readout on the
 right, because a throttle that holds when you let go is what makes an aircraft
 an aircraft.
 

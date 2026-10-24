@@ -23,8 +23,8 @@ import { toast } from './bandeau.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
 import { garagesDe, garageAutour, inscrireGarage, garer, sortir, planDePose } from './garages.js';
-import { allureDe } from './vehicules.js';
-import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe } from './sons.js';
+import { allureDe, feuxArriere } from './vehicules.js';
+import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe, klaxonTenir } from './sons.js';
 import { creerDegats } from './degats3d.js';
 import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensations.js';
 import { brancherTraces, avancerTraces, chaufferTraces } from './traces.js';
@@ -277,7 +277,8 @@ export function initFun(ctx) {
       // n'est plus mise à jour, elle garderait sa dernière flamme (v264).
       for (const f of (quitte && quitte.mesh && quitte.mesh.userData.tuyeres) || []) f.visible = false;
       // les feux de bord aussi (v533) : la monture quittée garderait ses phares
-      if (quitte && quitte.mesh) { eteindrePhares(quitte.mesh); eteindreFeuxNav(quitte.mesh); }
+      if (quitte && quitte.mesh) { eteindrePhares(quitte.mesh); eteindreFeuxNav(quitte.mesh); feuxArriere(quitte.mesh, {}); }
+      klaxonTenir(false);
       // On rend la marche en descendant : sans cela l'enfant garderait la
       // physique de vol à pied. Même règle que le gabarit de la voiture, qui
       // se rend aussi en descendant (v212).
@@ -1250,7 +1251,20 @@ export function initFun(ctx) {
       eteindreFeuxNav(a.mesh);
     }
     // LES PHARES (v533) : au volant d'une voiture, dès que la nuit tombe.
-    if (!player.pilote && a.def.moteur === 'voiture') allumerPhares(a.mesh, nuitDehors());
+    if (!player.pilote && a.def.moteur === 'voiture') {
+      allumerPhares(a.mesh, nuitDehors());
+      // LES FEUX STOP ET DE RECUL (v541) : rouge quand la voiture FREINE —
+      // elle perd de la vitesse plus vite qu'en roue libre, ou le frein à
+      // main est tiré —, blanc quand elle recule. Lu sur ce que la voiture
+      // fait, pas sur ce qu'on demande : une descente freinée s'allume aussi.
+      const v = player.vitesseVoiture || 0, vp = a.vFeux == null ? v : a.vFeux;
+      a.vFeux = v;
+      const decel = dt > 0 ? (Math.abs(vp) - Math.abs(v)) / dt : 0;
+      const frein = (Math.abs(v) > 0.3 && decel > 6) || (player.freinMainTire && Math.abs(v) > 0.8) || (player.glissade && Math.abs(v) > 1);
+      const recul = v < -0.3;
+      a.feuxFrein = frein ? Math.min(0.25, (a.feuxFrein || 0) + dt) : Math.max(0, (a.feuxFrein || 0) - dt);
+      feuxArriere(a.mesh, { frein: a.feuxFrein > 0, recul });
+    }
     // AU VOLANT, LE RÉGIME EST CE QUE LA VOITURE FAIT, pas ce qu'on demande :
     // moteur au ralenti à l'arrêt, qui monte avec l'allure. Le plafond vient
     // de `player.js`, là où il se calcule — la classe du modèle le fixe

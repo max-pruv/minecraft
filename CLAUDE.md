@@ -902,6 +902,62 @@ Cinq règles.
   Manhattan (mobilier instancié par lots) et le réseau (la casse n'est pas
   partagée) restent des dettes déclarées.
 
+## La voiture, comme dans GTA (v541) — un son se lit dans sa bande, et une règle de route vit dans la dynamique
+
+Max : « améliore la conduite pour qu'elle ressemble à GTA — l'environnement,
+les autres voitures, la musique, le son, jusqu'au design des voitures ». Quatre
+sujets dans une livraison, quatre lignes au journal, neuf témoins (v279). Six
+règles.
+
+- **LA RADIO A UN PROGRAMME PUR, ET IL SUIT L'HEURE RÉELLE.** `radio.js`
+  (sans import, lu par les témoins sous node) porte cinq stations de trois
+  morceaux, écrits en degrés relatifs à l'accord ; `programme(station, t)`
+  rend le morceau et le pas de croche à l'heure `t`, si bien qu'une station
+  continue de jouer quand on ne l'écoute pas et que deux tablettes sur la même
+  station entendent la même chose. `sons.js` ne fait que JOUER ce que le
+  programme dit, contre l'horloge du contexte audio (v268). Un jingle, sans
+  batterie, ouvre chaque morceau. Le choix de station — ou le silence — se
+  garde sur l'appareil (`web-minecraft-radio-v1`), pas dans le profil.
+- **UN ANALYSEUR LISSE SON SPECTRE : UN TÉMOIN DE SON LIT L'INSTANT.** Six
+  dixièmes après le lâcher, le klaxon se lisait encore à −43 dB dans sa bande,
+  gain à zéro depuis trois dixièmes : `smoothingTimeConstant` vaut 0,8 par
+  défaut, et `getFloatFrequencyData` rend une MÉMOIRE. À zéro, le lâcher
+  rend −62. Et un témoin de son lit UNE BANDE (le klaxon 350–560 Hz, le
+  grondement 60–300, la radio 250–1 600), jamais l'énergie totale, que le
+  moteur au ralenti remplit.
+- **LA RUE DIT CE QU'ELLE FAIT, ELLE NE CHANGE PAS CE QU'ELLE FAIT.** Une
+  voiture de la rue arrêtée derrière l'enfant cède sans limite (v245) ; elle
+  klaxonne désormais au bout de `KLAXON_PATIENCE` secondes réelles, puis
+  relance — mais n'avance pas d'un bloc. `vehicules.js` ne sait pas faire de
+  son : `brancherKlaxon` reçoit de main.js ce qui sait où est l'enfant et où
+  il regarde (le panoramique). Le ton d'une voiture vient de sa clé et de son
+  rang (`tonDeKlaxon`) : deux klaxons ne se ressemblent pas, et deux tablettes
+  entendent le même. Le passant lit le klaxon comme un choc (`regardChoc`,
+  `player.klaxon = { t, x, z }`, un événement daté posé au premier appui).
+- **UNE RÈGLE DE ROUTE ENTRE DANS LA DYNAMIQUE PAR UN FACTEUR, ET LE FACTEUR
+  1 EST L'IDENTITÉ AU BIT PRÈS.** `adherenceDeSurface(surface, pluie)`
+  (conduite.js) rend 1 sur la route ; `pasVoiture` lit `entree.adherence` et
+  en fait la traction, le freinage, la tenue latérale et la résistance au
+  roulement. Sans le champ, la v534 au bit près : 960 000 valeurs comparées à
+  la sonde, 128 000 pas au témoin de `plafond.js`. La surface se LIT (le bloc
+  sous le milieu et sous le nez de la caisse, `surfaceSousLaCaisse`, un
+  tablier est une route) ; un bloc inconnu se roule comme une route — on ne
+  punit pas une rue dont le bloc est neuf. L'oreille (`roulement`) et l'œil
+  (la vibration de la caméra) lisent la même rugosité (`rugositeDeSurface`).
+- **UN FEU DE MODÈLE SE POSE SUR LES POSES MESURÉES, ET LE MÊME GESTE SERT
+  L'ENFANT ET LA RUE.** `feuxArriere` (vehicules.js) pose le feu stop et le
+  feu de recul sur les deux poses ARRIÈRE de `posesDetresse` (v519), en
+  `matiereAdditive` (v533 : aucune clé neuve). `fun.js` l'allume sur ce que
+  la voiture FAIT (une décélération au-delà de la roue libre, le frein à main,
+  la glissade ; la marche arrière), jamais sur ce qu'on demande ; `montrer`
+  l'allume sur une voiture de la rue qui attend ou qui perd de la vitesse
+  d'une image à l'autre. Créés à la première demande, cachés sinon : une rue
+  qui roule ne coûte pas un appel de dessin de plus.
+- **UN TÉMOIN QUI CHERCHE UNE SITUATION DE RUE LA PROVOQUE SUR LA DALLE.**
+  Un convoi d'une voiture sur un anneau de la dalle témoin, l'enfant arrêté
+  sur sa voie : elle freine, s'arrête, klaxonne — vingt secondes, bornées à
+  quarante-cinq, la durée dans le message. Aller la chercher dans Paris aurait
+  été un tirage (v383).
 
 ## Un choc a de l'élan (v534) — la vitesse d'après un choc est un vecteur que le joystick ne touche pas
 
