@@ -1424,7 +1424,42 @@ Deux règles.
   minicarte s'ouvre sous le bouton carte (`--sous-carte`, `--rail-x`) ; ce qui
   vivait sous la carte (les émotes) descend de `--minimap-w`, et la file
   centrale (v445) la contourne par la même variable. Le témoin est formulé
-  sans dimension et joué à 430 × 932 et 420 × 760.
+  sans dimension et joué à 430 × 932 et 420 × 760. *(Depuis la v540 la
+  minicarte n'a plus de bouton : elle prend sa place — voir ci-dessous.)*
+
+## La minicarte toujours là (v540) — ce qui s'affiche toujours se paie en vol, et un raccourci de peinture garde ses états
+
+Max : « mettre la mini-carte toujours visible ». Trois règles.
+
+- **L'AFFICHAGE SUIT L'ÉTAT DU JEU, PAS UN BOUTON.** `minicarteVoulue()`
+  (main.js) : l'accueil fermé, ni carte du monde ni quiz ouverts (invariant 2) —
+  et pas `en-jeu`, qui exige le bouton pause, jamais affiché au bureau souris
+  verrouillée (le portail l'a dit par deux témoins de pages de bureau) ;
+  `majMinicarte()`, appelée à chaque image, ne touche au DOM que si l'état
+  change. Le bouton carte quitte l'écran (`hud-simple`), la minicarte prend sa
+  place (`--haut-rail`) et la toucher ouvre la carte du monde ; le bouton,
+  appuyé quand même, l'ouvre aussi (v228). Un témoin qui ouvrait la minicarte
+  par `#map-btn` la trouve déjà là : `banc.ouvrirLaCarte` touche la minicarte.
+- **CE QUI S'AFFICHE TOUJOURS SE MESURE LÀ OÙ IL COÛTE LE PLUS : EN VOL.**
+  Pleins gaz, le bord neuf (v233) coûtait ~100 ms de fil principal par
+  seconde. Une bande neuve de trois blocs ou plus se peint en esquisse un point
+  sur quatre (`carteReel` 2), les bandes de la v258 la remettent au propre ; un
+  point peint d'après le relief dont le morceau est encore absent n'est pas
+  repeint ; l'`ImageData` du fond est réutilisée. ~35 ms par seconde, cadence
+  identique avec et sans (`sonde-minicarte-cout.cjs`, `?minicarte=0`).
+- **UN RACCOURCI QUI SAUTE UN ÉTAT DOIT DISTINGUER « PAS ENCORE PEINT ».** Mon
+  premier jet sautait tout point marqué 0 (« peint d'après le relief ») ; un
+  raster neuf, rempli de zéros, n'était donc jamais peint — fond de nuit après
+  chaque saut, vu en capture et pas au témoin. Un raster neuf se marque 3 (pas
+  peint), et le témoin de `carte.js` saute de 4 000 blocs et lit les pixels.
+- **CE QUI SE CENTRE SUR L'ÉCRAN SE CENTRE À DROITE DE LA MINICARTE.** Le
+  badge du temps libre (v522, 169 px) touchait le bord de la minicarte à
+  430 px de large : il se centre sur l'espace à sa droite
+  (`(100vw + --rail-x + --minimap-w) / 2`). Un élément neuf posé en haut au
+  milieu entre dans la liste du témoin de `carte.js`, ou il rougit.
+  Et sur téléphone, une règle de `padding` en raccourci écrasait la place de
+  sa croix (« 21 h 1✕ ») : un élément qui réserve une place à un bouton se
+  relit dans les `@media` qui réécrivent son `padding`.
 
 ## ✈️ se pose devant (v502) — une approche assistée va là où le nez pointe
 

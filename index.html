@@ -1590,7 +1590,7 @@
       }
       #left-rail { top: calc(8px + var(--safe-top)); }
       :root { --minimap-w: 120px; }
-      #edu-timer { top: calc(56px + var(--safe-top)); font-size: 14px; padding: 3px 10px; }
+      #edu-timer { top: calc(56px + var(--safe-top)); font-size: 14px; padding: 3px 40px 3px 10px; /* la croix (v522) garde sa place, v533 */ }
       #cap-avion { top: calc(92px + var(--safe-top)); min-width: 170px; padding: 4px 10px 6px; }
       #cap-ville { font-size: 15px; }
       #quiz-card { padding: 16px 14px; max-height: 88vh; overflow-y: auto; }
@@ -2138,9 +2138,18 @@
        s'ouvre désormais SOUS son bouton, au même x que lui, et ce qui vivait
        sous la carte (les émotes) descend sous elle. La file centrale (v445) la
        contourne par la même variable. */
-    body.hud-simple #minimap { left: var(--rail-x); top: var(--sous-carte); }
-    body.hud-simple.minicarte-ouverte #left-rail-bottom { top: calc(var(--sous-carte) + var(--minimap-w) + 8px); }
+    /* ET ELLE EST TOUJOURS LÀ (v530) : son bouton ne bascule plus rien, il
+       quitte l'écran, et la minicarte prend sa place en tête de la colonne.
+       Toucher la minicarte ouvre la carte du monde. */
+    body.hud-simple #map-btn { display: none; }
+    body.hud-simple { --haut-rail: calc(34px + var(--safe-top)); }
+    @media (max-width: 700px) { body.hud-simple { --haut-rail: calc(8px + var(--safe-top)); } }
+    body.hud-simple #minimap { left: var(--rail-x); top: var(--haut-rail); }
+    body.hud-simple.minicarte-ouverte #left-rail-bottom { top: calc(var(--haut-rail) + var(--minimap-w) + 8px); }
     body.hud-simple.minicarte-ouverte #file-centre { left: calc(var(--rail-x) + var(--minimap-w) + 8px); }
+    /* le badge du temps libre (v522) se centre à droite de la minicarte : centré
+       sur l'écran, à 430 px il en touchait le bord (v530) */
+    body.hud-simple.minicarte-ouverte #edu-timer { left: calc((100vw + var(--rail-x) + var(--minimap-w)) / 2); }
 
     /* LE JOYSTICK, UN ANNEAU FIN — même au repos, pour qu'un enfant sache
        où poser le pouce. Il s'efface quand le vrai se dessine sous le doigt. */

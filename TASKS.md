@@ -436,6 +436,49 @@ v522 ne touche pas ; la distribution reste à faire.
   rendait trop peu d'images ce jour-là (v427 : `locator.click` attend deux
   images identiques).
   La livraison ne touchait que trois chaînes de bulles de `marlon.js`.
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v540 (la
+  minicarte toujours là).** `degats.js` rejouée SEULE deux fois sur la branche
+  et deux fois sur `origin/main` v531 (`git worktree`) :
+  - « les feux de détresse se posent SUR la carrosserie » : rouge 2 fois sur 2
+    des deux côtés, à l'identique — la Bugatti Bolide pose deux feux à 0,45
+    bloc de la tôle (les cinq autres modèles à −0,015). En production ; zone
+    véhicules (`posesDetresse`), que la v540 ne touche pas.
+  - « percuter une voiture de la rue l'abîme AUSSI » : 1 sur 2 sur la branche,
+    2 sur 2 sur `origin/main` (élan trouvé 13 à 15 blocs) ; « chez Alice
+    aussi… feux de détresse » le suit (`recues 0` quand le choc n'a pas eu
+    lieu) — un seul défaut, deux rouges (v291).
+  - `monte.js` au même portail : six rouges, cinq déjà déclarés (flâneur sur
+    la chaussée, feu qui pile, rue vide, mur de face, « Atterrissage vers »),
+    plus « à Rome aussi, en biais, un passant traverse sur le passage peint »
+    (déclaré sous la v402). La v540 ne touche que la minicarte et le badge du
+    temps libre.
+  - Portail repris (reprise, `degats.js`, `monte.js`, `reseau.js`) : `reseau.js`
+    verte ; `degats.js` les deux mêmes rouges ; `monte.js` sept rouges, le
+    passage peint de Rome redevenu vert, et deux autres intermittences déjà
+    déclarées : « un train s'arrête devant la voiture de l'enfant » (v440) et
+    « deux voisines d'un convoi gardent leur longueur d'écart » (vertes au
+    premier portail du même code).
+  - Troisième portail (après la croix du badge, `index.html`) : en plus,
+    `reglages.js` « un choix fait sur une tablette part au serveur » — rejouée
+    SEULE, rouge à l'identique sur la branche ET sur `origin/main` v531 (72
+    verts, 1 rouge des deux côtés) : en production ; et `manhattan.js` « les
+    deux clients restent sans erreur de jeu » (PeerJS « Lost connection to
+    server ») — rejouée seule : verte sur la branche, rouge sur `origin/main`,
+    le courtier local. `reseau.js` rejouée seule (coupée deux fois par la borne
+    de deux heures du terminal) : 91 verts, 0 rouge.
+
+  - Portail sur le code fusionné avec la v534 : quinze suites vertes ; `degats.js`
+    seul rouge les feux de la Bugatti ; `monte.js` « la rue roule à l'allure d'une
+    ville » (v472) et « rue vide » ; `reseau.js` rejouée seule 91 verts.
+  - Portail sur le code fusionné avec la v536 : `degats.js` les feux de la
+    Bugatti ; `maj.js` « le loader dit combien de fichiers » et `manhattan.js`
+    « le taxi roule avec les contrôles tactiles » (déclarés) ; `monte.js` cinq
+    rouges, dont « de nuit au volant, la voiture a ses phares » (`voiture.glb`,
+    une lueur à z 0,54). Rejouée SEULE : branche 263 verts / 3 rouges (rue par
+    tranches, passage peint de Rome, rue vide), `origin/main` v536 260 / 6
+    (les mêmes familles, plus « en vol… ne se recouvrent pas » en 430 × 932 et
+    420 × 760 — le badge du temps libre sur la minicarte, que la v540 corrige) ;
+    les phares verts des deux côtés : une intermittence de portail.
 - [ ] **Deux rouges de portail mesurés des deux côtés au portail de la v530
   (les pistes larges).** Chacun rejoué SEUL sur la branche et sur `origin/main`
   v518 (`git worktree`), par une sonde qui recopie le passage du témoin :

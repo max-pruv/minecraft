@@ -20,6 +20,45 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v540 — La minicarte toujours là
+
+**Pourquoi.** Max : « Il faut trouver une solution pour mettre la mini-carte
+toujours visible. » Elle ne s'affichait qu'après un appui sur le bouton carte,
+qu'un enfant de sept ans n'a aucune raison de chercher.
+
+**Ce que ça change.**
+- La minicarte s'affiche dès qu'on entre en jeu, sans un geste, à pied, au
+  volant, en avion et en construction. Elle prend la place de son bouton, en
+  tête de la colonne de gauche ; ce qui vivait sous elle et la file du haut se
+  rangent autour.
+- La toucher ouvre la carte du monde. Elle se cache sous la carte du monde et
+  pendant un quiz (invariant 2), et reste sous le voile du menu ☰.
+- En vol, son bord neuf se peint d'abord en esquisse (un point sur quatre),
+  que les bandes qui repassent remettent au propre ; un point que le jeu
+  repeindrait à l'identique est sauté. Après une téléportation, le fond de nuit
+  se repeint en quelques secondes. `?minicarte=0` la coupe, pour mesurer.
+- Le badge « Libre jusqu'à … » se centre à droite de la minicarte, et sur
+  téléphone sa croix ne barre plus l'heure (« 21 h 1✕ », vu en revue d'écran,
+  là depuis la v522).
+
+**Ce qui le prouve.**
+- `sonde-minicarte-cout.cjs` (chasseur pleins gaz, rr 12, iPhone, ordre
+  alterné) : le travail de la minicarte passe de ~100 à ~35 ms par seconde, et
+  la cadence est la même avec et sans elle.
+- Un témoin neuf dans `carte.js`, joué en 430 × 932 et 820 × 1180 : visible
+  sans geste ; dans les quatre modes rien par-dessus, aucun recouvrement du HUD,
+  le quart du joystick reste au canvas ; voilée sous le menu ; la toucher ouvre
+  la carte du monde, où elle se cache puis revient ; un quiz la cache ; après
+  un saut de 4 000 blocs, le fond de nuit retombe sous un cinquième des points ;
+  la croix du badge ne mord pas son texte (rouge sans la correction : 21 px).
+- Revue d'écran (`docs/revue-ecran/v540-minicarte`) à 430 × 932, 420 × 760 et
+  820 × 1180, de jour et de nuit.
+- Portail : les rouges de `degats.js` et `monte.js` sont rejoués des deux côtés
+  ou déjà déclarés (`TASKS.md`).
+- Témoins repointés : `monte.js` (en tête de la colonne), `maj.js`,
+  `reseau.js`, `banc.ouvrirLaCarte`, `sonde-revue-ecran.cjs`.
+
+
 ## v539 — Rien ne traverse une voie, et le train est un train
 
 **Pourquoi.** Max, deux captures d'iPhone en vol bas au-dessus du TGV

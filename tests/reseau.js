@@ -2064,7 +2064,7 @@ function verifier(nom, ok, detail = '') {
     await dormir(1500);
     const fleches = await lea.evaluate(() => {
       const g = window.__game;
-      document.getElementById('map-btn').click();
+      // la minicarte est toujours là (v530) : rien à ouvrir
       return new Promise((ok) => setTimeout(() => ok(window.__flechesAmis), 400));
     });
     verifier('un ami hors du cadre devient une flèche au bord de la minicarte',
