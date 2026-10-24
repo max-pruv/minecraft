@@ -1,5 +1,49 @@
 # Ce qui est en cours
 
+## v543 — LA VOITURE COMME DANS GTA : les rouges du portail
+
+- [ ] **Rouges du portail de la v543 (la voiture comme dans GTA), tous déjà
+  déclarés ou réglés.** `degats.js` « feux de détresse SUR la carrosserie » :
+  réglé ici (cache des poses rempli sur une voiture froissée), 2/2 verte.
+  `monte.js` rejouée seule jusqu'au bout sur la branche : tous les témoins de la
+  livraison verts ; rouges « rue vide », Moscou ×2 — les mêmes sur `origin/main`
+  v540 (rejouée seule, avec en plus le train, le feu qui pile, la voiture
+  heurtée). `reseau.js` : « un hôte sans courtier est trouvé » et « il le
+  REJOINT » rouges des deux côtés ; « seule après le départ de l'hôte » 1/1 sur
+  la branche (déclaré 1/3 des deux côtés). `metro.js` « la ligne 1 nous emmène »
+  : vert rejouée seule des deux côtés. `maj.js` (loader) et `reglages.js`
+  (battement) : déclarés plus bas.
+
+## v541 — DE VRAIES FEUILLES : ce qui reste, mesuré
+
+- **Un carré d'herbe en voxel (3 × 3 colonnes) au pied de chaque BOULEAU**,
+  au ras de la surface continue, même texture, à peine visible — ce qui reste
+  après la correction du TROU (v541, voir CLAUDE.md). Cause : `DESSUS_NATUREL`
+  (solcontinu.js) admet `LOG` et `LEAVES` au-dessus d'une colonne d'herbe, pas
+  `BLOCK.BIRCH`, le tronc du bouleau (`world.js`, `trunkBlock = kind === 2 ?
+  BIRCH : LOG`) ; la colonne du tronc n'est pas « naturelle », ses quatre
+  cellules ne se dessinent pas, et les huit colonnes voisines gardent leur cube
+  de sommet. Remède d'une ligne — ajouter `BIRCH` à `DESSUS_NATUREL` — mais il
+  change les tampons `solid` de tout morceau à bouleaux, arbres désarmés
+  aussi, donc l'empreinte des 490 morceaux de `plafond.js` : une option de
+  rejeu (`reglage…: false`, comme `baiesSoudees`) et un témoin. Sept suites
+  gardent `solcontinu.js`. À livrer seul, ou jamais : au bloc près, rien ne
+  manque sous un bouleau depuis la v541.
+- **`maj.js` « commandes (430 × 932) : en construction, on marche au
+  joystick ET l'on choisit un bloc » — vert au portail de la v541 (1,28 bloc
+  en 1 605 ms), rouge rejouée SEULE sur le même code une heure plus tard
+  (0,64 bloc en 10 050 ms, `atteinte` et `choisie` vraies).** Le témoin juge
+  une DISTANCE au joystick sur une page qui vient de passer en construction ;
+  le code du jeu n'a pas bougé entre les deux passages (seul `sw.js` a pris
+  son bump). Une intermittence de cadence du banc : à rejouer en distribution
+  (v269) le jour où elle revient, avec la cadence dans le message.
+- **La revue d'écran n'avait pas d'état en forêt avant la v541** : `campagne`
+  est le point d'apparition, sans un arbre. Les états `foret` et `foret-vol`
+  sont ajoutés à `sonde-revue-ecran.cjs` dans cette livraison.
+- **Les oiseaux (kites noirs) volent bas au-dessus de la forêt** et se lisent
+  comme des triangles noirs sur une capture en vol (`apres-foret-loin`). Vu
+  avant/après : préexistant, sans rapport avec les arbres.
+
 ## v539 — RIEN NE TRAVERSE UNE VOIE : ce qui reste, mesuré
 
 - **Rouges du portail de la v539 : aucun de la livraison.** `degats.js`
@@ -53,6 +97,7 @@
 - **Au demi-tour en gare, le convoi saute d'une voie à l'autre** sur un pas de
   tracé (quatre blocs de côté pour quatre de long) : `traceSegment` recoud
   l'aller et le retour sans courbe. À l'arrêt en gare, donc peu visible.
+
 - [ ] **Rouges de portail de la v538 (les guides des villes) : aucun de la
   livraison.** Soupçonnant les guides devant « la rue roule à l'allure d'une
   ville » (médiane 0), une sonde sous node a trouvé quatre guides sur la
@@ -136,6 +181,22 @@
   bute chez lui) ; un fût tombé vers la chaussée peut y dépasser, et les
   voitures de la rue passent au travers ; les arbres de rue (`LOG`) restent
   durs.
+- [ ] **La conduite à la GTA (v543), ce qui reste, déclaré.** (1) Le klaxon
+  de l'enfant ne voyage pas par le réseau : un ami ne l'entend pas (un message
+  court `klaxon`, nom neuf, l'hôte relaie, le receveur cède — comme
+  `portiere`, v377). (2) Les feux stop de la voiture d'un AMI ne s'allument
+  pas chez les autres : `p.v` ne porte pas le freinage (une lettre de plus
+  dans `p.v`, lue sur `pos` ET `rpos`, v388). (3) Les voitures de la rue n'ont
+  pas de phares la nuit : deux lueurs par voiture, c'est deux appels de dessin
+  par voiture visible, le goulot de l'iPad (v196) — à mesurer sur la tablette
+  avant de décider ; les feux stop, eux, ne se dessinent que quand la voiture
+  freine. (4) La radio d'un ami n'est pas la nôtre : deux tablettes sur la
+  même station entendent le même programme (l'heure réelle), mais rien ne
+  partage le CHOIX. (5) Un klaxon de rue se place à gauche ou à droite
+  (`StereoPannerNode`), pas devant ou derrière : un vrai panoramique
+  (`PannerNode` HRTF) coûterait un nœud par voiture. (6) La surface se lit
+  sous le milieu et sous le nez de la caisse, pas sous chaque roue : une
+  voiture à cheval sur le bord de la route prend la plus mauvaise des deux.
 
 - [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
   au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
@@ -302,8 +363,11 @@
   dans le brouillard, mais à regarder en vol rapide. (2) Le paysage lointain
   (horizon.js) n'a aucun arbre : une forêt au-delà des morceaux maillés est
   une prairie verte ; des silhouettes instanciées par `treeAt` y seraient la
-  suite. (3) Le palier bas et le rendu logiciel gardent les cubes (pas de
-  couche HD). (4) Coût worker de la reconnaissance partout : dans le bruit
+  suite. (3) ~~Le palier bas et le rendu logiciel gardent les cubes (pas de
+  couche HD).~~ **Le palier bas a ses arbres en cartes depuis la v541** (le
+  modèle lointain partout, le matériau HD chauffé à l'accueil) ; le rendu
+  logiciel seul garde les cubes, par la règle de la couche (v287), et
+  `?arbres=1` l'y force pour les témoins. (4) Coût worker de la reconnaissance partout : dans le bruit
   sous node (1,6 à 6,9 ms par morceau des deux côtés) — à relire sur l'iPhone
   (`?diag=1`, débit de maillage en vol au-dessus d'une forêt).
 
@@ -346,7 +410,10 @@ pendant la marche, `monte.js` les rouges ci-dessus.
   sur la branche : 6 verts sur 6. La v533 ne touche ni l'approche ni le
   bandeau ; elle allume des feux sur le maillage de l'avion. À rejouer en
   distribution (v269) le jour où il revient, avec la cadence dans le message.
-- [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » :
+- [x] **(Réglé en v543 : la cause n'était pas le capot de la Bolide mais le
+  cache des poses, rempli sur une voiture de la rue déjà froissée — on ne garde
+  plus que des poses mesurées sur une tôle intacte ; `degats.js` 2/2 verte.)**
+  **`degats.js` « les feux de détresse se posent SUR la carrosserie » :
   la Bugatti Bolide pose ses deux feux avant à 0,45 bloc de la tôle** (écarts
   `[0.45, 0.45, −0.015, −0.015]`). Rejouée SEULE sur la branche (v533) ET sur
   `origin/main` v531 (`git worktree`) : la même valeur au millième des deux

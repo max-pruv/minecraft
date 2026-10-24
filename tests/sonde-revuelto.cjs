@@ -1,4 +1,4 @@
-// LA REVUELTO ADAPTÉE CONTRE L'ANCIENNE (v541). Max a déposé une adaptation
+// LA REVUELTO ADAPTÉE CONTRE L'ANCIENNE (v545). Max a déposé une adaptation
 // CC-BY-4.0 du modèle de BRO, plus lourde que la Revuelto paramétrique de la
 // flotte ; elle la remplace à l'affichage par le champ `asset` (vehicules.js).
 // Avant de la proposer, on mesure les deux DANS LES MÊMES CONDITIONS, en ordre

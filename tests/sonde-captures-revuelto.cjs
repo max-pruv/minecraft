@@ -1,4 +1,4 @@
-// LA REVUELTO, L'ANCIENNE ET LA NEUVE, CÔTE À CÔTE EN JEU (v541). La règle
+// LA REVUELTO, L'ANCIENNE ET LA NEUVE, CÔTE À CÔTE EN JEU (v545). La règle
 // 6 bis : une voiture qui en remplace une que Max a fournie se juge sur ce que
 // l'enfant voit, pas sur les rendus de studio du paquet. Trois états — au
 // volant dans une rue de Paris, garée vue de trois quarts, et une rue où la

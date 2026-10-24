@@ -77,7 +77,6 @@ dans `docs/revue-ecran/`.
 | 19 | à vérifier | avion en vol, campagne (v532, iPad et iPhone) | — | Au bord des morceaux maillés, sous l'aile, un **trou bleu pâle** (le fond du ciel) entre le monde chargé et le paysage lointain. Visible avec et sans couronne (liseré plus fin sans) : la couronne ne le crée pas, le brouillard reculé le rend plus visible. | Une sonde qui lit, colonne par colonne au bord du disque maillé, ce que la grille fine dessine (découpe de `horizon.js` contre `chunkMeshes`). | `src/horizon.js`, `src/main.js` |
 | 20 | mineur | guide, tour Eiffel (v538, état `guide`) | [20](revue-ecran/20-guide-eiffel-iphone-jour.png) | Le fanion de Capucine, à l'ombre des platanes du Champ-de-Mars, tire sur le **rouille** plutôt que l'orange vif, même avivé : on le lit, mais il se cherche moins des yeux qu'en plein soleil. Et la nuit de la sonde (`0.75`) donne ici une rue encore claire. | Juger le fanion sur la tablette ; s'il se perd, un bord clair ou un orange plus saturé dans `fanion()`. | `src/vie.js` |
 | 21 | basse | minicarte toujours là (v540), juste après un saut | [v540](revue-ecran/v540-minicarte/iphone-paris-nuit.jpg) | La moitié basse de la minicarte est encore **le fond de nuit** : un raster neuf se remplit quatre lignes par image, des dizaines de secondes au banc (une à deux images par seconde), moins d'une seconde à 60 images par seconde. | Mesurer le temps de remplissage sur la tablette (`?diag=1`) ; s'il se voit, remplir plus de lignes par image à l'arrivée d'un saut. | `src/main.js` (`repeindreBandeCarte`) |
-| 22 | basse | Revuelto adaptée (v543), au volant et de trois quarts | [v543](revue-ecran/v543-revuelto/planche-iphone-troisquarts-jour.jpg) | Le modèle est un **travail en cours** de l'aveu du paquet : jointures de panneaux et habitacle à reprendre, 4,74 m de long contre 4,95 m réels, portières non séparées. À hauteur d'enfant et à cinq blocs, rien de cela ne se lit ; la voiture est nettement plus fidèle que l'ancienne. Ses phares sont éteints la nuit, comme toute la flotte garée (n° 8). | Juger sur la tablette ; la reprise des panneaux appartient au paquet de Max, pas au jeu. | `vendor/voitures/lamborghini-revuelto-wip.glb` |
 
 ## Ce que la sonde ne couvre pas encore
 
@@ -106,3 +105,49 @@ jour et nuit, et le train vu de près.
   plus profonds), à poser à Max.
 - Vu, non corrigé : la nuit, les fenêtres du train sont noires (aucune vitre
   allumée), alors que celles des villes s'allument.
+
+## Le relevé de la v541 (de vraies feuilles), 24 octobre 2026
+
+Captures dans `docs/revue-ecran/v541/` : la forêt tempérée dense près de
+(−1 560, −2 488), d'avant et d'après (au sol, de près, en vol, au loin), le
+palier bas (`hd=0&arbres=1`), et la revue d'écran sur les deux états neufs
+`foret` et `foret-vol` (iPhone et iPad, jour et nuit). `campagne` est le point
+d'apparition, sans un arbre : la jouer seule ne montrait rien des arbres.
+
+- Corrigé : les couronnes sont pleines et les feuilles se lisent, de près
+  comme en vol ; au palier bas les arbres sont en cartes, plus un cube ; le
+  carré couleur du ciel au pied de chaque bouleau (un trou dans le sol sous le
+  tronc tu) a disparu.
+- Vu, non corrigé : au pied d'un bouleau, un carré de 3 × 3 colonnes d'herbe
+  reste en voxel au ras de la surface continue — même texture, à peine
+  visible (`BIRCH` n'est pas un dessus naturel de `solcontinu.js`, dette dans
+  `TASKS.md`).
+- Vu, non corrigé : les oiseaux (kites noirs) volent bas au-dessus de la forêt
+  et se lisent comme des triangles noirs en vol ; préexistant.
+- Vu, non corrigé : les bêtes (mouton, éléphant) sont en cubes à côté d'arbres
+  en relief ; c'est le bestiaire, pas cette livraison.
+
+## Le relevé de la v543 (la voiture comme dans GTA), 24 octobre 2026
+
+Captures dans `docs/revue-ecran/v543-volant/` : `volant-arret`, `volant-roule`
+et `voiture-rue-percutee`, iPhone et iPad, jour et nuit. Rien ne se recouvre :
+radio, klaxon, « Descendre » et frein à main tiennent dans la colonne de
+droite, hors du quart du joystick, aux deux tailles.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 22 | moyenne | au volant (v543), iPhone et iPad | [v543](revue-ecran/v543-volant/iphone-volant-arret-jour.jpg) | L'icône du **klaxon** est un haut-parleur : un enfant peut la lire comme « le son », pas comme l'avertisseur. Le mot est dans `aria-label`, pas à l'écran. | Un cornet d'avertisseur dessiné (`ICONES.klaxon`), jugé sur une capture à 430 × 932. | `src/commandes.js` |
+| 23 | moyenne | au volant de nuit (v533, revu en v543) | [v543](revue-ecran/v543-volant/iphone-volant-roule-nuit.jpg) | Vus de la caméra de poursuite, les **cônes des phares** dessinent deux triangles clairs qui flottent au-dessus du capot, et les deux lentilles se lisent comme des ronds blancs posés sur le toit. | Raccourcir ou estomper le cône près de la voiture, ou ne pas le dessiner quand la caméra est derrière. | `src/phares.js` |
+| 24 | basse | voiture de la rue percutée, de nuit (v543) | [v543](revue-ecran/v543-volant/iphone-voiture-rue-percutee-nuit.jpg) | Sur la carrosserie blanche de la fourgonnette, les **feux de détresse** additifs virent au rose saumon : ils sont sur la tôle, mais on les lit mal comme des clignotants orange. | Une teinte plus saturée (moins de rouge additif sur fond clair), jugée sur la même capture. | `src/vehicules.js` (`feuxDeDetresse`) |
+
+## Le relevé de la v545 (la Revuelto adaptée), 24 octobre 2026
+
+Planches « ancienne | neuve » dans `docs/revue-ecran/v545-revuelto/` :
+`volant`, `troisquarts` et `rue` (une Revuelto de la circulation, cadrée de
+côté), iPhone et iPad, jour et nuit, rejouables par
+`tests/sonde-captures-revuelto.cjs`. Rien ne bouge dans l'interface : la
+livraison ne change que le modèle.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 25 | basse | Revuelto adaptée (v545), au volant et de trois quarts | [v545](revue-ecran/v545-revuelto/planche-iphone-troisquarts-jour.jpg) | Le modèle est un **travail en cours** de l'aveu du paquet : jointures de panneaux et habitacle à reprendre, 4,74 m de long contre 4,95 m réels, portières non séparées. À hauteur d'enfant et à cinq blocs, rien de cela ne se lit ; la voiture est nettement plus fidèle que l'ancienne. Ses phares sont éteints la nuit, comme toute la flotte garée (n° 8). | Juger sur la tablette ; la reprise des panneaux appartient au paquet de Max, pas au jeu. | `vendor/voitures/lamborghini-revuelto-wip.glb` |

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v543 — Une nouvelle Lamborghini Revuelto
+## v545 — Une nouvelle Lamborghini Revuelto
 
 **Pourquoi.** Max a fourni une adaptation de la Revuelto plus fidèle que le
 modèle paramétrique de la flotte (« Integrate ») : un modèle publié par BRO sous
@@ -56,6 +56,101 @@ portières non séparées.
   ajoutées) et chaque roue tourne autour de son essieu ; zéro programme né en
   dessinant le modèle après la chauffe, au volant ou dans la rue.
 - Revue d'écran côte à côte, iPhone et iPad, jour et nuit (dans la PR).
+
+---
+
+## v543 — La voiture, comme dans GTA
+
+**Pourquoi.** Max : « améliore la conduite pour qu'elle ressemble à GTA —
+comment elle réagit à l'environnement, aux autres voitures, la musique, le son,
+jusqu'au design des voitures ». Mesuré avant d'écrire une ligne : la radio
+jouait une boucle de quatre mesures, la même pour toujours, sur une station
+tirée au sort sans qu'on puisse en changer ; il n'y avait pas de klaxon, et les
+voitures de la rue, bloquées derrière l'enfant, attendaient en silence ;
+l'herbe, le sable, la neige et la pluie ne changeaient rien à la tenue de
+route ; et aucune voiture n'allumait de feu stop ni de feu de recul.
+
+**Ce que ça change.** Au volant, un bouton de radio (et la touche R) fait le
+tour de cinq stations — Radio Bloc, Nuit Cubique, Grand Large, Boulevard 93,
+Salle Ronde — de trois morceaux chacune, avec un jingle devant chaque morceau
+et un programme qui suit l'heure réelle, comme une vraie radio qui joue sans
+nous ; une pilule dit la station et le titre, et le choix (ou le silence) se
+garde sur la tablette. Un bouton de klaxon (touche H) sonne tant qu'on le
+tient ; les passants se retournent, et une voiture de la rue arrêtée derrière
+la voiture de l'enfant klaxonne au bout de deux secondes et demie, puis
+s'impatiente encore. L'herbe, le gravier, le sable et la neige tiennent moins
+que la route, la pluie mouille la chaussée : la voiture patine, dérive plus,
+gronde et tremble hors de l'asphalte. Et les feux stop s'allument au freinage,
+les feux de recul en marche arrière — sur la voiture de l'enfant comme sur
+celles de la rue, qui freinent feux allumés aux feux rouges et derrière lui.
+
+**Ce qui le prouve.** Neuf témoins neufs : sept dans `monte.js` (le tour des
+stations et la pilule, une station qui s'entend contre le silence, le klaxon
+tenu puis lâché et le passant qui se retourne, l'herbe contre la pierre —
+adhérence, grondement, tremblement —, les feux stop et de recul, la voiture de
+la rue qui freine et klaxonne derrière l'enfant, la place des boutons hors du
+quart du joystick), un dans `plafond.js` (sans adhérence donnée, la dynamique
+est celle de la v534 au bit près sur 128 000 pas tirés ; avec, la pointe baisse
+de la route à l'herbe, au sable, à la neige) et un dans `reglages.js` (le
+programme de la radio, pur). Tous rouges sur l'ancien code, et ils le disent.
+Et en chemin, un défaut de production réglé : les feux de détresse d'un modèle
+pouvaient flotter devant sa carrosserie (la Bolide, déclarée depuis la v540),
+parce que leurs poses se mettaient en cache sur une voiture déjà froissée. Le
+témoin de `degats.js` qui le voyait est vert deux fois sur deux.
+
+---
+
+## v541 — De vraies feuilles, et des arbres pour tous
+
+**Pourquoi.** Max, devant les arbres de la v499 : « Les arbres sont décevants,
+je veux qu'on arrête d'avoir des formats Minecraft en carré, je veux des vrais
+feuillages, des choses extrêmement réalistes comme GTA. » Deux causes, lues
+avant d'écrire une ligne. De près, une couronne était une dizaine de boules de
+confettis avec le ciel entre elles : la tuile de feuilles semait deux cent
+trente points de six texels. Et l'iPad de la famille jouait au palier bas
+(hd 0, la sûreté de la v509), où les arbres restaient des CUBES — trois
+livraisons d'arbres qui ne l'ont jamais atteint, la régression de réglage de
+la v291 une fois de plus.
+
+**Ce que ça change.**
+- La tuile de feuilles est faite de vraies feuilles : cent soixante limbes
+  pointus de quinze à vingt-deux texels, une nervure claire, un bord sombre,
+  les feuilles du fond dans l'ombre de celles de devant ; le bord de l'amas ne
+  porte que des feuilles isolées, et c'est lui qui dessine la silhouette.
+- De près, une couronne est pleine : plus d'amas (un chêne en a quatorze au
+  lieu de dix, un bouleau neuf au lieu de six), des cartes plus larges,
+  posées jusqu'au bord du volume, et une teinte qui s'assombrit vers le bas et
+  vers le cœur de la frondaison — la lumière vient du haut et du dehors.
+- Au loin, un feuillu porte quatre cartes debout au lieu de trois : on ne lit
+  plus les plans croisés quand on s'en approche avant que le détail n'arrive.
+- **Tout palier a ses arbres.** Sur une vraie carte graphique, le palier bas
+  les dessine aussi — le modèle lointain partout, qui coûte moins que les cubes
+  qu'il remplace (neuf morceaux de forêt dense : 1 293 Ko de cubes contre
+  1 074 Ko plus 46 Ko de cartes, 10 506 contre 9 254 triangles). Le matériau de
+  la couche et ses deux programmes se compilent pendant la préparation, plus
+  jamais au premier arbre. Le rendu logiciel (le banc) garde la règle de la
+  couche ; `?arbres=1` l'y force, `?arbres=0` coupe partout. `?diag=1` dit
+  « arbres en cartes » ou « en cubes », et le journal de bord le note.
+- Plus de trou au pied des bouleaux : un carré couleur du ciel, vu à la revue
+  d'écran, était la face du sol que le cube du tronc tu ne découvrait pas.
+  Contre un cube d'arbre tu, le mailleur dessine la face comme contre de
+  l'air.
+
+**Ce qui le prouve.** Deux témoins neufs dans `parishd.js`, rouges sur
+l'ancien code : au palier bas (`hd=0&arbres=1`), dans la forêt, chaque morceau
+porte ses arbres en cartes, aucun modèle proche, un fût plus fin que son cube ;
+et la clé de programme de la couche est là avant d'entrer en jeu, aucune clé
+neuve en arrivant dans la forêt. Le témoin du relais proche → loin de
+`plafond.js` reste vert pour les neuf essences (même boîte, même couleur à
+15 % près, moins d'un quart des sommets) ; un témoin neuf y lit le sol sous un
+bouleau, armé contre désarmé, et la conservation des faces compte celles
+qu'un cube tu découvre. Portail complet : six suites vertes, et les rouges de
+`monte.js`, `reglages.js` et `washington.js` sont tous des dettes déclarées
+(double mesure faite aux portails précédents ; `washington.js` et
+`parishd.js` rejouées seules, vertes). Les captures d'avant et d'après —
+forêt au sol, de près, en vol, au loin, le palier bas — et la revue d'écran
+(états neufs `foret` et `foret-vol`, iPhone et iPad, jour et nuit) sont dans
+`docs/revue-ecran/v541/`.
 
 ---
 
@@ -236,7 +331,6 @@ rejoués seuls des deux côtés (`TASKS.md`). Revue d'écran
 au premier regard.
 
 ---
-
 ## v534 — Un choc a de l'élan
 
 **Pourquoi.** Max : « Quand on fonce dans une voiture avec une autre voiture,

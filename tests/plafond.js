@@ -1043,6 +1043,45 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // tourne bien plus que le volant ne le dit ; lâché, elle se remet dans l'axe
   // PEU À PEU. Sur l'ancien code le frein à main n'existe pas : la caisse
   // tourne comme au seul volant (rapport 1).
+  // LA ROUTE SOUS LES ROUES (v543). `pasVoiture` lit `entree.adherence` :
+  // 1 sur la route, moins sur l'herbe, le sable, la neige, et moins encore
+  // sous la pluie (`adherenceDeSurface`). Deux promesses, et la première est
+  // celle qui garde tout le reste : SANS adhérence donnée (l'appelant
+  // d'avant), la dynamique est celle de la v534 AU BIT PRÈS — on compare
+  // `adherence: 1` et `adherence` absente sur des milliers de pas tirés
+  // (classes, gaz, volant, pente, frein à main, en l'air) ; et AVEC, la
+  // pointe à plein gaz baisse de la route à l'herbe, au sable, à la neige,
+  // la dérive en virage monte, et la route mouillée tient moins que la sèche.
+  // Sur l'ancien code `adherenceDeSurface` n'existe pas : rouge, et dit.
+  {
+    const C = await import('../src/conduite.js').catch(() => null);
+    if (!C || !C.adherenceDeSurface) verifier('conduite : la route sous les roues change l\'adhérence, et sans elle rien ne change', false, 'conduite.js n\'a pas adherenceDeSurface');
+    else {
+      let g = 97531; const rnd = () => ((g = (Math.imul(g, 1103515245) + 12345) >>> 0) / 4294967296);
+      let ecarts = 0, n = 0;
+      for (const nom of Object.keys(C.CLASSES)) {
+        let ea = { v: 0, braquage: 0, derive: 0 }, eb = { ...ea };
+        for (let k = 0; k < 4000; k++) {
+          const e = { gaz: rnd() * 2 - 1, volant: rnd() * 2 - 1, moteur: rnd() < 0.9 ? 1 : rnd(), pente: rnd() < 0.8 ? 0 : rnd() - 0.5, freinMain: rnd() < 0.05, auSol: rnd() > 0.03, plafond: rnd() < 0.9 ? null : rnd() * 30 };
+          const dt = 0.02 + rnd() * 0.06;
+          const ra = C.pasVoiture(ea, e, C.CLASSES[nom], dt), rb = C.pasVoiture(eb, { ...e, adherence: 1 }, C.CLASSES[nom], dt);
+          for (const c of ['v', 'braquage', 'derive', 'dCap']) { n++; if (ra[c] !== rb[c]) ecarts++; }
+          ea = { v: ra.v, braquage: ra.braquage, derive: ra.derive }; eb = { v: rb.v, braquage: rb.braquage, derive: rb.derive };
+        }
+      }
+      const pointe = (adh) => { let e = { v: 0, braquage: 0, derive: 0 }; for (let k = 0; k < 400; k++) e = { ...e, ...C.pasVoiture(e, { gaz: 1, volant: 0, adherence: adh }, C.CLASSES.sportive, 0.05) }; return +e.v.toFixed(2); };
+      const derive = (adh) => { let e = { v: 30, braquage: 0, derive: 0 }, pire = 0; for (let k = 0; k < 60; k++) { e = { ...e, ...C.pasVoiture(e, { gaz: 1, volant: 1, adherence: adh }, C.CLASSES.sportive, 0.05) }; pire = Math.max(pire, Math.abs(e.derive)); } return +pire.toFixed(3); };
+      const A = (s, pluie) => C.adherenceDeSurface(s, pluie);
+      const p = { route: pointe(1), herbe: pointe(A('herbe')), sable: pointe(A('sable')), neige: pointe(A('neige')), mouillee: pointe(A('route', true)) };
+      const d = { route: derive(1), herbe: derive(A('herbe')), sable: derive(A('sable')) };
+      const blocs = [C.surfaceDuBloc(562), C.surfaceDuBloc(1), C.surfaceDuBloc(4), C.surfaceDuBloc(629), C.surfaceDuBloc(14)];
+      verifier('conduite : la route sous les roues change l\'adhérence, et sans elle rien ne change',
+        ecarts === 0 && n > 100000 && A('route') === 1 && A('herbe') < 0.8 && A('sable') < A('herbe') && A('neige') < A('sable') && A('route', true) < 1
+          && p.route > p.herbe && p.herbe > p.sable && p.sable > p.neige && p.mouillee < p.route && d.herbe > d.route
+          && JSON.stringify(blocs) === JSON.stringify(['route', 'herbe', 'sable', 'pave', 'gravier']),
+        `identité ${ecarts} écarts sur ${n} · pointes ${JSON.stringify(p)} · dérives ${JSON.stringify(d)} · blocs ${JSON.stringify(blocs)}`);
+    }
+  }
   {
     const C = await import('../src/conduite.js').catch(() => null);
     if (!C || !C.pasVoiture) verifier('conduite : le frein à main fait déraper la voiture', false, 'conduite.js ne se charge pas');
@@ -3493,7 +3532,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const tues = (t) => (t.facesArbresTues !== undefined ? t.facesArbresTues : faces(t.plat));
       verifier('dans le morceau de forêt le plus dense, les arbres sont reconnus et dessinés en relief, et seuls leurs cubes se taisent',
         best.n >= 10 && arme.arbres >= best.n * 0.8 && arme.arbresEmis === arme.arbres && !!arme.facades && arme.facades.positions.length / 3 > 1000
-          && faces(arme.solid) + tues(arme) === faces(sans.solid) && tues(arme) > 0 && !sans.facades && !sans.plat,
+          && faces(arme.solid) + tues(arme) - (arme.facesSousArbre || 0) === faces(sans.solid) && tues(arme) > 0 && !sans.facades && !sans.plat,
         `morceau (${best.cx}, ${best.cz}) : ${best.n} arbres de treeAt, ${arme.arbres} reconnus, ${arme.arbresEmis} émis, ${arme.facades ? arme.facades.positions.length / 3 : 0} sommets ; faces solid ${faces(arme.solid)} + tues ${tues(arme)} = ${faces(sans.solid)} sans`);
       // (3) les blocs ne bougent pas, et sans l'option ou sans détail, rien ne change
       const da = wa.ensureChunk(best.cx, best.cz), ds = ws.ensureChunk(best.cx, best.cz);
@@ -3513,6 +3552,43 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       verifier('au loin, les arbres ne sont plus des cubes : leurs cubes se taisent et chacun a son modèle lointain, à moins d\'un quart des sommets du proche',
         loin.arbres === arme.arbres && sha(loin.solid) === sha(arme.solid) && !loin.facades && vLoin > loin.arbres * 12 && vLoin * 4 < vPres,
         `${loin.arbres} arbres au loin (${arme.arbres} de près) ; solid du loin = solid du proche ${sha(loin.solid) === sha(arme.solid)} ; ${vLoin} sommets au loin, ${vPres} de près`);
+      // (3 ter, v541) SOUS UN ARBRE DONT LES CUBES SE TAISENT, LE SOL GARDE
+      // SA FACE. Vu en capture au pied de chaque bouleau : un carré clair,
+      // couleur du ciel — un TROU. Le cube du tronc se tait, mais la face du
+      // dessus du bloc de sol sous lui n'était jamais émise (elle était contre
+      // un bloc plein), et par le trou on voyait le ciel à travers la terre.
+      // Sous un chêne, la surface continue (dont `LOG` est un dessus naturel)
+      // recouvre le trou ; sous un bouleau (`BIRCH`, pas naturel), rien. Le
+      // mailleur émet désormais la face d'un bloc contre un cube d'arbre tu,
+      // comme contre de l'air, et la compte (`facesSousArbre`). Un bouleau
+      // près du morceau de forêt, armé contre désarmé : la face du dessus du
+      // sol dans la colonne du tronc existe armée, pas désarmée ; et la
+      // conservation des faces (2) vaut toujours, ces faces-là en plus.
+      let bouleau = null;
+      for (let dx = -12; dx <= 12 && !bouleau; dx++) for (let dz = -12; dz <= 12 && !bouleau; dz++) {
+        const cx = Math.floor(-1500 / W.CHUNK) + dx, cz = Math.floor(-2500 / W.CHUNK) + dz;
+        for (let lx = 1; lx < W.CHUNK - 1 && !bouleau; lx++) for (let lz = 1; lz < W.CHUNK - 1 && !bouleau; lz++) {
+          const t = w0.treeAt(cx * W.CHUNK + lx, cz * W.CHUNK + lz);
+          if (t && t.kind === 2) bouleau = { cx, cz, lx, lz, t };
+        }
+      }
+      const solSous = (T, b) => {
+        const t = T.solid; let n = 0;
+        for (let i = 0; i < t.positions.length / 3; i++) {
+          if (t.normals[i * 3 + 1] < 0.5) continue;
+          if (Math.abs(t.positions[i * 3 + 1] - (b.t.h + 1)) > 0.01) continue;
+          if (t.positions[i * 3] < b.lx - 0.01 || t.positions[i * 3] > b.lx + 1.01 || t.positions[i * 3 + 2] < b.lz - 0.01 || t.positions[i * 3 + 2] > b.lz + 1.01) continue;
+          n++;
+        }
+        return n;
+      };
+      const bArme = bouleau ? buildChunkTampons(monde(1), bouleau.cx, bouleau.cz, { detail: false }) : null;
+      const bSans = bouleau ? buildChunkTampons(monde(0), bouleau.cx, bouleau.cz, { detail: false }) : null;
+      const sousArbre = (t) => t.facesSousArbre || 0;
+      verifier('sous un bouleau dont le tronc se tait, le sol garde sa face : plus de trou où l\'on voit le ciel à travers la terre (v541)',
+        !!bouleau && solSous(bArme, bouleau) - solSous(bSans, bouleau) === 4 && sousArbre(bArme) >= 1 && sousArbre(bArme) <= bArme.arbres * 3
+          && faces(bArme.solid) + tues(bArme) - sousArbre(bArme) === faces(bSans.solid),
+        bouleau ? `bouleau (${bouleau.cx * W.CHUNK + bouleau.lx}, ${bouleau.cz * W.CHUNK + bouleau.lz}) fût ${bouleau.t.trunk} : sommets du dessus du sol dans la colonne du tronc (les coins des faces voisines compris) ${solSous(bArme, bouleau)} armé, ${solSous(bSans, bouleau)} désarmé — une face de plus ; ${sousArbre(bArme)} face(s) sous un arbre, conservation ${faces(bArme.solid) + tues(bArme) - sousArbre(bArme)} = ${faces(bSans.solid)}` : 'aucun bouleau près de la forêt');
       // (4) une cabane de rondins sans feuilles n'est pas un arbre
       const wc = monde(1);
       const h0 = wc.terrainHeight(best.cx * W.CHUNK + 8, best.cz * W.CHUNK + 8);
@@ -3522,8 +3598,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       for (let dx = 0; dx < 3; dx++) for (let dz = 0; dz < 3; dz++) for (let dy = 1; dy <= 3; dy++) wc0.setBlock(best.cx * W.CHUNK + 7 + dx, h0 + dy, best.cz * W.CHUNK + 7 + dz, BLOCK.LOG, 1);
       const cab0 = buildChunkTampons(wc0, best.cx, best.cz, { detail: true });
       verifier('une cabane de rondins posée par un enfant n\'est pas un arbre : elle reste dans `solid`, visible, et les arbres autour restent reconnus',
-        cab.arbres === arme.arbres && faces(cab.solid) + tues(cab) === faces(cab0.solid) && faces(cab.solid) > faces(arme.solid),
-        `${cab.arbres} arbres (${arme.arbres} sans la cabane) ; faces solid ${faces(cab.solid)} + tues ${tues(cab)} = ${faces(cab0.solid)} (${faces(arme.solid)} de solid sans la cabane)`);
+        cab.arbres === arme.arbres && faces(cab.solid) + tues(cab) - (cab.facesSousArbre || 0) === faces(cab0.solid) && faces(cab.solid) > faces(arme.solid),
+        `${cab.arbres} arbres (${arme.arbres} sans la cabane) ; faces solid ${faces(cab.solid)} + tues ${tues(cab)} − découvertes ${cab.facesSousArbre || 0} = ${faces(cab0.solid)} (${faces(arme.solid)} de solid sans la cabane)`);
       // (5) déterminisme : Math.random remplacé, le même arbre ; et jamais Math.random dans le module
       const vrai = Math.random;
       let s = 123456789;

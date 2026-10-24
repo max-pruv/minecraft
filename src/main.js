@@ -52,7 +52,7 @@ import { TOUS_LES_GUIDES } from './guidesvilles.js';
 import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
 import { creerNomsDeStations, chaufferStations } from './stations.js';
-import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio } from './sons.js';
+import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio, radioSuivante, radioTitre, radioIndice, radioMemoire, radioRestaurer, klaxonTenir, klaxonRue } from './sons.js';
 import { traceAnneau, traceLigne1Paris, arretsLigne1Paris } from './ville.js';
 import { LIGNES_MONDE, traceLigneMonde } from './metromonde.js';
 import { traceCourse } from './circuit.js';
@@ -400,6 +400,16 @@ function sonVoulu() {
   try { return localStorage.getItem(SON_CLE) !== 'off'; } catch { return true; }
 }
 reglerSon(sonVoulu());
+// LA STATION DE RADIO SE GARDE SUR L'APPAREIL (v543), comme le son : celle
+// qu'on a choisie au volant revient dans la voiture suivante, et une radio
+// éteinte exprès reste éteinte. `null` est l'arrêt, un entier la station.
+const RADIO_CLE = 'web-minecraft-radio-v1';
+try { const v = localStorage.getItem(RADIO_CLE); if (v != null) radioRestaurer(v === 'off' ? null : Number(v)); } catch { /* mode privé */ }
+function changerDeStation() {
+  const nom = radioSuivante();
+  try { const m = radioMemoire(); localStorage.setItem(RADIO_CLE, m == null ? 'off' : String(m)); } catch { /* mode privé */ }
+  return nom;
+}
 
 const OMBRES_DEMANDEES = PARAMS_JEU.get('ombres');
 // ET LA PAGE LE SAIT, POUR SA PARURE DE FOND (v277). Deux calques plein écran
@@ -634,10 +644,21 @@ world.hd = RAYON_HD > 0 ? 1 : 0;
 // cubes se taisent ; au-delà, chaque arbre garde sa couronne en quelques
 // cartes (`arbresLoin`, v528) — plus un cube d'arbre à aucune distance.
 // Même portée, même budget, même matériau que le détail de Paris : rien de
-// neuf à compiler, un appel de dessin par morceau. Coupés avec la couche (rendu logiciel, palier bas) ; `?arbres=0`
-// les coupe seuls, pour mesurer ; `?hd=N&arbres=1` les force au banc.
+// neuf à compiler, un appel de dessin par morceau.
+//
+// ET LES ARBRES NE DÉPENDENT PLUS DE LA PORTÉE HD (v541). Max : « je veux des
+// vrais feuillages, des choses extrêmement réalistes comme GTA » — et l'iPad
+// de la famille jouait au palier BAS (hd 0, la sûreté de la v509), donc en
+// cubes : trois livraisons d'arbres qui ne l'atteignaient pas, la régression
+// de réglage de la v291 une fois de plus. Sur une vraie carte graphique, tout
+// palier dessine ses arbres : à portée du détail le modèle proche, ailleurs —
+// et au palier bas partout — le modèle lointain, quelques cartes de la
+// couronne, MOINS lourd que les cubes qu'il remplace (mesuré sous node sur
+// neuf morceaux de forêt dense : 1 293 Ko de cubes → 1 074 Ko + 43 Ko de
+// cartes, 10 506 → 9 218 triangles). En rendu logiciel la couche reste coupée
+// (le banc, v287) ; `?arbres=1` l'y force, `?arbres=0` coupe partout.
 const ARBRES_DEMANDES = new URLSearchParams(location.search).get('arbres');
-world.arbres = RAYON_HD > 0 && ARBRES_DEMANDES !== '0' ? 1 : 0;
+world.arbres = ARBRES_DEMANDES === '0' ? 0 : (ARBRES_DEMANDES === '1' || RAYON_HD > 0 || !renduLogiciel()) ? 1 : 0;
 // `?solcontinu=0` : le voxel d'avant, pour MESURER (A/B au banc). Ce n'est pas
 // un réglage et aucun palier ne le pose : le sol continu vaut pour tous les
 // appareils, parce qu'un sol qui change de forme avec le palier changerait la
@@ -649,6 +670,29 @@ let hd = null;
 function materiauDeParis() {
   if (!hd) hd = materiauHD(renderer);
   return hd.materiau;
+}
+// ET LA COUCHE SE CHAUFFE À L'ACCUEIL (v541). Son matériau naissait au premier
+// morceau qui le demandait — un morceau de Paris, ou de forêt. Au palier bas,
+// qui n'avait jamais eu la couche, c'eût été le premier arbre après « Jouer » :
+// un programme et un ciel préfiltré (PMREM) fabriqués en jeu, le gel de la
+// v246 par une porte de plus. On le fabrique ici, pendant la préparation, et
+// on le compile vers l'écran ET vers la cible des reflets — le décor y est
+// dessiné (couche 4), avec son propre espace de couleur —, comme les feux
+// (v306). Un quad qui porte les attributs de la couche suffit : `compile` ne
+// dessine rien, il ne regarde que le matériau et les lumières de la scène.
+function chaufferLaCoucheHD(camera) {
+  if (!world.arbres && RAYON_HD <= 0) return;
+  const t = { positions: new Float32Array([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0]), normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
+    uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), colors: new Float32Array(12).fill(1), tiles: new Float32Array([0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]),
+    matiere: new Float32Array([1, 0, 1, 0, 1, 0, 1, 0]), lueur: new Float32Array(4), indices: new Uint16Array([0, 1, 2, 0, 2, 3]) };
+  const ici = new THREE.Scene();
+  const m = new THREE.Mesh(geometrieHD(t), materiauDeParis());
+  ici.add(decor(m));
+  const cible = refletsVoiture(), avant = renderer.getRenderTarget();
+  try {
+    renderer.compile(ici, camera, scene);
+    if (cible) { renderer.setRenderTarget(cible); renderer.compile(ici, camera, scene); }
+  } finally { renderer.setRenderTarget(avant); m.geometry.dispose(); }
 }
 
 // LE PAYSAGE LOINTAIN. Il lit `terrainHeight` — une fonction PURE — et remplit
@@ -943,7 +987,7 @@ statsMaillage.enAttente = enAttente;  // la sonde lit l'âge des demandes (v360)
 // pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
 // réglage lu au démarrage. Et la portée de la vue (v532) : sans elle, on a dû
 // DÉDUIRE du palier que la couronne lointaine n'avait jamais tourné chez Max.
-journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576,
+journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, arbres: world.arbres, facadesMo: BUDGET_FACADES / 1048576,
   palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null, etendue: ETENDUE_CHOISIE,
   loin: PORTEE_VUE, logiciel: renduLogiciel() });
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
@@ -1785,6 +1829,14 @@ function updateChunks() {
   // dans la rue : la circulation, qui attend sans limite devant un piéton, ne
   // l'attend pas — sinon ses files se nouaient aux feux pendant l'arrivée
   vehicules.brancherPietons(() => npcs.filter((h) => !h.attendLeMonde));
+  // LA RUE KLAXONNE (v543) : une voiture arrêtée derrière l'enfant le dit.
+  // Plus loin, plus doux ; à gauche ou à droite de là où il regarde (pan).
+  vehicules.brancherKlaxon((x, z, ton) => {
+    const dx = x - player.pos.x, dz = z - player.pos.z, d = Math.hypot(dx, dz);
+    if (d > 70) return;
+    const rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);   // la droite de l'enfant
+    klaxonRue({ distance: d, pan: d > 0.5 ? (dx * rx + dz * rz) / d : 0, ton });
+  });
   // la voiture de l'enfant s'arrête devant la circulation (player.js, v245)
   // ET LE MOBILIER NON PLUS (v252). Un réverbère, une jardinière, un banc,
   // une table de Times Square sont des props NON SOLIDES pour la marche —
@@ -2709,6 +2761,7 @@ document.addEventListener('keydown', (e) => {
   player.keys.add(e.code);
   if (e.code === 'KeyF') refuserOuVoler();
   if (e.code === 'KeyE') openInventory();
+  if (e.code === 'KeyR' && !e.repeat && auVolantDUneVoiture()) changerDeStation();
   if (e.code.startsWith('Digit')) {
     const n = Number(e.code.slice(5));
     if (n >= 1 && n <= HOTBAR_BLOCKS.length) selectSlot(n - 1);
@@ -2912,6 +2965,14 @@ bindHoldButton('down-btn', 'KeyC');
 // main (player.js) ; le bouton 🛑 de la colonne de droite la tient comme ⤒ la
 // tient à pied. Une seule commande, deux gestes.
 bindHoldButton('fm-btn', 'Space');
+// LE KLAXON (v543) : tenu du pouce, comme le frein à main — la touche H au
+// clavier. LA RADIO : un appui passe à la station suivante, puis au silence
+// (touche R). Les deux ne vivent qu'au volant d'une voiture (index.html).
+bindHoldButton('klaxon-btn', 'KeyH');
+document.getElementById('radio-btn').addEventListener('click', () => { if (auVolantDUneVoiture()) changerDeStation(); });
+function auVolantDUneVoiture() {
+  try { const a = fun && fun.montureConduite && fun.montureConduite(); return !!(a && a.def && a.def.radio); } catch { return false; }
+}
 
 document.getElementById('mode-btn').addEventListener('touchstart', (e) => {
   e.preventDefault();
@@ -3016,9 +3077,41 @@ trainBtn.addEventListener('click', () => {
 // LES BOUTONS DE LA MARCHE S'EFFACENT EN VÉHICULE — saut, pioche, capture,
 // coffre — et reviennent à pied (Max). La classe du `body` fait le tri en CSS.
 let etatVehicule = '';
+// LE KLAXON ET L'ÉTAT DE LA RADIO, À CHAQUE IMAGE (v543). Le klaxon suit la
+// touche (bouton tenu ou H) : il sonne tant qu'elle est tenue, et le premier
+// appui publie `player.klaxon = { t, x, z }` — un ÉVÉNEMENT daté, comme le
+// choc (v358), que les passants lisent pour se retourner. La radio dit sa
+// station et son titre dans une pilule de la file du centre (`#radio-etat`),
+// trois secondes après chaque changement : un ÉTAT affiché (v516), pas un
+// message.
+let klaxonEtat = false, radioVu = '', radioJusqua = 0;
+const radioEtat = document.getElementById('radio-etat');
+function majKlaxonEtRadio(enVoiture) {
+  const tenu = enVoiture && player.keys.has('KeyH');
+  if (tenu !== klaxonEtat) {
+    klaxonEtat = tenu;
+    klaxonTenir(tenu);
+    if (tenu) player.klaxon = { t: performance.now(), x: player.pos.x, z: player.pos.z };
+  }
+  const station = enVoiture ? radioEnCours() : null;
+  const cle = enVoiture ? `${station || ''}|${station ? radioTitre() : ''}` : '';
+  const t = performance.now();
+  if (cle !== radioVu) {
+    radioVu = cle;
+    if (radioEtat) {
+      if (!enVoiture) radioEtat.classList.remove('visible');
+      else {
+        radioEtat.textContent = station ? `${station} · ${radioTitre() || ''}` : 'Radio éteinte';
+        radioEtat.classList.add('visible');
+        radioJusqua = t + 3000;
+      }
+    }
+  } else if (radioJusqua && t > radioJusqua) { radioJusqua = 0; if (radioEtat) radioEtat.classList.remove('visible'); }
+}
 function majBoutonsVehicule() {
   const enAvion = running && !!player.pilote;
   const enVehicule = running && (enAvion || player.gabarit > 1);
+  majKlaxonEtRadio(enVehicule && !enAvion);
   // `en-jeu` : la partie est à l'écran (le menu ouvert la met en pause sans
   // la quitter) ; `en-vol` : l'enfant vole à pied.
   const enJeu = overlay.style.display === 'none' && pauseBtn.style.display === 'block';
@@ -3476,7 +3569,9 @@ if (sonToggle) {
 // oscillateur n'était branché. C'est la leçon de `__lumiere()`, morte deux
 // fois pour avoir publié un mécanisme au lieu de ce qui s'entend.
 window.__sons = { etat: etatSon, contexte: contexteAudio, sortie: sortieAudio,
-  station: radioEnCours, regler: reglerSon, actif: sonActif, generation: generationAudio };
+  station: radioEnCours, regler: reglerSon, actif: sonActif, generation: generationAudio,
+  // la radio et le klaxon (v543), pour les témoins et les captures
+  suivante: changerDeStation, titre: radioTitre, indice: radioIndice, klaxon: klaxonTenir };
 
 // iOS only delivers orientation events after an explicit permission request,
 // and the request must come from a user gesture.
@@ -7766,6 +7861,9 @@ let dansMars = false;
 
 let weather = 'clear';
 let weatherTimer = 90;
+// LA PLUIE MOUILLE LA ROUTE (v543) : la physique de la conduite demande ici
+// s'il pleut, et l'adhérence baisse d'un cinquième (`adherenceDeSurface`).
+player.pluie = () => weather === 'rain';
 
 const RAIN_COUNT = 700;
 const rainGeo = new THREE.BufferGeometry();
@@ -8390,7 +8488,7 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
-    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · horizon ${PORTEE_VUE}`
+    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · arbres ${world.arbres ? 'en cartes' : 'en cubes'} · horizon ${PORTEE_VUE}`
     // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
     // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :
     // taire cette différence ferait croire à un classement qui n'arrivera pas.
@@ -8948,6 +9046,8 @@ requestAnimationFrame(() => {
     if (chauffe()) { requestAnimationFrame(pas); return; }
     try { chaufferLesFeux(); } catch (e) { console.warn('chauffe des feux', e); }
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
+    // la couche HD et ses arbres (v541) : un matériau, deux programmes
+    try { chaufferLaCoucheHD(camera); } catch (e) { console.warn('chauffe de la couche HD', e); }
     // la fumée et les flammes des dégâts (v343) : deux matériaux neufs
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
     // les traces de pneus (v434) : un matériau neuf, son essaim exact

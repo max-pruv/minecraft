@@ -6,12 +6,31 @@
 
 export const NOUVEAUTES = [
   {
-    v: 543,
+    v: 545,
     titre: 'Une nouvelle Lamborghini Revuelto',
     puces: [
       'Une Revuelto orange plus détaillée',
       'Avec son volant et ses compteurs',
       'Modèle de BRO, merci à lui',
+    ],
+  },
+  {
+    v: 543,
+    titre: 'La voiture, comme dans GTA',
+    puces: [
+      'Cinq stations de radio, un bouton pour changer',
+      'Un klaxon — et la rue klaxonne aussi',
+      'Sur l\'herbe et le sable, ça glisse',
+      'Feux stop et feux de recul',
+    ],
+  },
+  {
+    v: 541,
+    titre: 'De vraies feuilles',
+    puces: [
+      'Les arbres ont de vraies feuilles',
+      'Des couronnes bien pleines',
+      'Des arbres sur toutes les tablettes',
     ],
   },
   {

@@ -217,7 +217,7 @@ const GARDIENS = {
   'src/portieres.js': ['monte.js', 'degats.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
-  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js', 'reglages.js'],
+  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js', 'reglages.js', 'parishd.js'],   // parishd : les arbres au palier bas (v541)
   'index.html': ['carte.js', 'reglages.js', 'maj.js', 'manhattan.js'],
 
   // --- v195 : TRENTE FICHIERS MANQUAIENT, et deux d'entre eux étaient des
@@ -264,6 +264,7 @@ const GARDIENS = {
   // le réglage qui coupe tout dans `reglages.js`, et le carillon du chat
   // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
+  'src/radio.js': ['monte.js', 'reglages.js', 'reseau.js'],   // le programme de la radio (v543), pur
   'src/phares.js': ['monte.js'],
   'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/traces.js': ['monte.js', 'reglages.js', 'reseau.js'],

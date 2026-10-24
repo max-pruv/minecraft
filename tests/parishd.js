@@ -1326,28 +1326,38 @@ function verifier(nom, ok, detail = '') {
         while (performance.now() - t0 < 90000) {
           await dodo(500);
           e = g.chunkMeshes.get(`${cx},${cz}`);
-          if (e && (!w.arbres || e.facades)) { await dodo(1500); break; }
+          // (au palier bas, v541 : pas de modèle proche, les cartes du loin suffisent)
+          if (e && (!w.arbres || e.facades || (g.RAYON_HD <= 0 && e.arbresLoin))) { await dodo(1500); break; }
         }
         // la ligne de pixels au centre de l'écran
         const r = g.renderer, cam = g.camera;
         r.render(g.scene, cam);
         const gl = r.getContext();
         const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, y = Math.floor(H / 2);
-        const px = new Uint8Array(W * 4);
-        gl.readPixels(0, y, W, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-        const ecorce = (i) => { const R = px[i * 4], G = px[i * 4 + 1], B = px[i * 4 + 2]; return R >= G && R >= B && R < 170; };
+        // (v541 : au palier bas, les cartes debout du modèle lointain
+        // descendent sous la couronne et croisent la ligne de l'œil — le pixel
+        // central y est une feuille une fois sur deux. On lit l'écorce sur la
+        // colonne de pixels du centre, de l'œil vers le sol : la première
+        // ligne qui en porte, et sa largeur. En cubes, c'est la ligne de l'œil.)
+        const ecorce = (px, i) => { const R = px[i * 4], G = px[i * 4 + 1], B = px[i * 4 + 2]; return R >= G && R >= B && R < 170; };
         const c = Math.floor(W / 2);
-        let g0 = c, g1 = c;
-        while (g0 > 0 && ecorce(g0 - 1)) g0--;
-        while (g1 < W - 1 && ecorce(g1 + 1)) g1++;
-        const largeur = ecorce(c) ? g1 - g0 + 1 : 0;
+        let largeur = 0, ligne = -1;
+        for (let yy = y; yy >= Math.floor(H * 0.15); yy -= 3) {
+          const px = new Uint8Array(W * 4);
+          gl.readPixels(0, yy, W, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          if (!ecorce(px, c)) continue;
+          let g0 = c, g1 = c;
+          while (g0 > 0 && ecorce(px, g0 - 1)) g0--;
+          while (g1 < W - 1 && ecorce(px, g1 + 1)) g1++;
+          largeur = g1 - g0 + 1; ligne = y - yy; break;
+        }
         // (des cubes CACHÉS : jusqu'à la v510 ils partaient dans `plat`, caché
         // de près ; depuis la v528 ils ne s'émettent plus nulle part, et un
         // morceau qui porte les modèles lointains de ses arbres, `arbresLoin`,
         // a tu les cubes de ces arbres)
         let dessines = 0, caches = 0, mo = 0, n = 0;
         for (const m of g.chunkMeshes.values()) { if (m.facades && m.facades.visible) { dessines++; mo += m.octetsFacades || 0; n++; } if (m.arbresLoin || (m.plat && !m.plat.visible)) caches++; }
-        return { x, z, trunk: t.trunk, arbres: w.arbres, largeur, W, dessines, caches, moParMorceau: n ? +(mo / n / 1048576).toFixed(2) : 0, pireMo: +(Math.max(0, ...[...g.chunkMeshes.values()].map((m) => m.octetsFacades || 0)) / 1048576).toFixed(2), appels: g.renderer.info.render.calls, attente: Math.round(performance.now() - t0) };
+        return { x, z, trunk: t.trunk, arbres: w.arbres, largeur, ligne, W, dessines, caches, moParMorceau: n ? +(mo / n / 1048576).toFixed(2) : 0, pireMo: +(Math.max(0, ...[...g.chunkMeshes.values()].map((m) => m.octetsFacades || 0)) / 1048576).toFixed(2), appels: g.renderer.info.render.calls, attente: Math.round(performance.now() - t0) };
       });
       const sylvestre = await banc.jouerSeul('Sylvestre', { rr: 4, params: '&hd=2' });
       const avec = await mesurer(sylvestre);
@@ -1363,6 +1373,30 @@ function verifier(nom, ok, detail = '') {
         `${avec.largeur} px en relief contre ${sansA.largeur} px en cubes (écran de ${avec.W})`);
       verifier('un morceau de forêt en relief pèse moins d\'un mégaoctet et demi de tampons',
         avec.moParMorceau > 0 && avec.pireMo < 1.5, `${avec.moParMorceau} Mo par morceau en moyenne, ${avec.pireMo} au pire`);
+      // AU PALIER BAS AUSSI (v541). Max : « je veux des vrais feuillages… comme
+      // GTA » — et l'iPad de la famille jouait au palier bas (hd 0, sûreté),
+      // donc en cubes. Une page `hd=0&arbres=1` (le banc rend en logiciel, où
+      // la règle coupe les arbres avec la couche ; sur une vraie carte
+      // graphique le palier bas les a d'office) : ce que l'enfant voit, c'est
+      // chaque morceau de forêt avec ses arbres en cartes (`arbresLoin`,
+      // visibles), AUCUN modèle proche, les cubes tus — le fût de trois pans
+      // est plus fin que son cube —, et aucune clé de programme neuve entre
+      // l'accueil et la forêt : la couche s'est chauffée pendant la
+      // préparation (`chaufferLaCoucheHD`). Sur l'ancien code, `arbres=1` sans
+      // `hd` est ignoré : zéro carte, le tronc en cubes, rouge.
+      const cles = () => [...new Set((window.__game.renderer.info.programs || []).map((q) => q.cacheKey))];
+      const firmine = await banc.jouerSeul('Firmine', { rr: 4, params: '&hd=0&arbres=1', pret: true });
+      const clesAvant = await firmine.evaluate(cles);
+      const bas = await mesurer(firmine);
+      const clesApres = await firmine.evaluate(cles);
+      await firmine.close();
+      const neuves = clesApres.filter((k) => !clesAvant.includes(k));
+      verifier('au palier bas (hd 0), les arbres de la forêt sont des cartes : aucun modèle proche, les cubes tus, un fût plus fin que son cube (v541)',
+        !bas.erreur && bas.arbres === 1 && bas.dessines === 0 && bas.caches >= 5 && bas.largeur > 0 && sansA.largeur > 0 && bas.largeur < sansA.largeur * 0.8,
+        `${JSON.stringify(bas)} · en cubes ${sansA.largeur} px`);
+      verifier('et la couche HD s\'est chauffée à l\'accueil : sa clé est là avant d\'entrer, aucune clé de programme neuve en arrivant dans la forêt au palier bas',
+        clesAvant.some((k) => /paris-hd/.test(k)) && neuves.length === 0,
+        `${neuves.length} neuve(s) ${JSON.stringify(neuves.map((k) => k.slice(0, 60)).slice(0, 3))} ; ${clesAvant.length} clés à l'accueil, couche ${clesAvant.some((k) => /paris-hd/.test(k)) ? 'chauffée' : 'ABSENTE'}`);
     }
 
     const bas = await banc.jouerSeul('Firmin', { rr: 4, params: '&hd=0' });
