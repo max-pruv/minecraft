@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v544 — Les voitures de la rue gardent leur modèle
+
+**Pourquoi.** Max : « on tourne la tête une seconde, on revient, et c'est un
+autre modèle. » Mesuré (`tests/sonde-voitures-persistantes.cjs`) : une voiture
+de la rue naissait en coque sculptée générique, puis prenait son modèle de la
+flotte une image à près d'une seconde plus tard. En traversant la ville, 21
+voitures sur 50 à Paris et 34 sur 53 à Rome changeaient ainsi de forme ET de
+teinte sous les yeux de l'enfant. Le modèle et la laque d'une place étaient
+déjà des fonctions de son nom (v305) : c'était l'habillage qui trichait.
+
+**Ce que ça change.**
+- Une voiture dont le modèle est chargé s'habille dans l'image même où elle
+  naît : on ne voit plus jamais la coque d'attente.
+- Les modèles d'un circuit se demandent cent blocs avant que ses voitures
+  n'entrent dans le champ ; une voiture dont le fichier n'est pas encore là
+  reste cachée jusqu'à lui, au lieu de se montrer en coque.
+- Sa laque est posée dès sa naissance, fonction de sa place : deux tablettes
+  voient toujours la même voiture, de la même couleur, au même endroit.
+- Si un fichier manque, la coque est la voiture, pour toute sa vie.
+
+**Ce qui le prouve.** Un témoin de `monte.js` traverse Rome en temps réel et
+compte les voitures vues en coque puis en modèle (34 sur l'ancien code, 0
+ici), puis reproduit le geste de Max — relever les voitures en vue, demi-tour
+du regard, retour — et exige le même modèle et la même laque pour chaque
+place. Le témoin de la v495 (la rue rend sa mémoire) reste vert.
+
+---
+
+---
+
 ## v546 — Une nouvelle Lamborghini Revuelto
 
 **Pourquoi.** Max a fourni une adaptation de la Revuelto plus fidèle que le

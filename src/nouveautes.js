@@ -25,6 +25,14 @@ export const NOUVEAUTES = [
   },
   {
     v: 544,
+    titre: 'Les voitures gardent leur modèle',
+    puces: [
+      'Une voiture ne change plus de forme',
+      'Sa couleur reste la même',
+      'Pareil pour tous les amis',
+    ],
+  },
+  {
     titre: 'Des rues larges pour rouler',
     puces: [
       'Toutes les rues sont plus larges',

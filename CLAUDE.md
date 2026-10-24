@@ -1781,6 +1781,29 @@ Trois règles.
   la scène tient : une rue vide n'y montre plus les prototypes que le pilote
   garde (bornés à la flotte).
 
+## Une voiture ne change pas de modèle sous les yeux (v544) — une place est habillée ou cachée, jamais en coque
+
+Max : « on tourne la tête une seconde, on revient, et c'est un autre modèle ».
+Trois règles.
+
+- **CE QUI DOIT ÊTRE STABLE SE MESURE IMAGE PAR IMAGE, PAS SEULEMENT PAR NOM.**
+  Le modèle et la laque d'une place étaient déjà des fonctions de son nom
+  (`clé#rang`, v305) : la sonde du regard (`sonde-voitures-persistantes.cjs`)
+  ne trouvait rien en comparant les noms. C'est le relevé image par image qui a
+  nommé la coque d'attente — montrée à la naissance, remplacée une image à une
+  seconde plus tard (21 sur 50 à Paris, 34 sur 53 à Rome, fichier déjà chargé
+  compris : une promesse résolue rend la main après le rendu).
+- **UN PROTOTYPE PRÊT SE LIT SANS PROMESSE.** `protosPrets` (vehicules.js) :
+  la voiture s'habille dans l'image où elle naît. Sinon elle reste cachée
+  (`userData.attente`, que `montrer` lit) ; la coque ne se montre que si le
+  fichier manque, et elle est alors la voiture pour toute sa vie. Tout objet
+  qui naît avec un remplaçant temporaire suit cette règle.
+- **ON DEMANDE LE MODÈLE AVANT D'EN AVOIR BESOIN.** Un convoi demande les
+  fichiers de ses `modeles` à `portée + traînée + MARGE_RENDRE` : une voiture
+  qui entre dans le champ le trouve prêt (zéro cachée à moins de 18 blocs,
+  mesuré). La laque se pose à la naissance, pas à l'habillage : une voiture
+  empruntée avant son modèle garde la couleur de sa place.
+
 ## Le parapet sous la voie (v477) — une matière de tablier se lit sous la ligne qui roule
 
 Une règle. Aux coins des anneaux, la voie d'une voiture traversait la bande de

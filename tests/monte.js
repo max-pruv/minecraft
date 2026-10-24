@@ -13,6 +13,7 @@
 const { mesurerSaison } = require('./sonde-saison-ciel.cjs');
 const { Banc, dormir, souffler } = require('./banc.js');
 const { passage: passageRendre, juger: jugerRendre } = require('./sonde-rendre-convois.cjs');
+const { mesurer: mesurerRegard, mesurerAttente } = require('./sonde-voitures-persistantes.cjs');
 const { mesurerSensations } = require('./sensations-mesure.js');
 const { mesurerTraces } = require('./traces-mesure.js');
 const { mesurerDeriveDessinee } = require('./derive-mesure.js');
@@ -5815,6 +5816,26 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // revient quand on revient.
     verifier('les voitures de la rue rendent leur mémoire quand on s\'en va',
       jugerRendre(convois), JSON.stringify(convois));
+
+    // UNE VOITURE NE CHANGE PAS DE MODÈLE QUAND ON SE RETOURNE (v544).
+    //
+    // Max : « on tourne la tête une seconde, on revient, et c'est un autre
+    // modèle ». La sonde a nommé le mécanisme : la COQUE D'ATTENTE, montrée à
+    // la naissance de la voiture puis remplacée par son modèle de la flotte une
+    // image à une seconde plus tard — 21 voitures sur 50 à Paris, 34 sur 53 à
+    // Rome, sur l'ancien code. On traverse Rome en temps réel au pas d'une
+    // voiture et l'on compte, image par image, les voitures vues en coque puis
+    // en modèle ; puis le geste de Max : relever les voitures en vue (nom de
+    // place `clé#rang`, modèle, laque), demi-tour du regard, retour, comparer.
+    // Borne de garde (v237) : des voitures ont été vues, des places suivies.
+    await souffler();
+    const attente = await mesurerAttente(ciel, 'rome', { duree: 20000 });
+    const regard = (await mesurerRegard(ciel, ['rome'], { tours: 3 })).rome || {};
+    verifier('une voiture de la rue garde son modèle et sa laque sous les yeux de l\'enfant',
+      attente.voitures >= 10 && attente.bascules === 0 && attente.coqueImages === 0 && (attente.cacheesPres || 0) === 0
+        && regard.suivies >= 5 && regard.modele === 0 && regard.laque === 0 && regard.coque === 0,
+      `bascules ${attente.bascules} sur ${attente.voitures} voitures (coque ${attente.msMediane} ms médiane, ${attente.msPire} au pire) · `
+        + `cachées près ${attente.cacheesPres} · regard ${JSON.stringify(regard)}`);
 
     // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
     //
