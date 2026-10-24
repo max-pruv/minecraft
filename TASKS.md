@@ -198,7 +198,15 @@
   (rebasé sur la v540), `parishd.js` « au volant, la voiture de l'enfant ne
   traverse pas une terrasse de café » rouge (`fin` −49, 57 blocs parcourus),
   vert seul 2/2 sur la branche (−6,5 ; −9,1) et 2/2 sur `origin/main`
-  (−17,8 ; −34,6) — un rouge de charge, à rejouer au prochain portail ; `maj.js` trois passages de chaque côté, « en construction, on
+  (−17,8 ; −34,6) — un rouge de charge, à rejouer au prochain portail ;
+  au portail 9 (rebasé sur la v543), `monte.js` « deux voitures ne sont
+  jamais l'une dans l'autre » rouge (taux 5,3 %) : la sonde des chevauchements
+  (page neuve, 75 s sur place, six passages de chaque côté) rend 1/6 sur la
+  branche (8,4 %, voitures 3 et 4) et 1/6 sur `origin/main` (1,8 %, voitures
+  0 et 14), TOUJOURS au même virage du convoi 150 de Paris (−301, 323) :
+  centres à 4,4–4,6 blocs pour une marge de 1,6 sur l'arc — un coin trop
+  serré pour `miniVirage`, d'avant la livraison. Piste : un plancher qui se
+  mesure à la CORDE (distance des centres) et non à l'arc ; `maj.js` trois passages de chaque côté, « en construction, on
   marche au joystick » rouge une fois sur trois sur la branche (0,8 bloc),
   zéro sur `origin/main` — le crochet du piéton rend le même verdict
   (vrai/faux) qu'avant, à surveiller ; le loader qui compte les fichiers

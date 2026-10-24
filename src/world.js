@@ -2240,7 +2240,7 @@ function dansStations(x, z, t) {
 // de la v339, pour toutes les villes à la fois. Une colonne déjà gardée plus
 // ancienne (`colonnesVilleAvant`, `PARIS_AVANT`) garde la plus ancienne : le
 // bloc a été posé contre elle. La date se relit à la fusion (v309).
-export const DATE_RUES_GTA = Date.UTC(2026, 9, 24, 15, 10, 0);
+export const DATE_RUES_GTA = Date.UTC(2026, 9, 24, 23, 25, 0);
 const VILLES_GTA = [PARIS, LONDRES, NICE, SF, LILLE, { x: WASHINGTON.x, z: WASHINGTON.z, r: 268 }];
 function dansRuesGTA(x, z, t) {
   if (!(t <= DATE_RUES_GTA)) return false;
