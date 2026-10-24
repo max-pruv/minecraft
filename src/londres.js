@@ -38,7 +38,7 @@ import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, reculDesAvenues } from './voies.js';
 import { positionDe } from './mondes.js';
 import { monumentBati } from './monuments.js';
-import { sectionDeRue } from './voirie.js';
+import { sectionDeRue, sectionGTA } from './voirie.js';
 import { entreesDe } from './routes.js';
 
 const uni = (c) => DECOR_START + c * 10;
@@ -102,8 +102,13 @@ const de = (lat, lon) => [uDe(lon), vDe(lat)];
 // (demi-chaussée) et `t` (trottoir) sont ce que `rangerVoies` lit.
 // Aucune n'est un boulevard : quatre voies, c'est vingt et un blocs d'emprise,
 // et pas une artère de Londres n'en a la place sans avaler un quartier.
-const COLLECTRICE = sectionDeRue('collecteur');
-const LOCALE = sectionDeRue('locale');
+// LES RUES À LA GTA : la voie a la voiture plus un bloc de chaque côté
+// (`sectionGTA`). La chaussée s'élargit sur le front des lots ; le PAS de la
+// trame, lui, se lit encore sur la section du kit (`*_KIT`) — les circuits
+// restent sur les mêmes axes, et un îlot ne perd que la largeur gagnée.
+const COLLECTRICE = sectionGTA('collecteur');
+const LOCALE = sectionGTA('locale');
+const COLLECTRICE_KIT = sectionDeRue('collecteur');
 export const SECTIONS_LONDRES = { collecteur: COLLECTRICE, locale: LOCALE };
 // Où `world.js` cherche les coins d'un carrefour : à √2 × (demi-chaussée + un
 // bloc et demi) du croisement, la plus large section de la ville — la règle
@@ -555,7 +560,8 @@ export const VOIES_LONDRES = VOIES;
 // rapport.
 const trameALaRegle = (t) => {
   const w = COLLECTRICE.chaussee / 2, s = w + COLLECTRICE.trottoir;
-  return { ...t, type: COLLECTRICE.type, w, s, pu: t.pu * s / t.s, pv: t.pv * s / t.s };
+  const sk = COLLECTRICE_KIT.chaussee / 2 + COLLECTRICE_KIT.trottoir;
+  return { ...t, type: COLLECTRICE.type, w, s, pu: t.pu * sk / t.s, pv: t.pv * sk / t.s };
 };
 const TRAMES = {
   ouest: trameALaRegle({ ang: 0, pu: 21, pv: 18, cu: 0, cv: 0, w: 1.7, s: 4.0 }),

@@ -1524,7 +1524,10 @@ const position = (p) => p.evaluate(() => ({
     verifier('le phare veille au large de la passe, sur son rocher',
       frisco.phare.rouge && frisco.phare.mer, JSON.stringify(frisco.phare));
     verifier('aucune tour du Financial District n\'est une cage de verre',
-      frisco.centre.verre === 0 && frisco.centre.plein > 200,
+      // `plein` est une borne de GARDE (la mesure a eu lieu) : 212 sur la
+      // v531, 159 depuis les rues à la GTA (la chaussée prend de la façade) ;
+      // elle se pose à la moitié de la mesure, pas juste dessous.
+      frisco.centre.verre === 0 && frisco.centre.plein > 80,
       `${frisco.centre.verre} colonnes de verre plein · ${frisco.centre.plein} de façade`);
     verifier('et le centre est un tapis d\'où sortent quelques tours',
       frisco.centre.median <= 15 && frisco.centre.plusHaute >= 30,

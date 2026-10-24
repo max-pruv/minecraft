@@ -36,7 +36,7 @@
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, contournerBlocs, reculDesAvenues } from './voies.js';
 import { positionDe } from './mondes.js';
-import { sectionDeRue } from './voirie.js';
+import { sectionDeRue, sectionGTA } from './voirie.js';
 import { entreesDe } from './routes.js';
 
 const uni = (c) => DECOR_START + c * 10;
@@ -211,13 +211,19 @@ export const lieuxDeLille = () => LIEUX_LILLE
 // emprises : SI L'ÉLARGISSEMENT MANGE LES BÂTIMENTS, ON RECOMPOSE LES LOTS
 // (Londres v339, Nice v359, San Francisco v361). Les valeurs écrites ici sont
 // celles de la v204 et ne donnent plus que le rapport.
-const COLLECTRICE = sectionDeRue('collecteur');
-const LOCALE = sectionDeRue('locale');
+// LES RUES À LA GTA : la voie a la voiture plus un bloc de chaque côté
+// (`sectionGTA`). La chaussée s'élargit sur le front des lots ; le PAS de la
+// trame, lui, se lit encore sur la section du kit (`sectionDeRue`) — les
+// circuits restent sur les mêmes axes, et un îlot ne perd que la largeur
+// gagnée par la rue.
+const COLLECTRICE = sectionGTA('collecteur');
+const LOCALE = sectionGTA('locale');
 export const SECTIONS_LILLE = { collecteur: COLLECTRICE, locale: LOCALE };
 export const PORTEE_FEUX_LILLE = Math.ceil(Math.SQRT2 * (COLLECTRICE.chaussee / 2 + 1.5));
 const trameALaRegle = (t, sec) => {
   const w = sec.chaussee / 2, s = w + sec.trottoir;
-  return { ...t, type: sec.type, w, s, pu: t.pu * s / t.s, pv: t.pv * s / t.s };
+  const kit = sectionDeRue(sec.type), sk = kit.chaussee / 2 + kit.trottoir;
+  return { ...t, type: sec.type, w, s, pu: t.pu * sk / t.s, pv: t.pv * sk / t.s };
 };
 const TRAMES = {
   // le Vieux-Lille : des rues étroites qui ne sont parallèles à rien
