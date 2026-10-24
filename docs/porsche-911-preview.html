@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>911 GT3 RS · revue du modèle</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#e1e4e6;color:#192126;font:15px system-ui}canvas{display:block;width:100%;height:100vh;touch-action:none}header{position:absolute;left:28px;top:24px;pointer-events:none}h1{font-size:24px;margin:5px 0}small{letter-spacing:.1em;text-transform:uppercase;color:#59646b}header p{color:#59646b;max-width:420px;line-height:1.5}nav{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:7px;flex-wrap:wrap;justify-content:center;width:95%}button{border:1px solid #bac2c5;background:#fffffff0;padding:11px 16px;border-radius:30px;font:inherit;cursor:pointer}button:focus-visible{outline:3px solid #236ca0}#etat{position:absolute;right:24px;top:28px;color:#59646b}#erreur{position:absolute;top:40%;width:100%;text-align:center;color:#a02722}@media(max-width:600px){header{left:18px;top:18px}h1{font-size:20px}header p{max-width:300px;font-size:13px}#etat{top:130px;left:18px;font-size:12px}}
+</style>
+<header><small>Reconstruction originale · modèle de travail</small><h1>Porsche 911 GT3 RS / 992</h1><p>Glisser pour tourner · molette ou pincement pour zoomer.<br>Le modèle affiché est le GLB livré, sans image de substitution.</p></header>
+<div id="etat">Chargement…</div><div id="erreur" role="alert"></div>
+<nav aria-label="Vues du modèle"><button data-view="front">Avant</button><button data-view="rear">Arrière</button><button data-view="side">Profil</button><button data-view="cabin">Habitacle</button><button id="wire">Maillage</button><button id="spin">Rotation</button></nav>
+<script type="importmap">{"imports":{"three":"../vendor/three.module.min.js"}}</script>
+<script type="module">
+import * as T from 'three';
+import { GLTFLoader } from '../vendor/GLTFLoader.js';
+let renderer;
+try{renderer=new T.WebGLRenderer({antialias:true});}catch(e){document.getElementById('erreur').textContent='WebGL indisponible sur ce navigateur.';throw e;}
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);
+renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;document.body.prepend(renderer.domElement);
+const scene=new T.Scene();scene.background=new T.Color(0xe1e4e6);
+const camera=new T.PerspectiveCamera(35,innerWidth/innerHeight,.01,100);
+const target=new T.Vector3(0,.65,0);let radius=7.7,theta=.65,phi=1.24,spin=false,model;
+const studio=new T.Scene();studio.background=new T.Color(0x818991);
+for(const [p,size] of [[[0,4,0],[8,.1,3]],[[-4,2,1],[.1,3,7]],[[3,2,-4],[5,2,.1]]]){
+ const panel=new T.Mesh(new T.BoxGeometry(...size),new T.MeshBasicMaterial({color:0xffffff}));panel.position.set(...p);studio.add(panel);
+}
+const pmrem=new T.PMREMGenerator(renderer),environment=pmrem.fromScene(studio,.07);scene.environment=environment.texture;pmrem.dispose();
+scene.add(new T.HemisphereLight(0xdbeaff,0x55504a,1.4));
+const key=new T.DirectionalLight(0xfff5e8,3.2);key.position.set(-3,7,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-4;key.shadow.camera.right=4;key.shadow.camera.top=4;key.shadow.camera.bottom=-4;key.shadow.bias=-.0003;key.shadow.normalBias=.015;scene.add(key);
+const fill=new T.DirectionalLight(0xdceaff,1.3);fill.position.set(4,2,-3);scene.add(fill);
+const floor=new T.Mesh(new T.PlaneGeometry(200,200),new T.MeshStandardMaterial({color:0xe1e4e6,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.position.y=-.008;floor.receiveShadow=true;scene.add(floor);
+try{
+ const gltf=await new GLTFLoader().loadAsync('../vendor/voitures/porsche-911-gt3-rs-hd-v2.glb');model=gltf.scene;
+ let triangles=0,meshes=0;model.traverse(o=>{if(o.isMesh){o.castShadow=!o.material.transparent;o.receiveShadow=true;o.material.envMapIntensity=1;triangles+=o.geometry.index.count/3;meshes++;}});scene.add(model);
+ document.getElementById('etat').textContent=`${triangles.toLocaleString('fr-FR')} triangles · ${meshes} maillages`;
+}catch(e){document.getElementById('erreur').textContent='Modèle introuvable. Servir la racine du dépôt avec python3 -m http.server 8000.';console.error(e);}
+const views={front:[.65,1.24,7.7,[0,.65,0]],rear:[2.50,1.23,7.7,[0,.65,0]],side:[Math.PI/2,1.43,7.8,[0,.65,0]],cabin:[.3,.80,1.35,[.05,.76,.05]]};
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const v=views[b.dataset.view];[theta,phi,radius]=v;target.set(...v[3]);spin=false;});
+let wire=false;document.getElementById('wire').onclick=()=>{wire=!wire;model?.traverse(o=>{if(o.isMesh)o.material.wireframe=wire});};
+document.getElementById('spin').onclick=()=>{spin=!spin;};
+const pointers=new Map();let pinch=0;
+renderer.domElement.onpointerdown=e=>{renderer.domElement.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);pinch=0;spin=false;};
+renderer.domElement.onpointermove=e=>{if(!pointers.has(e.pointerId))return;const old=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(pointers.size===2){const [a,b]=[...pointers.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pinch)radius=T.MathUtils.clamp(radius*pinch/d,.6,15);pinch=d;}else{theta-=(e.clientX-old[0])*.006;phi=T.MathUtils.clamp(phi+(e.clientY-old[1])*.006,.08,1.54);}};
+for(const ev of ['pointerup','pointercancel'])renderer.domElement.addEventListener(ev,e=>{pointers.delete(e.pointerId);pinch=0;});
+renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();radius=T.MathUtils.clamp(radius*Math.exp(e.deltaY*.001),.6,15);},{passive:false});
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+let last=performance.now();function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;if(spin)theta+=dt*.20;camera.position.set(target.x+radius*Math.sin(phi)*Math.sin(theta),target.y+radius*Math.cos(phi),target.z+radius*Math.sin(phi)*Math.cos(theta));camera.lookAt(target);renderer.render(scene,camera);requestAnimationFrame(frame);}requestAnimationFrame(frame);
+</script></html>

@@ -1,0 +1,20 @@
+{
+  "README_INTEGRATION.md": "2f95f05dccc55274247f6b2db6ac359d6c18766574a812c9830ef435646589ee",
+  "porsche-911-integration.patch": "6516c79df01b7d75d0db58a4084f213f42ac124735816e97fcebf9f6248afcd2",
+  "docs/porsche-911-rebuild.md": "930aff36867ab1053384b4c864e8e2c8de6b8e5b413edcafa4a6a05bcaa71eba",
+  "docs/porsche-911-preview.html": "2b5c65bbfc8315acc60d35aecde8803145ba581c9a56993ece68b5cc25f1a7a2",
+  "scripts/render-porsche-review.py": "d5e4222df5ab51110a98797f22d542790724990611b5b95bf640266f9b70fb87",
+  "scripts/porsche911-v2.py": "8c8298320ef722310ddb8afe1dc7bd4acf8e2826dd345bfccfd2cbc5a24183cf",
+  "tests/porsche-911-textures.mjs": "9cd91ad7c3fea3bfd7907806e929ab9bf05ce386287de9b1b623fd8a27526043",
+  "tests/porsche-911-loader.mjs": "79f10b47697d1a0fec374a537599660310983a85269490291ef59fec38a5a0af",
+  "tests/porsche-911.test.mjs": "fee0c5dd95f4a15698a2c8434f42e4b8e9f57e3ba0000034ca94b49c5c477630",
+  "vendor/GLTFLoader.js": "9ab58686108d736dd008ef859a849c428a77a51f3677078e286356aa2211d6ae",
+  "vendor/three.module.min.js": "48ad607d911c8f54e9ec4afcf7984063ff6156bd8bb82f5b92d81f6d44bb9b53",
+  "vendor/BufferGeometryUtils.js": "b5dc0dc95574ae1c71e1e04548d8eefe2703132fd45b1e52a15c7b6a6faa98e1",
+  "renders/cabin.png": "d1a3f801233888af8286c706811ff88dce979029e2fb53136bd3aaa2a028b5ba",
+  "renders/front.png": "84ea8a0cb5bfe27024e72f45aec5bb651f775c17c97b3259f0c03df724f91d5f",
+  "renders/review.png": "556b70451c705e5586510a103a608d67a1639250db45bb8e99eb649a0a7e1009",
+  "renders/side.png": "8073f6b300cdd002fa3230f14e9af6b11fa7c5edd27880eac5bac907ae737cd7",
+  "renders/rear.png": "ed856bc55abd923f5217789fc05b63f9be75718388511296db622952c34197bd",
+  "vendor/voitures/porsche-911-gt3-rs-hd-v2.glb": "c929874f70ce67e56dddea1d94d76ed187dbdb9596549ee266c95507e07c360f"
+}

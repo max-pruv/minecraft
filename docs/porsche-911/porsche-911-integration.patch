@@ -1,0 +1,67 @@
+--- a/src/vehicules.js
++++ b/src/vehicules.js
+@@ -481,7 +481,9 @@
+   { fichier: 'pagani-zonda-cinque.glb', classe: 'sportive', nom: 'Pagani Zonda Cinque' },
+   { fichier: 'pininfarina-battista.glb', classe: 'hypercar', nom: 'Automobili Pininfarina Battista' },
+   { fichier: 'porsche-718-cayman-gt4-rs.glb', classe: 'gt', nom: 'Porsche 718 Cayman GT4 RS' },
+-  { fichier: 'porsche-911-gt3-rs.glb', classe: 'sportive', nom: 'Porsche 911 GT3 RS (992)' },
++  // L'identifiant des sauvegardes reste stable ; l'URL neuve renouvelle le
++  // modèle dans STATIC_CACHE sans retélécharger toute la flotte.
++  { fichier: 'porsche-911-gt3-rs.glb', asset: 'porsche-911-gt3-rs-hd-v2.glb', classe: 'sportive', nom: 'Porsche 911 GT3 RS (992)' },
+   { fichier: 'porsche-918-spyder.glb', classe: 'hypercar', nom: 'Porsche 918 Spyder' },
+   { fichier: 'porsche-carrera-gt.glb', classe: 'sportive', nom: 'Porsche Carrera GT' },
+   { fichier: 'porsche-taycan-turbo-s.glb', classe: 'gt', nom: 'Porsche Taycan Turbo S' },
+@@ -733,7 +735,7 @@
+     partagerTout(modele);   // le prototype ne se rend jamais (v495)
+     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
+   }
+-  const chargement = new GLTFLoader().register(partageDesTextures).loadAsync('./vendor/voitures/' + entree.fichier)
++  const chargement = new GLTFLoader().register(partageDesTextures).loadAsync('./vendor/voitures/' + (entree.asset || entree.fichier))
+     .then((gltf) => {
+       const cadre = new THREE.Group();
+       // On remet le modèle au manifeste AVANT de l'accrocher : la rotation et
+--- a/src/signatures.js
++++ b/src/signatures.js
+@@ -22,6 +22,10 @@
+ // telles que `signaturesDuGlb` les lit. `vehicules.js` compile chacune
+ // pendant l'accueil (`chaufferLesProgrammes`).
+ export const SIGNATURES_GLB = [
++  'Standard+alpha',           // vitrages de la 911 reconstruite
++  'Standard+map+nrm',         // carbone tissé
++  'Standard+map+atest',       // atlas des marquages
++  'Standard+map',             // flancs des pneus
+   'Physical+cc+DS+env',
+   'Physical+cc+DS',
+   'Physical+cc+alpha+DS',
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -1,4 +1,12 @@
+ # Contexte du projet — à lire avant toute modification
++
++**911 reconstruite — modification non publiée.** `FLOTTE.fichier` reste
++l'identifiant stable utilisé par les garages et le réseau. Le champ `asset`
++facultatif ne change que l'URL chargée (`asset || fichier`) : changer une
++géométrie conservée dans STATIC_CACHE impose une URL neuve, pas le renommage
++de l'identifiant sauvegardé. Voir `docs/porsche-911-rebuild.md` pour les tests
++réalisés, les limites artistiques et les validations encore requises.
++
+ 
+ Ce fichier est chargé automatiquement au début de chaque session. Il ne
+ raconte pas ce que fait le jeu (c'est le `README`), il dit **ce qu'il ne faut
+--- a/vendor/voitures/LICENSE.md
++++ b/vendor/voitures/LICENSE.md
+@@ -1,4 +1,14 @@
+ # La flotte de voitures (vendor/voitures/*.glb)
++
++## Reconstruction 911 (travail non publié, octobre 2026)
++
++`porsche-911-gt3-rs-hd-v2.glb` est une reconstruction originale générée par
++`scripts/porsche911-v2.py`. Elle ne provient pas des archives
++luxurycarfleet et ne réutilise pas leur géométrie. Les références visuelles
++officielles sont listées dans `docs/porsche-911-rebuild.md` ; aucune photo ni
++texture du constructeur n'est incorporée. Même destination privée et familiale,
++sans affiliation avec Porsche. Le niveau de fidélité reste à valider.
++
+ 
+ Cinquante modèles fournis par Max (août 2026, archives
+ `luxurycarfleet` partie 1 à 3) pour la diversité des voitures à conduire.
