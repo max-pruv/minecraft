@@ -194,7 +194,11 @@
   Marlon percute s'arrête feux de détresse allumés » rendait `recues 0`
   (le `rue_choc` n'est pas arrivé chez Alice) — rejouée seule, branche 2/2
   verte (`recues 1`), `origin/main` 1/2 rouge à l'identique (`recues 0`) :
-  intermittence de livraison du message, des deux côtés ; `maj.js` trois passages de chaque côté, « en construction, on
+  intermittence de livraison du message, des deux côtés ; au portail 7
+  (rebasé sur la v540), `parishd.js` « au volant, la voiture de l'enfant ne
+  traverse pas une terrasse de café » rouge (`fin` −49, 57 blocs parcourus),
+  vert seul 2/2 sur la branche (−6,5 ; −9,1) et 2/2 sur `origin/main`
+  (−17,8 ; −34,6) — un rouge de charge, à rejouer au prochain portail ; `maj.js` trois passages de chaque côté, « en construction, on
   marche au joystick » rouge une fois sur trois sur la branche (0,8 bloc),
   zéro sur `origin/main` — le crochet du piéton rend le même verdict
   (vrai/faux) qu'avant, à surveiller ; le loader qui compte les fichiers
