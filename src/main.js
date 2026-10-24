@@ -400,7 +400,7 @@ function sonVoulu() {
   try { return localStorage.getItem(SON_CLE) !== 'off'; } catch { return true; }
 }
 reglerSon(sonVoulu());
-// LA STATION DE RADIO SE GARDE SUR L'APPAREIL (v535), comme le son : celle
+// LA STATION DE RADIO SE GARDE SUR L'APPAREIL (v541), comme le son : celle
 // qu'on a choisie au volant revient dans la voiture suivante, et une radio
 // éteinte exprès reste éteinte. `null` est l'arrêt, un entier la station.
 const RADIO_CLE = 'web-minecraft-radio-v1';
@@ -1795,7 +1795,7 @@ function updateChunks() {
   // dans la rue : la circulation, qui attend sans limite devant un piéton, ne
   // l'attend pas — sinon ses files se nouaient aux feux pendant l'arrivée
   vehicules.brancherPietons(() => npcs.filter((h) => !h.attendLeMonde));
-  // LA RUE KLAXONNE (v535) : une voiture arrêtée derrière l'enfant le dit.
+  // LA RUE KLAXONNE (v541) : une voiture arrêtée derrière l'enfant le dit.
   // Plus loin, plus doux ; à gauche ou à droite de là où il regarde (pan).
   vehicules.brancherKlaxon((x, z, ton) => {
     const dx = x - player.pos.x, dz = z - player.pos.z, d = Math.hypot(dx, dz);
@@ -2931,7 +2931,7 @@ bindHoldButton('down-btn', 'KeyC');
 // main (player.js) ; le bouton 🛑 de la colonne de droite la tient comme ⤒ la
 // tient à pied. Une seule commande, deux gestes.
 bindHoldButton('fm-btn', 'Space');
-// LE KLAXON (v535) : tenu du pouce, comme le frein à main — la touche H au
+// LE KLAXON (v541) : tenu du pouce, comme le frein à main — la touche H au
 // clavier. LA RADIO : un appui passe à la station suivante, puis au silence
 // (touche R). Les deux ne vivent qu'au volant d'une voiture (index.html).
 bindHoldButton('klaxon-btn', 'KeyH');
@@ -3043,7 +3043,7 @@ trainBtn.addEventListener('click', () => {
 // LES BOUTONS DE LA MARCHE S'EFFACENT EN VÉHICULE — saut, pioche, capture,
 // coffre — et reviennent à pied (Max). La classe du `body` fait le tri en CSS.
 let etatVehicule = '';
-// LE KLAXON ET L'ÉTAT DE LA RADIO, À CHAQUE IMAGE (v535). Le klaxon suit la
+// LE KLAXON ET L'ÉTAT DE LA RADIO, À CHAQUE IMAGE (v541). Le klaxon suit la
 // touche (bouton tenu ou H) : il sonne tant qu'elle est tenue, et le premier
 // appui publie `player.klaxon = { t, x, z }` — un ÉVÉNEMENT daté, comme le
 // choc (v358), que les passants lisent pour se retourner. La radio dit sa
@@ -3536,7 +3536,7 @@ if (sonToggle) {
 // fois pour avoir publié un mécanisme au lieu de ce qui s'entend.
 window.__sons = { etat: etatSon, contexte: contexteAudio, sortie: sortieAudio,
   station: radioEnCours, regler: reglerSon, actif: sonActif, generation: generationAudio,
-  // la radio et le klaxon (v535), pour les témoins et les captures
+  // la radio et le klaxon (v541), pour les témoins et les captures
   suivante: changerDeStation, titre: radioTitre, indice: radioIndice, klaxon: klaxonTenir };
 
 // iOS only delivers orientation events after an explicit permission request,
@@ -7827,7 +7827,7 @@ let dansMars = false;
 
 let weather = 'clear';
 let weatherTimer = 90;
-// LA PLUIE MOUILLE LA ROUTE (v535) : la physique de la conduite demande ici
+// LA PLUIE MOUILLE LA ROUTE (v541) : la physique de la conduite demande ici
 // s'il pleut, et l'adhérence baisse d'un cinquième (`adherenceDeSurface`).
 player.pluie = () => weather === 'rain';
 

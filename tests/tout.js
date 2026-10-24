@@ -264,7 +264,7 @@ const GARDIENS = {
   // le réglage qui coupe tout dans `reglages.js`, et le carillon du chat
   // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
-  'src/radio.js': ['monte.js', 'reglages.js', 'reseau.js'],   // le programme de la radio (v535), pur
+  'src/radio.js': ['monte.js', 'reglages.js', 'reseau.js'],   // le programme de la radio (v541), pur
   'src/phares.js': ['monte.js'],
   'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/traces.js': ['monte.js', 'reglages.js', 'reseau.js'],

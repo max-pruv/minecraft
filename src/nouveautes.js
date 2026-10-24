@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 541,
+    titre: 'La voiture, comme dans GTA',
+    puces: [
+      'Cinq stations de radio, un bouton pour changer',
+      'Un klaxon — et la rue klaxonne aussi',
+      'Sur l\'herbe et le sable, ça glisse',
+      'Feux stop et feux de recul',
+    ],
+  },
+  {
     v: 540,
     titre: 'La minicarte toujours là',
     puces: [
@@ -40,16 +50,6 @@ export const NOUVEAUTES = [
       'La voiture renverse réverbères et feux',
       'Les jardinières s\'écrasent',
       'Tout se relève plus tard',
-    ],
-  },
-  {
-    v: 535,
-    titre: 'La voiture, comme dans GTA',
-    puces: [
-      'Cinq stations de radio, un bouton pour changer',
-      'Un klaxon — et la rue klaxonne aussi',
-      'Sur l\'herbe et le sable, ça glisse',
-      'Feux stop et feux de recul',
     ],
   },
   {

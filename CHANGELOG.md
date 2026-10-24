@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v541 — La voiture, comme dans GTA
+
+**Pourquoi.** Max : « améliore la conduite pour qu'elle ressemble à GTA —
+comment elle réagit à l'environnement, aux autres voitures, la musique, le son,
+jusqu'au design des voitures ». Mesuré avant d'écrire une ligne : la radio
+jouait une boucle de quatre mesures, la même pour toujours, sur une station
+tirée au sort sans qu'on puisse en changer ; il n'y avait pas de klaxon, et les
+voitures de la rue, bloquées derrière l'enfant, attendaient en silence ;
+l'herbe, le sable, la neige et la pluie ne changeaient rien à la tenue de
+route ; et aucune voiture n'allumait de feu stop ni de feu de recul.
+
+**Ce que ça change.** Au volant, un bouton de radio (et la touche R) fait le
+tour de cinq stations — Radio Bloc, Nuit Cubique, Grand Large, Boulevard 93,
+Salle Ronde — de trois morceaux chacune, avec un jingle devant chaque morceau
+et un programme qui suit l'heure réelle, comme une vraie radio qui joue sans
+nous ; une pilule dit la station et le titre, et le choix (ou le silence) se
+garde sur la tablette. Un bouton de klaxon (touche H) sonne tant qu'on le
+tient ; les passants se retournent, et une voiture de la rue arrêtée derrière
+la voiture de l'enfant klaxonne au bout de deux secondes et demie, puis
+s'impatiente encore. L'herbe, le gravier, le sable et la neige tiennent moins
+que la route, la pluie mouille la chaussée : la voiture patine, dérive plus,
+gronde et tremble hors de l'asphalte. Et les feux stop s'allument au freinage,
+les feux de recul en marche arrière — sur la voiture de l'enfant comme sur
+celles de la rue, qui freinent feux allumés aux feux rouges et derrière lui.
+
+**Ce qui le prouve.** Neuf témoins neufs : sept dans `monte.js` (le tour des
+stations et la pilule, une station qui s'entend contre le silence, le klaxon
+tenu puis lâché et le passant qui se retourne, l'herbe contre la pierre —
+adhérence, grondement, tremblement —, les feux stop et de recul, la voiture de
+la rue qui freine et klaxonne derrière l'enfant, la place des boutons hors du
+quart du joystick), un dans `plafond.js` (sans adhérence donnée, la dynamique
+est celle de la v534 au bit près sur 128 000 pas tirés ; avec, la pointe baisse
+de la route à l'herbe, au sable, à la neige) et un dans `reglages.js` (le
+programme de la radio, pur). Tous rouges sur l'ancien code, et ils le disent.
+
 ## v540 — La minicarte toujours là
 
 **Pourquoi.** Max : « Il faut trouver une solution pour mettre la mini-carte
@@ -197,41 +232,6 @@ rejoués seuls des deux côtés (`TASKS.md`). Revue d'écran
 au premier regard.
 
 ---
-## v535 — La voiture, comme dans GTA
-
-**Pourquoi.** Max : « améliore la conduite pour qu'elle ressemble à GTA —
-comment elle réagit à l'environnement, aux autres voitures, la musique, le son,
-jusqu'au design des voitures ». Mesuré avant d'écrire une ligne : la radio
-jouait une boucle de quatre mesures, la même pour toujours, sur une station
-tirée au sort sans qu'on puisse en changer ; il n'y avait pas de klaxon, et les
-voitures de la rue, bloquées derrière l'enfant, attendaient en silence ;
-l'herbe, le sable, la neige et la pluie ne changeaient rien à la tenue de
-route ; et aucune voiture n'allumait de feu stop ni de feu de recul.
-
-**Ce que ça change.** Au volant, un bouton de radio (et la touche R) fait le
-tour de cinq stations — Radio Bloc, Nuit Cubique, Grand Large, Boulevard 93,
-Salle Ronde — de trois morceaux chacune, avec un jingle devant chaque morceau
-et un programme qui suit l'heure réelle, comme une vraie radio qui joue sans
-nous ; une pilule dit la station et le titre, et le choix (ou le silence) se
-garde sur la tablette. Un bouton de klaxon (touche H) sonne tant qu'on le
-tient ; les passants se retournent, et une voiture de la rue arrêtée derrière
-la voiture de l'enfant klaxonne au bout de deux secondes et demie, puis
-s'impatiente encore. L'herbe, le gravier, le sable et la neige tiennent moins
-que la route, la pluie mouille la chaussée : la voiture patine, dérive plus,
-gronde et tremble hors de l'asphalte. Et les feux stop s'allument au freinage,
-les feux de recul en marche arrière — sur la voiture de l'enfant comme sur
-celles de la rue, qui freinent feux allumés aux feux rouges et derrière lui.
-
-**Ce qui le prouve.** Neuf témoins neufs : sept dans `monte.js` (le tour des
-stations et la pilule, une station qui s'entend contre le silence, le klaxon
-tenu puis lâché et le passant qui se retourne, l'herbe contre la pierre —
-adhérence, grondement, tremblement —, les feux stop et de recul, la voiture de
-la rue qui freine et klaxonne derrière l'enfant, la place des boutons hors du
-quart du joystick), un dans `plafond.js` (sans adhérence donnée, la dynamique
-est celle de la v534 au bit près sur 128 000 pas tirés ; avec, la pointe baisse
-de la route à l'herbe, au sable, à la neige) et un dans `reglages.js` (le
-programme de la radio, pur). Tous rouges sur l'ancien code, et ils le disent.
-
 ## v534 — Un choc a de l'élan
 
 **Pourquoi.** Max : « Quand on fonce dans une voiture avec une autre voiture,

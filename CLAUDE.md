@@ -902,7 +902,7 @@ Cinq règles.
   Manhattan (mobilier instancié par lots) et le réseau (la casse n'est pas
   partagée) restent des dettes déclarées.
 
-## La voiture, comme dans GTA (v535) — un son se lit dans sa bande, et une règle de route vit dans la dynamique
+## La voiture, comme dans GTA (v541) — un son se lit dans sa bande, et une règle de route vit dans la dynamique
 
 Max : « améliore la conduite pour qu'elle ressemble à GTA — l'environnement,
 les autres voitures, la musique, le son, jusqu'au design des voitures ». Quatre
