@@ -1,5 +1,35 @@
 # Ce qui est en cours
 
+## v541 — DE VRAIES FEUILLES : ce qui reste, mesuré
+
+- **Un carré d'herbe en voxel (3 × 3 colonnes) au pied de chaque BOULEAU**,
+  au ras de la surface continue, même texture, à peine visible — ce qui reste
+  après la correction du TROU (v541, voir CLAUDE.md). Cause : `DESSUS_NATUREL`
+  (solcontinu.js) admet `LOG` et `LEAVES` au-dessus d'une colonne d'herbe, pas
+  `BLOCK.BIRCH`, le tronc du bouleau (`world.js`, `trunkBlock = kind === 2 ?
+  BIRCH : LOG`) ; la colonne du tronc n'est pas « naturelle », ses quatre
+  cellules ne se dessinent pas, et les huit colonnes voisines gardent leur cube
+  de sommet. Remède d'une ligne — ajouter `BIRCH` à `DESSUS_NATUREL` — mais il
+  change les tampons `solid` de tout morceau à bouleaux, arbres désarmés
+  aussi, donc l'empreinte des 490 morceaux de `plafond.js` : une option de
+  rejeu (`reglage…: false`, comme `baiesSoudees`) et un témoin. Sept suites
+  gardent `solcontinu.js`. À livrer seul, ou jamais : au bloc près, rien ne
+  manque sous un bouleau depuis la v541.
+- **`maj.js` « commandes (430 × 932) : en construction, on marche au
+  joystick ET l'on choisit un bloc » — vert au portail de la v541 (1,28 bloc
+  en 1 605 ms), rouge rejouée SEULE sur le même code une heure plus tard
+  (0,64 bloc en 10 050 ms, `atteinte` et `choisie` vraies).** Le témoin juge
+  une DISTANCE au joystick sur une page qui vient de passer en construction ;
+  le code du jeu n'a pas bougé entre les deux passages (seul `sw.js` a pris
+  son bump). Une intermittence de cadence du banc : à rejouer en distribution
+  (v269) le jour où elle revient, avec la cadence dans le message.
+- **La revue d'écran n'avait pas d'état en forêt avant la v541** : `campagne`
+  est le point d'apparition, sans un arbre. Les états `foret` et `foret-vol`
+  sont ajoutés à `sonde-revue-ecran.cjs` dans cette livraison.
+- **Les oiseaux (kites noirs) volent bas au-dessus de la forêt** et se lisent
+  comme des triangles noirs sur une capture en vol (`apres-foret-loin`). Vu
+  avant/après : préexistant, sans rapport avec les arbres.
+
 ## v539 — RIEN NE TRAVERSE UNE VOIE : ce qui reste, mesuré
 
 - **Rouges du portail de la v539 : aucun de la livraison.** `degats.js`
@@ -302,8 +332,11 @@
   dans le brouillard, mais à regarder en vol rapide. (2) Le paysage lointain
   (horizon.js) n'a aucun arbre : une forêt au-delà des morceaux maillés est
   une prairie verte ; des silhouettes instanciées par `treeAt` y seraient la
-  suite. (3) Le palier bas et le rendu logiciel gardent les cubes (pas de
-  couche HD). (4) Coût worker de la reconnaissance partout : dans le bruit
+  suite. (3) ~~Le palier bas et le rendu logiciel gardent les cubes (pas de
+  couche HD).~~ **Le palier bas a ses arbres en cartes depuis la v541** (le
+  modèle lointain partout, le matériau HD chauffé à l'accueil) ; le rendu
+  logiciel seul garde les cubes, par la règle de la couche (v287), et
+  `?arbres=1` l'y force pour les témoins. (4) Coût worker de la reconnaissance partout : dans le bruit
   sous node (1,6 à 6,9 ms par morceau des deux côtés) — à relire sur l'iPhone
   (`?diag=1`, débit de maillage en vol au-dessus d'une forêt).
 

@@ -103,6 +103,20 @@ const ETATS = [
     const s = await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
     return { monde: s + ' s' };
   } },
+  // La forêt (v541) : les vrais arbres, à pied puis en vol, là où Max s'est
+  // téléporté (la forêt tempérée dense près de (−1 500, −2 500), le site de
+  // `sonde-captures-vrais-arbres.cjs`). Hors des villes et hors du
+  // couloir du témoin : c'est le seul état où l'on voit des arbres.
+  { nom: 'foret', async prep(tab) {
+    const s = await poserEt(tab, { x: -1560, z: -2488, yaw: 0.8, pitch: 0.12 });
+    return { monde: s + ' s', ...(await tab.evaluate(() => ({ arbres: window.__game.world.arbres, hd: window.__game.RAYON_HD }))) };
+  } },
+  { nom: 'foret-vol', async prep(tab) {
+    const s = await poserEt(tab, { x: -1560, z: -2470, yaw: 0.2, pitch: -0.55, vol: true });
+    await tab.evaluate(() => { const g = window.__game; if (!g.player.flying) g.player.toggleFly(); g.player.pos.y = g.world.terrainHeight(-1560, -2470) + 22; });
+    await dormir(2500);
+    return { monde: s + ' s', ...(await tab.evaluate(() => ({ vole: window.__game.player.flying }))) };
+  } },
   { nom: 'paris', async prep(tab) {
     const p = await tab.evaluate(async () => {
       const { adresseParis } = await import('./src/paris.js');

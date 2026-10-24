@@ -65,23 +65,23 @@ const TRONCS = new Set([BLOCK.LOG, BLOCK.BIRCH]);
 const lin = (r, g, b) => [(r / 255) ** 2.2, (g / 255) ** 2.2, (b / 255) ** 2.2];
 export const ESSENCES = {
   // kind 0 : le chêne — un fût qui s'évase, quatre branches, une couronne ronde
-  chene: { tronc: 'ecorce', feuille: 'feuilles', couleur: lin(78, 138, 48), r0: 0.34, r1: 0.14, courbe: 0.25, branches: 4, amas: 10, carte: 1.15 },
+  chene: { tronc: 'ecorce', feuille: 'feuilles', couleur: lin(78, 138, 48), r0: 0.34, r1: 0.14, courbe: 0.25, branches: 4, amas: 14, carte: 1.2 },
   // kind 1 : le pin — droit, des verticilles, un cône d'aiguilles
   pin: { tronc: 'ecorce', feuille: 'aiguilles', couleur: lin(58, 118, 66), r0: 0.28, r1: 0.06, courbe: 0.08, conique: true },
   // kind 2 : le bouleau — élancé, blanc, une couronne légère et claire
-  bouleau: { tronc: 'bouleau', feuille: 'feuilles', couleur: lin(132, 178, 70), r0: 0.2, r1: 0.06, courbe: 0.3, branches: 3, amas: 6, carte: 0.8, elance: true },
+  bouleau: { tronc: 'bouleau', feuille: 'feuilles', couleur: lin(132, 178, 70), r0: 0.2, r1: 0.06, courbe: 0.3, branches: 3, amas: 9, carte: 0.85, elance: true },
   // kind 3 : le palmier — un stipe penché, des palmes qui retombent
   palmier: { tronc: 'ecorce', feuille: 'palme', couleur: lin(72, 142, 52), r0: 0.27, r1: 0.19, courbe: 0.9, palmes: 9 },
   // kind 4 : le pin parasol — un haut fût nu, une ombrelle plate et sombre
-  parasol: { tronc: 'ecorce', feuille: 'aiguilles', couleur: lin(56, 108, 58), r0: 0.36, r1: 0.16, courbe: 0.4, branches: 3, amas: 9, carte: 1.3, plat: true },
+  parasol: { tronc: 'ecorce', feuille: 'aiguilles', couleur: lin(56, 108, 58), r0: 0.36, r1: 0.16, courbe: 0.4, branches: 3, amas: 12, carte: 1.3, plat: true },
   // kind 5 : l'olivier — trapu, tordu, gris-vert argenté
-  olivier: { tronc: 'ecorce', feuille: 'feuilles', couleur: lin(128, 142, 100), r0: 0.4, r1: 0.2, courbe: 0.45, branches: 4, amas: 8, carte: 0.95, bas: true },
+  olivier: { tronc: 'ecorce', feuille: 'feuilles', couleur: lin(128, 142, 100), r0: 0.4, r1: 0.2, courbe: 0.45, branches: 4, amas: 11, carte: 1.0, bas: true },
   // kind 6 : l'acacia — un fût qui se divise, une cime plate et large
-  acacia: { tronc: 'ecorce', feuille: 'feuilles', couleur: lin(104, 128, 58), r0: 0.3, r1: 0.12, courbe: 0.35, branches: 3, amas: 9, carte: 0.9, plat: true, haut: true },
+  acacia: { tronc: 'ecorce', feuille: 'feuilles', couleur: lin(104, 128, 58), r0: 0.3, r1: 0.12, courbe: 0.35, branches: 3, amas: 12, carte: 0.9, plat: true, haut: true },
   // sous les tropiques (kind 0 en climat `tropiques`) : un grand feuillu
-  feuillu: { tronc: 'ecorce', feuille: 'feuilles', couleur: lin(52, 128, 46), r0: 0.38, r1: 0.14, courbe: 0.2, branches: 5, amas: 12, carte: 1.3 },
+  feuillu: { tronc: 'ecorce', feuille: 'feuilles', couleur: lin(52, 128, 46), r0: 0.38, r1: 0.14, courbe: 0.2, branches: 5, amas: 16, carte: 1.3 },
   // les arbres d'alignement des villes : platanes et marronniers taillés
-  ville: { tronc: 'ecorce', feuille: 'feuilles', couleur: lin(86, 150, 54), r0: 0.28, r1: 0.14, courbe: 0.1, branches: 3, amas: 8, carte: 1.0 },
+  ville: { tronc: 'ecorce', feuille: 'feuilles', couleur: lin(86, 150, 54), r0: 0.28, r1: 0.14, courbe: 0.1, branches: 3, amas: 11, carte: 1.05 },
 };
 const PAR_KIND = ['chene', 'pin', 'bouleau', 'palmier', 'parasol', 'olivier', 'acacia'];
 
@@ -335,8 +335,14 @@ function couronne(x, z, wx, wz, boite, essence, climat) {
   const cy = (boite.y0 + boite.y1 + 1) / 2;
   // un sommet lissé : la normale du volume, mêlée d'un peu de ciel
   const nVol = (p) => norm([(p[0] - cx) / rx, (p[1] - cy) / ry + 0.5, (p[2] - cz) / rz]);
-  // la teinte d'un amas : plus sombre en bas de la couronne, un peu de variation
-  const nuance = (p, k) => ech(teinte, (0.78 + 0.22 * Math.max(0, Math.min(1, (p[1] - (cy - ry)) / (2 * ry)))) * (0.88 + 0.24 * g(40 + k)));
+  // la teinte d'un amas : plus sombre en bas de la couronne et vers son cœur
+  // (v541 — la lumière vient du haut et du dehors : un amas du dedans est à
+  // l'ombre des feuilles de devant), un peu de variation d'un amas à l'autre
+  const nuance = (p, k) => {
+    const haut = Math.max(0, Math.min(1, (p[1] - (cy - ry)) / (2 * ry)));
+    const dehors = Math.min(1, Math.hypot((p[0] - cx) / rx, (p[2] - cz) / rz));
+    return ech(teinte, (0.66 + 0.34 * haut) * (0.9 + 0.1 * dehors) * (0.9 + 0.2 * g(40 + k)));
+  };
   return { E, g, cx, cz, rx, ry, rz, cy, nVol, nuance };
 }
 
@@ -428,12 +434,14 @@ export function arbreVrai(buf, x, y, z, wx, wz, h, boite, essence, climat = 0) {
     bouts.push(e);
   }
   // les amas : dans l'ellipsoïde de la couronne, du bas vers le haut
-  const n = E.amas || 8, s = (E.carte || 1) * Math.min(1.5, 0.7 + Math.max(rx, rz) * 0.3);
+  // (v541 : plus d'amas, plus larges, jusqu'au bord du volume — la couronne
+  // de la v499 laissait voir le ciel entre ses boules de feuilles)
+  const n = E.amas || 8, s = (E.carte || 1) * Math.min(1.7, 0.8 + Math.max(rx, rz) * 0.32);
   const ryc = E.plat ? Math.max(0.45, ry * 0.5) : ry;
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + g(100 + i) * 0.9;
     const t = E.plat ? 0.5 + (g(110 + i) - 0.5) * 0.3 : 0.2 + g(110 + i) * 0.7;        // la hauteur dans la couronne
-    const rr = E.plat ? Math.sqrt(g(120 + i)) * 0.95 : Math.sqrt(Math.max(0, 1 - (2 * t - 1) ** 2)) * (0.3 + g(120 + i) * 0.55);  // le rayon à cette hauteur
+    const rr = E.plat ? Math.sqrt(g(120 + i)) * 0.95 : Math.sqrt(Math.max(0, 1 - (2 * t - 1) ** 2)) * (0.35 + g(120 + i) * 0.6);  // le rayon à cette hauteur
     const c = [cx + Math.cos(a) * rr * rx, (cy - ryc) + t * 2 * ryc, cz + Math.sin(a) * rr * rz];
     if (E.plat) {
       // une ombrelle : une carte couchée, large, et une petite carte debout
@@ -540,8 +548,10 @@ export function arbreLoin(buf, x, y, z, wx, wz, h, boite, essence, climat = 0) {
     return;
   }
   // (les petites cartes de près — le bouleau — font une couronne plus serrée)
+  // (v541 : quatre cartes debout au lieu de trois — au palier bas ce modèle
+  // est le seul, et vu de près à trois cartes on lisait les plans croisés)
   const c = [cx, cy, cz], rh = (E.carte || 1) < 0.9 ? 0.95 : 1.15;
-  for (let i = 0; i < 3; i++) debout(c, a0 + (i * Math.PI) / 3, i, rh, ry * 1.25, E.feuille);
+  for (let i = 0; i < 4; i++) debout(c, a0 + (i * Math.PI) / 4, i, rh, ry * 1.25, E.feuille);
   couche([cx, cy + ry * 0.3, cz], a0, 3, rh * 0.92, E.feuille);
   couche([cx, cy - ry * 0.25, cz], a0 + 0.7, 4, rh * 0.83, E.feuille);
 }

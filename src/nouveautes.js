@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 541,
+    titre: 'De vraies feuilles',
+    puces: [
+      'Les arbres ont de vraies feuilles',
+      'Des couronnes bien pleines',
+      'Des arbres sur toutes les tablettes',
+    ],
+  },
+  {
     v: 540,
     titre: 'La minicarte toujours là',
     puces: [

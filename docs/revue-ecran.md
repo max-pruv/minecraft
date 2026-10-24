@@ -105,3 +105,24 @@ jour et nuit, et le train vu de près.
   plus profonds), à poser à Max.
 - Vu, non corrigé : la nuit, les fenêtres du train sont noires (aucune vitre
   allumée), alors que celles des villes s'allument.
+
+## Le relevé de la v541 (de vraies feuilles), 24 octobre 2026
+
+Captures dans `docs/revue-ecran/v541/` : la forêt tempérée dense près de
+(−1 560, −2 488), d'avant et d'après (au sol, de près, en vol, au loin), le
+palier bas (`hd=0&arbres=1`), et la revue d'écran sur les deux états neufs
+`foret` et `foret-vol` (iPhone et iPad, jour et nuit). `campagne` est le point
+d'apparition, sans un arbre : la jouer seule ne montrait rien des arbres.
+
+- Corrigé : les couronnes sont pleines et les feuilles se lisent, de près
+  comme en vol ; au palier bas les arbres sont en cartes, plus un cube ; le
+  carré couleur du ciel au pied de chaque bouleau (un trou dans le sol sous le
+  tronc tu) a disparu.
+- Vu, non corrigé : au pied d'un bouleau, un carré de 3 × 3 colonnes d'herbe
+  reste en voxel au ras de la surface continue — même texture, à peine
+  visible (`BIRCH` n'est pas un dessus naturel de `solcontinu.js`, dette dans
+  `TASKS.md`).
+- Vu, non corrigé : les oiseaux (kites noirs) volent bas au-dessus de la forêt
+  et se lisent comme des triangles noirs en vol ; préexistant.
+- Vu, non corrigé : les bêtes (mouton, éléphant) sont en cubes à côté d'arbres
+  en relief ; c'est le bestiaire, pas cette livraison.
