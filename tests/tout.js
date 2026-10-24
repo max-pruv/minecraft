@@ -316,7 +316,7 @@ const GARDIENS = {
 };
 
 // Le banc lui-même : s'il bouge, plus rien de ce qu'il dit n'est acquis.
-const BANC = ['tests/banc.js', 'tests/nuage.js', 'tests/tout.js', 'tests/charge.js', 'tests/couverture.js', 'tests/aiguillage.js'];
+const BANC = ['tests/banc.js', 'tests/nuage.js', 'tests/tout.js', 'tests/charge.js'];
 
 // SAUF QUAND CE QUI BOUGE EST UN DÉLAI OU UN COMMENTAIRE.
 //
@@ -447,172 +447,6 @@ function sondeIsolee(base, f) {
   return true;
 }
 
-// ─── LA SÉLECTION À LA LIGNE (couverture) ───
-//
-// La table dit QUELLES suites gardent un fichier ; la carte de couverture
-// (`couverture.js`) dit QUELLES LIGNES de ce fichier chaque suite exécute.
-// Pour un fichier gardé, on ne rejoue que les gardiens qui exécutent au moins
-// une ligne que le changement touche. C'est une INTERSECTION : aucune suite
-// n'est ajoutée à ce que la table demandait, donc rien de ce que l'ancien
-// aiguillage attrapait ne lui échappe — une suite qui n'exécute pas une ligne
-// ne pouvait pas en voir le défaut.
-//
-// Au moindre doute, la table entière, sans discuter : pas de carte, une carte
-// trop vieille, un commit qui n'est pas un ancêtre, un blob qui ne correspond
-// pas, un fichier que la carte ne connaît pas, un fichier lu par un worker
-// (la couverture ne voit pas les workers), une suite absente de la carte, ou
-// git qui ne répond pas.
-const CARTE_AGE_MAX_JOURS = 7;       // au-delà, la carte se relève : c'est le rejeu complet périodique
-const CARTE_RETARD_MAX = 25;         // commits de `origin/main` depuis la carte, au plus
-
-// CE QU'UNE SUITE LIT EN TEXTE, ELLE EN DÉPEND EN ENTIER. Un témoin qui lit la
-// source d'un fichier (un `readFileSync`, une expression régulière sur le
-// code) voit un changement qu'il n'exécute pas. Chaque lecture est déclarée
-// ici avec ce qu'elle cherche ; `lecturesDeclarees` vérifie à chaque portail
-// que les suites n'en font pas d'autres — sinon la sélection à la ligne se
-// désarme d'elle-même.
-const LECTURES_TEXTE = {
-  'reglages.js': { fichiers: ['src/main.js', 'src/net.js'] },
-  'parent.js': { fichiers: ['src/cloud.js'] },
-  'plafond.js': { fichiers: ['src/arbreshd.js'] },
-  // maj.js relit les clés de stockage de TOUT `src/` (« on ne renomme jamais
-  // ce qui porte les données ») : seul un changement qui en touche une compte.
-  'maj.js': { tout: true, motif: /web-minecraft-/ },
-};
-function lecturesDeclarees(base, table = LECTURES_TEXTE) {
-  for (const s of SUITES) {
-    let src;
-    try { src = fs.readFileSync(path.join(base, 'tests', s), 'utf8'); } catch { return `${s} illisible`; }
-    const lignes = src.split('\n');
-    const vus = new Set();
-    let dossier = false;
-    lignes.forEach((l, i) => {
-      if (!/readFileSync\(|readdirSync\(/.test(l) || /^\s*\/\//.test(l)) return;
-      const contexte = lignes.slice(Math.max(0, i - 4), i + 1).join('\n');
-      if (!/['"`/]src['"`/]|\.\.\/src/.test(contexte)) return;
-      const noms = [...l.matchAll(/(?:['"`]|src\/)([\w-]+\.js)['"`]/g)].map((m) => `src/${m[1]}`);
-      if (noms.length) noms.forEach((n) => vus.add(n)); else dossier = true;
-    });
-    const d = table[s] || { fichiers: [] };
-    if (dossier && !d.tout) return `${s} lit un dossier de src/ sans le déclarer`;
-    for (const n of vus) if (!(d.fichiers || []).includes(n) && !d.tout) return `${s} lit ${n} en texte sans le déclarer`;
-  }
-  return null;
-}
-
-// Les fichiers qu'un worker charge : la couverture du navigateur ne les voit
-// que sur le fil principal, jamais dans le worker. On suit les imports
-// statiques et dynamiques depuis chaque worker du jeu.
-function fermetureDesWorkers(base) {
-  const vus = new Set();
-  const pile = [];
-  try {
-    for (const f of fs.readdirSync(path.join(base, 'src'))) {
-      if (!f.endsWith('.js')) continue;
-      const t = fs.readFileSync(path.join(base, 'src', f), 'utf8');
-      for (const m of t.matchAll(/new\s+Worker\(\s*new URL\(\s*['"]\.\/([\w-]+\.js)['"]/g)) pile.push(`src/${m[1]}`);
-    }
-  } catch { return null; }
-  while (pile.length) {
-    const f = pile.pop();
-    if (vus.has(f)) continue;
-    vus.add(f);
-    let t;
-    try { t = fs.readFileSync(path.join(base, f), 'utf8'); } catch { continue; }
-    for (const m of t.matchAll(/(?:from|import)\s*\(?\s*['"]\.\/([\w-]+\.js)['"]/g)) pile.push(`src/${m[1]}`);
-  }
-  return vus;
-}
-
-let _carte;
-function carteUtilisable(base) {
-  if (_carte !== undefined) return _carte;
-  _carte = { carte: null, pourquoi: 'pas de carte de couverture' };
-  const C = require('./couverture.js');
-  const carte = C.lireCarte();
-  if (!carte) return _carte;
-  const ageJ = (Date.now() - Date.parse(carte.date)) / 86400000;
-  if (!(ageJ <= CARTE_AGE_MAX_JOURS)) { _carte.pourquoi = `carte de ${ageJ.toFixed(0)} jours — npm run couverture`; return _carte; }
-  try {
-    C.git(['merge-base', '--is-ancestor', carte.commit, 'HEAD']);
-    const retard = Number(C.git(['rev-list', '--count', `${carte.commit}..origin/main`]).trim());
-    if (retard > CARTE_RETARD_MAX) { _carte.pourquoi = `carte en retard de ${retard} commits — npm run couverture`; return _carte; }
-  } catch { _carte.pourquoi = 'commit de la carte inconnu ici'; return _carte; }
-  const lectures = lecturesDeclarees(base);
-  if (lectures) { _carte.pourquoi = `lecture de texte non déclarée (${lectures})`; return _carte; }
-  const workers = fermetureDesWorkers(base);
-  if (!workers) { _carte.pourquoi = 'imports des workers illisibles'; return _carte; }
-  _carte = { carte, workers, C };
-  return _carte;
-}
-
-// La table pour ce fichier, affinée par la carte quand elle le peut. Rend
-// toujours des suites : au pire, celles de la table.
-function affiner(base, f, gardiens) {
-  const tel = { suites: gardiens, raison: f, sautees: [] };
-  if (process.env.SANS_CARTE) return tel;
-  if (!/^src\/[\w-]+\.js$/.test(f)) return tel;
-  const u = carteUtilisable(base);
-  if (!u.carte) return { ...tel, raison: `${f} (table : ${u.pourquoi})` };
-  const { carte, workers, C } = u;
-  if (workers.has(f)) return { ...tel, raison: `${f} (table : lu par un worker)` };
-  const fiche = carte.fichiers[f];
-  if (!fiche) return { ...tel, raison: `${f} (table : inconnu de la carte)` };
-  let blob;
-  try { blob = C.git(['rev-parse', `${carte.commit}:${f}`]).trim(); } catch { blob = null; }
-  if (blob !== fiche.blob) return { ...tel, raison: `${f} (table : blob de la carte introuvable)` };
-  // CE QUI A BOUGÉ DEPUIS LA CARTE, DES DEUX CÔTÉS. Une suite qui n'exécute
-  // aucune ligne changée entre la carte et ICI rend ici le verdict qu'elle
-  // rendait à la carte — mais celui-là n'est prouvé vert que sur `origin/main`.
-  // On ajoute donc ce qui a changé entre la carte et `origin/main` : une suite
-  // qui n'exécute rien de tout cela rend le même verdict sur les trois, et
-  // `origin/main` est publiée. Sans la seconde moitié, une branche qui
-  // REVIENT sur une correction de `origin/main` serait jugée « identique à la
-  // carte » et passerait sans la suite qui l'avait vue.
-  const ici = C.lignesTouchees(carte.commit, f);
-  const main = C.lignesTouchees(carte.commit, f, 'origin/main');
-  if (!ici || !main) return { ...tel, raison: `${f} (table : git muet)` };
-  const touchees = [...new Set([...ici, ...main])];
-  if (!touchees.length) return { suites: [], raison: `${f} (identique à la carte)`, sautees: gardiens };
-  let diffTexte = null;
-  const lireDiff = () => {
-    if (diffTexte === null) {
-      try {
-        diffTexte = C.git(['diff', '-U0', '--no-color', carte.commit, '--', f])
-          + C.git(['diff', '-U0', '--no-color', carte.commit, 'origin/main', '--', f]);
-      } catch { diffTexte = false; }
-    }
-    return diffTexte;
-  };
-  const { garde, saute } = decider(f, gardiens, touchees, fiche, carte.suites, LECTURES_TEXTE, lireDiff, C);
-  return {
-    suites: garde,
-    raison: saute.length ? `${f} (carte : ${garde.length}/${gardiens.length} gardiens exécutent les lignes touchées)` : f,
-    sautees: saute,
-  };
-}
-
-// LA DÉCISION, PURE : rien n'y lit le disque ni git, pour qu'un témoin la
-// rejoue sur des cas fabriqués (`aiguillage.js`).
-function decider(f, gardiens, touchees, fiche, suitesCarte, lectures, lireDiff, C) {
-  const garde = [];
-  const saute = [];
-  for (const s of gardiens) {
-    if (!suitesCarte.includes(s)) { garde.push(s); continue; }      // jamais relevée : on ne sait pas
-    const lt = lectures[s];
-    if (lt && ((lt.fichiers || []).includes(f) || lt.tout)) {
-      if (!lt.motif) { garde.push(s); continue; }
-      const d = lireDiff();
-      if (d === false) { garde.push(s); continue; }
-      const bouge = d.split('\n').filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---)/.test(l));
-      if (bouge.some((l) => lt.motif.test(l))) { garde.push(s); continue; }
-    }
-    const plages = C.dePlages((fiche.suites || {})[s]);
-    if (touchees.some((l) => C.dansPlages(plages, l))) garde.push(s); else saute.push(s);
-  }
-  return { garde, saute };
-}
-
 // Ce qu'il faut rejouer pour ce changement-ci. Rend la liste des suites, dans
 // l'ordre du portail, et la raison — qui s'affiche : un choix d'essais qu'on ne
 // peut pas relire est un choix qu'on ne peut pas contester.
@@ -623,7 +457,6 @@ function suitesNecessaires() {
 
   const besoin = new Set();
   const raisons = [];
-  const sautees = [];          // [suite, fichier] : gardien déclaré, mais qui n'exécute aucune ligne touchée
   let tout = false;
   for (const f of changes) {
     if (BANC.includes(f)) {
@@ -631,13 +464,7 @@ function suitesNecessaires() {
       if (gardiensElargis(base, f)) { raisons.push(`${f} (gardiens élargis)`); continue; }
       tout = true; raisons.push(`${f} (le banc)`); continue;
     }
-    if (GARDIENS[f]) {
-      const r = affiner(base, f, GARDIENS[f]);
-      r.suites.forEach((s) => besoin.add(s));
-      raisons.push(r.raison);
-      if (r.sautees.length) sautees.push(...r.sautees.map((s) => [s, f]));
-      continue;
-    }
+    if (GARDIENS[f]) { GARDIENS[f].forEach((s) => besoin.add(s)); raisons.push(f); continue; }
     if (f === 'sw.js') {
       if (swAnodin(base)) { raisons.push('sw.js (version + cache seulement)'); continue; }
       tout = true; raisons.push('sw.js (logique modifiée)'); continue;
@@ -666,28 +493,17 @@ function suitesNecessaires() {
     if (/^tests\/sonde-[\w-]+\.cjs$/.test(f) && sondeIsolee(base, f)) {
       raisons.push(`${f} (sonde, jamais lancée par le portail)`); continue;
     }
-    // LA CARTE DE COUVERTURE NE CHANGE RIEN AU JEU : elle ne décide que de ce
-    // qu'on rejoue la fois suivante. Elle se relève par un portail COMPLET
-    // (`npm run couverture`), et ce qui la rend sûre se vérifie à chaque lecture
-    // (son commit est un ancêtre, ses blobs sont les siens). Une carte qui ne
-    // passe pas ces contrôles est simplement ignorée : on retombe sur la table.
-    if (f === 'tests/carte-couverture.json') { raisons.push(`${f} (carte de couverture)`); continue; }
     // Contenu : décor, villes, monuments, créatures, journaux. Le témoin de
     // fumée les couvre — il charge le jeu, le joue et pose un bâtiment.
     if (/^src\/[\w-]+\.js$/.test(f) || /\.(md|png|webmanifest)$/.test(f)) continue;
     // Tout le reste : on ne sait pas, donc on ne parie pas.
     tout = true; raisons.push(`${f} (inconnu)`);
   }
-  if (tout) return { suites: SUITES, pourquoi: raisons.join(', '), sautees: [] };
+  if (tout) return { suites: SUITES, pourquoi: raisons.join(', ') };
   const liste = SUITES.filter((s) => besoin.has(s));
-  // Une suite sautée pour UN fichier peut être demandée par un autre : on ne
-  // dit « sautée » que de celles qui ne tournent pas du tout.
-  const vraimentSautees = new Map();
-  for (const [s, f] of sautees) if (!besoin.has(s)) vraimentSautees.set(s, [...(vraimentSautees.get(s) || []), f]);
   return {
     suites: liste,
     pourquoi: raisons.length ? raisons.join(', ') : `${changes.length} fichier(s) de contenu`,
-    sautees: [...vraimentSautees].map(([s, fs2]) => `${s} (gardien de ${fs2.join(', ')}, n'en exécute aucune ligne touchée)`),
   };
 }
 // La durée de chaque suite, lue dans le commentaire de `SUITES` — la seule
@@ -852,20 +668,14 @@ async function reposer() {
   if (r.motif !== 'libre') console.log(`   🧘 repos : ${(r.ms / 1000).toFixed(1)} s · ${r.motif} · ${r.occupation.toFixed(2)} cœur(s) encore occupé(s)`);
 }
 
-// `--couverture` : chaque suite tourne instrumentée (`couverture.js`, chargé
-// par `-r`), et ses relevés tombent dans COUVERTURE_DIR.
-const COUVERTURE = process.argv.includes('--couverture')
-  ? path.join(require('os').tmpdir(), `couverture-${Date.now()}`) : null;
 function lancer(fichier) {
   return new Promise((ok) => {
-    const args = COUVERTURE ? ['-r', './couverture.js', fichier] : [fichier];
-    const env = COUVERTURE ? { ...process.env, COUVERTURE_DIR: COUVERTURE, COUVERTURE_SUITE: fichier } : process.env;
-    const p = spawn(process.execPath, args, { stdio: 'inherit', cwd: __dirname, env });
+    const p = spawn(process.execPath, [fichier], { stdio: 'inherit', cwd: __dirname });
     p.on('close', (code) => ok(code === 0));
   });
 }
 
-module.exports = { SUITES, GARDIENS, LECTURES_TEXTE, DUREE_MESUREE, trancher, suitesNecessaires, affiner, decider, lecturesDeclarees, fermetureDesWorkers };
+module.exports = { SUITES, GARDIENS, DUREE_MESUREE, trancher, suitesNecessaires };
 
 if (require.main === module) (async () => {
   // `--tempo=1` (v501) : le tour de nuit, minuteries du jeu à l'échelle
@@ -881,21 +691,11 @@ if (require.main === module) (async () => {
   let aJouer = SUITES;
   let fumeeRouge = false;
   if (process.argv.includes('--voie') && !process.argv.includes('--long')) {
-    // L'AIGUILLAGE SE PROUVE AVANT DE CHOISIR (une seconde, sous node) : un
-    // choix faux rendrait un portail vert et aveugle.
-    if (!(await lancer('aiguillage.js'))) {
-      console.log('\n❌ l\'aiguillage n\'est pas sûr — on ne publie pas (npm run long rejoue tout)');
-      process.exit(1);
-    }
-    const { suites, pourquoi, sautees } = suitesNecessaires();
+    const { suites, pourquoi } = suitesNecessaires();
     aJouer = suites;
     console.log(`🎯 ${suites.length === SUITES.length ? 'tout le portail' : `${suites.length + 1} suite(s)`}`
       + ` — ${pourquoi}`);
-    console.log(`   fumee.js${suites.length ? ' + ' + suites.join(', ') : ' seul'}`);
-    // CE QU'ON SAUTE SE DIT, avec sa raison : un choix d'essais qu'on ne peut
-    // pas relire est un choix qu'on ne peut pas contester.
-    for (const s of sautees) console.log(`   ⏭️  sautée : ${s}`);
-    console.log('');
+    console.log(`   fumee.js${suites.length ? ' + ' + suites.join(', ') : ' seul'}\n`);
     // Le témoin de fumée passe TOUJOURS en premier : trois minutes qui
     // attrapent un module qui ne charge pas, avant d'en dépenser cinquante.
     // ET UN ROUGE DE FUMÉE CACHE L'ÉTAT DES DOUZE AUTRES SUITES.
@@ -1007,21 +807,6 @@ if (require.main === module) (async () => {
     console.log(`   ─────────────`);
     console.log(`   ${Math.floor(joue / 60)} min de suites · ${Math.floor((total - joue) / 60)} min `
       + `d'attente entre elles · ${Math.floor(total / 60)} min en tout`);
-  }
-  // LA CARTE SE RELÈVE MÊME SI UNE SUITE A ROUGI : elle décrit ce qui
-  // s'EXÉCUTE, pas ce qui passe. Mais elle ne se relève que si toutes les
-  // suites ont tourné — une suite absente de la carte se rejouerait toujours,
-  // ce qui est prudent, mais une carte partielle ne doit pas se faire passer
-  // pour un portail complet.
-  if (COUVERTURE) {
-    const joues = new Set(durees.map(([s]) => s));
-    if (SUITES.every((s) => joues.has(s))) {
-      try {
-        const c = require('./couverture.js').fabriquerCarte([COUVERTURE]);
-        console.log(`\n🗺️  carte de couverture relevée : ${c.suites.length} suites, `
-          + `${Object.keys(c.fichiers).length} fichiers, commit ${c.commit.slice(0, 7)}, passage ${c.passages}`);
-      } catch (e) { console.log(`\n⚠️  carte de couverture non écrite : ${e.message}`); }
-    } else console.log('\n⚠️  carte de couverture non écrite : il faut le portail entier (--depuis-zero)');
   }
   const tout = verdicts.every(([, v]) => v) && !fumeeRouge;
   if (fumeeRouge) console.log('❌ fumee.js');
