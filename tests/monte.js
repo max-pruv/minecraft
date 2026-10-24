@@ -7697,13 +7697,23 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       // vingt blocs par seconde l'herbe gronde (60-300 Hz) et la caméra
       // tremble ; la pierre, non —
       const placer = (dz, v) => { P.pos.set(x0 + 2, y0 + 1.05, z0 + dz); P.yaw = -Math.PI / 2; P.vitesseVoiture = v; P.vel.set(0, 0, 0); P.derive = 0; P.braquage = 0; P.glissade = null; a.pos.copy(P.pos); a.mesh.position.copy(P.pos); };
+      // LE TÉMOIN FIXE SA MÉTÉO (v279 : un témoin se place lui-même) : la
+      // pluie se tire au sort dans la page, et elle mouille aussi la pierre —
+      // le premier portail était sec, le second sous la pluie (pierre 0,8).
+      // On mesure à sec, puis sous une pluie posée exprès.
+      const pluieDuJeu = P.pluie;
+      P.pluie = () => true;
       placer(-6, 0); await tenir(0.3);
-      out.surface = { pierre: { s: P.surface, adh: P.adherence } };
+      const pierreMouillee = { s: P.surface, adh: P.adherence, regle: C.adherenceDeSurface('route', true) };
+      P.pluie = () => false;
+      placer(-6, 0); await tenir(0.3);
+      out.surface = { pierre: { s: P.surface, adh: P.adherence }, pierreMouillee };
       placer(6, 0); await tenir(0.3);
       out.surface.herbe = { s: P.surface, adh: P.adherence, regle: C.adherenceDeSurface('herbe') };
       const rouler = async (dz) => { placer(dz, 20); P.touchMove.f = 1; await tenir(0.6); const b = await bandeMax(1.2, 60, 300); const r = { bande: b, vib: a.sens ? +a.sens.vibration.toFixed(4) : null, v: +(P.vitesseVoiture || 0).toFixed(1), s: P.surface }; P.touchMove.f = 0; return r; };
       out.surface.roulePierre = await rouler(-6);
       out.surface.rouleHerbe = await rouler(6);
+      P.pluie = pluieDuJeu;
       // — LES FEUX STOP ET DE RECUL : en roulant rien, au freinage le rouge,
       // en marche arrière le blanc, à l'arrêt lâché plus rien —
       const feux = () => { const fa = a.mesh.userData.feuxArriere; return fa ? { vis: fa.visible, stops: fa.userData.stops.map((s) => s.visible), reculs: fa.userData.reculs.map((s) => s.visible), n: fa.userData.stops.length } : { vis: false, stops: [], reculs: [], n: 0 }; };
@@ -7757,8 +7767,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !gtaV.err && gK.pendant - gK.avant >= 12 && gK.pendant - gK.apres >= 10 && gK.evenement && (gK.passant === null || gK.passant >= 1),
       `${gtaV.err || ''} ${JSON.stringify(gK)}`);
     const gS = gtaV.surface || {};
-    verifier('la route sous les roues : la pierre tient, l\'herbe moins — et sur l\'herbe la voiture gronde et tremble',
-      !gtaV.err && gS.pierre && gS.pierre.s === 'route' && gS.pierre.adh === 1 && gS.herbe && gS.herbe.s === 'herbe' && gS.herbe.adh === gS.herbe.regle && gS.herbe.adh < 0.8
+    verifier('la route sous les roues : la pierre tient, la pluie la mouille, l\'herbe moins — et sur l\'herbe la voiture gronde et tremble',
+      !gtaV.err && gS.pierre && gS.pierre.s === 'route' && gS.pierre.adh === 1 && gS.pierreMouillee && gS.pierreMouillee.adh === gS.pierreMouillee.regle && gS.pierreMouillee.adh < 1 && gS.herbe && gS.herbe.s === 'herbe' && gS.herbe.adh === gS.herbe.regle && gS.herbe.adh < 0.8
         && gS.rouleHerbe.bande - gS.roulePierre.bande >= 5 && gS.rouleHerbe.vib > 0.02 && gS.roulePierre.vib < 0.005 && gS.rouleHerbe.v < gS.roulePierre.v,
       `${gtaV.err || ''} ${JSON.stringify(gS)}`);
     const gF = gtaV.feux || {};
