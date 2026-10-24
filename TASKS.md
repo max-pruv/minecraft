@@ -1,8 +1,8 @@
 # Ce qui est en cours
 
-## v541 — LA VOITURE COMME DANS GTA : les rouges du portail
+## v542 — LA VOITURE COMME DANS GTA : les rouges du portail
 
-- [ ] **Rouges du portail de la v541 (la voiture comme dans GTA), tous déjà
+- [ ] **Rouges du portail de la v542 (la voiture comme dans GTA), tous déjà
   déclarés ou réglés.** `degats.js` « feux de détresse SUR la carrosserie » :
   réglé ici (cache des poses rempli sur une voiture froissée), 2/2 verte.
   `monte.js` rejouée seule jusqu'au bout sur la branche : tous les témoins de la
@@ -151,7 +151,7 @@
   bute chez lui) ; un fût tombé vers la chaussée peut y dépasser, et les
   voitures de la rue passent au travers ; les arbres de rue (`LOG`) restent
   durs.
-- [ ] **La conduite à la GTA (v541), ce qui reste, déclaré.** (1) Le klaxon
+- [ ] **La conduite à la GTA (v542), ce qui reste, déclaré.** (1) Le klaxon
   de l'enfant ne voyage pas par le réseau : un ami ne l'entend pas (un message
   court `klaxon`, nom neuf, l'hôte relaie, le receveur cède — comme
   `portiere`, v377). (2) Les feux stop de la voiture d'un AMI ne s'allument
@@ -377,7 +377,7 @@ pendant la marche, `monte.js` les rouges ci-dessus.
   sur la branche : 6 verts sur 6. La v533 ne touche ni l'approche ni le
   bandeau ; elle allume des feux sur le maillage de l'avion. À rejouer en
   distribution (v269) le jour où il revient, avec la cadence dans le message.
-- [x] **(Réglé en v541 : la cause n'était pas le capot de la Bolide mais le
+- [x] **(Réglé en v542 : la cause n'était pas le capot de la Bolide mais le
   cache des poses, rempli sur une voiture de la rue déjà froissée — on ne garde
   plus que des poses mesurées sur une tôle intacte ; `degats.js` 2/2 verte.)**
   **`degats.js` « les feux de détresse se posent SUR la carrosserie » :

@@ -74,7 +74,7 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
       faux.length === 0 && TEMPO === 1 && t(20000) === 20000,
       faux.join(' · ') || `${ATTENDUS.length} cadences relues, tempo ${TEMPO}`);
 
-    // LA RADIO A UN PROGRAMME (v541, `radio.js`, pur). Cinq stations de trois
+    // LA RADIO A UN PROGRAMME (v542, `radio.js`, pur). Cinq stations de trois
     // morceaux ; chaque morceau commence par le jingle de sa station, sans
     // batterie ; le programme est une fonction de l'HEURE RÉELLE — la même
     // heure rend le même pas, et trois croches de plus avancent de trois pas —,

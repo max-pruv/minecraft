@@ -223,7 +223,7 @@ function poursuiteVoiture(a, player, dt, m) {
     x += cy * ox; z -= sy * ox; y += oy;
     roulisCam = amp * 0.09 * Math.sin(S.tSecousse * 37);
   }
-  // LA VIBRATION DE LA ROUTE (v541) : sur l'herbe, le gravier, le sable, la
+  // LA VIBRATION DE LA ROUTE (v542) : sur l'herbe, le gravier, le sable, la
   // caméra tremble un peu, d'autant plus qu'on va vite — rien sur l'asphalte.
   // Deux sinus encore, jamais un hasard par image.
   if (S.vibration > 0.0015) {
@@ -542,7 +542,7 @@ export function sensationsAuVolant(a, player, dt) {
     freinMain ? 0.75 : 0,
     Math.abs(m.lat) > 16 ? (Math.abs(m.lat) - 16) / 14 : 0));
   a.sens.crisse += (crisseVise - a.sens.crisse) * Math.min(1, dt * 8);
-  // LA ROUTE SOUS LES ROUES (v541) : hors de l'asphalte, un grondement qui
+  // LA ROUTE SOUS LES ROUES (v542) : hors de l'asphalte, un grondement qui
   // monte avec la vitesse, et la caméra qui tremble d'autant. La surface est
   // publiée par la physique (`player.surface`), la rugosité est une règle
   // pure de conduite.js — l'oreille et l'œil lisent la même.

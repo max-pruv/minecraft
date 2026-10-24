@@ -733,7 +733,7 @@ export class Player {
     const r = this.lectureCaisse();
     return r ? r.pente : null;
   }
-  // LA ROUTE SOUS LES ROUES (v541) : le bloc que les roues touchent, sous le
+  // LA ROUTE SOUS LES ROUES (v542) : le bloc que les roues touchent, sous le
   // milieu de la caisse et sous le nez (la plus mauvaise des deux surfaces
   // compte — on freine dès que le nez quitte la route). Un tablier est une
   // route. On descend jusqu'à trois blocs sous les pieds : la surface
@@ -1331,7 +1331,7 @@ export class Player {
       // qu'il agit (`freinMainTire`) pour qui voudrait le dessiner ou l'entendre.
       const freinMain = !!this.freinMain || k.has('Space');
       this.freinMainTire = freinMain && !inerte;
-      // LA ROUTE SOUS LES ROUES ET LA PLUIE (v541) : la surface se lit sous
+      // LA ROUTE SOUS LES ROUES ET LA PLUIE (v542) : la surface se lit sous
       // la caisse, la pluie se demande à main.js (`pluie`, lu si présent), et
       // l'adhérence qui en sort entre dans la dynamique. Publiés pour qui
       // veut l'entendre (le roulement) ou le voir (`?diag=1`).

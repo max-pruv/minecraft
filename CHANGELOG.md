@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v541 — La voiture, comme dans GTA
+## v542 — La voiture, comme dans GTA
 
 **Pourquoi.** Max : « améliore la conduite pour qu'elle ressemble à GTA —
 comment elle réagit à l'environnement, aux autres voitures, la musique, le son,

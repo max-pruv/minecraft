@@ -1043,7 +1043,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // tourne bien plus que le volant ne le dit ; lâché, elle se remet dans l'axe
   // PEU À PEU. Sur l'ancien code le frein à main n'existe pas : la caisse
   // tourne comme au seul volant (rapport 1).
-  // LA ROUTE SOUS LES ROUES (v541). `pasVoiture` lit `entree.adherence` :
+  // LA ROUTE SOUS LES ROUES (v542). `pasVoiture` lit `entree.adherence` :
   // 1 sur la route, moins sur l'herbe, le sable, la neige, et moins encore
   // sous la pluie (`adherenceDeSurface`). Deux promesses, et la première est
   // celle qui garde tout le reste : SANS adhérence donnée (l'appelant

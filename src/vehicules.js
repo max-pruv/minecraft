@@ -2174,7 +2174,7 @@ class Convoi {
       m.visible = true;
       if (this.routier) {
         feuxDeDetresse(m, this.heurte[i] > 0);
-        // LES FEUX STOP DE LA RUE (v541) : une voiture qui attend (un feu,
+        // LES FEUX STOP DE LA RUE (v542) : une voiture qui attend (un feu,
         // l'enfant, une file) ou qui perd de la vitesse freine ; une voiture
         // heurtée aussi. On lit sa vitesse LOCALE d'une image à l'autre.
         const vl = this.vLoc[i] >= 0 ? this.vLoc[i] : this.vGrilleDe(i);
@@ -2286,7 +2286,7 @@ export function posesDetresse(m) {
   m.position.set(0, 0, 0); m.quaternion.identity(); m.updateMatrixWorld(true);
   const meshes = [], feux = { av: new THREE.Box3(), ar: new THREE.Box3() };
   const boite = new THREE.Box3(), b = new THREE.Box3();
-  // UNE TÔLE FROISSÉE NE FAIT PAS LA RÈGLE DU MODÈLE (v541). Les poses se
+  // UNE TÔLE FROISSÉE NE FAIT PAS LA RÈGLE DU MODÈLE (v542). Les poses se
   // gardent par modèle ; mesurées sur une voiture de la rue déjà enfoncée
   // (`degats3d` lui donne une géométrie à elle, sans la marque `partagee` du
   // prototype), elles tombaient dans la bosse, et toutes les voitures neuves
@@ -2371,7 +2371,7 @@ export function feuxDeDetresse(m, allumes) {
   }
   g.visible = detresseAllumee();
 }
-// LES FEUX STOP ET DE RECUL (v541). Max : « jusqu'au design des voitures ».
+// LES FEUX STOP ET DE RECUL (v542). Max : « jusqu'au design des voitures ».
 // Une voiture qui freine s'allume en rouge à l'arrière, une qui recule en
 // blanc : c'est ce qu'on lit sur une voiture devant soi, et rien dans le jeu
 // ne le disait. Les lentilles se posent sur les DEUX poses arrière de
@@ -2607,7 +2607,7 @@ export function voituresDuCircuit(longueur) {
   return Math.max(6, Math.min(60, Math.round(longueur / 18)));
 }
 
-// Le klaxon de la rue (v541) : la patience avant le premier coup, l'écart
+// Le klaxon de la rue (v542) : la patience avant le premier coup, l'écart
 // entre deux, et le ton d'une voiture, tiré de sa clé et de son rang pour
 // que deux klaxons ne se ressemblent pas (0,86 à 1,14).
 export const KLAXON_PATIENCE = 2.5;   // secondes réelles derrière l'enfant
@@ -3521,7 +3521,7 @@ export function createVehicules({ scene, player }) {
       c.cible[i] = cible;
       c.urgence[i] = a.contact && cible === a.cible ? 1 : 0;
       c.cause[i] = a.cause === 'feu' || a.cause === 'file-feu' ? 1 : a.cause ? 2 : 0;
-      // LA RUE KLAXONNE (v541). Une voiture arrêtée derrière la voiture de
+      // LA RUE KLAXONNE (v542). Une voiture arrêtée derrière la voiture de
       // l'ENFANT (pas un ami, pas un piéton, pas un feu) s'impatiente : au
       // bout de `KLAXON_PATIENCE` secondes réelles, un coup de klaxon, puis
       // elle attend encore avant le suivant. Elle n'avance pas pour autant
@@ -3973,7 +3973,7 @@ export function createVehicules({ scene, player }) {
     },
     // pour les tests : heurter la voiture de la rue la plus proche d'un point
     heurter,
-    // LE KLAXON DE LA RUE (v541) : main.js branche ce qui le fait entendre
+    // LE KLAXON DE LA RUE (v542) : main.js branche ce qui le fait entendre
     brancherKlaxon(fn) { klaxonneur = fn; },
     // pour les tests : un point du tracé, en avant de la tête du convoi, là
     // où l'on peut aller attendre son passage
