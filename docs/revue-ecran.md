@@ -105,7 +105,37 @@ jour et nuit, et le train vu de près.
   plus profonds), à poser à Max.
 - Vu, non corrigé : la nuit, les fenêtres du train sont noires (aucune vitre
   allumée), alors que celles des villes s'allument.
+
+## Le relevé de la v541 (de vraies feuilles), 24 octobre 2026
+
+Captures dans `docs/revue-ecran/v541/` : la forêt tempérée dense près de
+(−1 560, −2 488), d'avant et d'après (au sol, de près, en vol, au loin), le
+palier bas (`hd=0&arbres=1`), et la revue d'écran sur les deux états neufs
+`foret` et `foret-vol` (iPhone et iPad, jour et nuit). `campagne` est le point
+d'apparition, sans un arbre : la jouer seule ne montrait rien des arbres.
+
+- Corrigé : les couronnes sont pleines et les feuilles se lisent, de près
+  comme en vol ; au palier bas les arbres sont en cartes, plus un cube ; le
+  carré couleur du ciel au pied de chaque bouleau (un trou dans le sol sous le
+  tronc tu) a disparu.
+- Vu, non corrigé : au pied d'un bouleau, un carré de 3 × 3 colonnes d'herbe
+  reste en voxel au ras de la surface continue — même texture, à peine
+  visible (`BIRCH` n'est pas un dessus naturel de `solcontinu.js`, dette dans
+  `TASKS.md`).
+- Vu, non corrigé : les oiseaux (kites noirs) volent bas au-dessus de la forêt
+  et se lisent comme des triangles noirs en vol ; préexistant.
+- Vu, non corrigé : les bêtes (mouton, éléphant) sont en cubes à côté d'arbres
+  en relief ; c'est le bestiaire, pas cette livraison.
+
+## Le relevé de la v542 (la voiture comme dans GTA), 24 octobre 2026
+
+Captures dans `docs/revue-ecran/v542-volant/` : `volant-arret`, `volant-roule`
+et `voiture-rue-percutee`, iPhone et iPad, jour et nuit. Rien ne se recouvre :
+radio, klaxon, « Descendre » et frein à main tiennent dans la colonne de
+droite, hors du quart du joystick, aux deux tailles.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
 | 22 | moyenne | au volant (v542), iPhone et iPad | [v542](revue-ecran/v542-volant/iphone-volant-arret-jour.jpg) | L'icône du **klaxon** est un haut-parleur : un enfant peut la lire comme « le son », pas comme l'avertisseur. Le mot est dans `aria-label`, pas à l'écran. | Un cornet d'avertisseur dessiné (`ICONES.klaxon`), jugé sur une capture à 430 × 932. | `src/commandes.js` |
 | 23 | moyenne | au volant de nuit (v533, revu en v542) | [v542](revue-ecran/v542-volant/iphone-volant-roule-nuit.jpg) | Vus de la caméra de poursuite, les **cônes des phares** dessinent deux triangles clairs qui flottent au-dessus du capot, et les deux lentilles se lisent comme des ronds blancs posés sur le toit. | Raccourcir ou estomper le cône près de la voiture, ou ne pas le dessiner quand la caméra est derrière. | `src/phares.js` |
 | 24 | basse | voiture de la rue percutée, de nuit (v542) | [v542](revue-ecran/v542-volant/iphone-voiture-rue-percutee-nuit.jpg) | Sur la carrosserie blanche de la fourgonnette, les **feux de détresse** additifs virent au rose saumon : ils sont sur la tôle, mais on les lit mal comme des clignotants orange. | Une teinte plus saturée (moins de rouge additif sur fond clair), jugée sur la même capture. | `src/vehicules.js` (`feuxDeDetresse`) |
-

@@ -59,6 +59,62 @@ pouvaient flotter devant sa carrosserie (la Bolide, déclarée depuis la v540),
 parce que leurs poses se mettaient en cache sur une voiture déjà froissée. Le
 témoin de `degats.js` qui le voyait est vert deux fois sur deux.
 
+---
+
+## v541 — De vraies feuilles, et des arbres pour tous
+
+**Pourquoi.** Max, devant les arbres de la v499 : « Les arbres sont décevants,
+je veux qu'on arrête d'avoir des formats Minecraft en carré, je veux des vrais
+feuillages, des choses extrêmement réalistes comme GTA. » Deux causes, lues
+avant d'écrire une ligne. De près, une couronne était une dizaine de boules de
+confettis avec le ciel entre elles : la tuile de feuilles semait deux cent
+trente points de six texels. Et l'iPad de la famille jouait au palier bas
+(hd 0, la sûreté de la v509), où les arbres restaient des CUBES — trois
+livraisons d'arbres qui ne l'ont jamais atteint, la régression de réglage de
+la v291 une fois de plus.
+
+**Ce que ça change.**
+- La tuile de feuilles est faite de vraies feuilles : cent soixante limbes
+  pointus de quinze à vingt-deux texels, une nervure claire, un bord sombre,
+  les feuilles du fond dans l'ombre de celles de devant ; le bord de l'amas ne
+  porte que des feuilles isolées, et c'est lui qui dessine la silhouette.
+- De près, une couronne est pleine : plus d'amas (un chêne en a quatorze au
+  lieu de dix, un bouleau neuf au lieu de six), des cartes plus larges,
+  posées jusqu'au bord du volume, et une teinte qui s'assombrit vers le bas et
+  vers le cœur de la frondaison — la lumière vient du haut et du dehors.
+- Au loin, un feuillu porte quatre cartes debout au lieu de trois : on ne lit
+  plus les plans croisés quand on s'en approche avant que le détail n'arrive.
+- **Tout palier a ses arbres.** Sur une vraie carte graphique, le palier bas
+  les dessine aussi — le modèle lointain partout, qui coûte moins que les cubes
+  qu'il remplace (neuf morceaux de forêt dense : 1 293 Ko de cubes contre
+  1 074 Ko plus 46 Ko de cartes, 10 506 contre 9 254 triangles). Le matériau de
+  la couche et ses deux programmes se compilent pendant la préparation, plus
+  jamais au premier arbre. Le rendu logiciel (le banc) garde la règle de la
+  couche ; `?arbres=1` l'y force, `?arbres=0` coupe partout. `?diag=1` dit
+  « arbres en cartes » ou « en cubes », et le journal de bord le note.
+- Plus de trou au pied des bouleaux : un carré couleur du ciel, vu à la revue
+  d'écran, était la face du sol que le cube du tronc tu ne découvrait pas.
+  Contre un cube d'arbre tu, le mailleur dessine la face comme contre de
+  l'air.
+
+**Ce qui le prouve.** Deux témoins neufs dans `parishd.js`, rouges sur
+l'ancien code : au palier bas (`hd=0&arbres=1`), dans la forêt, chaque morceau
+porte ses arbres en cartes, aucun modèle proche, un fût plus fin que son cube ;
+et la clé de programme de la couche est là avant d'entrer en jeu, aucune clé
+neuve en arrivant dans la forêt. Le témoin du relais proche → loin de
+`plafond.js` reste vert pour les neuf essences (même boîte, même couleur à
+15 % près, moins d'un quart des sommets) ; un témoin neuf y lit le sol sous un
+bouleau, armé contre désarmé, et la conservation des faces compte celles
+qu'un cube tu découvre. Portail complet : six suites vertes, et les rouges de
+`monte.js`, `reglages.js` et `washington.js` sont tous des dettes déclarées
+(double mesure faite aux portails précédents ; `washington.js` et
+`parishd.js` rejouées seules, vertes). Les captures d'avant et d'après —
+forêt au sol, de près, en vol, au loin, le palier bas — et la revue d'écran
+(états neufs `foret` et `foret-vol`, iPhone et iPad, jour et nuit) sont dans
+`docs/revue-ecran/v541/`.
+
+---
+
 ## v540 — La minicarte toujours là
 
 **Pourquoi.** Max : « Il faut trouver une solution pour mettre la mini-carte

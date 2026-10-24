@@ -13952,3 +13952,69 @@ leurs cubes. Quatre règles.
   d'un arbre dont la base est dans un morceau pas encore maillé manque (dans
   le brouillard) ; le palier bas et le rendu logiciel gardent les cubes (pas de
   couche HD) ; le paysage lointain (horizon.js) n'a pas d'arbres du tout.
+
+## De vraies feuilles, et des arbres pour tous (v541) — une couche se chauffe là où elle peut naître, et un feuillage se juge en capture
+
+Max : « Les arbres sont décevants, je veux qu'on arrête d'avoir des formats
+Minecraft en carré, je veux des vrais feuillages, des choses extrêmement
+réalistes comme GTA. » Quatre règles.
+
+- **AVANT DE REDESSINER, ON LIT CE QUE CHAQUE APPAREIL JOUE (v532).** Le
+  journal de bord (`journal_appareil`, des données d'appareil) a dit deux
+  choses : le téléphone de Max joue au palier haut (hd 6) et voit les modèles
+  de la v499 ; l'iPad de la famille joue au palier BAS par sûreté (hd 0) et
+  n'a jamais vu que des cubes. Un seul signalement, deux pannes : la qualité du
+  feuillage, et une couche que tout un palier ne recevait pas.
+- **LES ARBRES NE DÉPENDENT PLUS DE LA PORTÉE HD.** `world.arbres` (main.js)
+  vaut 1 sur toute vraie carte graphique, quel que soit le palier : à portée du
+  détail le modèle proche, ailleurs — et au palier bas partout — le modèle
+  lointain, qui coûte MOINS que les cubes qu'il remplace (neuf morceaux de forêt
+  dense sous node : 1 293 Ko → 1 074 + 46 Ko, 10 506 → 9 254 triangles). Le
+  rendu logiciel garde la règle de la couche (v287) ; `?arbres=1` force,
+  `?arbres=0` coupe. Un réglage qui éteint une couche se demande ce qu'il
+  éteint d'autre : `hd 0` était écrit pour les façades de Paris, et il
+  emportait les arbres de toute la carte.
+- **UNE COUCHE SE CHAUFFE À L'ACCUEIL DÈS QU'UN PALIER PEUT LA DEMANDER.** Le
+  matériau HD naissait au premier morceau qui le demandait ; au palier bas,
+  c'eût été le premier arbre après « Jouer » — un programme et une PMREM
+  compilés en jeu (v246). `chaufferLaCoucheHD` le fabrique pendant la
+  préparation et le compile vers l'écran ET vers la cible des reflets (le
+  décor y est dessiné, v245), comme les feux (v306). Le témoin lit les CLÉS :
+  celle de la couche est là avant d'entrer, aucune neuve dans la forêt.
+- **UN FEUILLAGE SE JUGE EN CAPTURE, ET LA CAUSE SE LIT DANS LA TUILE.** La
+  tuile `feuilles` de la v499 semait deux cent trente points de six texels :
+  de près, une carte était un nuage de confettis, et une couronne dix boules
+  éparses avec le ciel entre elles — vu en capture au sol, pas au témoin, qui
+  compte des sommets et des tuiles. Une feuille est un LIMBE (quinze à
+  vingt-deux texels, pointu, nervure claire, bord sombre), les feuilles du fond
+  plus sombres que celles de devant, le bord de l'amas en feuilles isolées
+  pour la silhouette. La couronne proche gagne des amas et des cartes jusqu'au
+  bord du volume ; sa nuance s'assombrit vers le bas ET vers le cœur. Le
+  témoin du relais proche → loin (v528) borne ce qu'on peut faire : la couleur
+  moyenne des deux modèles à 15 % près — une nuance radiale trop forte le
+  rougit (mesuré à 0,87 pour une barre de 0,85, adoucie à 0,90). Les captures
+  d'avant et d'après vont dans la PR, au sol, de près, en vol, au loin, et au
+  palier bas — et la revue d'écran a désormais ses états `foret` et
+  `foret-vol` : `campagne` est le point d'apparition, sans un arbre, et la
+  jouer seule ne prouvait rien des arbres.
+- **UN CUBE TU LAISSE VOIR CE QU'IL CACHAIT, ET C'EST LA CAPTURE QUI L'A DIT.**
+  Au pied de chaque bouleau, un carré uniforme couleur du ciel (173, 210,
+  221) : pas une tuile, un TROU. Le cube du tronc se tait depuis la v528, mais
+  la face du dessus du bloc de sol sous lui n'avait jamais été émise — contre
+  un bloc plein, `shouldRenderFace` dit non — et par le trou on voyait le ciel
+  à travers la terre. Sous un chêne, la surface continue recouvre le trou par
+  chance (`LOG` est un dessus naturel de `DESSUS_NATUREL`, `BIRCH` non) ; au
+  palier bas, où tout arbre est en cartes depuis cette livraison, le trou se
+  voyait sous tous les bouleaux. J'ai d'abord accusé `DESSUS_NATUREL` et un
+  patch d'herbe en voxel : une sonde sous node qui imprime les faces du
+  dessus autour du pied, avec leur rectangle de tuile, a montré des faces
+  d'herbe vertes — et une couleur uniforme qui n'est celle d'aucune tuile est
+  celle du fond. Le mailleur émet désormais une face contre un cube d'arbre tu
+  comme contre de l'air (sans fusion, comptée dans `facesSousArbre`), et la
+  conservation des faces de `plafond.js` les compte ; un témoin lit le sol
+  sous un bouleau, armé contre désarmé. **Ce chemin n'existe que si les arbres
+  sont armés** (`arbresTus`) : désarmés, le mailleur rend les tampons d'avant
+  au bit près, ce qui garde l'empreinte des 490 morceaux sans rien déclarer,
+  et c'est la preuve structurelle (v291) qui dispense de rejouer les dix-sept
+  gardiens de `mesher.js` — seules `plafond.js` et `parishd.js` arment les
+  arbres, et toutes deux sont rejouées seules.

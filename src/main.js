@@ -644,10 +644,21 @@ world.hd = RAYON_HD > 0 ? 1 : 0;
 // cubes se taisent ; au-delà, chaque arbre garde sa couronne en quelques
 // cartes (`arbresLoin`, v528) — plus un cube d'arbre à aucune distance.
 // Même portée, même budget, même matériau que le détail de Paris : rien de
-// neuf à compiler, un appel de dessin par morceau. Coupés avec la couche (rendu logiciel, palier bas) ; `?arbres=0`
-// les coupe seuls, pour mesurer ; `?hd=N&arbres=1` les force au banc.
+// neuf à compiler, un appel de dessin par morceau.
+//
+// ET LES ARBRES NE DÉPENDENT PLUS DE LA PORTÉE HD (v541). Max : « je veux des
+// vrais feuillages, des choses extrêmement réalistes comme GTA » — et l'iPad
+// de la famille jouait au palier BAS (hd 0, la sûreté de la v509), donc en
+// cubes : trois livraisons d'arbres qui ne l'atteignaient pas, la régression
+// de réglage de la v291 une fois de plus. Sur une vraie carte graphique, tout
+// palier dessine ses arbres : à portée du détail le modèle proche, ailleurs —
+// et au palier bas partout — le modèle lointain, quelques cartes de la
+// couronne, MOINS lourd que les cubes qu'il remplace (mesuré sous node sur
+// neuf morceaux de forêt dense : 1 293 Ko de cubes → 1 074 Ko + 43 Ko de
+// cartes, 10 506 → 9 218 triangles). En rendu logiciel la couche reste coupée
+// (le banc, v287) ; `?arbres=1` l'y force, `?arbres=0` coupe partout.
 const ARBRES_DEMANDES = new URLSearchParams(location.search).get('arbres');
-world.arbres = RAYON_HD > 0 && ARBRES_DEMANDES !== '0' ? 1 : 0;
+world.arbres = ARBRES_DEMANDES === '0' ? 0 : (ARBRES_DEMANDES === '1' || RAYON_HD > 0 || !renduLogiciel()) ? 1 : 0;
 // `?solcontinu=0` : le voxel d'avant, pour MESURER (A/B au banc). Ce n'est pas
 // un réglage et aucun palier ne le pose : le sol continu vaut pour tous les
 // appareils, parce qu'un sol qui change de forme avec le palier changerait la
@@ -659,6 +670,29 @@ let hd = null;
 function materiauDeParis() {
   if (!hd) hd = materiauHD(renderer);
   return hd.materiau;
+}
+// ET LA COUCHE SE CHAUFFE À L'ACCUEIL (v541). Son matériau naissait au premier
+// morceau qui le demandait — un morceau de Paris, ou de forêt. Au palier bas,
+// qui n'avait jamais eu la couche, c'eût été le premier arbre après « Jouer » :
+// un programme et un ciel préfiltré (PMREM) fabriqués en jeu, le gel de la
+// v246 par une porte de plus. On le fabrique ici, pendant la préparation, et
+// on le compile vers l'écran ET vers la cible des reflets — le décor y est
+// dessiné (couche 4), avec son propre espace de couleur —, comme les feux
+// (v306). Un quad qui porte les attributs de la couche suffit : `compile` ne
+// dessine rien, il ne regarde que le matériau et les lumières de la scène.
+function chaufferLaCoucheHD(camera) {
+  if (!world.arbres && RAYON_HD <= 0) return;
+  const t = { positions: new Float32Array([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0]), normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
+    uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), colors: new Float32Array(12).fill(1), tiles: new Float32Array([0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]),
+    matiere: new Float32Array([1, 0, 1, 0, 1, 0, 1, 0]), lueur: new Float32Array(4), indices: new Uint16Array([0, 1, 2, 0, 2, 3]) };
+  const ici = new THREE.Scene();
+  const m = new THREE.Mesh(geometrieHD(t), materiauDeParis());
+  ici.add(decor(m));
+  const cible = refletsVoiture(), avant = renderer.getRenderTarget();
+  try {
+    renderer.compile(ici, camera, scene);
+    if (cible) { renderer.setRenderTarget(cible); renderer.compile(ici, camera, scene); }
+  } finally { renderer.setRenderTarget(avant); m.geometry.dispose(); }
 }
 
 // LE PAYSAGE LOINTAIN. Il lit `terrainHeight` — une fonction PURE — et remplit
@@ -953,7 +987,7 @@ statsMaillage.enAttente = enAttente;  // la sonde lit l'âge des demandes (v360)
 // pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
 // réglage lu au démarrage. Et la portée de la vue (v532) : sans elle, on a dû
 // DÉDUIRE du palier que la couronne lointaine n'avait jamais tourné chez Max.
-journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576,
+journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, arbres: world.arbres, facadesMo: BUDGET_FACADES / 1048576,
   palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null, etendue: ETENDUE_CHOISIE,
   loin: PORTEE_VUE, logiciel: renduLogiciel() });
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
@@ -8454,7 +8488,7 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
-    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · horizon ${PORTEE_VUE}`
+    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · arbres ${world.arbres ? 'en cartes' : 'en cubes'} · horizon ${PORTEE_VUE}`
     // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
     // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :
     // taire cette différence ferait croire à un classement qui n'arrivera pas.
@@ -9012,6 +9046,8 @@ requestAnimationFrame(() => {
     if (chauffe()) { requestAnimationFrame(pas); return; }
     try { chaufferLesFeux(); } catch (e) { console.warn('chauffe des feux', e); }
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
+    // la couche HD et ses arbres (v541) : un matériau, deux programmes
+    try { chaufferLaCoucheHD(camera); } catch (e) { console.warn('chauffe de la couche HD', e); }
     // la fumée et les flammes des dégâts (v343) : deux matériaux neufs
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
     // les traces de pneus (v434) : un matériau neuf, son essaim exact

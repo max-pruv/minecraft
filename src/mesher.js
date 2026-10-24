@@ -411,6 +411,8 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   // les faces des cubes d'arbre qu'on n'émet plus : la preuve qu'on ne tait
   // que ce que le modèle couvre se lit sur ce compte (plafond.js)
   let facesArbresTues = 0;
+  // et les faces découvertes par un cube tu (le sol sous un tronc, v541)
+  let facesSousArbre = 0;
 
   // --- fusion, face par face ------------------------------------------------
   const dims = [CHUNK, topY + 1, CHUNK];
@@ -453,8 +455,23 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
 
           // a slab's top sits at half height, so it is always exposed
           const sommetDeDalle = slab && dY === 1;
+          // UN CUBE D'ARBRE TU LAISSE VOIR CE QU'IL CACHAIT (v541). Le cube
+          // du tronc se tait ; la face du dessus du bloc de sol sous lui
+          // n'était pas émise (contre un bloc plein), et par ce trou on
+          // voyait le ciel à travers la terre — un carré couleur du ciel au
+          // pied de chaque bouleau (sous un chêne, la surface continue le
+          // recouvre par chance). Contre un cube tu, on émet comme contre de
+          // l'air, sans fusion, et l'on compte — pour un bloc qui n'est pas
+          // lui-même un cube d'arbre (les faces entre deux cubes tus restent
+          // tues). Seulement si les arbres sont armés : désarmés, le chemin
+          // d'avant au bit près.
+          let sousArbre = false;
           if (!sommetDeDalle) {
-            if (!shouldRenderFace(id, neighbor)) continue;
+            if (!shouldRenderFace(id, neighbor)) {
+              if (!(arbresTus && !isWater && !estArbre(x, y, z) && nx >= 0 && nx < CHUNK && nz >= 0 && nz < CHUNK && ny >= 0 && ny < HEIGHT && estArbre(nx, ny, nz))) continue;
+              sousArbre = true;
+              facesSousArbre++;
+            }
             if (isWater && neighbor !== BLOCK.AIR && neighbor !== BLOCK.GLASS) continue;
           }
           const yTop = isWater && localGet(x, y + 1, z) !== BLOCK.WATER ? WATER_SURFACE_Y : slab ? 0.5 : 1;
@@ -495,7 +512,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           // cases ont la même clé si et seulement si elles avaient la même
           // chaîne — et une case qui ne fusionne pas reçoit une clé négative
           // propre à sa place dans la tranche (l'ancien `@u,v`).
-          const cle = (bloqueV || !uniforme)
+          const cle = (bloqueV || !uniforme || sousArbre)
             ? -1 - (u + v * nU)
             : (((((id * 3 + (yTop === 1 ? 0 : yTop === 0.5 ? 1 : 2)) * 5 + (ao ? AO_LEVELS.indexOf(ao[0]) : 4)) * 2
               + (allume ? 1 : 0)) * 2 + (monumentHd ? 1 : 0)) * 2 + (arbreHd ? 1 : 0)) * 256 + it;
@@ -686,7 +703,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     // (seulement quand les arbres sont armés : l'empreinte des 490 morceaux
     // hache aussi les champs scalaires du retour, et un champ neuf la change
     // sans qu'un sommet bouge — v421, le contenu neuf se retire par l'option)
-    ...(vraisArbres ? { arbres: arbres ? arbres.liste.length : 0, arbresEmis, facesArbresTues,
+    ...(vraisArbres ? { arbres: arbres ? arbres.liste.length : 0, arbresEmis, facesArbresTues, facesSousArbre,
       arbresLoin: arbresLoin ? arbresLoin.toTampons(false) : null } : {}),
     detail: detail || arbresDetail,
   };

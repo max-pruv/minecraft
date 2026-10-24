@@ -217,7 +217,7 @@ const GARDIENS = {
   'src/portieres.js': ['monte.js', 'degats.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
-  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js', 'reglages.js'],
+  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js', 'reglages.js', 'parishd.js'],   // parishd : les arbres au palier bas (v541)
   'index.html': ['carte.js', 'reglages.js', 'maj.js', 'manhattan.js'],
 
   // --- v195 : TRENTE FICHIERS MANQUAIENT, et deux d'entre eux étaient des

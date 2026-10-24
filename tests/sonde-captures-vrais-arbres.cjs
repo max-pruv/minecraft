@@ -3,6 +3,7 @@
 // oliviers et pins parasols, une rue plantée de Paris.
 //   node tests/sonde-captures-vrais-arbres.cjs <dossier> <étiquette> [nom,nom]
 // Le banc rend en logiciel : la couche se force (`hd=3`), comme pour Paris.
+// `HD=0 ARBRES=1` : le palier bas avec ses arbres en cartes (v541).
 // Lancé depuis un arbre d'`origin/main`, le script photographie l'avant.
 const { Banc, souffler } = require('./banc.js');
 const path = require('path');
@@ -37,7 +38,7 @@ const VUES = filtre ? TOUTES.filter((v) => filtre.split(',').some((f) => v.nom.s
   await banc.ouvrir();
   try {
     await souffler();
-    const page = await banc.jouerSeul('Arbres', { rr: Number(process.env.RR || 8), viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=3' + (process.env.ARBRES === '0' ? '&arbres=0' : '') });
+    const page = await banc.jouerSeul('Arbres', { rr: Number(process.env.RR || 8), viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=' + (process.env.HD ?? 3) + (process.env.ARBRES === '0' ? '&arbres=0' : process.env.ARBRES === '1' ? '&arbres=1' : '') });
     for (const v of VUES) {
       try {
         const info = await page.evaluate(async (v) => {
