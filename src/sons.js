@@ -226,7 +226,7 @@ export function moteurDemarre(type = 'voiture') {
     sp.start(); sif.start(); trem.start();
     pneus = { sp, sif, trem, gain };
   }
-  // LE ROULEMENT (v542) : ce que les roues font entendre de la ROUTE. Sur
+  // LE ROULEMENT (v543) : ce que les roues font entendre de la ROUTE. Sur
   // l'asphalte, rien ; sur l'herbe, le gravier, le sable, un grondement
   // sourd qui monte avec la vitesse — du bruit rose passé bas, séparé du
   // souffle du moteur pour qu'une voiture au ralenti dans un champ se taise.
@@ -256,7 +256,7 @@ export function moteurDemarre(type = 'voiture') {
 //   sante       0..1, le moteur abîmé tousse d'autant plus souvent
 //   panne       le moteur se tait
 //   feu         le crépitement des flammes
-//   roulement   0..1, le grondement de la route sous les roues (v542) —
+//   roulement   0..1, le grondement de la route sous les roues (v543) —
 //               déjà mis à l'échelle de la vitesse par celui qui appelle
 export function voitureSons({ regime = 0, charge = 0, crissement = 0, sante = 1, panne = false, feu = false, roulement = 0 } = {}) {
   if (!moteur || !ctx) return;
@@ -403,7 +403,7 @@ export function moteurCoupe() {
 
 // --- la radio ----------------------------------------------------------------
 
-// LE PROGRAMME VIT DANS `radio.js` (v542), pur : cinq stations, trois morceaux
+// LE PROGRAMME VIT DANS `radio.js` (v543), pur : cinq stations, trois morceaux
 // chacune, un jingle devant chaque morceau, et une horloge — `programme(st,
 // t)` dit où en est la station à l'heure réelle `t`, comme une vraie radio
 // qui joue même quand on ne l'écoute pas. Ici on ne fait que JOUER ce que le
@@ -491,7 +491,7 @@ function note(c, sortie, freq, debut, duree, onde, volume) {
 }
 
 // La batterie : la grosse caisse est un souffle grave, le charleston un
-// souffle aigu très court, la caisse claire (v542) un souffle du milieu, un
+// souffle aigu très court, la caisse claire (v543) un souffle du milieu, un
 // peu plus long — c'est elle qui fait le « boum-tchak ».
 function percussion(c, sortie, debut, quoi) {
   const s = c.createBufferSource();
@@ -536,7 +536,7 @@ export function radioEnCours() { return radio ? radio.station.nom : null; }
 
 // --- le klaxon ----------------------------------------------------------------
 
-// LE KLAXON (v542). Deux tons tenus — une tierce, comme un vrai avertisseur
+// LE KLAXON (v543). Deux tons tenus — une tierce, comme un vrai avertisseur
 // de voiture —, des dents de scie passées dans un filtre résonant autour du
 // kilohertz, qui leur donne le nasillement du cornet. Tenu tant que le doigt
 // est sur le bouton (`klaxonTenir(true)`), coupé en soixante millisecondes
@@ -569,7 +569,7 @@ export function klaxonTenir(oui) {
 }
 export const klaxonTenu = () => !!(klaxon && klaxon.tenu);
 
-// LE KLAXON D'UNE VOITURE DE LA RUE (v542) : un coup bref, placé dans
+// LE KLAXON D'UNE VOITURE DE LA RUE (v543) : un coup bref, placé dans
 // l'espace — plus loin, plus doux ; à gauche ou à droite de l'enfant
 // (`pan`, −1 à 1, calculé par celui qui sait où est l'enfant et où il
 // regarde). Chaque voiture a son ton (`ton`, autour de 1) : deux klaxons ne

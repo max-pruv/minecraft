@@ -1253,7 +1253,7 @@ export function initFun(ctx) {
     // LES PHARES (v533) : au volant d'une voiture, dès que la nuit tombe.
     if (!player.pilote && a.def.moteur === 'voiture') {
       allumerPhares(a.mesh, nuitDehors());
-      // LES FEUX STOP ET DE RECUL (v542) : rouge quand la voiture FREINE —
+      // LES FEUX STOP ET DE RECUL (v543) : rouge quand la voiture FREINE —
       // elle perd de la vitesse plus vite qu'en roue libre, ou le frein à
       // main est tiré —, blanc quand elle recule. Lu sur ce que la voiture
       // fait, pas sur ce qu'on demande : une descente freinée s'allume aussi.

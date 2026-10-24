@@ -7594,7 +7594,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
 
-    // LA CONDUITE À LA GTA (v542). Max : « améliore la conduite pour qu'elle
+    // LA CONDUITE À LA GTA (v543). Max : « améliore la conduite pour qu'elle
     // ressemble à GTA — comment elle réagit à l'environnement, aux autres
     // voitures, la musique, le son, jusqu'au design des voitures ». Quatre
     // sujets, sur une page et une dalle : la radio à stations (radio.js, le

@@ -34,7 +34,7 @@ export const ICONES = {
   voler: T('<path fill="currentColor" stroke="none" transform="translate(12 12) scale(1.12) translate(-12 -11)" d="M2.5 9.5C2.5 7 4.5 5.5 7 5.5c5 0 9.5 1 14.5-1.5-1.3 3.4-3.6 5.2-6.6 5.8 1.8.3 3.6.1 5-.5-1.6 2.9-4.3 4.2-7.3 4.5 1.4.5 2.8.6 4.1.3-2.3 2.9-6 4.2-9.6 3.4C4.1 16.8 2.5 13.6 2.5 9.5z"/>'),
   decoller: T(avion(48)),
   atterrir: T(avion(132)),
-  // LE KLAXON ET LA RADIO (v542) : un cornet d'avertisseur, un poste à
+  // LE KLAXON ET LA RADIO (v543) : un cornet d'avertisseur, un poste à
   // antenne — au trait épais, reconnaissables à la taille du pouce.
   klaxon: T('<path d="M4 9.5h5l7-4.5v14l-7-4.5H4z" fill="currentColor" fill-opacity=".35"/><path d="M4 9.5h5l7-4.5v14l-7-4.5H4z"/><path d="M19 9.2a4.2 4.2 0 0 1 0 5.6M21.2 6.8a7.3 7.3 0 0 1 0 10.4"/>', 2.2),
   radio: T('<rect x="3.5" y="9" width="17" height="11" rx="2"/><path d="M7 9 16.5 3.5"/><circle cx="14.8" cy="14.5" r="2.4"/><path d="M6.5 13h3.5M6.5 16h3.5"/>', 2.2),

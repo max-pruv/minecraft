@@ -105,7 +105,7 @@ export const GLISSE_MAIN = 0.45;      // part du frottement de dérive : on glis
 // que l'allure (`player.boost`, multiple de la marche) : la classe se
 // retrouve à sa pointe, qui est unique par classe. Une pointe inconnue
 // (une bête de secours) prend la fiche la plus proche, à sa pointe à elle.
-// LA ROUTE SOUS LES ROUES (v542). Max : « que la conduite réagisse à
+// LA ROUTE SOUS LES ROUES (v543). Max : « que la conduite réagisse à
 // l'environnement, comme GTA ». Jusqu'ici l'adhérence ne venait que de la
 // classe : une sportive tenait la même pointe et le même virage sur
 // l'asphalte, l'herbe, le sable et la neige. `surfaceDuBloc` classe le bloc
@@ -343,7 +343,7 @@ export function pasVoiture(e, entree, fiche, dt) {
   if (Math.abs(gaz) < ZONE_MORTE) gaz = 0;
   const volant = inerte ? 0 : borne(entree.volant || 0, 1);
   const main = !inerte && !!entree.freinMain;
-  // L'ADHÉRENCE DE LA SURFACE (v542) : 1 sur la route (rien ne change), moins
+  // L'ADHÉRENCE DE LA SURFACE (v543) : 1 sur la route (rien ne change), moins
   // sur l'herbe, le sable, la neige. La traction et le freinage suivent, la
   // tenue latérale aussi (`grip`), et ce qui n'est pas une route résiste au
   // roulement — on ralentit tout seul dans un champ, pas sur l'asphalte.

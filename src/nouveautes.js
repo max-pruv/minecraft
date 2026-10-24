@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 542,
+    v: 543,
     titre: 'La voiture, comme dans GTA',
     puces: [
       'Cinq stations de radio, un bouton pour changer',

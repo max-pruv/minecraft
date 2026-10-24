@@ -283,7 +283,7 @@ export class BaseNPC {
         if (vers !== null) { this.regardChoc = { yaw: vers, reste: ARRET_CHOC_S }; this.retournements = (this.retournements || 0) + 1; }
       }
     }
-    // ET VERS UN COUP DE KLAXON (v542) : `player.klaxon = { t, x, z }`, posé
+    // ET VERS UN COUP DE KLAXON (v543) : `player.klaxon = { t, x, z }`, posé
     // par main.js au premier appui, lu si présent — la même règle que le
     // choc, la même portée. Un passant SUR la chaussée presse le pas de côté
     // comme devant une voiture qui arrive (`ecart`), s'il n'y est pas déjà.
