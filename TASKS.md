@@ -1,5 +1,26 @@
 # Ce qui est en cours
 
+## v542 — les voitures gardent leur modèle : ce qui reste, mesuré
+
+- **Rouges du portail de la v542 : aucun de la livraison** (la suite `monte.js`
+  y était morte d'une faute de nom, corrigée ; rejouée seule, le témoin neuf est
+  vert : 0 bascule sur 50 voitures, 18 places suivies au demi-tour).
+  `monte.js` seule, branche contre `origin/main` v540 (`git worktree`) : même
+  famille de rouges déclarés (feu, rue vide, Moscou « pleines »). Moscou
+  « modèles ET couleurs » vert sur `origin/main` (7 visibles, barre 6) et rouge
+  sur la branche : sur page neuve, deux passages alternés de chaque côté
+  (`moscou.cjs` du brouillon), la même distribution — 15 → 33 voitures
+  visibles en 45 s, aucune cachée en attente : c'est le compte de six au moment
+  où la suite y arrive, pas la règle neuve. `maj.js` (le loader, déclaré) :
+  rouge sur `origin/main`, vert sur la branche.
+- [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » (Bolide
+  à 0,45)** : rouge sur la branche, VERT sur `origin/main` cette fois (rouge 2
+  sur 2 des deux côtés à la v540) — un tirage. Piste, non établie : les poses se
+  mémorisent par MODÈLE (`posesParModele`) sur la première voiture qui allume
+  ses feux ; si la voiture de la rue que le témoin précédent percute est une
+  Bolide, ses poses sont calculées sur une tôle enfoncée. La voiture percutée
+  change d'un passage à l'autre (7 clones contre 11). À vérifier : vider
+  `posesParModele` dans le témoin, ou ne mémoriser que sur un modèle intact.
 ## v546 — LA REVUELTO ADAPTÉE : ce qui reste, mesuré
 
 - [ ] **Le taxi jaune de New York porte ses phares au pare-brise.**
