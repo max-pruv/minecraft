@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-- [ ] **Les rues à la GTA (v542), ce qui reste, déclaré.** (1) Les convois des
+- [ ] **Les rues à la GTA (v544), ce qui reste, déclaré.** (1) Les convois des
   villes bâties à la main roulent à `DECALAGE_AVENUE` (1,3 bloc) de l'axe
   (v372) quand le milieu de la voie GTA est à 2,13 : recentrer touche les tours
   de monuments (`VOIE_DE_DROITE`, paris.js), les raccords et la jumelle

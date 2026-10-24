@@ -1014,7 +1014,7 @@ mètres ». Cinq règles, toutes mesurées par `sonde-elan-chocs.cjs`.
   vitesse de sortie, la force reste celle de la vitesse RELATIVE. Sans cela un
   taxi de Manhattan pris de face rejetait l'enfant de sept blocs (et
   `origin/main`, joystick lâché, de trente-neuf à cinquante et un).
-## Des rues à la GTA (v542) — une voie, c'est la voiture et un bloc de chaque côté
+## Des rues à la GTA (v544) — une voie, c'est la voiture et un bloc de chaque côté
 
 Max veut rouler dans les villes comme dans GTA. Mesuré avant une ligne : la
 marge du kit (0,4 m de chaque côté de la voiture), dans un monde où une rue se
