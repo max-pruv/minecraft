@@ -71,6 +71,10 @@ chauffés, identifiant stable et fichier neuf, portières, textures et matières
 Un témoin de navigateur au volant de la 911 (sol, volant, conducteur sous le
 pavillon face à la route, laque qui reflète) ; le témoin des feux de détresse
 la compte parmi ses modèles ; la table des programmes la lit dans `monte.js`.
+La revue d'écran (iPhone et iPad, jour et nuit, ancienne contre nouvelle) lit
+bien la voiture de trois quarts ; dans la vue de poursuite, l'aileron se lit
+comme une dalle noire et cache le conducteur — relevé n° 22 de
+`docs/revue-ecran.md`, à trancher sur la tablette.
 
 ---
 

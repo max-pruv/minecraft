@@ -1121,11 +1121,11 @@ function verifier(nom, ok, detail = '') {
         res.push({ f, n: gr ? gr.children.length : 0, ecarts, clignote: vus.size === 2 });
       }
       const neuves = g.renderer.info.programs.map((q) => q.cacheKey).filter((k) => !avantCles.has(k));
-      return { res, neuves: neuves.length };
+      return { res, attendus: modeles.length, neuves: neuves.length };
     });
     const surLaTole = (r) => !r.err && r.n === 4 && r.ecarts.every((e) => e !== null && e > -0.02 && e < 0.06) && r.clignote;
     verifier('les feux de détresse se posent SUR la carrosserie, aux quatre coins, du plus petit modèle au plus grand, et ils clignotent — sans compiler un programme',
-      !detresse.err && detresse.res.length === 7 && detresse.res.every(surLaTole) && detresse.neuves === 0,
+      !detresse.err && detresse.res.length === detresse.attendus && detresse.res.every(surLaTole) && detresse.neuves === 0,
       JSON.stringify(detresse));
 
     verifier('aucune erreur JavaScript de bout en bout', erreurs.length === 0, JSON.stringify(erreurs.slice(0, 4)));
