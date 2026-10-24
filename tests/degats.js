@@ -33,7 +33,7 @@ function verifier(nom, ok, detail = '') {
 
 (async () => {
   // ---------------------------------------------------- la 911 reconstruite
-  // Les témoins du paquet de la 911 (v541), sous node, avant le navigateur :
+  // Les témoins du paquet de la 911 (v544), sous node, avant le navigateur :
   // `portieres.js` et le GLTFLoader importent « three », qu'un crochet de
   // résolution leur donne comme l'import map de la page (celui de plafond.js).
   try {
@@ -192,7 +192,7 @@ function verifier(nom, ok, detail = '') {
     const erreurs = [];
     tab.on('pageerror', (e) => erreurs.push(String(e.message || e)));
 
-    // LA 911 RECONSTRUITE AU VOLANT (v541). Un modèle neuf passe les contrats de
+    // LA 911 RECONSTRUITE AU VOLANT (v544). Un modèle neuf passe les contrats de
     // la flotte que les autres témoins supposent sur un tirage : posée au sol
     // (v230), un volant (`Interior_SteeringWheel`), l'enfant assis sous le
     // pavillon MESURÉ de ce modèle et face à la route (v249), la laque qui lit

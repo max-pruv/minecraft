@@ -1,4 +1,4 @@
-// LES TÉMOINS DE LA 911 RECONSTRUITE (v541), LUS PAR `degats.js`.
+// LES TÉMOINS DE LA 911 RECONSTRUITE (v544), LUS PAR `degats.js`.
 //
 // Le paquet livré par l'autre session apportait ses tests sous `node --test`,
 // avec un chargeur à part : un test qu'aucun portail ne lance ne garde rien.

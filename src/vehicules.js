@@ -482,7 +482,7 @@ export const FLOTTE = [
   { fichier: 'pagani-zonda-cinque.glb', classe: 'sportive', nom: 'Pagani Zonda Cinque' },
   { fichier: 'pininfarina-battista.glb', classe: 'hypercar', nom: 'Automobili Pininfarina Battista' },
   { fichier: 'porsche-718-cayman-gt4-rs.glb', classe: 'gt', nom: 'Porsche 718 Cayman GT4 RS' },
-  // LA 911 RECONSTRUITE (v541) : `fichier` reste l'IDENTIFIANT (garages,
+  // LA 911 RECONSTRUITE (v544) : `fichier` reste l'IDENTIFIANT (garages,
   // réseau, couleur de la rue) ; `asset` est le fichier CHARGÉ. Une URL neuve
   // renouvelle le modèle dans STATIC_CACHE, où une URL connue ne se
   // retélécharge jamais (sw.js, `isStaticAsset`).
@@ -546,7 +546,7 @@ export function allureDe(fichier, secours = 3.4) {
 
 const chargementsFlotte = new Map();
 
-// L'ESSAI D'UN MODÈLE, DEPUIS L'ADRESSE (v541). Un modèle lourd se juge sur
+// L'ESSAI D'UN MODÈLE, DEPUIS L'ADRESSE (v544). Un modèle lourd se juge sur
 // la tablette, pas au banc (v247) : `?voiture=911` force ce modèle pour toute
 // voiture neuve ET toute voiture de la rue (une sous-chaîne du `fichier`), et
 // `?asset=0` désarme le champ `asset` — le fichier historique revient, pour

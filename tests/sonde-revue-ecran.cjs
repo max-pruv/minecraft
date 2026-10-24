@@ -215,7 +215,7 @@ const ETATS = [
     await attendreMonde(tab);
     return r;
   } },
-  // Une voiture garée vue de trois quarts avant, à six blocs (v541) : avec
+  // Une voiture garée vue de trois quarts avant, à six blocs (v544) : avec
   // `--params=&voiture=911` c'est la 911, et `&asset=0` rend l'ancienne.
   { nom: 'voiture-trois-quarts', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw, pitch: -0.12 });
