@@ -5829,6 +5829,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // place `clé#rang`, modèle, laque), demi-tour du regard, retour, comparer.
     // Borne de garde (v237) : des voitures ont été vues, des places suivies.
     await souffler();
+    {
     const attente = await mesurerAttente(ciel, 'rome', { duree: 20000 });
     const regard = (await mesurerRegard(ciel, ['rome'], { tours: 3 })).rome || {};
     verifier('une voiture de la rue garde son modèle et sa laque sous les yeux de l\'enfant',
@@ -5836,6 +5837,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && regard.suivies >= 5 && regard.modele === 0 && regard.laque === 0 && regard.coque === 0,
       `bascules ${attente.bascules} sur ${attente.voitures} voitures (coque ${attente.msMediane} ms médiane, ${attente.msPire} au pire) · `
         + `cachées près ${attente.cacheesPres} · regard ${JSON.stringify(regard)}`);
+    }
 
     // LA MINICARTE NE RESTE PLUS EN ARRIÈRE PENDANT QU'ON VOLE (v233).
     //
