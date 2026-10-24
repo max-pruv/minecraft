@@ -353,22 +353,45 @@ const PEINTRES = {
   // petites ellipses semées dans un disque, de plus en plus rares vers le bord ;
   // claires et presque grises, la couleur vient du sommet (par essence, par
   // climat). Le disque est à 95 % du rayon de la tuile : rien ne touche le bord.
+  // ET UNE FEUILLE EST UN LIMBE, PAS UN POINT (v541). Max, devant les arbres
+  // de la v499 : « les arbres sont décevants… je veux des vrais feuillages,
+  // des choses extrêmement réalistes comme GTA ». La tuile d'avant semait deux
+  // cent trente petites ellipses de six texels : vue de près, une carte était
+  // un nuage de confettis. Ici cent soixante limbes de quinze à vingt-deux
+  // texels, pointus aux deux bouts, une nervure claire au milieu et un bord
+  // plus sombre, posés du centre de l'amas vers son bord ; les derniers posés
+  // recouvrent les premiers, qui sont les plus sombres — c'est l'intérieur
+  // d'une frondaison, dans l'ombre des feuilles de devant. Le bord de la
+  // tuile ne porte que des feuilles isolées : c'est lui qui dessine la
+  // silhouette d'une couronne.
   feuilles(p, rempli, N) {
     const rng = mulberry32(474);
     const c = N / 2, R = N * 0.47;
     const fe = [];
-    for (let i = 0; i < 230; i++) {
-      const a = rng() * Math.PI * 2, d = Math.sqrt(rng()) * R * 0.92;
-      fe.push([c + Math.cos(a) * d, c + Math.sin(a) * d, 4 + rng() * 4, 2.6 + rng() * 2.4, rng() * Math.PI, rng()]);
+    for (let i = 0; i < 160; i++) {
+      const a = rng() * Math.PI * 2, d = Math.pow(rng(), 0.72) * R * 0.9;
+      // la demi-longueur, la demi-largeur, l'angle (vers l'extérieur de
+      // l'amas, avec du jeu), la lumière de la feuille, sa place du centre
+      fe.push([c + Math.cos(a) * d, c + Math.sin(a) * d, 7 + rng() * 4, 2.8 + rng() * 1.8, a + (rng() - 0.5) * 1.6, 0.25 + rng() * 0.75, i / 160]);
     }
     const img = new Float32Array(N * N);
     const lum = new Float32Array(N * N);
-    for (const [fx, fy, a, b, ang, l] of fe) {
+    for (const [fx, fy, L, W, ang, l, ordre] of fe) {
       const ca = Math.cos(ang), sa = Math.sin(ang);
-      for (let y = Math.floor(fy - 9); y <= fy + 9; y++) for (let x = Math.floor(fx - 9); x <= fx + 9; x++) {
+      for (let y = Math.floor(fy - L - 1); y <= fy + L + 1; y++) for (let x = Math.floor(fx - L - 1); x <= fx + L + 1; x++) {
         if (x < 0 || y < 0 || x >= N || y >= N) continue;
         const dx = x - fx, dy = y - fy, u = dx * ca + dy * sa, v = -dx * sa + dy * ca;
-        if ((u * u) / (a * a) + (v * v) / (b * b) <= 1) { img[y * N + x] = 1; lum[y * N + x] = l; }
+        const t = u / L;
+        if (Math.abs(t) >= 1) continue;
+        // le limbe : une ellipse pincée aux deux bouts
+        const w = W * Math.pow(1 - t * t, 0.45);
+        if (Math.abs(v) > w) continue;
+        img[y * N + x] = 1;
+        // la nervure centrale (claire), le bord (sombre), et les feuilles
+        // du fond plus sombres que celles de devant
+        const nervure = Math.abs(v) < 0.55 && Math.abs(t) < 0.85 ? 0.22 : 0;
+        const bord = w - Math.abs(v) < 0.9 ? -0.18 : 0;
+        lum[y * N + x] = (0.45 + 0.55 * ordre) * l + nervure + bord;
       }
     }
     rempli((x, y) => {
@@ -379,8 +402,8 @@ const PEINTRES = {
       // (la boîte noire vue en capture autour d'une couronne, elle, était le
       // curseur de bloc du jeu sur un cube de feuilles visé).
       if (!img[i]) { p(x, y, 222, 226, 216, ALPHA_VIDE); return; }
-      const v = 196 + lum[i] * 58 + (bruit(x, y, 81) - 0.5) * 20;
-      p(x, y, v - 4, v, v - 10, 255);
+      const v = 150 + lum[i] * 110 + (bruit(x, y, 81) - 0.5) * 12;
+      p(x, y, v - 4, v, v - 12, 255);
     });
   },
   // Les aiguilles : des traits courts et fins, par bouquets, dans le même disque.
