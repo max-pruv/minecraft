@@ -28,23 +28,25 @@ const { attendreLaCharge } = require('./charge.js');
 // 19 min 46 s), le rouge d'une petite suite arrive dans les cinq minutes qui
 // suivent la fumée. On remesure l'ordre quand une suite change de poids.
 const SUITES = [
-  'metro.js',        //  0 min 14 s
-  'parent.js',       //  0 min 30 s
-  'parishd.js',      //  0 min 45 s (v287)
-  'carteMonde.js',   //  0 min 34 s
-  'sauvegarde.js',   //  0 min 34 s
-  'plafond.js',      //  0 min 51 s
-  'degats.js',       //  0 min 55 s (v343)
-  'visio.js',        //  1 min 03 s
-  'maj.js',          //  1 min 34 s
-  'realisme.js',     //  1 min 37 s
-  'carte.js',        //  1 min 56 s
-  'hote.js',         //  2 min 20 s
-  'washington.js',   //  2 min 41 s
-  'reglages.js',     //  7 min 02 s
-  'manhattan.js',    //  8 min 35 s
-  'monte.js',        // 15 min 21 s
-  'reseau.js',       // 19 min 46 s
+  // remesuré au portail complet de la v541 sur `origin/main` (108 min) :
+  // les chiffres d'avant dataient de la v251 et `monte.js` en avait doublé
+  'metro.js',        //  0 min 34 s
+  'realisme.js',     //  1 min 14 s
+  'visio.js',        //  1 min 23 s
+  'parent.js',       //  1 min 35 s
+  'carteMonde.js',   //  1 min 49 s
+  'sauvegarde.js',   //  1 min 56 s
+  'degats.js',       //  2 min 18 s
+  'hote.js',         //  2 min 41 s
+  'washington.js',   //  2 min 43 s
+  'carte.js',        //  2 min 56 s
+  'reglages.js',     //  4 min 12 s
+  'plafond.js',      //  4 min 36 s
+  'parishd.js',      //  4 min 59 s
+  'manhattan.js',    //  6 min 50 s
+  'maj.js',          // 10 min 21 s
+  'reseau.js',       // 21 min 23 s
+  'monte.js',        // 36 min 42 s
 ];
 
 // QUELLE SUITE PROTÈGE QUOI.
