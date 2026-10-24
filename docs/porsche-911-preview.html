@@ -28,7 +28,7 @@ const key=new T.DirectionalLight(0xfff5e8,3.2);key.position.set(-3,7,5);key.cast
 const fill=new T.DirectionalLight(0xdceaff,1.3);fill.position.set(4,2,-3);scene.add(fill);
 const floor=new T.Mesh(new T.PlaneGeometry(200,200),new T.MeshStandardMaterial({color:0xe1e4e6,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.position.y=-.008;floor.receiveShadow=true;scene.add(floor);
 try{
- const gltf=await new GLTFLoader().loadAsync('../vendor/voitures/porsche-911-gt3-rs-hd-v2.glb');model=gltf.scene;
+ const gltf=await new GLTFLoader().loadAsync('../vendor/voitures/porsche-911-gt3-rs-hd-v2-compact.glb');model=gltf.scene;
  let triangles=0,meshes=0;model.traverse(o=>{if(o.isMesh){o.castShadow=!o.material.transparent;o.receiveShadow=true;o.material.envMapIntensity=1;triangles+=o.geometry.index.count/3;meshes++;}});scene.add(model);
  document.getElementById('etat').textContent=`${triangles.toLocaleString('fr-FR')} triangles · ${meshes} maillages`;
 }catch(e){document.getElementById('erreur').textContent='Modèle introuvable. Servir la racine du dépôt avec python3 -m http.server 8000.';console.error(e);}

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 544,
+    titre: 'Une nouvelle Porsche 911',
+    puces: [
+      'La 911 GT3 RS refaite en détail',
+      'Ses roues, son aileron, son habitacle',
+      'Toujours dans ton garage',
+    ],
+  },
+  {
     v: 543,
     titre: 'La voiture, comme dans GTA',
     puces: [

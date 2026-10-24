@@ -82,6 +82,11 @@ const GARDIENS = {
   'vendor/humains/femme-manteau.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/garcon.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  // La 911 reconstruite (v541) : ses témoins vivent dans porsche-911.mjs, que
+  // degats.js lance ; la table des programmes la lit dans monte.js.
+  'vendor/voitures/porsche-911-gt3-rs-hd-v2-compact.glb': ['degats.js', 'monte.js'],
+  'tests/porsche-911.mjs': ['degats.js'],
+  'tests/porsche-911-textures.mjs': ['degats.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js', 'reglages.js'],
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],

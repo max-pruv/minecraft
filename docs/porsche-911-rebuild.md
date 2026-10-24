@@ -1,4 +1,8 @@
-# Porsche 911 GT3 RS (992) — deuxième reconstruction indépendante
+# Porsche 911 GT3 RS (992) — deuxième reconstruction approuvée
+
+**Rendu approuvé par Max le 24 octobre 2026.** Le niveau visuel de cette version
+sert désormais de référence au [standard de création des voitures](standard-creation-voitures.md).
+Les validations techniques dans le jeu restent à effectuer avant publication.
 
 Le modèle a été entièrement reconstruit avec `scripts/porsche911-v2.py`.
 Le générateur ne lit ni le GLB de production, ni celui de la première proposition.
@@ -28,7 +32,10 @@ diffèrent. Ce détail et la fidélité des raccords demandent encore une revue.
 
 ## Résultat mesuré et limites
 
-362 868 triangles, 40 maillages, 11 602 448 octets, quatre textures PNG.
+362 868 triangles, 40 maillages, quatre textures PNG. Le fichier approuvé initial
+faisait 11 602 448 octets ; sa version compactée sans perte fait 7 736 576 octets
+(1 846 624 octets en Brotli ou 3 453 103 octets en gzip ; transfert à configurer). Voir
+[les mesures et preuves](voitures-poids-et-compression.md).
 Les pièces sont fusionnées par matériau et par pivot. La densité est élevée ;
 aucune performance en circulation dense ou sur iPhone/iPad n'est revendiquée.
 Ce modèle n'est pas présenté comme une reproduction photoréaliste validée.
@@ -42,7 +49,7 @@ utilise, lui, la version Three.js r160 du dépôt ; il reste à vérifier en nav
 
 `FLOTTE.fichier` conserve la clé `porsche-911-gt3-rs.glb` pour les garages et le
 réseau. Le champ facultatif `asset` sélectionne le nouveau fichier
-`porsche-911-gt3-rs-hd-v2.glb` avec `asset || fichier`, afin de renouveler l'URL
+`porsche-911-gt3-rs-hd-v2-compact.glb` avec `asset || fichier`, afin de renouveler l'URL
 stockée dans STATIC_CACHE. Les quatre signatures de matériaux supplémentaires
 sont ajoutées au préchauffage. Garder le GLB historique pour les anciens clients.
 
@@ -56,7 +63,7 @@ régénérer le modèle. Le jeu n'a besoin que du GLB, sans Python.
 
 ```bash
 python3 scripts/porsche911-v2.py
-node --experimental-loader ./tests/porsche-911-loader.mjs --test tests/porsche-911.test.mjs
+cd tests && node degats.js   # témoins de tests/porsche-911.mjs
 python3 -m http.server 8000
 ```
 
