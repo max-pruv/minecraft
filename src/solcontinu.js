@@ -75,7 +75,9 @@ const dessusNaturel = (id) => DESSUS_NATUREL.has(id) || isProp(id);
 // posés SUR la surface.
 export const SOL_ROUTE = new Set([CITY_BLOCK.ASPHALT, BLOCK.GRASS, BLOCK.DIRT, BLOCK.SAND, BLOCK.GRAVEL]);
 export function colonneRoute(world, x, z, r) {
-  const t = Math.floor(r.cote) - 1;
+  // le bloc que le générateur a ÉCRIT (une voie ferrée le publie : sa cote de
+  // surface se lit au centre de la colonne, son bloc au coin — v539)
+  const t = r.blocVoxel ?? Math.floor(r.cote) - 1;
   if (!SOL_ROUTE.has(world.getBlock(x, t, z))) return false;
   return dessusNaturel(world.getBlock(x, t + 1, z));
 }
@@ -229,6 +231,11 @@ export function grilleSol(world, cx, cz, chunk) {
   const N = chunk + 2;
   const nat = new Uint8Array(N * N);
   const cote = new Float32Array(N * N);
+  // le bloc que le générateur a ÉCRIT au sommet, quand il n'est pas
+  // `floor(cote) − 1` : la voie ferrée lit sa surface au centre de la colonne
+  // et écrit son ballast au coin (v539) — un tiers de bloc de pente suffit à
+  // les séparer d'un bloc, et le mailleur lisait alors de l'air
+  const blocs = new Int16Array(N * N).fill(-1);
   const idx = (lx, lz) => (lx + 1) + (lz + 1) * N;
   // ne demander « est-ce une ville ? » qu'aux villes à portée du morceau : sur
   // les 280 du registre, la question par colonne coûtait autant que le reste
@@ -254,6 +261,7 @@ export function grilleSol(world, cx, cz, chunk) {
     const r = world.corridorEn ? world.corridorEn(x, z) : null;
     if (r && !r.ouvrage) {
       cote[idx(lx, lz)] = r.cote;
+      if (r.blocVoxel !== undefined) blocs[idx(lx, lz)] = r.blocVoxel;
       nat[idx(lx, lz)] = colonneRoute(world, x, z, r) ? 1 : 0;
       continue;
     }
@@ -277,11 +285,12 @@ export function grilleSol(world, cx, cz, chunk) {
   const couvertes = new Uint8Array(chunk * chunk);
   const hauts = new Int16Array(chunk * chunk);
   for (let lz = 0; lz < chunk; lz++) for (let lx = 0; lx < chunk; lx++) {
-    hauts[lx + lz * chunk] = Math.floor(cote[idx(lx, lz)]) - 1;
+    const b = blocs[idx(lx, lz)];
+    hauts[lx + lz * chunk] = b >= 0 ? b : Math.floor(cote[idx(lx, lz)]) - 1;
     couvertes[lx + lz * chunk] = dessinee[cid(lx - 1, lz - 1)] && dessinee[cid(lx, lz - 1)]
       && dessinee[cid(lx - 1, lz)] && dessinee[cid(lx, lz)] ? 1 : 0;
   }
-  return { N, idx, nat, cote, dessinee, cid, couvertes, hauts, baseX, baseZ, chunk };
+  return { N, idx, nat, cote, blocs, dessinee, cid, couvertes, hauts, baseX, baseZ, chunk };
 }
 
 // La normale d'un triangle (pour l'éclairage Lambert), non normalisée.
@@ -302,7 +311,7 @@ export function normale(p, q, r) {
 // c'est ce qui distingue, dans un tampon, une face voxel (coins entiers) d'une
 // cellule de surface — et un témoin s'en sert.
 export function emettreSolContinu(buf, world, cx, cz, chunk, grille = grilleSol(world, cx, cz, chunk), teintes = null) {
-  const { idx, cote, dessinee, cid, baseX, baseZ } = grille;
+  const { idx, cote, blocs, dessinee, cid, baseX, baseZ } = grille;
   // au bord de la grille, la différence centrée n'a qu'un côté : on prend l'autre
   const coteEn = (lx, lz) => cote[idx(Math.max(-1, Math.min(chunk, lx)), Math.max(-1, Math.min(chunk, lz)))];
   const normaleEn = (lx, lz) => {
@@ -314,7 +323,8 @@ export function emettreSolContinu(buf, world, cx, cz, chunk, grille = grilleSol(
   let cellules = 0;
   for (let lz = 0; lz < chunk; lz++) for (let lx = 0; lx < chunk; lx++) {
     if (!dessinee[cid(lx, lz)]) continue;
-    const h = Math.floor(cote[idx(lx, lz)]) - 1;
+    const b = blocs ? blocs[idx(lx, lz)] : -1;
+    const h = b >= 0 ? b : Math.floor(cote[idx(lx, lz)]) - 1;
     const sommet = world.getBlock(baseX + lx, h, baseZ + lz);
     const tile = BLOCK_INFO[sommet].tiles[0];
     const rect = tileRect(tile);

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v537 — La minicarte toujours là
+## v540 — La minicarte toujours là
 
 **Pourquoi.** Max : « Il faut trouver une solution pour mettre la mini-carte
 toujours visible. » Elle ne s'affichait qu'après un appui sur le bouton carte,
@@ -51,13 +51,100 @@ qu'un enfant de sept ans n'a aucune raison de chercher.
   la carte du monde, où elle se cache puis revient ; un quiz la cache ; après
   un saut de 4 000 blocs, le fond de nuit retombe sous un cinquième des points ;
   la croix du badge ne mord pas son texte (rouge sans la correction : 21 px).
-- Revue d'écran (`docs/revue-ecran/v537-minicarte`) à 430 × 932, 420 × 760 et
+- Revue d'écran (`docs/revue-ecran/v540-minicarte`) à 430 × 932, 420 × 760 et
   820 × 1180, de jour et de nuit.
 - Portail : les rouges de `degats.js` et `monte.js` sont rejoués des deux côtés
   ou déjà déclarés (`TASKS.md`).
 - Témoins repointés : `monte.js` (en tête de la colonne), `maj.js`,
   `reseau.js`, `banc.ouvrirLaCarte`, `sonde-revue-ecran.cjs`.
 
+
+## v539 — Rien ne traverse une voie, et le train est un train
+
+**Pourquoi.** Max, deux captures d'iPhone en vol bas au-dessus du TGV
+Paris–Lyon : « Those things should never happen ». Une dalle d'herbe et de terre
+avançait au-dessus d'une voie et coupait le train en deux, des piliers de pierre
+se dressaient entre les rails, et le convoi — la rame du métro, des cylindres
+gris aux bouts arrondis — avait ses voitures qui se traversaient. Mesuré sur les
+neuf lignes : **507 blocs et 221 points de surface dans le gabarit des voies**,
+tous sur un pas de viaduc. Le viaduc (v465) se décidait sur l'axe : toute la
+largeur du pas était « pont », et là où la berge monte au-dessus du tablier le
+générateur n'y creusait rien. Le témoin d'avant ne lisait que l'axe, entre les
+deux voies. Et les voitures, longues de 8,0 à 8,7 blocs, étaient posées tous les
+7,6 blocs. Vu d'en haut enfin, un point de traverse sur huit était sous la
+surface du ballast (7 520 sur 58 494).
+
+**Ce que ça change.**
+- Une rive plus haute que le tablier est creusée comme un déblai : le gabarit
+  des deux voies est dégagé partout, sur les ponts comme ailleurs. Seules les
+  colonnes basses gardent l'eau, la pile et le tablier.
+- Le train a une motrice au nez effilé à chaque bout, avec pare-brise et
+  phares, des voitures à fenêtres, une bande de livrée, deux bogies, et un
+  soufflet entre deux voitures. L'écart se déduit des longueurs : plus aucun
+  recouvrement. Deux appels de dessin par voiture, aucun programme neuf.
+- Le ballast n'enterre plus les traverses : sa surface suit la voie au centre
+  de chaque colonne. Et le sol continu lit le bloc de ballast là où le
+  générateur l'écrit (au coin) : le premier jet le cherchait un bloc trop haut,
+  dans l'air, sur 322 des 758 morceaux le long des voies — le mailleur jetait,
+  et sur le fil principal la boucle de jeu s'arrêtait près d'un train. Le
+  portail l'a dit (`monte.js` mort après le témoin du train), pas une capture.
+- Le relief ne bouge pas : les deux empreintes de `plafond.js` sont intactes.
+
+**Ce qui le prouve.** Cinq témoins. `plafond.js` : le gabarit des deux voies
+sur 113 050 points du réseau entier (0 bloc, 0 surface ; la règle d'avant rend
+506 blocs sur les seuls pas de viaduc) ; deux lignes ne se partagent jamais une
+colonne (36 paires, la plus proche à 141 blocs) ; les traverses (1 point sur
+5 628, contre 1 205 avec la cote lue au coin) ; chaque morceau le long des voies
+se maille (758, zéro erreur, contre 322 sur le premier jet). `carteMonde.js` : le convoi rendu
+(motrice effilée aux deux bouts, jeu positif à chaque attelage, deux maillages
+par voiture). L'empreinte des 490 morceaux change ; corrections désarmées, elle
+rend la constante d'avant au bit près.
+## v538 — Des guides au pied des monuments
+
+**Pourquoi.** Apprendre dans les villes s'arrêtait à Washington : sept panneaux
+(v460), en français seulement, et personne pour les dire. Paris, Londres, Rome
+et New York ne racontaient rien de ce qu'on y regarde — la tour Eiffel, Big
+Ben, le Colisée, l'Empire State n'étaient que des formes.
+
+**Ce que ça change.** Vingt-deux guides, un par grand monument : cinq à Paris
+(tour Eiffel, Arc de Triomphe, Louvre, Notre-Dame, Sacré-Cœur), quatre à
+Londres, trois à Rome, trois à New York, et les sept lieux de Washington. Chacun
+est un personnage original — Capucine, Wilfred, Livia, Jasmine… — debout au
+pied du monument, à ciel ouvert, un fanion orange levé ; il se tourne vers
+l'enfant qui arrive (un rôle à part : le passant, lui, ne s'arrête toujours
+pas). En arrivant, son panneau passe une fois : deux ou trois phrases pour un
+enfant de sept à dix ans, des faits vérifiés (hauteurs, années, usages), et sa
+signature. Et comme plus rien ne s'affiche pendant le jeu (décision de Max,
+v504), **le guide le dit à voix haute** : la voix du navigateur, dans la langue
+du profil — français, anglais, ou les deux en alternance d'une visite à
+l'autre —, sans les pictogrammes, et seulement si le son du jeu est allumé.
+Aucun bandeau. Le mode éducatif reste toujours actif : les guides ne se coupent
+pas. Les panneaux de Washington (v460) passent par la même voix.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `washington.js`, rouges sur
+l'ancien code (le module n'existe pas) : chaque ville a au moins trois guides
+trouvés dans le registre des repères, chaque panneau a son français et son
+anglais en trois phrases au plus ; la langue du profil choisit et « les deux »
+alterne ; aucun rayon n'en recouvre un autre et chaque guide hors Manhattan a
+un sol au niveau de la rue, à ciel ouvert, dans le rayon de son panneau
+(mesuré sous node : douze guides sur dix-neuf tombaient d'abord DANS leur
+monument, sous une voûte, et quatre sur l'asphalte, où la rue les prenait pour des
+piétons et attendait sans fin devant eux) ; et au navigateur, à la tour Eiffel, le guide naît,
+se tourne vers l'enfant, et la voix de Capucine dit son panneau en français —
+ce que le jeu demande à la synthèse vocale est enregistré par le témoin, langue
+comprise, et rien ne s'affiche ; à l'Arc de Triomphe la même chose en anglais.
+Le témoin du Lincoln (v460) compte la visite une fois, sans affichage. Jugé sur
+captures : Capucine sous la tour Eiffel, Livia devant le Colisée, Jasmine sur
+le trottoir de la Cinquième Avenue au pied de l'Empire State — le fanion
+d'abord sorti rouille a été avivé, et Jasmine avait un corps d'homme (le
+modèle se tirait sur l'identifiant du lieu, il suit désormais le prénom).
+Et le regard du guide se lit hors d'un pas de côté : un guide est un piéton, une
+voiture qui passe sur la rue voisine le fait s'écarter un instant, dos à
+l'enfant (vu au portail : regard −0,7, écart en cours ; une sonde à part l'a
+séparé en une exécution). Le témoin attend que l'écart soit fini, borné à huit
+secondes, et dit combien il en a vu.
+
+---
 
 ## v536 — Le mobilier de rue se casse
 
@@ -108,6 +195,9 @@ rejoués seuls des deux côtés (`TASKS.md`). Revue d'écran
 (`--etats=mobilier-tombe,volant-arret`, iPhone et iPad, jour et nuit) dans
 `docs/revue-ecran/v536/` : le réverbère couché au pied du trottoir se lit
 au premier regard.
+
+---
+
 ## v534 — Un choc a de l'élan
 
 **Pourquoi.** Max : « Quand on fonce dans une voiture avec une autre voiture,

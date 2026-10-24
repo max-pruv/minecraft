@@ -2296,7 +2296,7 @@ const position = (p) => p.evaluate(() => ({
       JSON.stringify(couche.erreurs));
     await couche.close();
 
-    // LA MINICARTE EST TOUJOURS LÀ (v537). Max : « il faut trouver une
+    // LA MINICARTE EST TOUJOURS LÀ (v540). Max : « il faut trouver une
     // solution pour mettre la mini-carte toujours visible. » Elle ne
     // s'affichait qu'après un appui sur son bouton. Le témoin entre en jeu
     // SANS UN GESTE, puis la lit dans chaque mode — à pied, en construction,
@@ -2319,7 +2319,7 @@ const position = (p) => p.evaluate(() => ({
             : { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) }; };
         // l'état d'entrée, AVANT tout geste du témoin
         const entree = vis(mm);
-        // LA CROIX DU BADGE NE BARRE PAS SON TEXTE (v537, vu en revue d'écran :
+        // LA CROIX DU BADGE NE BARRE PAS SON TEXTE (v540, vu en revue d'écran :
         // « 21 h 1✕ ») : sur téléphone, `padding: 3px 10px` écrasait la place
         // réservée à la croix. On lit les deux boîtes, et l'écart entre elles.
         const txtB = vis(document.getElementById('edu-timer-txt')), crxB = vis(document.getElementById('edu-timer-close'));

@@ -821,6 +821,48 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les guides des villes (v538) — un guide est un rôle à part, et il se pose à ciel ouvert
+
+Trois règles.
+
+- **LE GUIDE EST LA SEULE EXCEPTION À LA v243, ET ELLE VIT DANS SA CLASSE.**
+  `Guide` (vie.js) tient son poste, ne marche pas, et se tourne vers l'enfant
+  à moins de seize blocs — c'est son métier. `Habitant` ne change pas : un
+  passant ne s'arrête toujours pas. Ce que dit le guide passe par la règle des
+  panneaux (`creerGuides`, guides.js : une fois par visite, jamais en rafale,
+  en temps réel), dans la langue du profil (`texteDuGuide` : `fr`, `en`, et
+  `both` alterne d'une visite à l'autre). Ses positions se demandent au
+  registre des repères (`REPERES`, `villeDuRepere`) ; ses faits sont vérifiés.
+- **PLUS DE MESSAGE À L'ÉCRAN, DONC LE GUIDE PARLE.** Depuis la v504 rien ne
+  s'affiche en jeu (décision de Max) : un panneau passe par la voix du
+  navigateur (`parlerAVoixHaute`, guides.js), langue du panneau, pictogrammes
+  retirés (`phraseAParler`), seulement si `sonActif()`. Un témoin remplace
+  `speechSynthesis` par un enregistreur et lit ce que le jeu a demandé de dire
+  — jamais un drapeau. Un appareil sans synthèse ne dit rien ; la visite se
+  compte quand même.
+- **UN CENTRE DE MONUMENT EST SOUVENT CREUX.** La rotonde du Capitole, la nef
+  de Notre-Dame, le dessous de la tour Eiffel sont au niveau de la rue et
+  praticables : le premier jet y posait douze guides sur dix-neuf, invisibles
+  du dehors. `essaiParBlocs` (guidesvilles.js, pure) exige le sol au niveau du
+  relief ET `CIEL` blocs d'air au-dessus ; à Manhattan, dont le plan n'est pas
+  fait de blocs, on demande le trottoir au monde (`trottoirA`).
+- **UN GUIDE EST UN PIÉTON POUR LA RUE, DONC JAMAIS SUR LA CHAUSSÉE.** Il est
+  dans `npcs`, que la circulation lit (`brancherPietons`), et une voiture
+  attend sans limite devant un piéton (v395). Le premier jet en posait quatre
+  sur dix-neuf sur l'asphalte (Capucine à la tour Eiffel, St Paul, le
+  Panthéon, Saint-Pierre), trouvés par une sonde sous node — j'avais d'abord
+  accusé le bouchon de « la rue roule » (médiane zéro), qui est déclaré et
+  revient sans eux. `essaiParBlocs` refuse `CHAUSSEE`.
+  **Tout personnage qui se tient immobile se pose hors de la chaussée**, sinon
+  il arrête une file pour toujours.
+  Et il reste un piéton : une voiture qui passe le fait s'écarter (v259), dos
+  à l'enfant. Un témoin de regard lit hors d'un écart (`guide.ecart` faux),
+  borné, jamais à un instant fixe.
+- **UN ACCESSOIRE DE PERSONNAGE SE FABRIQUE À L'ATELIER.** Le fanion du guide
+  est fait avec `Atelier` (`matiereVivante`) : le programme des corps sculptés,
+  chauffé à l'accueil (v246). Un matériau neuf aurait compilé à l'arrivée au
+  monument — et la présence (v241) en fait une variante transparente de plus.
+
 ## Le mobilier se casse (v536) — un obstacle de rue est un geste, pas un mur
 
 Max : « tout le mobilier urbain, poteau, feu rouge, est hyper dur. Comme dans
@@ -1382,10 +1424,10 @@ Deux règles.
   minicarte s'ouvre sous le bouton carte (`--sous-carte`, `--rail-x`) ; ce qui
   vivait sous la carte (les émotes) descend de `--minimap-w`, et la file
   centrale (v445) la contourne par la même variable. Le témoin est formulé
-  sans dimension et joué à 430 × 932 et 420 × 760. *(Depuis la v537 la
+  sans dimension et joué à 430 × 932 et 420 × 760. *(Depuis la v540 la
   minicarte n'a plus de bouton : elle prend sa place — voir ci-dessous.)*
 
-## La minicarte toujours là (v537) — ce qui s'affiche toujours se paie en vol, et un raccourci de peinture garde ses états
+## La minicarte toujours là (v540) — ce qui s'affiche toujours se paie en vol, et un raccourci de peinture garde ses états
 
 Max : « mettre la mini-carte toujours visible ». Trois règles.
 
@@ -1685,6 +1727,52 @@ Deux règles.
   de `GARDE_GARE` pas d'un bout, et un témoin compare les dix-huit gares à
   `viaducs(false)` (zéro déplacée). La rampe à terre, elle, bouge (deux blocs au
   plus) : déclarée dans `TASKS.md`.
+## Rien ne traverse une voie (v539) — un ouvrage décidé sur l'axe se rejuge colonne par colonne
+
+Max, captures d'iPhone sur le TGV Paris–Lyon : « Those things should never
+happen ». Cinq règles.
+
+- **UNE RIVE N'EST PAS UN PONT.** Le viaduc se décide sur l'AXE (de l'eau
+  sous lui), mais toute la largeur du pas était « pont » : le générateur n'y
+  creusait rien, et la berge plus haute que le tablier restait en travers des
+  voies (507 blocs de gabarit, tous sur un pas de viaduc). Dans `voieEn`, une
+  colonne dont le terrain monte jusque sous le ballast est de la plate-forme
+  (une culée, creusée comme un déblai) ; seule une colonne basse garde l'eau,
+  la pile et le tablier. C'est la culée de l'A1 (v300) du côté du rail : toute
+  décision d'ouvrage prise sur un axe se rejuge sur chaque colonne qu'elle
+  couvre. `rivesCreusees(false)` rejoue l'ancienne règle, pour les témoins.
+- **UN TÉMOIN DE GABARIT LIT LES DEUX VOIES, PAS L'AXE.** Celui de
+  `carteMonde.js` lisait le milieu de la ligne, entre les voies : il ne
+  pouvait pas voir ce que Max a vu. `plafond.js` balaie le réseau entier aux
+  positions des deux voies (113 050 points), blocs pleins non tus ET surface
+  du sol continu au-dessus du dessus des rails, ponts compris, et se vérifie
+  capable de rougir. Deux lignes ne se partagent jamais une colonne (la plus
+  proche paire est à 141 blocs) : une ligne neuve qui s'approche à moins de
+  deux plates-formes talus compris rougit ce témoin, et c'est alors un tracé
+  à mesurer, pas un aiguillage à inventer.
+- **UNE SURFACE SE LIT LÀ OÙ ELLE SE POSE.** Le sol continu pose le sommet
+  d'une colonne en son centre ; `corridorEn` lisait la cote de la voie au
+  coin, et le ballast enterrait une traverse sur huit. Le ballast lit
+  désormais sa cote au centre, son BLOC au coin (`blocVoxel`, que
+  `colonneRoute` lit) : le générateur garde son indice entier. Les routes
+  portent le même décalage, déclaré dans `TASKS.md`.
+- **QUAND UNE SURFACE SE LIT AILLEURS QUE LE BLOC, LE BLOC VOYAGE AVEC
+  ELLE.** `corridorEn` rend `cote` (centre) ET `blocVoxel` (coin) ; tout
+  lecteur qui cherche le bloc écrit (`grilleSol`, `hauts`, `coteHorizon`,
+  `colonneRoute`) lit `blocVoxel`, jamais `floor(cote) − 1`. Le premier jet
+  le recalculait et tombait dans l'air sur 322 morceaux sur 758 : un mailleur
+  qui jette sur le fil principal arrête la boucle de jeu, et c'est une cascade
+  de soixante rouges dans `monte.js` qui l'a dit. Le témoin maille les
+  morceaux le long de toutes les voies.
+- **UN CONVOI A SON MODÈLE ET SON ÉCART SE DÉDUIT DES LONGUEURS.** Le train
+  intervilles était la rame du métro (8,0 à 8,7 blocs) posée tous les 7,6 :
+  les bouts se traversaient. `convoitrain.js` : motrice au nez effilé à
+  chaque bout, voitures à fenêtres, soufflets, bogies, deux membres (tronc et
+  porte, v489), `matiereVivante` donc aucun programme neuf ; `ECART_TRAIN`
+  vaut la caisse plus deux demi-soufflets. `metro(…, { modele, ecart })`.
+  Le témoin mesure les MODÈLES RENDUS (boîte le long de la voie, demi-largeur
+  du bout) et l'écart des trains de la page.
+
 ## Un mauvais atterrissage casse l'avion (v462) — un seuil de crash vit dans la fiche, et l'enfant n'a jamais rien
 
 Max : « un avion devrait se crasher s'il atterrit mal ». Trois règles.

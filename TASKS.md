@@ -1,5 +1,97 @@
 # Ce qui est en cours
 
+## v539 — RIEN NE TRAVERSE UNE VOIE : ce qui reste, mesuré
+
+- **Rouges du portail de la v539 : aucun de la livraison.** `degats.js`
+  (« percuter une voiture de la rue l'abîme AUSSI » et « les feux de détresse
+  se posent SUR la carrosserie » — la Bugatti Bolide rend 0,45 sur deux feux) :
+  rejouée SEULE, mêmes deux rouges sur la branche et sur `origin/main` v531.
+  `monte.js` (rue et circulation : fabrication par tranches, passage peint de
+  Rome, allure d'une ville, voiture heurtée, rue vide), `reglages.js` (un choix
+  fait sur une tablette) et `reseau.js` (la voiture qui arrive derrière, sans
+  courtier) : familles déjà déclarées ci-dessous. Le premier portail avait
+  rendu SOIXANTE rouges dans `monte.js` : le sol continu lisait le ballast dans
+  l'air et la boucle de jeu mourait près d'un train — corrigé, témoin ajouté.
+  Après l'intégration de la v533 : `maj.js` (« en construction, on marche au
+  joystick », puis « le loader compte les fichiers ») vert rejoué SEUL sur la
+  branche et sur `origin/main` ; « de nuit, la voiture a ses phares » rouge une
+  fois sur `voiture.glb` (une lueur à z 0,54), vert sur `origin/main` rejoué
+  seul — le témoin tire un modèle au hasard, et la livraison ne touche aucun
+  modèle de voiture : à mesurer modèle par modèle dans la zone des phares.
+  `monte.js` sur `origin/main` rejouée seule : mêmes familles (rue vide, feu,
+  mur de face, minicarte en vol, flâneur, voisines d'un convoi).
+  Après l'intégration de la v536 : `reseau.js` rejouée SEULE deux fois de
+  chaque côté — branche 1 rouge sur 2 (veille sans retour, reprise d'hôte,
+  compteur après le départ de l'hôte : la famille qui va et vient, déclarée
+  plus bas), `origin/main` 0 sur 2. La livraison ne touche ni `net.js` ni
+  `sync.js`.
+- **Les rails semblent ondulés en vue oblique** (profil en long d'un tiers de
+  pente) et **les fenêtres du train restent noires la nuit** : relevé de la
+  revue d'écran (`docs/revue-ecran.md`).
+- **Le journal de la session des captures n'est pas encore remonté** (il part
+  au lancement suivant de l'iPhone). L'endroit a été retrouvé par la géométrie :
+  le TGV Paris–Lyon, viaduc des pas 716 à 767 et tranchée du pas 786, vers
+  (226, 1240) — même dalle d'herbe et mêmes piliers en capture au banc. À
+  relire dans `journal_appareil` (session v522 du 18 octobre, matin heure de
+  l'iPhone) pour confirmer.
+- **Des triangles de ciel au ras de la crête** (capture 2 de Max), vus aussi
+  au banc à gauche du viaduc (pas 716) avant ET après : la couture entre les
+  morceaux maillés et le paysage lointain. `horizon.js` est sur la PR de la
+  session `loin-reel` (#534) : non touché ici, à mesurer sur sa branche.
+- **La rame du MÉTRO garde son recouvrement** : `metro()` pose par défaut
+  `construireRame` (8,0 à 8,7 blocs) tous les 7,6 blocs — Washington, Paris,
+  Rome. Zone de la session des stations de métro : il suffit de lui passer
+  `ecart: 8.8`, ou un modèle à bouts plats.
+- **Sept cubes de ballast dépassent de 0,37 bloc au plus** au-dessus de la
+  base des rails, là où le sol continu n'est pas dessiné (au bord d'un
+  tablier, d'une gare) : le bloc est écrit à la cote du COIN, qui monte d'un
+  tiers de bloc par bloc. Sous le dessus des rails ; le témoin compte à partir
+  de `RAIL_HAUT + ROUES + 0,1`.
+- **Les routes portent le même décalage coin/centre** que le ballast avant la
+  v539 (`corridorEn` → `routeEn(x, z)` posé à x + ½) : rien ne s'y enterre (pas
+  de traverses), mais la surface est à un demi-bloc de pente près.
+- **Au demi-tour en gare, le convoi saute d'une voie à l'autre** sur un pas de
+  tracé (quatre blocs de côté pour quatre de long) : `traceSegment` recoud
+  l'aller et le retour sans courbe. À l'arrêt en gare, donc peu visible.
+- [ ] **Rouges de portail de la v538 (les guides des villes) : aucun de la
+  livraison.** Soupçonnant les guides devant « la rue roule à l'allure d'une
+  ville » (médiane 0), une sonde sous node a trouvé quatre guides sur la
+  chaussée — corrigé, et c'était un vrai défaut — mais le rouge revient au
+  portail suivant sans eux : c'est le bouchon déclaré plus bas. Au dernier
+  portail aussi, déclarés : « à Londres, un passant traverse sur le passage
+  peint », « feux de détresse », « un mur pris de face ». `monte.js` rejouée SEULE : branche 246
+  verts / 6 rouges, `origin/main` v515 249 / 3. Des deux côtés : « la rue se
+  fabrique par tranches », « au feu… piler », « rue vide ». Branche seule :
+  « un flâneur posé au milieu de la chaussée » et « deux voisines d'un
+  convoi » (déjà vus branche seule en v504, sans guides), et « les roues avant
+  braquent » (`braque: null`, joué dans le couloir vide (30 600, 30 600), à des
+  milliers de blocs de tout guide ; vert aux trois portails précédents du même
+  code). `degats.js` « percuter une voiture de la rue » (déclaré).
+  `reglages.js` « un choix fait sur une tablette » : vert seul des deux côtés.
+  **Portails de la v538 (après fusion de la v531), coupés deux fois à deux
+  heures pendant `reseau.js`.** Un seul rouge de la livraison, corrigé : le
+  regard de Capucine lu pendant un pas de côté (`ecart`, une voiture passe ;
+  sonde à part, 1 fois sur 3). Le reste, déclaré : `monte.js` (tranches,
+  voisines, rue vide, mur de face, `minimap×edu-timer`, passage peint de Rome,
+  au feu), `maj.js` (les deux loaders), `manhattan.js` (taxi tactile, PeerJS).
+  NEUF et pas à la livraison : `degats.js` « les feux de détresse se posent
+  SUR la carrosserie » — Bugatti Bolide, deux feux à 0,45 bloc de la tôle
+  (`ecarts [0.45,0.45,…]`) ; rejouée seule, branche 2/2 verte, `origin/main`
+  v531 1 rouge sur 2 à l'identique. `reseau.js` : 6 rouges au premier rejeu
+  seul de la branche (veille, reprise, hôte sans courtier), puis 91/91 vert
+  ; `origin/main` 91/91 — et preuve structurelle : aucun guide ne naît à
+  moins de 432 blocs du point d'apparition (`PORTEE_GUIDE` 150).
+  Troisième portail, sur la base v534 (renumérotée v538) : `monte.js` 11
+  rouges, dont trois intermittents jamais revus rejoué seul — « en virage, on
+  voit son flanc », « un passant change de trottoir au feu », « Atterrissage
+  vers Saint-Dizier » — et un neuf de la v531 : « au sol, chaque feuille vole
+  bas au-dessus de SA colonne » (vu une fois au portail, vert dans les deux
+  rejeux seuls). `monte.js` rejouée SEULE : branche 257 / 6 rouges,
+  `origin/main` v534 258 / 5 ; propres à la branche ce passage-là : « deux
+  voisines » et « au feu », tous deux déjà rouges sur `origin/main` ailleurs
+  dans ce fichier.
+
+
 - [ ] **PORTAIL DE LA v536 (mobilier cassable, fusionné à la v531) : aucun
   rouge de la livraison.** Le portail n'a pas fini sous la limite de deux
   heures (coupé dans `reseau.js`). Rejoués SEULS des deux côtés : `monte.js`
@@ -344,13 +436,13 @@ v522 ne touche pas ; la distribution reste à faire.
   rendait trop peu d'images ce jour-là (v427 : `locator.click` attend deux
   images identiques).
   La livraison ne touchait que trois chaînes de bulles de `marlon.js`.
-- [ ] **Rouges de portail mesurés des deux côtés au portail de la v537 (la
+- [ ] **Rouges de portail mesurés des deux côtés au portail de la v540 (la
   minicarte toujours là).** `degats.js` rejouée SEULE deux fois sur la branche
   et deux fois sur `origin/main` v531 (`git worktree`) :
   - « les feux de détresse se posent SUR la carrosserie » : rouge 2 fois sur 2
     des deux côtés, à l'identique — la Bugatti Bolide pose deux feux à 0,45
     bloc de la tôle (les cinq autres modèles à −0,015). En production ; zone
-    véhicules (`posesDetresse`), que la v537 ne touche pas.
+    véhicules (`posesDetresse`), que la v540 ne touche pas.
   - « percuter une voiture de la rue l'abîme AUSSI » : 1 sur 2 sur la branche,
     2 sur 2 sur `origin/main` (élan trouvé 13 à 15 blocs) ; « chez Alice
     aussi… feux de détresse » le suit (`recues 0` quand le choc n'a pas eu
@@ -358,7 +450,7 @@ v522 ne touche pas ; la distribution reste à faire.
   - `monte.js` au même portail : six rouges, cinq déjà déclarés (flâneur sur
     la chaussée, feu qui pile, rue vide, mur de face, « Atterrissage vers »),
     plus « à Rome aussi, en biais, un passant traverse sur le passage peint »
-    (déclaré sous la v402). La v537 ne touche que la minicarte et le badge du
+    (déclaré sous la v402). La v540 ne touche que la minicarte et le badge du
     temps libre.
   - Portail repris (reprise, `degats.js`, `monte.js`, `reseau.js`) : `reseau.js`
     verte ; `degats.js` les deux mêmes rouges ; `monte.js` sept rouges, le
@@ -385,7 +477,7 @@ v522 ne touche pas ; la distribution reste à faire.
     une lueur à z 0,54). Rejouée SEULE : branche 263 verts / 3 rouges (rue par
     tranches, passage peint de Rome, rue vide), `origin/main` v536 260 / 6
     (les mêmes familles, plus « en vol… ne se recouvrent pas » en 430 × 932 et
-    420 × 760 — le badge du temps libre sur la minicarte, que la v537 corrige) ;
+    420 × 760 — le badge du temps libre sur la minicarte, que la v540 corrige) ;
     les phares verts des deux côtés : une intermittence de portail.
 - [ ] **Deux rouges de portail mesurés des deux côtés au portail de la v530
   (les pistes larges).** Chacun rejoué SEUL sur la branche et sur `origin/main`
@@ -8853,7 +8945,20 @@ l'embarquement a eu lieu, pas par une hypothèse.
   pied bute (sonde v470) : le rendre plat exige que `colonneNaturelle` sache
   qu'un dessus a été posé, zone du sol continu.
 
-- [ ] **Apprendre** — guides dans les villes, questions audio.
+- [ ] **Apprendre** — questions audio. *(Les guides dans les villes : v538,
+  vingt-deux guides au pied des monuments de Paris, Londres, Rome, New York et
+  Washington, en français et en anglais.)* Ce qui reste des guides : la Statue
+  de la Liberté, le Golden Gate et les monuments du catalogue qui attendent
+  leur adresse (ci-dessus) n'en ont pas, faute de repère ; les villes
+  engendrées (Berlin, Tokyo…) non plus — une liste de faits vérifiés par
+  ville est un travail de rédaction à part, pas un réglage. Le guide ne fait
+  pas de geste (les corps Rocketbox ne se pilotent qu'en pose complète) : il
+  se tourne et lève son fanion, c'est tout. Le guide PARLE (synthèse vocale du
+  navigateur), puisque la v504 retire tout texte en jeu : la voix n'a été
+  éprouvée qu'au banc (un enregistreur à la place de `speechSynthesis`) —
+  POUR MAX, SUR LA TABLETTE : aller à la tour Eiffel, son allumé, et écouter
+  Capucine ; une voix de synthèse qui ne plaît pas se coupe d'une ligne
+  (`dire` dans main.js).
 
 - [ ] **Notifications push** — l'invitation atteint l'application fermée.
 

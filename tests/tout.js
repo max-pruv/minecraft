@@ -146,6 +146,7 @@ const GARDIENS = {
   // Les trains intervilles : les voies touchent le terrain et la carte, les
   // rames se prouvent dans monte.js.
   'src/trains.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'monte.js'],
+  'src/convoitrain.js': ['carteMonde.js', 'monte.js'],
   // Le tour du monde : neuf sites, dix monuments. Ils aplanissent leur parvis
   // (donc le témoin du relief) et s'ajoutent aux destinations de la carte.
   'src/capitales.js': ['carteMonde.js', 'plafond.js', 'carte.js'],
@@ -286,10 +287,11 @@ const GARDIENS = {
   // allégée », « un parent vient de changer tes réglages ». Ses gardiens sont donc
   // ceux de `main.js`, plus les suites où un message est lui-même un verdict.
   'src/guides.js': ['washington.js'],
+  'src/guidesvilles.js': ['washington.js'],
   'src/bandeau.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js',
     'maj.js', 'reglages.js', 'reseau.js'],
   'src/personnages.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
-  'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js'],
+  'src/vie.js': ['realisme.js', 'monte.js', 'manhattan.js', 'washington.js'],
   'src/marlon.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/pietons.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/passages.js': ['plafond.js', 'monte.js', 'carteMonde.js'],   // les passages en biais (v421)
