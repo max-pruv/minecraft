@@ -32,6 +32,7 @@
 
 import * as THREE from 'three';
 import { voitureSons, bruitDeChoc, moteurRegime } from './sons.js';
+import { rugositeDeSurface } from './conduite.js';
 import { marquerRoues, glissade } from './traces.js';
 
 const PARAMS = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
@@ -221,6 +222,14 @@ function poursuiteVoiture(a, player, dt, m) {
     const ox = amp * Math.sin(S.tSecousse * 53), oy = amp * 0.7 * Math.sin(S.tSecousse * 41 + 1);
     x += cy * ox; z -= sy * ox; y += oy;
     roulisCam = amp * 0.09 * Math.sin(S.tSecousse * 37);
+  }
+  // LA VIBRATION DE LA ROUTE (v543) : sur l'herbe, le gravier, le sable, la
+  // caméra tremble un peu, d'autant plus qu'on va vite — rien sur l'asphalte.
+  // Deux sinus encore, jamais un hasard par image.
+  if (S.vibration > 0.0015) {
+    S.tVib += dt;
+    const ox = S.vibration * Math.sin(S.tVib * 29), oy = S.vibration * 0.8 * Math.sin(S.tVib * 23 + 0.7);
+    x += cy * ox; z -= sy * ox; y += oy;
   }
 
   // LA REPRISE APRÈS L'EMBARQUEMENT : on part d'où la séquence a laissé la
@@ -480,7 +489,7 @@ function etatNeuf(player, cam) {
   return { s: 0, camYaw: null, recul: null, haut: null, regard: 0, reprise: 1, depart: null,
     secousse: 0, tSecousse: 0, roulis: 0, wr: 0, tangage: 0, wt: 0, derive: 0, volant: 0,
     yaw: player.yaw, tauxCap: 0, v: player.vitesseVoiture || 0, vAvant: player.vitesseVoiture || 0, acc: 0,
-    chocVu: player.choc && player.choc.t, suivi: null, crisse: 0, fovBase: cam.userData.fovBase };
+    chocVu: player.choc && player.choc.t, suivi: null, crisse: 0, vibration: 0, tVib: 0, fovBase: cam.userData.fovBase };
 }
 
 // L'ENTRÉE UNIQUE, appelée par `fun.js` à chaque image où l'enfant est porté
@@ -533,9 +542,15 @@ export function sensationsAuVolant(a, player, dt) {
     freinMain ? 0.75 : 0,
     Math.abs(m.lat) > 16 ? (Math.abs(m.lat) - 16) / 14 : 0));
   a.sens.crisse += (crisseVise - a.sens.crisse) * Math.min(1, dt * 8);
+  // LA ROUTE SOUS LES ROUES (v543) : hors de l'asphalte, un grondement qui
+  // monte avec la vitesse, et la caméra qui tremble d'autant. La surface est
+  // publiée par la physique (`player.surface`), la rugosité est une règle
+  // pure de conduite.js — l'oreille et l'œil lisent la même.
+  const roulement = rugositeDeSurface(player.surface) * Math.min(1, Math.abs(m.v) / 14);
+  a.sens.vibration += (0.035 * roulement - a.sens.vibration) * Math.min(1, dt * 6);
   const ev = player.etatVoiture || {};
   voitureSons({
-    regime, charge, crissement: a.sens.crisse,
+    regime, charge, crissement: a.sens.crisse, roulement,
     sante: typeof ev.moteur === 'number' ? ev.moteur : 1,
     panne: !!ev.enPanne, feu: !!ev.enFeu,
   });

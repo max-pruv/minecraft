@@ -73,6 +73,40 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     verifier('en production, les cadences de synchronisation valent leur valeur réelle',
       faux.length === 0 && TEMPO === 1 && t(20000) === 20000,
       faux.join(' · ') || `${ATTENDUS.length} cadences relues, tempo ${TEMPO}`);
+
+    // LA RADIO A UN PROGRAMME (v543, `radio.js`, pur). Cinq stations de trois
+    // morceaux ; chaque morceau commence par le jingle de sa station, sans
+    // batterie ; le programme est une fonction de l'HEURE RÉELLE — la même
+    // heure rend le même pas, et trois croches de plus avancent de trois pas —,
+    // comme une vraie radio qui joue sans nous ; la station suivante de la
+    // dernière est le silence, et celle du silence la première. Sur l'ancien
+    // code le module n'existe pas : rouge, et dit.
+    {
+      const R = await import('../src/radio.js').catch(() => null);
+      if (!R || !R.programme) verifier('la radio a cinq stations de trois morceaux, un jingle devant chacun, et un programme qui suit l\'heure réelle', false, 'radio.js ne se charge pas');
+      else {
+        const fautes = [];
+        if (R.STATIONS.length !== 5) fautes.push(`${R.STATIONS.length} stations`);
+        for (const st of R.STATIONS) {
+          if (st.morceaux.length !== 3) fautes.push(`${st.nom} : ${st.morceaux.length} morceaux`);
+          for (let k = 0; k < st.morceaux.length; k++) {
+            const premier = R.evenements(st, k, 0);
+            if (!premier.some((e) => e.quoi === 'jingle') || premier.some((e) => e.quoi === 'grosse' || e.quoi === 'caisse' || e.quoi === 'charley')) fautes.push(`${st.nom} / ${st.morceaux[k].titre} : pas de jingle en tête`);
+            let notes = 0;
+            for (let pas = R.PAS_JINGLE; pas < R.pasDuMorceau(st.morceaux[k]); pas++) notes += R.evenements(st, k, pas).filter((e) => e.note).length;
+            if (notes < 40) fautes.push(`${st.nom} / ${st.morceaux[k].titre} : ${notes} notes`);
+            if (!st.morceaux[k].titre) fautes.push(`${st.nom} : un morceau sans titre`);
+          }
+          const h = 1234567.8, a = R.programme(st, h), b = R.programme(st, h), c = R.programme(st, h + R.dureePas(st) * 3);
+          if (a.morceau !== b.morceau || a.pas !== b.pas) fautes.push(`${st.nom} : la même heure rend deux pas`);
+          if (!((c.morceau === a.morceau && c.pas - a.pas === 3) || (c.morceau !== a.morceau && c.pas < 3))) fautes.push(`${st.nom} : trois croches plus tard, pas ${a.pas} → ${c.pas}`);
+        }
+        const suite = [null, 0, 1, 2, 3, 4].map((i) => R.stationSuivante(i));
+        if (JSON.stringify(suite) !== JSON.stringify([0, 1, 2, 3, 4, null])) fautes.push(`suivante : ${JSON.stringify(suite)}`);
+        verifier('la radio a cinq stations de trois morceaux, un jingle devant chacun, et un programme qui suit l\'heure réelle',
+          fautes.length === 0, fautes.join(' · ') || R.STATIONS.map((s) => `${s.nom} (${(R.pasDeStation(s) * R.dureePas(s) / 60).toFixed(1)} min)`).join(', '));
+      }
+    }
     const lus = [
       ['https://minecraft-fam.vercel.app/index.html?tempo=4', 1],
       ['http://192.168.1.12:8321/index.html?tempo=4', 1],

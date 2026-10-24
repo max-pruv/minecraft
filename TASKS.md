@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+## v543 — LA VOITURE COMME DANS GTA : les rouges du portail
+
+- [ ] **Rouges du portail de la v543 (la voiture comme dans GTA), tous déjà
+  déclarés ou réglés.** `degats.js` « feux de détresse SUR la carrosserie » :
+  réglé ici (cache des poses rempli sur une voiture froissée), 2/2 verte.
+  `monte.js` rejouée seule jusqu'au bout sur la branche : tous les témoins de la
+  livraison verts ; rouges « rue vide », Moscou ×2 — les mêmes sur `origin/main`
+  v540 (rejouée seule, avec en plus le train, le feu qui pile, la voiture
+  heurtée). `reseau.js` : « un hôte sans courtier est trouvé » et « il le
+  REJOINT » rouges des deux côtés ; « seule après le départ de l'hôte » 1/1 sur
+  la branche (déclaré 1/3 des deux côtés). `metro.js` « la ligne 1 nous emmène »
+  : vert rejouée seule des deux côtés. `maj.js` (loader) et `reglages.js`
+  (battement) : déclarés plus bas.
+
 ## v541 — DE VRAIES FEUILLES : ce qui reste, mesuré
 
 - **Un carré d'herbe en voxel (3 × 3 colonnes) au pied de chaque BOULEAU**,
@@ -83,6 +97,7 @@
 - **Au demi-tour en gare, le convoi saute d'une voie à l'autre** sur un pas de
   tracé (quatre blocs de côté pour quatre de long) : `traceSegment` recoud
   l'aller et le retour sans courbe. À l'arrêt en gare, donc peu visible.
+
 - [ ] **Rouges de portail de la v538 (les guides des villes) : aucun de la
   livraison.** Soupçonnant les guides devant « la rue roule à l'allure d'une
   ville » (médiane 0), une sonde sous node a trouvé quatre guides sur la
@@ -166,6 +181,22 @@
   bute chez lui) ; un fût tombé vers la chaussée peut y dépasser, et les
   voitures de la rue passent au travers ; les arbres de rue (`LOG`) restent
   durs.
+- [ ] **La conduite à la GTA (v543), ce qui reste, déclaré.** (1) Le klaxon
+  de l'enfant ne voyage pas par le réseau : un ami ne l'entend pas (un message
+  court `klaxon`, nom neuf, l'hôte relaie, le receveur cède — comme
+  `portiere`, v377). (2) Les feux stop de la voiture d'un AMI ne s'allument
+  pas chez les autres : `p.v` ne porte pas le freinage (une lettre de plus
+  dans `p.v`, lue sur `pos` ET `rpos`, v388). (3) Les voitures de la rue n'ont
+  pas de phares la nuit : deux lueurs par voiture, c'est deux appels de dessin
+  par voiture visible, le goulot de l'iPad (v196) — à mesurer sur la tablette
+  avant de décider ; les feux stop, eux, ne se dessinent que quand la voiture
+  freine. (4) La radio d'un ami n'est pas la nôtre : deux tablettes sur la
+  même station entendent le même programme (l'heure réelle), mais rien ne
+  partage le CHOIX. (5) Un klaxon de rue se place à gauche ou à droite
+  (`StereoPannerNode`), pas devant ou derrière : un vrai panoramique
+  (`PannerNode` HRTF) coûterait un nœud par voiture. (6) La surface se lit
+  sous le milieu et sous le nez de la caisse, pas sous chaque roue : une
+  voiture à cheval sur le bord de la route prend la plus mauvaise des deux.
 
 - [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
   au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
@@ -379,7 +410,10 @@ pendant la marche, `monte.js` les rouges ci-dessus.
   sur la branche : 6 verts sur 6. La v533 ne touche ni l'approche ni le
   bandeau ; elle allume des feux sur le maillage de l'avion. À rejouer en
   distribution (v269) le jour où il revient, avec la cadence dans le message.
-- [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » :
+- [x] **(Réglé en v543 : la cause n'était pas le capot de la Bolide mais le
+  cache des poses, rempli sur une voiture de la rue déjà froissée — on ne garde
+  plus que des poses mesurées sur une tôle intacte ; `degats.js` 2/2 verte.)**
+  **`degats.js` « les feux de détresse se posent SUR la carrosserie » :
   la Bugatti Bolide pose ses deux feux avant à 0,45 bloc de la tôle** (écarts
   `[0.45, 0.45, −0.015, −0.015]`). Rejouée SEULE sur la branche (v533) ET sur
   `origin/main` v531 (`git worktree`) : la même valeur au millième des deux

@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 543,
+    titre: 'La voiture, comme dans GTA',
+    puces: [
+      'Cinq stations de radio, un bouton pour changer',
+      'Un klaxon — et la rue klaxonne aussi',
+      'Sur l\'herbe et le sable, ça glisse',
+      'Feux stop et feux de recul',
+    ],
+  },
+  {
     v: 541,
     titre: 'De vraies feuilles',
     puces: [

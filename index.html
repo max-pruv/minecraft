@@ -804,6 +804,12 @@
     #fm-btn { display: none; right: 24px; bottom: calc(150px + var(--safe-bottom)); flex-direction: column; }
     #fm-btn .lb { display: block; }
     body.en-vehicule:not(.en-avion) #fm-btn { display: flex; }
+    /* LE KLAXON ET LA RADIO (v543) : dans la même colonne, au-dessus du frein
+       à main — tout à droite de 55 % de la vue, rien dans le quart du joystick. */
+    #klaxon-btn, #radio-btn { display: none; right: 24px; flex-direction: column; }
+    #klaxon-btn { bottom: calc(220px + var(--safe-bottom)); }
+    #radio-btn { bottom: calc(290px + var(--safe-bottom)); }
+    body.en-vehicule:not(.en-avion) #klaxon-btn, body.en-vehicule:not(.en-avion) #radio-btn { display: flex; }
     /* En avion la colonne se déplie et porte les deux boutons ; en voiture
        elle n'est qu'un socle pour le compteur. */
     body.en-avion #cmd-vol { height: 210px; }
@@ -845,6 +851,14 @@
     }
     body.en-avion #etat-pose.visible { display: flex; }
     #etat-pose .ico { width: 22px; height: 22px; flex: none; }
+    /* LA RADIO (v543) : la station et le titre, trois secondes après chaque
+       changement, au volant seulement — un état, pas un message (v516). */
+    #radio-etat {
+      display: none; align-items: center; color: #fff; text-shadow: 1px 1px 0 #000;
+      background: rgba(0,0,0,0.5); border-radius: 18px; padding: 5px 14px; font-weight: bold; font-size: 15px;
+      white-space: nowrap; pointer-events: none;
+    }
+    body.en-vehicule:not(.en-avion) #radio-etat.visible { display: flex; }
     /* LE GPS (v306) : quand une destination est choisie, une flèche qui dit
        où tourner, le nom et la distance, et ✕ pour arrêter. En haut au
        milieu ; aux commandes d'un avion, sous le cadran de cap. */
@@ -923,7 +937,7 @@
       position: static !important; transform: none !important; max-width: 100%; box-sizing: border-box;
       pointer-events: auto;
     }
-    #file-centre > #toast, #file-centre > #cap-avion, #file-centre > #etat-pose { pointer-events: none; }
+    #file-centre > #toast, #file-centre > #cap-avion, #file-centre > #etat-pose, #file-centre > #radio-etat { pointer-events: none; }
     #creature-label {
       display: none; position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
       font-size: 15px; font-weight: bold; text-shadow: 1px 1px 0 #000;
@@ -2286,6 +2300,9 @@
     /* AU VOLANT : le joystick, « Descendre » et le frein à main. */
     body.hud-simple.en-vehicule:not(.en-avion) #construire-btn { display: none !important; }
     body.hud-simple.en-vehicule:not(.en-avion) #fm-btn { right: 20px; bottom: calc(28px + var(--safe-bottom)); }
+    /* le klaxon juste au-dessus de « Descendre », la radio au-dessus du klaxon */
+    body.hud-simple.en-vehicule:not(.en-avion) #klaxon-btn { right: 20px; bottom: calc(150px + var(--safe-bottom)); }
+    body.hud-simple.en-vehicule:not(.en-avion) #radio-btn { right: 20px; bottom: calc(214px + var(--safe-bottom)); }
     body.hud-simple.en-vehicule:not(.en-avion) .fun-target,
     body.hud-simple.a-bord .fun-target { bottom: calc(84px + var(--safe-bottom)); }
 
@@ -2308,7 +2325,7 @@
     body.hud-simple #gaz-fill { background: rgba(232, 86, 42, 0.78); }
 
     /* LES PILULES DU HAUT : GPS et cadran de cap, sur une ligne. */
-    body.hud-simple #gps, body.hud-simple #cap-avion, body.hud-simple #etat-pose {
+    body.hud-simple #gps, body.hud-simple #cap-avion, body.hud-simple #etat-pose, body.hud-simple #radio-etat {
       background: var(--hud-pilule); color: var(--encre, #111A2E); text-shadow: none;
       border: 1px solid rgba(255, 255, 255, 0.95); border-radius: 20px; white-space: nowrap;
       font-family: var(--corps, system-ui, sans-serif);
@@ -2335,7 +2352,7 @@
     body.hud-simple #gps-stop { width: 30px; height: 30px; border-radius: 15px; border: 0;
       background: rgba(17, 26, 46, 0.08); color: var(--encre, #111A2E); }
     body.hud-simple #cap-avion { padding: 6px 14px 7px; }
-    body.hud-simple #etat-pose { font-size: 15px; padding: 6px 14px; }
+    body.hud-simple #etat-pose, body.hud-simple #radio-etat { font-size: 15px; padding: 6px 14px; }
     body.hud-simple #etat-pose .ico { color: var(--corail-texte, #B83B16); }
     body.hud-simple #cap-degres, body.hud-simple #cap-ville { display: inline; font-size: 14px; }
     body.hud-simple #cap-degres { opacity: 1; color: #4A5470; margin-right: 8px; letter-spacing: 0.04em; }
@@ -2605,6 +2622,7 @@
   <div id="file-centre">
     <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
     <div id="etat-pose" role="status" aria-live="polite"></div>
+    <div id="radio-etat" role="status" aria-live="polite"></div>
     <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
     <div id="gps-ami"><span id="gps-ami-texte"></span><button id="gps-ami-oui">Y aller</button><button id="gps-ami-non" title="Non merci">✕</button></div>
     <div id="toast"></div>
@@ -2680,6 +2698,8 @@
     <button class="tbtn" id="fly-btn" aria-label="Voler"><span class="ic"></span><span class="lb" id="fly-lb">VOLER</span></button>
     <button class="tbtn" id="down-btn" aria-label="Descendre"></button>
     <button class="tbtn" id="fm-btn" title="Frein à main" aria-label="Frein à main"><span class="ic"></span><span class="lb">DÉRAPER</span></button>
+    <button class="tbtn" id="klaxon-btn" title="Klaxon" aria-label="Klaxon"><span class="ic"></span><span class="lb">KLAXON</span></button>
+    <button class="tbtn" id="radio-btn" title="Changer de station de radio" aria-label="Radio"><span class="ic"></span><span class="lb">RADIO</span></button>
     <!-- La manette des gaz (v262) : au volant ou aux commandes, à droite, on
          la monte et on la baisse — en même temps que le joystick à gauche. -->
     <div id="gaz-base"><div id="gaz-fill"></div><svg id="gaz-chevrons" viewBox="0 0 24 60" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 14 12 7l7 7M5 32l7-7 7 7M5 50l7-7 7 7"/></svg><div id="gaz-knob"></div><span id="gaz-mot">Gaz</span></div>

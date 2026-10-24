@@ -126,3 +126,16 @@ d'apparition, sans un arbre : la jouer seule ne montrait rien des arbres.
   et se lisent comme des triangles noirs en vol ; préexistant.
 - Vu, non corrigé : les bêtes (mouton, éléphant) sont en cubes à côté d'arbres
   en relief ; c'est le bestiaire, pas cette livraison.
+
+## Le relevé de la v543 (la voiture comme dans GTA), 24 octobre 2026
+
+Captures dans `docs/revue-ecran/v543-volant/` : `volant-arret`, `volant-roule`
+et `voiture-rue-percutee`, iPhone et iPad, jour et nuit. Rien ne se recouvre :
+radio, klaxon, « Descendre » et frein à main tiennent dans la colonne de
+droite, hors du quart du joystick, aux deux tailles.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 22 | moyenne | au volant (v543), iPhone et iPad | [v543](revue-ecran/v543-volant/iphone-volant-arret-jour.jpg) | L'icône du **klaxon** est un haut-parleur : un enfant peut la lire comme « le son », pas comme l'avertisseur. Le mot est dans `aria-label`, pas à l'écran. | Un cornet d'avertisseur dessiné (`ICONES.klaxon`), jugé sur une capture à 430 × 932. | `src/commandes.js` |
+| 23 | moyenne | au volant de nuit (v533, revu en v543) | [v543](revue-ecran/v543-volant/iphone-volant-roule-nuit.jpg) | Vus de la caméra de poursuite, les **cônes des phares** dessinent deux triangles clairs qui flottent au-dessus du capot, et les deux lentilles se lisent comme des ronds blancs posés sur le toit. | Raccourcir ou estomper le cône près de la voiture, ou ne pas le dessiner quand la caméra est derrière. | `src/phares.js` |
+| 24 | basse | voiture de la rue percutée, de nuit (v543) | [v543](revue-ecran/v543-volant/iphone-voiture-rue-percutee-nuit.jpg) | Sur la carrosserie blanche de la fourgonnette, les **feux de détresse** additifs virent au rose saumon : ils sont sur la tôle, mais on les lit mal comme des clignotants orange. | Une teinte plus saturée (moins de rouge additif sur fond clair), jugée sur la même capture. | `src/vehicules.js` (`feuxDeDetresse`) |
