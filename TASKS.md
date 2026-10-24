@@ -1,5 +1,27 @@
 # Ce qui est en cours
 
+## v545 (provisoire) — LA REVUELTO ADAPTÉE : ce qui reste, mesuré
+
+- [ ] **Le feu vert de Max** sur le rendu (PR #546, planches dans
+  `docs/revue-ecran/v545-revuelto/`). Au feu vert : rebase sur `origin/main`,
+  `CACHE_VERSION` relu sur `main` et dans les branches ouvertes, numéro suivant
+  libre. Si #544 passe avant, la ligne du chargeur se résout en
+  `fichierCharge(entree)`.
+- [ ] **Le taxi jaune de New York porte ses phares au pare-brise.**
+  `posesPhares` (phares.js) rend z −1,01, y 1,18 pour `ny-crown-victoria`, une
+  voiture de −2,73 à 2,68 : sans bloc optique nommé, la hauteur de repli est
+  `bas + 0,4 × h`, et le lanternon « TAXI » du toit grandit `h` — la pose tombe
+  au-dessus du capot. Sans lanternon (`construireTaxi({ taxi: false })`) : z
+  −2,76, y 0,74, au nez. Mesuré sous node, IDENTIQUE sur `origin/main` v540 et
+  sur la branche. Le témoin « de nuit au volant, la voiture a ses phares »
+  (`monte.js`) tire un modèle au hasard et rougit quand il tire ce taxi. Remède
+  probable : nommer les optiques du taxi (`RE_PHARE`), ou borner la hauteur de
+  repli à la caisse sous le lanternon.
+- [ ] **Si la Revuelto rame sur la tablette** : 102 maillages (contre 34) font
+  ≈ 36 appels de dessin de plus au volant ; fusionner par matériau au
+  chargement (≈ 36 maillages), ou réduire ses textures à 512 px (31 → ≈ 8 Mo).
+  Proposé à Max, pas fait.
+
 ## v543 — LA VOITURE COMME DANS GTA : les rouges du portail
 
 - [ ] **Rouges du portail de la v543 (la voiture comme dans GTA), tous déjà
