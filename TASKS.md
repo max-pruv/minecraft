@@ -13,6 +13,15 @@
   visibles en 45 s, aucune cachée en attente : c'est le compte de six au moment
   où la suite y arrive, pas la règle neuve. `maj.js` (le loader, déclaré) :
   rouge sur `origin/main`, vert sur la branche.
+- **Second portail, rebasé sur la v541** (chargé : `visio.js` radio, `washington.js`
+  Air et l'Espace, `maj.js` loader, `reseau.js` trio « à trois », `monte.js`
+  ×8 — tous des familles déclarées). Un seul inconnu : `monte.js` « une voiture
+  heurtée… feux de détresse » (`clignote: false`), vert sur `origin/main`, vert
+  sur la branche rejouée seule avant ET après le rebase (130:5, 130:9). Piste :
+  le clignotement ne se relit qu'à l'image, et le témoin échantillonne un état
+  de 0,7 s de période à une image par seconde sous charge. `monte.js` et
+  `reseau.js` rejouées seules : rouges déclarés seulement (voisines, rue vide ;
+  départ de l'hôte, 1/3 des deux côtés).
 - [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » (Bolide
   à 0,45)** : rouge sur la branche, VERT sur `origin/main` cette fois (rouge 2
   sur 2 des deux côtés à la v540) — un tirage. Piste, non établie : les poses se
