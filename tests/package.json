@@ -8,6 +8,7 @@
     "test": "node tout.js --voie",
     "fumee": "node fumee.js",
     "long": "node tout.js",
+    "couverture": "node tout.js --couverture --depuis-zero",
     "reseau": "node reseau.js",
     "reglages": "node reglages.js",
     "carte": "node carte.js",
