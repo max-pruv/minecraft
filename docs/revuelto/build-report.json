@@ -1,0 +1,55 @@
+{
+  "status": "work in progress; not approved for production",
+  "file": "Lamborghini_Revuelto_WIP.glb",
+  "bytes": 3365668,
+  "triangles": 91244,
+  "uniformScale": 1.0823725955641594,
+  "wheelbaseM": 2.779,
+  "actualDimensionsXYZ": [
+    2.1851993352239716,
+    1.1826405309635402,
+    4.739080506315693
+  ],
+  "officialLengthM": 4.947,
+  "lengthResidualM": -0.20791949368430718,
+  "originalImages": [
+    {
+      "name": "Carbon_baseColor.jpeg",
+      "bytes": 129106,
+      "sha256": "a9e9c6d8acbbc59e97682c435f0ef47535bd072e1890ecb19a849fe37e72e03f"
+    },
+    {
+      "name": "Engine_baseColor.jpeg",
+      "bytes": 49847,
+      "sha256": "be9e671c094610a6191653e2af54a77c6f6f100b3101c5afced49e7b3adddd48"
+    },
+    {
+      "name": "Headlight_baseColor.jpeg",
+      "bytes": 232551,
+      "sha256": "65d8e23d4777c4ae08663cc62cd8a96fd31cec7832378272dbc904aec0bad4d1"
+    },
+    {
+      "name": "Logo_baseColor.png",
+      "bytes": 159674,
+      "sha256": "47b6be9b4b8c8a1698b6c615353b96124670fb63e669e4e52cfefaababc660d6"
+    },
+    {
+      "name": "Brake_rotor_baseColor.jpeg",
+      "bytes": 211918,
+      "sha256": "04d5ae6b34544412400bc3b066788e6cd88dc24e27bd894ea9c6315ae6bd050c"
+    },
+    {
+      "name": "Steering_wheel_baseColor.jpeg",
+      "bytes": 329427,
+      "sha256": "8392466836ab6d22db59222f772ecd02cea2983fd7ece543d1283065ff20d7a5"
+    },
+    {
+      "name": "Cluster_emissive.jpeg",
+      "bytes": 194860,
+      "sha256": "f91ddaa314d1fa7176a8424211c128896a84a6c3b5926275207e995d8703835d"
+    }
+  ],
+  "doors": "disabled; source shell is not separated into door panels",
+  "sourceUrl": "https://sketchfab.com/3d-models/black-lamborghini-revuelto-1a00d7d7fea6492bb960ec595cf79464",
+  "dimensionReference": "https://www.lamborghini.com/original/DAM/lamborghini/facelift_2019/model_detail/revuelto/2024/brochure/06_24/REVUELTO_DIGITAL_BROCHURE_EN_2024.pdf"
+}
