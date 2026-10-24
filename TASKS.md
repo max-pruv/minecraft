@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+## v541 — LA VOITURE COMME DANS GTA : les rouges du portail
+
+- [ ] **Rouges du portail de la v541 (la voiture comme dans GTA), tous déjà
+  déclarés ou réglés.** `degats.js` « feux de détresse SUR la carrosserie » :
+  réglé ici (cache des poses rempli sur une voiture froissée), 2/2 verte.
+  `monte.js` rejouée seule jusqu'au bout sur la branche : tous les témoins de la
+  livraison verts ; rouges « rue vide », Moscou ×2 — les mêmes sur `origin/main`
+  v540 (rejouée seule, avec en plus le train, le feu qui pile, la voiture
+  heurtée). `reseau.js` : « un hôte sans courtier est trouvé » et « il le
+  REJOINT » rouges des deux côtés ; « seule après le départ de l'hôte » 1/1 sur
+  la branche (déclaré 1/3 des deux côtés). `metro.js` « la ligne 1 nous emmène »
+  : vert rejouée seule des deux côtés. `maj.js` (loader) et `reglages.js`
+  (battement) : déclarés plus bas.
+
 ## v539 — RIEN NE TRAVERSE UNE VOIE : ce qui reste, mesuré
 
 - **Rouges du portail de la v539 : aucun de la livraison.** `degats.js`
@@ -53,6 +67,7 @@
 - **Au demi-tour en gare, le convoi saute d'une voie à l'autre** sur un pas de
   tracé (quatre blocs de côté pour quatre de long) : `traceSegment` recoud
   l'aller et le retour sans courbe. À l'arrêt en gare, donc peu visible.
+
 - [ ] **Rouges de portail de la v538 (les guides des villes) : aucun de la
   livraison.** Soupçonnant les guides devant « la rue roule à l'allure d'une
   ville » (médiane 0), une sonde sous node a trouvé quatre guides sur la
