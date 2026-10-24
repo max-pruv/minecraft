@@ -19,6 +19,7 @@ const args = process.argv.slice(2);
 const dossier = args.find((a) => !a.startsWith('--')) || path.join(os.tmpdir(), 'revuelto');
 fs.mkdirSync(dossier, { recursive: true });
 const vuesVoulues = (args.find((a) => a.startsWith('--vues=')) || '--vues=iphone,ipad').slice(7).split(',');
+const etatsVoulus = (args.find((a) => a.startsWith('--etats=')) || '').slice(8).split(',').filter(Boolean);
 const VUES = { iphone: { width: 430, height: 932 }, ipad: { width: 820, height: 1180 } };
 const HEURES = [['jour', 0.42], ['nuit', 0.75]];
 const BRAS = ['ancienne', 'neuve'];
@@ -130,6 +131,41 @@ const ETATS = {
   },
 };
 
+// Avant chaque capture de la rue : la Revuelto de la circulation la plus
+// proche, vue de côté à sept blocs, à hauteur d'enfant (elle roule : on se
+// recadre sur elle juste avant de prendre l'image).
+const RECADRER = {
+  rue: (tab) => tab.evaluate(async () => {
+    const g = window.__game, THREE = await import('three');
+    const tenir = (n) => new Promise((f) => setTimeout(f, n * 1000));
+    const t0 = performance.now();
+    while (performance.now() - t0 < 40000) {
+      let best = null, dm = Infinity;
+      g.scene.traverse((o) => {
+        if (!o.userData || o.userData.flotte !== 'lamborghini-revuelto.glb' || !o.parent || o.userData.roues === undefined) return;
+        const p = o.getWorldPosition(new THREE.Vector3());
+        const d = p.distanceTo(g.player.pos);
+        if (d < dm) { dm = d; best = { o, p }; }
+      });
+      if (best && dm < 400) {
+        const q = new THREE.Quaternion(); best.o.getWorldQuaternion(q);
+        const cote = new THREE.Vector3(1, 0, 0).applyQuaternion(q).setY(0).normalize();
+        const av = new THREE.Vector3(0, 0, 1).applyQuaternion(q).setY(0).normalize();
+        const oeil = best.p.clone().addScaledVector(cote, 6).addScaledVector(av, 3);
+        g.player.flying = true;
+        g.player.pos.set(oeil.x, best.p.y + 0.6, oeil.z); g.player.vel.set(0, 0, 0);
+        g.player.yaw = Math.atan2(-(best.p.x - oeil.x), -(best.p.z - oeil.z));
+        g.player.pitch = -0.12;
+        await tenir(1.2);
+        const p2 = best.o.getWorldPosition(new THREE.Vector3());
+        return { distance: +dm.toFixed(0), visible: best.o.visible, bouge: +p2.distanceTo(best.p).toFixed(1) };
+      }
+      await tenir(1);
+    }
+    return { err: 'aucune Revuelto dans la rue en 40 s' };
+  }),
+};
+
 (async () => {
   const banc = new Banc({ portJeu: 8442, portPairs: 9442 });
   await banc.ouvrir();
@@ -138,7 +174,7 @@ const ETATS = {
   try {
     for (const vue of vuesVoulues) {
       for (const bras of BRAS) {
-        for (const nomEtat of Object.keys(ETATS)) {
+        for (const nomEtat of Object.keys(ETATS).filter((n) => !etatsVoulus.length || etatsVoulus.includes(n))) {
           // une page par état et par bras : la rue mutile FLOTTE, et l'on ne
           // veut pas qu'un état hérite de ce que le précédent a laissé (v279)
           const tab = await banc.jouerSeul('Rev' + vue + bras + nomEtat, { tactile: true, viewport: VUES[vue], rr: 9, params: '&ombres=1&hd=3', pret: true });
@@ -149,6 +185,7 @@ const ETATS = {
             for (const [h, t] of HEURES) {
               await tab.evaluate((t) => window.__setDayTime(t), t);
               await dormir(3000);
+              if (RECADRER[nomEtat]) noter(`  cadrage ${h} ${JSON.stringify(await RECADRER[nomEtat](tab))}`);
               const f = path.join(dossier, `${vue}-${nomEtat}-${h}-${bras}.png`);
               await tab.screenshot({ path: f, timeout: 120000 });
               noter('📸 ' + path.basename(f));
