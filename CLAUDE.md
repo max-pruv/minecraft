@@ -958,6 +958,15 @@ règles.
   sur sa voie : elle freine, s'arrête, klaxonne — vingt secondes, bornées à
   quarante-cinq, la durée dans le message. Aller la chercher dans Paris aurait
   été un tirage (v383).
+- **UN CACHE PAR MODÈLE NE SE REMPLIT QU'AVEC UNE MESURE SAINE.** Les poses
+  des feux (`posesDetresse`) se gardent par fichier de la flotte ; la première
+  mesure se faisait parfois sur une voiture de la rue déjà froissée, et toutes
+  les voitures neuves du modèle portaient ensuite leurs feux dans la bosse (la
+  Bolide en production depuis la v519, la F40 dès que les feux stop ont lu le
+  cache plus tôt). On ne garde que ce qui est mesuré sur une tôle intacte (les
+  géométries portent la marque `partagee` du prototype). C'est le rayon du
+  témoin, qui nommait le maillage touché (`Body_PrimaryPaint`), qui l'a dit :
+  la mesure fraîche rendait les mêmes poses dans les deux arbres.
 
 ## Un choc a de l'élan (v534) — la vitesse d'après un choc est un vecteur que le joystick ne touche pas
 

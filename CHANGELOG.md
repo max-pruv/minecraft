@@ -54,6 +54,10 @@ quart du joystick), un dans `plafond.js` (sans adhérence donnée, la dynamique
 est celle de la v534 au bit près sur 128 000 pas tirés ; avec, la pointe baisse
 de la route à l'herbe, au sable, à la neige) et un dans `reglages.js` (le
 programme de la radio, pur). Tous rouges sur l'ancien code, et ils le disent.
+Et en chemin, un défaut de production réglé : les feux de détresse d'un modèle
+pouvaient flotter devant sa carrosserie (la Bolide, déclarée depuis la v540),
+parce que leurs poses se mettaient en cache sur une voiture déjà froissée. Le
+témoin de `degats.js` qui le voyait est vert deux fois sur deux.
 
 ## v540 — La minicarte toujours là
 

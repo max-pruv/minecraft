@@ -362,7 +362,10 @@ pendant la marche, `monte.js` les rouges ci-dessus.
   sur la branche : 6 verts sur 6. La v533 ne touche ni l'approche ni le
   bandeau ; elle allume des feux sur le maillage de l'avion. À rejouer en
   distribution (v269) le jour où il revient, avec la cadence dans le message.
-- [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » :
+- [x] **(Réglé en v541 : la cause n'était pas le capot de la Bolide mais le
+  cache des poses, rempli sur une voiture de la rue déjà froissée — on ne garde
+  plus que des poses mesurées sur une tôle intacte ; `degats.js` 2/2 verte.)**
+  **`degats.js` « les feux de détresse se posent SUR la carrosserie » :
   la Bugatti Bolide pose ses deux feux avant à 0,45 bloc de la tôle** (écarts
   `[0.45, 0.45, −0.015, −0.015]`). Rejouée SEULE sur la branche (v533) ET sur
   `origin/main` v531 (`git worktree`) : la même valeur au millième des deux
