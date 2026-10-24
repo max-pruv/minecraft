@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 543,
+    titre: 'Une nouvelle Lamborghini Revuelto',
+    puces: [
+      'Une Revuelto orange plus détaillée',
+      'Avec son volant et ses compteurs',
+      'Modèle de BRO, merci à lui',
+    ],
+  },
+  {
     v: 540,
     titre: 'La minicarte toujours là',
     puces: [

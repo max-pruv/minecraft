@@ -334,6 +334,72 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && conduite.regardeLaRoute > 0.9 && conduite.sousLeToit,
       JSON.stringify(conduite));
 
+    // --- LA REVUELTO ADAPTÉE TIENT LES CONTRATS DE LA FLOTTE (v541) ---------
+    //
+    // Max a déposé une adaptation CC-BY-4.0 du modèle de BRO ; elle remplace à
+    // l'affichage la Revuelto paramétrique par le champ `asset` de FLOTTE,
+    // l'identifiant `fichier` restant celui des garages et du réseau. Un modèle
+    // d'une autre facture se vérifie sur ce que le jeu en fait : c'est bien le
+    // fichier neuf qui est chargé (sa laque s'appelle `Paint_Arancio`, que
+    // l'ancien n'a pas), ses quatre roues et son volant sont là, il est posé au
+    // sol à la longueur annoncée par le paquet (4,74 m), ses sept images sont
+    // décodées, sa fiche refuse la portière (elle n'est pas séparée, v366), et
+    // l'enfant y est assis sous le pavillon mesuré, face à la route (v249). Sur
+    // l'ancien code, c'est l'ancien fichier qui se charge : rouge, et il le dit.
+    await tab.evaluate(() => {
+      const g = window.__game;
+      for (let e = 0; e < 6 && g.fun.montureConduite && g.fun.montureConduite(); e++) document.getElementById('ride-btn').click();
+    });
+    await dormir(900);
+    const revuelto = await tab.evaluate(async () => {
+      const g = window.__game, THREE = await import('three'), V = await import('./src/vehicules.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const entree = V.FLOTTE.find((e) => e.fichier === 'lamborghini-revuelto.glb');
+      const proto = entree ? await V.chargerVoitureFlotte(entree) : null;
+      if (!proto) return { err: 'Revuelto non chargée' };
+      const mats = new Set(), images = new Set(); let roues = 0, volant = false;
+      proto.traverse((o) => {
+        if (/^Wheel_(FL|FR|RL|RR)$/i.test(o.name || '')) roues++;
+        if (/steer/i.test(o.name || '')) volant = true;
+        if (o.isMesh) for (const m of [].concat(o.material)) {
+          mats.add(m.name);
+          for (const k of ['map', 'emissiveMap', 'normalMap']) if (m[k] && m[k].image && m[k].image.width > 0) images.add(m[k].image);
+        }
+      });
+      proto.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(proto);
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 3, g.player.pos.z + fz * 3, false, { flotte: 'lamborghini-revuelto.glb' });
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000 && !a.mesh.userData.roues) await dodo(300);
+      for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(700); }
+      await dodo(900);
+      const m = g.fun.montureConduite && g.fun.montureConduite(), av = g.avatarLocal;
+      let siege = null;
+      if (m && av) {
+        const tete = av.localToWorld(new THREE.Vector3(0, 1.45, 0)).project(g.camera);
+        const visage = av.getWorldDirection(new THREE.Vector3()).negate();
+        const route = new THREE.Vector3(-Math.sin(g.player.yaw), 0, -Math.cos(g.player.yaw));
+        const crane = av.position.y + (0.77 + 0.706) * av.scale.x;
+        const cache = m.plafondSiege ? m.plafondSiege.y : null;
+        const toit = cache instanceof Map ? (cache.get(`${m.def.siege.x}|${m.def.siege.z}`) ?? null) : cache;
+        siege = { dansVoiture: av.parent === m.mesh, flotte: m.mesh.userData.flotte, dansLeCadre: Math.abs(tete.x) < 1 && Math.abs(tete.y) < 1 && tete.z < 1,
+          regarde: +visage.dot(route).toFixed(2), crane: +crane.toFixed(2), toit: toit === null ? null : +toit.toFixed(2) };
+      }
+      for (let e = 0; e < 6 && g.fun.montureConduite && g.fun.montureConduite(); e++) { document.getElementById('ride-btn').click(); await dodo(500); }
+      return { asset: entree.asset || null, laque: mats.has('Paint_Arancio'), roues, volant, images: images.size, portiere: entree.portiere,
+        longueur: +(b.max.z - b.min.z).toFixed(2), sol: +b.min.y.toFixed(3), forme: proto.userData.forme, rayon: +(proto.userData.rayonRoue || 0).toFixed(3), siege };
+    });
+    verifier('la Revuelto adaptée se charge par son asset, au sol, avec ses roues, son volant, ses sept images, sans portière, et l\'enfant y est assis sous le pavillon',
+      !revuelto.err && revuelto.asset === 'lamborghini-revuelto-wip.glb' && revuelto.laque && revuelto.roues === 4 && revuelto.volant
+        && revuelto.images >= 7 && revuelto.portiere === false && revuelto.longueur > 4.5 && revuelto.longueur < 5.0
+        && Math.abs(revuelto.sol) < 0.02 && revuelto.rayon > 0.25 && revuelto.rayon < 0.45
+        && !!revuelto.siege && revuelto.siege.dansVoiture && revuelto.siege.dansLeCadre && revuelto.siege.regarde > 0.9
+        && (revuelto.siege.toit === null || revuelto.siege.crane < revuelto.siege.toit),
+      JSON.stringify(revuelto));
+
     // --- ET LA CAMÉRA MONTRE LE FLANC EN VIRAGE (v278, gardé en v279) --------
     //
     // Max : « la vue de la voiture, je la trouve pas très cool… comme dans GTA,

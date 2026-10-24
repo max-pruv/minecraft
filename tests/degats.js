@@ -1023,7 +1023,9 @@ function verifier(nom, ok, detail = '') {
       const g = window.__game, THREE = await import('three'), V = await import('./src/vehicules.js');
       if (!V.feuxDeDetresse || !V.posesDetresse) return { err: 'feuxDeDetresse non publié (ancien code)' };
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
-      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb'];
+      // la Revuelto adaptée (v541) : un modèle d'une autre facture, chargé
+      // par son `asset` — ses feux se mesurent comme ceux des autres
+      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb', 'lamborghini-revuelto.glb'];
       const rc = new THREE.Raycaster(); rc.layers.enableAll();
       const avantCles = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
       const res = [];
@@ -1063,7 +1065,7 @@ function verifier(nom, ok, detail = '') {
     });
     const surLaTole = (r) => !r.err && r.n === 4 && r.ecarts.every((e) => e !== null && e > -0.02 && e < 0.06) && r.clignote;
     verifier('les feux de détresse se posent SUR la carrosserie, aux quatre coins, du plus petit modèle au plus grand, et ils clignotent — sans compiler un programme',
-      !detresse.err && detresse.res.length === 7 && detresse.res.every(surLaTole) && detresse.neuves === 0,
+      !detresse.err && detresse.res.length === 8 && detresse.res.every(surLaTole) && detresse.neuves === 0,
       JSON.stringify(detresse));
 
     verifier('aucune erreur JavaScript de bout en bout', erreurs.length === 0, JSON.stringify(erreurs.slice(0, 4)));
