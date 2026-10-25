@@ -366,8 +366,13 @@ export function creerEmbarquement(ctx) {
     return accesCache.get(cle);
   }
   function ouvrant(g, porte, k) {
-    const m = g.userData.membres && g.userData.membres[porte.ouvrant];
+    const ms = g.userData.membres || {};
+    const m = ms[porte.ouvrant];
     if (m) m.rotation[porte.axe] = porte.angle * k;
+    // UNE PORTE DESSINÉE SUR LA LIVRÉE (v554, avions déposés) : le panneau
+    // qui pivote et la baie sombre derrière lui n'existent qu'ouverts
+    if (porte.cachee && m) m.visible = k > 0.02;
+    if (porte.baie && ms[porte.baie]) ms[porte.baie].visible = k > 0.02;
   }
   function monterAvion(a) {
     const g = a.mesh, porte = g.userData.porte;

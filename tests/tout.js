@@ -85,6 +85,9 @@ const GARDIENS = {
   // La 911 reconstruite (v545) : ses témoins vivent dans porsche-911.mjs, que
   // degats.js lance ; la table des programmes la lit dans monte.js.
   'vendor/voitures/porsche-911-gt3-rs-hd-v2-compact.glb': ['degats.js', 'monte.js'],
+  'vendor/avions/airbus-a320.glb': ['monte.js', 'carteMonde.js', 'reseau.js'],
+  'vendor/avions/airbus-a321.glb': ['monte.js', 'carteMonde.js', 'reseau.js'],
+  'vendor/avions/chasseur-f35.glb': ['monte.js', 'carteMonde.js', 'reseau.js'],
   'tests/porsche-911.mjs': ['degats.js'],
   'tests/porsche-911-textures.mjs': ['degats.js'],
   // les lumières de la flotte (v550), lues par degats.js sous node
@@ -208,7 +211,7 @@ const GARDIENS = {
   'src/poissons.js': ['monte.js'],
   'src/animals.js': ['monte.js', 'manhattan.js', 'degats.js'],
   'src/montures.js': ['monte.js', 'manhattan.js'],
-  'src/avions.js': ['monte.js', 'carteMonde.js'],
+  'src/avions.js': ['monte.js', 'carteMonde.js', 'reseau.js'],
   // La cadence de ménage décide si le monde est peuplé : elle se voit dans la
   // vie de rue (fumée + monte) et dans les durées (maj).
   // `education.js` en est client depuis la v234 : ses deux gardiens rejoignent

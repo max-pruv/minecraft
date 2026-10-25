@@ -18,7 +18,8 @@
 // compilerait dans l'image où la voiture apparaît, c'est-à-dire à l'arrivée
 // en ville, qui est précisément le gel signalé.
 
-// Les signatures des cinquante-deux voitures et des neuf corps humains,
+// Les signatures des voitures, des neuf corps humains et des trois avions
+// déposés (v554 : aucune neuve, ils retombent sur celles de la flotte),
 // telles que `signaturesDuGlb` les lit. `vehicules.js` compile chacune
 // pendant l'accueil (`chaufferLesProgrammes`).
 export const SIGNATURES_GLB = [

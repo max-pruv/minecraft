@@ -2209,16 +2209,31 @@ function verifier(nom, ok, detail = '') {
     await souffler();
     const { p: pilote, code: codeAvion } = await banc.creerMonde('Hugo');
     const temoinAvion = await banc.rejoindre('Clara', codeAvion);
+    // LES DEUX TABLETTES ONT LEURS AVIONS DÉPOSÉS (v554) avant que Hugo ne
+    // monte : un appareil ne change pas de modèle sous les yeux (v547), donc
+    // celui que Clara dessine avant l'arrivée du fichier resterait sculpté.
+    // Sur l'ancien code le module n'a pas `avionsPrets` : on n'attend rien.
+    const avionsPrets = (page) => page.evaluate(async () => {
+      const m = await import('/src/avions.js');
+      if (!m.avionsPrets) return null;
+      const t0 = performance.now();
+      while (m.avionsPrets().length < 3 && performance.now() - t0 < 30000) await new Promise((f) => setTimeout(f, 200));
+      return m.avionsPrets();
+    });
+    const prets = [await avionsPrets(pilote), await avionsPrets(temoinAvion)];
     const aBord = await pilote.evaluate(async () => {
       const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
       g.animalManager.animals.length = 0;
       const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      // l'A321, la variante qui n'est PAS celle qu'une tablette prend
+      // d'elle-même : si Clara la voit, c'est que la position l'a emportée
       const avion = g.animalManager.invoquer('avionligne',
-        Math.round(g.player.pos.x + fx * 3), Math.round(g.player.pos.z + fz * 3));
+        Math.round(g.player.pos.x + fx * 3), Math.round(g.player.pos.z + fz * 3), false, { variante: 'a321' });
       if (!avion) return { err: 'aucun avion posé' };
       for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await dodo(600); }
-      return { pilote: !!g.player.pilote, x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z };
+      return { pilote: !!g.player.pilote, x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z,
+        variante: avion.mesh.userData.variante || null };
     });
     await temoinAvion.evaluate((p) => {
       const g = window.__game;
@@ -2233,7 +2248,8 @@ function verifier(nom, ok, detail = '') {
         if (!rp.vehicule) return { vehicule: false };
         const e = d ? d.etat(rp.vehicule.mesh) : null;
         return { vehicule: true, cle: rp.vehicule.cle, pilote: !!(rp.vehicule.def && rp.vehicule.def.pilote),
-          dansLaScene: !!rp.vehicule.mesh.parent, enFeu: !!(e && e.enFeu) };
+          dansLaScene: !!rp.vehicule.mesh.parent, enFeu: !!(e && e.enFeu),
+          variante: rp.vehicule.mesh.userData.variante || null };
       }
       return { absent: true };
     });
@@ -2244,6 +2260,13 @@ function verifier(nom, ok, detail = '') {
     verifier('à plusieurs, l\'ami voit l\'AVION de son ami, pas un enfant à pied',
       !aBord.err && aBord.pilote && avionVu.vehicule && avionVu.pilote && /^avionligne\|/.test(avionVu.cle || ''),
       JSON.stringify({ aBord, avionVu }));
+    // ET LE MÊME APPAREIL (v554). Les avions de ligne déposés sont deux, et la
+    // variante voyage dans `p.v.f` comme le modèle d'une voiture (v253) :
+    // l'A321 de Hugo est un A321 chez Clara, pas l'A320 qu'elle prendrait
+    // d'elle-même. Sur l'ancien code, sculpté des deux côtés, sans variante.
+    verifier('à plusieurs, l\'ami voit le MÊME avion que son ami — l\'A321 reste un A321',
+      aBord.variante === 'a321' && avionVu.variante === 'a321',
+      JSON.stringify({ prets, pilote: aBord.variante, vu: avionVu.variante }));
     // Le lieu de l'appareil, et le crash : la physique juge, fun.js met le feu
     // et dépose l'enfant une seconde plus tard.
     const lieuAvion = await pilote.evaluate(() => {

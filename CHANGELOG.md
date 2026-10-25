@@ -20,6 +20,47 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v554 — Trois vrais avions : A320, A321 et F-35
+
+**Pourquoi.** Les avions de ligne et le chasseur étaient sculptés par le jeu,
+pièce à pièce, et se reconnaissaient mal. Max a déposé trois modèles
+d'artistes (Sketchfab) : un Airbus A320 en livrée d'origine, un A321 et un
+Lockheed Martin F-35. Livrés tels quels, aucun ne tenait le contrat du jeu :
+tailles de trois à quinze fois trop grandes, nez dans le mauvais axe, train
+soudé au fuselage (ou absent sur l'A320), des yeux de dessin animé dans le
+cockpit de l'A321, des pièces de travers, des normales à l'envers, et
+quatre-vingt-un mille triangles pour le F-35.
+
+**Ce que ça change.**
+- L'avion de ligne est un vrai Airbus : un A320 sur les petits aérodromes et
+  à Roissy, un A321 sur les grandes plates-formes. Le chasseur est un F-35.
+  Le Concorde reste celui du jeu.
+- Tout ce qui marchait marche pareil : les postes, les pistes, le train qui
+  se replie, l'escalier contre la porte (la porte s'ouvre dans la livrée),
+  la verrière du F-35 qui bascule, les flammes dans les tuyères, les feux de
+  navigation, le passager dans l'avion d'un ami (v552). Le siège du chasseur
+  est sous la verrière du F-35.
+- À plusieurs, l'ami voit le même appareil (la variante voyage avec la
+  position, comme le modèle d'une voiture).
+- Les trois fichiers (2,4 Mo) arrivent après l'accueil, dans le cache qui
+  survit aux mises à jour ; un avion né avant eux reste sculpté, et
+  `?avions=0` rejoue les modèles sculptés.
+- Crédits et licences dans `vendor/avions/LICENSE.md` ; l'A320 est sous
+  CC-BY-NC-SA-4.0 (pas d'usage commercial).
+
+**Ce qui le prouve.** Quatre témoins neufs : les avions déposés tiennent dans
+le gabarit de leur espèce, posés sur leurs roues (`carteMonde.js`) ; ils
+tiennent le contrat du jeu — trois jambes de train, la porte, une flamme par
+tuyère dans la boîte du modèle, des feux, des fichiers sans yeux ni extension
+et sous quarante mille triangles (`carteMonde.js`) ; l'ami voit l'A321 de son
+ami en A321 (`reseau.js`) ; la table des programmes à chauffer couvre les
+fichiers des avions (`monte.js` — aucune signature neuve). Les témoins des
+dimensions mesurent désormais le modèle sculpté ET chaque modèle déposé, nommés,
+au lieu de l'un ou l'autre selon l'heure. Sondes : `sonde-avions-deposes.cjs`
+(captures) et `sonde-embarquement-deposes.cjs` (on monte et on descend des
+trois par la séquence entière, zéro programme neuf). Revue d'écran (avion au
+sol, en vol, roulage, aérodrome) sur iPhone et iPad, de jour et de nuit.
+
 ## v553 — Des arbres au loin, et plus de trou de ciel en vol
 
 **Pourquoi.** Deux dettes du paysage lointain. (1) La revue d'écran de la v532

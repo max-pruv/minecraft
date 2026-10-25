@@ -679,8 +679,11 @@ export const MONTURES = [
       toucherMax: 70, chuteMax: 8 },
     // UNE PLACE ARRIÈRE, SOUS LA VERRIÈRE : un chasseur n'a pas de cabine, et
     // la version biplace (le pilote devant, le passager derrière) est la
-    // seule façon d'y emmener un ami. La bulle va de z −3,8 à 0 ; le pilote
-    // est devant, le passager à −0,9, hanches sur l'axe (1,55).
-    sieges: [{ x: 0, y: 1.55, z: -0.9 }],
+    // seule façon d'y emmener un ami. RELEVÉE SUR LES DEUX MODÈLES (v554) :
+    // la bulle du chasseur déposé va de z −3,9 à −1,9 et culmine à 2,03 ; la
+    // place à −0,9 de la v552 tombait DERRIÈRE elle, la tête dans le dos du
+    // fuselage (1,89). À −2,7, des hanches à 1,2 mettent le crâne à 1,91 sous
+    // les deux bulles (celle du modèle sculpté monte à 2,6).
+    sieges: [{ x: 0, y: 1.2, z: -2.7 }],
     moteur: 'avion' },
 ];

@@ -841,6 +841,46 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les avions déposés (v554) — un modèle d'artiste se met au contrat, le contrat ne bouge pas
+
+Max a déposé un A320, un A321 et un F-35 (Sketchfab). Ils deviennent l'avion
+de ligne et le chasseur ; le Concorde reste sculpté. Cinq règles.
+
+- **LE MODÈLE SE CONVERTIT HORS LIGNE, PAR UN SCRIPT QUI SE REJOUE.**
+  `scripts/convertir-avions.py` cuit les transformations, retourne le nez vers
+  −z, met à la LONGUEUR de `GABARITS_AVION` (postes, pistes et prolongements
+  sont dimensionnés dessus : rien ne bouge au sol), pose les roues à y = 0,
+  fusionne par matériau, sépare en nœuds ce qui bouge (`train_nez`,
+  `train_gauche`, `train_droit`, `verriere`), simplifie les matériaux (aucune
+  extension) et IMPRIME ses mesures (tuyères, essieu). Une règle de pièce lit
+  la LIGNÉE des nœuds (les maillages sont des enfants anonymes) ; un
+  enroulement contredit par les normales se retourne. Ce qu'on retire de
+  l'archive (yeux, pièces de travers, halos) est nommé dans le script ET dans
+  `vendor/avions/LICENSE.md`, avec le crédit exact.
+- **CE QUI EST FONCTION RESTE À L'ATELIER, ET LA FICHE LE DIT.**
+  `AVIONS_GLB` (avions.js) : `trainAtelier` (l'A320 n'a pas de train),
+  `panneau` et `porte` (la porte d'un avion déposé est DESSINÉE sur la livrée :
+  le panneau qui pivote n'apparaît qu'ouvert, `cachee`, avec sa baie), les
+  `tuyeres` mesurées par le script, `trainPrincipal`. `depuisModele` rend le
+  même contrat que l'atelier (`membres`, `train`, `porte`, `tuyeres`,
+  `feuxNav`) : fun.js et embarquement.js ne savent pas d'où vient l'avion.
+- **LA VARIANTE EST UNE RÈGLE, JAMAIS UN TIRAGE, ET ELLE VOYAGE.**
+  `varianteDuPoste` (le profil `hub` prend l'A321) ; `p.v.f` porte la
+  variante comme le modèle d'une voiture (v253). Un avion né avant l'arrivée
+  de son fichier reste sculpté pour sa vie (v547) ; `?avions=0` rejoue les
+  sculptés.
+- **UN TÉMOIN DE DIMENSION NOMME LE MODÈLE QU'IL MESURE.** `MODELES_AVION`
+  rend le déposé si son fichier est arrivé, le sculpté sinon : appelé tel
+  quel, le témoin des dessins de `carteMonde.js` aurait mesuré l'un ou
+  l'autre selon l'heure — un tirage. Il mesure le sculpté et chaque variante,
+  fichiers attendus ; le sculpté garde l'égalité d'envergure (v278), un
+  déposé doit tenir DANS le gabarit de son espèce.
+- **UN SIÈGE SE MESURE SUR LE MODÈLE QUI L'ENTOURE.** Le siège du chasseur
+  (z −0,9) tombait derrière la verrière du F-35 : il est à −2,7, sous elle.
+  Les sièges de l'avion de ligne valent pour l'A320, l'A321 et le sculpté
+  (mesurés au rayon sur les trois). Toute variante neuve se rejoue par
+  `sonde-embarquement-deposes.cjs` (on monte, on descend, zéro clé neuve).
+
 ## Passager dans l'avion d'un ami (v552) — un siège se déclare dans la fiche, et le reste suit
 
 Max : « rentrer dans une voiture, avion… en passager si un autre joueur est

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 554,
+    titre: 'Trois vrais avions',
+    puces: [
+      'Un Airbus A320 et un A321',
+      'Un F-35 pour le chasseur',
+      'Le train, la porte, tout marche',
+    ],
+  },
+  {
     v: 553,
     titre: 'Des arbres au loin',
     puces: [
