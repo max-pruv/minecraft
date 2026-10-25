@@ -1781,7 +1781,7 @@ Trois règles.
   la scène tient : une rue vide n'y montre plus les prototypes que le pilote
   garde (bornés à la flotte).
 
-## Une voiture ne change pas de modèle sous les yeux (v544) — une place est habillée ou cachée, jamais en coque
+## Une voiture ne change pas de modèle sous les yeux (v545) — une place est habillée ou cachée, jamais en coque
 
 Max : « on tourne la tête une seconde, on revient, et c'est un autre modèle ».
 Trois règles.

@@ -6,6 +6,10 @@
 
 export const NOUVEAUTES = [
   {
+    v: 545,
+    ],
+  },
+  {
     v: 546,
     titre: 'Une nouvelle Lamborghini Revuelto',
     puces: [
@@ -33,6 +37,7 @@ export const NOUVEAUTES = [
     ],
   },
   {
+    v: 544,
     titre: 'Des rues larges pour rouler',
     puces: [
       'Toutes les rues sont plus larges',

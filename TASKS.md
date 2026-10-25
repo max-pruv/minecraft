@@ -1,8 +1,8 @@
 # Ce qui est en cours
 
-## v544 — les voitures gardent leur modèle : ce qui reste, mesuré
+## v545 — les voitures gardent leur modèle : ce qui reste, mesuré
 
-- **Rouges du portail de la v544 : aucun de la livraison** (la suite `monte.js`
+- **Rouges du portail de la v545 : aucun de la livraison** (la suite `monte.js`
   y était morte d'une faute de nom, corrigée ; rejouée seule, le témoin neuf est
   vert : 0 bascule sur 50 voitures, 18 places suivies au demi-tour).
   `monte.js` seule, branche contre `origin/main` v540 (`git worktree`) : même
