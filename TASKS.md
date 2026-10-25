@@ -47,6 +47,13 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   branche (6 sur `origin/main`), au-dessus du plancher de trois. Non modifié.
 - [x] **« deux voisines d'un convoi »** : vert des deux côtés ce passage
   (946 et 1 013 paires). Non modifié.
+- **Portail de la livraison** (fumée + `monte.js`, 40 min) : 3 rouges, tous
+  déclarés — « à Rome aussi, en biais » (des deux côtés), « rue vide » (la
+  répartition ci-dessus : `vus [10,2,0,48,0,0,0,11]`, 34, 65, 8 et 36
+  passants dessinés à portée aux arrêts vides) et « ✈️ Atterrissage vers
+  Saint-Dizier » absent à l'appui (déclaré v516, aéroports non touchés).
+  Les trois témoins réécrits verts : flanc 12,3°, détresse `pose: true`,
+  par tranches 1 par image.
 - Et `monte.js` sur `origin/main` v547 a planté la page (« Target page…
   closed ») au témoin de l'eau (ligne 6822), au bout de soixante minutes : la
   branche, elle, est allée jusqu'au bout. Une fois vue, à surveiller.
