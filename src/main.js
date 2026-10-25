@@ -2029,7 +2029,7 @@ function updateChunks() {
     const avant = pietonsDans(x0, z0, cap);
     return apres.some((n) => !avant.includes(n));
   };
-  // L'EAU N'EST PLUS UNE FAMILLE D'OBSTACLE (v559, décision de Max qui
+  // L'EAU N'EST PLUS UNE FAMILLE D'OBSTACLE (v560, décision de Max qui
   // annule la v272) : « il faut arrêter de mettre des messages pour dire une
   // voiture ne roule pas dans l'eau ; s'il tombe dans l'eau, il tombe dans
   // l'eau ». La voiture garde son élan, plonge, cale et coule (player.js,
@@ -2044,7 +2044,7 @@ function updateChunks() {
   // `gabarit` — pas un avion. Elle n'était un obstacle que pour les piétons
   // (v259) ; la voiture de l'enfant la traversait. Elle se POUSSE : c'est une
   // bête de cette tablette, rien de l'horloge partagée (v305).
-  // ET PAR ENFONCEMENT (v559) : avec la pose d'avant, la voiture garée dans
+  // ET PAR ENFONCEMENT (v560) : avec la pose d'avant, la voiture garée dans
   // laquelle ce pas s'enfonce — on la touchait déjà ou non (`sEnfonce`).
   // Collé à une voiture garée, on traversait celle d'à côté.
   const gareeContre = (x, z, cap, x0, z0) => {
@@ -2062,7 +2062,7 @@ function updateChunks() {
   };
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
     // « pas si l'on est déjà dedans » se juge PAR VÉHICULE et PAR ENFONCEMENT
-    // (v559) : on peut se dégager d'une voiture qu'on touche, pas s'y enfoncer,
+    // (v560) : on peut se dégager d'une voiture qu'on touche, pas s'y enfoncer,
     // et la toucher ne désarme plus les autres
     if (vehicules.obstacleDevant(x, z, cap, x0, z0)) return 'voiture';
     // on ne casse que sur le pas qu'on fait vraiment (pas sur le regard au

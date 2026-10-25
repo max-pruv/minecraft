@@ -474,6 +474,13 @@ export const FLOTTE = [
   { fichier: 'lotus-evija.glb', classe: 'hypercar', nom: 'Lotus Evija' },
   { fichier: 'lucid-gravity.glb', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
   { fichier: 'maserati-mc20.glb', classe: 'sportive', nom: 'Maserati MC20' },
+  // LA MC12 GT1 RED BULL (v559), adaptation CC-BY-4.0 du modèle de Dave Love
+  // (vendor/voitures/LICENSE.md, `scripts/convertir-mc12.py`). Sa livrée EST
+  // sa laque : la rue ne la repeint jamais (`laque: 'jamais'`, comme la
+  // fourgonnette). Ses portes s'ouvrent en élytre et ne sont pas séparées dans
+  // le modèle : `portiere: false` (v366), plutôt qu'une portière classique
+  // découpée dans la tôle d'une voiture qui n'en a pas.
+  { fichier: 'maserati-mc12-gt1.glb', classe: 'hypercar', nom: 'Maserati MC12 GT1 Red Bull', laque: 'jamais', portiere: false },
   { fichier: 'mclaren-765lt.glb', classe: 'sportive', nom: 'McLaren 765LT' },
   { fichier: 'mclaren-artura.glb', classe: 'sportive', nom: 'McLaren Artura' },
   { fichier: 'mclaren-p1.glb', classe: 'hypercar', nom: 'McLaren P1' },
@@ -3321,7 +3328,7 @@ export function createVehicules({ scene, player }) {
     }
     const rectEnfant = voitures[0].rect;
     // l'enfant ou un ami AU VOLANT : une rame ou une voiture déjà dedans
-    // s'arrête au lieu de la traverser (v559)
+    // s'arrête au lieu de la traverser (v560)
     const estUnVehicule = (b) => (b.ami ? !!b.vehicule : b.cle === CLE_ENFANT && enVehicule);
     for (let ci = 0; ci < convois.length; ci++) {
       const c = convois[ci];
@@ -3340,7 +3347,7 @@ export function createVehicules({ scene, player }) {
         voitures.push({ c, ci, i, cle: -2 - ci * 1000 - i, d, x: q.x, y: q.y, z: q.z, ux, uz,
           rect, balayage: null, veut: null, rail: true });
       }
-      // UNE RAME DÉJÀ DANS LA VOITURE DE L'ENFANT S'ARRÊTE (v559) : elle la
+      // UNE RAME DÉJÀ DANS LA VOITURE DE L'ENFANT S'ARRÊTE (v560) : elle la
       // traversait (« y rester, c'est y rester pour toujours », v245 — vrai
       // d'un enfant à pied, pas d'une voiture, qui s'en dégage en reculant ;
       // `sEnfonce` le lui permet). Arrêt LOCAL, comme devant lui (v304).
@@ -3450,7 +3457,7 @@ export function createVehicules({ scene, player }) {
         // Déjà DANS l'enfant À PIED, un ami à pied ou un piéton (il s'est posé
         // dessus) : continuer est la seule façon d'en sortir ; y attendre sans
         // limite, c'est rester dedans pour toujours.
-        // MAIS PAS DANS UNE VOITURE (v559). Max : « il ne faut pas que les
+        // MAIS PAS DANS UNE VOITURE (v560). Max : « il ne faut pas que les
         // véhicules puissent passer les uns dans les autres ». Une voiture de
         // la rue déjà dans celle de l'enfant (ou d'un ami) la traversait de part
         // en part ; elle s'arrête désormais contre elle, comme heurtée (v372),
@@ -3675,7 +3682,7 @@ export function createVehicules({ scene, player }) {
   // joueur ne connaît que les blocs. On relit la collecte de la dernière
   // image : les voitures de la rue avancent de quelques centimètres entre
   // deux images, c'est sans conséquence pour un arrêt.
-  // ET PAR VÉHICULE, PAR ENFONCEMENT (v559) : avec la pose d'avant (x0, z0),
+  // ET PAR VÉHICULE, PAR ENFONCEMENT (v560) : avec la pose d'avant (x0, z0),
   // un pas est refusé s'il fait entrer dans une voiture qu'on ne touchait pas,
   // ou s'il s'enfonce plus loin dans celle qu'on touche (`sEnfonce`,
   // conduite.js). Jugé sur la famille, collé à une voiture on traversait
@@ -3702,7 +3709,7 @@ export function createVehicules({ scene, player }) {
   // cotes d'une voiture) et son allure du moment le long de son axe (zéro si
   // elle attend, comme `enMarche`). Lecture seule, une copie : rien de la
   // collecte ne sort d'ici.
-  // (avec la pose d'avant, v559 : la voiture contre laquelle on s'enfonce,
+  // (avec la pose d'avant, v560 : la voiture contre laquelle on s'enfonce,
   // pas la première qu'on touche — collé à l'une, le choc est contre l'autre)
   function voitureContre(x, z, cap, x0, z0) {
     const b = bloquantDevant(x, z, cap, x0, z0, 8);

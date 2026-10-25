@@ -1155,7 +1155,7 @@ export function initFun(ctx) {
     if (a.def.key === 'voiture' && flotte) return allureDe(flotte, a.def.allure || 3.4);
     return a.def.allure || 2;
   }
-  // la voiture noyée (v559) : le temps de la voir couler, puis l'enfant sort
+  // la voiture noyée (v560) : le temps de la voir couler, puis l'enfant sort
   // et nage vers la surface (au plus REMONTER_MS, en temps réel)
   const SORTIE_NOYEE_MS = 1200, REMONTER_MS = 6000;
   function updateRide(dt) {
@@ -1186,7 +1186,7 @@ export function initFun(ctx) {
       degats.deposer(enFeu);
       return;
     }
-    // LA VOITURE NOYÉE (v559, Max : « s'il tombe dans l'eau, il tombe dans
+    // LA VOITURE NOYÉE (v560, Max : « s'il tombe dans l'eau, il tombe dans
     // l'eau, et puis c'est tout ») : la physique l'a laissée entrer, son
     // moteur a calé sous l'eau (`voitureDansLEau.noyee`, player.js). Le temps
     // de la voir couler — en temps RÉEL, une sortie ne doit pas durer plus

@@ -1126,7 +1126,7 @@ function verifier(nom, ok, detail = '') {
       const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
       const pcx = Math.floor(g.player.pos.x / 16), pcz = Math.floor(g.player.pos.z / 16);
       const vu = w.mobilierVu || (() => false);
-      // PLUSIEURS SITES (v559) : la voiture de la rue ne se traverse plus, et
+      // PLUSIEURS SITES (v560) : la voiture de la rue ne se traverse plus, et
       // une voiture de la rue qui arrive le long du trottoir pendant l'essai
       // arrête la nôtre AVANT la terrasse — l'ancien code passait au travers
       // d'elle, donc la situation mesurée avait eu lieu. Une voiture qui gêne

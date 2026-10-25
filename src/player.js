@@ -64,7 +64,7 @@ const DEGAGEMENT_MARCHE = 0.7;
 const RAYON_MUR = 4.5;     // la façade se lit sur ce rayon autour du contact (v397)
 const FACES = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const ANTI_REBOND = 0.35;        // s de jeu : un choc plus faible dans ce délai est le même accident (v534)
-// UNE VOITURE TOMBE DANS L'EAU (v559, décision de Max qui annule la v272 :
+// UNE VOITURE TOMBE DANS L'EAU (v560, décision de Max qui annule la v272 :
 // « s'il tombe dans l'eau, il tombe dans l'eau »). Le moteur est noyé, l'eau
 // freine la caisse (la vitesse est divisée par e toutes les 1/TRAINEE_EAU s :
 // lancée à quinze blocs/s, elle file une dizaine de blocs) et elle coule.
@@ -554,7 +554,7 @@ export class Player {
   // suite, et s'il bute sur le coin d'une marche de l'escalier, la voiture se
   // décolle d'un cheveu le long de la normale — c'est la réaction du mur, pas
   // un passe-muraille : seule une pose LIBRE est prise — libre des blocs ET
-  // des véhicules (v559).
+  // des véhicules (v560).
   //
   // ET LA CAISSE SE MET DANS L'AXE DU MUR SI ELLE NE L'EST PAS : la normale
   // lue sur un escalier se trompe d'un ou deux degrés (mesuré), et une caisse
@@ -570,7 +570,7 @@ export class Player {
       for (const cap of caps) {
         const tx = x + sx + nx * d, tz = z + sz + nz * d;
         if (!this.poseVoitureLibre(tx, y, tz, cap, dedans)) continue;
-        // ET PAS DANS UNE VOITURE (v559) : le pas glissé le long d'un mur ne
+        // ET PAS DANS UNE VOITURE (v560) : le pas glissé le long d'un mur ne
         // regardait que les blocs, et la sonde l'a vu entrer dans une voiture
         // de la rue arrêtée contre la façade (sonde-traverse-vehicules.cjs)
         if (this.obstacleVehicule && this.obstacleVehicule(tx, tz, cap + Math.PI, x, z)) continue;
@@ -585,7 +585,7 @@ export class Player {
   // LE DÉPLACEMENT DE LA VOITURE, PAS À PAS (au plus PAS_VOITURE blocs).
   //   · les familles de main.js d'abord (`obstacleVehicule`, qui rend la
   //     famille touchée) : un PIÉTON, on s'arrête devant — personne n'est
-  //     jamais touché (v259) ; l'EAU n'arrête plus (v559, la voiture y
+  //     jamais touché (v259) ; l'EAU n'arrête plus (v560, la voiture y
   //     tombe et coule) ; une VOITURE de la rue ou le MOBILIER, c'est un choc, qui rebondit ;
   //   · puis les blocs, sous la boîte orientée : une marche d'un bloc se
   //     franchit (v286), sinon c'est un choc — rasant on glisse le long du
@@ -630,7 +630,7 @@ export class Player {
       const fam = this.obstacleVehicule ? this.obstacleVehicule(x + dx, z + dz, this.yaw + Math.PI, x, z) : false;
       if (fam === 'pieton') {
         // une glissade qui mènerait vers un piéton s'arrête net (v534) ; l'eau
-        // n'arrête plus rien (v559) : la voiture y tombe
+        // n'arrête plus rien (v560) : la voiture y tombe
         this.glissade = null;
         this.vitesseVoiture = 0; this.derive = 0; this.vel.x = 0; this.vel.z = 0;
         break;
@@ -1323,7 +1323,7 @@ export class Player {
       // CE QUE PUBLIENT LES AUTRES, LU SI PRÉSENT : l'état de la voiture (les
       // dégâts) et l'embarquement en cours. Chacun marche sans l'autre.
       const ev = this.etatVoiture, emb = this.embarquement;
-      // DANS L'EAU (v559) : la caisse dans l'eau freine (`TRAINEE_EAU`), et
+      // DANS L'EAU (v560) : la caisse dans l'eau freine (`TRAINEE_EAU`), et
       // SOUS l'eau — la hauteur des yeux noyée — le moteur cale. On le publie
       // (`voitureDansLEau` : depuis combien de temps de jeu, noyée ou non) :
       // fun.js fait sortir l'enfant d'une voiture noyée, et il remonte à la
@@ -1429,9 +1429,9 @@ export class Player {
     } else if (this.inWater) {
       this.vel.y -= GRAVITY * 0.25 * dt;
       this.vel.y *= Math.pow(0.02, dt); // heavy drag
-      // au volant, Espace est le frein à main : une voiture ne nage pas (v559)
+      // au volant, Espace est le frein à main : une voiture ne nage pas (v560)
       if (k.has('Space') && !(this.gabarit > 1 && !this.pilote)) this.vel.y = SWIM_SPEED;
-      // SORTI D'UNE VOITURE NOYÉE, ON REMONTE (v559) : fun.js pose
+      // SORTI D'UNE VOITURE NOYÉE, ON REMONTE (v560) : fun.js pose
       // `remonter` (une échéance en temps réel) ; l'enfant nage vers la
       // surface tout seul et s'y maintient, le temps de rejoindre la rive au
       // joystick — ensuite, l'eau redevient celle de tout le monde.

@@ -637,7 +637,7 @@ export function normaleEntreBoites(A, B) {
   return mieux;
 }
 
-// ON N'ENTRE PAS PLUS LOIN DANS UN VÉHICULE (v559). Max : « il ne faut pas que
+// ON N'ENTRE PAS PLUS LOIN DANS UN VÉHICULE (v560). Max : « il ne faut pas que
 // les véhicules puissent passer les uns dans les autres, et c'est encore
 // possible ». « Pas si l'on est déjà dedans » (v245) se jugeait par FAMILLE :
 // collée à une voiture de la rue — l'état que laisse un choc, ou une voiture

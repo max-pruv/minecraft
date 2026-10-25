@@ -288,7 +288,7 @@ const ETATS = [
   }, apres: (tab) => tab.evaluate(() => window.__game.player.keys.delete('KeyW')) },
   // Au volant dans une rue de Paris (les rues à la GTA) : la chaussée vue de la
   // place du conducteur, là où la voiture devait tenir dans sa voie.
-  // LA VOITURE TOMBE DANS L'EAU (v559) : un port fabriqué au-dessus du relief
+  // LA VOITURE TOMBE DANS L'EAU (v560) : un port fabriqué au-dessus du relief
   // (le même que le témoin de monte.js), pleins gaz vers le bassin. On capture
   // la voiture dans l'eau (« voiture-plonge »), puis l'enfant remonté à la
   // surface, la voiture au fond (« voiture-coulee »).

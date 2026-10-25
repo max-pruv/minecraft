@@ -811,7 +811,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       if (e.enFeu) calcinerTout(rec, Math.min(1, e.feu / D.DUREE_FEU * 1.6));
       if (e.eteint && !rec.calcinee) calcinerTout(rec, 1);
       // la carcasse n'est plus une voiture qu'on prend
-      // (une voiture noyée non plus, v559 : `noyee`, posé par fun.js)
+      // (une voiture noyée non plus, v560 : `noyee`, posé par fun.js)
       if (rec.animal) rec.animal.horsService = !!(e.enFeu || e.eteint || rec.animal.noyee);
       // les débris tombent
       for (const pc of rec.debris) {

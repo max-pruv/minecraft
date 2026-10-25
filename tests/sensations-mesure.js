@@ -114,7 +114,7 @@ async function mesurerSensations() {
   const virage = { releves: penche.length, tourne: +tourne.toFixed(2),
     penche: med(penche), braque: med(braque), roues };
 
-  // à l'arrêt pour la suite — TOUT DE SUITE (v559) : laissée en roue libre,
+  // à l'arrêt pour la suite — TOUT DE SUITE (v560) : laissée en roue libre,
   // la voiture sortait de l'aire de quarante blocs et tombait dans la mer,
   // cent blocs plus bas ; elle y coule désormais et l'enfant en sort, et
   // toute la suite (son, choc, pente) se mesurait à pied.

@@ -309,7 +309,7 @@ function verifier(nom, ok, detail = '') {
       'degats3d.js': 1,   // sorti sain et sauf (le feu et la panne passent par `dire`)
       'education.js': 3,  // le quiz qui arrive (deux), le parent qui débloque
       'fun.js': 7,        // la voiture de l'ami cassée ; le cache-cache lancé ; l'indice du trésor (deux) ; Cornichon (deux) ; on ne descend pas d'un avion en vol (v552, quoi faire)
-      'main.js': 16,      // le vol refusé (l'eau retirée en v559, décision de Max), l'avion cassé, le ventre, la mer, l'invitation ratée, la caméra hors ligne, le code parental…
+      'main.js': 16,      // le vol refusé (l'eau retirée en v560, décision de Max), l'avion cassé, le ventre, la mer, l'invitation ratée, la caméra hors ligne, le code parental…
       'net.js': 2,        // le micro sans caméra ; la caméra refusée
       'partage.js': 2,    // le lien copié, ou le lien à copier
     };
@@ -334,7 +334,7 @@ function verifier(nom, ok, detail = '') {
     // plus ; un personnage qui les promet est pire que muet (v285). On lit les
     // chaînes du jeu — jamais les commentaires, ni le journal des nouveautés
     // (c'est de l'histoire), ni education.js (« chapeau » et « coffre » y sont du
-    // vocabulaire) — et seulement celles qui portent une phrase. Et la v559 :
+    // vocabulaire) — et seulement celles qui portent une phrase. Et la v560 :
     // « une voiture ne roule pas dans l'eau » ne se dit plus, elle y tombe. Une chaîne sans
     // espace est une clé de stockage (`web-minecraft-dex-v1`), pas un texte.
     const INTERDITS = /pok[eé]|\bdex\b|dresseu|attrap|feux? d'artifice|🎆|🎇|\bqu[êe]tes?\b|\bchapeaux?\b|\bcoffres?\b|planter un panneau|\bcollectionn|ne roule pas dans l'eau/i;

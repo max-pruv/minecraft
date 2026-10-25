@@ -1,4 +1,4 @@
-// Sonde (v559) : que fait une voiture qui roule vers l'eau ?
+// Sonde (v560) : que fait une voiture qui roule vers l'eau ?
 // Max : « s'il tombe dans l'eau, il tombe dans l'eau » — plus d'arrêt au bord.
 // Le VRAI joueur (player.js) sous node, un port fabriqué au-dessus du relief
 // (un quai de pierre, puis un bassin en eau), pleins gaz vers le bassin.

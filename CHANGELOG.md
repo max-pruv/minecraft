@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v559 — Dans l'eau pour de vrai, et les voitures ne se traversent plus
+## v560 — Dans l'eau pour de vrai, et les voitures ne se traversent plus
 
 Deux sujets, deux parties (v279).
 
@@ -79,6 +79,46 @@ une dalle trop courte, une aire quittée en roue libre) : la voiture y coulait
 désormais, et la suite se jouait à pied. Leurs dalles sont au sec.
 
 ---
+## v559 — Une Maserati MC12 GT1 Red Bull dans la flotte
+
+**Pourquoi.** Max a déposé un modèle de la Maserati MC12 GT1 aux couleurs Red
+Bull (Dave Love, Sketchfab, CC-BY-4.0) : « intègre la nouvelle voiture ». C'est
+un export Sketchfab brut — les quatre roues fusionnées dans chaque matériau de
+roue, le volant fusionné avec la planche de bord, des textures de 2 048² dont
+une toute noire — que le jeu ne savait ni faire rouler ni tenir dans la mémoire
+d'une tablette.
+
+**Ce que ça change.**
+- Une voiture de plus dans la flotte : on la croise dans la rue, on la conduit,
+  on la range au garage. Elle garde sa livrée Red Bull (la rue ne la repeint
+  jamais), ses roues tournent autour de leur moyeu (étriers fixes), son volant
+  Momo et l'écran Motec sont dans l'habitacle, l'enfant y est assis sous le
+  pavillon.
+- `scripts/convertir-mc12.py` fait le travail et se rejoue sur le paquet :
+  roues découpées en quatre pivots, volant séparé par pièces entières, flou de
+  jante invisible retiré, extensions inutiles retirées, images unies devenues
+  des couleurs, trois images de 2 048² ramenées à 1 024², laque recalée (métal
+  0,8 → 0,15 : en revue d'écran, la livrée bleu nuit sortait noire). 161 346 triangles
+  (aucune simplification), 7,77 Mo (6,0 Mo en gzip), 19 images, 59 primitives.
+- Portes en élytre non séparées dans le modèle : pas de portière qui s'ouvre
+  (`portiere: false`), comme la Revuelto.
+- Crédit CC-BY-4.0 et liste des modifications dans `vendor/voitures/LICENSE.md` ;
+  rendus de contrôle (studio three.js hors jeu) dans `docs/mc12/`.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (au manifeste, au sol,
+5,19 m, quatre roues qui tournent sur leur moyeu, volant, images, livrée qui
+résiste au repeint, sans portière, l'enfant assis sous le pavillon et face à la
+route) ; la MC12 dans le témoin des feux de détresse de `degats.js` et dans la
+mesure de la flotte sous node (phares, détresse, feux stop sur la tôle) ; la
+table des programmes (cinq signatures neuves) égale à ce que les fichiers
+contiennent. Portail complet : 14 suites vertes ; trois rouges, cinq témoins
+déjà déclarés (`maj.js` rejouée seule : 74 verts, 0 rouge) ; rebasée sur la
+v554, rejoué : mêmes familles, `maj.js` (75 verts) et `reseau.js` (96 verts)
+seules sans un rouge, et le titre de la v554 ramené à six mots ; reposée sur
+la v557 : 15 suites vertes, `maj.js` (loader) et `monte.js` (passages peints
+de Rome et Londres) sur des témoins déjà déclarés — détail dans
+`TASKS.md`. Revue d'écran à l'iPhone et à l'iPad, de jour et de nuit
+(`docs/revue-ecran/v559-mc12/`).
 
 ## v558 — Le métro de Washington roule droit le long des quais
 
@@ -506,6 +546,8 @@ place. Le témoin de la v495 (la rue rend sa mémoire) reste vert.
 
 ---
 
+---
+
 ## v546 — Une nouvelle Lamborghini Revuelto
 
 **Pourquoi.** Max a fourni une adaptation de la Revuelto plus fidèle que le
@@ -795,7 +837,6 @@ qu'un enfant de sept ans n'a aucune raison de chercher.
   ou déjà déclarés (`TASKS.md`).
 - Témoins repointés : `monte.js` (en tête de la colonne), `maj.js`,
   `reseau.js`, `banc.ouvrirLaCarte`, `sonde-revue-ecran.cjs`.
-
 
 ## v539 — Rien ne traverse une voie, et le train est un train
 
@@ -3757,7 +3798,6 @@ resserrées au milieu (59 anneaux, 806 pas ; 7 villes). Sonde
 comparaison des tracés et des tabliers des deux arbres (3 villes changées,
 0 tablier).
 
-
 ## v434 — Le dérapage laisse des traces
 
 **Pourquoi.** Depuis le frein à main (v409), la voiture dérape comme dans GTA :
@@ -3838,8 +3878,6 @@ sur `origin/main`, barre 15). Sonde sous node ville par ville, avant et après :
 pas, circuits, couverture (règle v322), pire partage (18, inchangé), voiture
 en vue depuis le centre, coût du premier dépliage (inchangé pour les villes
 sans faute, 75 à 110 ms pour celles qu'on essaie, sous le pire de Rome).
-
-
 
 ## v431 — Des files serrées, et une rue qui arrive sans à-coup
 
@@ -4199,7 +4237,6 @@ rendu, installation, génération) et profile la première seconde ; le gain ne
 se voit pas en durée d'image au banc (pire image 283 à 367 ms contre 283 à
 383), parce que l'attente se cachait dans des images déjà lentes — il se
 transpose à la tablette comme un appel synchrone de moins par morceau.
-
 
 ## v419 — Paris rejoint Lyon
 
@@ -4706,7 +4743,6 @@ traversée sur `origin/main`. Portail sur la v398 : mes trois témoins de piéto
 verts ; les rouges (GPS et glissé de `carte.js`, `reglages.js`, Manhattan,
 circulation, embarquement, train, trou en vol) se retrouvent rejoués seuls sur
 `origin/main`, souvent en plus grand nombre.
-
 
 ## v401 — Le monde entier en relief
 
@@ -5233,7 +5269,6 @@ les rouges sont des dettes déclarées (façade et taxi de Manhattan, compilatio
 rejoué seul trois fois des deux côtés : 0,67 à 0,83 s ici, 0,70 à 0,91 s sur
 `origin/main` — de la charge, et ce piéton est posé en mer, où la règle neuve
 ne trouve jamais de chaussée.
-
 
 ## v384 — On descend de la voiture d'un ami par la portière
 
@@ -7097,7 +7132,6 @@ propre, aucune colonne sur un rail (0 sur 8 249 mesurées sous node). La sonde :
 proches — sept admissibles, tous sans pont. La plaine du Pô n'est pas plate
 partout : c'est le déblai qui a fait le tri.
 
-
 ## v326 — Des falaises de roche et des berges de sable
 
 **Pourquoi.** Partout où le relief saute de deux blocs ou plus, le sol continu
@@ -7344,7 +7378,6 @@ un par lieu et deux sur le tour.
 
 ---
 
-
 ## v318 — Des contrôles plus justes
 
 **Pourquoi.** Deux témoins du portail ne prouvaient rien, et `TASKS.md` le
@@ -7380,7 +7413,6 @@ neuves (`sonde-tour-monuments.cjs`, `sonde-attente-volant.cjs`) rejouent ces
 mesures.
 
 ---
-
 
 ## v317 — Des quais en pierre dans toutes les villes
 
@@ -13305,7 +13337,6 @@ empreintes IDENTIQUES à la v205 (relief 218 089 colonnes · c20adb7308ae ;
 hors villes 184 656 · c79c2f3b0135 ; 4 040 colonnes sous les enfants, zéro
 déplacée) et `carteMonde.js`.
 
-
 ## v205 — Washington roule : des ronds-points qui tournent et onze circuits mesurés
 
 **Pourquoi.** Depuis la v201, chaque grande ville a ses voitures — sauf
@@ -14789,7 +14820,6 @@ même hash hors des villes — pas un bloc n'a bougé ailleurs. Et surtout : la
 discipline du regard — Tokyo, capturée à hauteur d'yeux et du ciel, se lit
 enfin comme une ville, rues noires, zèbres blancs, skyline.
 
-
 ## v171 — la vie : des voitures qui circulent, des passants qui marchent
 
 **Pourquoi.** Max : « les villes n'ont pas de vie. Il n'y a pas de voitures
@@ -14820,7 +14850,6 @@ Rome, l'anneau naît et ses voitures se montrent ; six passants peuplent les
 rues ; et huit secondes plus tard, ils ont MARCHÉ — ce sont des passants,
 pas des statues.
 
-
 ## v170 — les devantures : les villes prennent des couleurs de vraies rues
 
 **Pourquoi.** Max : « on n'a pas suffisamment de diversité d'un point de vue
@@ -14850,7 +14879,6 @@ trois trames, trois palettes : vitrines (≥ 60), portes (≥ 40), enseignes
 (≥ 100), auvents (≥ 60), lampadaires (≥ 8), bancs (≥ 4), et la diversité de
 blocs COMPTÉE (≥ 18 sortes par quartier ; mesuré : 27 à 31). Les empreintes
 du plafond ne bougent pas : les façades ne touchent pas au terrain.
-
 
 ## v169 — la carte ne lague plus
 
@@ -14887,7 +14915,6 @@ froid sous 400 ms (mesuré 134), le rendu suivant sous 150 ms (mesuré 34), et
 le glisser qui ne téléporte jamais même le fil principal étouffé 700 ms. Les
 témoins existants de la carte, du plafond et du tour du monde repassent au
 vert — même monde, au bloc près, juste plus vite.
-
 
 ## v168 — la Giga-usine : la chaîne de production, la peinture qui opère, et le volant
 
@@ -14930,7 +14957,6 @@ robots, le tunnel et le parc garni, sondés dans le monde engendré. Les deux
 empreintes du plafond sont inchangées au hash près : l'usine n'a pas bougé
 un bloc hors de son site.
 
-
 ## v167 — les pastilles répondent au doigt, et la bibliothèque de bâtiments se trouve
 
 **Pourquoi.** Max, capture d'écran à l'appui : « je ne comprends pas à quoi
@@ -14963,7 +14989,6 @@ suivent le doigt de l'enfant : la récolte fait naître la pastille (visible et
 touchable), le toucher ouvre l'atelier sur le garde-manger ; poser une cabane
 fait naître la jauge, la toucher ouvre le Chantier avec la ligne 📍 ; et
 l'onglet Bâtiments montre bien monuments célèbres et bâtiments de ville.
-
 
 ## v166 — les cinquante grandes : le tour du monde au complet
 
@@ -15010,7 +15035,6 @@ sec. Les deux empreintes du plafond sont recalculées avec Bruxelles et
 Amsterdam dans la découpe — et la preuve d'intégrité est refaite : la même
 découpe, mesurée sur main et sur v166, rend le MÊME hash hors des villes
 (5e54e15c…) : pas un bloc n'a bougé ailleurs.
-
 
 ## v165 — la Terre se reconnaît, et le tour du monde devient un vrai tour du monde
 

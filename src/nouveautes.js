@@ -6,12 +6,21 @@
 
 export const NOUVEAUTES = [
   {
-    v: 559,
+    v: 560,
     titre: 'Plouf ! Et plus de passe-muraille',
     puces: [
       'La voiture tombe dans l\'eau et coule',
       'Tu remontes tout seul à la surface',
       'Les voitures ne se traversent plus',
+    ],
+  },
+  {
+    v: 559,
+    titre: 'Une Maserati MC12 de course',
+    puces: [
+      'La MC12 GT1 aux couleurs Red Bull',
+      'Son volant et ses roues qui tournent',
+      'Modèle de Dave Love, merci à lui',
     ],
   },
   {
@@ -52,7 +61,7 @@ export const NOUVEAUTES = [
   },
   {
     v: 554,
-    titre: 'Des arbres entiers au bord du monde',
+    titre: 'Des arbres entiers, même au loin',
     puces: [
       'Plus de couronne coupée au loin',
       'Même en arrivant quelque part',

@@ -637,7 +637,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       !t.erreur && t.points > 50000 && t.trous === 0, t.erreur || JSON.stringify(t));
   }
 
-  // --- UNE VOITURE TOMBE DANS L'EAU (v559) ----------------------------------
+  // --- UNE VOITURE TOMBE DANS L'EAU (v560) ----------------------------------
   // Décision de Max, qui annule la v272 : « s'il tombe dans l'eau, il tombe
   // dans l'eau ». Le VRAI joueur sous node (`sonde-voiture-eau.cjs`), un port
   // fabriqué, pleins gaz vers le bassin, sans crochet d'eau : la voiture
@@ -657,7 +657,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       gue.erreur || JSON.stringify({ tEau: gue.tEau, tNoyee: gue.tNoyee, fin: gue.fin }));
   }
 
-  // --- ON NE S'ENFONCE PAS DANS UN VÉHICULE, PUR (v559) ----------------------
+  // --- ON NE S'ENFONCE PAS DANS UN VÉHICULE, PUR (v560) ----------------------
   // Max : « il ne faut pas que les véhicules puissent passer les uns dans les
   // autres ». « Pas si l'on est déjà dedans » (v245) se jugeait par famille :
   // collé à une voiture, on traversait celle d'à côté. La règle (`sEnfonce`,

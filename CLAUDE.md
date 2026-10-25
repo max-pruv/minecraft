@@ -921,7 +921,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La voiture tombe dans l'eau, et un véhicule ne s'enfonce plus dans un autre (v559)
+## La voiture tombe dans l'eau, et un véhicule ne s'enfonce plus dans un autre (v560)
 
 Max : « il faut arrêter de mettre des messages d'erreur pour dire attention,
 une voiture ne roule pas dans l'eau… s'il tombe dans l'eau, il tombe dans
@@ -1037,6 +1037,34 @@ Max : « tu le vois bouger de manière saccadée ». Trois règles.
   qui vient d'entrer ne rend parfois pas une image en dix secondes, et l'on
   attend qu'elle rende avant de mesurer. Un témoin de fluidité rend la place
   telle qu'il l'a trouvée (position et cap du conducteur).
+
+## La MC12 GT1 Red Bull (v559) — un export Sketchfab se découpe au convertisseur, et un nom de matériau est une donnée
+
+Max a déposé un paquet glTF Sketchfab (Dave Love, CC-BY-4.0). `scripts/convertir-mc12.py`
+le met au contrat (le paquet n'est pas versionné, le script se rejoue dessus).
+Trois règles.
+
+- **DES ROUES FUSIONNÉES PAR MATÉRIAU SE DÉCOUPENT AU CONVERTISSEUR, PAR LA
+  POSITION DE LEURS TRIANGLES.** `normaliserVoiture` regroupe des MAILLAGES par
+  leur nom ; elle ne peut rien pour un pneu qui porte les quatre roues dans une
+  seule primitive. Le script coupe par quadrant (signe de x, axe des roues),
+  pose le pivot au centre de SON pneu et livre un fichier au manifeste — que
+  `normaliserVoiture` laisse alors intact (`forme: 'manifeste'`). Le volant se
+  prend par PIÈCES ENTIÈRES (composantes connexes dont la boîte tient dans la
+  sienne) : une boîte par triangles a d'abord attrapé le combiné Motec de la
+  planche, vu en rendu marqué, pas au témoin.
+- **FUSIONNER DES MATÉRIAUX IDENTIQUES PERD LEUR NOM, ET LES FEUX LISENT LE
+  NOM.** Feu arrière, catadioptre et verre ambré avaient le même JSON ;
+  fusionnés, ils prenaient le nom du premier et la boîte des deux bouts de la
+  voiture — `posesDetresse`, `posesPhares` et les dégâts (`RE_FEU`,
+  `RE_PHARE`, `RE_PHARE_AR`) les rangent par nom et par boîte. Feux, vitrages,
+  rétroviseurs et laque gardent leur matériau.
+- **UNE IMAGE UNIE EST UN FACTEUR, ET UNE LIVRÉE EST UNE LAQUE QU'ON NE
+  REPEINT PAS.** Une texture dont tous les pixels sont égaux devient
+  `baseColorFactor` (sRGB → linéaire) : sans perte, une texture de moins, et la
+  signature du vitrage redevient une signature que la flotte compile déjà.
+  Une voiture dont les couleurs sont l'identité porte `laque: 'jamais'`, et sa
+  laque ne s'appelle pas `body` (que `EST_LAQUE` repeindrait) : `Paint_RedBull`.
 
 ## La Revuelto adaptée (v546) — un identifiant de flotte ne change pas, son fichier oui
 
@@ -2935,7 +2963,7 @@ Trois règles.
 ## Un pont se lit sur la colonne que le monde écrit (v430) — et une règle de contact vit dans le monde
 
 Max, capture d'iPhone : le bandeau de l'eau sur une autoroute, la voiture
-arrêtée. Quatre règles. *(Depuis la v559 l'eau n'arrête plus la voiture et le
+arrêtée. Quatre règles. *(Depuis la v560 l'eau n'arrête plus la voiture et le
 bandeau n'existe plus ; `eauSousLaVoiture` reste la règle que lit la sonde des
 ponts, et le contact sur les tabliers est inchangé.)*
 
@@ -9619,8 +9647,8 @@ sait ne cesse de marcher » — qui redevient le seul.
   raisonnement : le même protocole, avec et sans la borne, rend 4,4 blocs des
   deux côtés — la distance était plafonnée par un obstacle, et sans la mesure
   j'aurais « corrigé » la mauvaise chose.
-- *(ANNULÉ en v559 par décision de Max : la voiture tombe dans l'eau, sans
-  message — voir « La voiture tombe dans l'eau (v559) ». Le raisonnement
+- *(ANNULÉ en v560 par décision de Max : la voiture tombe dans l'eau, sans
+  message — voir « La voiture tombe dans l'eau (v560) ». Le raisonnement
   ci-dessous reste vrai pour la sonde des ponts : un plancher sous les roues
   passe avant l'eau dessous.)*
   **UNE VOITURE N'ENTRE PAS DANS L'EAU, ET C'EST LA QUATRIÈME FAMILLE
@@ -9636,7 +9664,7 @@ sait ne cesse de marcher » — qui redevient le seul.
   la famille gratuite : sur une rue, la chaussée est sous les roues, on sort
   sans descendre aucune colonne. Une borne d'altitude aurait été une constante
   de plus à régler pour un coût qui n'existe pas.
-- *(Retiré en v559 avec la famille d'eau.)* **ET LE MESSAGE DIT QUOI FAIRE** (« fais demi-tour »), au plus une fois
+- *(Retiré en v560 avec la famille d'eau.)* **ET LE MESSAGE DIT QUOI FAIRE** (« fais demi-tour »), au plus une fois
   toutes les quatre secondes, comptées en temps RÉEL : un bandeau ne doit pas se
   répéter plus souvent parce que la tablette rame (piège de `dt`, v226).
 

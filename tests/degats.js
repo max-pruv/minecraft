@@ -1101,8 +1101,9 @@ function verifier(nom, ok, detail = '') {
       if (!V.feuxDeDetresse || !V.posesDetresse) return { err: 'feuxDeDetresse non publié (ancien code)' };
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
       // la Revuelto adaptée (v546) : un modèle d'une autre facture, chargé
-      // par son `asset` — ses feux se mesurent comme ceux des autres
-      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'porsche-911-gt3-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb', 'lamborghini-revuelto.glb'];
+      // par son `asset` — ses feux se mesurent comme ceux des autres ; et la
+      // MC12 GT1 (v559), dont les feux vivent dans un export Sketchfab
+      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'porsche-911-gt3-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb', 'lamborghini-revuelto.glb', 'maserati-mc12-gt1.glb'];
       const rc = new THREE.Raycaster(); rc.layers.enableAll();
       const avantCles = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
       const res = [];

@@ -1,4 +1,4 @@
-// Sonde (v559) : « les véhicules ne doivent pas pouvoir passer les uns dans
+// Sonde (v560) : « les véhicules ne doivent pas pouvoir passer les uns dans
 // les autres ; aujourd'hui c'est encore possible » (Max). On MESURE avant
 // d'écrire (v223) : par paire, combien de relevés où deux rectangles se
 // recouvrent VRAIMENT (séparation d'axes, v244, enfoncement > 0,25 bloc —
