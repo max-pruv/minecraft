@@ -342,7 +342,7 @@ function voitureNeuve(voeu) {
   // garage muet.
   const voulu = voeu && voeu.flotte
     ? FLOTTE.find((f) => f.fichier === voeu.flotte) || null : null;
-  // le tirage ne sort pas la voiture de police (`horsRue`, v559) : l'usine et
+  // le tirage ne sort pas la voiture de police (`horsRue`, v562) : l'usine et
   // le garage livrent des voitures de tout le monde ; la police, on la prend
   // à la fin d'un contrôle, ou on la demande par son nom (le vœu)
   const tirables = FLOTTE.filter((f) => !f.horsRue);

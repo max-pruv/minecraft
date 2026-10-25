@@ -250,7 +250,7 @@ export function initFun(ctx) {
   // ne demande donc plus de penser à revenir modifier ce fichier — l'oubli
   // qui, pendant des mois, a laissé le cheval, le cerf et le loup seuls
   // montables alors que le bestiaire s'était étoffé.
-  // `enService` (v559) : une voiture de police en patrouille n'est pas à prendre
+  // `enService` (v562) : une voiture de police en patrouille n'est pas à prendre
   // — elle le devient une fois garée, à la fin du contrôle (patrouille.js).
   const montable = (a) => !!(a && a.def && a.def.montable && !a.baby && !a.horsService && !a.enService);
 
@@ -1157,6 +1157,9 @@ export function initFun(ctx) {
     if (a.def.key === 'voiture' && flotte) return allureDe(flotte, a.def.allure || 3.4);
     return a.def.allure || 2;
   }
+  // la voiture noyée (v560) : le temps de la voir couler, puis l'enfant sort
+  // et nage vers la surface (au plus REMONTER_MS, en temps réel)
+  const SORTIE_NOYEE_MS = 1200, REMONTER_MS = 6000;
   function updateRide(dt) {
     if (!riding) return;
     if (riding.dying > 0 || !animalManager.animals.includes(riding)) {
@@ -1185,6 +1188,28 @@ export function initFun(ctx) {
       degats.deposer(enFeu);
       return;
     }
+    // LA VOITURE NOYÉE (v560, Max : « s'il tombe dans l'eau, il tombe dans
+    // l'eau, et puis c'est tout ») : la physique l'a laissée entrer, son
+    // moteur a calé sous l'eau (`voitureDansLEau.noyee`, player.js). Le temps
+    // de la voir couler — en temps RÉEL, une sortie ne doit pas durer plus
+    // longtemps parce que la tablette rame (v226) — l'enfant en sort, au-dessus
+    // du toit, et remonte tout seul à la surface (`remonter`). Aucun message :
+    // l'enfant voit ce qui s'est passé. La voiture reste au fond, hors service.
+    const eau = player.voitureDansLEau;
+    if (eau && eau.noyee && riding.def.moteur && !riding.def.pilote) {
+      const t = performance.now();
+      if (!riding.noyeeA) riding.noyeeA = t;
+      if (t - riding.noyeeA > SORTIE_NOYEE_MS) {
+        const a = riding;
+        toggleRide(null, true);
+        a.noyee = true; a.horsService = true; a.noyeeA = 0;
+        player.flying = false;
+        player.pos.set(a.pos.x, a.pos.y + 1.4, a.pos.z);
+        player.vel.set(0, 0, 0);
+        player.remonter = t + REMONTER_MS;
+        return;
+      }
+    } else if (riding.noyeeA) riding.noyeeA = 0;
     // L'AVION CASSÉ (aviation) : la physique a jugé le toucher (`epave`,
     // player.js). La carcasse prend feu tout de suite (`ecraser`) ; une
     // seconde plus tard — le temps que l'ami reçoive l'épave en feu par la

@@ -327,7 +327,7 @@ export function creerEmbarquement(ctx) {
   function monter(a) {
     if (s) { terminer(); return; }
     if (SEQUENCE_ACTIVE && av && a && a.mesh && a.def && a.def.pilote && a.mesh.userData.porte) { monterAvion(a); return; }
-    // UNE MOTO S'ENFOURCHE (v559) : ni portière ni marche jusqu'au volant —
+    // UNE MOTO S'ENFOURCHE (v562) : ni portière ni marche jusqu'au volant —
     // on passe la jambe, et l'on est en selle. La fiche le dit (`selle`).
     if (!SEQUENCE_ACTIVE || !av || !a || !a.mesh || !a.def || !a.def.siege || a.def.pilote || a.def.selle) { ctx.toggleRide(a); return; }
     const g = a.mesh;

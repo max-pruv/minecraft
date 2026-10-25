@@ -6,13 +6,40 @@
 
 export const NOUVEAUTES = [
   {
-    v: 559,
+    v: 562,
     titre: 'La police, et la moto',
     puces: [
       'Une bêtise au volant ? La police arrive',
       'Sirène, gyrophares et étoiles',
       "Arrête-toi : le policier te parle",
       'Conduis la moto, elle se penche',
+    ],
+  },
+  {
+    v: 561,
+    titre: 'Une nouvelle Ferrari SF90 XX',
+    puces: [
+      'Une vraie SF90 XX Stradale',
+      'Avec son volant et son aileron',
+      'Modèle de Ddiaz Design, merci',
+    ],
+  },
+  {
+    v: 560,
+    titre: 'Plouf ! Et plus de passe-muraille',
+    puces: [
+      'La voiture tombe dans l\'eau et coule',
+      'Tu remontes tout seul à la surface',
+      'Les voitures ne se traversent plus',
+    ],
+  },
+  {
+    v: 559,
+    titre: 'Une Maserati MC12 de course',
+    puces: [
+      'La MC12 GT1 aux couleurs Red Bull',
+      'Son volant et ses roues qui tournent',
+      'Modèle de Dave Love, merci à lui',
     ],
   },
   {
@@ -53,7 +80,7 @@ export const NOUVEAUTES = [
   },
   {
     v: 554,
-    titre: 'Plus d’arbres coupés au loin',
+    titre: 'Des arbres entiers, même au loin',
     puces: [
       'Plus de couronne coupée au loin',
       'Même en arrivant quelque part',

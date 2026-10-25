@@ -921,7 +921,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La police et la moto (v559) — une poursuite suit la piste de l'enfant, et un contrôle se range là où la caméra regarde
+## La police et la moto (v562) — une poursuite suit la piste de l'enfant, et un contrôle se range là où la caméra regarde
 
 Max : « dès lors que tu fais une bêtise, un accident, que tu fonces dans
 quelqu'un… la police ; et la moto ». `src/police.js` (pur : points, étoiles,
@@ -972,6 +972,64 @@ s'entend), `src/moto.js` (le modèle, ses éclats). Les modèles sont ceux de Ma
 Ce qui reste, déclaré dans `TASKS.md` : la police est locale à la tablette (un
 ami ne la voit pas) ; la moto a la boîte de collision d'une voiture en longueur.
 
+## La voiture tombe dans l'eau, et un véhicule ne s'enfonce plus dans un autre (v560)
+
+Max : « il faut arrêter de mettre des messages d'erreur pour dire attention,
+une voiture ne roule pas dans l'eau… s'il tombe dans l'eau, il tombe dans
+l'eau… et il ne faut pas que les véhicules puissent passer les uns dans les
+autres ». **Cette décision annule la v272** (l'eau, quatrième famille
+d'obstacle, et son bandeau « fais demi-tour »). Sept règles.
+
+- **L'EAU N'EST PLUS UN OBSTACLE, C'EST UN MILIEU.** Retirer l'arrêt seul
+  remettait la panne d'avant la v272 : mesuré (`sonde-voiture-eau.cjs`, le vrai
+  joueur sous node, un port fabriqué), la voiture traversait le bassin à seize
+  blocs/s en roulant sur le fond. Dans l'eau la caisse freine (`TRAINEE_EAU`,
+  player.js) ; la tête noyée, le moteur cale (`voitureDansLEau.noyee`, entre
+  dans `inerte`) ; Espace, frein à main, ne la fait plus nager. Lancée à quinze
+  blocs/s depuis un quai : elle vole par-dessus le bord, plonge, file quatre
+  blocs, coule au fond. Un gué d'un bloc freine sans noyer : on en ressort.
+- **L'ENFANT EN SORT ET REMONTE, SANS UN MOT.** `fun.js` (`updateRide`) :
+  1,2 s RÉELLE après que le moteur a calé, l'enfant quitte la voiture au-dessus
+  du toit, et `player.remonter` (une échéance en temps réel) le fait nager vers
+  la surface et s'y tenir le temps de rejoindre la rive. La voiture reste au
+  fond, `noyee` et `horsService` (degats3d.js le garde : sa ligne qui recalcule
+  `horsService` connaît `noyee`). Le texte « ne roule pas dans l'eau » est
+  interdit par la fumée, comme une fonctionnalité retirée (v505).
+- **`eauSousLaVoiture` RESTE DANS LE MONDE** : la sonde des ponts (v430) la lit
+  pour prouver qu'un tablier porte la voiture ; le jeu ne s'en sert plus.
+- **« PAS SI L'ON EST DÉJÀ DEDANS » SE JUGE PAR VÉHICULE ET PAR ENFONCEMENT.**
+  `obstacleVehicule` testait la FAMILLE (`obstacleDevant(nouveau) &&
+  !obstacleDevant(ancien)`) : collée à une voiture, la nôtre ne voyait plus
+  AUCUNE voiture. `sEnfonce` (conduite.js, pur) refuse un pas qui fait entrer
+  dans un véhicule OU qui s'y enfonce plus (profondeur de séparation d'axes) ;
+  reculer ou longer reste permis — on n'est jamais coincé. `obstacleDevant` et
+  `voitureContre` (vehicules.js) prennent la pose d'avant et rendent la voiture
+  qui bloque, pas la première touchée ; `gareeContre` (main.js) de même. Toute
+  famille d'obstacle à venir se juge ainsi.
+- **UNE VOITURE DE LA RUE OU UNE RAME DÉJÀ DANS UNE VOITURE S'ARRÊTE.** La
+  v245 la laissait continuer « pour en sortir » : vrai d'un enfant à pied,
+  faux d'une voiture, qu'elle traversait de part en part. Contre l'enfant ou un
+  ami AU VOLANT (`estUnVehicule`), la voiture de la rue ne saute plus le
+  contact (elle s'arrête, légitime, comme heurtée, v372) et la rame se pose en
+  `bloque` (arrêt local, v304). À pied, la règle d'avant. L'horloge partagée
+  ne bouge pas (v305) : rien n'est poussé.
+- **ON MESURE LA SITUATION, PAS UN TIRAGE.** `sonde-traverse-vehicules.cjs`
+  (isolée) roule dans Paris en cherchant le contact et mesure les
+  recouvrements par paire ; la rue y est un tirage (un à trois chocs en
+  quarante secondes). Les témoins provoquent : `monte.js` gare une voiture
+  flanc contre flanc et une autre devant, `plafond.js` juge `sEnfonce` pur.
+- **UN TÉMOIN DE CONDUITE SE POSE AU SEC, ET RESTE SUR SA DALLE.** Tant que
+  l'eau ne faisait rien à une voiture, trois témoins roulaient sans le savoir
+  dans la mer ou à son bord : une dalle posée trois blocs au-dessus d'un relief
+  SOUS l'eau (l'allure citadine/hypercar, 6,9 pour 15,7), une voiture qui
+  filait au-delà du bout de la dalle GTA, une autre qui sortait en roue libre
+  de l'aire des sensations. Elles coulaient, l'enfant sortait, et les témoins
+  suivants se jouaient À PIED — quatre rouges pour une cause. C'est la v380
+  (« un couloir vide se vérifie au sec ») et la v279 (une correction du jeu
+  rend visible une hypothèse de banc) : une dalle de témoin se pose à
+  `WATER_LEVEL` au moins, et va au-delà de ce qu'on y roule ; une voiture qu'on
+  ne mesure plus s'arrête tout de suite.
+
 ## Passager dans l'avion d'un ami (v552) — un siège se déclare dans la fiche, et le reste suit
 
 Max : « rentrer dans une voiture, avion… en passager si un autre joueur est
@@ -1004,6 +1062,37 @@ déjà conducteur ». Quatre règles.
   est posé à la main (`update` suspendu), sinon sa physique le ramène au sol
   pendant la mesure.
 
+## La SF90 XX Stradale (v561) — un paquet Sketchfab passe par un script, et ses matériaux par la table des programmes
+
+Max a fourni le paquet glTF de Ddiaz Design (CC-BY-4.0). Trois règles.
+
+- **UN PAQUET QUI NE TIENT PAS LE MANIFESTE SE CUIT HORS LIGNE, PAR UN SCRIPT
+  REPRODUCTIBLE.** 1 097 maillages (autant d'appels de dessin) et les 648
+  pièces des QUATRE roues sous un seul nœud nommé « Front_L » :
+  `normaliserVoiture` ne peut pas en faire quatre roues, elle lit les noms.
+  `scripts/ferrari-sf90-xx.py` cuit les transformations, pose au manifeste
+  (échelle sur l'empattement réel, nez vers +Z déduit du moteur central
+  arrière), répartit les pièces de roue par QUADRANT, découpe le volant de
+  l'habitacle par composantes connexes dans une boîte mesurée, fusionne par
+  matériau et compacte sans perte. Il refait le fichier au bit près ; les
+  empreintes du paquet sont dans `docs/sf90-xx/`. Le prochain paquet du même
+  genre se cuit ainsi, jamais à la main dans un éditeur.
+- **UN MATÉRIAU DÉPOSÉ RETOMBE SUR UN PROGRAMME DÉJÀ CHAUFFÉ, OU IL SE
+  DÉCLARE.** Ce qui crée une signature (v246) sans rien montrer part au
+  script : couleurs de sommets (le visualiseur de Sketchfab ne les montre pas
+  par défaut, leur alpha valait zéro), tangentes, second jeu d'UV, spéculaire
+  constant. La transmission (une passe de rendu de plus par image) devient une
+  transparence simple ; une carte métal/rugosité, sa moyenne. Il ne reste
+  qu'UNE signature neuve (`Standard+map+nrm+DS`), déclarée dans
+  `signatures.js`. On compte les signatures du fichier de sortie
+  (`signaturesDuGlb`) avant de le livrer.
+- **UN BRAS « AVANT » SE CHOISIT DANS L'ADRESSE.** Retirer `asset` de FLOTTE
+  dans une page ouverte ne change rien si le prototype est déjà chargé : la
+  première planche de la sonde montrait deux XX. `?asset=0` choisit le fichier
+  d'avant dès le démarrage (`sonde-captures-sf90.cjs`, et désormais celle de
+  la Revuelto). Le prix se déclare : 262 651 triangles, 8,7 Mo, ≈ 6,3 Mo
+  transférés, portières non séparées (`portiere: false`).
+
 ## Les amis rejoués entre deux relevés (v556) — une position reçue porte son heure d'envoi
 
 Max : « tu le vois bouger de manière saccadée ». Trois règles.
@@ -1030,6 +1119,34 @@ Max : « tu le vois bouger de manière saccadée ». Trois règles.
   qui vient d'entrer ne rend parfois pas une image en dix secondes, et l'on
   attend qu'elle rende avant de mesurer. Un témoin de fluidité rend la place
   telle qu'il l'a trouvée (position et cap du conducteur).
+
+## La MC12 GT1 Red Bull (v559) — un export Sketchfab se découpe au convertisseur, et un nom de matériau est une donnée
+
+Max a déposé un paquet glTF Sketchfab (Dave Love, CC-BY-4.0). `scripts/convertir-mc12.py`
+le met au contrat (le paquet n'est pas versionné, le script se rejoue dessus).
+Trois règles.
+
+- **DES ROUES FUSIONNÉES PAR MATÉRIAU SE DÉCOUPENT AU CONVERTISSEUR, PAR LA
+  POSITION DE LEURS TRIANGLES.** `normaliserVoiture` regroupe des MAILLAGES par
+  leur nom ; elle ne peut rien pour un pneu qui porte les quatre roues dans une
+  seule primitive. Le script coupe par quadrant (signe de x, axe des roues),
+  pose le pivot au centre de SON pneu et livre un fichier au manifeste — que
+  `normaliserVoiture` laisse alors intact (`forme: 'manifeste'`). Le volant se
+  prend par PIÈCES ENTIÈRES (composantes connexes dont la boîte tient dans la
+  sienne) : une boîte par triangles a d'abord attrapé le combiné Motec de la
+  planche, vu en rendu marqué, pas au témoin.
+- **FUSIONNER DES MATÉRIAUX IDENTIQUES PERD LEUR NOM, ET LES FEUX LISENT LE
+  NOM.** Feu arrière, catadioptre et verre ambré avaient le même JSON ;
+  fusionnés, ils prenaient le nom du premier et la boîte des deux bouts de la
+  voiture — `posesDetresse`, `posesPhares` et les dégâts (`RE_FEU`,
+  `RE_PHARE`, `RE_PHARE_AR`) les rangent par nom et par boîte. Feux, vitrages,
+  rétroviseurs et laque gardent leur matériau.
+- **UNE IMAGE UNIE EST UN FACTEUR, ET UNE LIVRÉE EST UNE LAQUE QU'ON NE
+  REPEINT PAS.** Une texture dont tous les pixels sont égaux devient
+  `baseColorFactor` (sRGB → linéaire) : sans perte, une texture de moins, et la
+  signature du vitrage redevient une signature que la flotte compile déjà.
+  Une voiture dont les couleurs sont l'identité porte `laque: 'jamais'`, et sa
+  laque ne s'appelle pas `body` (que `EST_LAQUE` repeindrait) : `Paint_RedBull`.
 
 ## La Revuelto adaptée (v546) — un identifiant de flotte ne change pas, son fichier oui
 
@@ -2928,7 +3045,9 @@ Trois règles.
 ## Un pont se lit sur la colonne que le monde écrit (v430) — et une règle de contact vit dans le monde
 
 Max, capture d'iPhone : le bandeau de l'eau sur une autoroute, la voiture
-arrêtée. Quatre règles.
+arrêtée. Quatre règles. *(Depuis la v560 l'eau n'arrête plus la voiture et le
+bandeau n'existe plus ; `eauSousLaVoiture` reste la règle que lit la sonde des
+ponts, et le contact sur les tabliers est inchangé.)*
 
 - **CE QUE LE GÉNÉRATEUR A DÉCIDÉ AU COIN D'UNE COLONNE SE LIT AU COIN.**
   `world.js` demande `routeEn(wx, wz)` — le coin — pour savoir si une colonne
@@ -9610,7 +9729,11 @@ sait ne cesse de marcher » — qui redevient le seul.
   raisonnement : le même protocole, avec et sans la borne, rend 4,4 blocs des
   deux côtés — la distance était plafonnée par un obstacle, et sans la mesure
   j'aurais « corrigé » la mauvaise chose.
-- **UNE VOITURE N'ENTRE PAS DANS L'EAU, ET C'EST LA QUATRIÈME FAMILLE
+- *(ANNULÉ en v560 par décision de Max : la voiture tombe dans l'eau, sans
+  message — voir « La voiture tombe dans l'eau (v560) ». Le raisonnement
+  ci-dessous reste vrai pour la sonde des ponts : un plancher sous les roues
+  passe avant l'eau dessous.)*
+  **UNE VOITURE N'ENTRE PAS DANS L'EAU, ET C'EST LA QUATRIÈME FAMILLE
   D'OBSTACLE** (`eauDevant`, main.js), jugée chez elle comme les trois autres,
   avec « pas si l'on est déjà dedans » — une voiture tombée au port doit
   pouvoir en sortir. C'est le piège de `sommetColonne` du v267 une famille plus
@@ -9623,7 +9746,7 @@ sait ne cesse de marcher » — qui redevient le seul.
   la famille gratuite : sur une rue, la chaussée est sous les roues, on sort
   sans descendre aucune colonne. Une borne d'altitude aurait été une constante
   de plus à régler pour un coût qui n'existe pas.
-- **ET LE MESSAGE DIT QUOI FAIRE** (« fais demi-tour »), au plus une fois
+- *(Retiré en v560 avec la famille d'eau.)* **ET LE MESSAGE DIT QUOI FAIRE** (« fais demi-tour »), au plus une fois
   toutes les quatre secondes, comptées en temps RÉEL : un bandeau ne doit pas se
   répéter plus souvent parce que la tablette rame (piège de `dt`, v226).
 

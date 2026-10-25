@@ -40,7 +40,7 @@ import { creerPatrouille } from './patrouille.js';
 import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN, PORTEE_COURONNE,
   ABAISSE_TRES_LOIN, rayonTresLoin, silhouetteArbre } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
-import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites } from './conduite.js';
+import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites, sEnfonce, rectangleDeBoite } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
@@ -1139,7 +1139,7 @@ const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world,
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
 const animalManager = new AnimalManager(scene, world, player, toast);
-let patrouille = null;   // la police (v559), créée plus bas une fois `fun` prêt
+let patrouille = null;   // la police (v562), créée plus bas une fois `fun` prêt
 let marlon = null; // spawned after the spawn point is known
 let cornichon = null;
 let npcs = [];
@@ -1907,7 +1907,7 @@ function updateChunks() {
       const g = rp.vehicule && rp.vehicule.def ? rp.vehicule.def.gabarit || 0 : 0;
       out.push({ x: rp.pos.x, y: rp.pos.y, z: rp.pos.z, cap: (rp.yaw || 0) + Math.PI, gabarit: g > 1 ? g : 0.6 });
     }
-    // et la police en service (v559) : la rue lui cède comme à un ami
+    // et la police en service (v562) : la rue lui cède comme à un ami
     if (patrouille) for (const o of patrouille.obstacles()) out.push(o);
     return out;
   });
@@ -2033,90 +2033,61 @@ function updateChunks() {
     const avant = pietonsDans(x0, z0, cap);
     return apres.some((n) => !avant.includes(n));
   };
-  // ET UNE VOITURE N'ENTRE PAS DANS L'EAU (v272). Max, capture de Hambourg :
-  // sa voiture au milieu du port. C'est le piège de `sommetColonne` du v267,
-  // une famille plus bas — elle rend le premier bloc SOLIDE en descendant, et
-  // l'eau n'en est pas un : au-dessus de la mer elle rend le FOND, et la
-  // voiture y roulait tranquillement. On demande donc ce qu'il y a JUSTE
-  // AU-DESSUS du sol.
-  //
-  // MAIS « DE L'EAU DANS CETTE COLONNE » N'EST PAS « LA VOITURE EST DANS
-  // L'EAU » : un pont passe AU-DESSUS du fleuve, et les trois tabliers de la
-  // Tamise (v208) seraient devenus infranchissables. Ce qu'une voiture
-  // demande, c'est un PLANCHER sous ses roues — s'il y en a un, on roule,
-  // quoi qu'il y ait plus bas. Sinon, et si la colonne est en eau, on refuse.
-  //
-  // Et l'on regarde le RECTANGLE, pas le centre : à vingt blocs par seconde
-  // le capot est dans l'eau deux blocs avant le milieu de la voiture.
-  //
-  // ET CE N'EST PAS CHER, PARCE QUE LE PLANCHER EST LA PREMIÈRE QUESTION :
-  // sur une rue, la chaussée est sous les roues, on sort par `continue` et
-  // l'on ne descend AUCUNE colonne. La recherche de fond ne coûte que là où
-  // il n'y a rien sous les roues — un bord de quai, une chute. Une borne
-  // d'altitude serait une constante de plus à régler pour un coût qui
-  // n'existe pas.
-  // La règle elle-même vit dans le monde depuis la v430 (`eauSousLaVoiture`) :
-  // la sonde des ponts la lit telle quelle, et le tablier s'y lit sur la
-  // colonne que le générateur a décidée — aux deux bouts de chaque pont
-  // d'autoroute, la voiture refusait d'avancer (Max, capture d'iPhone).
-  const eauDevant = (x, z, cap) => world.eauSousLaVoiture(x, z, cap, player.pos.y, Math.max(0.3, player.gabarit / 2));
-  // LE MESSAGE DIT QUOI FAIRE, ET IL NE SE RÉPÈTE PAS À CHAQUE IMAGE. Le
-  // crochet est appelé soixante fois par seconde tant que l'enfant pousse
-  // vers la mer : un bandeau par image serait illisible.
-  let ditEau = 0;
-  const direLEau = () => {
-    // en temps RÉEL, jamais en `dt` : un bandeau ne doit pas se répéter plus
-    // souvent parce que la tablette rame (piège de `dt`, v226)
-    if (performance.now() - ditEau < 4000) return;
-    ditEau = performance.now();
-    toast('🌊 Une voiture ne roule pas dans l\'eau — fais demi-tour.', 0xffd166);
-  };
+  // L'EAU N'EST PLUS UNE FAMILLE D'OBSTACLE (v560, décision de Max qui
+  // annule la v272) : « il faut arrêter de mettre des messages pour dire une
+  // voiture ne roule pas dans l'eau ; s'il tombe dans l'eau, il tombe dans
+  // l'eau ». La voiture garde son élan, plonge, cale et coule (player.js,
+  // `voitureDansLEau`), et l'enfant en sort à la nage (fun.js). La règle du
+  // monde (`world.eauSousLaVoiture`) reste : la sonde des ponts la lit.
   // LES FAMILLES SE JUGENT L'UNE APRÈS L'AUTRE, ET LA PLUS CHÈRE EN DERNIER
-  // (leçon de la contrainte de partage, v270) : `eauDevant` descend une
-  // colonne, les autres lisent des listes déjà figées.
+  // (leçon de la contrainte de partage, v270).
   // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v358) : un choc
-  // contre une voiture de la rue ou du mobilier rebondit, un piéton et l'eau
-  // arrêtent net, sans choc — personne n'est jamais touché (v259).
+  // contre une voiture de la rue ou du mobilier rebondit, un piéton
+  // arrête net, sans choc — personne n'est jamais touché (v259).
   // ET UNE VOITURE GARÉE OU INVOQUÉE (v534) : une monture qui porte un
   // `gabarit` — pas un avion. Elle n'était un obstacle que pour les piétons
   // (v259) ; la voiture de l'enfant la traversait. Elle se POUSSE : c'est une
   // bête de cette tablette, rien de l'horloge partagée (v305).
-  const gareeContre = (x, z, cap) => {
-    const moi = boiteVoiture(x, z, cap, 2.2, Math.max(0.3, player.gabarit / 2));
+  // ET PAR ENFONCEMENT (v560) : avec la pose d'avant, la voiture garée dans
+  // laquelle ce pas s'enfonce — on la touchait déjà ou non (`sEnfonce`).
+  // Collé à une voiture garée, on traversait celle d'à côté.
+  const gareeContre = (x, z, cap, x0, z0) => {
+    const moiB = boiteVoiture(x, z, cap, 2.2, Math.max(0.3, player.gabarit / 2));
+    const moi = rectangleDeBoite(moiB);
+    const avant = x0 === undefined ? null : rectangleDeBoite(boiteVoiture(x0, z0, cap, 2.2, Math.max(0.3, player.gabarit / 2)));
     for (const a of animalManager.animals) {
       const g = a.def.gabarit;
       if (!(g > 1) || a.def.pilote || a.montee || a.dying > 0 || Math.abs(a.pos.y - player.pos.y) > 2.5) continue;
       if ((a.pos.x - x) ** 2 + (a.pos.z - z) ** 2 > 8 * 8) continue;
       const B = boiteVoiture(a.pos.x, a.pos.z, a.yaw, 2.2, g / 2);
-      if (normaleEntreBoites(moi, B)) return { a, B };
+      if (avant ? sEnfonce(avant, moi, rectangleDeBoite(B)) : normaleEntreBoites(moiB, B)) return { a, B };
     }
     return null;
   };
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
-    if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return 'voiture';
+    // « pas si l'on est déjà dedans » se juge PAR VÉHICULE et PAR ENFONCEMENT
+    // (v560) : on peut se dégager d'une voiture qu'on touche, pas s'y enfoncer,
+    // et la toucher ne désarme plus les autres
+    if (vehicules.obstacleDevant(x, z, cap, x0, z0)) return 'voiture';
     // on ne casse que sur le pas qu'on fait vraiment (pas sur le regard au
     // loin que `player.js` jette pour freiner devant un piéton), et assez vite
     const pas = Math.hypot(x - x0, z - z0);
     const sp = Math.abs(player.vitesseVoiture || 0);
     const sens = sp >= VITESSE_CASSE && pas > 1e-6 && pas < 1.5 ? { dx: (x - x0) / pas, dz: (z - z0) / pas } : null;
-    const g = gareeContre(x, z, cap);
-    if (g) { const avant = gareeContre(x0, z0, cap); if (!avant || avant.a !== g.a) return 'voiture'; }
+    if (gareeContre(x, z, cap, x0, z0)) return 'voiture';
     if (mobilierDevant(x, z, cap, sens) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
-    // `arretDouxT` (v343) : s'arrêter devant un piéton ou au bord de l'eau
-    // n'est PAS un choc — les dégâts ne comptent jamais un piéton touché.
+    // `arretDouxT` (v343) : s'arrêter devant un piéton n'est PAS un choc —
+    // les dégâts ne comptent jamais un piéton touché.
     if (pietonDevant(x, z, cap, x0, z0)) { player.arretDouxT = performance.now(); return 'pieton'; }
-    // « Pas si l'on est déjà dedans » : une voiture tombée à l'eau doit
-    // pouvoir en ressortir, sinon elle y reste pour toujours.
-    if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { player.arretDouxT = performance.now(); direLEau(); return 'eau'; }
     return false;
   };
   // ET CONTRE QUELLE VOITURE (v397) : sa boîte et son allure, pour que le choc
   // prenne la normale de SON rectangle et la vitesse RELATIVE — un flanc frôlé
   // glisse, un choc par l'arrière pousse peu.
-  player.voitureContre = (x, z, cap) => {
-    const r = vehicules.voitureContre(x, z, cap);
+  player.voitureContre = (x, z, cap, x0, z0) => {
+    const r = vehicules.voitureContre(x, z, cap, x0, z0);
     if (r) return r;
-    const g = gareeContre(x, z, cap);
+    const g = gareeContre(x, z, cap, x0, z0);
     if (!g) return null;
     const e = g.a.elan;
     return { ...g.B, v: 0, vx: e ? e.vx : 0, vz: e ? e.vz : 0, libre: true, pousser: (ix, iz) => g.a.pousser(ix, iz) };
@@ -3903,7 +3874,7 @@ function garagiste(dt) {
       && Math.hypot(a.pos.x - x, a.pos.z - z) < 6);
     if (!dejaLa) animalManager.invoquer('voiture', x, z);
   }
-  // ET UNE MOTO (v559) entre la deuxième et la troisième voiture : Max,
+  // ET UNE MOTO (v562) entre la deuxième et la troisième voiture : Max,
   // « j'ajoute aussi le concept de moto » — elle attend au parc comme les
   // voitures, et le garagiste la remplace de la même façon.
   const mx = pu.x + PLACE_MOTO[0], mz = pu.z + PLACE_MOTO[1];
@@ -8147,7 +8118,7 @@ function asseoir(av, a, siege, temps) {
   av.scale.setScalar(c.echelle);
   av.position.set(c.x, c.y, c.z);
   av.rotation.y = 0;                             // visage en −z, comme le nez de la voiture
-  // la fiche peut avoir sa posture (v559) : à califourchon sur une moto
+  // la fiche peut avoir sa posture (v562) : à califourchon sur une moto
   const pose = (a.def && a.def.pose) || POSE_AU_VOLANT;
   av.userData.legs.forEach((l) => { l.rotation.x = pose.cuisses; });
   av.userData.arms.forEach((b) => { b.rotation.x = pose.bras; });
@@ -8876,7 +8847,7 @@ window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) 
 // Les panneaux à lire sur place : une fois par visite, en temps réel (v460).
 // Depuis la v538, dans les cinq grandes villes, dans la langue du profil, et
 // raconté par le guide posé au pied du monument (`createGuidesVilles`).
-// LA POLICE (v559). Une bêtise au volant — une voiture heurtée, un piéton
+// LA POLICE (v562). Une bêtise au volant — une voiture heurtée, un piéton
 // qu'on force à s'écarter, un gros choc, le mobilier renversé — et une
 // voiture de police arrive derrière l'enfant, sirène et gyrophares ; à deux
 // étoiles, une moto la rejoint. On s'en sort en la semant… ou en s'arrêtant :
@@ -9096,7 +9067,7 @@ function frame(now) {
   // qu'on sait ce que `dt` vaut.
   edu.update(dtEcran(), running);
   fun.update(dt);
-  if (running && patrouille) patrouille.update();   // la police (v559)
+  if (running && patrouille) patrouille.update();   // la police (v562)
   majEtatPolice();
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
