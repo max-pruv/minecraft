@@ -91,6 +91,7 @@ const ASSETS = [
   './src/partage.js',
   './src/visio.js',
   './src/relaisnuage.js',
+  './src/fluidite.js',
   './src/effects.js',
   './src/sky.js',
   './src/siege.js',

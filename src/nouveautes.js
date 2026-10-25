@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 556,
+    titre: 'Les amis bougent sans à-coups',
+    puces: [
+      'Un ami en voiture roule en douceur',
+      'Même quand le réseau est lent',
+      'Pareil en avion et à pied',
+    ],
+  },
+  {
     v: 555,
     titre: 'Le métro Hôtel de Ville rouvre',
     puces: [

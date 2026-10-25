@@ -1663,7 +1663,11 @@ export class NetSession {
         break;
       }
       case 'pos':
-        entry.pos = { x: msg.x, y: msg.y, z: msg.z };
+        // L'HEURE D'ENVOI ET LA VITESSE (amis-fluides) : `ts` sur l'horloge de
+        // l'ami, `vx`/`vz` au volant. Le receveur rejoue l'ami entre deux
+        // relevés au lieu de courir après le dernier ; une tablette restée
+        // sur l'ancienne version n'envoie ni l'un ni l'autre (le receveur cède).
+        entry.pos = { x: msg.x, y: msg.y, z: msg.z, ts: msg.ts, vx: msg.vx, vz: msg.vz };
         entry.yaw = msg.yaw;
         entry.moving = !!msg.m;
         // LE VÉHICULE VOYAGE AVEC LA POSITION (v253) : `v` dit dans quoi
@@ -1701,7 +1705,9 @@ export class NetSession {
         }
         const e2 = this.conns.get(msg.from);
         if (e2) {
-          e2.pos = { x: msg.x, y: msg.y, z: msg.z }; e2.yaw = msg.yaw; e2.moving = !!msg.m;
+          // l'heure d'envoi et la vitesse traversent l'hôte telles quelles :
+          // `ts` reste sur l'horloge de l'ami d'origine (amis-fluides)
+          e2.pos = { x: msg.x, y: msg.y, z: msg.z, ts: msg.ts, vx: msg.vx, vz: msg.vz }; e2.yaw = msg.yaw; e2.moving = !!msg.m;
           e2.v = msg.v || null; e2.p = msg.p || null;
           e2.g = msg.g || null;   // la destination du GPS (v388)
           e2.seen = Date.now();   // c'est sa seule preuve de vie, cf. startHeartbeat
@@ -1775,7 +1781,10 @@ export class NetSession {
     this.posTimer = setInterval(() => {
       if (!this.getPos || this.conns.size === 0) return;
       const p = this.getPos();
-      const msg = { t: 'pos', x: p.x, y: p.y, z: p.z, yaw: p.yaw, m: p.moving ? 1 : 0 };
+      // `ts` : l'heure d'envoi sur NOTRE horloge (amis-fluides). L'ami n'a pas
+      // besoin qu'elle s'accorde avec la sienne, seulement qu'elle avance.
+      const msg = { t: 'pos', x: p.x, y: p.y, z: p.z, yaw: p.yaw, m: p.moving ? 1 : 0, ts: Math.round(performance.now()) };
+      if (Number.isFinite(p.vx)) { msg.vx = p.vx; msg.vz = p.vz; }   // au volant ou en vol : la vitesse
       if (p.v) msg.v = p.v;                 // au volant : espèce et modèle (v253)
       if (p.p) msg.p = p.p;                 // passager : chez qui, quel siège
       if (p.rc) msg.rc = p.rc;              // l'histoire des chocs de la rue (v374)

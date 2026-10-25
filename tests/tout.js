@@ -93,6 +93,7 @@ const GARDIENS = {
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],
   'src/relaisnuage.js': ['reseau.js'],
+  'src/fluidite.js': ['reseau.js'],
   // Le tempo du banc (v501) : lu par `main.js`, donc gardé par ses gardiens ;
   // `reglages.js` est la suite qui le déclare et le relit sous node.
   'src/tempo.js': ['reglages.js', 'carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],

@@ -483,8 +483,18 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   - [ ] **la séquence de l'escalier chez l'ami** n'a pas de témoin au portail
     (le banc saute les séquences) : `EMBARQ=1 node tests/sonde-passager-avion.cjs`
     la rejoue.
-- [ ] **Les autres joueurs bougent par saccades, surtout en voiture et en avion
-  (demande de Max, 20 octobre 2026).** « Tu le vois bouger de manière saccadée,
+- [x] **Les autres joueurs bougent par saccades — fait (amis-fluides, v555).**
+  Mesuré, puis remédié par (1)-(3) : `ts` et la vitesse dans `pos`,
+  `src/fluidite.js` rejoue l'ami entre deux relevés. Ce qui reste, déclaré :
+  la fluidité RELAYÉE ne se mesure pas au banc (trois pages sur quatre cœurs :
+  l'hôte et l'observatrice calent des secondes, et sur `origin/main` même
+  l'ami relayé ne bougeait pas pendant la fenêtre) — son témoin juge le CHAMP
+  (`ts` à travers `rpos`) et publie la fluidité dans son message ; (4), la
+  cadence d'envoi plus serrée, n'est pas demandée par la mesure (en direct
+  0,98 des images à la vraie vitesse avec 120 ms) ; la mesure sur la tablette
+  reste à faire : `window.__game.remotePlayers` porte `suivi.retard` (ms) et
+  `suivi.recus`, à lire en partie à deux. L'ancienne entrée, pour mémoire :
+  (demande de Max, 20 octobre 2026). « Tu le vois bouger de manière saccadée,
   toutes les secondes il a avancé… c'est pas très real time. » Ce qui est dans
   le code, pas encore mesuré : `startPosLoop` (net.js:1765) envoie la position
   toutes les 120 ms, sans vitesse ; `updateRemotePlayers` (main.js:4881) court
@@ -1993,6 +2003,11 @@ v522 ne touche pas ; la distribution reste à faire.
   distance d'Alice à Marlon (la rue ne cède qu'aux amis à moins de 90 blocs
   d'elle), pour que le prochain rouge se démonte. Piste : le rattrapage à
   1,3 × de la grille d'une voiture très en retard.
+  Revu au portail de la v555 (amis-fluides) : rouge une fois sur quatre
+  passages de la branche, mais sans la situation — « arrive 0, personne », aucune
+  voiture de la rue venue en cinq essais ; vert sur `origin/main` rejouée seule
+  au même moment. Marlon y est posé à l'arrêt : l'ami rejoué entre deux
+  relevés n'y change rien (sa position dessinée est la même à 0,2 s près).
   Et `monte.js` rejouée SEULE : branche — « se téléporter ne compile plus de
   programmes » rouge (Paris : 3 programmes `physical` neufs) et l'écran figé
   (26,3 %) ; `origin/main` v356 — l'écran figé seul (20,7 %), Paris à zéro. La
