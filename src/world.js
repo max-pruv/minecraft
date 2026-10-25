@@ -6,7 +6,7 @@ import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { echelleDe, etirerBatisseur } from './echelle-monuments.js';
 import { carrefoursDeVoies } from './voies.js';
 import { idGarage, CLE_GARAGES } from './garages.js';
-import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste } from './aeroport.js';
+import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste, videParUnTroncon } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
 } from './usine.js';
@@ -136,6 +136,10 @@ const ISOLE = 0.001;
 // L'HEURE DES BOSQUETS (v513), relue à la fusion (v309) : un bloc posé avant
 // garde les arbres d'avant dans son morceau et ses huit voisins.
 export const DATE_CLAIRIERES = Date.parse('2026-10-18T13:20:00Z');
+// L'HEURE DES PISTES DÉGAGÉES (v548), relue à la fusion (v309) : un bloc posé
+// avant garde, dans son morceau et ses huit voisins, les arbres d'avant — y
+// compris une couronne orpheline contre laquelle il aurait été posé.
+export const DATE_PISTES_DEGAGEES = Date.parse('2026-10-25T16:00:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
   return fbm(x * 0.07, z * 0.07, SEED + 941) > 0.64 ? BLOCK.GRAVEL : BLOCK.GRASS;
@@ -1583,6 +1587,7 @@ export const CONF_NEUF = {
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
   mursDeQuai: true, falaises: true, villesAvant: false, climat: true, sansTrameLondres: true,
   metroParis: true, metroMonde: true, voiesJardinsParis: true, clairieres: true,
+  pistesDegagees: true,
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
@@ -1592,7 +1597,7 @@ export const CONF_NEUF = {
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
 // v339, `londres-v332.js` ; Nice v359, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
-export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false, metroMonde: false, voiesJardinsParis: false, clairieres: false };
+export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false, metroMonde: false, voiesJardinsParis: false, clairieres: false, pistesDegagees: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.filter((lm) => !NES_APRES_V306_NOMS.has(lm.name)).map(repereAvant),
@@ -3100,6 +3105,7 @@ export class World {
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.morceauxAvantClairieres = new Set(); // … et avant les bosquets (v513)
+    this.morceauxAvantPistes = new Set();    // … et avant les pistes dégagées (v548)
     this.colonnesCedees = new Set();    // les colonnes de Paris où la ville cède à ce qu'un enfant a bâti (v306)
     this.colonnesTrameLondres = new Set(); // les colonnes de Londres où la trame générique d'avant reste (v447)
     this.colonnesJardinsParis = new Set(); // les colonnes de Paris où le jardin d'avant reste sous une voie (v512)
@@ -3684,6 +3690,10 @@ export class World {
     // règle (`morceauxAvantClimat`) : un arbre neuf n'y pousse pas dans sa
     // maison, un arbre d'avant n'y disparaît pas sous sa cabane.
     if (tirage >= DENSITE_MAX) return null;
+    // ni dans l'emprise qu'une piste prolongée vide (v548) : la tranchée y
+    // efface le tronc, et la couronne qui débordait restait en l'air
+    if (this.conf.pistesDegagees && videParUnTroncon(x, z)
+      && !this.morceauxAvantPistes.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)))) return null;
     let cl = cm !== undefined ? cm : this.climat(x, z);
     const avantClimat = cl && cl !== 'desert' && this.morceauxAvantClimat.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)));
     if (avantClimat) cl = null;
@@ -4942,6 +4952,7 @@ export class World {
     if (dansStations(x, z, t)) marquerParisCede(this.colonnesStations, x, z);
     if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
     if (t <= DATE_CLAIRIERES) this.marquerAvantClairieres(x, z);
+    if (t <= DATE_PISTES_DEGAGEES) this.marquerAvantPistes(x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
     if (this.onBloc) this.onBloc(x, y, z, id);
 
@@ -5188,6 +5199,11 @@ export class World {
     for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) this.morceauxAvantClairieres.add(World.key(cx + dx, cz + dz));
   }
 
+  marquerAvantPistes(x, z) {
+    const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
+    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) this.morceauxAvantPistes.add(World.key(cx + dx, cz + dz));
+  }
+
   // Un lot de la trame générique de Londres reste-t-il ? (v447) Oui si une de
   // ses colonnes est marquée — le marquage couvre déjà les huit voisines d'un
   // bloc d'enfant.
@@ -5216,12 +5232,14 @@ export class World {
     this.colonnesStations.clear();
     this.morceauxAvantClimat.clear();
     this.morceauxAvantClairieres.clear();
+    this.morceauxAvantPistes.clear();
     for (const [k, t] of this.editTimes) {
-      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS || t <= DATE_CLAIRIERES || t <= DATE_STATIONS || t <= DATE_RUES_GTA)) continue;
+      if (!(t <= DATE_PISTES_DEGAGEES || t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS || t <= DATE_CLAIRIERES || t <= DATE_STATIONS || t <= DATE_RUES_GTA)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
       if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
       if (t <= DATE_CLAIRIERES) this.marquerAvantClairieres(x, z);
+      if (t <= DATE_PISTES_DEGAGEES) this.marquerAvantPistes(x, z);
       if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
       if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
       if (dansRuesGTA(x, z, t)) marquerParisCede(this.colonnesRuesGTA, x, z);

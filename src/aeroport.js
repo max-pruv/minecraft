@@ -500,6 +500,36 @@ export function tronconsDePiste(a) {
   }
   return out;
 }
+// CE QUE LA TRANCHÉE VIDE, EN COORDONNÉES DU MONDE (v548). Un arbre planté là
+// n'a plus de tronc — la tranchée l'a effacé jusqu'à `DECAISSE + DEGAGE_CIME`
+// — et la part de sa couronne qui débordait hors de l'emprise restait
+// suspendue au-dessus de l'herbe (quatorze feuilles sur quatre aérodromes,
+// mesuré). `treeAt` le demande et n'y plante rien. Même géométrie que
+// `batirTroncon` : la bande et ses deux bas-côtés, de `bout − 16` au bout
+// prolongé, hors du disque pavé. Pure ; un rejet par boîte d'abord, parce
+// qu'elle est appelée par colonne.
+let EMPRISES_TRONCONS = null;
+function empriseDesTroncons() {
+  if (EMPRISES_TRONCONS) return EMPRISES_TRONCONS;
+  EMPRISES_TRONCONS = [];
+  for (const a of AEROPORTS) for (const p of pistesDe(a)) for (const sens of [-1, 1]) {
+    const fin = sens < 0 ? p.ouest : p.est;
+    if (fin <= p.bout) continue;
+    const d0 = p.bout - 16, xa = a.x + sens * d0, xb = a.x + sens * fin;
+    EMPRISES_TRONCONS.push({ ax: a.x, az: a.z, p, sens, d0, fin,
+      x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: a.z + p.z0 - p.demi - 2, z1: a.z + p.z0 + p.demi + 2 });
+  }
+  return EMPRISES_TRONCONS;
+}
+export function videParUnTroncon(x, z) {
+  for (const e of empriseDesTroncons()) {
+    if (x < e.x0 || x > e.x1 || z < e.z0 || z > e.z1) continue;
+    const lx = x - e.ax, lz = z - e.az;
+    if (lx * lx + lz * lz > e.p.rayon * e.p.rayon) return true;   // `dehors`, la règle du bâtisseur
+  }
+  return false;
+}
+
 function batirTroncon(poser, p, sens, mi, d0, d1, fin) {
   const { z0, demi, rayon, bout, roissy } = p;
   const phase = -bout + 4;   // l'axe discontinu de Roissy part de là
