@@ -20,6 +20,47 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v559 — Une Maserati MC12 GT1 Red Bull dans la flotte
+
+**Pourquoi.** Max a déposé un modèle de la Maserati MC12 GT1 aux couleurs Red
+Bull (Dave Love, Sketchfab, CC-BY-4.0) : « intègre la nouvelle voiture ». C'est
+un export Sketchfab brut — les quatre roues fusionnées dans chaque matériau de
+roue, le volant fusionné avec la planche de bord, des textures de 2 048² dont
+une toute noire — que le jeu ne savait ni faire rouler ni tenir dans la mémoire
+d'une tablette.
+
+**Ce que ça change.**
+- Une voiture de plus dans la flotte : on la croise dans la rue, on la conduit,
+  on la range au garage. Elle garde sa livrée Red Bull (la rue ne la repeint
+  jamais), ses roues tournent autour de leur moyeu (étriers fixes), son volant
+  Momo et l'écran Motec sont dans l'habitacle, l'enfant y est assis sous le
+  pavillon.
+- `scripts/convertir-mc12.py` fait le travail et se rejoue sur le paquet :
+  roues découpées en quatre pivots, volant séparé par pièces entières, flou de
+  jante invisible retiré, extensions inutiles retirées, images unies devenues
+  des couleurs, trois images de 2 048² ramenées à 1 024², laque recalée (métal
+  0,8 → 0,15 : en revue d'écran, la livrée bleu nuit sortait noire). 161 346 triangles
+  (aucune simplification), 7,77 Mo (6,0 Mo en gzip), 19 images, 59 primitives.
+- Portes en élytre non séparées dans le modèle : pas de portière qui s'ouvre
+  (`portiere: false`), comme la Revuelto.
+- Crédit CC-BY-4.0 et liste des modifications dans `vendor/voitures/LICENSE.md` ;
+  rendus de contrôle (studio three.js hors jeu) dans `docs/mc12/`.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (au manifeste, au sol,
+5,19 m, quatre roues qui tournent sur leur moyeu, volant, images, livrée qui
+résiste au repeint, sans portière, l'enfant assis sous le pavillon et face à la
+route) ; la MC12 dans le témoin des feux de détresse de `degats.js` et dans la
+mesure de la flotte sous node (phares, détresse, feux stop sur la tôle) ; la
+table des programmes (cinq signatures neuves) égale à ce que les fichiers
+contiennent. Portail complet : 14 suites vertes ; trois rouges, cinq témoins
+déjà déclarés (`maj.js` rejouée seule : 74 verts, 0 rouge) ; rebasée sur la
+v554, rejoué : mêmes familles, `maj.js` (75 verts) et `reseau.js` (96 verts)
+seules sans un rouge, et le titre de la v554 ramené à six mots ; reposée sur
+la v557 : 15 suites vertes, `maj.js` (loader) et `monte.js` (passages peints
+de Rome et Londres) sur des témoins déjà déclarés — détail dans
+`TASKS.md`. Revue d'écran à l'iPhone et à l'iPad, de jour et de nuit
+(`docs/revue-ecran/v559-mc12/`).
+
 ## v558 — Le métro de Washington roule droit le long des quais
 
 **Pourquoi.** La voie du métro de Washington allait d'arrêt en arrêt en

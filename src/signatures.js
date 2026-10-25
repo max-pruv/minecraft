@@ -49,6 +49,11 @@ export const SIGNATURES_GLB = [
   'Physical+DS',              // ses feux arrière (intensité émissive)
   'Physical+map+DS',          // la lampe des phares, texturée et émissive
   'Standard+emap+DS',         // le combiné d'instruments rétroéclairé
+  'Physical+map+cc+DS+env',   // MC12 GT1 (Dave Love) : la livrée Red Bull vernie
+  'Physical+map+cc+DS',       // le bandeau du pare-brise, verni, dans la livrée
+  'Standard+map+alpha+DS',    // les étiquettes et logos détourés, le verre des feux
+  'Standard+map+nrm+alpha+DS',// les grilles ajourées des prises d'air
+  'Standard+map+nrm+DS',      // les pneus et leur bande de roulement
 ];
 
 // ET CE QUE LE JEU FABRIQUE LUI-MÊME, mesuré à l'arrivée à Paris une fois les

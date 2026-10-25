@@ -980,6 +980,34 @@ Max : « tu le vois bouger de manière saccadée ». Trois règles.
   attend qu'elle rende avant de mesurer. Un témoin de fluidité rend la place
   telle qu'il l'a trouvée (position et cap du conducteur).
 
+## La MC12 GT1 Red Bull (v559) — un export Sketchfab se découpe au convertisseur, et un nom de matériau est une donnée
+
+Max a déposé un paquet glTF Sketchfab (Dave Love, CC-BY-4.0). `scripts/convertir-mc12.py`
+le met au contrat (le paquet n'est pas versionné, le script se rejoue dessus).
+Trois règles.
+
+- **DES ROUES FUSIONNÉES PAR MATÉRIAU SE DÉCOUPENT AU CONVERTISSEUR, PAR LA
+  POSITION DE LEURS TRIANGLES.** `normaliserVoiture` regroupe des MAILLAGES par
+  leur nom ; elle ne peut rien pour un pneu qui porte les quatre roues dans une
+  seule primitive. Le script coupe par quadrant (signe de x, axe des roues),
+  pose le pivot au centre de SON pneu et livre un fichier au manifeste — que
+  `normaliserVoiture` laisse alors intact (`forme: 'manifeste'`). Le volant se
+  prend par PIÈCES ENTIÈRES (composantes connexes dont la boîte tient dans la
+  sienne) : une boîte par triangles a d'abord attrapé le combiné Motec de la
+  planche, vu en rendu marqué, pas au témoin.
+- **FUSIONNER DES MATÉRIAUX IDENTIQUES PERD LEUR NOM, ET LES FEUX LISENT LE
+  NOM.** Feu arrière, catadioptre et verre ambré avaient le même JSON ;
+  fusionnés, ils prenaient le nom du premier et la boîte des deux bouts de la
+  voiture — `posesDetresse`, `posesPhares` et les dégâts (`RE_FEU`,
+  `RE_PHARE`, `RE_PHARE_AR`) les rangent par nom et par boîte. Feux, vitrages,
+  rétroviseurs et laque gardent leur matériau.
+- **UNE IMAGE UNIE EST UN FACTEUR, ET UNE LIVRÉE EST UNE LAQUE QU'ON NE
+  REPEINT PAS.** Une texture dont tous les pixels sont égaux devient
+  `baseColorFactor` (sRGB → linéaire) : sans perte, une texture de moins, et la
+  signature du vitrage redevient une signature que la flotte compile déjà.
+  Une voiture dont les couleurs sont l'identité porte `laque: 'jamais'`, et sa
+  laque ne s'appelle pas `body` (que `EST_LAQUE` repeindrait) : `Paint_RedBull`.
+
 ## La Revuelto adaptée (v546) — un identifiant de flotte ne change pas, son fichier oui
 
 Max a fourni une adaptation CC-BY-4.0 (BRO) de la Revuelto. Trois règles.
