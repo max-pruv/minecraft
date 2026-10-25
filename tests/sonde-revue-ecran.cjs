@@ -89,6 +89,37 @@ async function attendreMonde(tab, maxMs = 30000) {
   return Math.round((Date.now() - t0) / 1000);
 }
 
+// la police jusqu'à la poursuite (`controle` faux) ou jusqu'au contrôle :
+// une voiture, une vraie bêtise (`betise`, le geste que le jeu attend), des
+// cercles sur la dalle pendant que la police arrive, puis l'arrêt
+async function policeJusqua(tab, controle) {
+  const { dalle } = require('./sonde-police.cjs');
+  const y0 = await dalle(tab, 47000, 47000, 130);
+  return tab.evaluate(async ([y0, controle]) => {
+    const g = window.__game, P = g.player, am = g.animalManager, pat = window.__patrouille;
+    const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+    if (!pat) return { err: 'pas de patrouille' };
+    pat.remiseAZero();
+    P.flying = false; P.yaw = 0; P.pos.set(47000.5, y0 + 1.2, 47040.5); P.vel.set(0, 0, 0);
+    await dodo(800);
+    const a = am.invoquer('voiture', P.pos.x, P.pos.z - 3, false, { flotte: 'amg-gt-black-series.glb' });
+    a.yaw = Math.PI; await dodo(400);
+    for (let i = 0; i < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); i++) { document.getElementById('ride-btn').click(); await dodo(600); }
+    P.touchMove.f = 0.8; P.touchMove.s = -1;
+    await dodo(2000);
+    pat.betise('voiture');
+    const t0 = performance.now();
+    while (performance.now() - t0 < 25000 && !pat.etat().unites.some((u) => u.ecart < 22)) await dodo(250);
+    await dodo(1500);
+    if (!controle) { P.touchMove.s = -0.6; await dodo(800); return { etat: pat.etat() }; }
+    P.touchMove.f = 0; P.touchMove.s = 0;
+    const t1 = performance.now();
+    while (performance.now() - t1 < 40000 && !(pat.etat().controle && pat.etat().controle.etape === 'parle')) await dodo(250);
+    await dodo(1500);
+    return { etat: pat.etat() };
+  }, [y0, controle]);
+}
+
 // ——— les états ————————————————————————————————————————————————————————————————
 // Chacun prépare la page et rend un petit relevé (ce qu'il a obtenu), ou jette.
 
@@ -226,6 +257,28 @@ const ETATS = [
   // LE MOBILIER TOMBÉ (v536) : un réverbère et un feu de Paris renversés
   // comme une voiture lancée les renverse, vus du trottoir — la nuit, la
   // lanterne couchée ne doit plus éclairer la rue
+  // LA POLICE ET LA MOTO (v554), sur la dalle de `sonde-police.cjs` : la
+  // poursuite (une bêtise, la voiture de police dans le rétroviseur de la
+  // caméra, la pilule des étoiles), puis le contrôle (la police garée DEVANT,
+  // le policier à la portière), puis la moto penchée dans un virage.
+  { nom: 'police-poursuite', async prep(tab) { return policeJusqua(tab, false); } },
+  { nom: 'police-controle', async prep(tab) { return policeJusqua(tab, true); } },
+  { nom: 'moto', async prep(tab) {
+    const { dalle } = require('./sonde-police.cjs');
+    const y0 = await dalle(tab, 47000, 47000, 60);
+    return tab.evaluate(async (y0) => {
+      const g = window.__game, P = g.player, am = g.animalManager;
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      P.flying = false; P.yaw = 0; P.pos.set(47000.5, y0 + 1.2, 47020.5); P.vel.set(0, 0, 0);
+      await dodo(800);
+      const m = am.invoquer('moto', P.pos.x, P.pos.z - 2.5); m.yaw = Math.PI;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 20000 && !m.mesh.userData.modele) await dodo(200);
+      for (let i = 0; i < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); i++) { document.getElementById('ride-btn').click(); await dodo(600); }
+      P.touchMove.f = 1; await dodo(1500); P.touchMove.s = -1; await dodo(1600);
+      return { enSelle: !!(g.fun.montureConduite && g.fun.montureConduite()), modele: !!m.mesh.userData.modele };
+    }, y0);
+  } },
   { nom: 'mobilier-tombe', async prep(tab) {
     const p = await tab.evaluate(async () => {
       const { adresseParis } = await import('./src/paris.js');

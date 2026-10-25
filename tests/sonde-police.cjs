@@ -255,4 +255,4 @@ if (require.main === module) (async () => {
     console.log(JSON.stringify(await passageMoto(page), null, 1));
   } finally { await banc.fermer(); process.exit(0); }
 })();
-module.exports = { passage, passageMoto };
+module.exports = { passage, passageMoto, dalle };
