@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v554';
+const CACHE_VERSION = 'web-minecraft-v564';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -24,10 +24,12 @@ const STATIC_CACHE = 'web-minecraft-static-v1';
 const isStaticAsset = (url) =>
   url.includes('/vendor/face-api.js') || url.includes('/vendor/face-models/')
   || url.includes('/vendor/voitures/') || url.includes('/vendor/humains/')
-  || url.includes('/vendor/polices/');
+  || url.includes('/vendor/polices/') || url.includes('/vendor/avions/');
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
+// les avions déposés (v563) : immuables, comme les corps et la flotte
+const AVIONS = ['airbus-a320', 'airbus-a321', 'chasseur-f35'].map((n) => `./vendor/avions/${n}.glb`);
 
 const ASSETS = [
   './',
@@ -92,11 +94,15 @@ const ASSETS = [
   './src/partage.js',
   './src/visio.js',
   './src/relaisnuage.js',
+  './src/fluidite.js',
   './src/effects.js',
   './src/sky.js',
   './src/siege.js',
   './src/sons.js',
   './src/radio.js',
+  './src/police.js',
+  './src/patrouille.js',
+  './src/moto.js',
   './src/sensations.js',
   './src/phares.js',
   './src/traces.js',
@@ -214,7 +220,7 @@ self.addEventListener('install', (event) => {
   // première demande.
   caches.open(STATIC_CACHE).then(async (cache) => {
     // Les polices d'abord : l'accueil les attend, les corps non (v245).
-    for (const u of [...POLICES, ...HUMAINS]) {
+    for (const u of [...POLICES, ...HUMAINS, ...AVIONS]) {
       if (await cache.match(u)) continue;
       await cache.add(u).catch(() => {});
     }

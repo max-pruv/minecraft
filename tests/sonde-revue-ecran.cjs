@@ -89,6 +89,37 @@ async function attendreMonde(tab, maxMs = 30000) {
   return Math.round((Date.now() - t0) / 1000);
 }
 
+// la police jusqu'à la poursuite (`controle` faux) ou jusqu'au contrôle :
+// une voiture, une vraie bêtise (`betise`, le geste que le jeu attend), des
+// cercles sur la dalle pendant que la police arrive, puis l'arrêt
+async function policeJusqua(tab, controle) {
+  const { dalle } = require('./sonde-police.cjs');
+  const y0 = await dalle(tab, 47000, 47000, 130);
+  return tab.evaluate(async ([y0, controle]) => {
+    const g = window.__game, P = g.player, am = g.animalManager, pat = window.__patrouille;
+    const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+    if (!pat) return { err: 'pas de patrouille' };
+    pat.remiseAZero();
+    P.flying = false; P.yaw = 0; P.pos.set(47000.5, y0 + 1.2, 47040.5); P.vel.set(0, 0, 0);
+    await dodo(800);
+    const a = am.invoquer('voiture', P.pos.x, P.pos.z - 3, false, { flotte: 'amg-gt-black-series.glb' });
+    a.yaw = Math.PI; await dodo(400);
+    for (let i = 0; i < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); i++) { document.getElementById('ride-btn').click(); await dodo(600); }
+    P.touchMove.f = 0.8; P.touchMove.s = -1;
+    await dodo(2000);
+    pat.betise('voiture');
+    const t0 = performance.now();
+    while (performance.now() - t0 < 25000 && !pat.etat().unites.some((u) => u.ecart < 22)) await dodo(250);
+    await dodo(1500);
+    if (!controle) { P.touchMove.s = -0.6; await dodo(800); return { etat: pat.etat() }; }
+    P.touchMove.f = 0; P.touchMove.s = 0;
+    const t1 = performance.now();
+    while (performance.now() - t1 < 40000 && !(pat.etat().controle && pat.etat().controle.etape === 'parle')) await dodo(250);
+    await dodo(1500);
+    return { etat: pat.etat() };
+  }, [y0, controle]);
+}
+
 // ——— les états ————————————————————————————————————————————————————————————————
 // Chacun prépare la page et rend un petit relevé (ce qu'il a obtenu), ou jette.
 
@@ -133,6 +164,39 @@ const ETATS = [
       return { x, z };
     });
     const s = await poserEt(tab, { x: p.x, z: p.z, yaw: Math.PI / 2, pitch: 0.02 });
+    return { monde: s + ' s' };
+  } },
+  // Les villes à bordures : une rue de Rome le long d'un circuit, depuis la
+  // voie (le mobilier contre les façades), l'hôtel de ville de Los Angeles vu
+  // de la rue, et la place de Shanghai vue du ciel (l'anneau qui la traverse).
+  { nom: 'rome-rue', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const VM = await import('./src/villesmonde.js');
+      const t = VM.tracesCirculation(() => 33).find((q) => q.cle === 'rome');
+      const a = t.pts[0], b = t.pts[1];
+      const L = Math.hypot(b.x - a.x, b.z - a.z), m = Math.min(12, L / 3);
+      return { x: a.x + (b.x - a.x) * m / L, z: a.z + (b.z - a.z) * m / L, yaw: Math.atan2(-(b.x - a.x), -(b.z - a.z)) };
+    });
+    const s = await poserEt(tab, { x: p.x - 0.5, z: p.z - 0.5, yaw: p.yaw, pitch: 0.0 });
+    return { monde: s + ' s' };
+  } },
+  { nom: 'la-mairie', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const VM = await import('./src/villesmonde.js');
+      const f = VM.VILLES_MONDE.find((v) => v.cle === 'losangeles');
+      const [du, dv] = f.local(34.0537, -118.2427);
+      return { x: f.ancre.x + du, z: f.ancre.z + dv };
+    });
+    const s = await poserEt(tab, { x: p.x - 26, z: p.z + 18, yaw: Math.atan2(-26, 18), pitch: 0.42 });
+    return { monde: s + ' s' };
+  } },
+  { nom: 'shanghai-place', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const VM = await import('./src/villesmonde.js');
+      const f = VM.VILLES_MONDE.find((v) => v.cle === 'shanghai');
+      return { x: f.ancre.x, z: f.ancre.z, y: window.__game.world.terrainHeight(Math.floor(f.ancre.x), Math.floor(f.ancre.z)) + 45 };
+    });
+    const s = await poserEt(tab, { x: p.x, y: p.y, z: p.z + 40, yaw: 0, pitch: -0.9, vol: true });
     return { monde: s + ' s' };
   } },
   // Un guide au pied de son monument (v538) : Capucine sous la tour Eiffel,
@@ -193,6 +257,32 @@ const ETATS = [
   // LE MOBILIER TOMBÉ (v536) : un réverbère et un feu de Paris renversés
   // comme une voiture lancée les renverse, vus du trottoir — la nuit, la
   // lanterne couchée ne doit plus éclairer la rue
+  // LA POLICE ET LA MOTO (v562), sur la dalle de `sonde-police.cjs` : la
+  // poursuite (une bêtise, la voiture de police dans le rétroviseur de la
+  // caméra, la pilule des étoiles), puis le contrôle (la police garée DEVANT,
+  // le policier à la portière), puis la moto penchée dans un virage.
+  { nom: 'police-poursuite', async prep(tab) { return policeJusqua(tab, false); } },
+  { nom: 'police-controle', async prep(tab) { return policeJusqua(tab, true); } },
+  { nom: 'moto', async prep(tab) {
+    const { dalle } = require('./sonde-police.cjs');
+    // la dalle de la sonde (130) : sur 60, trois secondes de moto la faisaient
+    // sortir de la dalle, et la capture était prise sous l'eau
+    const y0 = await dalle(tab, 47000, 47000, 130);
+    return tab.evaluate(async (y0) => {
+      const g = window.__game, P = g.player, am = g.animalManager;
+      const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      P.flying = false; P.yaw = 0; P.pos.set(47000.5, y0 + 1.2, 47040.5); P.vel.set(0, 0, 0);
+      await dodo(800);
+      const m = am.invoquer('moto', P.pos.x, P.pos.z - 2.5); m.yaw = Math.PI;
+      const t0 = performance.now();
+      while (performance.now() - t0 < 20000 && !m.mesh.userData.modele) await dodo(200);
+      for (let i = 0; i < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); i++) { document.getElementById('ride-btn').click(); await dodo(600); }
+      P.touchMove.f = 1; await dodo(1500); P.touchMove.s = -1; await dodo(1600);
+      return { enSelle: !!(g.fun.montureConduite && g.fun.montureConduite()), modele: !!m.mesh.userData.modele,
+        surLaDalle: Math.abs(P.pos.x - 47000) < 128 && Math.abs(P.pos.z - 47000) < 128 && P.pos.y > y0,
+        pos: [+P.pos.x.toFixed(1), +P.pos.y.toFixed(1), +P.pos.z.toFixed(1)], y0 };
+    }, y0);
+  } },
   { nom: 'mobilier-tombe', async prep(tab) {
     const p = await tab.evaluate(async () => {
       const { adresseParis } = await import('./src/paris.js');
@@ -255,6 +345,14 @@ const ETATS = [
   }, apres: (tab) => tab.evaluate(() => window.__game.player.keys.delete('KeyW')) },
   // Au volant dans une rue de Paris (les rues à la GTA) : la chaussée vue de la
   // place du conducteur, là où la voiture devait tenir dans sa voie.
+  // LA VOITURE TOMBE DANS L'EAU (v560) : un port fabriqué au-dessus du relief
+  // (le même que le témoin de monte.js), pleins gaz vers le bassin. On capture
+  // la voiture dans l'eau (« voiture-plonge »), puis l'enfant remonté à la
+  // surface, la voiture au fond (« voiture-coulee »).
+  { nom: 'voiture-plonge', prep: (tab) => portEtPlongee(tab, false),
+    apres: (tab) => tab.evaluate(() => window.__game.player.keys.clear()) },
+  { nom: 'voiture-coulee', prep: (tab) => portEtPlongee(tab, true),
+    apres: (tab) => tab.evaluate(() => window.__game.player.keys.clear()) },
   { nom: 'volant-ville', async prep(tab) {
     const p = await tab.evaluate(async () => {
       const { adresseParis } = await import('./src/paris.js');
@@ -403,6 +501,56 @@ const ETATS = [
     return tab.evaluate(() => ({ aBord: !!(window.__game.fun.bordDe && window.__game.fun.bordDe()) }));
   } },
 ];
+
+// Un quai de pierre puis un bassin, la berline au bord, l'enfant au volant,
+// pleins gaz vers l'eau. `jusquAuBout` : on attend que l'enfant soit sorti et
+// remonté (la voiture au fond) ; sinon, que la voiture soit dans l'eau.
+async function portEtPlongee(tab, jusquAuBout) {
+  return tab.evaluate(async (fin) => {
+    const g = window.__game;
+    const { BLOCK } = await import('./src/blocks.js');
+    const tenir = (n) => new Promise((f) => setTimeout(f, n));
+    const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+    for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(400); }
+    for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+    g.animalManager.animals.length = 0;
+    g.player.keys.clear(); g.player.flying = false; g.player.pilote = null;
+    const x0 = 31200, z0 = 31500, W = 10, QUAI = 12;
+    let y0 = 0;
+    for (let d = -8; d <= 44; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+    y0 += 2;
+    const surface = y0 - 1, fond = y0 - 5;
+    for (let d = -8; d <= 44; d++) for (let w = -W; w <= W; w++) {
+      if (d <= QUAI) for (let y = fond; y <= y0; y++) g.world.setBlock(x0 + d, y, z0 + w, BLOCK.STONE);
+      else {
+        g.world.setBlock(x0 + d, fond, z0 + w, BLOCK.STONE);
+        for (let y = fond + 1; y <= surface; y++) g.world.setBlock(x0 + d, y, z0 + w, BLOCK.WATER);
+        g.world.setBlock(x0 + d, y0, z0 + w, 0);
+      }
+      for (let h = 1; h <= 8; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+    }
+    g.player.yaw = -Math.PI / 2; g.player.pitch = -0.1;
+    g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+    await tenir(1500);
+    g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte: 'berline-citadine' });
+    await tenir(1000);
+    for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(500); }
+    if (!auVolant()) return { err: 'pas monté' };
+    g.player.keys.add('KeyW');
+    const t0 = performance.now();
+    if (!fin) {
+      while (performance.now() - t0 < 40000 && !(g.player.pos.x - x0 > QUAI + 3 && g.player.pos.y < y0)) await tenir(100);
+      return { d: +(g.player.pos.x - x0).toFixed(1), y: +g.player.pos.y.toFixed(1), surface, ms: Math.round(performance.now() - t0) };
+    }
+    while (performance.now() - t0 < 60000 && auVolant()) await tenir(200);
+    g.player.keys.clear();
+    const t1 = performance.now();
+    while (performance.now() - t1 < 20000 && g.player.pos.y < surface - 1.2) await tenir(200);
+    await tenir(1500);
+    g.player.pitch = -0.35;
+    return { auVolant: auVolant(), y: +g.player.pos.y.toFixed(1), surface, ms: Math.round(performance.now() - t0) };
+  }, jusquAuBout);
+}
 
 async function monterEnVoiture(tab) {
   return tab.evaluate(async () => {

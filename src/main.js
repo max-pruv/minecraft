@@ -22,6 +22,7 @@ import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
+import { chargerAvionsDeposes, varianteDuPoste } from './avions.js';
 import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
@@ -32,13 +33,15 @@ import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, optionsMetro, HORAIRE_METRO, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
 import { materiauHD, geometrieHD } from './matierehd.js';
+import { DIRECTIONS_VOISINS } from './arbreshd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { creerGuides, parlerAVoixHaute } from './guides.js';
+import { creerPatrouille } from './patrouille.js';
 import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN, PORTEE_COURONNE,
   ABAISSE_TRES_LOIN, rayonTresLoin, silhouetteArbre } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
-import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites } from './conduite.js';
+import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites, sEnfonce, rectangleDeBoite } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
@@ -84,6 +87,7 @@ import { EducationMode, GRADES, todayKey } from './education.js';
 import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
 import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe, micOuvert } from './visio.js';
 import { initCommandes, ICONES } from './commandes.js';
+import { creerSuivi, recevoir, positionA } from './fluidite.js';
 
 // New York appartient à la Terre. Les anciennes adresses deviennent un lieu de départ.
 const VISITE_MANHATTAN = ['manhattan'].includes(new URLSearchParams(location.search).get('lieu')) || new URLSearchParams(location.search).get('carte') === 'manhattan';
@@ -1136,6 +1140,7 @@ const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world,
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
 const animalManager = new AnimalManager(scene, world, player, toast);
+let patrouille = null;   // la police (v562), créée plus bas une fois `fun` prêt
 let marlon = null; // spawned after the spawn point is known
 let cornichon = null;
 let npcs = [];
@@ -1350,7 +1355,9 @@ function installerMorceau(cx, cz, tampons) {
   const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null, arbresLoin: null,
     // ce morceau touche la couche HD (ou porte des arbres, v499), et il a été
     // maillé AVEC ses façades détaillées (v296)
-    hd: !!tampons.hd || !!tampons.arbres, detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0) };
+    hd: !!tampons.hd || !!tampons.arbres, detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0),
+    // les plages d'indices des arbres du bord (v554), et la dernière plage montrée
+    arbresBord: tampons.arbresBord || null, bordSig: null, cle: [cx, cz] };
   const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
   const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
   if (solid) {
@@ -1376,7 +1383,9 @@ function installerMorceau(cx, cz, tampons) {
       const g = geometrieHD(t);
       if (!g) continue;
       if (nom === 'facades') { entry.octetsFacades = octetsDeTampons(t); detailTenu.octets += entry.octetsFacades; detailTenu.n++; }
-      const m = new THREE.Mesh(g, materiau);
+      // (les arbres du loin se dessinent par plages, v554 : un tableau d'un
+      // seul matériau — le même, donc la même clé de programme)
+      const m = new THREE.Mesh(g, nom === 'arbresLoin' && tampons.arbresBord ? [materiau] : materiau);
       m.position.set(cx * CHUNK, 0, cz * CHUNK);
       m.castShadow = ombre && (nom === 'facades' || nom === 'arbresLoin');
       m.receiveShadow = true;
@@ -1464,6 +1473,8 @@ function installerMorceau(cx, cz, tampons) {
     if (m) m.userData.morceau = true;
   }
   chunkMeshes.set(key, entry);
+  // ses voisins cessent de montrer les arbres dont il porte la base (v554)
+  relayerArbresVoisins(cx, cz);
   // un morceau plus lourd que son estimation peut faire déborder le budget :
   // on rend alors les plus loin, tout de suite (v299)
   if (entry.facades) appliquerLeBudget(pcx, pcz, []);
@@ -1495,7 +1506,10 @@ function rendreLeDetail(entry) {
   entry.detail = false; entry.octetsFacades = 0;
   if (entry.plat) entry.plat.visible = true;
   if (entry.platLumineux) entry.platLumineux.visible = true;
-  if (entry.arbresLoin) entry.arbresLoin.visible = true;
+  if (entry.arbresLoin) {
+    if (entry.arbresBord) { const [cx, cz] = entry.cle; montrerArbresBord(entry, cx, cz, false); }
+    else entry.arbresLoin.visible = true;
+  }
 }
 // LE BUDGET S'APPLIQUE DU PLUS PROCHE AU PLUS LOIN (v299, `planDetail`) : ce
 // qui dépasse se rend, les candidats les plus proches se demandent, un tenu
@@ -1530,7 +1544,41 @@ function montrerLeDetail(entry, cx, cz, pcx, pcz) {
   if (entry.platLumineux) entry.platLumineux.visible = !pres;
   // les arbres du loin (v528) se relaient avec leurs modèles proches, qui
   // vivent dans `facades` : jamais les deux à la fois
-  if (entry.arbresLoin) entry.arbresLoin.visible = !pres;
+  if (entry.arbresLoin) {
+    if (entry.arbresBord) montrerArbresBord(entry, cx, cz, pres);
+    else entry.arbresLoin.visible = !pres;
+  }
+}
+// LES ARBRES DU BORD (v554) : un arbre dont la base est dans un voisin est
+// dessiné par ce voisin ; tant que le voisin n'est pas maillé (le bord du
+// disque chargé, une arrivée), ce morceau-ci montre son modèle lointain — sa
+// couronne ne manque plus de la part dont les cubes se taisent ici. Les
+// plages contiguës se fusionnent : un morceau du bord coûte un ou deux appels
+// de dessin, un morceau de l'intérieur exactement ce qu'il coûtait.
+function montrerArbresBord(entry, cx, cz, pres) {
+  const b = entry.arbresBord, m = entry.arbresLoin;
+  const plages = [];
+  if (!pres && b.propres > 0) plages.push([0, b.propres]);
+  for (const [d, debut, n] of b.groupes) {
+    const [dx, dz] = DIRECTIONS_VOISINS[d];
+    if (chunkMeshes.has(`${cx + dx},${cz + dz}`)) continue;
+    const der = plages[plages.length - 1];
+    if (der && der[0] + der[1] === debut) der[1] += n; else plages.push([debut, n]);
+  }
+  const sig = plages.join(';');
+  if (sig === entry.bordSig) return;
+  entry.bordSig = sig;
+  m.geometry.clearGroups();
+  for (const [debut, n] of plages) m.geometry.addGroup(debut, n, 0);
+  m.visible = plages.length > 0;
+}
+// Un morceau qui arrive ou s'en va change ce que ses huit voisins montrent.
+function relayerArbresVoisins(cx, cz) {
+  const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
+  for (const [dx, dz] of DIRECTIONS_VOISINS) {
+    const e = chunkMeshes.get(`${cx + dx},${cz + dz}`);
+    if (e && e.arbresBord) montrerLeDetail(e, cx + dx, cz + dz, pcx, pcz);
+  }
 }
 
 // Faut-il fabriquer les façades détaillées de ce morceau ? (v296)
@@ -1577,9 +1625,20 @@ function rueAutour(wx, wy, wz) {
   const rue = (x, z) => !world.arriveeEnCours() || world.morceauxPrets(x, z) ? CHAUSSEE.has(world.getBlock(x, wy, z)) : null;
   return [rue(wx + 1, wz), rue(wx - 1, wz), rue(wx, wz + 1), rue(wx, wz - 1)];
 }
+function rueAutour2(wx, wy, wz) {
+  const rue = (x, z) => !world.arriveeEnCours() || world.morceauxPrets(x, z) ? CHAUSSEE.has(world.getBlock(x, wy, z)) : null;
+  return [rue(wx + 2, wz), rue(wx - 2, wz), rue(wx, wz + 2), rue(wx, wz - 2)];
+}
 const CAPS_RUE = [0, Math.PI, -Math.PI / 2, Math.PI / 2];
 function versLaRue(wx, wy, wz) {
-  const r = rueAutour(wx, wy, wz);
+  let r = rueAutour(wx, wy, wz);
+  // Le réverbère des villes engendrées est à DEUX blocs du caniveau depuis
+  // qu'il a reculé (villesmonde.js, `reglageMobilier`) : sans chaussée
+  // voisine, on la cherche un bloc plus loin, sinon la crosse tournait vers +x.
+  if (r.indexOf(true) < 0) {
+    const r2 = rueAutour2(wx, wy, wz);
+    if (r2.indexOf(true) >= 0) r = r2;
+  }
   let k = r.indexOf(true);
   if (k < 0) k = r.indexOf(null);
   return k < 0 ? 0 : CAPS_RUE[k];
@@ -1711,6 +1770,7 @@ function updateChunks() {
       if (Math.abs(cx - pcx) > UNLOAD_RADIUS || Math.abs(cz - pcz) > UNLOAD_RADIUS) {
         disposeChunkMesh(entry);
         chunkMeshes.delete(key);
+        relayerArbresVoisins(cx, cz);
       } else {
         const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
         if (entry.solid) entry.solid.castShadow = ombre;
@@ -1848,6 +1908,8 @@ function updateChunks() {
       const g = rp.vehicule && rp.vehicule.def ? rp.vehicule.def.gabarit || 0 : 0;
       out.push({ x: rp.pos.x, y: rp.pos.y, z: rp.pos.z, cap: (rp.yaw || 0) + Math.PI, gabarit: g > 1 ? g : 0.6 });
     }
+    // et la police en service (v562) : la rue lui cède comme à un ami
+    if (patrouille) for (const o of patrouille.obstacles()) out.push(o);
     return out;
   });
   // et la rue freine devant les piétons (v372) : à cinquante à l'heure, qu'un
@@ -1972,90 +2034,61 @@ function updateChunks() {
     const avant = pietonsDans(x0, z0, cap);
     return apres.some((n) => !avant.includes(n));
   };
-  // ET UNE VOITURE N'ENTRE PAS DANS L'EAU (v272). Max, capture de Hambourg :
-  // sa voiture au milieu du port. C'est le piège de `sommetColonne` du v267,
-  // une famille plus bas — elle rend le premier bloc SOLIDE en descendant, et
-  // l'eau n'en est pas un : au-dessus de la mer elle rend le FOND, et la
-  // voiture y roulait tranquillement. On demande donc ce qu'il y a JUSTE
-  // AU-DESSUS du sol.
-  //
-  // MAIS « DE L'EAU DANS CETTE COLONNE » N'EST PAS « LA VOITURE EST DANS
-  // L'EAU » : un pont passe AU-DESSUS du fleuve, et les trois tabliers de la
-  // Tamise (v208) seraient devenus infranchissables. Ce qu'une voiture
-  // demande, c'est un PLANCHER sous ses roues — s'il y en a un, on roule,
-  // quoi qu'il y ait plus bas. Sinon, et si la colonne est en eau, on refuse.
-  //
-  // Et l'on regarde le RECTANGLE, pas le centre : à vingt blocs par seconde
-  // le capot est dans l'eau deux blocs avant le milieu de la voiture.
-  //
-  // ET CE N'EST PAS CHER, PARCE QUE LE PLANCHER EST LA PREMIÈRE QUESTION :
-  // sur une rue, la chaussée est sous les roues, on sort par `continue` et
-  // l'on ne descend AUCUNE colonne. La recherche de fond ne coûte que là où
-  // il n'y a rien sous les roues — un bord de quai, une chute. Une borne
-  // d'altitude serait une constante de plus à régler pour un coût qui
-  // n'existe pas.
-  // La règle elle-même vit dans le monde depuis la v430 (`eauSousLaVoiture`) :
-  // la sonde des ponts la lit telle quelle, et le tablier s'y lit sur la
-  // colonne que le générateur a décidée — aux deux bouts de chaque pont
-  // d'autoroute, la voiture refusait d'avancer (Max, capture d'iPhone).
-  const eauDevant = (x, z, cap) => world.eauSousLaVoiture(x, z, cap, player.pos.y, Math.max(0.3, player.gabarit / 2));
-  // LE MESSAGE DIT QUOI FAIRE, ET IL NE SE RÉPÈTE PAS À CHAQUE IMAGE. Le
-  // crochet est appelé soixante fois par seconde tant que l'enfant pousse
-  // vers la mer : un bandeau par image serait illisible.
-  let ditEau = 0;
-  const direLEau = () => {
-    // en temps RÉEL, jamais en `dt` : un bandeau ne doit pas se répéter plus
-    // souvent parce que la tablette rame (piège de `dt`, v226)
-    if (performance.now() - ditEau < 4000) return;
-    ditEau = performance.now();
-    toast('🌊 Une voiture ne roule pas dans l\'eau — fais demi-tour.', 0xffd166);
-  };
+  // L'EAU N'EST PLUS UNE FAMILLE D'OBSTACLE (v560, décision de Max qui
+  // annule la v272) : « il faut arrêter de mettre des messages pour dire une
+  // voiture ne roule pas dans l'eau ; s'il tombe dans l'eau, il tombe dans
+  // l'eau ». La voiture garde son élan, plonge, cale et coule (player.js,
+  // `voitureDansLEau`), et l'enfant en sort à la nage (fun.js). La règle du
+  // monde (`world.eauSousLaVoiture`) reste : la sonde des ponts la lit.
   // LES FAMILLES SE JUGENT L'UNE APRÈS L'AUTRE, ET LA PLUS CHÈRE EN DERNIER
-  // (leçon de la contrainte de partage, v270) : `eauDevant` descend une
-  // colonne, les autres lisent des listes déjà figées.
+  // (leçon de la contrainte de partage, v270).
   // ET LE CROCHET DIT QUELLE FAMILLE ARRÊTE LA VOITURE (v358) : un choc
-  // contre une voiture de la rue ou du mobilier rebondit, un piéton et l'eau
-  // arrêtent net, sans choc — personne n'est jamais touché (v259).
+  // contre une voiture de la rue ou du mobilier rebondit, un piéton
+  // arrête net, sans choc — personne n'est jamais touché (v259).
   // ET UNE VOITURE GARÉE OU INVOQUÉE (v534) : une monture qui porte un
   // `gabarit` — pas un avion. Elle n'était un obstacle que pour les piétons
   // (v259) ; la voiture de l'enfant la traversait. Elle se POUSSE : c'est une
   // bête de cette tablette, rien de l'horloge partagée (v305).
-  const gareeContre = (x, z, cap) => {
-    const moi = boiteVoiture(x, z, cap, 2.2, Math.max(0.3, player.gabarit / 2));
+  // ET PAR ENFONCEMENT (v560) : avec la pose d'avant, la voiture garée dans
+  // laquelle ce pas s'enfonce — on la touchait déjà ou non (`sEnfonce`).
+  // Collé à une voiture garée, on traversait celle d'à côté.
+  const gareeContre = (x, z, cap, x0, z0) => {
+    const moiB = boiteVoiture(x, z, cap, 2.2, Math.max(0.3, player.gabarit / 2));
+    const moi = rectangleDeBoite(moiB);
+    const avant = x0 === undefined ? null : rectangleDeBoite(boiteVoiture(x0, z0, cap, 2.2, Math.max(0.3, player.gabarit / 2)));
     for (const a of animalManager.animals) {
       const g = a.def.gabarit;
       if (!(g > 1) || a.def.pilote || a.montee || a.dying > 0 || Math.abs(a.pos.y - player.pos.y) > 2.5) continue;
       if ((a.pos.x - x) ** 2 + (a.pos.z - z) ** 2 > 8 * 8) continue;
       const B = boiteVoiture(a.pos.x, a.pos.z, a.yaw, 2.2, g / 2);
-      if (normaleEntreBoites(moi, B)) return { a, B };
+      if (avant ? sEnfonce(avant, moi, rectangleDeBoite(B)) : normaleEntreBoites(moiB, B)) return { a, B };
     }
     return null;
   };
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
-    if (vehicules.obstacleDevant(x, z, cap) && !vehicules.obstacleDevant(x0, z0, cap)) return 'voiture';
+    // « pas si l'on est déjà dedans » se juge PAR VÉHICULE et PAR ENFONCEMENT
+    // (v560) : on peut se dégager d'une voiture qu'on touche, pas s'y enfoncer,
+    // et la toucher ne désarme plus les autres
+    if (vehicules.obstacleDevant(x, z, cap, x0, z0)) return 'voiture';
     // on ne casse que sur le pas qu'on fait vraiment (pas sur le regard au
     // loin que `player.js` jette pour freiner devant un piéton), et assez vite
     const pas = Math.hypot(x - x0, z - z0);
     const sp = Math.abs(player.vitesseVoiture || 0);
     const sens = sp >= VITESSE_CASSE && pas > 1e-6 && pas < 1.5 ? { dx: (x - x0) / pas, dz: (z - z0) / pas } : null;
-    const g = gareeContre(x, z, cap);
-    if (g) { const avant = gareeContre(x0, z0, cap); if (!avant || avant.a !== g.a) return 'voiture'; }
+    if (gareeContre(x, z, cap, x0, z0)) return 'voiture';
     if (mobilierDevant(x, z, cap, sens) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
-    // `arretDouxT` (v343) : s'arrêter devant un piéton ou au bord de l'eau
-    // n'est PAS un choc — les dégâts ne comptent jamais un piéton touché.
+    // `arretDouxT` (v343) : s'arrêter devant un piéton n'est PAS un choc —
+    // les dégâts ne comptent jamais un piéton touché.
     if (pietonDevant(x, z, cap, x0, z0)) { player.arretDouxT = performance.now(); return 'pieton'; }
-    // « Pas si l'on est déjà dedans » : une voiture tombée à l'eau doit
-    // pouvoir en ressortir, sinon elle y reste pour toujours.
-    if (eauDevant(x, z, cap) && !eauDevant(x0, z0, cap)) { player.arretDouxT = performance.now(); direLEau(); return 'eau'; }
     return false;
   };
   // ET CONTRE QUELLE VOITURE (v397) : sa boîte et son allure, pour que le choc
   // prenne la normale de SON rectangle et la vitesse RELATIVE — un flanc frôlé
   // glisse, un choc par l'arrière pousse peu.
-  player.voitureContre = (x, z, cap) => {
-    const r = vehicules.voitureContre(x, z, cap);
+  player.voitureContre = (x, z, cap, x0, z0) => {
+    const r = vehicules.voitureContre(x, z, cap, x0, z0);
     if (r) return r;
-    const g = gareeContre(x, z, cap);
+    const g = gareeContre(x, z, cap, x0, z0);
     if (!g) return null;
     const e = g.a.elan;
     return { ...g.B, v: 0, vx: e ? e.vx : 0, vz: e ? e.vz : 0, libre: true, pousser: (ix, iz) => g.a.pousser(ix, iz) };
@@ -3810,7 +3843,8 @@ function aeroportiste(dt) {
     const dejaLa = animalManager.animals.some((b) => b.def.key === espece
       && Math.hypot(b.pos.x - x, b.pos.z - z) < 8);
     if (dejaLa) continue;
-    const ne = animalManager.invoquer(espece, x, z);
+    const variante = varianteDuPoste(espece, a.profil);
+    const ne = animalManager.invoquer(espece, x, z, false, variante ? { variante } : null);
     // LE CAP N'EST PLUS UN TIRAGE AU SORT. `animals.js` donne à toute bête un
     // yaw aléatoire ; l'espèce étant `immobile`, un avion garé pointait donc
     // dans une direction quelconque, pour toujours. Le poste publie son cap,
@@ -3842,7 +3876,16 @@ function garagiste(dt) {
       && Math.hypot(a.pos.x - x, a.pos.z - z) < 6);
     if (!dejaLa) animalManager.invoquer('voiture', x, z);
   }
+  // ET UNE MOTO (v562) entre la deuxième et la troisième voiture : Max,
+  // « j'ajoute aussi le concept de moto » — elle attend au parc comme les
+  // voitures, et le garagiste la remplace de la même façon.
+  const mx = pu.x + PLACE_MOTO[0], mz = pu.z + PLACE_MOTO[1];
+  if (!animalManager.animals.some((a) => a.def.key === 'moto' && !a.enService && Math.hypot(a.pos.x - mx, a.pos.z - mz) < 6)) {
+    const m = animalManager.invoquer('moto', mx, mz);
+    if (m) m.yaw = 0;
+  }
 }
+const PLACE_MOTO = [51, 7];
 
 // --- catch celebration ------------------------------------------------------------
 
@@ -5052,13 +5095,18 @@ function syncRemotePlayers(list) {
       mesh.add(nameSprite(p.name));
       scene.add(mesh);
       rp = { mesh, target: null, yaw: 0, moving: false, animTime: 0, name: p.name, pop: 0.5,
-        pos: new THREE.Vector3(), cap: 0, vehicule: null, passager: null };
+        pos: new THREE.Vector3(), cap: 0, vehicule: null, passager: null, suivi: creerSuivi(), dernierRecu: null };
       remotePlayers.set(p.id, rp);
       if (p.pos) { mesh.position.set(p.pos.x, p.pos.y, p.pos.z); rp.pos.set(p.pos.x, p.pos.y, p.pos.z); }
       mesh.scale.setScalar(0.01); // grandit depuis rien, cf. updateRemotePlayers
       joinEffect(mesh.position, p.name || 'Un ami');
     }
-    if (p.pos) rp.target = p.pos;
+    // chaque relevé neuf entre dans le suivi une fois (un objet `pos` par
+    // message reçu : la liste des joueurs repasse aussi ceux qui n'ont pas bougé)
+    if (p.pos && p.pos !== rp.dernierRecu) {
+      rp.dernierRecu = p.pos;
+      recevoir(rp.suivi, { ...p.pos, yaw: p.yaw || 0 }, performance.now());
+    }
     rp.yaw = p.yaw || 0;
     rp.moving = p.moving;
     synchroniserVehiculeDistant(rp, p.v || null);
@@ -5138,6 +5186,8 @@ function vehiculeDuConducteur(de) {
   return rp && rp.vehicule ? rp.vehicule : null;
 }
 
+let dernierEnvoiPos = null;   // l'envoi de position précédent, pour la vitesse (amis-fluides)
+
 function updateRemotePlayers(dt) {
   updateNetFx(dt);
   for (const rp of remotePlayers.values()) {
@@ -5151,16 +5201,22 @@ function updateRemotePlayers(dt) {
     }
     // La position VRAIE vit dans `rp.pos` (v253) : le maillage, lui, peut
     // être assis dans un véhicule, en coordonnées du siège.
-    if (rp.target) {
-      const t = Math.min(1, dt * 10);
-      rp.pos.x += (rp.target.x - rp.pos.x) * t;
-      rp.pos.y += (rp.target.y - rp.pos.y) * t;
-      rp.pos.z += (rp.target.z - rp.pos.z) * t;
+    // L'AMI EST REJOUÉ ENTRE DEUX RELEVÉS (amis-fluides) : sa position est une
+    // fonction de l'horloge réelle (`fluidite.js`), plus une course après le
+    // dernier relevé reçu — qui le faisait bondir puis s'arrêter au volant, et
+    // par paquets par le nuage. Le cap suit de même.
+    const ici = performance.now();
+    const vu = positionA(rp.suivi, ici, (ici - (rp.dernierRendu || ici)) / 1000);
+    rp.dernierRendu = ici;
+    if (vu) {
+      rp.pos.set(vu.x, vu.y, vu.z);
+      rp.cap = vu.yaw;
+    } else {
+      let dy = rp.yaw - rp.cap;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      rp.cap += dy * Math.min(1, dt * 10);
     }
-    let dy = rp.yaw - rp.cap;
-    while (dy > Math.PI) dy -= Math.PI * 2;
-    while (dy < -Math.PI) dy += Math.PI * 2;
-    rp.cap += dy * Math.min(1, dt * 10);
     rp.animTime += dt;
     if (rp.vehicule) {
       // au volant : la voiture suit la position, le cap suit le regard
@@ -5255,7 +5311,9 @@ function startNetSession(code, isHost, patience) {
     // par les dégâts (`d`, v344) — même s'il n'a pas de siège dessiné.
     if (a && a.def && (a.def.siege || a.def.pilote)) {
       const u = (a.mesh && a.mesh.userData) || {};
-      p.v = { k: a.def.key, f: u.flotte || null };
+      // `f` : le modèle de flotte d'une voiture, ou la variante d'un avion
+      // déposé (v563) — l'ami le dessine avec le même modèle
+      p.v = { k: a.def.key, f: u.flotte || u.variante || null };
       // SA COULEUR ET SON ORIGINE (v305) : l'ami la voit dans la teinte que la
       // rue lui avait donnée, et retire de SA rue la voiture qu'on a prise
       if (typeof u.peinture === 'number') p.v.c = u.peinture;
@@ -5284,6 +5342,17 @@ function startNetSession(code, isHost, patience) {
     if (rc) p.rc = rc;
     // où l'on va (v388) : l'ami se voit proposer d'y aller aussi
     if (gpsCible) p.g = [Math.round(gpsCible.x), Math.round(gpsCible.z), gpsCible.nom, gpsCible.k];
+    // LA VITESSE AU VOLANT (amis-fluides) : mesurée sur le déplacement réel
+    // depuis l'envoi précédent, en temps réel — c'est elle qui prolonge l'ami
+    // chez l'autre quand un relevé tarde. À pied, l'interpolation suffit.
+    const ici = performance.now();
+    if (p.v && dernierEnvoiPos && ici - dernierEnvoiPos.t > 30 && ici - dernierEnvoiPos.t < 1000) {
+      const e = (ici - dernierEnvoiPos.t) / 1000;
+      p.vx = Math.round((p.x - dernierEnvoiPos.x) / e * 10) / 10;
+      p.vz = Math.round((p.z - dernierEnvoiPos.z) / e * 10) / 10;
+      if (Math.hypot(p.vx, p.vz) > 400) { delete p.vx; delete p.vz; }   // une téléportation n'est pas une vitesse
+    }
+    dernierEnvoiPos = { t: ici, x: p.x, z: p.z };
     return p;
   };
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
@@ -8053,9 +8122,11 @@ function asseoir(av, a, siege, temps) {
   av.scale.setScalar(c.echelle);
   av.position.set(c.x, c.y, c.z);
   av.rotation.y = 0;                             // visage en −z, comme le nez de la voiture
-  av.userData.legs.forEach((l) => { l.rotation.x = POSE_AU_VOLANT.cuisses; });
-  av.userData.arms.forEach((b) => { b.rotation.x = POSE_AU_VOLANT.bras; });
-  animerHumain(av, temps, 0, POSE_AU_VOLANT);
+  // la fiche peut avoir sa posture (v562) : à califourchon sur une moto
+  const pose = (a.def && a.def.pose) || POSE_AU_VOLANT;
+  av.userData.legs.forEach((l) => { l.rotation.x = pose.cuisses; });
+  av.userData.arms.forEach((b) => { b.rotation.x = pose.bras; });
+  animerHumain(av, temps, 0, pose);
 }
 // OÙ L'ON EST ASSIS, sans y poser personne : la séquence d'embarquement
 // (embarquement.js, v366) y fait arriver l'avatar, et c'est le MÊME calcul
@@ -8780,6 +8851,35 @@ window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) 
 // Les panneaux à lire sur place : une fois par visite, en temps réel (v460).
 // Depuis la v538, dans les cinq grandes villes, dans la langue du profil, et
 // raconté par le guide posé au pied du monument (`createGuidesVilles`).
+// LA POLICE (v562). Une bêtise au volant — une voiture heurtée, un piéton
+// qu'on force à s'écarter, un gros choc, le mobilier renversé — et une
+// voiture de police arrive derrière l'enfant, sirène et gyrophares ; à deux
+// étoiles, une moto la rejoint. On s'en sort en la semant… ou en s'arrêtant :
+// le policier descend, dit à voix haute ce qui s'est passé et quoi faire, et
+// souhaite bonne route. La règle est pure (police.js), le branchement dans
+// patrouille.js ; la voix est celle des guides (v538).
+patrouille = creerPatrouille({
+  scene, world, player, animaux: animalManager,
+  montureConduite: () => (fun.montureConduite ? fun.montureConduite() : null),
+  dire: (texte, l) => { if (sonActif()) parlerAVoixHaute(texte, l); },
+  langue: () => playerProfile.lang,
+  casses: () => statsCasse.n,
+});
+window.__patrouille = patrouille;
+// L'ÉTAT : les étoiles, dans la file du centre — un état affiché, pas un
+// message (v516). Le DOM ne s'écrit que quand le nombre change (v263).
+const etatPoliceEl = document.getElementById('etat-police');
+let etatPoliceN = -1;
+function majEtatPolice() {
+  const n = running && patrouille ? patrouille.etoiles() : 0;
+  if (n === etatPoliceN || !etatPoliceEl) return;
+  etatPoliceN = n;
+  etatPoliceEl.classList.toggle('visible', n > 0);
+  etatPoliceEl.dataset.etoiles = String(n);
+  etatPoliceEl.setAttribute('aria-label', n ? `Recherché par la police : ${n} étoile${n > 1 ? 's' : ''} sur 3` : '');
+  etatPoliceEl.innerHTML = n ? ICONES.gyrophare + [0, 1, 2].map((i) => (i < n ? ICONES.etoile : ICONES.etoileVide)).join('') : '';
+}
+
 const guides = creerGuides({
   // Plus de bandeau pendant le jeu (v504) : le guide le dit à voix haute.
   dire: (texte, lieu, l) => { if (sonActif()) parlerAVoixHaute(texte, l); },
@@ -8971,6 +9071,8 @@ function frame(now) {
   // qu'on sait ce que `dt` vaut.
   edu.update(dtEcran(), running);
   fun.update(dt);
+  if (running && patrouille) patrouille.update();   // la police (v562)
+  majEtatPolice();
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
   if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux des guides (v460, v538)
@@ -9079,6 +9181,9 @@ requestAnimationFrame(() => {
   // (voir humains.js). C'était le « vingt secondes avant de pouvoir cliquer »
   // de Max sur l'iPad de quatre ans.
   chargerHumains();
+  // Les avions déposés (v563), 2,4 Mo : même moment, même raison. Un avion
+  // garé qui naîtrait avant eux reste sculpté (avions.js).
+  chargerAvionsDeposes();
   // Et l'on chauffe la sonde des reflets ici, au point d'apparition : ses six
   // faces compilent les programmes du décor vu depuis une cible cubique —
   // mesuré au banc, vingt-six programmes de plus à l'arrivée de la première

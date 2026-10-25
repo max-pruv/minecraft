@@ -262,6 +262,7 @@ function poursuiteVoiture(a, player, dt, m) {
 // --- la caisse ---------------------------------------------------------------
 
 const ROULIS_MAX = 0.075;      // rad, ~4°
+const ROULIS_MOTO = 0.6;      // rad, ~35° : une moto se couche (v562)
 const TANGAGE_MAX = 0.05;      // rad, ~3° au freinage
 const PENTE_MAX = 0.45;        // rad, ~26° : la pente dessinée au plus
 const BRAQUAGE_ROUES = 0.5;    // rad, ~29° à plein volant
@@ -314,7 +315,15 @@ function vieDeVoiture(a, player, dt, m) {
   // rotation x positive = nez levé, le signe des avions (v261).
   // Un ressort amorti, pas un lissage : une caisse qui se pose fait un petit
   // rebond, et c'est ce rebond qui dit qu'elle a du poids.
-  const roulisVise = Math.max(-ROULIS_MAX, Math.min(ROULIS_MAX, -m.lat * 0.0042));
+  // UNE MOTO SE COUCHE VERS L'INTÉRIEUR (v562), et de l'angle que la
+  // physique exige : tan θ = accélération latérale / pesanteur (9,81, la
+  // pesanteur « vraie » de la conduite, v408). Un virage à gauche monte le
+  // cap, donc `m.lat` > 0, donc une rotation z POSITIVE — le haut de la moto
+  // part vers la gauche, l'opposé du roulis d'une caisse. Bornée à 0,6 rad
+  // (35°) : au-delà, le repose-pied frotterait.
+  const roulisVise = a.def.penche
+    ? Math.max(-ROULIS_MOTO, Math.min(ROULIS_MOTO, Math.atan(m.lat / 9.81)))
+    : Math.max(-ROULIS_MAX, Math.min(ROULIS_MAX, -m.lat * 0.0042));
   const tangageVise = Math.max(-TANGAGE_MAX, Math.min(TANGAGE_MAX * 0.6, m.acc * 0.0035));
   const h = Math.min(dt, 0.05);
   S.wr += ((roulisVise - S.roulis) * 70 - S.wr * 12) * h; S.roulis += S.wr * h;
@@ -497,7 +506,9 @@ function etatNeuf(player, cam) {
 export function sensationsAuVolant(a, player, dt) {
   const cam = player.camera;
   if (cam.userData.fovBase == null) cam.userData.fovBase = cam.fov;
-  if (a.def.pilote || a.def.moteur !== 'voiture') {
+  // la moto roule comme une voiture (v562) : même caméra, même vie de caisse,
+  // mais elle se COUCHE dans le virage (`penche`, vieDeVoiture)
+  if (a.def.pilote || (a.def.moteur !== 'voiture' && a.def.moteur !== 'moto')) {
     poursuiteAvion(a, player, dt);
     return;
   }

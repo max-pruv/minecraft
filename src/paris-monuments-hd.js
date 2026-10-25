@@ -99,7 +99,7 @@ class Atelier {
   }
 }
 
-// LA TOUR EIFFEL EST UN VRAI MODÈLE (v554). Max a fourni « Eiffel Tower » de
+// LA TOUR EIFFEL EST UN VRAI MODÈLE (v564). Max a fourni « Eiffel Tower » de
 // Johnson Martin (Sketchfab, CC-BY-4.0, crédit dans `vendor/TOUR_EIFFEL_LICENSE`) :
 // quatre cent cinquante mille triangles, les socles de maçonnerie, les arches,
 // le treillis jusqu'au phare. `scripts/tour-eiffel.mjs` le décime dans le
@@ -493,7 +493,7 @@ export function emettreMonument(buf, nom, dx, by, dz, taille = 16) {
   for (const face of geometrieMonument(nom)) {
     // Une face entièrement d'un côté du morceau ne se découpe pas : la tour
     // Eiffel en compte quarante mille, et chacune touche un seul morceau sur
-    // quatre (v554).
+    // quatre (v564).
     let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
     for (const q of face.p) {
       const x = q[0] + dx + 0.5, z = q[2] + dz + 0.5;
@@ -522,7 +522,7 @@ export function emettreMonument(buf, nom, dx, by, dz, taille = 16) {
       buf.indices.push(ids[0], ids[1], ids[2]);
       continue;
     }
-    // Une face qui porte ses normales (la tour Eiffel, v554) les fait voyager
+    // Une face qui porte ses normales (la tour Eiffel, v564) les fait voyager
     // avec ses sommets : la découpe les interpole comme les positions.
     const original = face.n
       ? face.p.map((p, k) => [p[0] + dx + 0.5, p[1] + by, p[2] + dz + 0.5, ...face.n[k]])

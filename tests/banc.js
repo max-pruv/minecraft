@@ -249,6 +249,7 @@ const VERRE_BANC = process.env.BANC_VERRE;
 // vrai jeu — et l'inverse.
 let TEMPO_BANC = 1;
 const TEMPO_FORCE = process.env.BANC_TEMPO;
+const DE_COTE_COUPE = process.env.BANC_DE_COTE === '0';
 function fixerTempo(n) {
   TEMPO_BANC = TEMPO_FORCE !== undefined ? (Number(TEMPO_FORCE) || 1) : n;
   if (TEMPO_BANC !== 1) console.log(`   ⏩ tempo ${TEMPO_BANC} : les minuteries de synchronisation du jeu vont ${TEMPO_BANC} fois plus vite (BANC_TEMPO=1 pour l'échelle réelle)`);
@@ -503,9 +504,13 @@ class Banc {
     // portière, l'ouvrir, s'asseoir. Le banc la saute partout ailleurs
     // (`embarq=0`), comme il saute la préparation : les témoins de conduite ne
     // la mesurent pas, et ils retrouvent ainsi l'ancien geste au bit près.
-    await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr, !!opts.prep, opts.dpr) + (opts.embarq ? '' : '&embarq=0') + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
-      { waitUntil: 'load', timeout: 90000 });
-    await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    // La page neuve se charge pendant que les autres sont de côté (banc, après la v547) :
+    // voir `aLEcart`, plus bas.
+    await this.aLEcart(async () => {
+      await p.goto(adresse(this.portJeu, this.portPairs, opts.portNuage || this.opts.portNuage, opts.rr, !!opts.prep, opts.dpr) + (opts.embarq ? '' : '&embarq=0') + (opts.carte ? `&carte=${encodeURIComponent(opts.carte)}&qualite=tablette` : '') + (opts.ombres ? '&ombres=1' : '') + (opts.params || ''),
+        { waitUntil: 'load', timeout: 90000 });
+      await p.waitForFunction(() => window.__game, null, { timeout: 90000 });
+    }, opts);
     this.pages.push(p);
     return p;
   }
@@ -600,6 +605,57 @@ class Banc {
     await p.setViewportSize({ width: 16, height: 16 });
   }
 
+  // LES VOISINES SE METTENT DE CÔTÉ PENDANT QU'UNE PAGE SE CHARGE (banc, après la v547).
+  //
+  // `reseau.js` seule durait 35 min. Le relevé horodaté montrait le temps
+  // DANS les scénarios, pas dans les attentes du banc : souffler y coûtait
+  // 17 s en tout. Ce qui coûtait, c'est la règle de la v440 vue d'ailleurs —
+  // une page en jeu prend presque quatre cœurs, et l'hôte (souvent un ami en
+  // plus) restait en jeu pendant chaque chargement et chaque arrivée d'un
+  // invité. Pendant `fn`, le CANVAS de toute page déjà ouverte passe donc à
+  // 16 × 16 : son réseau, ses minuteurs, son jeu tournent comme avant, seul
+  // le remplissage d'une grande image s'arrête. Il revient à sa taille AVANT
+  // que le témoin ne reprenne la main : aucun témoin ne lit une page réduite.
+  //
+  // ON RÉDUIT LE CANVAS, PAS LA FENÊTRE. `mettreDeCote` change la fenêtre, et
+  // une fenêtre redimensionnée perd le verrou du pointeur : le jeu passe en
+  // pause (`pointerlockchange`, `running` faux) et n'en ressort pas — mesuré
+  // par `sonde-de-cote-pause.cjs`, et mon premier jet a rendu neuf rouges de
+  // `reseau.js` (la voiture de l'hôte immobile, zéro bloc en vingt secondes).
+  // Le canvas, lui, est remesuré par le jeu toutes les 500 ms
+  // (`ajusterLaVue`) : même économie, aucune pause.
+  //
+  // On ne touche ni à une page déjà mise de côté par sa suite (`__vue`), ni à
+  // une page endormie (`__taille`), et une page gelée qui ne répond pas
+  // n'arrête rien (3 s au plus). `BANC_DE_COTE=0` rejoue l'ancien banc, pour
+  // mesurer ; `{ voisinesEnJeu: true }` aussi, par page.
+  async aLEcart(fn, opts = {}) {
+    if (DE_COTE_COUPE || opts.voisinesEnJeu || this.__aLEcart) return fn();
+    this.__aLEcart = true;
+    const borne = (pr) => Promise.race([pr.catch(() => {}), dormir(3000)]);
+    const reduire = (q, oui) => borne(q.evaluate((oui) => {
+      const c = window.__game && window.__game.renderer && window.__game.renderer.domElement;
+      if (!c) return;
+      if (oui) { c.style.setProperty('width', '16px', 'important'); c.style.setProperty('height', '16px', 'important'); }
+      else { c.style.removeProperty('width'); c.style.removeProperty('height'); }
+    }, oui));
+    const mises = [];
+    try {
+      for (const q of this.pages) {
+        if (q.isClosed() || q.__vue || q.__taille) continue;
+        mises.push(q);
+        await reduire(q, true);
+      }
+      return await fn();
+    } finally {
+      for (const q of mises) if (!q.isClosed()) await reduire(q, false);
+      // `ajusterLaVue` remesure le canvas toutes les 500 ms : une image à la
+      // bonne taille avant de rendre la main.
+      if (mises.length) await dormir(700);
+      this.__aLEcart = false;
+    }
+  }
+
   async ramener(p) {
     if (!p.__vue) return;
     await p.setViewportSize(p.__vue);
@@ -623,6 +679,10 @@ class Banc {
   }
 
   async creerMonde(prenom, opts = {}) {
+    return this.aLEcart(() => this._creerMonde(prenom, opts), opts);
+  }
+
+  async _creerMonde(prenom, opts) {
     const p = await this.joueur(prenom, opts);
     await p.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);
@@ -635,6 +695,10 @@ class Banc {
   }
 
   async rejoindre(prenom, code, opts = {}) {
+    return this.aLEcart(() => this._rejoindre(prenom, code, opts), opts);
+  }
+
+  async _rejoindre(prenom, code, opts) {
     const p = await this.joueur(prenom, opts);
     await p.evaluate(() => document.getElementById('online-btn').click());
     await dormir(400);

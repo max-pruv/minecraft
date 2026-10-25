@@ -419,7 +419,7 @@ function buildLighthouse(set) { // rayé rouge et blanc
   for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) set(dx, 17, dz, BLOCK.SLAB_STONE);
 }
 
-// LA TOUR EIFFEL DU MODÈLE (v554). Max a fourni un vrai modèle de la tour
+// LA TOUR EIFFEL DU MODÈLE (v564). Max a fourni un vrai modèle de la tour
 // (`paris-monuments-hd.js`) ; le voxel est son squelette et suit SES cotes —
 // c'est le voxel qui arrête l'enfant, et ce que le modèle ne couvre pas reste
 // en cubes (v292). Chaque couche ci-dessous est relevée sur le modèle mis à
@@ -1322,7 +1322,7 @@ const LANDMARKS_V317 = [
       x: PARIS.x + p.u, z: PARIS.z + p.v, box: Math.max(p.socle[0], p.socle[1]), build,
       // le Moulin Rouge du monde d'aujourd'hui borde le boulevard (v512)
       ...(nom === 'Moulin Rouge' ? { tour: buildMoulinRougeNord } : {}),
-      // la tour du modèle de Johnson Martin (v554) ; le monde d'avant garde l'ancienne
+      // la tour du modèle de Johnson Martin (v564) ; le monde d'avant garde l'ancienne
       ...(nom === 'Tour Eiffel' ? { tour: buildEiffelModele } : {}),
       // v306 : Paris doublé se lit à 1,7 bloc par pixel quand il tient entier
       // sur un téléphone ; ses monuments restent sur le plan (carte.js)

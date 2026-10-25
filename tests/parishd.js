@@ -702,7 +702,7 @@ function verifier(nom, ok, detail = '') {
           restes.length <= 8, `${restes.length} cellule(s) hors du modèle${restes.length ? ' : ' + restes.slice(0, 8).join(' ') : ''}`);
       }
 
-      // 4 ter. LA TOUR EST LE MODÈLE DE JOHNSON MARTIN (v554). Max l'a fourni
+      // 4 ter. LA TOUR EST LE MODÈLE DE JOHNSON MARTIN (v564). Max l'a fourni
       //    (CC-BY-4.0) : 453 397 triangles, décimés à une erreur d'un
       //    quarantième de bloc. Le témoin lit la géométrie que le mailleur
       //    émet : assez de triangles pour être ce modèle et pas les poutres de
@@ -1169,11 +1169,18 @@ function verifier(nom, ok, detail = '') {
       const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
       const pcx = Math.floor(g.player.pos.x / 16), pcz = Math.floor(g.player.pos.z / 16);
       const vu = w.mobilierVu || (() => false);
-      let site = null, vues = 0;
-      for (let dx = -g.RAYON_HD; dx <= g.RAYON_HD && !site; dx++) for (let dz = -g.RAYON_HD; dz <= g.RAYON_HD && !site; dz++) {
+      // PLUSIEURS SITES (v560) : la voiture de la rue ne se traverse plus, et
+      // une voiture de la rue qui arrive le long du trottoir pendant l'essai
+      // arrête la nôtre AVANT la terrasse — l'ancien code passait au travers
+      // d'elle, donc la situation mesurée avait eu lieu. Une voiture qui gêne
+      // n'est pas une terrasse : on recommence sur le site suivant, et les
+      // essais gênés entrent dans le message (v252, v372 : un verdict exige
+      // que la situation ait eu lieu).
+      const sites = []; let vues = 0; let site = null;
+      for (let dx = -g.RAYON_HD; dx <= g.RAYON_HD && sites.length < 4; dx++) for (let dz = -g.RAYON_HD; dz <= g.RAYON_HD && sites.length < 4; dz++) {
         const e = g.chunkMeshes.get((pcx + dx) + ',' + (pcz + dz));
         if (!e || !e.facades || !e.facades.visible) continue;
-        for (let lx = 0; lx < 16 && !site; lx++) for (let lz = 0; lz < 16 && !site; lz++) {
+        for (let lx = 0; lx < 16 && sites.length < 4; lx++) for (let lz = 0; lz < 16 && sites.length < 4; lz++) {
           const bx = (pcx + dx) * 16 + lx, bz = (pcz + dz) * 16 + lz, by = w.sommetColonne(bx, bz);
           if (w.getBlock(bx, by, bz) !== CITY_BLOCK.SIDEWALK) continue;
           const m = F.mobilierTrottoir((a, b, c) => w.getBlock(bx + a, by + b, bz + c), bx, bz);
@@ -1193,12 +1200,15 @@ function verifier(nom, ok, detail = '') {
             // et la façade continue de l'autre côté : la voiture ne s'y frotte pas
             if (!ok) continue;
             if (g.vehicules.placeProche({ x: bx + 0.5, y: by + 1, z: bz + 0.5 }, 14)) continue;
-            site = { bx, bz, by, vx, vz, lx: lx2, lz: lz2 };
+            if (!sites.some((o) => Math.hypot(o.bx - bx, o.bz - bz) < 24)) sites.push({ bx, bz, by, vx, vz, lx: lx2, lz: lz2 });
             break;
           }
         }
       }
-      if (!site) return { err: `aucune terrasse montrée avec un couloir dégagé (${vues} vue(s))` };
+      if (!sites.length) return { err: `aucune terrasse montrée avec un couloir dégagé (${vues} vue(s))` };
+      const genes = [];
+      for (site of sites) {
+      g.player.contact = null;
       // les passants à cent blocs, les bêtes retirées (v284, v371)
       for (const s of g.passants.sites) for (const h of (s.peuple || [])) {
         if (Math.hypot(h.pos.x - site.bx, h.pos.z - site.bz) > 40) continue;
@@ -1252,7 +1262,13 @@ function verifier(nom, ok, detail = '') {
       // LANCÉE, LA VOITURE L'ÉCRASE (v519) : la terrasse quitte le registre de
       // ce qui arrête, et son morceau se remaille sans elle
       const ecrasee = !!(g.mobilierCasse && g.mobilierCasse.casses.has('h' + site.bx + ',' + site.bz));
-      return { monte, depart: +a0.toFixed(2), plusPres: +plusPres.toFixed(2), fin: +fin.toFixed(2), parcouru: +(a0 - fin).toFixed(2), secondes: +((performance.now() - t0) / 1000).toFixed(1), site, devant, ecrasee, contact: g.player.contact || null };
+      const r = { monte, depart: +a0.toFixed(2), plusPres: +plusPres.toFixed(2), fin: +fin.toFixed(2), parcouru: +(a0 - fin).toFixed(2), secondes: +((performance.now() - t0) / 1000).toFixed(1), site, devant, ecrasee, contact: g.player.contact || null  };
+        const gene = !r.ecrasee && r.contact && r.contact.famille === 'voiture';
+        if (!gene) return { ...r, genes };
+        await dodo(800);
+        genes.push({ site: [site.bx, site.bz], autre: r.contact.autre });
+      }
+      return { err: 'une voiture de la rue a gêné chaque essai', genes };
     });
     // la voiture fait 4,4 blocs de long : son pare-chocs avant est à 2,2 du
     // centre ; arrêtée devant la terrasse, le centre reste à plus de 2,2 de la

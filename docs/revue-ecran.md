@@ -167,3 +167,66 @@ n° 19, corrigé).
 | # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
 | --- | --- | --- | --- | --- | --- | --- |
 | 28 | basse | en vol au-dessus d'une forêt (v553), iPad et iPhone | [jour](revue-ecran/lointain-arbres/ipad-foret-loin-jour.jpg), [nuit](revue-ecran/lointain-arbres/ipad-foret-loin-nuit.jpg) | Au bord du disque maillé, une **couture de teinte** : le paysage lointain est plus clair et voilé que le monde proche, parce que le brouillard commence exactement à ce bord (`fog.near` = rr × 16). Antérieur à la v553, visible sur les captures de la v532. | Faire commencer le brouillard un peu en deçà du bord, ou teinter la grille fine du sous-bois là où `foret` est haute (les témoins de couleur de `plafond.js` lisent l'herbe au sommet près : à décider avec eux). | `src/main.js`, `src/horizon.js` |
+
+## Le relevé de la v560 (la voiture tombe dans l'eau), 25 octobre 2026
+
+États `voiture-plonge` et `voiture-coulee` (ajoutés à la sonde pour cette
+livraison : un quai fabriqué, pleins gaz vers le bassin), iPhone et iPad,
+jour et nuit. Ce que la livraison promet se voit : la voiture plonge feux stop
+allumés (l'eau la freine), aucun message, l'enfant remonte en surface, la
+voiture reste au fond, le bouton de nage apparaît. La capture de nuit est
+prise après celle de jour : l'enfant y est déjà sorti.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 29 | basse | voiture dans l'eau, de jour (v560) | [v560](revue-ecran/v560-eau/iphone-voiture-plonge-jour.jpg) | Des **feuilles d'automne** flottent haut dans le ciel au-dessus du bassin, loin de tout arbre (la v531 les voulait sur leur colonne). Hors de la livraison. | Vérifier ce qui « porte » une feuille au-dessus d'un plan d'eau fabriqué au-dessus du relief | `src/saisons.js` |
+| 30 | basse | voiture dans l'eau, de jour (v560) | [v560](revue-ecran/v560-eau/iphone-voiture-plonge-jour.jpg) | Une pilule « Salle Ronde · Les marches du palais » s'affiche en haut au milieu, loin de toute ville visible — un panneau de lieu lu à distance ? Hors de la livraison. | Lire quelle règle pose cette pilule à (31 200, 31 500) | `src/main.js` (file centrale) |
+
+## Le relevé de la v561 (la SF90 XX Stradale), 25 octobre 2026
+
+Planches « ancienne | neuve » dans `docs/revue-ecran/v561-sf90/` :
+`volant`, `troisquarts` et `rue` (une SF90 de la circulation, cadrée de
+côté), iPhone et iPad, jour et nuit, rejouables par
+`tests/sonde-captures-sf90.cjs` (le bras « ancienne » se choisit par
+`?asset=0`). Rien ne bouge dans l'interface : la livraison ne change que le
+modèle, et il se lit tout de suite comme une Ferrari — aileron, prises d'air,
+jantes, vitrage, plaque « SF90XX ».
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 31 | basse | SF90 XX (v561), garée de trois quarts, de nuit | [v561](revue-ecran/v561-sf90/planche-iphone-troisquarts-nuit.jpg) | Phares éteints la nuit, comme toute la flotte garée (n° 8). Repeinte dans la rue, la voiture garde sa **livrée rouge** (prises du capot, ouïes arrière) : sur une laque sarcelle, ces accents se lisent comme des pièces d'une autre voiture. | Garder ; ou repeindre la livrée (`Paint_Secondary`) d'un ton accordé à la laque tirée — décision de Max. | `src/vehicules.js` (`repeindre`) |
+| 32 | basse | rue de Paris, de nuit, caméra de la sonde à hauteur de toit | [v561](revue-ecran/v561-sf90/planche-ipad-rue-nuit.jpg) | Une **feuille d'automne** passe à quelques centimètres de l'objectif et couvre un quart de l'écran. Ce n'est pas la voiture : c'est l'essaim de saison (v531), que la caméra de cadrage traverse. | Ne pas dessiner une particule à moins d'un bloc de la caméra. | `src/saisons.js` |
+
+## Le relevé de la v562 (la police et la moto), 25 octobre 2026
+
+États `police-poursuite`, `police-controle` et `moto`, sur la dalle de
+`sonde-police.cjs`, à 430 × 932 et 820 × 1180, de jour et de nuit
+(`docs/revue-ecran/v562-police-moto/`). Le contrôle se lit au premier regard :
+la voiture de police garée devant, gyrophare allumé, le policier à côté de la
+portière ([nuit](revue-ecran/v562-police-moto/ipad-police-controle-nuit.jpg)).
+La pilule (gyrophare et étoiles) tient sous le badge du temps libre, sans rien
+recouvrir. La moto se couche dans le virage, l'enfant à califourchon
+([jour](revue-ecran/v562-police-moto/iphone-moto-jour.jpg)). Le premier jet de
+l'état `moto` faisait sortir la moto d'une dalle trop petite et capturait sous
+l'eau (le haut de l'image noir) : la sonde prend désormais la dalle de la sonde
+de police, et dit si la moto y est encore (`surLaDalle`).
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 33 | moyenne | poursuite de police (v562), iPhone et iPad | [jour](revue-ecran/v562-police-moto/ipad-police-poursuite-jour.jpg) | Pendant la poursuite, la voiture de police roule dix blocs **derrière** l'enfant, donc derrière la caméra de poursuite (6,4) : à l'écran, seule la pilule des étoiles dit qu'elle est là, et la sirène. Au contrôle, elle se gare devant et se voit (v562). | Juger sur la tablette ; si l'enfant ne comprend pas qui le suit, un repère au bord de l'écran du côté de la police, ou la caméra qui se retourne un instant quand elle arrive. Décision de Max. | `src/patrouille.js`, `src/sensations.js` |
+
+## Le relevé de la v563 (trois vrais avions : A320, A321 et F-35), 25 octobre 2026
+
+États `avion-sol`, `avion-vol`, `aeroport-roulage`, `aeroport-ciel`, iPhone
+et iPad, jour et nuit, plus les vues de modèle de
+`tests/sonde-avions-deposes.cjs` et la porte qui s'ouvre de
+`tests/sonde-embarquement-deposes.cjs` (préfixe `modele-`), dans
+`docs/revue-ecran/v563-avions/`. L'Airbus se lit au premier regard (livrée
+A320, réacteurs, train), le F-35 aussi ; l'escalier se pose contre la porte
+dessinée sur la livrée, la verrière du F-35 bascule. Rien ne change dans
+l'interface.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 34 | basse | au roulage, de jour (v563) | [roulage](revue-ecran/v563-avions/ipad-aeroport-roulage-jour.jpg) | Les feux de navigation font deux grosses boules rouge et verte au bout des ailes vues de la caméra de poursuite ; leur taille est celle de la v533, la même sur l'avion sculpté. | Réduire le rayon des lentilles de navigation, ou les estomper de jour (à mesurer avec le témoin des feux de monte.js). | `src/avions.js` |
+| 35 | basse | Orly vu du ciel (v563) | (aucune — capture locale) | Sur l'état `aeroport-ciel`, l'aire d'Orly est vide : l'aéroportiste ne fait naître les appareils qu'à portée de l'enfant, et la sonde prend la vue avant. Antérieur. | Faire attendre à la sonde un appareil au poste. | `tests/sonde-revue-ecran.cjs` |

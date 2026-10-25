@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v554 — La vraie tour Eiffel
+## v564 — La vraie tour Eiffel
 
 **Pourquoi.** Max a fourni un modèle 3D de la tour Eiffel (« Eiffel Tower » de
 Johnson Martin, Sketchfab, CC-BY-4.0) : 453 397 triangles, les quatre socles
@@ -51,6 +51,442 @@ hauteur d'enfant (`sonde-monuments-hd.cjs`). L'empreinte des 490 morceaux
 témoins est inchangée. Prix mesuré : le morceau central de la tour coûte
 +45 ms au mailleur (l'ancienne +16, une fois par visite), ses quatre morceaux
 +3,5 Mo de tampons ; `tour-eiffel-donnees.js` pèse 142 Ko compressés.
+
+---
+## v563 — Trois vrais avions : A320, A321 et F-35
+
+**Pourquoi.** Les avions de ligne et le chasseur étaient sculptés par le jeu,
+pièce à pièce, et se reconnaissaient mal. Max a déposé trois modèles
+d'artistes (Sketchfab) : un Airbus A320 en livrée d'origine, un A321 et un
+Lockheed Martin F-35. Livrés tels quels, aucun ne tenait le contrat du jeu :
+tailles de trois à quinze fois trop grandes, nez dans le mauvais axe, train
+soudé au fuselage (ou absent sur l'A320), des yeux de dessin animé dans le
+cockpit de l'A321, des pièces de travers, des normales à l'envers, et
+quatre-vingt-un mille triangles pour le F-35.
+
+**Ce que ça change.**
+- L'avion de ligne est un vrai Airbus : un A320 sur les petits aérodromes et
+  à Roissy, un A321 sur les grandes plates-formes. Le chasseur est un F-35.
+  Le Concorde reste celui du jeu.
+- Tout ce qui marchait marche pareil : les postes, les pistes, le train qui
+  se replie, l'escalier contre la porte (la porte s'ouvre dans la livrée),
+  la verrière du F-35 qui bascule, les flammes dans les tuyères, les feux de
+  navigation, le passager dans l'avion d'un ami (v552). Le siège du chasseur
+  est sous la verrière du F-35.
+- À plusieurs, l'ami voit le même appareil (la variante voyage avec la
+  position, comme le modèle d'une voiture).
+- Les trois fichiers (2,4 Mo) arrivent après l'accueil, dans le cache qui
+  survit aux mises à jour ; un avion né avant eux reste sculpté, et
+  `?avions=0` rejoue les modèles sculptés.
+- Crédits et licences dans `vendor/avions/LICENSE.md` ; l'A320 est sous
+  CC-BY-NC-SA-4.0 (pas d'usage commercial).
+
+**Ce qui le prouve.** Quatre témoins neufs : les avions déposés tiennent dans
+le gabarit de leur espèce, posés sur leurs roues (`carteMonde.js`) ; ils
+tiennent le contrat du jeu — trois jambes de train, la porte, une flamme par
+tuyère dans la boîte du modèle, des feux, des fichiers sans yeux ni extension
+et sous quarante mille triangles (`carteMonde.js`) ; l'ami voit l'A321 de son
+ami en A321 (`reseau.js`) ; la table des programmes à chauffer couvre les
+fichiers des avions (`monte.js` — aucune signature neuve). Les témoins des
+dimensions mesurent désormais le modèle sculpté ET chaque modèle déposé, nommés,
+au lieu de l'un ou l'autre selon l'heure. Sondes : `sonde-avions-deposes.cjs`
+(captures) et `sonde-embarquement-deposes.cjs` (on monte et on descend des
+trois par la séquence entière, zéro programme neuf). Revue d'écran (avion au
+sol, en vol, roulage, aérodrome) sur iPhone et iPad, de jour et de nuit.
+## v562 — La police, et la moto
+
+**Pourquoi.** Max : « dès que tu fais une bêtise, un accident, que tu fonces
+dans quelqu'un… la police ; et la moto ». Il a fourni trois modèles
+(CC-BY-4.0) : une voiture de police, une moto de police et un policier. Rien
+dans le jeu ne répondait à une bêtise au volant, et il n'y avait pas de
+deux-roues.
+
+**Ce que ça change.**
+- Foncer dans une voiture, rentrer fort dans un mur, faire s'écarter un passant
+  à vive allure, renverser le mobilier de la rue : c'est une bêtise. Une
+  pilule (gyrophare et étoiles) dit combien la police s'y intéresse ; elle
+  oublie peu à peu quand elle ne voit plus l'enfant.
+- La voiture de police (le modèle fourni) arrive derrière, sirène et
+  gyrophares rouge et bleu, et suit le chemin même de l'enfant ; à deux
+  étoiles une moto de police la rejoint.
+- Si l'enfant s'arrête, la police le double et se gare devant lui, le policier
+  descend, vient à sa portière et dit à voix haute ce qui s'est passé et quoi
+  faire (« Ralentis quand il y a des piétons. Bonne route ! »). Les étoiles
+  tombent, et la voiture de police reste garée : on peut la conduire, gyrophares
+  allumés. Personne n'est jamais touché ni poursuivi pour toujours.
+- La moto se conduit : on l'enfourche, on est à califourchon, elle a son bruit
+  de moteur et se couche dans les virages. Une attend sur le parc de la
+  Giga-usine.
+
+**Ce qui le prouve.** Quatorze témoins dans `monte.js`, qui lisent
+`tests/sonde-police.cjs` tel quel, sur une dalle à soi, avec un VRAI choc :
+les règles pures, une bêtise réelle, la voiture de police qui apparaît
+derrière, la sirène lue dans sa bande sur la sortie audio, la pilule, les
+gyrophares qui alternent, la moto à la seconde bêtise, le contrôle qui double à
+plus de 2,6 blocs et se gare devant, la phrase dite, les étoiles remises à zéro
+et la voiture garée montable ; puis la moto, son modèle et ses deux roues, son
+son, l'avatar à califourchon, l'inclinaison vers l'intérieur lue image par
+image (rouge, signe inversé : 0 bon contre 22), et la descente d'un pas de côté.
+
+---
+## v561 — Une nouvelle Ferrari SF90 XX Stradale
+
+**Pourquoi.** Max a fourni un modèle Sketchfab de la SF90 XX Stradale
+(Ddiaz Design, CC-BY-4.0) à intégrer. La SF90 de la flotte était une
+sculpture générique : une caisse rouge arrondie, sans aileron, sans vitrage
+lisible, sans habitacle reconnaissable — vue de trois quarts, rien ne disait
+Ferrari. Le paquet, lui, ne pouvait pas entrer tel quel : 2 201 nœuds,
+1 097 maillages (autant d'appels de dessin), les 648 pièces des quatre roues
+réunies sous un seul nœud nommé « Front_L », des couleurs de sommets à
+alpha nul, de la transmission sur les vitres (une passe de rendu de plus).
+
+**Ce que ça change.**
+- Toute SF90 du jeu — garée, au garage, dans la rue, chez un ami — est la XX :
+  grand aileron arrière, prises d'air, jantes et étriers, vitrage et habitacle
+  avec son volant. Elle se repeint dans la rue comme les autres (sa livrée
+  rouge reste) ; une sur trois garde son gris d'origine.
+- Même identifiant `ferrari-sf90.glb` pour les garages et le réseau ; le
+  fichier chargé est `ferrari-sf90-xx.glb` (`asset`), téléchargé une fois à la
+  première rencontre. `?voiture=sf90` la met partout pour la juger sur la
+  tablette, `?asset=0` rend l'ancienne.
+- Prix déclaré : 262 651 triangles (6,7 fois l'ancienne, 0,72 fois la 911
+  approuvée), 8,7 Mo sur le disque, ≈ 6,3 Mo transférés (Brotli q4, contre
+  1,4 pour l'ancienne). Pas de portière qui s'ouvre : elles ne sont pas
+  séparées dans le modèle (`portiere: false`, comme la Revuelto).
+
+**Ce qui le prouve.**
+- `scripts/ferrari-sf90-xx.py` refait le GLB au bit près depuis le paquet
+  (empreintes dans `docs/sf90-xx/SHA256.json`) : 32 maillages, quatre pivots
+  de roue, le volant, 4,84 m de long pour 4,85 réels, 1,22 m de haut.
+- Un seul programme neuf à chauffer (`Standard+map+nrm+DS`), déclaré dans
+  `signatures.js` ; le témoin de la table des programmes le lit dans le fichier.
+- Un témoin neuf dans `monte.js` (le témoin de la Revuelto, rendu commun) :
+  chargée par son asset, au sol, quatre roues, volant, images, sans portière,
+  l'enfant assis sous le pavillon face à la route. Rouge sur l'ancien code
+  (pas d'asset).
+- Ses phares, feux de détresse et feux stop sont sur la tôle
+  (`sonde-feux-flotte.mjs` : 57 modèles, zéro faute), et elle entre dans le
+  témoin des feux de détresse de `degats.js`.
+- Revue d'écran ancienne | neuve, iPhone et iPad, jour et nuit, au volant,
+  garée et dans la rue (`tests/sonde-captures-sf90.cjs`, planches dans
+  `docs/revue-ecran/v561-sf90/`).
+
+---
+
+
+---
+## v560 — Dans l'eau pour de vrai, et les voitures ne se traversent plus
+
+Deux sujets, deux parties (v279).
+
+### La voiture tombe dans l'eau
+
+**Pourquoi.** Max : « il faut arrêter de mettre des messages d'erreur pour dire
+attention, une voiture ne roule pas dans l'eau… s'il tombe dans l'eau, il tombe
+dans l'eau… j'ai l'impression que le véhicule est arrêté quand il arrive dans
+l'eau ». Depuis la v272, une voiture s'arrêtait net au bord du quai avec un
+bandeau « fais demi-tour ». Et sans cet arrêt, mesuré, la voiture traversait un
+bassin à seize blocs/s en roulant sur le fond : il n'y avait pas d'eau pour
+elle.
+
+**Ce que ça change.** Plus d'arrêt, plus de message. La voiture garde son élan,
+passe par-dessus le quai, plonge ; l'eau la freine, le moteur cale sous l'eau
+et elle coule au fond. Un instant plus tard l'enfant sort de la voiture et
+remonte tout seul à la surface, le temps de nager jusqu'à la rive. La voiture
+noyée reste au fond, on ne la reprend pas. Un gué peu profond freine sans noyer.
+
+**Ce qui le prouve.** Deux témoins sous node (`plafond.js`, le vrai joueur sur
+un port fabriqué : la voiture tombe, coule, l'enfant remonte en moins de quatre
+secondes ; un gué d'un bloc se traverse), un témoin au navigateur (`monte.js` :
+plongée, sortie, surface, voiture hors service, et aucun bandeau sur l'eau —
+rouge sur l'ancien code, arrêtée sur le quai), la fumée (le message retiré ne
+peut plus revenir). Les ponts se franchissent toujours (`sonde-ponts-eau.cjs`).
+
+### Les véhicules ne passent plus les uns dans les autres
+
+**Pourquoi.** Max : « il ne faut pas que les véhicules puissent passer les uns
+dans les autres. Et aujourd'hui c'est encore possible. » La règle « pas si l'on
+est déjà dedans » (v245) se jugeait pour toutes les voitures à la fois : dès
+que la voiture de l'enfant touchait une voiture (l'état que laisse un choc), elle
+ne voyait plus AUCUNE voiture et pouvait la traverser, elle ou sa voisine. Et
+une voiture de la rue ou un train déjà dans la voiture de l'enfant continuaient
+leur route au travers.
+
+**Ce que ça change.** La règle se juge voiture par voiture : on ne peut ni
+entrer dans une voiture, ni s'enfoncer plus loin dans celle qu'on touche ;
+reculer ou longer reste toujours possible. Une voiture de la rue ou un train
+arrivé dans la voiture de l'enfant (ou d'un ami) s'arrête contre elle au lieu
+de la traverser, et repart quand elle s'est dégagée.
+
+**Ce qui le prouve.** Une sonde (`sonde-traverse-vehicules.cjs`) qui mesure
+les recouvrements par paire, des deux côtés : collée à une voiture garée, la
+voiture de l'enfant traversait celle de devant (52 relevés dedans, 2,2 blocs
+d'enfoncement, treize blocs parcourus au travers) — zéro ici, elle s'arrête et
+la pousse ; en roulant dans Paris à la recherche du contact, des voitures de la
+rue entraient dans la nôtre (0, 1, 13, 27 et 35 relevés dedans selon les
+passages) — zéro sur trois passages ici, après avoir bouché un trou que la
+sonde a trouvé (la glissade le long d'un mur ne regardait pas les voitures) ; un témoin pur (`plafond.js` :
+entrer et s'enfoncer refusés, reculer et longer permis) ; un témoin au
+navigateur (`monte.js` : collée à une voiture, la nôtre ne traverse pas celle de
+devant, et elle recule). Et la correction a montré quatre témoins de conduite
+qui roulaient sans le savoir dans la mer ou à son bord (une dalle sous l'eau,
+une dalle trop courte, une aire quittée en roue libre) : la voiture y coulait
+désormais, et la suite se jouait à pied. Leurs dalles sont au sec.
+
+---
+## v559 — Une Maserati MC12 GT1 Red Bull dans la flotte
+
+**Pourquoi.** Max a déposé un modèle de la Maserati MC12 GT1 aux couleurs Red
+Bull (Dave Love, Sketchfab, CC-BY-4.0) : « intègre la nouvelle voiture ». C'est
+un export Sketchfab brut — les quatre roues fusionnées dans chaque matériau de
+roue, le volant fusionné avec la planche de bord, des textures de 2 048² dont
+une toute noire — que le jeu ne savait ni faire rouler ni tenir dans la mémoire
+d'une tablette.
+
+**Ce que ça change.**
+- Une voiture de plus dans la flotte : on la croise dans la rue, on la conduit,
+  on la range au garage. Elle garde sa livrée Red Bull (la rue ne la repeint
+  jamais), ses roues tournent autour de leur moyeu (étriers fixes), son volant
+  Momo et l'écran Motec sont dans l'habitacle, l'enfant y est assis sous le
+  pavillon.
+- `scripts/convertir-mc12.py` fait le travail et se rejoue sur le paquet :
+  roues découpées en quatre pivots, volant séparé par pièces entières, flou de
+  jante invisible retiré, extensions inutiles retirées, images unies devenues
+  des couleurs, trois images de 2 048² ramenées à 1 024², laque recalée (métal
+  0,8 → 0,15 : en revue d'écran, la livrée bleu nuit sortait noire). 161 346 triangles
+  (aucune simplification), 7,77 Mo (6,0 Mo en gzip), 19 images, 59 primitives.
+- Portes en élytre non séparées dans le modèle : pas de portière qui s'ouvre
+  (`portiere: false`), comme la Revuelto.
+- Crédit CC-BY-4.0 et liste des modifications dans `vendor/voitures/LICENSE.md` ;
+  rendus de contrôle (studio three.js hors jeu) dans `docs/mc12/`.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (au manifeste, au sol,
+5,19 m, quatre roues qui tournent sur leur moyeu, volant, images, livrée qui
+résiste au repeint, sans portière, l'enfant assis sous le pavillon et face à la
+route) ; la MC12 dans le témoin des feux de détresse de `degats.js` et dans la
+mesure de la flotte sous node (phares, détresse, feux stop sur la tôle) ; la
+table des programmes (cinq signatures neuves) égale à ce que les fichiers
+contiennent. Portail complet : 14 suites vertes ; trois rouges, cinq témoins
+déjà déclarés (`maj.js` rejouée seule : 74 verts, 0 rouge) ; rebasée sur la
+v554, rejoué : mêmes familles, `maj.js` (75 verts) et `reseau.js` (96 verts)
+seules sans un rouge, et le titre de la v554 ramené à six mots ; reposée sur
+la v557 : 15 suites vertes, `maj.js` (loader) et `monte.js` (passages peints
+de Rome et Londres) sur des témoins déjà déclarés — détail dans
+`TASKS.md`. Revue d'écran à l'iPhone et à l'iPad, de jour et de nuit
+(`docs/revue-ecran/v559-mc12/`).
+
+## v558 — Le métro de Washington roule droit le long des quais
+
+**Pourquoi.** La voie du métro de Washington allait d'arrêt en arrêt en
+ligne droite. Dans une station posée sur un virage — Smithsonian prend un
+quart de tour sous son quai —, chaque voie, décalée de quatre blocs selon
+son propre cap, se rapprochait de l'axe et traversait le quai central à ses
+deux bouts : le passage des rames, creusé en dernier, ouvrait le quai, la
+rame roulait sur son bord, et il n'y avait plus de place pour le pylône du
+nom. Mesuré (`geo` des points de voie contre l'axe de chaque quai) : 2 590
+points de voie dans les quais, cinq stations sans un seul pylône
+(Smithsonian, McPherson Square, Foggy Bottom, Arlington Cemetery, Gallery
+Place), et 34 endroits où la voie du dedans revenait en arrière.
+
+**Ce que ça change.**
+- Le long de chaque quai, la voie est droite, dans l'axe de la station : la
+  rame longe le bord du quai au lieu de rouler dessus.
+- Entre deux stations, la voie tourne par une courbe douce, jamais plus
+  serrée que quatre blocs et demi : plus aucune voie ne se replie.
+- Chaque station a désormais au moins un pylône avec son nom, et l'escalier
+  du quai se pose au bout du quai plutôt qu'en son milieu.
+- Ce qu'on voit depuis la rue ne bouge pas d'un bloc : les tunnels ne
+  changent qu'en profondeur.
+
+**Ce qui le prouve.** Trois témoins neufs dans `washington.js`, rouges sur
+l'ancien code : les points de voie dans les quais (2 590 → 478, barre 1 200 ;
+ce qui reste, ce sont les demi-tours des terminus et les quais qui se
+chevauchent de Metro Center et McPherson Square, à seize blocs l'un de
+l'autre) avec zéro station sans pylône ; zéro rebroussement de voie (34
+avant) ; et l'empreinte de tout ce que le métro pose à moins de trois blocs
+du sol, sur les 79 560 colonnes de l'emprise, identique à la v547 — Foggy
+Bottom et Arlington Cemetery, dont la mezzanine longe le lit du Potomac,
+gardent leur escalier pour cela, et aucune date neuve n'est nécessaire. Le
+vrai joueur descend et remonte toujours dans les trente-cinq stations, le
+passage des rames reste sans un bloc plein (12 830 points), la durée d'un
+tour de l'Orange et de l'Argent reste celle de la Bleue (202,5 s), et
+l'import de `world.js` ne coûte rien de plus (1,17 s des deux côtés).
+L'empreinte des 490 morceaux change (Washington est un des neuf lieux) :
+désarmée, elle rend la constante d'avant au bit près. La sonde des stations
+ne pose plus le pied sur un portillon : les cases « sous quatre blocs d'air »
+qui restent sont toutes en haut de l'escalier de la rue, sous le bloc de la
+rue lui-même — déclarées. Captures avant / après (Smithsonian, Foggy Bottom,
+Archives) dans `docs/captures/stations-virages/`. Portail : seize suites
+vertes ; `monte.js` rouge sur des témoins de la rue déjà déclarés, rejouée
+seule : 3 rouges sur la branche, 5 sur `origin/main`, même famille.
+
+## Banc — Le portail se répartit, et les voisines se taisent pendant un chargement (après la v557)
+
+Aucune livraison du jeu : seul le banc d'essai change (`tests/`), donc aucun
+`CACHE_VERSION` n'est dû — rien de ce qu'une tablette télécharge ne bouge.
+
+**Pourquoi.** Max : « accélérer la CI… beaucoup plus rapide, beaucoup plus
+sélective, à qualité égale ». Les sessions attendaient 75 à 170 minutes leur
+portail. Mesuré sur `origin/main` (v540) : **108 minutes** — `monte.js` 37,
+`reseau.js` 21, `maj.js` 10 —, des durées inscrites dans `tout.js` qui
+dataient de la v251, et un conteneur à quatre cœurs déjà saturé (3,1 à 3,6
+cœurs dans chaque suite de navigateur).
+
+**Ce que ça change.**
+- `npm test -- --tranche=k/n` joue une tranche des suites choisies, réparties
+  par durée mesurée ; n machines rendent le portail en parallèle, chaque suite
+  entière, rien de sauté. En deux tranches : 54 et 87 minutes, au lieu de 108.
+- Une suite rouge au dernier portail passe en tête au suivant : un rouge qui
+  revient se voit en minutes.
+- Pendant qu'une tablette se charge ou rejoint une partie, les pages déjà
+  ouvertes réduisent leur image à 16 × 16 et la retrouvent avant que le témoin
+  ne reprenne la main : `reseau.js` seule, 35 min 30 → 33 min 47.
+- Les dix-sept durées de `SUITES` sont remesurées.
+
+**Ce qui le prouve.**
+- `reseau.js` rejouée seule, même code, même conteneur, horodatée ligne par
+  ligne : 2 130 → 2 027 s, 88 verts des deux côtés hors intermittences déjà
+  déclarées (« un hôte sans courtier », « seule après le départ de l'hôte »).
+  Les scénarios où l'hôte attendait en jeu gagnent 30 à 60 s chacun.
+- `monte.js` avec l'ancien banc (`BANC_DE_COTE=0`) : 3 250 s, contre 3 277 au
+  portail avec le nouveau — inchangée, mêmes familles de rouges déclarés.
+- `sonde-de-cote-pause.cjs` : réduire la FENÊTRE met une page de bureau en
+  pause (verrou du pointeur perdu) ; réduire le CANVAS la laisse en jeu. Le
+  premier jet, à la fenêtre, avait rendu neuf rouges : c'est la sonde qui l'a
+  démonté.
+- La sélection à la ligne par couverture V8, écrite et rejouée sur les 24
+  dernières livraisons : **0 %** de gain. Elle est retirée, et la raison est
+  écrite dans `CLAUDE.md` pour qu'on ne la reconstruise pas.
+
+## v557 — Le mobilier recule du caniveau, l'hôtel de ville de Los Angeles monte
+
+**Pourquoi.** Deux dettes des villes engendrées. Une voiture qui serrait le
+trottoir à un bloc de sa voie butait sur 18 à 36 réverbères, feux et
+jardinières par kilomètre (`tests/sonde-mobilier-route.cjs`, Rome, Zurich,
+Tokyo, Berlin) : le trottoir fait deux blocs et demi depuis les rues à la GTA,
+et le mobilier n'en occupait que la moitié côté chaussée. Et à Los Angeles,
+l'hôtel de ville — un fût d'un bloc — était à 21 blocs pour une médiane de
+toits de 22 depuis les mêmes rues : plus bas que ses voisins.
+
+**Ce que ça change.**
+- Dans les villes engendrées, le réverbère et la jardinière reculent d'un bloc,
+  contre les façades : à un bloc de sa voie, la voiture ne rencontre plus que
+  les feux (Rome 57 → 17 pièces, toutes des feux). Autant de réverbères le long
+  de la rue (−9 à +10 % selon la ville), et leur crosse se tourne toujours vers
+  la chaussée. Le feu et le banc ne bougent pas d'un bloc.
+- L'hôtel de ville de Los Angeles a sa silhouette : un fût carré à bandeaux, la
+  colonnade, la pyramide à gradins et sa lanterne, à 36 blocs au-dessus des
+  toits du centre (22). Les quatre anneaux de voitures de la ville restent au
+  bloc près.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` (aucun réverbère ni
+jardinière à moins de trois blocs du milieu d'une voie — 1 158 sur
+`origin/main`, 0 ici — et autant de réverbères, aucun feu ni banc déplacé),
+rouges sur `origin/main` ; l'hôtel de ville sort des exceptions déclarées
+(« aucun monument plus bas que les immeubles qui l'entourent »), l'ordre du
+ciel de la ville tenu ; l'empreinte des 490 morceaux, mobilier désarmé, rend la
+constante d'avant au bit près ; le relief ne bouge pas (des props seulement).
+Le grand anneau de Shanghai (32 pas) passe sur la PLACE CENTRALE, pas sur un
+quai : aucun contour ne l'évite sans suivre un voisin (mesuré jusqu'à 3 000
+essais), c'est déclaré dans `TASKS.md`.
+
+---
+
+## v556 — Les amis bougent en temps réel
+
+**Pourquoi.** Max : « Tu le vois bouger de manière saccadée, toutes les
+secondes il a avancé… c'est pas très real time. » Chaque tablette envoie sa
+position toutes les 120 ms, sans heure ni vitesse, et l'autre dessinait l'ami
+en courant après la DERNIÈRE position reçue. Mesuré au banc
+(`tests/sonde-amis-fluides.cjs`, l'ami au volant à 30 blocs par seconde, sa
+dessinée relevée image par image chez l'autre) : en direct, des bonds jusqu'à
+quatorze blocs d'un coup et 74 % des images à la vraie vitesse ; par le nuage,
+où les relevés arrivent une demi-seconde à la fois et parfois dans le
+désordre, l'ami immobile sur 40 % des images puis bondissant, 21 % des images
+à la vraie vitesse.
+
+**Ce que ça change.** L'ami, à pied, en voiture ou en avion, avance d'un
+mouvement continu chez les autres, par le lien direct, à travers l'hôte et par
+le nuage. Chaque position part avec l'heure de son envoi et, au volant, sa
+vitesse ; l'autre tablette rejoue l'ami avec un léger retard (de deux
+dixièmes de seconde en direct à un peu plus d'une demi-seconde par le nuage,
+réglé tout seul) en glissant entre deux relevés, et prolonge son mouvement une
+demi-seconde au plus quand un relevé tarde. Une téléportation se pose
+d'un coup. Une tablette restée sur l'ancienne version est suivie comme avant.
+
+**Ce qui le prouve.** Quatre témoins dans `reseau.js` : la règle pure sous
+node (paquets du nuage, désordre, téléportation, ancienne version) ; en direct,
+le pire bond d'une image à l'autre (13 à 25 blocs → 0,4 à 2,1 d'ordinaire, barre 8) et le
+champ sur `pos` ; par l'hôte, l'heure d'envoi qui traverse `rpos` (rouge sur
+l'ancien code) ; par le nuage, la part des images à la vraie vitesse (0,21 à
+0,37 → 0,69 à 0,98, barre 0,55). Portail : seize suites vertes ; `monte.js`
+rend quatre rouges de la famille rue et circulation déjà déclarée (une partie
+seule n'a pas d'ami à dessiner : rien de ce que la livraison change n'y est
+atteint).
+
+## v555 — Hôtel de Ville retrouve sa bouche de métro
+
+**Pourquoi.** Depuis les rues à la GTA (v544), la station Hôtel de Ville de la
+ligne 1 n'avait plus de bouche : on ne pouvait y descendre que par Saint-Paul.
+Mesuré, paire par paire : chaque place d'Hôtel de Ville recouvre la seule
+place de Saint-Paul qui laisse la Bastille, et chaque place de la Bastille
+recouvre les autres places de Saint-Paul — le trottoir au sud de la ligne ne
+tient pas trois escaliers. Et à Reuilly–Diderot, la bouche rechoisie entrait
+dans le quai par la case du nom : la plaque de ce côté avait disparu.
+
+**Ce que ça change.**
+- Hôtel de Ville a de nouveau sa bouche, sur le trottoir du sud ; pour lui
+  laisser la place, celle de Saint-Paul passe au nord, sur le trottoir du
+  bassin : son couloir passe SOUS l'eau, au niveau du quai, quatre blocs de
+  terre sous le lit ; l'escalier, lui, ne passe jamais sous l'eau. Les seize
+  stations de Paris ont leur bouche.
+- Reuilly–Diderot garde ses quatre plaques : sa bouche s'est décalée de deux
+  blocs.
+- Rien d'autre ne bouge : les treize autres bouches, le Paris de la v531
+  (gardé sous ce qu'un enfant a bâti) et les bouches de la v473.
+- Rome Lepanto reste sans bouche, et c'est une question pour Max : les 666
+  places qui tiennent sur le trottoir ont toutes leur escalier sous le Tibre
+  (`TASKS.md`).
+
+**Ce qui le prouve.** Trois témoins de `plafond.js`, rouges sur la v554 :
+seize bouches sur seize (15), quatre plaques par station (Reuilly–Diderot 3),
+et le vrai joueur qui descend et remonte dans trente-six stations (35), sans
+une plaque qui flotte — le premier jet perçait le piédroit de Châtelet, à
+dix-neuf blocs d'Hôtel de Ville, et c'est ce témoin qui l'a dit. La
+sonde de marche (`sonde-stations.cjs`) : 36/36 quais atteints, 36/36 rues
+retrouvées ; `sonde-metro-paris.mjs` : aucune poche dans la Seine, aucune rue
+murée.
+
+## v554 — Les arbres gardent toute leur couronne au bord du monde
+
+**Pourquoi.** Deux dettes des vrais arbres. (1) Au bord de la portée du détail
+(v499), un arbre pouvait montrer son relief d'un côté et les cubes de sa
+couronne de l'autre. (2) Depuis la v528, les feuilles d'un arbre dont la base
+est dans un morceau voisin se taisent, et c'est le voisin qui dessine l'arbre :
+tant qu'il n'est pas maillé — au bord du disque chargé, ou juste après une
+arrivée —, cette part de couronne MANQUAIT. Mesuré sous node
+(`tests/sonde-arbres-frontiere.cjs`) : sept arbres et 147 cases de feuilles
+tues au bord d'un disque de rayon douze, neuf arbres au rayon trois.
+
+**Ce que ça change.** Plus d'arbre amputé d'un quartier de couronne en vol ou à
+l'arrivée : un morceau dessine aussi, en cartes lointaines, les arbres du bord
+dont le voisin n'est pas encore là, et cède dès que le voisin arrive — le
+même arbre, au sommet près. La dette (1) était déjà caduque depuis la v528
+(un arbre n'a qu'un dessinateur, proche ou lointain) : c'est désormais prouvé.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` : sur la forêt témoin,
+quatorze directions de voisins, 1 344 sommets d'arbres du bord, tous présents
+dans le modèle que le voisin dessine, et le `solid` d'un morceau identique
+avec ou sans détail ; rouge sur `origin/main` (zéro direction). Prix mesuré :
++0,96 Mo pour 169 morceaux de forêt (4,8 % du `solid`), maillage dans le
+bruit (5,0 contre 4,9 ms). Revue d'écran `foret` et `foret-vol`, iPhone et
+iPad, jour et nuit. Portail : trois suites rouges, toutes de familles déjà
+déclarées, et hors d'atteinte par construction — le banc rend en logiciel,
+donc `world.arbres` vaut zéro et aucun `arbresBord` n'existe sauf dans
+`plafond.js` et `parishd.js` (vertes). Rejouées seules : `manhattan.js` 34/0
+des deux côtés ; `monte.js` 4 rouges sur la branche, 5 sur `origin/main`
+(feu, rue vide, passages de Rome) ; `reseau.js` « un hôte sans courtier »,
+déclaré rouge des deux côtés.
 
 ---
 
@@ -556,7 +992,6 @@ qu'un enfant de sept ans n'a aucune raison de chercher.
   ou déjà déclarés (`TASKS.md`).
 - Témoins repointés : `monte.js` (en tête de la colonne), `maj.js`,
   `reseau.js`, `banc.ouvrirLaCarte`, `sonde-revue-ecran.cjs`.
-
 
 ## v539 — Rien ne traverse une voie, et le train est un train
 
@@ -3518,7 +3953,6 @@ resserrées au milieu (59 anneaux, 806 pas ; 7 villes). Sonde
 comparaison des tracés et des tabliers des deux arbres (3 villes changées,
 0 tablier).
 
-
 ## v434 — Le dérapage laisse des traces
 
 **Pourquoi.** Depuis le frein à main (v409), la voiture dérape comme dans GTA :
@@ -3599,8 +4033,6 @@ sur `origin/main`, barre 15). Sonde sous node ville par ville, avant et après :
 pas, circuits, couverture (règle v322), pire partage (18, inchangé), voiture
 en vue depuis le centre, coût du premier dépliage (inchangé pour les villes
 sans faute, 75 à 110 ms pour celles qu'on essaie, sous le pire de Rome).
-
-
 
 ## v431 — Des files serrées, et une rue qui arrive sans à-coup
 
@@ -3960,7 +4392,6 @@ rendu, installation, génération) et profile la première seconde ; le gain ne
 se voit pas en durée d'image au banc (pire image 283 à 367 ms contre 283 à
 383), parce que l'attente se cachait dans des images déjà lentes — il se
 transpose à la tablette comme un appel synchrone de moins par morceau.
-
 
 ## v419 — Paris rejoint Lyon
 
@@ -4467,7 +4898,6 @@ traversée sur `origin/main`. Portail sur la v398 : mes trois témoins de piéto
 verts ; les rouges (GPS et glissé de `carte.js`, `reglages.js`, Manhattan,
 circulation, embarquement, train, trou en vol) se retrouvent rejoués seuls sur
 `origin/main`, souvent en plus grand nombre.
-
 
 ## v401 — Le monde entier en relief
 
@@ -4994,7 +5424,6 @@ les rouges sont des dettes déclarées (façade et taxi de Manhattan, compilatio
 rejoué seul trois fois des deux côtés : 0,67 à 0,83 s ici, 0,70 à 0,91 s sur
 `origin/main` — de la charge, et ce piéton est posé en mer, où la règle neuve
 ne trouve jamais de chaussée.
-
 
 ## v384 — On descend de la voiture d'un ami par la portière
 
@@ -6858,7 +7287,6 @@ propre, aucune colonne sur un rail (0 sur 8 249 mesurées sous node). La sonde :
 proches — sept admissibles, tous sans pont. La plaine du Pô n'est pas plate
 partout : c'est le déblai qui a fait le tri.
 
-
 ## v326 — Des falaises de roche et des berges de sable
 
 **Pourquoi.** Partout où le relief saute de deux blocs ou plus, le sol continu
@@ -7105,7 +7533,6 @@ un par lieu et deux sur le tour.
 
 ---
 
-
 ## v318 — Des contrôles plus justes
 
 **Pourquoi.** Deux témoins du portail ne prouvaient rien, et `TASKS.md` le
@@ -7141,7 +7568,6 @@ neuves (`sonde-tour-monuments.cjs`, `sonde-attente-volant.cjs`) rejouent ces
 mesures.
 
 ---
-
 
 ## v317 — Des quais en pierre dans toutes les villes
 
@@ -13066,7 +13492,6 @@ empreintes IDENTIQUES à la v205 (relief 218 089 colonnes · c20adb7308ae ;
 hors villes 184 656 · c79c2f3b0135 ; 4 040 colonnes sous les enfants, zéro
 déplacée) et `carteMonde.js`.
 
-
 ## v205 — Washington roule : des ronds-points qui tournent et onze circuits mesurés
 
 **Pourquoi.** Depuis la v201, chaque grande ville a ses voitures — sauf
@@ -14550,7 +14975,6 @@ même hash hors des villes — pas un bloc n'a bougé ailleurs. Et surtout : la
 discipline du regard — Tokyo, capturée à hauteur d'yeux et du ciel, se lit
 enfin comme une ville, rues noires, zèbres blancs, skyline.
 
-
 ## v171 — la vie : des voitures qui circulent, des passants qui marchent
 
 **Pourquoi.** Max : « les villes n'ont pas de vie. Il n'y a pas de voitures
@@ -14581,7 +15005,6 @@ Rome, l'anneau naît et ses voitures se montrent ; six passants peuplent les
 rues ; et huit secondes plus tard, ils ont MARCHÉ — ce sont des passants,
 pas des statues.
 
-
 ## v170 — les devantures : les villes prennent des couleurs de vraies rues
 
 **Pourquoi.** Max : « on n'a pas suffisamment de diversité d'un point de vue
@@ -14611,7 +15034,6 @@ trois trames, trois palettes : vitrines (≥ 60), portes (≥ 40), enseignes
 (≥ 100), auvents (≥ 60), lampadaires (≥ 8), bancs (≥ 4), et la diversité de
 blocs COMPTÉE (≥ 18 sortes par quartier ; mesuré : 27 à 31). Les empreintes
 du plafond ne bougent pas : les façades ne touchent pas au terrain.
-
 
 ## v169 — la carte ne lague plus
 
@@ -14648,7 +15070,6 @@ froid sous 400 ms (mesuré 134), le rendu suivant sous 150 ms (mesuré 34), et
 le glisser qui ne téléporte jamais même le fil principal étouffé 700 ms. Les
 témoins existants de la carte, du plafond et du tour du monde repassent au
 vert — même monde, au bloc près, juste plus vite.
-
 
 ## v168 — la Giga-usine : la chaîne de production, la peinture qui opère, et le volant
 
@@ -14691,7 +15112,6 @@ robots, le tunnel et le parc garni, sondés dans le monde engendré. Les deux
 empreintes du plafond sont inchangées au hash près : l'usine n'a pas bougé
 un bloc hors de son site.
 
-
 ## v167 — les pastilles répondent au doigt, et la bibliothèque de bâtiments se trouve
 
 **Pourquoi.** Max, capture d'écran à l'appui : « je ne comprends pas à quoi
@@ -14724,7 +15144,6 @@ suivent le doigt de l'enfant : la récolte fait naître la pastille (visible et
 touchable), le toucher ouvre l'atelier sur le garde-manger ; poser une cabane
 fait naître la jauge, la toucher ouvre le Chantier avec la ligne 📍 ; et
 l'onglet Bâtiments montre bien monuments célèbres et bâtiments de ville.
-
 
 ## v166 — les cinquante grandes : le tour du monde au complet
 
@@ -14771,7 +15190,6 @@ sec. Les deux empreintes du plafond sont recalculées avec Bruxelles et
 Amsterdam dans la découpe — et la preuve d'intégrité est refaite : la même
 découpe, mesurée sur main et sur v166, rend le MÊME hash hors des villes
 (5e54e15c…) : pas un bloc n'a bougé ailleurs.
-
 
 ## v165 — la Terre se reconnaît, et le tour du monde devient un vrai tour du monde
 

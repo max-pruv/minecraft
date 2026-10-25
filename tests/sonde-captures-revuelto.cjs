@@ -177,7 +177,7 @@ const RECADRER = {
         for (const nomEtat of Object.keys(ETATS).filter((n) => !etatsVoulus.length || etatsVoulus.includes(n))) {
           // une page par état et par bras : la rue mutile FLOTTE, et l'on ne
           // veut pas qu'un état hérite de ce que le précédent a laissé (v279)
-          const tab = await banc.jouerSeul('Rev' + vue + bras + nomEtat, { tactile: true, viewport: VUES[vue], rr: 9, params: '&ombres=1&hd=3', pret: true });
+          const tab = await banc.jouerSeul('Rev' + vue + bras + nomEtat, { tactile: true, viewport: VUES[vue], rr: 9, params: '&ombres=1&hd=3' + (bras === 'ancienne' ? '&asset=0' : ''), pret: true });
           try {
             const asset = await choisir(tab, bras);
             const r = await ETATS[nomEtat](tab);

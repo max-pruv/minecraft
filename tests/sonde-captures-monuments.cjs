@@ -19,7 +19,7 @@ const VUES = [
     { nom: 'pied', d: 7, cap: Math.PI * 0.75, h: 2, cible: 40, dedans: true },
     { nom: 'ciel', d: 60, cap: Math.PI * 0.25, h: 62, pitch: -0.35 },
     { nom: 'nuit', d: 34, cap: Math.PI, h: 2, pitch: 0.75, heure: 0.75 },
-    // v554 : la tour entière depuis le Champ-de-Mars, et au-delà de la couche
+    // v564 : la tour entière depuis le Champ-de-Mars, et au-delà de la couche
     // HD — là où l'on ne voit que son voxel.
     { nom: 'champ', d: 60, cap: Math.PI, h: 28 },
     { nom: 'loin', d: 125, cap: Math.PI * 0.75, h: 40 },

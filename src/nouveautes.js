@@ -6,12 +6,103 @@
 
 export const NOUVEAUTES = [
   {
-    v: 554,
+    v: 564,
     titre: 'La vraie tour Eiffel',
     puces: [
       'La tour Eiffel est un vrai modèle',
       'Ses arches, ses étages, son treillis',
       'On passe toujours dessous',
+    ],
+  },
+  {
+    v: 563,
+    titre: 'Trois vrais avions',
+    puces: [
+      'Un Airbus A320 et un A321',
+      'Un F-35 pour le chasseur',
+      'Le train, la porte, tout marche',
+    ],
+  },
+  {
+    v: 562,
+    titre: 'La police, et la moto',
+    puces: [
+      'Une bêtise au volant ? La police arrive',
+      'Sirène, gyrophares et étoiles',
+      "Arrête-toi : le policier te parle",
+      'Conduis la moto, elle se penche',
+    ],
+  },
+  {
+    v: 561,
+    titre: 'Une nouvelle Ferrari SF90 XX',
+    puces: [
+      'Une vraie SF90 XX Stradale',
+      'Avec son volant et son aileron',
+      'Modèle de Ddiaz Design, merci',
+    ],
+  },
+  {
+    v: 560,
+    titre: 'Plouf ! Et plus de passe-muraille',
+    puces: [
+      'La voiture tombe dans l\'eau et coule',
+      'Tu remontes tout seul à la surface',
+      'Les voitures ne se traversent plus',
+    ],
+  },
+  {
+    v: 559,
+    titre: 'Une Maserati MC12 de course',
+    puces: [
+      'La MC12 GT1 aux couleurs Red Bull',
+      'Son volant et ses roues qui tournent',
+      'Modèle de Dave Love, merci à lui',
+    ],
+  },
+  {
+    v: 558,
+    titre: 'Le métro roule droit en station',
+    puces: [
+      'La rame longe le quai sans rouler dessus',
+      'Chaque station a son panneau',
+      'Des virages doux entre les stations',
+    ],
+  },
+  {
+    v: 557,
+    titre: 'Des rues plus faciles en voiture',
+    puces: [
+      'Les lampadaires reculent du trottoir',
+      'Moins de poteaux sur la route',
+      'La mairie de Los Angeles grandit',
+    ],
+  },
+  {
+    v: 556,
+    titre: 'Les amis bougent sans à-coups',
+    puces: [
+      'Un ami en voiture roule en douceur',
+      'Même quand le réseau est lent',
+      'Pareil en avion et à pied',
+    ],
+  },
+  {
+    v: 555,
+    titre: 'Le métro Hôtel de Ville rouvre',
+    puces: [
+      'Une nouvelle entrée de métro',
+      'Le couloir passe sous l’eau',
+      'Chaque station garde son nom',
+    ],
+  },
+  {
+    v: 554,
+    titre: 'Des arbres entiers, même au loin',
+    puces: [
+      'Plus de couronne coupée au loin',
+      'Même en arrivant quelque part',
+      'Le même arbre, de près et de loin',
     ],
   },
   {
