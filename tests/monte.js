@@ -1888,10 +1888,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.flying = true;
       g.player.pos.set(p.x + 0.5, g.world.terrainHeight(p.x, p.z) + 6, p.z + 0.5); g.player.vel.set(0, 0, 0);
       const t0 = performance.now();
-      while (vues() < 6 && performance.now() - t0 < 20000) await new Promise((f) => setTimeout(f, 200));
+      // ON COMPTE PARIS, PAS ROME (v548). `visibles` ne se relit qu'à l'image :
+      // juste après le saut, il porte encore les voitures de Rome, et la boucle
+      // sortait aussitôt (« vues 5, s 2 » sur `origin/main` v547 : six voitures
+      // de Rome au départ, cinq de Paris deux secondes plus tard). On attend
+      // trois images rendues après le saut, puis l'on attend Paris ; et le
+      // compte retenu est le plus haut vu (une voiture qui sort du champ entre
+      // deux relevés ne défait pas la fabrication).
+      const fSaut = g.renderer.info.render.frame;
+      while (g.renderer.info.render.frame - fSaut < 3 && performance.now() - t0 < 10000) await new Promise((f) => setTimeout(f, 50));
+      let vuesMax = vues();
+      while (vuesMax < 6 && performance.now() - t0 < 25000) { await new Promise((f) => setTimeout(f, 200)); vuesMax = Math.max(vuesMax, vues()); }
       await new Promise((f) => setTimeout(f, 2000));
+      vuesMax = Math.max(vuesMax, vues());
       actif = false;
-      const r = { vues: vues(), images, maxParImage: Math.max(0, ...hausses), s: Math.round((performance.now() - t0) / 100) / 10,
+      const r = { vues: vuesMax, fin: vues(), images, maxParImage: Math.max(0, ...hausses), s: Math.round((performance.now() - t0) / 100) / 10,
         fabrication: window.__vehicules.fabrication ? window.__vehicules.fabrication() : null };
       g.player.pos.copy(avant); g.player.vel.set(0, 0, 0);
       return r;
@@ -3833,6 +3844,40 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         }
         return n;
       };
+      // CE QUE LES PASSANTS FONT AUTOUR DE L'ENFANT, À CHAQUE ARRÊT (v548) :
+      // dans le cadre, à portée (62 blocs), dessinés, qui attendent leur monde,
+      // et combien la ville en a. Un zéro dans le cadre confondait trois
+      // pannes — personne n'est venu, ils sont là mais cachés, ils sont
+      // derrière — et ne se démontait pas (v223).
+      const detail = [];
+      const autour = () => {
+        let pres = 0, vis = 0, att = 0, tot = 0;
+        for (const q of g.npcs) {
+          if (!q.pos || (q.name !== 'passant' && q.name !== 'chien')) continue;
+          tot++;
+          const dd = Math.hypot(q.pos.x - g.player.pos.x, q.pos.z - g.player.pos.z);
+          if (dd >= 62 || dd < 1) continue;
+          pres++; if (q.mesh && q.mesh.visible) vis++; if (q.attendLeMonde) att++;
+        }
+        return [pres, vis, att, tot];
+      };
+      // ON MESURE LA MARCHE, PAS L'ARRIVÉE (v548). Le témoin d'avant laisse
+      // l'enfant ailleurs dans Paris, ou dans une autre ville ; le premier
+      // arrêt mesurait donc le repeuplement d'une arrivée (« les passants
+      // peuplent les rues à l'arrivée » est un autre témoin) — `origin/main`
+      // v547 au portail : `[0, 7, 10, …]`, et zéro au premier arrêt quand la
+      // suite y arrive d'ailleurs, contre 17 sur une page neuve (sonde
+      // `rue.cjs` du brouillon, deux passes, aucun arrêt vide). On se pose au
+      // départ et l'on attend la ville, vingt secondes au plus, durée dans le
+      // message ; les arrêts, eux, gardent leur borne de sept secondes.
+      {
+        const [, a] = trajets[0];
+        const x = Math.round(m.PARIS.x + a[0]), z = Math.round(m.PARIS.z + a[1]);
+        g.player.pos.set(x + 0.5, g.world.terrainHeight(x, z) + 1.2, z + 0.5); g.player.vel.set(0, 0, 0);
+        const t0 = performance.now();
+        while (autour()[1] < 8 && performance.now() - t0 < 20000) await new Promise((r) => setTimeout(r, 500));
+        attentes.push(+((performance.now() - t0) / 1000).toFixed(1));
+      }
       for (const [, a, b] of trajets) {
         const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
         const yaw = Math.atan2(-(b[0] - a[0]), -(b[1] - a[1]));
@@ -3865,9 +3910,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           }
           attentes.push(+((7000 - Math.max(0, finArret - Date.now())) / 1000).toFixed(1));
           vus.push(n);
+          detail.push(autour());
         }
       }
-      return { vus, vides: vus.filter((n) => n === 0).length,
+      return { vus, detail, mise: attentes.shift(), vides: vus.filter((n) => n === 0).length,
         moyenne: +(vus.reduce((s, n) => s + n, 0) / vus.length).toFixed(2),
         attendu: +attentes.reduce((s, t) => s + t, 0).toFixed(1) };
     });
