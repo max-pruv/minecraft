@@ -4,6 +4,8 @@
 const { Banc, vu, nomsVus, dormir, jusqua } = require('./banc.js');
 const { servirLeNuage } = require('./nuage.js');
 const echecs = [];
+const CAP = process.env.CAPTURES || null;   // dossier : une capture par étape
+const capture = async (page, nom) => { if (CAP) { await dormir(1200); await page.screenshot({ path: `${CAP}/${nom}.png` }).catch(() => {}); } };
 function verifier(nom, ok, detail = '') { console.log(`${ok ? '✅' : '❌'} ${nom}${detail ? ` — ${detail}` : ''}`); if (!ok) echecs.push(nom); }
 (async () => {
   const banc = new Banc();
@@ -60,7 +62,8 @@ function verifier(nom, ok, detail = '') { console.log(`${ok ? '✅' : '❌'} ${n
     if (boutonAvion) await alice.evaluate(() => document.getElementById('ride-btn').click());
     const phases = new Set();
     await jusqua(async () => alice.evaluate(() => { const g = window.__game; const e = g.player.embarquement; return { ph: e ? e.phase : null, p: !!g.fun.passagerDe() }; })
-      .then((r) => { if (r.ph) phases.add(r.ph); return r.p; }), 30000, 150);
+      .then(async (r) => { if (r.ph && !phases.has(r.ph) && r.ph === 'gravir') await capture(alice, '1-escalier'); if (r.ph) phases.add(r.ph); return r.p; }), 30000, 150);
+    await capture(alice, '2-assise-au-sol');
     console.log('phases montée', [...phases]);
     const montee = await alice.evaluate(() => { const p = window.__game.fun.passagerDe(); return p ? { de: p.de, s: p.s } : null; });
     // la parenté du maillage, des deux côtés du réseau
@@ -90,6 +93,9 @@ function verifier(nom, ok, detail = '') { console.log(`${ok ? '✅' : '❌'} ${n
       return !!enVol;
     }, 20000);
     const camDist = enVol ? Math.hypot(enVol.a.cx - enVol.av.x, enVol.a.cy - enVol.av.y, enVol.a.cz - enVol.av.z) : null;
+    await capture(alice, '3-en-vol');
+    await alice.evaluate(() => { window.__game.player.yaw += 1.6; window.__game.player.pitch = -0.4; });
+    await capture(alice, '4-en-vol-regard');
     // en vol, l'appui ne fait pas descendre : le refus dit quoi faire
     const sautRefuse = await alice.evaluate(async () => {
       const g = window.__game; const r0 = g.fun.refusVol ? g.fun.refusVol() : 0;
