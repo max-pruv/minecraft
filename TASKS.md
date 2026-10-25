@@ -483,7 +483,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   - [ ] **la séquence de l'escalier chez l'ami** n'a pas de témoin au portail
     (le banc saute les séquences) : `EMBARQ=1 node tests/sonde-passager-avion.cjs`
     la rejoue.
-- [x] **Les autres joueurs bougent par saccades — fait (amis-fluides, v555).**
+- [x] **Les autres joueurs bougent par saccades — fait (amis-fluides, v556).**
   Mesuré, puis remédié par (1)-(3) : `ts` et la vitesse dans `pos`,
   `src/fluidite.js` rejoue l'ami entre deux relevés. Ce qui reste, déclaré :
   la fluidité RELAYÉE ne se mesure pas au banc (trois pages sur quatre cœurs :
@@ -2003,7 +2003,7 @@ v522 ne touche pas ; la distribution reste à faire.
   distance d'Alice à Marlon (la rue ne cède qu'aux amis à moins de 90 blocs
   d'elle), pour que le prochain rouge se démonte. Piste : le rattrapage à
   1,3 × de la grille d'une voiture très en retard.
-  Revu au portail de la v555 (amis-fluides) : rouge une fois sur quatre
+  Revu au portail de la v556 (amis-fluides) : rouge une fois sur quatre
   passages de la branche, mais sans la situation — « arrive 0, personne », aucune
   voiture de la rue venue en cinq essais ; vert sur `origin/main` rejouée seule
   au même moment. Marlon y est posé à l'arrêt : l'ami rejoué entre deux

@@ -873,7 +873,7 @@ déjà conducteur ». Quatre règles.
   est posé à la main (`update` suspendu), sinon sa physique le ramène au sol
   pendant la mesure.
 
-## Les amis rejoués entre deux relevés (v555) — une position reçue porte son heure d'envoi
+## Les amis rejoués entre deux relevés (v556) — une position reçue porte son heure d'envoi
 
 Max : « tu le vois bouger de manière saccadée ». Trois règles.
 
