@@ -180,6 +180,9 @@ export const ECHELLES_VILLES = Object.freeze({
   // Le socle à huit mètres, les voiles de Gehry jusqu'à quarante-six (v369).
   'Los Angeles|Walt Disney Hall': { vraie: 46, paliers: [[0, 0], [1, 1], [3, 8], [12, 47]] },
   // La tour de l'horloge de l'ancien hôtel de ville, cent quatre mètres.
+  // L'hôtel de ville de Los Angeles, 138 m : les bandeaux à 18 et 30, le fût
+  // jusqu'à 108, la colonnade, la pyramide à gradins et sa lanterne.
+  'Los Angeles|L\'hôtel de ville': { vraie: 138, paliers: [[0, 0], [1, 1], [4, 18], [6, 30], [16, 108], [17, 114], [20, 132], [21, 139]] },
   'Toronto|L\'ancien hôtel de ville': { vraie: 104, paliers: [[0, 0], [1, 1], [5, 24], [7, 30], [15, 92], [18, 105]] },
   'Mexico|La cathédrale': { vraie: 67, paliers: [[0, 0], [1, 1], [5, 13], [7, 23], [15, 68]] },
   'Mexico|Bellas Artes': { vraie: 53, paliers: [[0, 0], [1, 1], [5, 12], [6, 14], [8, 20], [12, 20], [16, 54]] },
@@ -339,10 +342,6 @@ export const ECHELLES_MAIN = Object.freeze({
 // sont une DETTE DÉCLARÉE, elles doivent disparaître.
 export const BAS_DECLARES = Object.freeze({
   // Dans la vraie ville aussi, ils sont plus bas que ce qui les entoure.
-  // Une dette des rues à la GTA : moins de lots, et les immeubles qui restent
-  // autour de l'hôtel de ville sont les tours du centre — médiane 22 pour 21
-  // (mesuré ; 21 juste au-dessus sur la v531). Il se remet au ciel de sa ville.
-  'Los Angeles|L\'hôtel de ville': { lot: 'rues à la GTA : à remettre au ciel de Los Angeles (21 pour une médiane de 22)' },
   'Paris|Pyramide du Louvre': { vrai: 'la pyramide (21,6 m) est plus basse que le palais du Louvre qui l\'entoure' },
   'New York|Bourse de New York': { vrai: 'la Bourse est un temple de six étages au pied des tours de Wall Street' },
   'San Francisco|Lombard Street': { vrai: 'c\'est une rue' },

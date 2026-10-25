@@ -1424,6 +1424,28 @@ function buildHotelDeVilleToronto(poser) {
   poser(0, 16, -2, ARDOISE); poser(0, 17, -2, ARDOISE);
 }
 
+// L'hôtel de ville de Los Angeles (1928, 138 m) : le fût carré de pierre
+// claire, ses bandeaux, la colonnade sous le toit et la pyramide à gradins,
+// d'après le mausolée d'Halicarnasse, que coiffe une lanterne. Un fût d'un bloc
+// (le gabarit `minaret`) restait à vingt et un blocs, sous la médiane des toits
+// du centre depuis les rues à la GTA ; un corps de trois blocs monte à son ciel
+// sans devenir une perche. ET PAS PLUS LARGE AU PIED : la boîte touche la
+// place centrale, et des ailes de cinq blocs (ce qu'a la vraie mairie) y
+// écartaient l'anneau de voitures d'arrivée — mesuré, 2 044 blocs de circuits
+// tombaient à 1 532 ; à trois blocs, les quatre anneaux restent au bit près.
+function buildHotelDeVilleLA(poser) {
+  for (let y = 1; y <= 16; y++) {
+    plein(poser, y, -1, 1, -1, 1, y === 4 || y === 6 ? CREME : BLANC);
+    if (y % 3 === 2 && y > 4) for (const [a, b] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) poser(a, y, b, VITRE);
+  }
+  for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) poser(a, 17, b, CREME);     // la colonnade
+  poser(0, 17, 0, BLANC);
+  plein(poser, 18, -1, 1, -1, 1, CREME);                                                  // la pyramide
+  for (const [a, b] of [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]]) poser(a, 19, b, CREME);
+  poser(0, 20, 0, CREME);
+  poser(0, 21, 0, BLANC);                                                                 // la lanterne
+}
+
 // Le Panthéon de Rome : la rotonde de brique, la coupole basse — une demi-
 // sphère posée sur un cylindre aussi haut qu'elle (dix blocs en tout, à la
 // hauteur de ses voisins, sous le Colisée) — son
@@ -2697,7 +2719,7 @@ const FICHES = {
     palette: [BLANC, CREME, ACIER], toit: CREME, hMaison: [4, 7],
     parcs: [{ cu: -18, cv: 20, ru: 6, rv: 5 }],
     monuments: [
-      { nom: "L'hôtel de ville", lat: 34.0537, lon: -118.2427, box: 3, build: minaret(20, BLANC) },
+      { nom: "L'hôtel de ville", lat: 34.0537, lon: -118.2427, box: 3, build: minaret(20, BLANC), tour: buildHotelDeVilleLA },
       { nom: 'Walt Disney Hall', lat: 34.0553, lon: -118.25, box: 6, build: dome(4, ACIER, ACIER), tour: buildDisneyHall },
       // Le panneau est sur le mont Lee, à dix vrais kilomètres — hors du
       // rayon, ses neuf lettres blanches sur la colline, comme en vrai.
@@ -4031,6 +4053,26 @@ function surUneEntree(f, x, z) {
   return false;
 }
 
+// LE MOBILIER DE BORDURE RECULE D'UN BLOC (dette de la v536). Mesuré le long
+// des circuits (`sonde-mobilier-route.cjs`) : une voiture à un bloc de sa voie
+// vers le trottoir butait sur 18 à 36 pièces par kilomètre, à un bloc et demi
+// sur 70 à 87. Le trottoir d'une rue fait deux blocs et demi depuis les rues à
+// la GTA, et la bande du mobilier n'en prenait que la moitié côté chaussée.
+// Le réverbère et la jardinière reculent d'un bloc dans la bande d'à côté,
+// contre les façades. Trois choses n'y vont pas, et chacune a sa raison :
+// - LE FEU reste au coin : son AXE se lit dans la parité de sa position
+//   (`axeDuFeu`, v273), et un bloc de côté changerait la file qu'il arrête ;
+//   les bouches de métro se choisissent aussi contre lui (metromonde.js).
+// - LE BANC reste : c'est un bloc SOLIDE (une planche). Déplacer un solide
+//   change la FORME de la ville sous ce qu'un enfant a pu bâtir (v457) ; un
+//   réverbère et une jardinière sont des props, qu'on traverse à pied.
+// - UNE MÉDINA n'a pas de voitures (v270) : rien à dégager.
+// Sur une rue commerçante, le réverbère prend sa colonne à l'auvent : la
+// bande reculée est celle de l'auvent, et sans cela la moitié des rues
+// perdaient leurs lampes. `recul: 0` rejoue la règle d'avant au bloc près,
+// pour l'empreinte des 490 morceaux — jamais un réglage du jeu.
+export const reglageMobilier = { recul: 1 };
+
 export function mobilierVillesMonde(x, z, poser) {
   for (const f of villesPres(x, z)) {
     if (Math.hypot(x - f.ancre.x, z - f.ancre.z) > f.rayon) continue;
@@ -4066,6 +4108,16 @@ export function mobilierVillesMonde(x, z, poser) {
     // trottoir et son lot partagent le même index (a, b), donc le même
     // tirage : l'auvent est de la couleur de l'enseigne qu'il prolonge.
     const commerce = tirage(a, b, 131) < 0.5;
+    const long = leLongDeA ? B : A;
+    const cran = ((Math.round(long) % 9) + 9) % 9;
+    const debord = (Math.abs(co) + Math.abs(si)) / 2;
+    const degageDe = (x) => (t.ruelles ? x.w : Math.max(x.w, t.w / 2 + DEGAGEMENT_VOITURE + debord));
+    const degage = degageDe(sec);
+    const recul = t.ruelles ? 0 : reglageMobilier.recul;
+    if (recul > 0 && dRue >= degage + recul && dRue < Math.min(sec.s, degage + recul + 1.5)) {
+      if (cran === 4) { poser(1, RUE.REVERBERE); return; }
+      if (cran === 7 && tirage(a, b, 269) < 0.5 && !surUneEntree(f, x + 0.5, z + 0.5)) { poser(1, RUE.JARDINIERE); return; }
+    }
     if (commerce && sec.s - dRue < 1.15) {
       // Par SEGMENTS, pas d'un seul tenant : un vrai store couvre une
       // devanture, pas tout le pâté de maisons — trois blocs d'auvent, deux
@@ -4078,8 +4130,6 @@ export function mobilierVillesMonde(x, z, poser) {
     }
     // LE LAMPADAIRE : au bord du caniveau, un tous les neuf blocs le long de
     // la rue. `long` est la coordonnée LE LONG de la rue la plus proche.
-    const long = leLongDeA ? B : A;
-    const cran = ((Math.round(long) % 9) + 9) % 9;
     // La bande du mobilier : elle commence au-delà du couloir de la voiture,
     // et elle fait un bloc et demi de large — décalée, pas rognée.
     //
@@ -4097,7 +4147,6 @@ export function mobilierVillesMonde(x, z, poser) {
     // la ruelle, comme dans la vraie. Sans cette clause Marrakech perdait
     // quatre-vingt-quatre pour cent de ses réverbères — des ruelles noires
     // pour dégager une chaussée que personne n'emprunte.
-    const debord = (Math.abs(co) + Math.abs(si)) / 2;
     // ET LA VOIE DE DROITE DÉPLACE LE DÉGAGEMENT (v271). Depuis que le convoi
     // roule dans sa voie, une voiture n'est plus centrée sur l'axe : son
     // centre est à une demi-chaussée de lui, donc son flanc extérieur à
@@ -4108,8 +4157,7 @@ export function mobilierVillesMonde(x, z, poser) {
     // bande garde 1,56 bloc, plus large qu'avant.
     // Le convoi roule à `t.w / 2` de l'axe de TOUTE rue, boulevard compris
     // (`tracesCirculation`) : sur un boulevard le caniveau est déjà plus loin.
-    const degageDe = (x) => (t.ruelles ? x.w : Math.max(x.w, t.w / 2 + DEGAGEMENT_VOITURE + debord));
-    const degage = degageDe(sec);
+    // (`degageDe` et `degage` sont calculés plus haut, avant l'auvent.)
     // Dans une médina, la bande est TOUT le trottoir : il ne fait qu'un bloc
     // et un dixième, rien n'y roule, et le mesurer au centre de la case en
     // écartait un tiers pour rien.
@@ -4128,10 +4176,10 @@ export function mobilierVillesMonde(x, z, poser) {
       }
       // LE RÉVERBÈRE : un mesh fin de trois mètres, plus jamais le monolithe
       // noir à chapeau doré de la capture de Moscou.
-      if (cran === 4) { poser(1, RUE.REVERBERE); return; }
+      if (cran === 4 && recul === 0) { poser(1, RUE.REVERBERE); return; }
       // LE BANC, et LA JARDINIÈRE — assez rares pour rester des trouvailles.
       if (cran === 0 && tirage(a, b, 263) < 0.5) { if (!surUneEntree(f, x + 0.5, z + 0.5)) poser(1, BOIS_BANC); return; }
-      if (cran === 7 && tirage(a, b, 269) < 0.5) { if (!surUneEntree(f, x + 0.5, z + 0.5)) poser(1, RUE.JARDINIERE); return; }
+      if (cran === 7 && recul === 0 && tirage(a, b, 269) < 0.5) { if (!surUneEntree(f, x + 0.5, z + 0.5)) poser(1, RUE.JARDINIERE); return; }
     }
     return;
   }

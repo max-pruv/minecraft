@@ -52,7 +52,13 @@ export async function empreinteMorceaux(src) {
   const T = await import(src + '/trains.js'), Wm = await import(src + '/world.js');
   if (T.rivesCreusees) T.rivesCreusees(false);
   if (Wm.COTE_AU_CENTRE) Wm.COTE_AU_CENTRE.actif = false;
+  // LE MOBILIER DE BORDURE RECULÉ (les villes à bordures) : un contenu neuf,
+  // désarmé, la branche rend la constante d'avant.
+  const VMm = await import(src + '/villesmonde.js');
+  const recul = VMm.reglageMobilier ? VMm.reglageMobilier.recul : null;
+  if (VMm.reglageMobilier) VMm.reglageMobilier.recul = 0;
   try { return await empreinteDesMorceaux({ World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu }); } finally {
+    if (VMm.reglageMobilier) VMm.reglageMobilier.recul = recul;
     if (T.rivesCreusees) T.rivesCreusees(true);
     if (Wm.COTE_AU_CENTRE) Wm.COTE_AU_CENTRE.actif = true;
   }
