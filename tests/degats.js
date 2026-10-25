@@ -44,6 +44,21 @@ function verifier(nom, ok, detail = '') {
       `export async function resolve(s, c, n) { return s === 'three' ? { url: ${JSON.stringify(trois)}, shortCircuit: true } : n(s, c); }`));
     const { temoinsPorsche911 } = await import('./porsche-911.mjs');
     for (const [nom, ok, detail] of await temoinsPorsche911()) verifier(nom, ok, detail);
+    // LES LUMIÈRES POSÉES SUR TOUTE LA FLOTTE (v550), sous node, modèle par
+    // modèle : phares, feux de détresse, feux stop — sur la tôle et à leur
+    // coin. Le taxi jaune posait ses phares et ses feux avant au pied du
+    // pare-brise (son lanternon était rangé avec ses ampoules) ; et une
+    // Bolide abîmée mesurée la première empoisonnait le modèle entier.
+    // L'empoisonnement passe AVANT la flotte : la mesure de la Bolide qu'il
+    // laisse en cache est celle que la flotte relit.
+    const F = await import('./sonde-feux-flotte.mjs');
+    const p = await F.empoisonner();
+    verifier('une voiture abîmée (échelle en pleine animation, un feu détaché) mesurée la première ne fait pas la règle du modèle : la Bolide neuve qui suit a ses feux sur sa tôle',
+      p.detOk && p.stopOk && p.phOk && p.otees > 0, JSON.stringify(p));
+    const flotte = await F.mesurerFlotte();
+    const ko = flotte.filter((x) => !(x.phOk && x.detOk && x.stopOk));
+    verifier(`les phares, les feux de détresse et les feux stop des ${flotte.length} modèles de la flotte (taxis et utilitaires fabriqués compris) sont sur la tôle, à leur coin`,
+      flotte.length >= 57 && ko.length === 0, JSON.stringify(ko.slice(0, 3)));
   } catch (e) {
     verifier('911 : les témoins du modèle reconstruit se chargent sous node', false, String(e && e.message || e).slice(0, 200));
   }

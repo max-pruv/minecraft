@@ -757,6 +757,7 @@ export function chargerVoitureFlotte(entree) {
     const modele=entree.fabrique(),rt=refletsVoiture();
     if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial))refleter(o,o.material,.75);});
     partagerTout(modele);   // le prototype ne se rend jamais (v495)
+    modele.userData.protoDe = entree.fichier;
     protosPrets.set(entree.fichier, modele);
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
@@ -805,6 +806,7 @@ export function chargerVoitureFlotte(entree) {
       // et les matériaux de TOUT le modèle — renvoyés à la carte graphique et
       // recompilés à l'image suivante, pour chaque voiture de la rue.
       partagerTout(porteur);
+      porteur.userData.protoDe = entree.fichier;
       protosPrets.set(entree.fichier, porteur);
       return porteur;
     }).catch(() => null);
@@ -2342,6 +2344,15 @@ function materielDetresse() {
 export function posesDetresse(m) {
   const cle = m.userData && m.userData.flotte && m.userData.roues ? m.userData.flotte : null;
   if (cle && posesParModele.has(cle)) return posesParModele.get(cle);
+  // LA RÈGLE DU MODÈLE SE MESURE SUR LE PROTOTYPE (v550, la règle de la v366).
+  // Ce qui se garde par modèle ne se mesure pas sur la voiture qu'on a sous la
+  // main : elle peut être froissée, avoir perdu une pièce, porter ses phares ou
+  // être à mi-chemin d'une animation d'échelle — et la règle de la v543 (une
+  // tôle intacte) ne voit que la première de ces causes. La Bolide a gardé ses
+  // feux avant à 0,45 de la tôle après elle. Quand la voiture est un clone du
+  // prototype à l'identité, on mesure sur un clone propre de celui-ci.
+  const propre = cle ? surLePrototype(m, cle) : null;
+  if (propre) { const poses = posesDetresse(propre); posesParModele.set(cle, poses); return poses; }
   // on mesure dans le repère de la voiture : posée un instant à l'origine
   const pos = m.position.clone(), quat = m.quaternion.clone(), parent = m.parent;
   if (parent) parent.remove(m);
@@ -2382,6 +2393,28 @@ export function posesDetresse(m) {
   m.updateMatrixWorld(true);
   if (cle && intacte) posesParModele.set(cle, poses);
   return poses;
+}
+// Un clone propre du prototype du modèle, enveloppé comme une voiture de la
+// rue (groupe + clone, roues listées, sans `flotte` : il ne lit pas le cache),
+// si `m` en porte un à l'identité (ou en est un). Sinon null : on mesure `m`.
+const prototypesPropres = new Map();
+export function surLePrototype(m, cle) {
+  const proto = protosPrets.get(cle);
+  if (!proto) return null;
+  const identite = (o) => o.position.lengthSq() < 1e-12 && Math.abs(o.quaternion.w) > 1 - 1e-9
+    && Math.abs(o.scale.x - 1) < 1e-9 && Math.abs(o.scale.y - 1) < 1e-9 && Math.abs(o.scale.z - 1) < 1e-9;
+  const estClone = m.userData.protoDe === cle
+    || m.children.some((c) => c.userData && c.userData.protoDe === cle && identite(c));
+  if (!estClone) return null;
+  let g = prototypesPropres.get(cle);
+  if (!g) {
+    g = new THREE.Group();
+    const modele = proto.clone(true); g.add(modele);
+    const roues = []; modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
+    g.userData.roues = roues; g.updateMatrixWorld(true);
+    prototypesPropres.set(cle, g);
+  }
+  return g;
 }
 const _v3 = new THREE.Vector3(), _o3 = new THREE.Vector3(), _d3 = new THREE.Vector3();
 // Un rayon venu de devant (ou de derrière) à la hauteur du feu ; s'il ne

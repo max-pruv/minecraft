@@ -49,26 +49,28 @@
   côtés, avec le temps écoulé depuis l'entrée dans le message.
   v548 : rejouée SEULE, rouge sur la branche, VERTE sur `origin/main` v547 —
   l'inverse de la v546. Vue des deux côtés : une intermittence.
-- [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » (Bolide
-  à 0,45)** : rouge sur la branche, VERT sur `origin/main` cette fois (rouge 2
-  sur 2 des deux côtés à la v540) — un tirage. Piste, non établie : les poses se
-  mémorisent par MODÈLE (`posesParModele`) sur la première voiture qui allume
-  ses feux ; si la voiture de la rue que le témoin précédent percute est une
-  Bolide, ses poses sont calculées sur une tôle enfoncée. La voiture percutée
-  change d'un passage à l'autre (7 clones contre 11). À vérifier : vider
-  `posesParModele` dans le témoin, ou ne mémoriser que sur un modèle intact.
+- [x] **(Réglé en v550 : les poses d'un modèle se mesurent sur son PROTOTYPE,
+  jamais sur la voiture.)** `degats.js` « les feux de détresse se posent SUR la
+  carrosserie » (Bolide à 0,45), intermittent. La cause exacte du portail n'a
+  pas été reproduite : la règle de la v543 (une tôle intacte) couvre bien la
+  tôle froissée (`degats3d` donne `userData = {}` à la géométrie clonée), mais
+  pas une voiture en animation d'échelle (`animals.js`, la bête qui disparaît)
+  ni une pièce détachée (`detacher` la sort de la voiture sans toucher sa
+  géométrie) — sous node, l'une ou l'autre mesurée la première rend −0,38 et
+  −0,5 sur la Bolide neuve qui suit. Remède par construction, quelle que soit
+  la voie : `surLePrototype` (vehicules.js). À rejouer en distribution (v269)
+  au prochain portail, pour voir le rouge disparaître.
 ## v546 — LA REVUELTO ADAPTÉE : ce qui reste, mesuré
 
-- [ ] **Le taxi jaune de New York porte ses phares au pare-brise.**
-  `posesPhares` (phares.js) rend z −1,01, y 1,18 pour `ny-crown-victoria`, une
-  voiture de −2,73 à 2,68 : sans bloc optique nommé, la hauteur de repli est
-  `bas + 0,4 × h`, et le lanternon « TAXI » du toit grandit `h` — la pose tombe
-  au-dessus du capot. Sans lanternon (`construireTaxi({ taxi: false })`) : z
-  −2,76, y 0,74, au nez. Mesuré sous node, IDENTIQUE sur `origin/main` v540 et
-  sur la branche. Le témoin « de nuit au volant, la voiture a ses phares »
-  (`monte.js`) tire un modèle au hasard et rougit quand il tire ce taxi. Remède
-  probable : nommer les optiques du taxi (`RE_PHARE`), ou borner la hauteur de
-  repli à la caisse sous le lanternon.
+- [x] **(Réglé en v548.)** Le taxi jaune de New York portait ses phares au
+  pare-brise : son lanternon était dans le maillage « light » de ses ampoules,
+  donc un bloc optique du nez au toit, lu par `posesDetresse` (feux avant au
+  pied du pare-brise eux aussi) puis repris par `posesPhares`. Le lanternon a
+  son maillage (`lanternon`, même matériau). Le témoin de `monte.js` conduit le
+  taxi ; les 57 modèles sont mesurés sous node (`sonde-feux-flotte.mjs`,
+  `degats.js`) : aucun en faute. Ce qui reste, déclaré : la sonde juge les feux
+  sur la tôle et à leur coin, pas qu'ils tombent sur le bloc optique peint du
+  modèle (un modèle sans optique nommée garde ses feux à 72 % de sa largeur).
 - [ ] **Si la Revuelto rame sur la tablette** : 102 maillages (contre 34) font
   ≈ 36 appels de dessin de plus au volant ; fusionner par matériau au
   chargement (≈ 36 maillages), ou réduire ses textures à 512 px (31 → ≈ 8 Mo).

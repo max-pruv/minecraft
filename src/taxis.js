@@ -71,6 +71,7 @@ export function construireTaxi({ taxi = true, couleur = 0x26313b } = {}) {
   };
   mat.paint.name = "Paint_NYC";
   mat.glass.name = "Glass_NYC";
+  mat.lanternon = mat.light;   // le lanternon du toit, maillage à part (v550)
   const add = (
     geo,
     key,
@@ -614,7 +615,13 @@ export function construireTaxi({ taxi = true, couleur = 0x26313b } = {}) {
   }
   if (taxi) {
     box("rubber", [0, 1.502, 0.02], [0.62, 0.061, 0.24], 0.025);
-    box("light", [0, 1.606, 0.02], [0.59, 0.176, 0.232], 0.035);
+    // LE LANTERNON A SON MAILLAGE (v550). Rangé avec les ampoules des phares
+    // sous la clé « light », il en faisait un seul bloc optique, du nez au
+    // toit : les feux de détresse et les phares, mesurés sur ce bloc
+    // (`posesDetresse`, `posesPhares`), se posaient au pied du pare-brise
+    // (z −1,01, y 1,18). Même matériau (`mat.lanternon` est `mat.light`) :
+    // aucun programme neuf, un appel de dessin de plus par taxi.
+    box("lanternon", [0, 1.606, 0.02], [0.59, 0.176, 0.232], 0.035);
     const roofMat = label(
       (c) => {
         c.fillStyle = "#fff2c1";
