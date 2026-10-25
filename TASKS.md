@@ -1,5 +1,88 @@
 # Ce qui est en cours
 
+## v560 — l'eau, les véhicules qui ne se traversent plus : ce qui reste, mesuré
+
+- **Portail de la v560, rebasé sur la v553** (en trois reprises, la limite de
+  deux heures des tâches de fond le coupant) : quatorze suites vertes,
+  `reseau.js` comprise ; rouges, TOUS déjà déclarés avec leur double mesure :
+  `maj.js` (le loader, deux), `reglages.js` (le choix qui part au serveur),
+  `monte.js` (la rue roule — médiane 0, le bouchon —, le freinage au feu, la rue
+  vide, Moscou deux fois). Aucun ne lit l'eau ni le contact entre véhicules.
+- [ ] **`degats.js` « chez Alice aussi, la voiture de la rue que Marlon percute
+  s'arrête feux de détresse allumés » : rouge identique des deux côtés,
+  rejouée SEULE** (branche v560 et `origin/main` v547, arbre séparé) : 56 verts,
+  ce seul rouge, `{"recues":0,"heurte":0}` — aucun `rue_choc` reçu chez Alice.
+  Donc en production depuis la v547 au moins ; à démonter : le nom `clé#rang`
+  (v363) d'une voiture dont le modèle se garde désormais (v547) ?
+  Pas dans la zone de cette livraison.
+  Et il est VERT au portail de la v560 (`recues 1`) : c'est un tirage.
+- [ ] **`monte.js` « une voiture de la rue heurtée par l'enfant s'arrête, feux de
+  détresse, puis repart »** : `id: null` au portail de la v560 (`heurter` n'a
+  trouvé aucune voiture de la collecte à 4,5 blocs du point que `etat()`
+  venait de rendre) ; rejoué seul dans une sonde, 3/3 verts (arrêt 0,7 à
+  1,8 s, détresse, repart à 6 s). La livraison ne touche ni `heurter` ni la
+  collecte. Piste : `etat()` et `dernieres` ne sont pas de la même image.
+- [ ] **`monte.js` « les feux stop s'allument au freinage, les feux de recul en
+  marche arrière… »** : vert au premier portail de la v560 (`v3 −2,1`, stops
+  éteints), rouge au second sur le MÊME code de jeu (`v3 −1,3`, stops encore
+  allumés) : le recul se lit deux secondes de montre après le frein, et à
+  cadence basse la voiture n'a pas fini de freiner — le rouge s'éteint en
+  0,25 s de jeu après la décélération. Un tirage de cadence ; le remède est
+  dans le témoin (attendre `v < −2`, borné), pas dans `fun.js`.
+- [ ] **`monte.js` « hors de Paris aussi, un passant traverse sur le passage
+  peint d'un carrefour sans feu »** (Kyoto, 4 traversées, 3 sur le passage) :
+  même famille que « à Rome aussi, en biais » ci-dessus ; la livraison ne
+  touche pas les piétons.
+- [ ] **Rouges du portail de la v560 (l'eau, les véhicules qui ne se
+  traversent plus) : aucun de la livraison, mesuré.** Portail rebasé sur la
+  v544 : seize suites vertes, `monte.js` cinq rouges.
+  - « l'on ne marche pas dans une rue vide » et « à Rome aussi, en biais, un
+    passant traverse sur le passage peint » : familles déclarées ; la rue vide
+    est rouge sur `origin/main` v543 rejouée seule (`vus` 0,7,8,1,0,0,1,28).
+  - « une station s'entend, et la radio éteinte se tait » (−58,4 contre
+    −51,1 dB, un écart de 7,3 sous la barre) et « un second appui pendant la
+    séquence la termine tout de suite » (`pendant : null/false` : la séquence
+    était déjà finie quand le second appui est arrivé), plus « le diagnostic
+    dit comment la dernière séquence a fini », qui le suit (v291 : un défaut,
+    deux rouges). Verts dans les quatre autres passages : deux `monte.js`
+    rejouées seules sur la branche, une sur `origin/main`, le premier portail.
+    La livraison ne touche ni la radio ni l'embarquement : la charge.
+  - Rejouée seule, la branche rendait aussi « deux voisines d'un convoi gardent
+    leur longueur d'écart » et « au feu, la voiture freine… » — rouges
+    identiques sur `origin/main` rejouée seule (déclarés), et « de nuit au
+    volant, la voiture a ses phares » (`voiture.glb`, la lueur à z 0,54, déjà
+    déclarée intermittente sous la v536).
+  - Ce que le premier portail avait trouvé, et qui ÉTAIT la livraison : quatre
+    témoins de conduite roulaient au bord ou dans la mer (CLAUDE.md, v560) ;
+    corrigés dans les témoins, verts.
+- [ ] **Rouges du portail de la v559 (la MC12 GT1) : aucun de la livraison.**
+  Portail complet : 14 suites vertes, `maj.js`, `manhattan.js` et `monte.js`
+  rouges, cinq témoins, tous déjà déclarés ici. `maj.js` (« le loader dit
+  combien de fichiers », « le loader ne s'efface… », `humains: false` à
+  7 008 ms) : la seule suite que la livraison pouvait toucher (cinq signatures
+  de plus à chauffer, 40 au lieu de 35) — rejouée SEULE sur la branche, 74
+  verts, 0 rouge, 40/40 programmes à l'effacement (6 926 ms). `manhattan.js`
+  « les passants de Manhattan au long cap » (débit 0,66, déclaré v496) ;
+  `monte.js` « un flâneur posé au milieu de la chaussée » et « au feu, la
+  voiture freine sur plusieurs relevés » (déclarés, rouges des deux côtés aux
+  portails v522 et v532). Preuve structurelle : la livraison ajoute un GLB
+  hors `ASSETS` et une entrée de `FLOTTE` ; ni les passants, ni la grille de
+  la rue, ni la règle de freinage ne lisent le modèle d'une voiture.
+  Rebasée sur la v554, portail rejoué (coupé à deux heures pendant
+  `reseau.js`) : 15 suites vertes ; `maj.js` les deux témoins du loader plus
+  le titre de la v554 à sept mots (corrigé ici, six mots) — rejouée SEULE
+  ensuite, 75 verts, 0 rouge ; `reseau.js` rejouée SEULE, 96 verts, 0 rouge ;
+  `manhattan.js` « le taxi roule avec les contrôles tactiles » (3 s de jeu en
+  240 s de montre, déclaré) ; `monte.js` « elle ralentit assez pour qu'on la
+  rejoigne » (9,0 m/s), « à Rome aussi, en biais », « la rue roule à l'allure
+  d'une ville », « au feu la voiture freine », « chaque feuille vole bas
+  au-dessus de SA colonne » (`ecartMax` 6,28) — tous déclarés plus bas.
+  Reposée sur la v557 (v558, puis v559 après le métro de Washington), portail complet : 15 suites vertes ; `maj.js`
+  les deux témoins du loader (programmes 5/40 à 7 430 ms, l'intermittence
+  déclarée, verte deux fois rejouée seule ci-dessus) ; `monte.js` « à Rome
+  aussi, en biais » et « à Londres, un passant traverse sur le passage peint »
+  (déclarés plus bas).
+
 ## Banc — le portail réparti (claude/portail-rapide, tests seuls) : rouges des portails, mesurés
 
 Trois portails complets sur la branche (le troisième coupé à 46 min de `reseau.js` par un recyclage du conteneur). Aucun rouge n'est causé par la mise à l'écart des voisines :

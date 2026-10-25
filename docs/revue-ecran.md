@@ -168,9 +168,23 @@ n° 19, corrigé).
 | --- | --- | --- | --- | --- | --- | --- |
 | 28 | basse | en vol au-dessus d'une forêt (v553), iPad et iPhone | [jour](revue-ecran/lointain-arbres/ipad-foret-loin-jour.jpg), [nuit](revue-ecran/lointain-arbres/ipad-foret-loin-nuit.jpg) | Au bord du disque maillé, une **couture de teinte** : le paysage lointain est plus clair et voilé que le monde proche, parce que le brouillard commence exactement à ce bord (`fog.near` = rr × 16). Antérieur à la v553, visible sur les captures de la v532. | Faire commencer le brouillard un peu en deçà du bord, ou teinter la grille fine du sous-bois là où `foret` est haute (les témoins de couleur de `plafond.js` lisent l'herbe au sommet près : à décider avec eux). | `src/main.js`, `src/horizon.js` |
 
-## Le relevé de la v559 (la SF90 XX Stradale), 25 octobre 2026
+## Le relevé de la v560 (la voiture tombe dans l'eau), 25 octobre 2026
 
-Planches « ancienne | neuve » dans `docs/revue-ecran/v559-sf90/` :
+États `voiture-plonge` et `voiture-coulee` (ajoutés à la sonde pour cette
+livraison : un quai fabriqué, pleins gaz vers le bassin), iPhone et iPad,
+jour et nuit. Ce que la livraison promet se voit : la voiture plonge feux stop
+allumés (l'eau la freine), aucun message, l'enfant remonte en surface, la
+voiture reste au fond, le bouton de nage apparaît. La capture de nuit est
+prise après celle de jour : l'enfant y est déjà sorti.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 29 | basse | voiture dans l'eau, de jour (v560) | [v560](revue-ecran/v560-eau/iphone-voiture-plonge-jour.jpg) | Des **feuilles d'automne** flottent haut dans le ciel au-dessus du bassin, loin de tout arbre (la v531 les voulait sur leur colonne). Hors de la livraison. | Vérifier ce qui « porte » une feuille au-dessus d'un plan d'eau fabriqué au-dessus du relief | `src/saisons.js` |
+| 30 | basse | voiture dans l'eau, de jour (v560) | [v560](revue-ecran/v560-eau/iphone-voiture-plonge-jour.jpg) | Une pilule « Salle Ronde · Les marches du palais » s'affiche en haut au milieu, loin de toute ville visible — un panneau de lieu lu à distance ? Hors de la livraison. | Lire quelle règle pose cette pilule à (31 200, 31 500) | `src/main.js` (file centrale) |
+
+## Le relevé de la v561 (la SF90 XX Stradale), 25 octobre 2026
+
+Planches « ancienne | neuve » dans `docs/revue-ecran/v561-sf90/` :
 `volant`, `troisquarts` et `rue` (une SF90 de la circulation, cadrée de
 côté), iPhone et iPad, jour et nuit, rejouables par
 `tests/sonde-captures-sf90.cjs` (le bras « ancienne » se choisit par
@@ -180,5 +194,5 @@ jantes, vitrage, plaque « SF90XX ».
 
 | # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
 | --- | --- | --- | --- | --- | --- | --- |
-| 29 | basse | SF90 XX (v559), garée de trois quarts, de nuit | [v559](revue-ecran/v559-sf90/planche-iphone-troisquarts-nuit.jpg) | Phares éteints la nuit, comme toute la flotte garée (n° 8). Repeinte dans la rue, la voiture garde sa **livrée rouge** (prises du capot, ouïes arrière) : sur une laque sarcelle, ces accents se lisent comme des pièces d'une autre voiture. | Garder ; ou repeindre la livrée (`Paint_Secondary`) d'un ton accordé à la laque tirée — décision de Max. | `src/vehicules.js` (`repeindre`) |
-| 30 | basse | rue de Paris, de nuit, caméra de la sonde à hauteur de toit | [v559](revue-ecran/v559-sf90/planche-ipad-rue-nuit.jpg) | Une **feuille d'automne** passe à quelques centimètres de l'objectif et couvre un quart de l'écran. Ce n'est pas la voiture : c'est l'essaim de saison (v531), que la caméra de cadrage traverse. | Ne pas dessiner une particule à moins d'un bloc de la caméra. | `src/saisons.js` |
+| 31 | basse | SF90 XX (v561), garée de trois quarts, de nuit | [v561](revue-ecran/v561-sf90/planche-iphone-troisquarts-nuit.jpg) | Phares éteints la nuit, comme toute la flotte garée (n° 8). Repeinte dans la rue, la voiture garde sa **livrée rouge** (prises du capot, ouïes arrière) : sur une laque sarcelle, ces accents se lisent comme des pièces d'une autre voiture. | Garder ; ou repeindre la livrée (`Paint_Secondary`) d'un ton accordé à la laque tirée — décision de Max. | `src/vehicules.js` (`repeindre`) |
+| 32 | basse | rue de Paris, de nuit, caméra de la sonde à hauteur de toit | [v561](revue-ecran/v561-sf90/planche-ipad-rue-nuit.jpg) | Une **feuille d'automne** passe à quelques centimètres de l'objectif et couvre un quart de l'écran. Ce n'est pas la voiture : c'est l'essaim de saison (v531), que la caméra de cadrage traverse. | Ne pas dessiner une particule à moins d'un bloc de la caméra. | `src/saisons.js` |

@@ -33,6 +33,42 @@ en les MESURANT : elle ne touche à rien quand le manifeste est déjà respecté
 pour que les cinquante d'origine ne changent pas d'un pixel. Même usage privé
 et familial.
 
+**La Maserati MC12 GT1 Red Bull (octobre 2026)** — `maserati-mc12-gt1.glb`,
+fournie par Max, entre dans la flotte (une voiture de plus, rien de remplacé).
+C'est l'adaptation d'un modèle publié sous licence **Creative Commons
+Attribution 4.0** (CC-BY-4.0), qui exige le crédit ci-dessous, recopié tel quel
+du `license.txt` du paquet :
+
+> This work is based on "2005 Maserati MC12 GT1 Redbull"
+> (https://sketchfab.com/3d-models/2005-maserati-mc12-gt1-redbull-f5e55567ced04ef78b2386fcb7637410)
+> by Dave Love SketchFab (https://sketchfab.com/Tyler_Dave) licensed under
+> CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
+Modifications apportées à l'œuvre d'origine, toutes par
+`scripts/convertir-mc12.py` (le paquet glTF n'est pas versionné ; le script se
+rejoue sur lui) :
+- transformations de la racine Sketchfab cuites dans la géométrie, roues
+  posées à y = 0 (+0,032 m) ; aucun sommet déplacé par rapport aux autres,
+  aucune simplification ni subdivision (161 346 triangles) ;
+- roues découpées par la position de leurs triangles en quatre pivots
+  `Wheel_FL/FR/RL/RR` (pneu, bande de roulement, jante, disque), étriers fixes ;
+- volant (jante, moyeu, palettes, boutons) séparé dans `Interior_SteeringWheel`
+  par pièces entières ;
+- le flou de jante (`WHEEL_BLUR_RIM`, opacité nulle dans le paquet) retiré ;
+- `KHR_materials_specular` retiré (la texture de reflet des étriers avec),
+  cartes de normales à échelle nulle retirées, `KHR_texture_transform` de la
+  livrée cuit dans les UV, matériaux identiques fusionnés (sauf feux, vitrages,
+  rétroviseurs et laque, qui gardent leur nom), laque renommée `Paint_RedBull`
+  et réglée métal 0,15 / rugosité 0,3 au lieu de 0,8 / 0,15 (la livrée sortait
+  noire dans le jeu, sans le studio d'éclairage de Sketchfab) ;
+- images unies remplacées par une couleur (sans perte) ; trois images de
+  2 048² réduites à 1 024² ; les autres recopiées.
+
+SHA-256 du fichier livré : `63439db6274857499d306547f657d7d8a21aa9d4267e0c092899f931937a7b63`. Le modèle n'est affilié ni à Maserati, ni à
+Red Bull, ni à Sketchfab ; les marques et logos de la livrée sont ceux de la
+voiture de course réelle, reproduits par l'auteur du modèle. Même usage privé et
+familial.
+
 **La Revuelto adaptée (octobre 2026)** — `lamborghini-revuelto-wip.glb`,
 fournie par Max, remplace à l'affichage `lamborghini-revuelto.glb` (gardée sur
 le disque ; l'identifiant `fichier` des sauvegardes ne change pas, le champ

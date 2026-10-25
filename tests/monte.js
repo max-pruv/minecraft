@@ -637,7 +637,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         longueur: +(b.max.z - b.min.z).toFixed(2), sol: +b.min.y.toFixed(3), forme: proto.userData.forme, rayon: +(proto.userData.rayonRoue || 0).toFixed(3), siege };
     }, spec);
     const revuelto = await adaptee({ fichier: 'lamborghini-revuelto.glb', laque: 'Paint_Arancio' });
-    // ET LA SF90 XX STRADALE (v559), posée au manifeste par
+    // ET LA SF90 XX STRADALE (v561), posée au manifeste par
     // scripts/ferrari-sf90-xx.py : mêmes contrats, sa laque `Paint_Primary_XX`
     // (l'ancienne SF90 n'a que `Paint_Primary`), ses vingt-neuf images, 4,84 m.
     const sf90 = await adaptee({ fichier: 'ferrari-sf90.glb', laque: 'Paint_Primary_XX' });
@@ -663,6 +663,113 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && !!sf90.siege && sf90.siege.dansVoiture && sf90.siege.dansLeCadre && sf90.siege.regarde > 0.9
         && (sf90.siege.toit === null || sf90.siege.crane < sf90.siege.toit),
       JSON.stringify(sf90));
+
+    // --- LA MC12 GT1 RED BULL TIENT LES CONTRATS DE LA FLOTTE (v559) --------
+    //
+    // Max a déposé un export Sketchfab (Dave Love, CC-BY-4.0) : roues fusionnées
+    // dans chaque matériau, volant fusionné avec la planche de bord.
+    // `scripts/convertir-mc12.py` les découpe ; on vérifie ici ce que le JEU en
+    // fait, pas ce que le script annonce : le fichier est au manifeste (quatre
+    // pivots, donc `normaliserVoiture` n'y touche pas), au sol, à sa longueur
+    // réelle (5,14 m), avec son volant et ses images ; chaque roue TOURNE
+    // autour de son moyeu (un point du pneu garde sa distance au pivot) ; sa
+    // livrée survit au repeint de la rue (`repeindre` ne reconnaît pas sa laque,
+    // et sa fiche dit `laque: 'jamais'`) ; sa fiche refuse la portière (élytres
+    // non séparées, v366) ; et l'enfant y est assis sous le pavillon, face à la
+    // route (v249). Sur l'ancien code, la voiture n'est pas dans la flotte :
+    // rouge, et il le dit. Même placement que la Revuelto : une dalle à soi,
+    // puis l'on rend tout (v279).
+    const avantMc12 = await tab.evaluate(() => {
+      const g = window.__game;
+      for (let e = 0; e < 6 && g.fun.montureConduite && g.fun.montureConduite(); e++) document.getElementById('ride-btn').click();
+      return { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, yaw: g.player.yaw, flying: g.player.flying };
+    });
+    await dormir(900);
+    const mc12 = await tab.evaluate(async () => {
+      const g = window.__game, THREE = await import('three'), V = await import('./src/vehicules.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const entree = V.FLOTTE.find((e) => e.fichier === 'maserati-mc12-gt1.glb');
+      if (!entree) return { err: 'la MC12 n\'est pas dans la flotte (ancien code)' };
+      const proto = await V.chargerVoitureFlotte(entree);
+      if (!proto) return { err: 'MC12 non chargée' };
+      const { BLOCK } = await import('./src/blocks.js');
+      const x0 = 43100, z0 = 43000; let y0 = 0;
+      for (let d = -12; d <= 12; d += 4) for (let w = -12; w <= 12; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 3;
+      for (let d = -12; d <= 12; d++) for (let w = -12; w <= 12; w++) g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
+      g.player.flying = false; g.player.yaw = -Math.PI / 2; g.player.pitch = 0;
+      g.player.pos.set(x0, y0 + 1.2, z0); g.player.vel.set(0, 0, 0);
+      await dodo(1500);
+      const images = new Set(); const roues = []; let volant = false, laque = false;
+      proto.traverse((o) => {
+        if (/^Wheel_(FL|FR|RL|RR)$/i.test(o.name || '')) roues.push(o);
+        if (/steer/i.test(o.name || '')) volant = true;
+        if (o.isMesh) for (const m of [].concat(o.material)) {
+          if (m.name === 'Paint_RedBull') laque = true;
+          for (const k of ['map', 'normalMap']) if (m[k] && m[k].image && m[k].image.width > 0) images.add(m[k].image);
+        }
+      });
+      proto.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(proto);
+      // une roue tourne autour de son moyeu : un sommet du pneu garde sa
+      // distance au pivot après un tiers de tour, et il a bougé
+      let moyeu = null;
+      const r0 = roues[0];
+      if (r0) {
+        let pneu = null; r0.traverse((o) => { if (!pneu && o.isMesh && /tyre/i.test(o.material.name || '')) pneu = o; });
+        if (pneu) {
+          const v = new THREE.Vector3().fromBufferAttribute(pneu.geometry.attributes.position, 0);
+          const c = new THREE.Vector3(); r0.getWorldPosition(c);
+          const avant = v.clone().applyMatrix4(pneu.matrixWorld);
+          r0.rotation.x += 1.1; proto.updateMatrixWorld(true);
+          const apres = v.clone().applyMatrix4(pneu.matrixWorld);
+          r0.rotation.x -= 1.1; proto.updateMatrixWorld(true);
+          moyeu = { rayon: +avant.distanceTo(c).toFixed(3), ecart: +Math.abs(avant.distanceTo(c) - apres.distanceTo(c)).toFixed(4), bouge: +avant.distanceTo(apres).toFixed(3) };
+        }
+      }
+      // la livrée ne se repeint pas
+      const essai = proto.clone(true); V.repeindre(essai, entree.fichier, 0xff3300);
+      let peinte = false; essai.traverse((o) => { if (o.isMesh && o.material.name === 'Paint_RedBull' && o.material.color.getHex() !== 0xffffff) peinte = true; });
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 3, g.player.pos.z + fz * 3, false, { flotte: 'maserati-mc12-gt1.glb' });
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000 && !a.mesh.userData.roues) await dodo(300);
+      for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(700); }
+      await dodo(900);
+      const m = g.fun.montureConduite && g.fun.montureConduite(), av = g.avatarLocal;
+      let siege = null;
+      if (m && av) {
+        const tete = av.localToWorld(new THREE.Vector3(0, 1.45, 0)).project(g.camera);
+        const visage = av.getWorldDirection(new THREE.Vector3()).negate();
+        const route = new THREE.Vector3(-Math.sin(g.player.yaw), 0, -Math.cos(g.player.yaw));
+        const crane = av.position.y + (0.77 + 0.706) * av.scale.x;
+        const cache = m.plafondSiege ? m.plafondSiege.y : null;
+        const toit = cache instanceof Map ? (cache.get(`${m.def.siege.x}|${m.def.siege.z}`) ?? null) : cache;
+        siege = { dansVoiture: av.parent === m.mesh, flotte: m.mesh.userData.flotte, dansLeCadre: Math.abs(tete.x) < 1 && Math.abs(tete.y) < 1 && tete.z < 1,
+          regarde: +visage.dot(route).toFixed(2), crane: +crane.toFixed(2), toit: toit === null ? null : +toit.toFixed(2) };
+      }
+      for (let e = 0; e < 6 && g.fun.montureConduite && g.fun.montureConduite(); e++) { document.getElementById('ride-btn').click(); await dodo(500); }
+      return { forme: proto.userData.forme, laque, roues: roues.length, volant, images: images.size, portiere: entree.portiere, laqueFiche: entree.laque, peinte,
+        longueur: +(b.max.z - b.min.z).toFixed(2), sol: +b.min.y.toFixed(3), rayon: +(proto.userData.rayonRoue || 0).toFixed(3), moyeu, siege };
+    });
+    await tab.evaluate((av) => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      g.player.pos.set(av.x, av.y, av.z); g.player.vel.set(0, 0, 0);
+      g.player.yaw = av.yaw; g.player.flying = av.flying;
+    }, avantMc12);
+    await dormir(600);
+    verifier('la MC12 GT1 Red Bull se charge au manifeste, au sol, à sa longueur, avec ses quatre roues qui tournent sur leur moyeu, son volant, ses images et sa livrée que la rue ne repeint pas, sans portière, et l\'enfant y est assis sous le pavillon',
+      !mc12.err && mc12.forme === 'manifeste' && mc12.laque && mc12.roues === 4 && mc12.volant && mc12.images >= 12
+        && mc12.portiere === false && mc12.laqueFiche === 'jamais' && !mc12.peinte
+        && mc12.longueur > 5.05 && mc12.longueur < 5.3 && Math.abs(mc12.sol) < 0.02 && mc12.rayon > 0.3 && mc12.rayon < 0.42
+        && !!mc12.moyeu && mc12.moyeu.ecart < 0.002 && mc12.moyeu.bouge > 0.2
+        && !!mc12.siege && mc12.siege.dansVoiture && mc12.siege.dansLeCadre && mc12.siege.regarde > 0.9
+        && (mc12.siege.toit === null || mc12.siege.crane < mc12.siege.toit),
+      JSON.stringify(mc12));
 
     // --- ce qui ne se monte pas ---------------------------------------------
     await poserDevant(tab, 'chicken');
@@ -3232,6 +3339,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       let y0 = 0;
       for (let d = -6; d <= 44; d++) for (let w = -2; w <= 3; w++) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
       y0 += 3;
+      // AU SEC (v380, v560) : (30 000, 30 000) est en MER, le relief y est
+      // sous l'eau, et une dalle à trois blocs au-dessus restait noyée. Tant
+      // que l'eau ne faisait rien à une voiture, cela ne se voyait pas ;
+      // depuis la v560 elle y freine et y coule — la citadine plafonnait à
+      // 6,9. La dalle se pose au-dessus de l'eau.
+      const { WATER_LEVEL } = await import('./src/world.js');
+      y0 = Math.max(y0, WATER_LEVEL);
       const dalle = [];
       for (let d = -6; d <= 44; d++) for (let w = -2; w <= 3; w++) { g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE); dalle.push([x0 + d, y0, z0 + w]); }
       const champ = { x0, z0, y0 };
@@ -6920,13 +7034,18 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && mur.contreLeMur.vitesse < mur.lance * 0.2 && mur.recule >= 1,
       `${mur.err || ''} lancée ${mur.lance} (allure ${mur.max}) · contre le mur ${JSON.stringify(mur.contreLeMur)} · reculé ${mur.recule}`);
 
-    // UNE VOITURE N'ENTRE PAS DANS L'EAU (v272).
+    // UNE VOITURE TOMBE DANS L'EAU (v560, décision de Max qui annule la v272).
     //
-    // Max, capture de Hambourg : sa voiture au milieu du port. C'est le piège
-    // de `sommetColonne` du v267, une famille plus bas — elle rend le premier
-    // bloc SOLIDE en descendant, et l'eau n'en est pas un : au-dessus de la
-    // mer elle rend le FOND, si bien que rien n'arrêtait la voiture et
-    // qu'elle roulait au fond.
+    // « Il faut arrêter de mettre des messages pour dire une voiture ne roule
+    // pas dans l'eau… s'il tombe dans l'eau, il tombe dans l'eau. Il ne faut
+    // pas que ce soit arrêté. » La v272 arrêtait la voiture sur le quai avec un
+    // bandeau ; avant elle, rien n'arrêtait la voiture et elle ROULAIT au fond
+    // (mesuré à la sonde `sonde-voiture-eau.cjs` : seize blocs par seconde à
+    // travers le bassin). Désormais : elle garde son élan, plonge, l'eau la
+    // freine, le moteur cale sous l'eau, elle coule — et l'enfant en sort et
+    // remonte tout seul à la surface. Aucun message.
+    //
+    // Sur l'ancien code ce témoin est rouge : la voiture reste sur le quai.
     //
     // ON PROVOQUE LA SITUATION, ON NE L'ATTEND PAS (leçon des poissons, v233) :
     // un quai de pierre posé au ras de l'eau, cap droit sur la mer. Et la
@@ -6999,33 +7118,122 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       };
       if (!auVolant()) { await rendre(); return { err: 'pas monté dans la voiture' }; }
       const depart = ou();
+      // les bandeaux de la partie : aucun ne doit parler de l'eau
+      const vus = [];
+      const toastEl = document.getElementById('toast');
+      const obs = toastEl ? new MutationObserver(() => { const t = toastEl.textContent.trim(); if (t && !vus.includes(t)) vus.push(t); }) : null;
+      if (obs) obs.observe(toastEl, { childList: true, characterData: true, subtree: true });
       g.player.keys.add('KeyW');
-      // on pousse vers la mer jusqu'à ne plus avancer, borné en temps mural
+      // on pousse vers la mer ; on attend le RÉSULTAT (v270) : l'enfant sorti
+      // de la voiture noyée, la tête hors de l'eau — borné à 30 s de montre
       const t0 = performance.now();
-      let immobile = 0, xAvant = g.player.pos.x;
-      while (performance.now() - t0 < 30000 && immobile < 4) {
-        await new Promise((f) => setTimeout(f, 250));
-        const bouge = Math.abs(g.player.pos.x - xAvant);
-        xAvant = g.player.pos.x;
-        immobile = bouge < 0.02 ? immobile + 1 : 0;
+      let plongee = null, sorti = null, surface2 = null;
+      while (performance.now() - t0 < 30000) {
+        await new Promise((f) => setTimeout(f, 200));
+        const o = ou();
+        if (!plongee && o.eau > 0 && auVolant()) plongee = { ...o, ms: Math.round(performance.now() - t0) };
+        if (plongee && !sorti && !auVolant()) { sorti = { ...o, ms: Math.round(performance.now() - t0) }; g.player.keys.clear(); }
+        if (sorti && g.player.pos.y + 1.62 > surface + 1) { surface2 = { ...o, ms: Math.round(performance.now() - t0) }; break; }
+        if (!plongee && performance.now() - t0 > 12000) break;      // l'ancien code : arrêtée sur le quai
       }
       const arrive = ou();
-      // ET L'ON DOIT POUVOIR RECULER : « pas si l'on est déjà dedans » vaut
-      // aussi pour l'eau, sinon une voiture tombée au port y reste à jamais.
-      g.player.keys.delete('KeyW'); g.player.keys.add('KeyS');
-      const t1 = performance.now();
-      let recule = 0;
-      while (performance.now() - t1 < 15000 && recule < 1) {
-        await new Promise((f) => setTimeout(f, 250));
-        recule = arrive.d - (g.player.pos.x - x0);
-      }
+      // la voiture noyée ne se reprend pas : elle est hors service, au fond
+      const noyee = g.animalManager.animals.find((a) => a.def.key === 'voiture');
+      const horsService = !!(noyee && noyee.horsService);
+      if (obs) obs.disconnect();
       await rendre();
-      return { depart, arrive, quai: QUAI, recule: +recule.toFixed(2), duree: Math.round(performance.now() - t0) };
+      return { depart, plongee, sorti, surface: surface2, arrive, quai: QUAI, horsService, bandeaux: vus, duree: Math.round(performance.now() - t0) };
     });
-    verifier('une voiture n\'entre pas dans l\'eau — elle s\'arrête sur le quai, et elle peut reculer',
-      !eau.err && !!eau.arrive && eau.arrive.eau === 0 && eau.arrive.y > eau.arrive.surface
-        && eau.arrive.d > 2 && eau.arrive.d <= eau.quai + 2 && eau.recule >= 1,
-      `${eau.err || ''} départ ${JSON.stringify(eau.depart)} → arrivée ${JSON.stringify(eau.arrive)} (quai jusqu'à ${eau.quai}) · reculé ${eau.recule} · ${eau.duree} ms`);
+    verifier('une voiture tombe dans l\'eau : elle plonge, coule, l\'enfant en sort et remonte à la surface — sans un message',
+      !eau.err && !!eau.plongee && eau.plongee.d > eau.quai && !!eau.sorti && !!eau.surface && eau.horsService
+        && !eau.bandeaux.some((t) => /eau|demi-tour/i.test(t)),
+      `${eau.err || ''} départ ${JSON.stringify(eau.depart)} · plongée ${JSON.stringify(eau.plongee)} · sorti ${JSON.stringify(eau.sorti)} · surface ${JSON.stringify(eau.surface)} · arrivée ${JSON.stringify(eau.arrive)} (quai jusqu'à ${eau.quai}) · hors service ${eau.horsService} · bandeaux ${JSON.stringify(eau.bandeaux)} · ${eau.duree} ms`);
+
+    // COLLÉE À UNE VOITURE, LA NÔTRE NE TRAVERSE PAS CELLE D'À CÔTÉ (v560).
+    //
+    // Max : « il ne faut pas que les véhicules puissent passer les uns dans les
+    // autres, et aujourd'hui c'est encore possible ». « Pas si l'on est déjà
+    // dedans » (v245) se jugeait par FAMILLE : collée à une voiture — l'état
+    // que laisse un choc —, la voiture de l'enfant ne voyait plus AUCUNE
+    // voiture. Mesuré (`sonde-traverse-vehicules.cjs`) sur l'ancien code : la
+    // voiture de devant traversée. On provoque la situation (v233) : une dalle
+    // loin de tout, une voiture garée flanc contre flanc (elle mord de quelques
+    // centimètres), une autre juste devant, pleins gaz. Mesuré : l'ancien code
+    // la traverse de part en part (2,2 blocs d'enfoncement, treize blocs
+    // parcourus) ; ici il s'arrête et la pousse. Puis on recule :
+    // se dégager d'une voiture qu'on touche reste permis.
+    const colle = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dodo(400); }
+      const vider = () => { for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh); g.animalManager.animals.length = 0; };
+      vider();
+      g.player.keys.clear(); g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false; g.player.remonter = 0;
+      const X0 = 31260, Z0 = 31460;
+      let Y0 = 0;
+      for (let d = -8; d <= 30; d += 4) for (let w = -8; w <= 8; w += 4) Y0 = Math.max(Y0, g.world.terrainHeight(X0 + d, Z0 + w));
+      Y0 += 2;
+      const pose = [];
+      const mettre = (x, y, z, id) => { g.world.setBlock(x, y, z, id); pose.push([x, y, z]); };
+      for (let d = -8; d <= 30; d++) for (let w = -8; w <= 8; w++) {
+        mettre(X0 + d, Y0, Z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 6; h++) if (g.world.getBlock(X0 + d, Y0 + h, Z0 + w) !== 0) mettre(X0 + d, Y0 + h, Z0 + w, 0);
+      }
+      g.player.pos.set(X0, Y0 + 1.01, Z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await dodo(1000);
+      g.animalManager.invoquer('voiture', X0, Z0 + 0.5, false, { flotte: 'berline-citadine' });
+      await dodo(700);
+      for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await dodo(500); }
+      const rendre = async () => {
+        g.player.keys.clear();
+        for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dodo(400); }
+        vider();
+        for (const [x, y, z] of pose) g.world.setBlock(x, y, z, 0);
+      };
+      if (!auVolant()) { await rendre(); return { err: 'pas monté' }; }
+      g.player.yaw = -Math.PI / 2; g.player.vitesseVoiture = 0; g.player.vel.set(0, 0, 0);
+      const x0 = g.player.pos.x, z0 = g.player.pos.z;
+      // flanc contre flanc : 1,8 pour deux demi-largeurs d'un bloc (le
+      // `gabarit` de la fiche, 2) — elle mord de deux dixièmes. À 2,0 tout
+      // juste, les boîtes ne se recouvraient pas, et l'ancien code passait.
+      const A = g.animalManager.invoquer('voiture', x0, z0 + 1.8, false, { flotte: 'berline-citadine' });
+      // et une autre JUSTE devant (1,1 bloc entre les pare-chocs) : on la heurte
+      // en touchant encore la première — c'est là que l'ancien code passait
+      const B = g.animalManager.invoquer('voiture', x0 + 5.5, z0, false, { flotte: 'berline-citadine' });
+      if (!A || !B) { await rendre(); return { err: 'invocation refusée' }; }
+      A.yaw = Math.PI / 2; B.yaw = Math.PI / 2;
+      await dodo(500);
+      const rect = (x, z, cap, a, b) => { const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
+        return [[x + ux * a + vx * b, z + uz * a + vz * b], [x + ux * a - vx * b, z + uz * a - vz * b], [x - ux * a - vx * b, z - uz * a - vz * b], [x - ux * a + vx * b, z - uz * a + vz * b]]; };
+      const { profondeurRectangles } = await import('./src/conduite.js').catch(() => ({}));
+      const prof = profondeurRectangles || (() => NaN);
+      const moi = () => rect(g.player.pos.x, g.player.pos.z, g.player.yaw + Math.PI, 2.2, g.player.gabarit / 2);
+      let pireB = 0;
+      g.player.keys.add('KeyW');
+      const t0 = performance.now();
+      let xPrec = g.player.pos.x, immobile = 0;
+      while (performance.now() - t0 < 15000 && immobile < 6) {
+        await dodo(150);
+        pireB = Math.max(pireB, prof(moi(), rect(B.pos.x, B.pos.z, B.yaw, 2.2, 1.13)));
+        immobile = Math.abs(g.player.pos.x - xPrec) < 0.02 ? immobile + 1 : 0; xPrec = g.player.pos.x;
+      }
+      g.player.keys.delete('KeyW');
+      const avance = +(g.player.pos.x - x0).toFixed(1);
+      const bAvance = +(B.pos.x - (x0 + 5.5)).toFixed(1);
+      // et l'on recule : se dégager reste permis
+      g.player.keys.add('KeyS');
+      const t1 = performance.now();
+      while (performance.now() - t1 < 10000 && g.player.pos.x > x0 + avance - 1.5) await dodo(150);
+      const recule = +(x0 + avance - g.player.pos.x).toFixed(1);
+      await rendre();
+      return { avance, bAvance, pireB: +pireB.toFixed(2), recule, ms: Math.round(performance.now() - t0) };
+    });
+    verifier('collée à une voiture, la nôtre ne traverse pas celle de devant — et elle peut reculer',
+      !colle.err && colle.pireB <= 0.25 && colle.avance <= 1.1 + colle.bAvance + 0.3 && colle.recule >= 1,
+      JSON.stringify(colle));
 
     // EN AVION : GAZ RÉDUITS, MANCHE EN AVANT, TRAIN SORTI PAR SON BOUTON — ON
     // SE POSE SOI-MÊME, SANS ✈️. Et sans le train, c'est sur le ventre.
@@ -8456,11 +8664,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const { BLOCK } = await import('./src/blocks.js');
       const C = await import('./src/conduite.js').catch(() => null);
       const x0 = 41000, z0 = 41000; let y0 = 0;
-      for (let d = -20; d <= 420; d += 4) for (let w = -60; w <= 60; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      // LA DALLE VA AU-DELÀ DE CE QU'ON Y ROULE (v560) : le flanc frôlé au coin
+      // de l'anneau (x0 + 410) laisse la voiture filer deux secondes à
+      // quatorze blocs par seconde, et à x0 + 420 elle tombait de la dalle
+      // dans la mer — où elle coule désormais, et l'enfant en sort : les deux
+      // témoins suivants (l'arrière, la panne) se jouaient alors À PIED.
+      for (let d = -20; d <= 480; d += 4) for (let w = -100; w <= 100; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
       y0 += 3;
       const poses = [];
       const poser = (x, y, z) => { g.world.setBlock(x, y, z, BLOCK.STONE); poses.push([x, y, z]); };
-      for (let d = -20; d <= 420; d++) for (let w = -60; w <= 60; w++) poser(x0 + d, y0, z0 + w);
+      for (let d = -20; d <= 480; d++) for (let w = -100; w <= 100; w++) poser(x0 + d, y0, z0 + w);
       const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
       const vider = () => { for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh); g.animalManager.animals.length = 0; };
       // UN TÉMOIN SE PLACE LUI-MÊME, ET COMMENCE PAR FAIRE LE VIDE (v284)
@@ -8627,6 +8840,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           c = { force: ch ? ch.force : 0, v: +(P.vitesseVoiture || 0).toFixed(1), long: +(ex * fx + ez * fz).toFixed(2), lat: +Math.abs(ex * fz - ez * fx).toFixed(2), contact: P.contact ? P.contact.famille : null };
         } });
         P.voitureContre = vrai; P.touchMove.f = 0;
+        // UNE VOITURE QU'ON NE MESURE PLUS S'ARRÊTE TOUT DE SUITE (v560) : le
+        // flanc frôlé la laisse filer en diagonale (l'axe de la voiture garée
+        // est à 45°), et à z0 − 72 elle quittait la dalle pour la mer — elle y
+        // coule désormais, et l'arrière et la panne se jouaient À PIED
+        // (mesuré : `av: false` à (435, −72) avant l'arrière). La sortie se
+        // fait PENDANT les deux secondes du flanc : la dalle va donc à ±100 en z.
+        P.vitesseVoiture = 0; P.vel.set(0, 0, 0); P.glissade = null; P.derive = 0;
         return { c, lu: lus.some(Boolean), garee: [+(q.x - x0).toFixed(1), +(q.z - zr).toFixed(1)], axe: boite ? [+boite.ux.toFixed(2), +boite.uz.toFixed(2)] : null, vue, attenteVue };
       };
       await enJeu(0.5);

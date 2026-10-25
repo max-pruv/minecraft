@@ -1102,8 +1102,9 @@ function verifier(nom, ok, detail = '') {
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
       // la Revuelto adaptée (v546) : un modèle d'une autre facture, chargé
       // par son `asset` — ses feux se mesurent comme ceux des autres ; la SF90
-      // XX (v559) aussi
-      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'porsche-911-gt3-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb', 'lamborghini-revuelto.glb', 'ferrari-sf90.glb'];
+      // XX (v561) aussi, et la MC12 GT1 (v559), dont les feux vivent dans un
+      // export Sketchfab
+      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'porsche-911-gt3-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb', 'lamborghini-revuelto.glb', 'ferrari-sf90.glb', 'maserati-mc12-gt1.glb'];
       const rc = new THREE.Raycaster(); rc.layers.enableAll();
       const avantCles = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
       const res = [];

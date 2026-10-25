@@ -1,0 +1,11 @@
+Model Information:
+* title:	2005 Maserati MC12 GT1 Redbull
+* source:	https://sketchfab.com/3d-models/2005-maserati-mc12-gt1-redbull-f5e55567ced04ef78b2386fcb7637410
+* author:	Dave Love SketchFab (https://sketchfab.com/Tyler_Dave)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "2005 Maserati MC12 GT1 Redbull" (https://sketchfab.com/3d-models/2005-maserati-mc12-gt1-redbull-f5e55567ced04ef78b2386fcb7637410) by Dave Love SketchFab (https://sketchfab.com/Tyler_Dave) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
