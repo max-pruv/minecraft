@@ -22,7 +22,7 @@ const NEUTRE = [0, 0, 1, 1];
 import { CHUNK, HEIGHT, REPERES_HD } from './world.js';
 import { TEINTE_HERBE_LIN as TEINTE_HERBE, TEINTE_FEUILLES_LIN as TEINTE_FEUILLES } from './terre.js';
 import { emettreMonument, cellulesDuMorceau } from './paris-monuments-hd.js';
-import { reconnaitreArbres, emettreArbres } from './arbreshd.js';
+import { reconnaitreArbres, emettreArbres, directionDuVoisin, DIRECTIONS_VOISINS } from './arbreshd.js';
 import { grilleSol, emettreSolContinu, emettreRubans, emettreBandesPassages } from './solcontinu.js';
 
 // Faces: corner positions (CCW from outside), normal, tile slot (0 top / 1 side / 2 bottom), shade.
@@ -406,7 +406,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   const arbresDetail = !!arbres && arbres.liste.length > 0 && options.detail !== false;
   const arbresTus = !!arbres && arbres.cellules.size > 0;
   if (arbresDetail && !facades) facades = new GeomBufferHD();
-  const arbresLoin = arbres && arbres.liste.length > 0 ? new GeomBufferHD() : null;
+  const arbresLoin = arbres && (arbres.liste.length > 0 || arbres.bord.length > 0) ? new GeomBufferHD() : null;
   const estArbre = arbresTus ? (x, y, z) => arbres.cellules.has(x + z * CHUNK + y * CHUNK * CHUNK) : () => false;
   // les faces des cubes d'arbre qu'on n'émet plus : la preuve qu'on ne tait
   // que ce que le modèle couvre se lit sur ce compte (plafond.js)
@@ -663,6 +663,31 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   let arbresEmis = 0;
   if (arbresDetail) arbresEmis = emettreArbres(facades, arbres, ox, oz, CHUNK, teintes);
   if (arbresLoin) emettreArbres(arbresLoin, arbres, ox, oz, CHUNK, teintes, true);
+  // LES ARBRES DU BORD (v548). Les feuilles d'un arbre dont la base est dans
+  // un morceau voisin se taisent ici, et c'est le voisin qui dessine l'arbre ;
+  // tant qu'il n'est pas maillé (au bord du disque chargé, pendant une
+  // arrivée), cette part de couronne MANQUAIT. Le modèle lointain de chaque
+  // arbre du bord part donc ici aussi, APRÈS ceux du morceau, rangé par
+  // direction du voisin qui porte sa base : `main.js` ne montre que les
+  // directions dont le voisin n'est pas maillé (`arbresBord`, des plages
+  // d'indices), et l'arbre n'est jamais dessiné deux fois.
+  let arbresBord = null;
+  if (arbresLoin) {
+    arbresBord = { propres: arbresLoin.indices.length, sommets: arbresLoin.positions.length / 3, groupes: [] };
+    if (arbres.bord.length) {
+      const parDir = [[], [], [], [], [], [], [], []];
+      for (const a of arbres.bord) parDir[directionDuVoisin(Math.floor(a.x / CHUNK), Math.floor(a.z / CHUNK))].push(a);
+      for (let d = 0; d < 8; d++) {
+        if (!parDir[d].length) continue;
+        const [dx, dz] = DIRECTIONS_VOISINS[d];
+        // l'essence suit le climat de la colonne du fût, dans SON morceau
+        const tv = world.teintesDuMorceau ? world.teintesDuMorceau(cx + dx, cz + dz) : null;
+        const debut = arbresLoin.indices.length;
+        emettreArbres(arbresLoin, { liste: parDir[d] }, ox, oz, CHUNK, tv ? (a) => tv[(a.x - dx * CHUNK) + (a.z - dz * CHUNK) * CHUNK] : null, true);
+        arbresBord.groupes.push([d, debut, arbresLoin.indices.length - debut]);
+      }
+    }
+  }
 
   const surface = grille ? emettreSolContinu(solid, world, cx, cz, CHUNK, grille, teintes) : null;
   // les tabliers des ponts et le marquage des routes (v300), avec la surface
@@ -704,7 +729,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     // hache aussi les champs scalaires du retour, et un champ neuf la change
     // sans qu'un sommet bouge — v421, le contenu neuf se retire par l'option)
     ...(vraisArbres ? { arbres: arbres ? arbres.liste.length : 0, arbresEmis, facesArbresTues, facesSousArbre,
-      arbresLoin: arbresLoin ? arbresLoin.toTampons(false) : null } : {}),
+      arbresLoin: arbresLoin ? arbresLoin.toTampons(false) : null, arbresBord } : {}),
     detail: detail || arbresDetail,
   };
 }

@@ -568,10 +568,13 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   la voit » — même preuve structurelle (pas de `hd=`, arbres non atteints), à
   rejouer seul sur `origin/main`.
 
-- [ ] **Les arbres beaux partout (v528) : ce qui reste.** (1) Au bord du
+- [ ] **Les arbres beaux partout (v528) : ce qui reste.** (1) ~~Au bord du
   disque chargé, la part de couronne d'un arbre dont la base est dans un
-  morceau pas encore maillé manque (ses cubes se taisent dans le voisin) —
-  dans le brouillard, mais à regarder en vol rapide. (2) ~~Le paysage lointain
+  morceau pas encore maillé manque.~~ **Remboursé** : mesuré sept
+  arbres et 147 cases au bord d'un disque de rayon douze
+  (`sonde-arbres-frontiere.cjs`) ; le morceau porte le modèle lointain de ses
+  arbres du bord et le montre tant que le voisin n'est pas maillé
+  (`arbresBord`). (2) ~~Le paysage lointain
   (horizon.js) n'a aucun arbre.~~ **Fait en v553** sur la grille fine (une
   silhouette par case boisée, `world.foret`, 1 196 instances au-dessus d'une
   forêt à rr 12, 16 triangles chacune, 0,87 Mo à capacité pleine). Restent :
@@ -1067,8 +1070,12 @@ v522 ne touche pas ; la distribution reste à faire.
   La couche est inerte sur ces pages : `world.arbres` ne vaut 1 que si
   `RAYON_HD > 0`, et le banc rend en logiciel — seules les pages `hd=` de
   `parishd.js` et `plafond.js` (node) l'arment, et elles sont vertes.
-- [ ] **LES VRAIS ARBRES (v499) : UNE DEMI-COURONNE À LA FRONTIÈRE DE
-  `RAYON_HD`.** Un arbre dont la couronne déborde sur le morceau voisin est
+- [x] **LES VRAIS ARBRES (v499) : UNE DEMI-COURONNE À LA FRONTIÈRE DE
+  `RAYON_HD`.** **Caduque depuis la v528, prouvé en v548** : les cubes d'un
+  arbre reconnu ne s'émettent plus nulle part et chaque arbre n'a qu'un
+  dessinateur (le morceau de sa base, proche OU lointain) ; le témoin de
+  `plafond.js` exige que le `solid` d'un morceau ne dépende pas de son détail.
+  Le texte d'origine : Un arbre dont la couronne déborde sur le morceau voisin est
   émis par le morceau qui porte son fût ; ses feuilles DANS le voisin sont
   cachées (`plat`) seulement si ce voisin est détaillé lui aussi. Au bord
   exact de la portée, un arbre peut donc montrer son relief ET les cubes de
