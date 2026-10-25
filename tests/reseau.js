@@ -2195,6 +2195,110 @@ function verifier(nom, ok, detail = '') {
     await temoinAvion.close();
     await pilote.close();
 
+    // --- LE KLAXON ET LES FEUX STOP DE L'AMI (v548) -----------------------
+    //
+    // Deux dettes de la v543 : un ami n'entendait pas le klaxon de l'enfant,
+    // et ne voyait pas s'allumer ses feux stop ni son feu de recul. Lucas
+    // conduit, Ines est à pied à huit blocs. Le klaxon se lit à la SORTIE
+    // audio d'Ines, dans sa bande (350–560 Hz, v543), à l'instant
+    // (`smoothingTimeConstant` 0) ; les feux, sur le maillage de la voiture de
+    // Lucas tel que la tablette d'Ines le dessine.
+    await souffler();
+    const { p: lucas, code: codeK } = await banc.creerMonde('Lucas');
+    const ines = await banc.rejoindre('Ines', codeK);
+    await jusqua(async () => (await nomsVus(lucas)).includes('Ines') && (await nomsVus(ines)).includes('Lucas'), 30000);
+    const volantK = await lucas.evaluate(async () => {
+      const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'amg-gt-black-series.glb' });
+      for (let i = 0; i < 80 && !(a && a.mesh.userData.modele); i++) await dodo(100);
+      for (let e = 0; e < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(700); }
+      const m = g.fun.montureConduite && g.fun.montureConduite();
+      return { auVolant: !!m, x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z };
+    });
+    const lucasChezInes = await idDe(ines, 'Lucas');
+    await jusqua(async () => ines.evaluate((id) => { const rp = window.__game.remotePlayers.get(id); return !!(rp && rp.vehicule && rp.vehicule.mesh.userData.modele); }, lucasChezInes), 20000);
+    await ines.evaluate((p) => {
+      const g = window.__game;
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      g.player.pos.set(p.x + 8, p.y, p.z); g.player.vel.set(0, 0, 0);
+      // l'oreille d'Ines : un analyseur sans mémoire sur la sortie du jeu
+      const ctx = window.__sons.contexte(), sortie = window.__sons.sortie();
+      if (!ctx || !sortie) return;
+      if (ctx.resume) ctx.resume();
+      const an = ctx.createAnalyser(); an.fftSize = 4096; an.smoothingTimeConstant = 0; sortie.connect(an);
+      const buf = new Float32Array(an.frequencyBinCount), pasHz = ctx.sampleRate / an.fftSize;
+      window.__oreille = { max: -200, ecouter: true };
+      const tour = () => {
+        if (!window.__oreille.ecouter) return;
+        an.getFloatFrequencyData(buf);
+        for (let k = Math.floor(350 / pasHz); k <= Math.ceil(560 / pasHz); k++) window.__oreille.max = Math.max(window.__oreille.max, buf[k]);
+        setTimeout(tour, 50);
+      };
+      tour();
+    }, volantK);
+    const ecouter = async (ms) => {
+      await ines.evaluate(() => { if (window.__oreille) window.__oreille.max = -200; });
+      await dormir(ms);
+      return ines.evaluate(() => ({ db: window.__oreille ? +window.__oreille.max.toFixed(1) : null,
+        amis: (window.__sons.etat().klaxonsAmis) ?? null,
+        // l'événement que lisent les passants d'Ines (v543), posé là où est Lucas
+        kx: window.__game.player.klaxon ? Math.round(window.__game.player.klaxon.x) : null }));
+    };
+    const avantK = await ecouter(1200);
+    await lucas.evaluate(() => window.__game.player.keys.add('KeyH'));
+    const pendantK = await ecouter(1500);
+    await lucas.evaluate(() => window.__game.player.keys.delete('KeyH'));
+    await dormir(500);
+    const apresK = await ecouter(1200);
+    await ines.evaluate(() => { if (window.__oreille) window.__oreille.ecouter = false; });
+    verifier('à plusieurs, l\'ami entend le klaxon de l\'enfant (ses passants aussi), et il se tait au lâcher',
+      volantK.auVolant && pendantK.db !== null && pendantK.db > avantK.db + 15 && apresK.db < pendantK.db - 15 && pendantK.amis >= 1
+        && pendantK.kx !== null && Math.abs(pendantK.kx - volantK.x) < 4,
+      JSON.stringify({ volantK, avantK, pendantK, apresK }));
+    // LES FEUX : un coup de frein depuis une allure (provoqué : la vitesse
+    // est posée, le frein est le joystick tiré, comme l'enfant), puis la
+    // marche arrière. On relève, chez Ines, ce que la voiture de Lucas
+    // montre, tous les dixièmes de seconde.
+    await ines.evaluate((id) => {
+      window.__feuxVus = { frein: 0, recul: 0, relevés: 0 };
+      const t = setInterval(() => {
+        const rp = window.__game.remotePlayers.get(id);
+        const g = rp && rp.vehicule ? rp.vehicule.mesh.userData.feuxArriere : null;
+        window.__feuxVus.relevés++;
+        if (g && g.visible) {
+          if (g.userData.stops.some((f) => f.visible)) window.__feuxVus.frein++;
+          if (g.userData.reculs.some((f) => f.visible)) window.__feuxVus.recul++;
+        }
+      }, 100);
+      window.__feuxStop = () => clearInterval(t);
+    }, lucasChezInes);
+    const feuxLucas = await lucas.evaluate(async () => {
+      const g = window.__game, P = g.player; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      let frein = 0, recul = 0;
+      const relever = () => { const a = g.fun.montureConduite && g.fun.montureConduite(); const f = a && a.mesh.userData.feuxArriere;
+        if (f && f.visible) { if (f.userData.stops.some((x) => x.visible)) frein++; if (f.userData.reculs.some((x) => x.visible)) recul++; } };
+      for (let n = 0; n < 4; n++) {
+        P.vitesseVoiture = 14; P.keys.add('KeyS');
+        for (let i = 0; i < 8; i++) { await dodo(100); relever(); }
+        P.keys.delete('KeyS');
+      }
+      P.keys.add('KeyS');
+      for (let i = 0; i < 30; i++) { await dodo(100); relever(); }
+      P.keys.delete('KeyS');
+      return { frein, recul, v: P.vitesseVoiture };
+    });
+    await dormir(600);
+    const feuxIci = await ines.evaluate(() => { window.__feuxStop(); return window.__feuxVus; });
+    verifier('à plusieurs, l\'ami voit s\'allumer les feux stop et le feu de recul de la voiture de l\'enfant',
+      feuxLucas.frein > 0 && feuxLucas.recul > 0 && feuxIci.frein > 0 && feuxIci.recul > 0,
+      JSON.stringify({ chezLucas: feuxLucas, chezInes: feuxIci }));
+    await ines.close();
+    await lucas.close();
+
     // Filet final : rien ne doit avoir cassé en silence pendant tout ce parcours.
     const bruit = banc.pages.flatMap((p) => fautes(p).map((e) => `${p.prenom}: ${e}`));
     verifier('aucune erreur JavaScript de bout en bout', bruit.length === 0, JSON.stringify(bruit));

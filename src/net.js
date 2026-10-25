@@ -1585,6 +1585,14 @@ export class NetSession {
         if (this.onPortiere && (msg.c === 1 || msg.c === -1)) this.onPortiere({ de: String(msg.de || ''), c: msg.c, o: msg.o ? 1 : 0 });
         if (this.isHost) this.relay(conn.peer, msg);
         break;
+      // Le klaxon d'un ami (v548) : `o` 1 quand il appuie, 0 quand il lâche.
+      // Nom neuf : une tablette restée sur l'ancienne version l'ignore (le
+      // receveur cède) ; l'hôte relaie en disant de qui il vient, comme une
+      // émote — c'est la même clé que celle de sa position.
+      case 'klaxon':
+        if (this.onKlaxon) this.onKlaxon({ de: msg.from || conn.peer, o: msg.o ? 1 : 0 });
+        if (this.isHost) this.relay(conn.peer, { ...msg, from: conn.peer });
+        break;
       case 'sign': // a text sign planted in the world
         if (this.onSign) this.onSign(msg.sign);
         if (this.isHost) this.relay(conn.peer, msg);

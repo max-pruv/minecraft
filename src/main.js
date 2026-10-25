@@ -49,10 +49,10 @@ import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
 import { createVie, createGuidesVilles } from './vie.js';
 import { TOUS_LES_GUIDES } from './guidesvilles.js';
-import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte, fichierCharge } from './vehicules.js';
+import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte, fichierCharge, tonDeKlaxon, feuxArriere } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
 import { creerNomsDeStations, chaufferStations } from './stations.js';
-import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio, radioSuivante, radioTitre, radioIndice, radioMemoire, radioRestaurer, klaxonTenir, klaxonRue } from './sons.js';
+import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio, radioSuivante, radioTitre, radioIndice, radioMemoire, radioRestaurer, klaxonTenir, klaxonRue, klaxonAmi } from './sons.js';
 import { traceAnneau, traceLigne1Paris, arretsLigne1Paris } from './ville.js';
 import { LIGNES_MONDE, traceLigneMonde } from './metromonde.js';
 import { traceCourse } from './circuit.js';
@@ -3092,6 +3092,8 @@ function majKlaxonEtRadio(enVoiture) {
     klaxonEtat = tenu;
     klaxonTenir(tenu);
     if (tenu) player.klaxon = { t: performance.now(), x: player.pos.x, z: player.pos.z };
+    // et l'ami l'entend (v548) : appuyé, lâché — le message `klaxon`
+    if (net && net.active) net.broadcast({ t: 'klaxon', o: tenu ? 1 : 0 });
   }
   const station = enVoiture ? radioEnCours() : null;
   const cle = enVoiture ? `${station || ''}|${station ? radioTitre() : ''}` : '';
@@ -5035,6 +5037,11 @@ function syncRemotePlayers(list) {
     // l'ignore (le receveur cède).
     if (rp.vehicule) fun.degats.distant(rp.vehicule.mesh, (p.v && p.v.d) || null);
     if (rp.vehicule) { const u = rp.vehicule.mesh.userData; u.braquage = (p.v && +p.v.b) || 0; u.derive = (p.v && +p.v.r) || 0; u.freinMain = !!(p.v && p.v.m); }
+    // ses feux stop et de recul (v548), allumés par la règle de la rue
+    if (rp.vehicule && rp.vehicule.def && rp.vehicule.def.moteur === 'voiture') {
+      const sf = (p.v && +p.v.s) || 0;
+      feuxArriere(rp.vehicule.mesh, { frein: !!(sf & 1), recul: !!(sf & 2) });
+    }
     rp.passager = p.p || null;
     proposerGPSAmi(p.id, rp, p.g || null);   // sa destination, proposée (v388)
   }
@@ -5234,6 +5241,11 @@ function startNetSession(code, isHost, patience) {
       if (Math.abs(player.derive || 0) > 0.0005) p.v.r = Math.round(player.derive * 1000) / 1000;
       // le frein à main tiré (v441) : l'ami voit les traces qu'il laisse
       if (player.freinMainTire) p.v.m = 1;
+      // LES FEUX STOP ET DE RECUL (v548) : l'ami les voit s'allumer. `s` vaut
+      // 1 au freinage, 2 en marche arrière (les deux s'additionnent), absent
+      // sinon ; ce que `fun.js` allume sur NOTRE voiture, tel quel.
+      const sf = (a.feuxFrein > 0 ? 1 : 0) | (a.feuxRecul ? 2 : 0);
+      if (sf) p.v.s = sf;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
@@ -5498,6 +5510,21 @@ function showOnlineUI() {
   net.onRueHistoires = (rc) => fun.degats.adopterHistoires(rc); // par la position, si l'hôte ne relaie pas rue_choc (v374)
   // la portière qu'un ami ouvre pour monter en passager (v377) : la nôtre si
   // l'on conduit, sinon celle de la voiture du conducteur telle qu'on la dessine
+  // LE KLAXON D'UN AMI (v548) : joué chez nous, placé comme celui de la rue
+  // (plus loin, plus doux ; à gauche ou à droite de là où l'enfant regarde),
+  // au ton de SA voiture (`tonDeKlaxon` de son modèle) — et nos passants le
+  // lisent comme le nôtre (`player.klaxon`, un événement daté).
+  net.onKlaxon = (m) => {
+    if (!m.o) { klaxonAmi(m.de, false); return; }
+    const rp = remotePlayers.get(m.de);
+    if (!rp || !rp.pos) return;
+    const dx = rp.pos.x - player.pos.x, dz = rp.pos.z - player.pos.z, d = Math.hypot(dx, dz);
+    if (d > 70) return;
+    const rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
+    const u = rp.vehicule && rp.vehicule.mesh ? rp.vehicule.mesh.userData : {};
+    klaxonAmi(m.de, true, { distance: d, pan: d > 0.5 ? (dx * rx + dz * rz) / d : 0, ton: tonDeKlaxon(u.flotte || 'ami', 0) });
+    player.klaxon = { t: performance.now(), x: rp.pos.x, z: rp.pos.z };
+  };
   net.onPortiere = (m) => { const v = vehiculeDuConducteur(m.de); if (v && v.mesh) fun.recevoirPortiere(v.mesh, m.c, m.o); };
   net.onCiel = (c) => adopterCiel(c);
   net.donnerCiel = () => cielDuMonde();

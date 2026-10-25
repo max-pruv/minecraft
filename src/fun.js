@@ -1263,6 +1263,7 @@ export function initFun(ctx) {
       const frein = (Math.abs(v) > 0.3 && decel > 6) || (player.freinMainTire && Math.abs(v) > 0.8) || (player.glissade && Math.abs(v) > 1);
       const recul = v < -0.3;
       a.feuxFrein = frein ? Math.min(0.25, (a.feuxFrein || 0) + dt) : Math.max(0, (a.feuxFrein || 0) - dt);
+      a.feuxRecul = recul;   // publié avec la position (`p.v.s`, v548)
       feuxArriere(a.mesh, { frein: a.feuxFrein > 0, recul });
     }
     // AU VOLANT, LE RÉGIME EST CE QUE LA VOITURE FAIT, pas ce qu'on demande :
