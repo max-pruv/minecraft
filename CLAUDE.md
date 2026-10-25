@@ -1662,6 +1662,15 @@ Max : « mettre la mini-carte toujours visible ». Trois règles.
   place (`--haut-rail`) et la toucher ouvre la carte du monde ; le bouton,
   appuyé quand même, l'ouvre aussi (v228). Un témoin qui ouvrait la minicarte
   par `#map-btn` la trouve déjà là : `banc.ouvrirLaCarte` touche la minicarte.
+- **UN ÉTAT QUI CHANGE PAR UN GESTE S'ÉCRIT DANS LE GESTE, PAS À L'IMAGE
+  SUIVANTE (v551).** Lue seulement dans la boucle, la minicarte attendait la
+  fin de la première image de la partie — la plus lente, 1,7 s sur l'iPad du
+  banc — et tout ce qui se range contre elle (le badge du temps libre,
+  `minicarte-ouverte`) restait à sa place d'avant : le badge la recouvrait.
+  `startGame`, le repli au glisser et le verrou de la souris appellent
+  `majMinicarte()`. Le témoin neutralise `requestAnimationFrame`, touche
+  « Jouer » et lit la minicarte dans la même tâche : une intermittence se
+  provoque (v233).
 - **CE QUI S'AFFICHE TOUJOURS SE MESURE LÀ OÙ IL COÛTE LE PLUS : EN VOL.**
   Pleins gaz, le bord neuf (v233) coûtait ~100 ms de fil principal par
   seconde. Une bande neuve de trois blocs ou plus se peint en esquisse un point

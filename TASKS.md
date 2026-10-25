@@ -40,7 +40,10 @@
   ville, et les 543 feuilles retirées sont toutes hors des villes (la plus
   proche à 314 blocs du centre de Londres). À rejouer en distribution des deux
   côtés (v269).
-- [ ] **`carte.js` « minicarte (820 × 1180) : visible dès l'entrée en jeu » et
+- [x] **(Réglé en v551 : la décision était vraie, le DOM ne s'écrivait qu'à la
+  fin de la première image — `sonde-minicarte-entree.cjs` ; `majMinicarte` est
+  appelée là où l'accueil se ferme, et un témoin le provoque.)**
+  **`carte.js` « minicarte (820 × 1180) : visible dès l'entrée en jeu » et
   « … à pied, en construction, au volant et en avion »** : la minicarte n'est
   pas à l'écran à l'entrée (`entree: null`, `b: null`), à la taille de l'iPad
   seulement. Rejouée SEULE : rouge sur `origin/main` v546 (`git worktree`),
@@ -549,7 +552,12 @@ une voiture de la rue l'abîme AUSSI », `manhattan.js` le taxi tactile,
 `reseau.js` la portière droite (entrée, descente) et la voiture refaite
 pendant la marche, `monte.js` les rouges ci-dessus.
 
-- [ ] **La minicarte ouverte recouvre le chrono de l'espace éducatif en vol.**
+- [x] **(Réglé : la v540 range le badge à droite de la minicarte — mesuré en
+  v551, en vol, badge à x 175 · 170 · 379 pour une minicarte finissant à 128 ·
+  128 · 168, à 430 × 932, 420 × 760, 820 × 1180 ; la boîte relevée ici, (125,
+  56), est celle du badge centré, avant la classe `minicarte-ouverte`, que la
+  v551 pose dans le geste même.)** La minicarte ouverte recouvre le chrono de
+  l'espace éducatif en vol.
   Boîtes mesurées : minicarte (8, 60, 120 × 120), chrono (125, 56, 179 × 24).
   Le chrono doit contourner la minicarte par `--minimap-w`, comme la file
   centrale (v445, v518).

@@ -2659,6 +2659,7 @@ function startGame() {
     overlay.style.display = 'none';
     touchUI.style.display = 'block';
     pauseBtn.style.display = 'block';
+    majMinicarte();
     return;
   }
   if (!canvas.requestPointerLock) return enableDragFallback();
@@ -2675,6 +2676,7 @@ function enableDragFallback() {
   running = true;
   overlay.style.display = 'none';
   pauseBtn.style.display = 'block';
+  majMinicarte();
 }
 
 // Une partie mise en pause doit pouvoir reprendre là où elle était.
@@ -2743,6 +2745,7 @@ document.addEventListener('pointerlockchange', () => {
     if (edu.quizActive || invOpen || carteOuverte) { overlay.style.display = 'none'; return; }
     overlay.style.display = locked ? 'none' : 'flex';
     if (!locked && tournait) { overlayTitle.textContent = 'Pause'; montrerReprise(true); }
+    majMinicarte();
   }
 });
 document.addEventListener('pointerlockerror', () => enableDragFallback());
@@ -7753,6 +7756,11 @@ document.getElementById('map-tout').addEventListener('click', () => carte.toutVo
 // l'écran (CSS) et, s'il est appuyé, ouvre la carte du monde, comme la
 // minicarte elle-même. La décision est dans `minicarteVoulue`, lue à chaque
 // image ; le DOM ne s'écrit que quand elle change.
+// ET ELLE S'ÉCRIT AUSSI LÀ OÙ L'ACCUEIL SE FERME (v551) : lue seulement dans
+// la boucle, elle attendait la fin de la PREMIÈRE image de la partie — la plus
+// lente (le monde autour se maille), jusqu'à 1,7 s sur l'iPad du banc, où le
+// témoin de `carte.js` la trouvait absente (`sonde-minicarte-entree.cjs`).
+// `startGame`, le repli au glisser et le verrou de la souris l'appellent.
 // `?minicarte=0` l'éteint, pour mesurer ce qu'elle coûte (sonde-minicarte-cout.cjs).
 const MINICARTE_COUPEE = PARAMS_JEU.get('minicarte') === '0';
 // La partie est à l'écran quand l'accueil est fermé : on ne lit PAS `en-jeu`,

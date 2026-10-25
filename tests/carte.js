@@ -2311,9 +2311,19 @@ const position = (p) => p.evaluate(() => ({
     // ouverte et pendant un quiz, elle se cache ; la toucher ouvre la carte du
     // monde ; son ancien bouton n'est plus à l'écran. Rouge sur l'ancien code :
     // `display: none` à l'entrée en jeu.
-    for (const vue of [{ width: 430, height: 932 }, { width: 820, height: 1180 }]) {
+    //
+    // ET ELLE EST LÀ DÈS LA PREMIÈRE IMAGE (v551). Le DOM ne s'écrivait qu'à la
+    // fin de la première image de la partie, jusqu'à 1,7 s plus tard sur
+    // l'iPad du banc : l'entrée se lisait `null` à 820 × 1180, et le badge du
+    // temps libre, centré sur l'écran tant que la classe `minicarte-ouverte`
+    // n'était pas posée, recouvrait la minicarte à la taille de l'iPhone. Le
+    // témoin lit donc l'entrée tout de suite, les deux boîtes ensemble, et
+    // publie le temps écoulé depuis que le jeu tourne ; il se joue aussi à
+    // 420 × 760, la taille du banc.
+    for (const vue of [{ width: 430, height: 932 }, { width: 420, height: 760 }, { width: 820, height: 1180 }]) {
       const mc = await banc.jouerSeul('Minicarte' + vue.width, { viewport: vue, tactile: true, rr: 2 });
-      const r = await mc.evaluate(async () => {
+      const tJeu = Date.now();
+      const r = await mc.evaluate(async (tJeu) => {
         const att = (ms) => new Promise((f) => setTimeout(f, ms));
         const g = window.__game, C = window.__commandes, am = g.animalManager, P = g.player;
         const mm = document.getElementById('minimap'), cv = document.getElementById('game');
@@ -2321,7 +2331,8 @@ const position = (p) => p.evaluate(() => ({
           return st.display === 'none' || st.visibility === 'hidden' || b.width === 0 ? null
             : { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) }; };
         // l'état d'entrée, AVANT tout geste du témoin
-        const entree = vis(mm);
+        const entree = vis(mm), chronoEntree = vis(document.getElementById('edu-timer'));
+        const msEntree = Date.now() - tJeu;
         // LA CROIX DU BADGE NE BARRE PAS SON TEXTE (v540, vu en revue d'écran :
         // « 21 h 1✕ ») : sur téléphone, `padding: 3px 10px` écrasait la place
         // réservée à la croix. On lit les deux boîtes, et l'écart entre elles.
@@ -2396,7 +2407,7 @@ const position = (p) => p.evaluate(() => ({
         // saute à quatre mille blocs et l'on compte les pixels bleu nuit,
         // jusqu'à ce qu'ils passent sous un sur cinq (borné, durée au message).
         let saut = null;
-        if (innerWidth < 600) {
+        if (innerWidth < 600 && innerHeight > 800) {
           P.pos.set(P.pos.x + 4000, g.world.terrainHeight(Math.floor(P.pos.x + 4000), Math.floor(P.pos.z)) + 2, P.pos.z);
           const nuit = () => { const d = mm.getContext('2d').getImageData(0, 0, mm.width, mm.height).data; let n = 0;
             for (let i = 0; i < d.length; i += 16) if (d[i] === 20 && d[i + 1] === 26 && d[i + 2] === 40) n++;
@@ -2409,12 +2420,16 @@ const position = (p) => p.evaluate(() => ({
         // pendant un quiz (invariant 2), elle se cache, et revient après
         g.edu.startQuiz(); await att(600);
         const quiz = { actif: !!g.edu.quizActive, cachee: !vis(mm) };
-        return { saut, badge, entree, modes, sousMenu, carte, quiz, bouton: !!vis(document.getElementById('map-btn')), vue: [innerWidth, innerHeight] };
-      });
+        return { saut, badge, entree, chronoEntree, msEntree, modes, sousMenu, carte, quiz, bouton: !!vis(document.getElementById('map-btn')), vue: [innerWidth, innerHeight] };
+      }, tJeu);
       await mc.close();
       const T = `minicarte (${vue.width} × ${vue.height})`;
       verifier(`${T} : visible dès l'entrée en jeu, sans un geste, et son ancien bouton n'est plus à l'écran`,
-        !r.err && !!r.entree && !r.bouton, JSON.stringify({ entree: r.entree, bouton: r.bouton }));
+        !r.err && !!r.entree && !r.bouton, JSON.stringify({ entree: r.entree, bouton: r.bouton, msDepuisLeJeu: r.msEntree }));
+      const sup = (a, b) => !!a && !!b && Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x) && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
+      verifier(`${T} : dès l'entrée, le badge du temps libre contourne la minicarte`,
+        !r.err && !!r.entree && !sup(r.entree, r.chronoEntree),
+        JSON.stringify({ minicarte: r.entree, badge: r.chronoEntree, msDepuisLeJeu: r.msEntree }));
       verifier(`${T} : la croix du badge du temps libre ne barre pas son texte`,
         !r.err && !!r.badge && r.badge.mord <= 0, JSON.stringify(r.badge));
       const fautes = (r.modes || []).filter((m) => !m.b || m.dessus.length || m.recouvre.length || m.joy || m.horsCanvas.length || m.pris === false);
@@ -2425,6 +2440,27 @@ const position = (p) => p.evaluate(() => ({
         JSON.stringify({ sousMenu: r.sousMenu, carte: r.carte, quiz: r.quiz }));
       if (r.saut) verifier(`${T} : après un saut de quatre mille blocs, le fond de nuit de la minicarte se repeint`,
         r.saut.part <= 0.2, JSON.stringify(r.saut));
+    }
+
+    // ON PROVOQUE LA PREMIÈRE IMAGE LENTE (v551), au lieu de l'attendre (v233) :
+    // la boucle du jeu arrêtée (`requestAnimationFrame` neutralisé), on appuie
+    // sur « Jouer » et l'on lit la minicarte DANS LA MÊME TÂCHE. Une minicarte
+    // qui n'est écrite que par la boucle est absente ; celle qui suit l'état du
+    // jeu est là. Rouge sur la v550, à coup sûr.
+    {
+      const fp = await banc.joueur('MinicarteGel', { viewport: { width: 820, height: 1180 }, tactile: true, rr: 2 });
+      const r = await fp.evaluate(async () => {
+        const att = (ms) => new Promise((f) => setTimeout(f, ms));
+        window.requestAnimationFrame = () => 0;
+        await att(400);
+        document.getElementById('play-btn').click();
+        const mm = document.getElementById('minimap'), b = mm.getBoundingClientRect();
+        return { running: !!window.__game.running, display: getComputedStyle(mm).display, w: Math.round(b.width),
+          classe: document.body.classList.contains('minicarte-ouverte') };
+      }).catch((e) => ({ err: e.message }));
+      await fp.close();
+      verifier('minicarte : affichée dans la tâche même où « Jouer » ferme l\'accueil, sans attendre une image',
+        !r.err && r.running && r.display === 'block' && r.w > 0 && r.classe, JSON.stringify(r));
     }
   } finally {
     await banc.fermer();
