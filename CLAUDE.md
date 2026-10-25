@@ -1024,6 +1024,19 @@ règles.
   témoin, qui nommait le maillage touché (`Body_PrimaryPaint`), qui l'a dit :
   la mesure fraîche rendait les mêmes poses dans les deux arbres.
 
+## Le klaxon et les feux d'un ami (v549) — un événement voyage par un message, un état par la position
+
+Deux règles. **UN ÉVÉNEMENT TENU VOYAGE PAR DEUX MESSAGES, ET SE TAIT SEUL.**
+Le klaxon part en `klaxon` (`o` 1 à l'appui, 0 au lâcher, l'hôte relaie avec
+`from` comme une émote, nom neuf : le receveur cède) ; `klaxonAmi` (sons.js)
+le tient comme le nôtre, placé comme celui de la rue, au ton de SA voiture
+(`tonDeKlaxon`), et se tait seul au bout de quatre secondes si le lâcher se
+perd. Nos passants le lisent (`player.klaxon`). **CE QUI EST UN ÉTAT VOYAGE
+AVEC LA POSITION** (v388) : les feux stop et de recul sont `p.v.s` (1 frein,
+2 recul), recopié avec `p.v` sur `pos` et `rpos`, allumés chez l'ami par
+`feuxArriere`. Les témoins lisent la SORTIE audio de l'ami dans la bande du
+klaxon et les lentilles sur SA copie de la voiture, jamais un drapeau.
+
 ## Un choc a de l'élan (v534) — la vitesse d'après un choc est un vecteur que le joystick ne touche pas
 
 Max : « quand on fonce dans une voiture avec une autre voiture, la voiture

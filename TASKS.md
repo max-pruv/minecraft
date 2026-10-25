@@ -329,12 +329,11 @@
   bute chez lui) ; un fût tombé vers la chaussée peut y dépasser, et les
   voitures de la rue passent au travers ; les arbres de rue (`LOG`) restent
   durs.
-- [ ] **La conduite à la GTA (v543), ce qui reste, déclaré.** (1) Le klaxon
-  de l'enfant ne voyage pas par le réseau : un ami ne l'entend pas (un message
-  court `klaxon`, nom neuf, l'hôte relaie, le receveur cède — comme
-  `portiere`, v377). (2) Les feux stop de la voiture d'un AMI ne s'allument
-  pas chez les autres : `p.v` ne porte pas le freinage (une lettre de plus
-  dans `p.v`, lue sur `pos` ET `rpos`, v388). (3) Les voitures de la rue n'ont
+- [ ] **La conduite à la GTA (v543), ce qui reste, déclaré.** (1) et (2)
+  faits en v549 : le klaxon voyage (message `klaxon`, joué par `klaxonAmi`,
+  lu par les passants de l'ami), les feux stop et de recul aussi (`p.v.s`) —
+  deux témoins dans `reseau.js`. Reste : un passager n'allume pas le klaxon
+  de la voiture où il est assis (le klaxon est celui du conducteur). (3) Les voitures de la rue n'ont
   pas de phares la nuit : deux lueurs par voiture, c'est deux appels de dessin
   par voiture visible, le goulot de l'iPad (v196) — à mesurer sur la tablette
   avant de décider ; les feux stop, eux, ne se dessinent que quand la voiture
@@ -1157,7 +1156,8 @@ v522 ne touche pas ; la distribution reste à faire.
     l'image où son retard s'annule (3,74 → 2,87 b/s en 25 ms). Remède :
     `libre = vConv + min(0,3·vConv, 3, 1,5·retard)`, l'excès s'éteint avec le
     retard.
-- [ ] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — SANS TÉMOIN À DEUX TABLETTES.**
+- [x] **L'AVION DE L'AMI ET SON ÉPAVE (v453) — doublon, fermé en v549 : le témoin
+  existe depuis la v476 (voir plus bas).**
   `p.v` porte désormais un avion (fiche `pilote`) et ses dégâts ; aucun témoin
   de `reseau.js` ne vérifie encore que l'autre tablette voit l'appareil, puis
   l'épave en feu après un crash. À écrire sur le modèle de la v344 (l'ami voit

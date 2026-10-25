@@ -598,6 +598,51 @@ export function klaxonRue({ distance = 10, pan = 0, ton = 1, duree = 0.45 } = {}
 }
 export const klaxonsRueJoues = () => klaxonsRue;
 
+// LE KLAXON D'UN AMI (v548) : le message `klaxon` (net.js) dit quand il
+// appuie et quand il lâche ; on le tient ici comme le nôtre, placé dans
+// l'espace comme celui de la rue (plus loin, plus doux ; à gauche ou à
+// droite), au ton de SA voiture. Un klaxon dont la fin s'est perdue sur le
+// réseau se tait seul au bout de `KLAXON_AMI_MAX` secondes.
+const KLAXON_AMI_MAX = 4;
+const klaxonsAmis = new Map();   // de -> { k, p, fin }
+let klaxonsAmiJoues = 0;
+function lacherAmi(de) {
+  const a = klaxonsAmis.get(de);
+  if (!a) return false;
+  klaxonsAmis.delete(de);
+  clearTimeout(a.fin);
+  const c = contexteAudio();
+  const t = c ? c.currentTime : 0;
+  try {
+    a.k.gain.gain.cancelScheduledValues(t);
+    a.k.gain.gain.setTargetAtTime(0.0001, t, 0.04);
+    a.k.o1.stop(t + 0.3); a.k.o2.stop(t + 0.3);
+  } catch { /* contexte déjà fermé */ }
+  return true;
+}
+export function klaxonAmi(de, oui, { distance = 10, pan = 0, ton = 1 } = {}) {
+  if (!oui) return lacherAmi(de);
+  const c = contexteAudio();
+  if (!c) return false;
+  let a = klaxonsAmis.get(de);
+  if (!a) {
+    const k = monterKlaxon(c, ton);
+    let sortie = sortieAudio(), p = null;
+    if (c.createStereoPanner) { p = c.createStereoPanner(); p.connect(sortie); sortie = p; }
+    k.gain.connect(sortie);
+    a = { k, p, fin: 0 };
+    klaxonsAmis.set(de, a);
+    klaxonsAmiJoues++;
+  }
+  clearTimeout(a.fin);
+  a.fin = setTimeout(() => lacherAmi(de), KLAXON_AMI_MAX * 1000);
+  if (a.p) a.p.pan.value = Math.max(-1, Math.min(1, pan));
+  const vol = 0.2 / (1 + distance / 16) ** 2;
+  a.k.gain.gain.cancelScheduledValues(c.currentTime);
+  a.k.gain.gain.setTargetAtTime(Math.max(0.001, vol), c.currentTime, 0.015);
+  return true;
+}
+
 // Ce qu'une sonde peut lire — et ce n'est PAS ce qu'un témoin doit croire :
 // un témoin de son lit des ÉCHANTILLONS (voir `tests/monte.js`), jamais ce
 // drapeau. Il sert à la mise au point et aux captures.
@@ -607,6 +652,6 @@ export function etatSon() {
     moteur: moteur ? moteur.type : null,
     radio: radio ? radio.station.nom : null,
     titre: radio ? titreEnCours(radio.station, radio.morceau) : null,
-    klaxon: klaxonTenu(), klaxonGain: klaxon ? +klaxon.gain.gain.value.toFixed(4) : null, klaxonsRue,
+    klaxon: klaxonTenu(), klaxonGain: klaxon ? +klaxon.gain.gain.value.toFixed(4) : null, klaxonsRue, klaxonsAmis: klaxonsAmiJoues, klaxonsAmisTenus: klaxonsAmis.size,
   };
 }
