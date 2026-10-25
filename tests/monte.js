@@ -1907,8 +1907,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.pos.copy(avant); g.player.vel.set(0, 0, 0);
       return r;
     });
+    // LA BARRE EST AU MILIEU DES DEUX RÉGIMES MESURÉS (v548, v237). Le budget
+    // désarmé (`fabrication.fin = Infinity` dans une copie) rend CINQ voitures
+    // dans une même image à l'arrivée — et la barre d'avant valait cinq : vert
+    // sur le défaut qu'il garde. Armé : 1 au portail de `origin/main` v547, 1
+    // sur la branche, 1 à la sonde (`dt.cjs` du brouillon). Trois.
     verifier('à l\'arrivée, la rue se fabrique par tranches, pas toute dans la même image',
-      fab.vues >= 6 && fab.maxParImage <= 5, JSON.stringify(fab));
+      fab.vues >= 6 && fab.maxParImage <= 3, JSON.stringify(fab));
 
     // LES FILES SE SERRENT AU ROUGE (v431). Max, capture de GTA VI : des voies
     // serrées. Une voiture arrêtée derrière une autre s'arrêtait entre 1,1 et

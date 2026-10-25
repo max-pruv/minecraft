@@ -573,6 +573,26 @@ que « ne jamais relancer jusqu'au vert », par l'autre bout.
 
 ---
 
+## Un témoin lit ce que le jeu POSE, pas ce qu'une image laisse voir (claude/temoins-monte)
+
+Trois règles, toutes nées de rouges de `monte.js` qui n'étaient pas des pannes.
+
+- **UN ÉTAT QUI CLIGNOTE SE LIT À SA POSE.** Les feux de détresse alternent
+  toutes les 0,7 s et leur visibilité ne s'écrit qu'à l'image : à une image
+  par seconde, toutes les images d'un arrêt peuvent tomber éteintes. Ce que
+  le jeu fait de façon déterministe — poser le groupe `detresse` sur le
+  maillage heurté — est ce que le témoin lit.
+- **UN COMPTE LU JUSTE APRÈS UN SAUT EST CELUI DE L'ENDROIT QU'ON QUITTE.**
+  `visibles` se relit à l'image ; on attend quelques images rendues avant de
+  compter la ville d'arrivée.
+- **UNE BARRE SE VÉRIFIE SUR LE CODE DÉSARMÉ, PAS SEULEMENT SUR L'ANCIEN.**
+  « par tranches » valait cinq ; désarmé, le budget rend cinq. Un témoin qui
+  passe sur le défaut qu'il garde ne garde rien.
+
+Et un témoin de conduite qui a besoin de place se pose sa dalle (le virage à
+pleins gaz décrit un cercle d'une trentaine de blocs) : la campagne du point
+d'apparition a des murs et des arbres.
+
 ## Le tempo du banc (v501) — une cadence se divise, une fenêtre calée sur le monde non
 
 `?tempo=N` (`src/tempo.js`, pur) divise les minuteries de synchronisation du
