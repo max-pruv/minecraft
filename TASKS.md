@@ -1,5 +1,20 @@
 # Ce qui est en cours
 
+## De grands aéroports (v565) — ce qui reste, déclaré
+
+- [ ] **Un appareil qui roule traverse les appareils garés.** Un avion n'est
+  pas un obstacle (`gareeContre`, v534 : « une monture à gabarit, pas un
+  avion ») ; la rangée étant désormais pleine, ✈️ depuis un poste fait passer
+  le bout d'aile dans le voisin pendant le virage vers la piste (vu en capture
+  `aeroport-roulage`). Piste : une boîte d'envergure pour les seuls appareils
+  garés, jugée chez le joueur comme une famille d'obstacle (v252).
+- [ ] **Roissy garde ses trois postes dans le disque.** Son disque est bâti à
+  la main (halls, satellites, mâts) : la rangée pleine se mesure contre son
+  bâtisseur avant d'y entrer. Ses aires prolongées, elles, ont quatorze postes.
+- [ ] **Le coût sur la tablette.** Neuf appels de dessin par appareil garé en
+  moyenne au banc (`sonde-appels-aeroport.cjs`, ombres allumées) ; à relire
+  sur l'iPad avec `?diag=1` au-dessus d'un aéroport.
+
 ## La tour Eiffel du modèle de Max (v564) — ce qui reste
 
 - [ ] **Ce qu'un enfant a bâti sur l'ANCIENNE tour, dans le monde d'aujourd'hui.**

@@ -519,11 +519,81 @@ function empriseDesTroncons() {
     EMPRISES_TRONCONS.push({ ax: a.x, az: a.z, p, sens, d0, fin,
       x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: a.z + p.z0 - p.demi - 2, z1: a.z + p.z0 + p.demi + 2 });
   }
+  // et les aires prolongées (v565) : leur tranchée vide autant que celle d'une piste
+  for (const a of AEROPORTS) {
+    const t = AIRES[a.cle];
+    if (!t) continue;
+    bandesDuPlan(a.profil, a.r).forEach((b, k) => {
+      const [lo, le] = t[k] || [0, 0];
+      for (const [sens, L] of [[-1, lo], [1, le]]) {
+        if (L <= 0) continue;
+        const xa = a.x + sens * b.bordDisque, xb = a.x + sens * (b.bordDisque + L);
+        EMPRISES_TRONCONS.push({ ax: a.x, az: a.z, p: { rayon: b.rayon }, aire: true,
+          x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: a.z + b.z0, z1: a.z + b.z1 });
+      }
+    });
+  }
   return EMPRISES_TRONCONS;
 }
+// LES AIRES PROLONGÉES (v565) — des repères de trente-deux blocs comme les
+// tronçons de piste, et marqués `piste` pour la même raison : ce sont des
+// ouvrages de l'aérodrome, ni des bâtiments ni des zones de relief, et tous
+// les lecteurs de repères les écartent déjà. Remblai, tranchée et appui sont
+// ceux des prolongements, sur la bande de l'aire et seulement DEHORS du
+// disque pavé ; le marquage tombe sous chaque appareil (`postesAerodrome`),
+// et une ligne de guidage longe le bas-côté de la piste.
+export function tronconsDAire(a) {
+  const t = AIRES[a.cle];
+  if (!t) return [];
+  const postes = postesAerodrome(a).filter((q) => q.aire);
+  const out = [];
+  bandesDuPlan(a.profil, a.r).forEach((b, k) => {
+    const [lo, le] = t[k] || [0, 0];
+    const zc = Math.round((b.z0 + b.z1) / 2);
+    for (const [sens, L] of [[-1, lo], [1, le]]) {
+      if (L <= 0) continue;
+      const fin = b.bordDisque + L;
+      const ici = postes.filter((q) => Math.sign(q.du) === sens && q.dv === b.dv);
+      for (let d0 = b.bordDisque; d0 <= fin; d0 += TRONCON) {
+        const d1 = Math.min(fin, d0 + TRONCON - 1), mi = Math.round((d0 + d1) / 2);
+        out.push({
+          name: `${a.nom} — aire de stationnement`, piste: true, aire: true,
+          x: a.x + sens * mi, z: a.z + zc,
+          box: Math.max(Math.ceil((d1 - d0) / 2) + 1, Math.ceil((b.z1 - b.z0) / 2) + 1),
+          ancre: { x: a.x, z: a.z },
+          build: (poser) => batirAire(poser, b, sens, mi, zc, d0, d1, ici),
+        });
+      }
+    }
+  });
+  return out;
+}
+function batirAire(poser, b, sens, mi, zc, d0, d1, postes) {
+  if (!reglageAires.actif) return;   // désarmée : l'aérodrome d'avant, au bloc près
+  const R2 = b.rayon * b.rayon, zGuide = b.cote < 0 ? b.z1 : b.z0;
+  for (let d = d0; d <= d1; d++) {
+    const x = sens * d, lx = x - sens * mi;
+    for (let z = b.z0; z <= b.z1; z++) {
+      if (x * x + z * z <= R2) continue;            // dedans : le bâtisseur
+      const dz = z - zc;
+      for (let k = 2; k <= REMBLAI + APPUI_PROLONGE; k++) poser(lx, -k + 1, dz, BETON);   // le remblai
+      for (let k = 0; k < DECAISSE + DEGAGE_CIME; k++) poser(lx, k + 1, dz, BLOCK.AIR); // la tranchée
+      let id = ASPHALTE;
+      if (z === zGuide) id = JAUNE;                                       // la ligne de guidage
+      for (const q of postes) {
+        const L = GABARITS_AVION[q.espece].long;
+        if (z === q.dv - 3 && x >= q.du - L / 2 && x < q.du + L / 2 && ((x - q.du) & 1) === 0) id = JAUNE;
+        if (x === q.du && Math.abs(z - q.dv) <= 3) id = JAUNE;
+      }
+      poser(lx, 0, dz, id);
+    }
+  }
+}
+
 export function videParUnTroncon(x, z) {
   for (const e of empriseDesTroncons()) {
     if (x < e.x0 || x > e.x1 || z < e.z0 || z > e.z1) continue;
+    if (e.aire && !reglageAires.actif) continue;
     const lx = x - e.ax, lz = z - e.az;
     if (lx * lx + lz * lz > e.p.rayon * e.p.rayon) return true;   // `dehors`, la règle du bâtisseur
   }
@@ -1051,7 +1121,7 @@ export function planAerodrome(profil, rayon = 68) {
     STAND, PROF_HALL, zt0, zt1, tx, tz, hx, hz0, hz1, demiLargeurA };
 }
 
-export function buildAerodrome(poser, profil, rayon = 68) {
+export function buildAerodrome(poser, profil, rayon = 68, aires = reglageAires.actif) {
   // Le disque pavé vient du PLAN, il ne se recalcule pas ici : il valait
   // `rayon − 20` — la limite du relief plat — et vaut `rayon − 10` depuis que
   // la plate-forme est un ouvrage. Laissé en double, il annulait tout
@@ -1133,14 +1203,20 @@ export function buildAerodrome(poser, profil, rayon = 68) {
       }
     }
   };
-  niveler(PISTE - DEMI_PISTE - 2, PISTE + DEMI_PISTE + 2);
+  if (aires) {
+    // LES AIRES SE NIVELLENT AVEC LA PISTE (v565) : la rangée va jusqu'au
+    // bord du disque pavé, au-delà de `PLAT` — du terminal à la piste d'un
+    // seul tenant, et la bande d'en face.
+    niveler(zt0 - 8, PISTE + DEMI_PISTE + 2);
+    for (const b of bandesDuPlan(profil, rayon)) if (b.cote > 0) niveler(b.z0, b.z1);
+  } else niveler(PISTE - DEMI_PISTE - 2, PISTE + DEMI_PISTE + 2);
   if (PISTE2) niveler(PISTE2 - DEMI_PISTE - 2, PISTE2 + DEMI_PISTE + 2);
   // ET LA BANDE DU TERMINAL AUSSI, parce que sur le plus petit disque elle en
   // sort. À Orly (rayon 62, donc béton jusqu'à 42), le terminal va jusqu'à
   // z = −40 et la tour de contrôle jusqu'à −43 : sans cela elles se posaient
   // sur le relief de l'anneau de raccord, à un ou deux blocs de la dalle. Ce
   // qui porte un bâtiment se nivelle, et cela se mesure — pas se relit.
-  niveler(zt0 - 8, zt1);
+  if (!aires) niveler(zt0 - 8, zt1);
 
   // LES PISTES. Une bande d'asphalte, son axe discontinu en blanc, et les
   // seuils en « échelle » — ce sont eux qu'on reconnaît depuis un avion.
@@ -1179,14 +1255,30 @@ export function buildAerodrome(poser, profil, rayon = 68) {
   // L'AIRE SE RÈGLE SUR CE QUI S'Y GARE. Elle valait `HALL ± 12` — un chiffre
   // rond — et il manquait quatre blocs de chaque côté à `ville`, un à `hub` :
   // le Concorde débordait sur le hangar. On demande donc son emprise à
-  // `aireAvions`, qui la tient de la longueur des appareils : le jour où l'un
+  // l'emprise des postes (`empriseAuSol`), qui la tient de la longueur des appareils : le jour où l'un
   // d'eux grandit, la dalle suit sans qu'on y pense.
-  const aire = aireAvions(profil, rayon);
-  dalle(Math.min(-HALL - 12, aire.x0), Math.max(HALL + 12, aire.x1),
-    Math.min(aire.dv0, zt1), Math.max(aire.dv1, TAXI), -1, ASPHALTE);
+  //
+  // ET DEPUIS LA v565 ELLE VA D'UN BORD DU DISQUE À L'AUTRE, des deux côtés
+  // de la piste (`bandesDuPlan`) : la rangée la remplit tout entière, et elle
+  // se raccorde aux aires prolongées au-delà du disque. Une dalle à la taille
+  // de la rangée d'avant (désarmée) se rejoue telle quelle.
+  if (aires) {
+    for (const b of bandesDuPlan(profil, rayon)) {
+      const za = b.cote < 0 ? zt1 : b.z0, zb = b.cote < 0 ? TAXI : b.z1;
+      dalle(-RAYON, RAYON, za, zb, -1, ASPHALTE);
+    }
+  } else {
+    const boites = postesAvion(profil, rayon, aires).map((p) => empriseAuSol(p.espece, p.du, p.dv));
+    const aire = {
+      x0: Math.min(...boites.map((b) => b.x0)) - 2, x1: Math.max(...boites.map((b) => b.x1)) + 2,
+      dv0: Math.min(...boites.map((b) => b.z0)) - 2, dv1: Math.max(...boites.map((b) => b.z1)) + 2,
+    };
+    dalle(Math.min(-HALL - 12, aire.x0), Math.max(HALL + 12, aire.x1),
+      Math.min(aire.dv0, zt1), Math.max(aire.dv1, TAXI), -1, ASPHALTE);
+  }
   // Le marquage tombe SOUS chaque appareil, pas tous les dix blocs : c'est ce
   // qui fait qu'un poste se lit comme un poste.
-  for (const p of postesAvion(profil, rayon)) {
+  for (const p of postesAvion(profil, rayon, aires)) {
     const g = GABARITS_AVION[p.espece];
     for (let dx = -Math.round(g.long / 2); dx <= Math.round(g.long / 2); dx += 2) {
       set(p.du + dx, -1, p.dv - 3, JAUNE);
@@ -1293,6 +1385,85 @@ export function buildAerodrome(poser, profil, rayon = 68) {
   if (base) { hangar(-hx); hangar(hx); } else hangar(hx);
 }
 
+// LA BANDE DE L'AIRE (v565) — publiée ici, lue par le bâtisseur des aires
+// prolongées, par les postes et par la sonde qui en mesure la longueur
+// (`sonde-aires-aeroports.mjs`). Côté local de l'aérodrome : la bande va du
+// dos des appareils garés (`STAND − AILE − 1`) au bas-côté de la piste
+// (`DEMI_PISTE + 3` : les deux blocs d'avant appartiennent au tronçon de la
+// piste prolongée, v448, et deux ouvrages ne s'écrivent pas l'un sur
+// l'autre). `bordDisque` est l'abscisse au-delà de laquelle la bande sort du
+// disque pavé ; `finPiste` le bout de la piste qu'elle longe, de chaque côté.
+export const RETRAIT_AIRE = 12;
+function bandesDuPlan(profil, rayon) {
+  const out = [];
+  const ajouter = (cote, axe, dv, aile, demi, R) => {
+    // la bande va du bas-côté de la piste (`demi + 3`) au dos des appareils
+    const zPiste = axe + cote * (demi + 3), zDos = dv + cote * (aile + 1);
+    const z0 = Math.min(zPiste, zDos), z1 = Math.max(zPiste, zDos);
+    const loin = Math.max(Math.abs(z0), Math.abs(z1));
+    const bordDisque = Math.floor(Math.sqrt(Math.max(0, R * R - loin * loin)));
+    out.push({ cote, z0, z1, dv, axe, rayon: R, bordDisque });
+  };
+  if (profil === 'roissy') {
+    const aile = Math.ceil(GABARITS_AVION.avionligne.envergure / 2);
+    // la rangée d'origine (v280), entre le centre et la piste nord ; et sa
+    // jumelle au sud, contre l'autre piste
+    for (const axe of [...PISTES_ROISSY].sort((p, q) => p - q)) {
+      const cote = axe > 0 ? -1 : 1;   // la bande est du côté du centre
+      ajouter(cote, axe, Math.sign(axe) * STAND_ROISSY, aile, DEMI_PISTE_ROISSY, 82);
+    }
+  } else {
+    const P = planAerodrome(profil, rayon);
+    // côté ville : la rangée d'origine, entre la voie de circulation et le
+    // terminal ; de l'autre côté, contre la piste la plus au large
+    ajouter(-1, P.PISTE, P.STAND, P.AILE, P.DEMI_PISTE, P.RAYON);
+    const axe2 = P.PISTE2 || P.PISTE;
+    ajouter(1, axe2, axe2 + P.DEMI_PISTE + 4 + P.AILE, P.AILE, P.DEMI_PISTE, P.RAYON);
+  }
+  return out;
+}
+export function bandesAire(a) {
+  const pistes = pistesDe(a);
+  return bandesDuPlan(a.profil, a.r).map((b) => {
+    const p = pistes.find((q) => q.z0 === b.axe);
+    return { ...b, finPiste: [p.ouest, p.est] };
+  });
+}
+
+// LA LONGUEUR DES AIRES PROLONGÉES, de chaque côté de chaque bande — un
+// RÉSULTAT de `sonde-aires-aeroports.mjs`, pas un goût : [ouest, est], en
+// blocs au-delà du bord du disque pavé. La sonde avance colonne par colonne
+// et s'arrête au premier obstacle (relief hors des bornes de l'ouvrage,
+// ville, autre aérodrome, repère, route, voie ferrée ou gare à moins de
+// douze blocs, quarante de ce que les enfants ont bâti, bout de la piste) ;
+// le témoin de `carteMonde.js` refait la mesure et rougit si une aire
+// dépasse ce que la sonde rend.
+export const AIRES = {
+  cdg: [[114, 40], [163, 0]],
+  orly: [[35, 38], [76, 76]],
+  lhr: [[61, 6], [16, 28]],
+  jfk: [[17, 47], [35, 40]],
+  mad: [[120, 34], [99, 99]],
+  bcn: [[31, 20], [31, 12]],
+  ams: [[72, 59], [94, 80]],
+  fra: [[12, 59], [47, 13]],
+  fco: [[5, 108], [5, 105]],
+  hnd: [[2, 102], [26, 36]],
+  dxb: [[75, 75], [95, 95]],
+  del: [[67, 8], [35, 58]],
+  sfo: [[7, 50], [13, 50]],
+  lax: [[30, 0], [43, 46]],
+  ist: [[77, 77], [99, 99]],
+  sin: [[10, 144], [36, 53]],
+  'bas-sd': [[11, 105], [11, 105]],
+  'bas-adw': [[58, 58], [58, 58]],
+  'bas-llv': [[38, 9], [5, 58]],
+  'bas-ykt': [[9, 58], [58, 9]],
+};
+// Désarmées, les aires rendent l'aérodrome d'avant au bloc près : c'est ce
+// qui prouve l'empreinte des 490 morceaux (jamais un réglage du jeu).
+export const reglageAires = { actif: true };
+
 const PASSAGE = 4;            // de quoi passer entre deux appareils garés
 
 // LES POSTES DE STATIONNEMENT, publiés ici et pas dans `main.js`.
@@ -1369,26 +1540,109 @@ const CAP_LE_LONG_DE_X = Math.PI / 2;
 // pile dans l'envergure, et bloquaient les TROIS postes à la fois ; et la
 // manche à air, posée de la même façon, se retrouvait au bord de la piste.
 const POSTES_ROISSY = [
-  { espece: 'avionligne', du: -19, dv: STAND_ROISSY },   // aile à 1 bloc de la voie, 4 du bord
-  { espece: 'concorde', du: 3, dv: STAND_ROISSY },
-  { espece: 'chasseur', du: 22, dv: STAND_ROISSY },
+  { espece: 'avionligne', variante: 'a320', du: -19, dv: STAND_ROISSY },   // aile à 1 bloc de la voie, 4 du bord
+  { espece: 'concorde', variante: null, du: 3, dv: STAND_ROISSY },
+  { espece: 'chasseur', variante: 'f35', du: 22, dv: STAND_ROISSY },
 ];
 
-export function postesAvion(profil, rayon = 68) {
+// TOUS LES MODÈLES, EN RANGÉE (v565). Max : « que les aéroports soient
+// vraiment beaucoup plus grands et qu'il y ait tous les modèles d'avions
+// possibles garés ». Trois appareils au centre de l'aire, c'était une
+// vitrine ; une rangée qui longe la piste d'un bout à l'autre du disque — et
+// au-delà, sur les aires prolongées — c'est un aéroport. Les modèles se
+// suivent dans cet ordre, A320 et A321 en majorité comme sur un vrai tarmac,
+// le Concorde et le F-35 entre eux ; une base ne gare que des chasseurs.
+// Une règle lue sur le rang du poste, jamais un tirage : deux tablettes
+// voient le même appareil au même poste.
+const RANGEE_CIVILE = [
+  { espece: 'avionligne', variante: 'a320' },
+  { espece: 'avionligne', variante: 'a321' },
+  { espece: 'concorde', variante: null },
+  { espece: 'avionligne', variante: 'a320' },
+  { espece: 'chasseur', variante: 'f35' },
+  { espece: 'avionligne', variante: 'a321' },
+];
+const RANGEE_BASE = [{ espece: 'chasseur', variante: 'f35' }];
+export const modelesDeRangee = (profil) => (profil === 'base' ? RANGEE_BASE : RANGEE_CIVILE);
+
+// Une rangée dans [x0, x1] : chaque appareil prend sa longueur, plus un
+// passage ; on prend le modèle suivant de la suite qui tient encore, et la
+// place qui reste se met au milieu (`centre`), contre `x1` (`fin`) ou après.
+// Les longueurs sont paires : `du` tombe sur un bloc, et l'emprise
+// (`empriseAuSol`) va exactement de `x0` à `x0 + long − 1`.
+function remplir(seq, i, x0, x1, dv, cale) {
+  const out = [];
+  let x = x0;
+  for (;;) {
+    let pris = null;
+    for (let k = 0; k < seq.length && !pris; k++) {
+      const m = seq[(i + k) % seq.length];
+      if (x + GABARITS_AVION[m.espece].long - 1 <= x1) { pris = m; i += k + 1; }
+    }
+    if (!pris) break;
+    const L = GABARITS_AVION[pris.espece].long;
+    out.push({ espece: pris.espece, variante: pris.variante, du: x + L / 2, dv, cap: CAP_LE_LONG_DE_X });
+    x += L + PASSAGE;
+  }
+  const reste = out.length ? x1 - (x - PASSAGE - 1) : 0;
+  const decal = cale === 'centre' ? Math.floor(reste / 2) : cale === 'fin' ? reste : 0;
+  for (const q of out) q.du += decal;
+  return { postes: out, i };
+}
+
+// LES POSTES DANS LE DISQUE : une rangée par bande, d'un bord du disque à
+// l'autre — côté ville entre la voie de circulation et le terminal, comme
+// avant, et de l'autre côté de la piste la plus au large. Roissy garde ses
+// trois postes mesurés : son disque est bâti à la main.
+export function postesAvion(profil, rayon = 68, aires = reglageAires.actif) {
   if (profil === 'roissy') {
     return POSTES_ROISSY.map((p) => ({ ...p, cap: CAP_LE_LONG_DE_X }));
   }
-  const especes = especesDe(profil);
-  const { STAND } = planAerodrome(profil, rayon);
-  const total = especes.reduce((s, e) => s + GABARITS_AVION[e].long, 0)
-    + PASSAGE * (especes.length - 1);
-  let x = -total / 2;
-  return especes.map((espece) => {
-    const g = GABARITS_AVION[espece];
-    const du = Math.round(x + g.long / 2);
-    x += g.long + PASSAGE;
-    return { espece, du, dv: STAND, cap: CAP_LE_LONG_DE_X };
+  const seq = modelesDeRangee(profil);
+  if (!aires) {
+    // la rangée d'avant (v280) : un appareil de chaque espèce, au centre
+    const especes = especesDe(profil);
+    const { STAND } = planAerodrome(profil, rayon);
+    const total = especes.reduce((s, e) => s + GABARITS_AVION[e].long, 0) + PASSAGE * (especes.length - 1);
+    let x = -total / 2;
+    return especes.map((espece) => {
+      const g = GABARITS_AVION[espece];
+      const du = Math.round(x + g.long / 2);
+      x += g.long + PASSAGE;
+      return { espece, variante: null, du, dv: STAND, cap: CAP_LE_LONG_DE_X };
+    });
+  }
+  const out = [];
+  let i = 0;
+  for (const b of bandesDuPlan(profil, rayon)) {
+    const r = remplir(seq, i, -(b.bordDisque - 1), b.bordDisque - 1, b.dv, 'centre');
+    out.push(...r.postes); i = r.i;
+  }
+  return out;
+}
+
+// ET SUR LES AIRES PROLONGÉES, de chaque côté de chaque bande. Elles
+// commencent là où TOUTE la bande est sortie du disque (le bord intérieur,
+// sur la rangée la plus proche de l'axe) : ce qui est dedans appartient au
+// bâtisseur de l'aérodrome, ce qui est dehors à l'aire.
+export function bordInterieur(b) {
+  const pres = Math.min(Math.abs(b.z0), Math.abs(b.z1));
+  return Math.floor(Math.sqrt(Math.max(0, b.rayon * b.rayon - pres * pres)));
+}
+export function postesAerodrome(a) {
+  const out = postesAvion(a.profil, a.r);
+  const t = reglageAires.actif && AIRES[a.cle];
+  if (!t) return out;
+  const seq = modelesDeRangee(a.profil);
+  let i = 3;
+  bandesDuPlan(a.profil, a.r).forEach((b, k) => {
+    const [lo, le] = t[k] || [0, 0];
+    const d0 = bordInterieur(b) + 3;
+    const ouest = remplir(seq, i, -(b.bordDisque + lo), -d0, b.dv, 'fin'); i = ouest.i;
+    const est = remplir(seq, i, d0, b.bordDisque + le, b.dv, 'debut'); i = est.i;
+    out.push(...ouest.postes.map((q) => ({ ...q, aire: true })), ...est.postes.map((q) => ({ ...q, aire: true })));
   });
+  return out;
 }
 
 // L'EMPRISE AU SOL D'UN APPAREIL GARÉ — publiée ici, lue partout.
@@ -1406,19 +1660,3 @@ export function empriseAuSol(espece, du = 0, dv = 0) {
   };
 }
 
-// L'EMPRISE que la rangée réclame sur le tarmac. `buildAerodrome` l'utilise
-// pour dimensionner sa dalle : l'aire se règle sur ce qui s'y gare, et elle
-// suivra toute seule le jour où un appareil changera de taille.
-//
-// ELLE LIT L'ENVERGURE DEPUIS LA v278. Elle prenait `dv ± 3` — un chiffre
-// rond — alors qu'un avion de ligne étend ses ailes à huit blocs de son axe :
-// la dalle s'arrêtait donc cinq blocs avant le bout des ailes, et l'appareil
-// débordait sur l'herbe. Une aire se règle sur ce qui s'y gare, ailes
-// comprises.
-export function aireAvions(profil, rayon = 68) {
-  const boites = postesAvion(profil, rayon).map((p) => empriseAuSol(p.espece, p.du, p.dv));
-  return {
-    x0: Math.min(...boites.map((b) => b.x0)) - 2, x1: Math.max(...boites.map((b) => b.x1)) + 2,
-    dv0: Math.min(...boites.map((b) => b.z0)) - 2, dv1: Math.max(...boites.map((b) => b.z1)) + 2,
-  };
-}

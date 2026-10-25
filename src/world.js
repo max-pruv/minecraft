@@ -6,7 +6,7 @@ import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { echelleDe, etirerBatisseur } from './echelle-monuments.js';
 import { carrefoursDeVoies } from './voies.js';
 import { idGarage, CLE_GARAGES } from './garages.js';
-import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste, videParUnTroncon } from './aeroport.js';
+import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste, tronconsDAire, videParUnTroncon } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
 } from './usine.js';
@@ -1473,7 +1473,11 @@ const LANDMARKS_V317 = [
   // c'est-à-dire exactement ce que cette version allonge.
   ...AEROPORTS.map((a) => ({
     name: a.nom, x: a.x, z: a.z, box: a.r - 9,
-    build: a.cle === 'cdg' ? buildAeroport : (poser) => buildAerodrome(poser, a.profil, a.r),
+    // LES MONDES FIGÉS GARDENT L'AIRE D'AVANT (v565) : sa rangée de trois
+    // appareils, sa dalle et ses nivellements. Le monde d'aujourd'hui prend
+    // la grande aire (`aerodrome`, lu plus bas).
+    build: a.cle === 'cdg' ? buildAeroport : (poser) => buildAerodrome(poser, a.profil, a.r, false),
+    aerodrome: a,
   })),
   // La Giga-usine d'Austin : le hall et sa chaîne d'un côté, le parc des
   // voitures neuves de l'autre — deux tampons, parce qu'une seule boîte assez
@@ -1543,11 +1547,17 @@ const LANDMARKS = LANDMARKS_V317.map((lm) => {
   // Une tour qui a reçu une emprise (v357) étire son bâtisseur neuf ; le monde
   // d'avant (`LANDMARKS_V317`) garde la colonne d'un bloc.
   if (e) return { ...lm, build: etirerBatisseur(lm.tour || lm.build, e.paliers), echelle: e };
+  if (lm.aerodrome && lm.aerodrome.cle !== 'cdg') {
+    const a = lm.aerodrome;
+    return { ...lm, build: (poser) => buildAerodrome(poser, a.profil, a.r) };
+  }
   return lm.tour ? { ...lm, build: lm.tour } : lm;
 }).concat(
   // LES PISTES PROLONGÉES (v445) — seulement dans le monde d'aujourd'hui : les
   // mondes figés gardent leurs pistes d'avant (`LANDMARKS_V317`).
   AEROPORTS.flatMap(tronconsDePiste),
+  // ET LEURS AIRES DE STATIONNEMENT PROLONGÉES (v565), au même titre
+  AEROPORTS.flatMap(tronconsDAire),
 );
 
 // La même liste, sans les constructeurs : ce que la carte a le droit de lire.

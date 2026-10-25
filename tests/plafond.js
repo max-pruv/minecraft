@@ -1928,6 +1928,74 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       `${sansTronc} arbre(s) sans tronc sur ${arbres} autour des tronçons ${ex.join(', ')}`);
   }
 
+  // LES AIRES DE STATIONNEMENT PROLONGÉES (v565). Max : « agrandir les
+  // aéroports pour qu'il y ait beaucoup plus d'avions garés ». L'aire longe la
+  // piste prolongée, en blocs (remblai, tranchée), jamais en relief : les deux
+  // empreintes du dessus n'en savent rien. Trois verdicts. La table `AIRES`
+  // est EXACTEMENT ce que la sonde mesure (une aire allongée à la main, ou un
+  // obstacle neuf sur son chemin, rougit) ; sous chaque appareil d'une aire,
+  // l'asphalte de l'aire et rien au-dessus jusqu'à quarante blocs ; et aucun
+  // arbre n'y perd son tronc. Rouge sur l'ancien code : `tronconsDAire`
+  // n'existe pas.
+  {
+    const A = await import('../src/aeroport.js');
+    const W = await import('../src/world.js');
+    const { BLOCK: B, DECOR_START: D0 } = await import('../src/blocks.js');
+    let mesure = null, err = '';
+    try { mesure = (await import('./sonde-aires-aeroports.mjs')).mesurerAires(); } catch (e) { err = String(e && e.message || e); }
+    const ecarts = A.AIRES && mesure ? Object.keys(mesure).filter((k) => JSON.stringify(A.AIRES[k] || null) !== JSON.stringify(mesure[k])) : null;
+    verifier('chaque aire de stationnement prolongée a exactement la longueur que la sonde mesure',
+      !!ecarts && ecarts.length === 0 && Object.keys(mesure).length === A.AEROPORTS.length,
+      err || (ecarts ? `${ecarts.length} écart(s) ${ecarts.map((k) => `${k} ${JSON.stringify(A.AIRES[k])} pour ${JSON.stringify(mesure[k])}`).join(' · ')}` : 'AIRES ou bandesAire absente'));
+    if (!A.tronconsDAire || !A.postesAerodrome) {
+      verifier('sous chaque appareil d\'une aire prolongée, l\'asphalte et le ciel', false, 'tronconsDAire absente (code d\'avant la v565)');
+    } else {
+      const w = new W.World();
+      const ROULANT = new Set([25, 26, 23, 24, 27, 2].map((c) => D0 + c * 10));
+      let postes = 0, colonnes = 0, sansSol = 0, plein = 0, arbres = 0, sansTronc = 0; const ex = [];
+      const vus = new Set();
+      for (const a of A.AEROPORTS) {
+        for (const q of A.postesAerodrome(a).filter((u) => u.aire)) {
+          postes++;
+          const b = A.empriseAuSol(q.espece, q.du, q.dv);
+          for (let x = b.x0; x <= b.x1; x++) for (let z = b.z0; z <= b.z1; z++) {
+            colonnes++;
+            if (!ROULANT.has(w.getBlock(a.x + x, a.sol, a.z + z))) { sansSol++; if (ex.length < 3) ex.push(`${a.cle} sol (${x},${z})`); }
+          }
+        }
+        // et sur TOUTE l'aire, hors du disque : rien au-dessus jusqu'à quarante blocs
+        const t = A.AIRES[a.cle];
+        A.bandesAire(a).forEach((b, k) => {
+          for (const [sens, L] of [[-1, t[k][0]], [1, t[k][1]]]) for (let d = b.bordDisque; d <= b.bordDisque + L; d++) for (let z = b.z0; z <= b.z1; z++) {
+            const x = sens * d;
+            if (x * x + z * z <= b.rayon * b.rayon) continue;
+            colonnes++;
+            for (let y = a.sol + 1; y <= a.sol + 40; y++) {
+              const id = w.getBlock(a.x + x, y, a.z + z);
+              if (id !== B.AIR && id !== B.WATER) { plein++; if (ex.length < 3) ex.push(`${a.cle} plein (${x},${y - a.sol},${z})`); break; }
+            }
+          }
+        });
+        for (const t of A.tronconsDAire(a)) {
+          const m = t.box + 3;
+          for (let x = t.x - m; x <= t.x + m; x++) for (let z = t.z - m; z <= t.z + m; z++) {
+            const k = x + ',' + z;
+            if (vus.has(k)) continue;
+            vus.add(k);
+            const tr = w.treeAt(x, z);
+            if (!tr) continue;
+            arbres++;
+            const id = w.getBlock(x, tr.h + 1, z);
+            if (id !== B.LOG && id !== B.BIRCH) { sansTronc++; if (ex.length < 5) ex.push(`${a.cle} arbre (${x - a.x}, ${z - a.z})`); }
+          }
+        }
+      }
+      verifier('sous chaque appareil d\'une aire prolongée, l\'asphalte et le ciel ; autour, aucun arbre sans tronc',
+        postes > 150 && sansSol === 0 && plein === 0 && arbres > 20 && sansTronc === 0,
+        `${postes} postes (${sansSol} colonne(s) sans revêtement), ${colonnes} colonnes d'aire (${plein} sous un bloc) · ${sansTronc} arbre(s) sans tronc sur ${arbres} ${ex.join(', ')}`);
+    }
+  }
+
   // ET MÊME EXIGENCE POUR LES DEUX CENT SOIXANTE-NEUF VILLES ENGENDRÉES,
   // qui ont pris 1,8 fois leur emprise en v200.
   //

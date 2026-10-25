@@ -57,10 +57,16 @@ export async function empreinteMorceaux(src) {
   const VMm = await import(src + '/villesmonde.js');
   const recul = VMm.reglageMobilier ? VMm.reglageMobilier.recul : null;
   if (VMm.reglageMobilier) VMm.reglageMobilier.recul = 0;
+  // LES GRANDES AIRES DES AÉRODROMES (v565) : un contenu neuf — la rangée de
+  // postes et ses aires prolongées. Désarmées, la branche rend la constante
+  // d'avant (l'ancien code n'a pas l'interrupteur).
+  const Ae = await import(src + '/aeroport.js');
+  if (Ae.reglageAires) Ae.reglageAires.actif = false;
   try { return await empreinteDesMorceaux({ World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu }); } finally {
     if (VMm.reglageMobilier) VMm.reglageMobilier.recul = recul;
     if (T.rivesCreusees) T.rivesCreusees(true);
     if (Wm.COTE_AU_CENTRE) Wm.COTE_AU_CENTRE.actif = true;
+    if (Ae.reglageAires) Ae.reglageAires.actif = true;
   }
 }
 
