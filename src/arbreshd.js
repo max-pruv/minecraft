@@ -217,7 +217,7 @@ export function reconnaitreArbres(get, signature, C, yLo, yHi, H) {
         for (const [ax, ay, az] of fourche) if (dedans(ax, az)) cellules.add(ax + az * C + ay * C * C);
         if (dedans(x, z)) liste.push({ x, y, z, h, bloc: id, kind, boite, feuilles: feuilles.length / 3 });
         else {
-          // un fût du bord (v548) : ses cases dans le morceau, s'il en a
+          // un fût du bord (v554) : ses cases dans le morceau, s'il en a
           let nd = 0;
           for (let i = 0; i < feuilles.length; i += 3) if (dedans(feuilles[i], feuilles[i + 2])) nd++;
           for (const [ax, , az] of fourche) if (dedans(ax, az)) nd++;
@@ -571,7 +571,7 @@ export function arbreLoin(buf, x, y, z, wx, wz, h, boite, essence, climat = 0) {
 // `climats` est la table de `teintesDuMorceau` (ou null).
 // `loin` : le modèle lointain (`arbreLoin`, v528) au lieu du proche.
 // (`climats` peut aussi être une fonction de l'arbre : un arbre du bord lit
-// la table de SON morceau, v548)
+// la table de SON morceau, v554)
 export function emettreArbres(buf, arbres, ox, oz, C, climats, loin = false) {
   let n = 0;
   const modele = loin ? arbreLoin : arbreVrai;
@@ -585,7 +585,7 @@ export function emettreArbres(buf, arbres, ox, oz, C, climats, loin = false) {
   return n;
 }
 
-// Les huit voisins d'un morceau, dans l'ordre du tour (v548) : un arbre du
+// Les huit voisins d'un morceau, dans l'ordre du tour (v554) : un arbre du
 // bord a sa base dans l'un d'eux (`FENETRE` est sous la largeur d'un morceau).
 // Rangés en cercle, les directions d'un bord du disque chargé (nord-ouest,
 // nord, nord-est) sont contiguës : `main.js` les montre en une ou deux plages.

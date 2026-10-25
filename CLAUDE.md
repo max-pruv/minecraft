@@ -14298,7 +14298,7 @@ réalistes comme GTA. » Quatre règles.
   gardiens de `mesher.js` — seules `plafond.js` et `parishd.js` arment les
   arbres, et toutes deux sont rejouées seules.
 
-## Les arbres du bord (v548) — ce qu'un morceau tait, il le dessine tant que personne d'autre ne le fait
+## Les arbres du bord (v554) — ce qu'un morceau tait, il le dessine tant que personne d'autre ne le fait
 
 Deux dettes des arbres, une mesure. Deux règles.
 

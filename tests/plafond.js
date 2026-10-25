@@ -3630,13 +3630,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // `arbresLoin`, quelques cartes, à moins d'un quart des sommets du proche.
       // Sur l'ancien code, le loin gardait ses cubes (`solid` = celui d'avant).
       // (les modèles des arbres du BORD suivent ceux du morceau dans le même
-      // tampon depuis la v548 : on ne compte que ceux du morceau)
+      // tampon depuis la v554 : on ne compte que ceux du morceau)
       const vLoin = loin.arbresLoin ? (loin.arbresBord ? loin.arbresBord.sommets : loin.arbresLoin.positions.length / 3) : 0;
       const vPres = arme.facades ? arme.facades.positions.length / 3 : 0;
       verifier('au loin, les arbres ne sont plus des cubes : leurs cubes se taisent et chacun a son modèle lointain, à moins d\'un quart des sommets du proche',
         loin.arbres === arme.arbres && sha(loin.solid) === sha(arme.solid) && !loin.facades && vLoin > loin.arbres * 12 && vLoin * 4 < vPres,
         `${loin.arbres} arbres au loin (${arme.arbres} de près) ; solid du loin = solid du proche ${sha(loin.solid) === sha(arme.solid)} ; ${vLoin} sommets au loin, ${vPres} de près`);
-      // (3 bis bis, v548) AU BORD DU DISQUE CHARGÉ, UNE COURONNE NE MANQUE PLUS
+      // (3 bis bis, v554) AU BORD DU DISQUE CHARGÉ, UNE COURONNE NE MANQUE PLUS
       // DE SA PART TUE. Les feuilles d'un arbre dont la base est dans un
       // morceau voisin se taisent ici ; c'est le voisin qui dessine l'arbre —
       // et tant qu'il n'est pas maillé, cette part manquait (sonde : sept
@@ -3673,7 +3673,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           cases += A.reconnaitreArbres((x, y, z) => wb.getBlock(cx * W.CHUNK + x, y, cz * W.CHUNK + z), (lx, lz) => wb.treeAt(cx * W.CHUNK + lx, cz * W.CHUNK + lz), W.CHUNK, 20, 120, W.HEIGHT).bord
             ?.reduce((s, a) => s + a.dedans, 0) || 0;
         }
-        verifier('au bord du disque chargé, la couronne d\'un arbre dont la base est dans un morceau voisin ne manque plus : le morceau porte son modèle lointain, celui-là même que le voisin dessine (v548)',
+        verifier('au bord du disque chargé, la couronne d\'un arbre dont la base est dans un morceau voisin ne manque plus : le morceau porte son modèle lointain, celui-là même que le voisin dessine (v554)',
           groupes > 0 && sommetsBord > 100 && absents === 0 && solidStable,
           `${groupes} directions, ${sommetsBord} sommets d'arbres du bord, ${absents} absents du voisin${temoin ? ' (' + temoin + ')' : ''}, ${cases} cases tues ici ; solid indépendant du détail ${solidStable}`);
       }

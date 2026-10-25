@@ -1071,7 +1071,7 @@ v522 ne touche pas ; la distribution reste à faire.
   `RAYON_HD > 0`, et le banc rend en logiciel — seules les pages `hd=` de
   `parishd.js` et `plafond.js` (node) l'arment, et elles sont vertes.
 - [x] **LES VRAIS ARBRES (v499) : UNE DEMI-COURONNE À LA FRONTIÈRE DE
-  `RAYON_HD`.** **Caduque depuis la v528, prouvé en v548** : les cubes d'un
+  `RAYON_HD`.** **Caduque depuis la v528, prouvé en v554** : les cubes d'un
   arbre reconnu ne s'émettent plus nulle part et chaque arbre n'a qu'un
   dessinateur (le morceau de sa base, proche OU lointain) ; le témoin de
   `plafond.js` exige que le `solid` d'un morceau ne dépende pas de son détail.

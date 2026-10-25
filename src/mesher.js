@@ -663,7 +663,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   let arbresEmis = 0;
   if (arbresDetail) arbresEmis = emettreArbres(facades, arbres, ox, oz, CHUNK, teintes);
   if (arbresLoin) emettreArbres(arbresLoin, arbres, ox, oz, CHUNK, teintes, true);
-  // LES ARBRES DU BORD (v548). Les feuilles d'un arbre dont la base est dans
+  // LES ARBRES DU BORD (v554). Les feuilles d'un arbre dont la base est dans
   // un morceau voisin se taisent ici, et c'est le voisin qui dessine l'arbre ;
   // tant qu'il n'est pas maillé (au bord du disque chargé, pendant une
   // arrivée), cette part de couronne MANQUAIT. Le modèle lointain de chaque

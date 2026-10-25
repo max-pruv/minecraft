@@ -1352,7 +1352,7 @@ function installerMorceau(cx, cz, tampons) {
     // ce morceau touche la couche HD (ou porte des arbres, v499), et il a été
     // maillé AVEC ses façades détaillées (v296)
     hd: !!tampons.hd || !!tampons.arbres, detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0),
-    // les plages d'indices des arbres du bord (v548), et la dernière plage montrée
+    // les plages d'indices des arbres du bord (v554), et la dernière plage montrée
     arbresBord: tampons.arbresBord || null, bordSig: null, cle: [cx, cz] };
   const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
   const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
@@ -1379,7 +1379,7 @@ function installerMorceau(cx, cz, tampons) {
       const g = geometrieHD(t);
       if (!g) continue;
       if (nom === 'facades') { entry.octetsFacades = octetsDeTampons(t); detailTenu.octets += entry.octetsFacades; detailTenu.n++; }
-      // (les arbres du loin se dessinent par plages, v548 : un tableau d'un
+      // (les arbres du loin se dessinent par plages, v554 : un tableau d'un
       // seul matériau — le même, donc la même clé de programme)
       const m = new THREE.Mesh(g, nom === 'arbresLoin' && tampons.arbresBord ? [materiau] : materiau);
       m.position.set(cx * CHUNK, 0, cz * CHUNK);
@@ -1469,7 +1469,7 @@ function installerMorceau(cx, cz, tampons) {
     if (m) m.userData.morceau = true;
   }
   chunkMeshes.set(key, entry);
-  // ses voisins cessent de montrer les arbres dont il porte la base (v548)
+  // ses voisins cessent de montrer les arbres dont il porte la base (v554)
   relayerArbresVoisins(cx, cz);
   // un morceau plus lourd que son estimation peut faire déborder le budget :
   // on rend alors les plus loin, tout de suite (v299)
@@ -1545,7 +1545,7 @@ function montrerLeDetail(entry, cx, cz, pcx, pcz) {
     else entry.arbresLoin.visible = !pres;
   }
 }
-// LES ARBRES DU BORD (v548) : un arbre dont la base est dans un voisin est
+// LES ARBRES DU BORD (v554) : un arbre dont la base est dans un voisin est
 // dessiné par ce voisin ; tant que le voisin n'est pas maillé (le bord du
 // disque chargé, une arrivée), ce morceau-ci montre son modèle lointain — sa
 // couronne ne manque plus de la part dont les cubes se taisent ici. Les
