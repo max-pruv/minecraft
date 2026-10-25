@@ -1434,16 +1434,16 @@ function buildHotelDeVilleToronto(poser) {
 // écartaient l'anneau de voitures d'arrivée — mesuré, 2 044 blocs de circuits
 // tombaient à 1 532 ; à trois blocs, les quatre anneaux restent au bit près.
 function buildHotelDeVilleLA(poser) {
-  for (let y = 1; y <= 16; y++) {
+  for (let y = 1; y <= 15; y++) {
     plein(poser, y, -1, 1, -1, 1, y === 4 || y === 6 ? CREME : BLANC);
     if (y % 3 === 2 && y > 4) for (const [a, b] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) poser(a, y, b, VITRE);
   }
-  for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) poser(a, 17, b, CREME);     // la colonnade
-  poser(0, 17, 0, BLANC);
-  plein(poser, 18, -1, 1, -1, 1, CREME);                                                  // la pyramide
-  for (const [a, b] of [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]]) poser(a, 19, b, CREME);
-  poser(0, 20, 0, CREME);
-  poser(0, 21, 0, BLANC);                                                                 // la lanterne
+  for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) poser(a, 16, b, CREME);     // la colonnade
+  poser(0, 16, 0, BLANC);
+  plein(poser, 17, -1, 1, -1, 1, CREME);                                                  // la pyramide
+  for (const [a, b] of [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]]) poser(a, 18, b, CREME);
+  poser(0, 19, 0, CREME);
+  poser(0, 20, 0, BLANC);                                                                 // la lanterne
 }
 
 // Le Panthéon de Rome : la rotonde de brique, la coupole basse — une demi-
