@@ -22,6 +22,16 @@
   de 0,7 s de période à une image par seconde sous charge. `monte.js` et
   `reseau.js` rejouées seules : rouges déclarés seulement (voisines, rue vide ;
   départ de l'hôte, 1/3 des deux côtés).
+- **Portail de la v547 (rebasée sur la v546)** : rouges déclarés seulement
+  (`maj.js` loader, `reglages.js` un choix à deux tablettes, `manhattan.js` le
+  taxi roule, `monte.js` par tranches et rue vide), plus un NEUF :
+- [ ] **`carte.js` « minicarte (820 × 1180) : visible dès l'entrée en jeu » et
+  « … à pied, en construction, au volant et en avion »** : la minicarte n'est
+  pas à l'écran à l'entrée (`entree: null`, `b: null`), à la taille de l'iPad
+  seulement. Rejouée SEULE : rouge sur `origin/main` v546 (`git worktree`),
+  verte sur la branche — en production, la v547 n'y touche pas. Non vu aux
+  portails de la v540 à la v544 : à rejouer en distribution (v269) des deux
+  côtés, avec le temps écoulé depuis l'entrée dans le message.
 - [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » (Bolide
   à 0,45)** : rouge sur la branche, VERT sur `origin/main` cette fois (rouge 2
   sur 2 des deux côtés à la v540) — un tirage. Piste, non établie : les poses se
