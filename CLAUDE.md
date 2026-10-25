@@ -873,6 +873,33 @@ déjà conducteur ». Quatre règles.
   est posé à la main (`update` suspendu), sinon sa physique le ramène au sol
   pendant la mesure.
 
+## Les amis rejoués entre deux relevés (v556) — une position reçue porte son heure d'envoi
+
+Max : « tu le vois bouger de manière saccadée ». Trois règles.
+
+- **UNE POSITION D'AMI SE DESSINE À UNE HEURE, PAS À LA DERNIÈRE ARRIVÉE.**
+  `pos` porte `ts` (l'horloge de l'envoyeur) et, au volant ou en vol, `vx`/`vz`
+  ; `fluidite.js` (pur) rejoue l'ami avec un retard réglé sur ce que le chemin
+  impose — le 9e décile du délai d'un relevé PLUS l'écart au précédent, parce
+  que par le nuage c'est l'écart qui compte — et interpole. Les horloges ne
+  s'accordent pas : l'écart entre elles est le plus petit délai jamais vu, qui
+  ne remonte jamais (un écart qui remonte ferait reculer l'ami). Le retard
+  monte à mi-vitesse et redescend à 12 % : jamais de saut. Au-delà de
+  `EXTRAPOLE_MAX` (500 ms : une page qui cale perd autant de relevés) sans relevé, l'ami attend. Tout en temps réel.
+- **UN RELEVÉ EN RETARD SE RANGE À SA PLACE.** Par le nuage, deux écritures
+  parties ensemble se publient dans le désordre (75 envoyés, une quarantaine
+  reçus dans l'ordre en neuf secondes, mesuré) : on l'insère, on ne le jette
+  pas. Une téléportation (plus de 60 blocs à plus de 300 b/s) remet le suivi
+  à zéro et se pose d'un coup.
+- **UNE FLUIDITÉ SE MESURE EN VITESSE APPARENTE, IMAGE PAR IMAGE.** Le
+  conducteur roule en temps réel (position fonction de la montre, physique
+  suspendue), l'autre page relève où l'ami est DESSINÉ à chaque image, et l'on
+  compte la part des images à la vraie vitesse (`sonde-amis-fluides.cjs`, lue
+  par `reseau.js`). Un pire saut seul mesure les hoquets du banc ; une page
+  qui vient d'entrer ne rend parfois pas une image en dix secondes, et l'on
+  attend qu'elle rende avant de mesurer. Un témoin de fluidité rend la place
+  telle qu'il l'a trouvée (position et cap du conducteur).
+
 ## La Revuelto adaptée (v546) — un identifiant de flotte ne change pas, son fichier oui
 
 Max a fourni une adaptation CC-BY-4.0 (BRO) de la Revuelto. Trois règles.

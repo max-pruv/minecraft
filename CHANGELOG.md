@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v556 — Les amis bougent en temps réel
+
+**Pourquoi.** Max : « Tu le vois bouger de manière saccadée, toutes les
+secondes il a avancé… c'est pas très real time. » Chaque tablette envoie sa
+position toutes les 120 ms, sans heure ni vitesse, et l'autre dessinait l'ami
+en courant après la DERNIÈRE position reçue. Mesuré au banc
+(`tests/sonde-amis-fluides.cjs`, l'ami au volant à 30 blocs par seconde, sa
+dessinée relevée image par image chez l'autre) : en direct, des bonds jusqu'à
+quatorze blocs d'un coup et 74 % des images à la vraie vitesse ; par le nuage,
+où les relevés arrivent une demi-seconde à la fois et parfois dans le
+désordre, l'ami immobile sur 40 % des images puis bondissant, 21 % des images
+à la vraie vitesse.
+
+**Ce que ça change.** L'ami, à pied, en voiture ou en avion, avance d'un
+mouvement continu chez les autres, par le lien direct, à travers l'hôte et par
+le nuage. Chaque position part avec l'heure de son envoi et, au volant, sa
+vitesse ; l'autre tablette rejoue l'ami avec un léger retard (de deux
+dixièmes de seconde en direct à un peu plus d'une demi-seconde par le nuage,
+réglé tout seul) en glissant entre deux relevés, et prolonge son mouvement une
+demi-seconde au plus quand un relevé tarde. Une téléportation se pose
+d'un coup. Une tablette restée sur l'ancienne version est suivie comme avant.
+
+**Ce qui le prouve.** Quatre témoins dans `reseau.js` : la règle pure sous
+node (paquets du nuage, désordre, téléportation, ancienne version) ; en direct,
+le pire bond d'une image à l'autre (13 à 25 blocs → 0,4 à 2,1 d'ordinaire, barre 8) et le
+champ sur `pos` ; par l'hôte, l'heure d'envoi qui traverse `rpos` (rouge sur
+l'ancien code) ; par le nuage, la part des images à la vraie vitesse (0,21 à
+0,37 → 0,69 à 0,98, barre 0,55). Portail : seize suites vertes ; `monte.js`
+rend quatre rouges de la famille rue et circulation déjà déclarée (une partie
+seule n'a pas d'ami à dessiner : rien de ce que la livraison change n'y est
+atteint).
+
 ## v555 — Hôtel de Ville retrouve sa bouche de métro
 
 **Pourquoi.** Depuis les rues à la GTA (v544), la station Hôtel de Ville de la

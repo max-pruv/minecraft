@@ -85,6 +85,7 @@ import { EducationMode, GRADES, todayKey } from './education.js';
 import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './partage.js';
 import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe, micOuvert } from './visio.js';
 import { initCommandes, ICONES } from './commandes.js';
+import { creerSuivi, recevoir, positionA } from './fluidite.js';
 
 // New York appartient à la Terre. Les anciennes adresses deviennent un lieu de départ.
 const VISITE_MANHATTAN = ['manhattan'].includes(new URLSearchParams(location.search).get('lieu')) || new URLSearchParams(location.search).get('carte') === 'manhattan';
@@ -5097,13 +5098,18 @@ function syncRemotePlayers(list) {
       mesh.add(nameSprite(p.name));
       scene.add(mesh);
       rp = { mesh, target: null, yaw: 0, moving: false, animTime: 0, name: p.name, pop: 0.5,
-        pos: new THREE.Vector3(), cap: 0, vehicule: null, passager: null };
+        pos: new THREE.Vector3(), cap: 0, vehicule: null, passager: null, suivi: creerSuivi(), dernierRecu: null };
       remotePlayers.set(p.id, rp);
       if (p.pos) { mesh.position.set(p.pos.x, p.pos.y, p.pos.z); rp.pos.set(p.pos.x, p.pos.y, p.pos.z); }
       mesh.scale.setScalar(0.01); // grandit depuis rien, cf. updateRemotePlayers
       joinEffect(mesh.position, p.name || 'Un ami');
     }
-    if (p.pos) rp.target = p.pos;
+    // chaque relevé neuf entre dans le suivi une fois (un objet `pos` par
+    // message reçu : la liste des joueurs repasse aussi ceux qui n'ont pas bougé)
+    if (p.pos && p.pos !== rp.dernierRecu) {
+      rp.dernierRecu = p.pos;
+      recevoir(rp.suivi, { ...p.pos, yaw: p.yaw || 0 }, performance.now());
+    }
     rp.yaw = p.yaw || 0;
     rp.moving = p.moving;
     synchroniserVehiculeDistant(rp, p.v || null);
@@ -5183,6 +5189,8 @@ function vehiculeDuConducteur(de) {
   return rp && rp.vehicule ? rp.vehicule : null;
 }
 
+let dernierEnvoiPos = null;   // l'envoi de position précédent, pour la vitesse (amis-fluides)
+
 function updateRemotePlayers(dt) {
   updateNetFx(dt);
   for (const rp of remotePlayers.values()) {
@@ -5196,16 +5204,22 @@ function updateRemotePlayers(dt) {
     }
     // La position VRAIE vit dans `rp.pos` (v253) : le maillage, lui, peut
     // être assis dans un véhicule, en coordonnées du siège.
-    if (rp.target) {
-      const t = Math.min(1, dt * 10);
-      rp.pos.x += (rp.target.x - rp.pos.x) * t;
-      rp.pos.y += (rp.target.y - rp.pos.y) * t;
-      rp.pos.z += (rp.target.z - rp.pos.z) * t;
+    // L'AMI EST REJOUÉ ENTRE DEUX RELEVÉS (amis-fluides) : sa position est une
+    // fonction de l'horloge réelle (`fluidite.js`), plus une course après le
+    // dernier relevé reçu — qui le faisait bondir puis s'arrêter au volant, et
+    // par paquets par le nuage. Le cap suit de même.
+    const ici = performance.now();
+    const vu = positionA(rp.suivi, ici, (ici - (rp.dernierRendu || ici)) / 1000);
+    rp.dernierRendu = ici;
+    if (vu) {
+      rp.pos.set(vu.x, vu.y, vu.z);
+      rp.cap = vu.yaw;
+    } else {
+      let dy = rp.yaw - rp.cap;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      rp.cap += dy * Math.min(1, dt * 10);
     }
-    let dy = rp.yaw - rp.cap;
-    while (dy > Math.PI) dy -= Math.PI * 2;
-    while (dy < -Math.PI) dy += Math.PI * 2;
-    rp.cap += dy * Math.min(1, dt * 10);
     rp.animTime += dt;
     if (rp.vehicule) {
       // au volant : la voiture suit la position, le cap suit le regard
@@ -5329,6 +5343,17 @@ function startNetSession(code, isHost, patience) {
     if (rc) p.rc = rc;
     // où l'on va (v388) : l'ami se voit proposer d'y aller aussi
     if (gpsCible) p.g = [Math.round(gpsCible.x), Math.round(gpsCible.z), gpsCible.nom, gpsCible.k];
+    // LA VITESSE AU VOLANT (amis-fluides) : mesurée sur le déplacement réel
+    // depuis l'envoi précédent, en temps réel — c'est elle qui prolonge l'ami
+    // chez l'autre quand un relevé tarde. À pied, l'interpolation suffit.
+    const ici = performance.now();
+    if (p.v && dernierEnvoiPos && ici - dernierEnvoiPos.t > 30 && ici - dernierEnvoiPos.t < 1000) {
+      const e = (ici - dernierEnvoiPos.t) / 1000;
+      p.vx = Math.round((p.x - dernierEnvoiPos.x) / e * 10) / 10;
+      p.vz = Math.round((p.z - dernierEnvoiPos.z) / e * 10) / 10;
+      if (Math.hypot(p.vx, p.vz) > 400) { delete p.vx; delete p.vz; }   // une téléportation n'est pas une vitesse
+    }
+    dernierEnvoiPos = { t: ici, x: p.x, z: p.z };
     return p;
   };
   world.onOp = (k, id, ts) => { if (net && net.active) net.sendOp(k, id, ts); };
