@@ -137,6 +137,14 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   chargement (≈ 36 maillages), ou réduire ses textures à 512 px (31 → ≈ 8 Mo).
   Proposé à Max, pas fait.
 
+- [ ] **Portail de la v554 (villes à bordures), rouges déclarés.** `washington.js` :
+  « sur le quai, une rame Orange arrive et propose de monter » (pas de bouton à
+  58 s) et la descente qui en dépend, rouges au portail ; rejouée SEULE, verte
+  sur la branche ET sur `origin/main` v553 (`{"t":58.25}` des deux côtés) — un
+  rouge de charge, à rejouer en distribution (v269). `monte.js` : « à Rome
+  aussi, un passant traverse sur le passage peint » et « les passants de la
+  ville d'arrivée se posent quand le monde est là », déjà déclarés, le premier
+  rouge aussi sur `origin/main` rejouée seule.
 - [ ] **Les rues à la GTA (v544), ce qui reste, déclaré.** (1) Les convois des
   villes bâties à la main roulent à `DECALAGE_AVENUE` (1,3 bloc) de l'axe
   (v372) quand le milieu de la voie GTA est à 2,13 : recentrer touche les tours
