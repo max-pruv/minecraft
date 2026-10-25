@@ -821,6 +821,38 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La file freine en douceur au feu (vXXX) — une borne de file se tient à chaque image, et une vitesse publiée a une heure
+
+La vraie panne déclarée deux fois dans `TASKS.md` (« la voiture de file pile
+derrière celle qui s'arrête »). Quatre règles.
+
+- **UN MÉCANISME RARE SE NOMME PAR UN JOURNAL IMAGE PAR IMAGE, PAS PAR LA
+  CAUSE ÉCRITE DANS LA DETTE.** La dette accusait l'arrêt d'urgence au
+  contact ; une instrumentation provisoire de `updateProfil` (vitesse avant et
+  après `rapprocher`, après la borne, plancher qui recolle, retard, cause),
+  vidée au moment exact où la sonde voit la chute, en a nommé cinq autres —
+  et `urgence` valait zéro dans tous. Le journal se retire avant le commit ;
+  la sonde qui reste (`sonde-feu-file.cjs`) mesure l'effet.
+- **LA BORNE DE FILE (v450) SE TIENT À CHAQUE IMAGE, DISCRÈTE, ET VOIT LE
+  GABARIT D'AUSSI LOIN QU'IL FAUT POUR FREINER.** Armée dès qu'il y a une
+  voiture devant et une raison de freiner ou de rattraper (`cible` finie ou
+  retard), pas seulement en cause 1 ; relative à celle de devant (v453) ;
+  exigée à la FIN de l'image (v·dt + v²/2a ≤ reste + vDevant²/2a) ; et le
+  gabarit du virage (v431) lu sur tout ce qu'elle parcourra avant de pouvoir
+  s'arrêter. Le plancher (v283) reste la garantie dure ; s'il recolle, c'est
+  que la borne a raté quelque chose, et c'est un arrêt sec.
+- **UNE VITESSE PUBLIÉE EST CELLE DE LA FIN DE L'IMAGE.** `vLoc` mêlait une
+  moyenne sur l'image (sur la grille) et une vitesse de fin d'image (en
+  freinant) : une image longue suivie d'une courte faisait une marche que
+  personne n'avait freinée. Sur sa grille, une voiture publie `vFin` (la
+  vitesse de la grille à cette heure, jeu compris) ; un déplacement qui
+  n'est pas une allure (le retard rendu d'une voiture que personne ne voit,
+  v372) ne gonfle pas la vitesse — que la voiture reprend comme son état.
+- **LA GRILLE VA EN MOUVEMENT UNIFORMÉMENT VARIÉ SUR CHAQUE BLOC**
+  (`blocUniforme`) : mêmes points aux mêmes heures, donc la même rue sur deux
+  tablettes (v305), et plus de marche de vitesse au bout de chaque bloc. Les
+  rames et les convois sans profil gardent la règle linéaire.
+
 ## La Revuelto adaptée (v546) — un identifiant de flotte ne change pas, son fichier oui
 
 Max a fourni une adaptation CC-BY-4.0 (BRO) de la Revuelto. Trois règles.

@@ -1642,7 +1642,15 @@ class Convoi {
       const prof = pr.calcule || profilVitesse({ longueur: L, capA: (d) => par.capLisse(d), limiteA: lim });
       const g = grilleDuProfil(prof);
       this.profilCalcule = prof;
-      this._horaire = { ts: g.ts, ds: g.ds, P: g.ts[g.ts.length - 1], L };
+      // LA GRILLE NE VA PLUS PAR ESCALIER (feu-file-douce). Entre deux points
+      // du profil (un bloc), la distance était interpolée linéairement : la
+      // vitesse était constante sur le bloc et sautait à sa fin — à trois
+      // blocs par seconde, une marche de 1,2 b/s d'une image à l'autre, que le
+      // témoin du feu lisait comme un coup de frein. On pose une accélération
+      // constante sur le bloc (`vs`, les vitesses du profil aux points) : mêmes
+      // points aux mêmes heures (la grille est la même, v305), la position
+      // entre deux points bouge de moins d'un centième de bloc.
+      this._horaire = { ts: g.ts, ds: g.ds, P: g.ts[g.ts.length - 1], L, vs: prof.vs && prof.vs.length === g.ts.length ? prof.vs : null };
       // les voitures se suivent à intervalle de TEMPS égal : un tour divisé
       // par leur nombre, et une queue qui retombe sur la tête au tour suivant
       this.dtVoiture = this._horaire.P / Math.max(1, this.nb);
@@ -1711,6 +1719,11 @@ class Convoi {
     while (lo < hi) { const m = (lo + hi) >> 1; if (ds[m] < r) lo = m + 1; else hi = m; }
     if (lo === 0 || ds[lo] === r) return n * P + ts[lo];
     const k = lo - 1;
+    const q = this.blocUniforme(k);
+    if (q) {
+      const x = r - ds[k];
+      return n * P + ts[k] + (Math.abs(q.a) > 1e-9 ? (Math.sqrt(Math.max(0, q.v0 * q.v0 + 2 * q.a * x)) - q.v0) / q.a : x / q.v0);
+    }
     return n * P + ts[k] + (ts[lo] - ts[k]) * (r - ds[k]) / (ds[lo] - ds[k]);
   }
 
@@ -1722,8 +1735,22 @@ class Convoi {
     let lo = 0, hi = ts.length - 1;
     while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ts[m] <= r) lo = m; else hi = m; }
     const dt = ts[hi] - ts[lo], dd = ds[hi] - ds[lo];
+    const q = this.blocUniforme(lo);
+    if (q) { const tau = r - ts[lo]; return { d: n * L + ds[lo] + q.v0 * tau + 0.5 * q.a * tau * tau, v: q.v0 + q.a * tau, pause: 0 }; }
     const u = dt > 0 ? (r - ts[lo]) / dt : 0;
     return { d: n * L + ds[lo] + dd * u, v: dt > 0 ? dd / dt : 0, pause: dd === 0 ? ts[hi] - r : 0 };
+  }
+
+  // Le bloc k du profil en mouvement uniformément varié : vitesse v0 au point
+  // k, accélération a, ou null si la grille n'en vient pas (rames, convois
+  // sans profil) ou si le bloc est sous le plancher de vitesse de
+  // `grilleDuProfil` (moyenne bornée à 0,2 : la règle linéaire d'avant).
+  blocUniforme(k) {
+    const { ts, ds, vs } = this._horaire;
+    if (!vs || k + 1 >= ts.length) return null;
+    const v0 = vs[k], v1 = vs[k + 1], dt = ts[k + 1] - ts[k];
+    if (!(dt > 0) || (v0 + v1) / 2 < 0.2 || Math.abs((ds[k + 1] - ds[k]) - (v0 + v1) / 2 * dt) > 1e-6) return null;
+    return { v0, a: (v1 - v0) / dt };
   }
 
   // CHAQUE VOITURE A SON CONDUCTEUR (v438). La variance d'allure était par
@@ -1823,7 +1850,7 @@ class Convoi {
     if (this.bloque) this.decalage = (this.decalage || 0) + dt;
     const h0 = horloge - (this.decalage || 0);
     const n = this.nb;
-    if (!this.base) { this.base = new Float64Array(n); this.vGrille = new Float32Array(n); }
+    if (!this.base) { this.base = new Float64Array(n); this.vGrille = new Float32Array(n); this.vFin = new Float32Array(n); }
     const avantTete = this.distance;
     const pos0 = this.distanceA(h0);
     const saut = !this.baseFaite || Math.abs(pos0.d - avantTete) > Math.max(30, this.vitesse * 4);
@@ -1835,6 +1862,8 @@ class Convoi {
       const hi = h0 - i * this.dtVoiture, e = this.jeu(i, hi + this.phase);
       const p = i === 0 && e === 0 ? pos0 : this.distanceA(hi - e);
       this.base[i] = p.d; this.vGrille[i] = p.v;
+      // sa vitesse à la FIN de l'image, jeu compris (d/dh de la grille)
+      this.vFin[i] = e === 0 ? p.v : p.v * (1 - (e - this.jeu(i, hi - 0.02 + this.phase)) / 0.02);
     }
     this.distance = pos0.d;
     this.vitesseActuelle = pos0.v;
@@ -1874,10 +1903,20 @@ class Convoi {
       let vise = this.heurte[i] > 0 ? 0 : this.cible[i];
       // rattraper, oui, mais pas à soixante-dix dans Paris : trois blocs par
       // seconde de plus que la grille au plus
-      const libre = this.retard[i] > 0.05 ? Math.min(vConv * 1.3, vConv + 3) : vConv;
+      // ET LE RATTRAPAGE S'ÉTEINT AVEC LE RETARD (feu-file-douce) : recollée à
+      // sa grille dans l'image où son retard s'annulait, la voiture perdait
+      // d'un coup l'excès d'allure (10,55 → 9,63 b/s en 9 ms, journal de la
+      // sonde) ; l'excès vaut désormais au plus une fois et demie le retard.
+      // (sur la vitesse de la grille à la FIN de l'image : la moyenne d'une
+      // image longue retarde d'une demi-image sur une grille qui ralentit)
+      const vRef = this.vFin[i];
+      const libre = this.retard[i] > 0.05 ? vRef + Math.min(0.3 * vRef, 3, 1.5 * this.retard[i]) : vConv;
       if (vise > libre) vise = libre;
       let v = this.vLoc[i] < 0 ? vConv : this.vLoc[i];
-      v = (vise >= vConv && this.retard[i] <= 0.05) ? vConv : rapprocher(v, vise, dt);
+      const D_v0 = v, D_r0 = this.retard[i];
+      const surGrille = vise >= vConv && this.retard[i] <= 0.05;
+      v = surGrille ? vConv : rapprocher(v, vise, dt);
+      const D_v1 = v;
       // CONTACT IMMINENT : l'autre est déjà au ras du capot — on s'arrête là,
       // sans attendre le freinage (v372)
       if (this.urgence[i]) v = 0;
@@ -1889,11 +1928,43 @@ class Convoi {
       // deux fois par minute au-dessus de Paris). On ne lui laisse que la
       // vitesse qu'elle peut perdre au freinage d'urgence avant le plancher :
       // elle y arrive en freinant.
-      const devant = this.devantSurLaLigne(i);
-      if (v > 0 && this.cause[i] === 1 && this.cible[i] !== Infinity && (i > 0 || devant || queue)) {
-        const ici = ancien[i] - this.retard[i];
-        const miniIci = Math.abs(this.parcours.courbure(ici)) > 0.03 || Math.abs(this.parcours.courbure(ici + 3)) > 0.03
-          || Math.abs(this.parcours.courbure(ici + 5)) > 0.03 ? miniVirage : miniDroit;
+      // (feu-file-douce) ARMÉE DÈS QU'IL Y A UNE VOITURE DEVANT, quelle que
+      // soit la cause : une voiture retenue par une autre (cause 2) qui passait
+      // en cause 1 était coupée d'un coup (2,80 → 0,98 b/s en une image,
+      // journal de la sonde), et une voiture qui roulait à douze blocs par
+      // seconde sans rien voir (`cible` infinie : la précédente hors de portée
+      // du regard) arrivait sur elle trop vite pour freiner (12,2 → 7,8). La
+      // borne est RELATIVE à celle de devant (v453) : une file qui roule ne la
+      // sent pas, et elle ne se calcule que si l'écart devient court. ET
+      // DISCRÈTE : la suiveuse avance de v·dt dans l'image AVANT que la borne
+      // ne la revoie ; dans une image longue (0,44 s au banc) elle dépassait ce
+      // que son freinage lui laissait (3,04 → 1,16). On exige qu'à la FIN de
+      // l'image elle puisse encore s'arrêter : v·dt + v²/2a ≤ reste + vDevant²/2a.
+      // (« voies réunies » se juge là où la voiture EST, au début de l'image :
+      // à `base − retard`, base neuve et retard ancien, la réunion se lisait
+      // jusqu'à deux blocs devant elle dans une image longue, et le plancher
+      // de la ligne la reculait avant qu'elle n'y arrive — journal de la sonde)
+      const ici = ancien[i] - this.retard[i];
+      const devant = this.devantSurLaLigne(i, false, ici);
+      let miniBorne = null;
+      if (v > 0 && (i > 0 || devant || queue || this.jumeauDe || this.jumelle)) {
+        // LE GABARIT DE LA v431 VU D'AUSSI LOIN QU'IL FAUT POUR FREINER. Le
+        // plancher le relisait à chaque image là où est la suiveuse (courbure
+        // sous elle, à trois et à cinq blocs) : quand le tracé devant elle se
+        // mettait à tourner, l'écart exigé passait de 5,4 à 6,0 blocs d'un coup
+        // et elle était recollée à l'arrêt (3,56 → 0 b/s, journal de la sonde).
+        // La borne lit la courbure sur tout ce qu'elle parcourra avant de
+        // pouvoir s'arrêter, et le plancher reprend ce gabarit-là : les deux
+        // ne lisent plus la courbure à deux endroits différents.
+        const portee = v * dt + v * v / (2 * FREIN_URGENCE) + 5;
+        let miniIci = null;
+        const gabarit = () => {
+          if (miniIci === null) {
+            miniIci = miniDroit;
+            for (let k = 0; k <= portee + 0.5; k++) if (Math.abs(this.parcours.courbure(ici + Math.min(k, portee))) > 0.03) { miniIci = miniVirage; break; }
+          }
+          return miniIci;
+        };
         // RELATIVE À CELLE DE DEVANT : une file qui roule à quatorze blocs par
         // seconde à douze blocs d'écart ne freine pas (le premier jet bornait
         // comme si la précédente était arrêtée, et toute la file traînait).
@@ -1901,8 +1972,9 @@ class Convoi {
         // de la précédente : v² ≤ vDevant² + 2·a·reste. (La somme
         // vDevant + √(2·a·reste), plus large, laissait des arrêts secs : 3 sur 8.)
         const borne = (dDevant, vDevant) => {
-          const reste = dDevant - ici - miniIci;
-          const vMax = Math.sqrt(vDevant * vDevant + 2 * FREIN_URGENCE * Math.max(0, reste));
+          if (dDevant - ici - miniVirage >= portee) return;      // assez loin, quel que soit le gabarit
+          const reste = dDevant - ici - gabarit(), adt = FREIN_URGENCE * dt;
+          const vMax = Math.sqrt(adt * adt + vDevant * vDevant + 2 * FREIN_URGENCE * Math.max(0, reste)) - adt;
           if (v > vMax) v = vMax;
         };
         if (i > 0) borne(this.base[i - 1] - this.retard[i - 1], this.vLoc[i - 1] >= 0 ? this.vLoc[i - 1] : vConv);
@@ -1912,22 +1984,43 @@ class Convoi {
         if (devant) {
           const j = devant.iDevant;
           borne(devant.dElement(j), devant.vLoc && devant.vLoc[j] >= 0 ? devant.vLoc[j] : vConv);
+        } else if (this.jumeauDe || this.jumelle) {
+          // ET AVANT D'Y ENTRER (feu-file-douce). La voiture de l'autre convoi
+          // ne compte qu'une fois les deux voies réunies sous la suiveuse ;
+          // elle apparaissait alors d'un coup, parfois à huit blocs trop près,
+          // et le plancher de la ligne reculait la suiveuse d'autant (6,76 →
+          // 15,13 blocs de retard en une image, journal de la sonde, Moscou).
+          // On la regarde dès que la réunion est à portée de freinage : si elle
+          // n'a pas encore laissé la place, on s'arrête avant la réunion.
+          const lf = this.devantSurLaLigne(i, true, ici);
+          const j = lf ? lf.iDevant : -1, dD = lf ? lf.dElement(j) : Infinity;
+          if (lf && dD - ici - miniVirage < portee) {
+            const B = this.jumeauDe ? this : this.jumelle, seuil = 2 * DEMI_LARG_VOITURE + 0.3;
+            let dReunion = null;
+            for (let k = 1; k <= portee + 0.5; k++) if (Math.abs(B.parcours.decalageA(ici + Math.min(k, portee))) <= seuil) { dReunion = ici + Math.min(k, portee); break; }
+            if (dReunion !== null) {
+              if (dD - gabarit() >= dReunion) borne(dD, lf.vLoc && lf.vLoc[j] >= 0 ? lf.vLoc[j] : vConv);
+              else borne(dReunion - 0.3 + gabarit(), 0);
+            }
+          }
         }
+        miniBorne = miniIci;
       }
+      let colle = false; let D_pl = ''; const D_v3 = v;
       let r = this.retard[i] + pas - v * dt;
       if (r < 0) r = 0;
       // UN CONVOI NE SE TÉLESCOPE PAS (v283), par construction : la suiveuse
       // garde une longueur de voiture derrière celle qui la précède.
       // (la courbure sous la suiveuse ET devant elle, là où est la précédente)
       const dq = this.base[i] - r;
-      const mini = Math.abs(this.parcours.courbure(dq)) > 0.03 || Math.abs(this.parcours.courbure(dq + 3)) > 0.03
+      const mini = miniBorne !== null ? miniBorne : Math.abs(this.parcours.courbure(dq)) > 0.03 || Math.abs(this.parcours.courbure(dq + 3)) > 0.03
         || Math.abs(this.parcours.courbure(dq + 5)) > 0.03 ? miniVirage : miniDroit;
       if (i > 0) {
         const plancher = this.retard[i - 1] - (this.base[i - 1] - this.base[i]) + mini;
-        if (r < plancher) r = plancher;
+        if (r < plancher) { r = plancher; colle = true; D_pl += 'F'; }
       } else if (queue && !devant) {
         const plancher = this.retard[n - 1] - queue + mini;
-        if (r < plancher) r = plancher;
+        if (r < plancher) { r = plancher; colle = true; D_pl += 'Q'; }
       }
       // ET UNE LIGNE NON PLUS (v423) : là où la jumelle d'une seconde voie
       // partage la voie de sa file, la voiture qui la précède sur la ligne est
@@ -1936,13 +2029,17 @@ class Convoi {
       // dans l'autre. On lit l'autre convoi tel qu'il est à cette image.
       if (devant) {
         const plancher = this.base[i] - devant.dElement(devant.iDevant) + mini;
-        if (r < plancher) r = plancher;
+        if (r < plancher) { r = plancher; colle = true; D_pl += 'L'; }
       }
       // LE RETARD D'UNE VOITURE QUE PERSONNE NE VOIT SE REND (v372). Chaque feu
       // rouge en ajoute ; rendu à 30 % de l'allure, il s'accumulerait d'un feu
       // à l'autre et la file finirait par s'étirer sur des centaines de blocs
       // derrière sa grille. Loin de l'enfant (aucune `cible`, hors de la portée
       // de la rue), on la remet à sa place en douceur — personne ne la voit.
+      // (le retard rendu déplace la voiture, il ne change pas son allure :
+      // compté dans `obtenu`, il gonflait la vitesse publiée — que la voiture
+      // reprend comme sa vitesse à l'image suivante — jusqu'à trois b/s)
+      const rAvantRendu = r;
       if (r > 0 && this.cible[i] === Infinity && i > 0 && this.retard[i - 1] < r) {
         const q = this.parcours.a(this.base[i] - r);
         if ((q.x - joueur.x) ** 2 + (q.z - joueur.z) ** 2 > (VU_VOITURE + 15) ** 2) r = Math.max(this.retard[i - 1], r - Math.max(2, r) * dt);
@@ -1951,10 +2048,20 @@ class Convoi {
         const sol = queue && !devant ? Math.max(0, this.retard[n - 1] - queue + mini) : 0;
         if ((q.x - joueur.x) ** 2 + (q.z - joueur.z) ** 2 > (VU_VOITURE + 15) ** 2) r = Math.max(sol, r - Math.max(2, r) * dt);
       }
-      const obtenu = pas - (r - this.retard[i]);
+      const obtenu = pas - (rAvantRendu - this.retard[i]);
       this.retard[i] = r;
+      // LA VITESSE PUBLIÉE EST CELLE DE LA FIN DE L'IMAGE (feu-file-douce).
+      // Sur sa grille, `obtenu / dt` est une MOYENNE sur l'image ; en freinant
+      // (`rapprocher`), c'est la vitesse de fin d'image. Mêlées, une image
+      // longue suivie d'une courte donnait une marche de plus de dix b/s² sans
+      // que personne ne freine fort. Sur la grille exacte, on publie la vitesse
+      // de la grille à cette heure.
       this.vLoc[i] = dt > 0 ? Math.max(0, Math.min(obtenu / dt, Math.max(v, vConv + 3))) : 0;
+      // (et sur la grille aussi la voiture qui la rattrape dans cette image :
+      // `obtenu` y compte le retard rattrapé, une pointe d'une image)
+      if (dt > 0 && !colle && !this.urgence[i] && ((surGrille && v === vConv) || rAvantRendu === 0)) this.vLoc[i] = Math.max(0, this.vFin[i]);
       this.rapport[i] = vConv > 0.01 ? this.vLoc[i] / vConv : (this.vLoc[i] > 0.01 ? 1 : 0);
+      if (globalThis.__feuDbg) globalThis.__feuDbg.push({ h: +horloge.toFixed(3), cle: this.cle, i, dt: +dt.toFixed(3), v0: +D_v0.toFixed(2), v1: +D_v1.toFixed(2), v3: +D_v3.toFixed(2), vf: +this.vLoc[i].toFixed(2), vConv: +vConv.toFixed(2), vFin: +this.vFin[i].toFixed(2), cible: this.cible[i], urg: this.urgence[i], cause: this.cause[i], pl: D_pl, r0: +D_r0.toFixed(2), r: +r.toFixed(2), devant: !!devant, n, rq: +this.retard[n - 1].toFixed(2), sg: surGrille ? 1 : 0, ...(() => { const lf = this.devantSurLaLigne(i, true, ici); if (!lf) return {}; const j = lf.iDevant; const B = this.jumeauDe ? this : this.jumelle; return { lfj: j, lfEcart: +(lf.dElement(j) - (ancien[i] - D_r0)).toFixed(2), lfFin: +(lf.dElement(j) - (this.base[i] - r)).toFixed(2), lfv: +(lf.vLoc[j] || 0).toFixed(2), lfr: +lf.retard[j].toFixed(2), dec: +Math.abs(B.parcours.decalageA(ancien[i] - D_r0)).toFixed(2), mini: +mini.toFixed(2), mb: miniBorne }; })() });
     }
     this.montrer(joueur);
   }
@@ -1962,11 +2069,11 @@ class Convoi {
   // La voiture de l'AUTRE file qui précède la voiture i sur la ligne, là où
   // les deux voies n'en font qu'une (v423), ou null. Les rangs se lisent dans
   // la grille : la jumelle est `rangJumeau` intervalles derrière sa file.
-  devantSurLaLigne(i) {
+  // (`partout` : où que soit la suiveuse, voies réunies ou non)
+  devantSurLaLigne(i, partout = false, d = this.base[i] - this.retard[i]) {
     const B = this.jumeauDe ? this : this.jumelle, A = this.jumeauDe || this;
     if (!B || !B.baseFaite || !A.baseFaite || !(B.parcours instanceof ParcoursDecale)) return null;
-    const d = this.base[i] - this.retard[i];
-    if (Math.abs(B.parcours.decalageA(d)) > 2 * DEMI_LARG_VOITURE + 0.3) return null;
+    if (!partout && Math.abs(B.parcours.decalageA(d)) > 2 * DEMI_LARG_VOITURE + 0.3) return null;
     const r = B.rangJumeau;
     let autre, j;
     if (this === B) { autre = A; j = i + Math.floor(r); }       // la voiture de la file juste devant

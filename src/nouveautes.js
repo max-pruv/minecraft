@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 9999,
+    titre: 'Les voitures freinent en douceur',
+    puces: [
+      'Au feu, plus de voiture qui pile',
+      'La file ralentit l\'une après l\'autre',
+      'Pareil sur toutes les tablettes',
+    ],
+  },
+  {
     v: 547,
     titre: 'Les voitures gardent leur modèle',
     puces: [

@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## vXXX — Les voitures freinent en douceur au feu
+
+**Pourquoi.** Le témoin « au feu, la voiture freine sur plusieurs relevés »
+était rouge en production : une voiture de file pouvait perdre vingt à
+soixante-dix blocs par seconde en une image derrière celle qui s'arrêtait au
+feu — un arrêt sec, alors qu'une voiture ne freine jamais plus fort que le
+freinage d'urgence (7,5 b/s²). `TASKS.md` déclarait deux pistes (l'arrêt
+d'urgence au contact, puis trois mécanismes rares) ; un journal image par
+image de chaque voiture, vidé au moment de la chute, en a nommé cinq, et
+l'arrêt d'urgence n'en était pas : (1) la borne de freinage de la v450 ne
+s'armait qu'en cause 1, et une voiture retenue par une autre qui passait à
+« retenue par un feu » était coupée d'un coup ; (2) cette borne n'était pas
+discrète : dans une image longue la suiveuse avançait au-delà de ce que son
+freinage lui laissait ; (3) le plancher de file recollait la suiveuse à
+l'arrêt quand le tracé devant elle se mettait à tourner (l'écart exigé passe
+de 5,4 à 6,0 blocs d'un coup) ; (4) la fin d'un rattrapage, et le « retard
+rendu » d'une voiture que personne ne voit, faisaient sauter la vitesse
+d'une image à l'autre ; (5) la grille horaire allait par escalier (vitesse
+constante sur un bloc, puis une marche).
+
+**Ce que ça change.**
+- Au feu, une file de voitures ralentit voiture après voiture, sans qu'une
+  seule ne pile derrière celle qui s'arrête.
+- La position de chaque voiture reste une fonction de l'heure de la rue :
+  deux tablettes voient toujours la même rue (v305). Ce qui change est local
+  (le freinage d'une voiture derrière une autre) ou à moins d'un centième de
+  bloc (la grille ne va plus par escalier : mêmes points aux mêmes heures).
+
+**Ce qui le prouve.** Le témoin de `monte.js` « au feu, la voiture freine sur
+plusieurs relevés au lieu de piler », sans changement de barre. Une sonde
+neuve, `tests/sonde-feu-file.cjs`, mesure sur pages neuves la pire perte de
+vitesse au feu, les voitures visibles, la vitesse de la rue et le taux de
+voitures l'une dans l'autre, à Paris et à Moscou, sur la branche et sur
+`origin/main` : MESURES.
+
+---
+
 ## v547 — Les voitures de la rue gardent leur modèle
 
 **Pourquoi.** Max : « on tourne la tête une seconde, on revient, et c'est un
