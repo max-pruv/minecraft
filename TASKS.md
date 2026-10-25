@@ -580,6 +580,16 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   passage sur deux. `degats.js` « percuter une voiture de la rue » : rouge sur
   `origin/main`, déjà déclaré. `reglages.js` « un choix fait sur une
   tablette » : même rouge des deux côtés, déjà déclaré.
+- [ ] **Rouges du portail de la v554 (les voies droites du métro de
+  Washington) : aucun de la livraison.** Quinze suites vertes (dont
+  `washington.js`, `plafond.js`, `metro.js`). `monte.js` : la rue de Rome et
+  de Kyoto (flâneur, passant au feu, passage peint), la rue vide, « Atterrissage
+  vers <ville> », et une fois « une station s'entend » (radio, −51,6 dB pour
+  −58,3 sans) — rejouée seule : 3 rouges sur la branche, 5 sur `origin/main`
+  (v547), même famille, la radio verte. `reseau.js` : « un hôte sans courtier
+  est trouvé » et « il le REJOINT », l'intermittence déclarée plus bas.
+  PREUVE STRUCTURELLE : la livraison ne change que la géométrie du métro dans
+  l'emprise de Washington ; aucune de ces suites n'y joue ses témoins.
 - [x] **Les stations en virage (v529) : la voie croise les bouts du quai.**
   Fait en v554 : la trace suit l'axe du quai autour de chaque arrêt, puis une
   courbe d'Hermite au rayon ≥ 4,5 (2 590 points de voie dans les quais → 478,
