@@ -2,6 +2,12 @@
 
 ## v547 — les voitures gardent leur modèle : ce qui reste, mesuré
 
+- `reseau.js` rejouée seule sur la v547 : 87 verts, 3 rouges, la portière droite
+  (entrée, descente) et « la voiture de l'ami se refait pendant la marche », même
+  page, `phases: []`. Déclarés (lignes plus bas, v465 et suivantes), vus aussi sur
+  `origin/main` ; et ils ne lisent que la voiture de l'AMI (une monture), que la
+  v547 ne touche pas (`voitureDeVille` seule). Rejouée seule sur la v545 : verte.
+
 - **Rouges du portail de la v547 : aucun de la livraison** (la suite `monte.js`
   y était morte d'une faute de nom, corrigée ; rejouée seule, le témoin neuf est
   vert : 0 bascule sur 50 voitures, 18 places suivies au demi-tour).
