@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v549 — Le klaxon et les feux stop d'un ami
+
+**Pourquoi.** Deux dettes déclarées par la v543. À plusieurs, un ami
+n'entendait pas le klaxon de l'enfant : le son ne quittait pas sa tablette. Et
+il ne voyait jamais s'allumer les feux stop ni le feu de recul de sa voiture :
+`p.v`, ce que la position emporte du véhicule, ne disait rien du freinage.
+
+**Ce que ça change.** Quand Marlon klaxonne, Alice l'entend, plus fort s'il
+est près, à gauche ou à droite selon où elle regarde, au ton de SA voiture —
+et les passants autour d'elle se retournent. Quand il freine ou recule, elle
+voit ses feux rouges et son feu blanc s'allumer. Le klaxon voyage par un
+message court (`klaxon`, appuyé puis lâché ; une tablette restée sur
+l'ancienne version l'ignore, l'hôte relaie) ; s'il se perd en route, le
+klaxon de l'ami se tait seul au bout de quatre secondes. Les feux voyagent
+avec la position (`p.v.s`), sur les deux chemins (direct et relayé).
+
+**Ce qui le prouve.** Deux témoins à deux tablettes dans `reseau.js`, rouges
+sur `origin/main` (klaxon : −200 dB dans la bande 350–560 Hz chez l'ami ;
+feux : zéro relevé allumé sur 77) et verts ici (−54 dB pendant, −200 au
+lâcher, l'événement des passants posé là où est l'ami ; feux stop 47 relevés,
+recul 25). Le troisième sujet demandé — l'avion de l'ami et son épave — avait
+déjà son témoin depuis la v476 : l'entrée restée ouverte dans `TASKS.md` était
+un doublon, fermée.
+
+Au portail, neuf rouges, aucun de la livraison, par preuve structurelle (v291) :
+le code neuf ne s'exécute qu'en partie en ligne (`net.active`) et ne dessine
+un feu chez l'ami que s'il freine. Les six de `monte.js` (sans réseau) et les
+trois de `reseau.js` (portière droite, voiture refaite : `phases: []`, mesurés
+à l'identique sur la v547 rejouée seule) sont déjà déclarés dans `TASKS.md`.
+
 ## v548 — Plus de feuilles suspendues autour des pistes
 
 **Pourquoi.** Signalé en v480 : des couronnes d'arbres sans tronc flottaient

@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 549,
+    titre: 'Klaxon et feux de l\'ami',
+    puces: [
+      'Tu entends le klaxon de ton ami',
+      'Tu vois ses feux stop s\'allumer',
+    ],
+  },
+  {
     v: 548,
     titre: 'Des pistes bien dégagées',
     puces: [
