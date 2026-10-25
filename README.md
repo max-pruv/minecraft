@@ -157,13 +157,15 @@ npm install
 npm test
 ```
 
-It takes about an hour, on purpose. Seventeen suites run one after the other — never
+A full run takes about 1 h 50 (measured on v540), on purpose. Seventeen suites run one after the other — never
 in parallel, since two browsers fighting over four cores produce
 failures that don't exist in the game — and the waits have to outlast the
 game's own thresholds (twenty seconds of silence before a link is cut) or they
 would prove nothing. Each verdict is written to disk as it lands, so a crashed
 or recycled container costs one suite rather than the whole run;
-`npm test -- --depuis-zero` forces a full replay.
+`npm test -- --depuis-zero` forces a full replay. `npm test -- --tranche=k/n`
+plays only one of n balanced slices, so n machines run the whole thing in
+parallel (two slices: about 55 minutes each).
 
 See `tests/README.md` for what each scenario reproduces — every one of them is
 a failure that actually happened to the children playing — and `CLAUDE.md` for

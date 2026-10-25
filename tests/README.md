@@ -9,6 +9,7 @@ cd tests
 npm ci
 npx playwright-core install chromium  # si aucun Chromium n'est installé
 npm test          # le portail sélectionne les suites pertinentes
+npm test -- --tranche=1/2   # la moitié des suites choisies ; l'autre sur une seconde machine
 npm run reseau    # le monde partagé
 npm run reglages  # les réglages, enfant et parent
 npm run carte     # la carte : glisser, zoomer, voyager
