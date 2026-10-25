@@ -1279,7 +1279,7 @@ Max : « on ne peut même pas marcher dedans ». Sept règles.
   près. Quand un module gagne un calcul à son chargement, on chronomètre
   `import('./src/world.js')` des deux côtés.
 
-## Les bouches rendues (v554) — un dernier recours s'ajoute après les places ordinaires
+## Les bouches rendues (v555) — un dernier recours s'ajoute après les places ordinaires
 
 Hôtel de Ville sans bouche depuis les rues à la GTA, Reuilly–Diderot sans une
 de ses plaques. Quatre règles.

@@ -607,7 +607,7 @@ export function placesDe(q, k, evite = null, recours = false) {
   const tient = (b, recours) => emprisesTremie(q, b).every(([x, z]) => praticable(x, z) && !lotParisLu(Math.floor(x), Math.floor(z))
     && !(evite && evite(x, z)))
     && (recours
-      // LE COULOIR PASSE SOUS LE BASSIN, PAS L'ESCALIER (v554, dernier
+      // LE COULOIR PASSE SOUS LE BASSIN, PAS L'ESCALIER (v555, dernier
       // recours). Le couloir est au niveau du quai, son plafond à six blocs
       // au-dessus de la voie (24), le lit à 27 : trois blocs de terre entre
       // les deux, la règle même de la voûte des stations (v473). L'escalier,
@@ -671,7 +671,7 @@ export const dansNotreDame = (x, z) => Math.abs(Math.floor(x) - NOTRE_DAME.x) <=
 // restent à leur place, au bloc près — on n'ouvre pas une trémie neuve et on
 // n'en referme pas une vieille pour en déplacer UNE (v529) ; seules celles qui
 // ne tiennent plus se cherchent, autour des autres.
-// LE COULOIR D'UNE BOUCHE RECHOISIE NE PERCE PAS LA CASE DU NOM (v554). Le
+// LE COULOIR D'UNE BOUCHE RECHOISIE NE PERCE PAS LA CASE DU NOM (v555). Le
 // nom de la station est posé sur le piédroit, devant les cases 8 et 9 de
 // chaque douzaine (`plaquesParis`) ; un couloir qui y débouche le perce, et la
 // plaque de ce côté disparaît — Reuilly–Diderot, rechoisie par les rues à la
@@ -763,7 +763,7 @@ function bouchesLigne1(BOUCHES_V473) {
       });
     }
   }
-  // LE DERNIER RECOURS (v554) : Hôtel de Ville, Saint-Paul et la Bastille se
+  // LE DERNIER RECOURS (v555) : Hôtel de Ville, Saint-Paul et la Bastille se
   // disputent le seul trottoir au sud de la ligne (chaque place de l'un
   // recouvre une place de l'autre, mesuré), et le trottoir élargi du nord est
   // derrière le bassin. Une station encore sans bouche cherche aussi les

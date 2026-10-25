@@ -145,7 +145,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   son contresens roulerait à 34,1 blocs du centre, sur 46 blocs le long de la
   baie (33,6 sur la v531, même géographie). (3) Le grand anneau de Shanghai
   passe 32 pas sur le quai de granit du Huangpu (0 sur la v531). (4) Québec ne
-  voit que 17 blocs à l'entrée de l'A20 (20 sur la v531). (5) *(v554 : Hôtel de
+  voit que 17 blocs à l'entrée de l'A20 (20 sur la v531). (5) *(v555 : Hôtel de
   Ville a retrouvé sa bouche — Saint-Paul passe au nord, couloir sous le
   bassin, escalier jamais — et Reuilly–Diderot sa plaque.)* **Rome Lepanto reste sans bouche, et c'est une
   décision de sol pour Max** : remesuré au quart de bloc, pied jusqu'au bout du

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v554 — Hôtel de Ville retrouve sa bouche de métro
+## v555 — Hôtel de Ville retrouve sa bouche de métro
 
 **Pourquoi.** Depuis les rues à la GTA (v544), la station Hôtel de Ville de la
 ligne 1 n'avait plus de bouche : on ne pouvait y descendre que par Saint-Paul.
@@ -44,7 +44,7 @@ dans le quai par la case du nom : la plaque de ce côté avait disparu.
   places qui tiennent sur le trottoir ont toutes leur escalier sous le Tibre
   (`TASKS.md`).
 
-**Ce qui le prouve.** Trois témoins de `plafond.js`, rouges sur la v553 :
+**Ce qui le prouve.** Trois témoins de `plafond.js`, rouges sur la v554 :
 seize bouches sur seize (15), quatre plaques par station (Reuilly–Diderot 3),
 et le vrai joueur qui descend et remonte dans trente-six stations (35), sans
 une plaque qui flotte — le premier jet perçait le piédroit de Châtelet, à
@@ -52,6 +52,7 @@ dix-neuf blocs d'Hôtel de Ville, et c'est ce témoin qui l'a dit. La
 sonde de marche (`sonde-stations.cjs`) : 36/36 quais atteints, 36/36 rues
 retrouvées ; `sonde-metro-paris.mjs` : aucune poche dans la Seine, aucune rue
 murée.
+
 ## v554 — Les arbres gardent toute leur couronne au bord du monde
 
 **Pourquoi.** Deux dettes des vrais arbres. (1) Au bord de la portée du détail
