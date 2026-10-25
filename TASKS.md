@@ -1,5 +1,63 @@
 # Ce qui est en cours
 
+## Les témoins de `monte.js` qui se placent (claude/temoins-monte, tests seuls)
+
+Mesuré : `monte.js` seule sur `origin/main` v547 (copie de travail) et sur la
+branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
+`flanc.cjs`, `dt.cjs`, `rue.cjs` du brouillon de la session).
+
+- [x] **« en virage… on voit son flanc »** : se joue sur une dalle de pierre à
+  soi (161 × 161, x 41 000), l'enfant et sa voiture rendus à leur place
+  ensuite. Branche : 48 relevés en mouvement, médiane 12,8°, un signe, aucun
+  choc. Désarmé (`RETARD_MAX = 0`) : 0° à chaque relevé — rouge.
+- [x] **« une voiture heurtée… feux de détresse »** : lit le groupe `detresse`
+  POSÉ sur le maillage heurté (`voitureNommee`), plus un instantané de la
+  scène. Désarmé (`feuxDeDetresse` vide) : `pose: false, clignote: false` —
+  rouge ; armé : `pose: true`.
+- [x] **« la rue se fabrique par tranches »** : comptait encore les voitures de
+  Rome juste après le saut (`vues 5, s 2` sur `origin/main`) ; attend trois
+  images, retient le plus haut compte vu. ET la barre ne voyait pas son
+  défaut : désarmé (`fabrication.fin = Infinity`), 5 par image pour une barre
+  à 5. Armé : 1 partout. Barre à 3.
+- [ ] **« et l'on ne marche pas dans une rue vide » : une vraie question de
+  répartition, pas un tirage — laissé rouge.** Le témoin se pose au départ
+  et attend la ville (vingt secondes au plus) puis publie, par arrêt, les
+  passants à portée et dessinés : branche `vus [9,2,0,44,5,0,4,12]`, et aux
+  deux arrêts vides **29 et 19 passants à moins de 62 blocs, tous dessinés,
+  aucun dans le cadre** (190 personnages dans la ville à ce point de la
+  suite). Sur une page neuve (sonde, deux passes) : aucun arrêt vide. Ils ne
+  manquent pas, ils sont derrière ou de côté : depuis la v241 les voisins
+  dépassés restent à leur place, et un saut de cinquante blocs arrive là où
+  personne n'a été posé devant. Rapatrier devant soi au saut est une décision
+  de jeu (v218 contre v241), pas un réglage de témoin.
+- [ ] **« un flâneur posé au milieu de la chaussée en sort »** : un essai sur
+  trois finit SUR la chaussée avec son POSTE sur la chaussée
+  (`arrivee c, poste c, sorties 7`), branche ; vert sur `origin/main` ce
+  passage, rouge des deux côtés aux portails d'avant. Le témoin voit ce qu'il
+  annonce (le poste est choisi sur l'asphalte, la règle de la v385 le laisse
+  y retourner) : laissé rouge, à démonter dans `posteAutour`.
+- [ ] **« à Rome aussi, en biais, un passant traverse sur le passage peint »**
+  : `traversees 0` sur 6 poses, des DEUX côtés (rejouée seule). Déclaré depuis
+  la v481 ; non repris ici.
+- [ ] **« la rue roule à l'allure d'une ville »** (médiane 0) et, avec elle,
+  « elles tournent progressivement » (20 relevés) et « elles s'inclinent » (0)
+  : le bouchon de Paris déclaré depuis la v481, sur la branche ce passage,
+  vert sur `origin/main` le sien — un tirage de la rue, pas des témoins.
+- [x] **« un passant… s'écarte d'une voiture en biais »** : 4 scénarios sur la
+  branche (6 sur `origin/main`), au-dessus du plancher de trois. Non modifié.
+- [x] **« deux voisines d'un convoi »** : vert des deux côtés ce passage
+  (946 et 1 013 paires). Non modifié.
+- **Portail de la livraison** (fumée + `monte.js`, 40 min) : 3 rouges, tous
+  déclarés — « à Rome aussi, en biais » (des deux côtés), « rue vide » (la
+  répartition ci-dessus : `vus [10,2,0,48,0,0,0,11]`, 34, 65, 8 et 36
+  passants dessinés à portée aux arrêts vides) et « ✈️ Atterrissage vers
+  Saint-Dizier » absent à l'appui (déclaré v516, aéroports non touchés).
+  Les trois témoins réécrits verts : flanc 12,3°, détresse `pose: true`,
+  par tranches 1 par image.
+- Et `monte.js` sur `origin/main` v547 a planté la page (« Target page…
+  closed ») au témoin de l'eau (ligne 6822), au bout de soixante minutes : la
+  branche, elle, est allée jusqu'au bout. Une fois vue, à surveiller.
+
 ## v547 — les voitures gardent leur modèle : ce qui reste, mesuré
 
 - `reseau.js` rejouée seule sur la v547 : 87 verts, 3 rouges, la portière droite
