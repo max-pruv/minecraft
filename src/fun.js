@@ -250,7 +250,9 @@ export function initFun(ctx) {
   // ne demande donc plus de penser à revenir modifier ce fichier — l'oubli
   // qui, pendant des mois, a laissé le cheval, le cerf et le loup seuls
   // montables alors que le bestiaire s'était étoffé.
-  const montable = (a) => !!(a && a.def && a.def.montable && !a.baby && !a.horsService);
+  // `enService` (v554) : une voiture de police en patrouille n'est pas à prendre
+  // — elle le devient une fois garée, à la fin du contrôle (patrouille.js).
+  const montable = (a) => !!(a && a.def && a.def.montable && !a.baby && !a.horsService && !a.enService);
 
   // LES DÉGÂTS DE LA VOITURE (v343) — tout vit dans degats.js (la règle) et
   // degats3d.js (ce qui se voit) ; ici, quatre crochets : chaque image au
@@ -1296,7 +1298,7 @@ export function initFun(ctx) {
           f.scale.z = allumee ? Math.max(0.05, (1.5 + 8.5 * poussee) * f.userData.rayon * vacille) : 0.001;
         }
       }
-    } else if (a.def.moteur !== 'voiture' && (a.mesh.rotation.z || a.mesh.rotation.x)) {
+    } else if (a.def.moteur !== 'voiture' && a.def.moteur !== 'moto' && (a.mesh.rotation.z || a.mesh.rotation.x)) {
       a.mesh.rotation.z = 0;      // on rend l'assiette en descendant
       a.mesh.rotation.x = 0;
       for (const f of a.mesh.userData.tuyeres || []) f.visible = false;

@@ -851,6 +851,17 @@
     }
     body.en-avion #etat-pose.visible { display: flex; }
     #etat-pose .ico { width: 22px; height: 22px; flex: none; }
+    /* LA POLICE (v554) : le gyrophare et trois étoiles, pleines pour ce qui
+       compte, vides pour ce qui manque — un ÉTAT, comme l'atterrissage (v516),
+       jamais un message. Dans la file du centre, hors du quart du joystick. */
+    #etat-police {
+      display: none; align-items: center; gap: 3px; color: #FFC83D;
+      background: rgba(0,0,0,0.5); border-radius: 18px; padding: 4px 12px;
+      pointer-events: none;
+    }
+    #etat-police.visible { display: flex; }
+    #etat-police .ico { width: 24px; height: 24px; flex: none; filter: drop-shadow(1px 1px 0 #000); }
+    #etat-police .ico:first-child { color: #ff4a3a; margin-right: 4px; }
     /* LA RADIO (v543) : la station et le titre, trois secondes après chaque
        changement, au volant seulement — un état, pas un message (v516). */
     #radio-etat {
@@ -937,7 +948,7 @@
       position: static !important; transform: none !important; max-width: 100%; box-sizing: border-box;
       pointer-events: auto;
     }
-    #file-centre > #toast, #file-centre > #cap-avion, #file-centre > #etat-pose, #file-centre > #radio-etat { pointer-events: none; }
+    #file-centre > #toast, #file-centre > #cap-avion, #file-centre > #etat-pose, #file-centre > #radio-etat, #file-centre > #etat-police { pointer-events: none; }
     #creature-label {
       display: none; position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
       font-size: 15px; font-weight: bold; text-shadow: 1px 1px 0 #000;
@@ -2622,6 +2633,7 @@
   <div id="file-centre">
     <div id="cap-avion"><div id="cap-degres"></div><div id="cap-ville"></div><div id="cap-regle"><div id="cap-repere"></div></div></div>
     <div id="etat-pose" role="status" aria-live="polite"></div>
+    <div id="etat-police" role="status" aria-live="polite"></div>
     <div id="radio-etat" role="status" aria-live="polite"></div>
     <div id="gps"><span id="gps-fleche">⬆</span><div id="gps-texte"></div><button id="gps-stop" title="Arrêter le GPS">✕</button></div>
     <div id="gps-ami"><span id="gps-ami-texte"></span><button id="gps-ami-oui">Y aller</button><button id="gps-ami-non" title="Non merci">✕</button></div>

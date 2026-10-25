@@ -124,7 +124,11 @@ function capEntre(a, b) {
 // le long de sa piste : plus loin, elle accélère ; trop près, elle ralentit.
 // Bornée à `vmax` (une hypercar la sème, une citadine non) et à une
 // accélération de voiture — elle ne bondit pas d'un coup.
-export const ECART = 9;
+export const ECART = 10;
+// et elle ne s'approche jamais à moins de PLANCHER fois son écart : à sept
+// blocs de centre à centre, deux voitures de 4,4 blocs gardent 2,6 blocs entre
+// leurs pare-chocs — on la voit dans le rétroviseur, elle ne touche pas.
+export const PLANCHER = 0.7;
 export const ACCEL_POLICE = 14;   // blocs/s²
 export const VMAX_POLICE = 40;    // blocs/s, 144 km/h
 export function vitessePoursuite(v, ecart, vEnfant, dt, { cible = ECART, vmax = VMAX_POLICE } = {}) {
@@ -132,8 +136,8 @@ export function vitessePoursuite(v, ecart, vEnfant, dt, { cible = ECART, vmax = 
   // elle freine deux fois plus fort qu'elle n'accélère : arrivée trop vite
   // derrière l'enfant arrêté, elle s'arrête à temps
   const dv = Math.max(-ACCEL_POLICE * 2 * dt, Math.min(ACCEL_POLICE * dt, voulue - v));
-  // et à la moitié de son écart, elle est à l'arrêt quoi qu'il arrive
-  return ecart <= cible * 0.5 ? 0 : Math.max(0, v + dv);
+  // et à son plancher, elle est à l'arrêt quoi qu'il arrive
+  return ecart <= cible * PLANCHER ? 0 : Math.max(0, v + dv);
 }
 
 // où la police apparaît : DERRIÈRE l'enfant sur sa piste, hors de sa vue

@@ -342,9 +342,13 @@ function voitureNeuve(voeu) {
   // garage muet.
   const voulu = voeu && voeu.flotte
     ? FLOTTE.find((f) => f.fichier === voeu.flotte) || null : null;
+  // le tirage ne sort pas la voiture de police (`horsRue`, v554) : l'usine et
+  // le garage livrent des voitures de tout le monde ; la police, on la prend
+  // à la fin d'un contrôle, ou on la demande par son nom (le vœu)
+  const tirables = FLOTTE.filter((f) => !f.horsRue);
   const enFlotte = voulu || VOITURE_FORCEE || (voeu && voeu.flotte === 'voiture.glb' ? null
-    : Math.random() < FLOTTE.length / (FLOTTE.length + 1)
-      ? FLOTTE[Math.floor(Math.random() * FLOTTE.length)] : null);
+    : Math.random() < tirables.length / (tirables.length + 1)
+      ? tirables[Math.floor(Math.random() * tirables.length)] : null);
   g.userData.flotte = enFlotte ? enFlotte.fichier : 'voiture.glb';
   g.userData.nomVoiture = enFlotte ? enFlotte.nom : 'Bugatti Chiron';
   // ET SA COULEUR (v305) : la teinte que la rue lui avait posée voyage avec

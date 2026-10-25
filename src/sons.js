@@ -146,7 +146,13 @@ export function generationAudio() { return generation; }
 const RECETTES = {
   voiture: { base: 42, harmo: 2.02, gainH: 0.055, gainS: 0.020, filtre: 420, q: 1.2, siffle: 0 },
   avion:   { base: 30, harmo: 2.51, gainH: 0.016, gainS: 0.075, filtre: 900, q: 0.7, siffle: 0.012 },
+  // LA MOTO (v554) : un bicylindre — une fondamentale plus haute et une
+  // harmonique à la quinte (1,5) plutôt qu'à l'octave, ce qui fait le
+  // « potato-potato » d'un V2 ; plus de dents que de souffle.
+  moto:    { base: 58, harmo: 1.5, gainH: 0.062, gainS: 0.016, filtre: 520, q: 1.5, siffle: 0 },
 };
+// ce qui roule sur des pneus a des pneus qui crissent et une route qui gronde
+const SUR_ROUES = (type) => type === 'voiture' || type === 'moto';
 
 let bruitTampon = null;
 function tamponDeBruit(c) {
@@ -211,7 +217,7 @@ export function moteurDemarre(type = 'voiture') {
   // kilohertz et un sifflement tonal qui tremble — c'est le tremblement qui
   // fait un crissement plutôt qu'une bouilloire.
   let pneus = null;
-  if (type === 'voiture') {
+  if (SUR_ROUES(type)) {
     const sp = c.createBufferSource(); sp.buffer = tamponDeBruit(c); sp.loop = true;
     const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2900; bp.Q.value = 4;
     const sif = c.createOscillator(); sif.type = 'triangle'; sif.frequency.value = 1850;
@@ -231,7 +237,7 @@ export function moteurDemarre(type = 'voiture') {
   // sourd qui monte avec la vitesse — du bruit rose passé bas, séparé du
   // souffle du moteur pour qu'une voiture au ralenti dans un champ se taise.
   let roulement = null;
-  if (type === 'voiture') {
+  if (SUR_ROUES(type)) {
     const sr = c.createBufferSource(); sr.buffer = tamponDeBruit(c); sr.loop = true;
     const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 240; lp.Q.value = 0.9;
     const gr = c.createGain(); gr.gain.value = 0.0001;
@@ -598,6 +604,59 @@ export function klaxonRue({ distance = 10, pan = 0, ton = 1, duree = 0.45 } = {}
 }
 export const klaxonsRueJoues = () => klaxonsRue;
 
+// LA SIRÈNE DE POLICE (v554) : le « wail » — une note qui monte et descend
+// entre 650 et 1 450 Hz en quatre secondes, deux dents de scie à peine
+// désaccordées et passées bas pour qu'elle ne perce pas les oreilles d'un
+// enfant de sept ans. Placée dans l'espace comme le klaxon de la rue : plus
+// loin, plus doux ; à gauche ou à droite. UN graphe, monté au premier appel et
+// réglé à chaque image par `setTargetAtTime` (rien ne se crée par image) ; il
+// se remonte si le contexte a changé (un appel de visio en crée un neuf,
+// v304), et il se démonte quand la police s'en va.
+const SIRENE_BASSE = 650, SIRENE_HAUTE = 1450, SIRENE_PERIODE = 4;
+let sirene = null;   // { gen, o1, o2, lfo, gain, pan }
+function monterSirene(c) {
+  const milieu = (SIRENE_BASSE + SIRENE_HAUTE) / 2, ampl = (SIRENE_HAUTE - SIRENE_BASSE) / 2;
+  const o1 = c.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = milieu;
+  const o2 = c.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = milieu; o2.detune.value = 9;
+  const lfo = c.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 1 / SIRENE_PERIODE;
+  const lfoG = c.createGain(); lfoG.gain.value = ampl;
+  lfo.connect(lfoG); lfoG.connect(o1.frequency); lfoG.connect(o2.frequency);
+  const doux = c.createBiquadFilter(); doux.type = 'lowpass'; doux.frequency.value = 2200;
+  const gain = c.createGain(); gain.gain.value = 0.0001;
+  o1.connect(doux); o2.connect(doux); doux.connect(gain);
+  let pan = null, sortie = sortieAudio();
+  if (c.createStereoPanner) { pan = c.createStereoPanner(); pan.connect(sortie); sortie = pan; }
+  gain.connect(sortie);
+  o1.start(); o2.start(); lfo.start();
+  return { gen: generation, o1, o2, lfo, gain, pan };
+}
+// `oui` faux : elle se tait (et se démonte). `distance` en blocs, `pan` de −1
+// (à gauche) à 1 (à droite).
+export function sireneJouer(oui, { distance = 20, pan = 0 } = {}) {
+  if (!oui) {
+    if (!sirene) return false;
+    const s = sirene; sirene = null;
+    const c = ctx;
+    if (c && s.gen === generation) {
+      const t = c.currentTime;
+      s.gain.gain.cancelScheduledValues(t); s.gain.gain.setTargetAtTime(0.0001, t, 0.08);
+      setTimeout(() => { for (const n of [s.o1, s.o2, s.lfo]) { try { n.stop(); } catch { /* fini */ } } }, 500);
+    }
+    return true;
+  }
+  const c = contexteAudio();
+  if (!c) return false;
+  if (sirene && sirene.gen !== generation) sirene = null;   // l'ancien contexte est fermé
+  if (!sirene) sirene = monterSirene(c);
+  const t = c.currentTime;
+  const vol = 0.09 / (1 + Math.max(0, distance) / 22) ** 2;
+  sirene.gain.gain.setTargetAtTime(Math.max(0.0001, vol), t, 0.1);
+  if (sirene.pan) sirene.pan.pan.setTargetAtTime(Math.max(-1, Math.min(1, pan)), t, 0.1);
+  return true;
+}
+export const sireneEnMarche = () => !!sirene;
+export const BANDE_SIRENE = Object.freeze([SIRENE_BASSE, SIRENE_HAUTE]);
+
 // LE KLAXON D'UN AMI (v548) : le message `klaxon` (net.js) dit quand il
 // appuie et quand il lâche ; on le tient ici comme le nôtre, placé dans
 // l'espace comme celui de la rue (plus loin, plus doux ; à gauche ou à
@@ -653,5 +712,6 @@ export function etatSon() {
     radio: radio ? radio.station.nom : null,
     titre: radio ? titreEnCours(radio.station, radio.morceau) : null,
     klaxon: klaxonTenu(), klaxonGain: klaxon ? +klaxon.gain.gain.value.toFixed(4) : null, klaxonsRue, klaxonsAmis: klaxonsAmiJoues, klaxonsAmisTenus: klaxonsAmis.size,
+    sirene: !!sirene,
   };
 }
