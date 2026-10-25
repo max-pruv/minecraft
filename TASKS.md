@@ -145,11 +145,16 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   son contresens roulerait à 34,1 blocs du centre, sur 46 blocs le long de la
   baie (33,6 sur la v531, même géographie). (3) Le grand anneau de Shanghai
   passe 32 pas sur le quai de granit du Huangpu (0 sur la v531). (4) Québec ne
-  voit que 17 blocs à l'entrée de l'A20 (20 sur la v531). (5) Paris Hôtel de
-  Ville et Rome Lepanto n'ont plus de bouche de métro (le trottoir élargi ne
-  laisse pas de place hors des lots et des voies) ; à Reuilly–Diderot la bouche
-  rechoisie perce le piédroit à la case du nom, la plaque de ce côté est retirée
-  (179 au lieu de 180). (6) Nice Masséna : part de lots 8,6 → 0,9 % (le quartier
+  voit que 17 blocs à l'entrée de l'A20 (20 sur la v531). (5) *(v555 : Hôtel de
+  Ville a retrouvé sa bouche — Saint-Paul passe au nord, couloir sous le
+  bassin, escalier jamais — et Reuilly–Diderot sa plaque.)* **Rome Lepanto reste sans bouche, et c'est une
+  décision de sol pour Max** : remesuré au quart de bloc, pied jusqu'au bout du
+  quai, `o` jusqu'à 40, coins et feux permis, 666 trémies tiennent sur le
+  trottoir et TOUTES ont leur escalier sous le Tibre (jusqu'à la marche 15, le
+  plafond à 31 pour un lit à 26). La bouche de la v531 (19,5/−1/−6,5) a 10
+  colonnes de chaussée sous sa trémie sur 27. Pistes : rendre à Lepanto un bout
+  de trottoir (sol de la ville), ou un mur de quai qui borne l'escalier dans le
+  fleuve (l'eau change). (6) Nice Masséna : part de lots 8,6 → 0,9 % (le quartier
   des places et jardins est traversé par les collectrices) — question pour Max.
   (7) Los Angeles : l'hôtel de ville à 21 blocs pour une médiane de toits de 22.
   (8) Le partage aux coins rentrants d'un contour se mesure maintenant avec la
