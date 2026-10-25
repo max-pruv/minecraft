@@ -96,6 +96,26 @@ const GARDIENS = {
   // La MC12 GT1 (v559) : son témoin vit dans monte.js, ses feux dans
   // degats.js (la flotte sous node et les feux de détresse en page).
   'vendor/voitures/maserati-mc12-gt1.glb': ['degats.js', 'monte.js'],
+  // les dix-huit de la v566 (scripts/convertir-flotte.mjs) : les feux et les
+  // signatures de toute la flotte (degats.js), les roues et la police (monte.js)
+  'vendor/voitures/tesla-model-y.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/tesla-cybertruck.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/aston-martin-victor.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/aston-martin-db11.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/alpine-a110-gt4.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/bentley-mulliner-batur.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/rolls-royce-ghost.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/gmc-hummer-ev.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/chevrolet-camaro-ss-1967.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/cadillac-escalade-esv.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/renault-fuego.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/porsche-cayenne-turbo-gt.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/abt-audi-rs6-r.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/porsche-992-gt3-r.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/bugatti-divo.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/ford-f150-raptor-r.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/ford-mondeo-taxi.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-suv.glb': ['degats.js', 'monte.js'],
   'tests/porsche-911.mjs': ['degats.js'],
   'tests/porsche-911-textures.mjs': ['degats.js'],
   // les lumières de la flotte (v550), lues par degats.js sous node

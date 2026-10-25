@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 566,
+    titre: 'Dix-huit nouvelles voitures',
+    puces: [
+      'Tesla, Bugatti, Rolls-Royce, Camaro et plein d\'autres',
+      'La Giga-usine fabrique des Tesla Model Y',
+      'Un SUV de police rejoint la patrouille',
+      'Un taxi Ford Mondeo dans les rues',
+    ],
+  },
+  {
     v: 565,
     titre: 'De grands aéroports',
     puces: [

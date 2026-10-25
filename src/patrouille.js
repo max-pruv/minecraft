@@ -40,7 +40,12 @@ import {
 } from './police.js';
 
 export const FICHIER_POLICE = 'police-car.glb';
-const ENTREE_POLICE = FLOTTE.find((e) => e.fichier === FICHIER_POLICE);
+// LES VOITURES DE POLICE (v566) : toute fiche de la flotte marquée `police`
+// — la Crown Victoria, puis le SUV. Elles viennent en alternance, la Crown
+// Victoria d'abord ; une voiture dont le modèle n'est pas encore arrivé laisse
+// sa place à l'autre.
+const ENTREES_POLICE = FLOTTE.filter((e) => e.police);
+export const FICHIERS_POLICE = ENTREES_POLICE.map((e) => e.fichier);
 // la moto suit la voiture de quelques longueurs, et vient à deux étoiles
 const ECART_MOTO = ECART + 8;
 const VMAX_MOTO = 42;
@@ -143,8 +148,10 @@ export function creerPatrouille(ctx) {
       // on ne télécharge rien tant qu'il n'y a pas eu de bêtise : la police
       // ne coûte rien à l'enfant sage (le scanner de visages, v220)
       chargeLance = true;
-      const p = ENTREE_POLICE && chargerVoitureFlotte(ENTREE_POLICE);
-      if (p) p.then((proto) => { policePrete = !!proto; });
+      for (const e of ENTREES_POLICE) {
+        const p = chargerVoitureFlotte(e);
+        if (p) p.then((proto) => { if (proto) prets.add(e.fichier); policePrete = prets.has(FICHIER_POLICE); });
+      }
       chargerMoto();
       chargerAgent();
     }
@@ -195,6 +202,17 @@ export function creerPatrouille(ctx) {
     sireneJouer(false);
   }
 
+  // la prochaine voiture de police, en alternance parmi celles qui sont prêtes
+  const prets = new Set();
+  let rangPolice = 0;
+  function prochaineVoiture() {
+    for (let k = 0; k < FICHIERS_POLICE.length; k++) {
+      const f = FICHIERS_POLICE[(rangPolice + k) % FICHIERS_POLICE.length];
+      if (prets.has(f)) { rangPolice += k + 1; return f; }
+    }
+    return FICHIER_POLICE;
+  }
+
   function apparaitre(type) {
     // on attend le VRAI modèle : une coque d'attente au hasard ne dit pas
     // « police » (la rue n'en montre jamais une non plus, v547)
@@ -205,7 +223,7 @@ export function creerPatrouille(ctx) {
     const p = piste.positionA(s);
     const a = type === 'moto'
       ? animaux.invoquer('moto', p.x, p.z)
-      : animaux.invoquer('voiture', p.x, p.z, false, { flotte: FICHIER_POLICE });
+      : animaux.invoquer('voiture', p.x, p.z, false, { flotte: prochaineVoiture() });
     if (!a) return null;
     a.pos.set(p.x, p.y, p.z);
     if (p.cap != null) a.yaw = p.cap;
@@ -456,7 +474,7 @@ export function creerPatrouille(ctx) {
   // conduire SA voiture de police (ou sa moto) : les gyrophares s'allument
   function auVolantDePolice(t) {
     const a = montureConduite && montureConduite();
-    const police = a && a.mesh && (a.mesh.userData.flotte === FICHIER_POLICE || (a.def && a.def.key === 'moto'));
+    const police = a && a.mesh && (FICHIERS_POLICE.includes(a.mesh.userData.flotte) || (a.def && a.def.key === 'moto'));
     if (pilotee && pilotee !== (police ? a.mesh : null)) { gyrophares(pilotee, false, 0); pilotee = null; }
     if (!police) return;
     if (a.mesh.userData.proto && a.def.key === 'voiture') equiperGyrophares(a.mesh, a.mesh.userData.proto);
