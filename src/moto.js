@@ -31,7 +31,7 @@ export function chargerMoto() {
     porteur.add(cadre);
     porteur.updateMatrixWorld(true);
     let roue = null;
-    porteur.traverse((o) => { if (!roue && /^Wheel_/i.test(o.name || '')) roue = o; });
+    porteur.traverse((o) => { if (!roue && /^Wheel_(F|R)$/.test(o.name || '')) roue = o; });
     const b = roue ? new THREE.Box3().setFromObject(roue) : null;
     porteur.userData.rayonRoue = b ? (b.max.y - b.min.y) / 2 : 0.33;
     porteur.userData.protoDe = FICHIER_MOTO;
@@ -106,7 +106,7 @@ export function construireMoto() {
     g.add(m);
     g.userData.modele = m;
     const roues = [];
-    m.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
+    m.traverse((o) => { if (/^Wheel_(F|R)$/.test(o.name || '')) roues.push(o); });   // les pivots seulement
     g.userData.roues = roues;
     g.userData.rayonRoue = modele.userData.rayonRoue || 0.33;
   });

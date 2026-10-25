@@ -267,7 +267,10 @@ function maillage(g, mat, nom) {
     const pivot = new THREE.Group();
     pivot.name = nom;
     pivot.position.copy(c);
-    pivot.add(maillage(simplifier(p.g, 0.22, 0.004), matRoue, nom + '_Tire'));
+    // le maillage du pneu ne porte PAS le préfixe `Wheel_` : le jeu fait
+    // tourner tout nœud qui le porte (montures.js, `/^Wheel_/`), et un enfant
+    // nommé ainsi tournerait deux fois
+    pivot.add(maillage(simplifier(p.g, 0.22, 0.004), matRoue, 'Pneu_' + nom.slice(6)));
     racineScene.add(pivot);
     p.fait = true;
   }
@@ -411,7 +414,7 @@ function maillage(g, mat, nom) {
     for (const [mat, { m, liste }] of parMat) {
       const g = fusionner(liste);
       g.translate(-c.x, -c.y, -c.z);
-      pivot.add(maillage(simplifier(g, 0.1, 0.002), matiere(m, { dim: 512, side: THREE.DoubleSide }), nom + '_' + mat));
+      pivot.add(maillage(simplifier(g, 0.1, 0.002), matiere(m, { dim: 512, side: THREE.DoubleSide }), 'Roue_' + nom.slice(6) + '_' + mat));
     }
     racineScene.add(pivot);
   }

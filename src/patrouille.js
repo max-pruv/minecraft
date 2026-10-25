@@ -115,7 +115,7 @@ function chargerAgent() {
 
 // --- la patrouille --------------------------------------------------------
 export function creerPatrouille(ctx) {
-  const { scene, player, animaux, montureConduite, dire, langue, casses } = ctx;
+  const { scene, world, player, animaux, montureConduite, dire, langue, casses } = ctx;
   let etat = { points: 0, derniere: null };
   const piste = new Piste();
   const unites = [];             // { a, type, s, v, cible, vmax, appel }
@@ -241,16 +241,55 @@ export function creerPatrouille(ctx) {
   }
 
   // --- le contrôle ----------------------------------------------------------
-  function commencerControle(u) {
-    if (!protoAgent) return false;
+  // LE CONTRÔLE COMMENCE PAR SE GARER DEVANT L'ENFANT. Derrière lui, la
+  // voiture de police est derrière la caméra de poursuite : l'enfant ne la
+  // verrait jamais (mesuré : à l'arrêt, sept blocs derrière pour une caméra à
+  // 6,4). Elle le double par sa gauche, à trois blocs de côté, et se range
+  // huit blocs devant lui — gyrophares face à la caméra —, si le chemin est
+  // libre ; sinon elle reste derrière, comme avant. Puis le policier descend.
+  const VOIE_DEPASSE = 3, DEVANT = 8, VITESSE_DEPASSE = 7;
+  function cheminDevant(u) {
+    const ay = player.yaw + Math.PI;                         // le cap de la voiture de l'enfant
+    const fx = Math.sin(ay), fz = Math.cos(ay), gx = Math.cos(ay), gz = -Math.sin(ay);
+    const P0 = { x: u.a.pos.x, z: u.a.pos.z };
+    const P1 = { x: player.pos.x + gx * VOIE_DEPASSE, z: player.pos.z + gz * VOIE_DEPASSE };
+    const P2 = { x: player.pos.x + fx * DEVANT + gx * 0.4, z: player.pos.z + fz * DEVANT + gz * 0.4 };
+    const pts = [];
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24, a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, c = t * t;
+      pts.push({ x: a * P0.x + b * P1.x + c * P2.x, z: a * P0.z + b * P1.z + c * P2.z });
+    }
+    // libre : aucun bloc plein à hauteur de carrosserie sous l'emprise
+    if (world && world.isSolid) {
+      const y = Math.floor(player.pos.y + 0.3);
+      for (let i = 1; i < pts.length; i++) {
+        const p = pts[i], q = pts[i - 1];
+        const dx = p.x - q.x, dz = p.z - q.z, n = Math.hypot(dx, dz) || 1;
+        const lx = -dz / n, lz = dx / n;
+        for (const k of [-1.1, 0, 1.1]) for (const h of [0, 1]) {
+          if (world.isSolid(Math.floor(p.x + lx * k), y + h, Math.floor(p.z + lz * k))) return null;
+        }
+      }
+    }
+    let L = 0; pts[0].s = 0;
+    for (let i = 1; i < pts.length; i++) { L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z); pts[i].s = L; }
+    return { pts, L, cap: ay };
+  }
+  function descendreAgent(c) {
     const agent = protoAgent.clone(true);
-    const ay = u.a.yaw;
+    const ay = c.u.a.yaw;
     // la portière du conducteur de la police : à gauche de la voiture qui
     // avance vers (sin, cos) — la gauche est (cos, −sin)
-    agent.position.set(u.a.pos.x + Math.cos(ay) * 1.4, u.a.pos.y, u.a.pos.z - Math.sin(ay) * 1.4);
+    agent.position.set(c.u.a.pos.x + Math.cos(ay) * 1.4, c.u.a.pos.y, c.u.a.pos.z - Math.sin(ay) * 1.4);
     scene.add(agent);
-    controle = { u, agent, etape: 'aller', t: 0, cle: (etat.derniere && etat.derniere.quoi) || 'defaut' };
+    c.agent = agent; c.etape = 'aller'; c.t = 0;
+  }
+  function commencerControle(u) {
+    if (!protoAgent) return false;
+    controle = { u, agent: null, etape: 'depasse', t: 0, cle: (etat.derniere && etat.derniere.quoi) || 'defaut',
+      chemin: cheminDevant(u), d: 0 };
     sireneJouer(false);
+    if (!controle.chemin) descendreAgent(controle);
     return true;
   }
   function cibleAgent() {
@@ -265,10 +304,32 @@ export function creerPatrouille(ctx) {
     controle = null;
     if (c && c.agent) { scene.remove(c.agent); liberer(c.agent); }
     if (!parti) { etat = { points: 0, derniere: null }; toutesSeGarent(); appelDit = false; }
+    // reparti avant la fin : la voiture garée devant lui y reste (garée) ; une
+    // autre reprendra la poursuite par derrière, sur la piste
+    else for (const u of [...unites]) if (u.horsPiste) retirerUnite(u);
   }
   function majControle(dt) {
     const c = controle;
     c.t += dt;
+    if (c.etape === 'depasse') {
+      // l'enfant repart pendant qu'elle se range : la poursuite reprend
+      if (vitesseEnfant() > 3) { finirControle(true); return; }
+      c.d = Math.min(c.chemin.L, c.d + VITESSE_DEPASSE * dt);
+      let i = 1; while (i < c.chemin.pts.length - 1 && c.chemin.pts[i].s < c.d) i++;
+      const a = c.chemin.pts[i - 1], b = c.chemin.pts[i], k = (c.d - a.s) / Math.max(1e-6, b.s - a.s);
+      c.u.a.pos.x = a.x + (b.x - a.x) * k; c.u.a.pos.z = a.z + (b.z - a.z) * k;
+      c.u.a.pos.y = player.pos.y;
+      let cible = Math.atan2(b.x - a.x, b.z - a.z);
+      if (c.d >= c.chemin.L) cible = c.chemin.cap;
+      let d = cible - c.u.a.yaw; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
+      c.u.a.yaw += d * Math.min(1, dt * 6);
+      if (c.d >= c.chemin.L && Math.abs(d) < 0.05) {
+        // garée devant : la piste ne la mène plus (elle reste là, garée)
+        c.u.horsPiste = true;
+        descendreAgent(c);
+      }
+      return;
+    }
     const g = c.agent;
     // l'enfant repart avant la fin : le policier remonte, la poursuite reprend
     if (c.etape !== 'retour' && (vitesseEnfant() > 3 || Math.hypot(player.pos.x - c.u.a.pos.x, player.pos.z - c.u.a.pos.z) > 30)) {
@@ -344,7 +405,7 @@ export function creerPatrouille(ctx) {
     arretDepuis = vEnf < 1.2 ? arretDepuis + dt : 0;
     for (const u of unites) {
       equiper(u);
-      if (!controle) avancer(u, dt);
+      if (!controle && !u.horsPiste) avancer(u, dt);
       else if (u !== controle.u) u.v = 0;
       gyrophares(u.a.mesh, true, horloge);
     }
@@ -404,7 +465,8 @@ export function creerPatrouille(ctx) {
       points: etat.points, etoiles: etoiles(etat.points), derniere: etat.derniere && etat.derniere.quoi,
       unites: unites.map((u) => ({ type: u.type, x: u.a.pos.x, z: u.a.pos.z, v: u.v, ecart: piste.fin - u.s })),
       controle: controle ? { etape: controle.etape, texte: controle.texte || null, cle: controle.cle,
-        x: controle.agent.position.x, z: controle.agent.position.z } : null,
+        devant: !!controle.chemin,
+        x: controle.agent ? controle.agent.position.x : null, z: controle.agent ? controle.agent.position.z : null } : null,
       piste: piste.fin - piste.debut,
     }),
     // pour le banc : une bêtise qu'on provoque (v233), et le grand ménage

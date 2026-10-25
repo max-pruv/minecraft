@@ -3903,7 +3903,16 @@ function garagiste(dt) {
       && Math.hypot(a.pos.x - x, a.pos.z - z) < 6);
     if (!dejaLa) animalManager.invoquer('voiture', x, z);
   }
+  // ET UNE MOTO (v554) entre la deuxième et la troisième voiture : Max,
+  // « j'ajoute aussi le concept de moto » — elle attend au parc comme les
+  // voitures, et le garagiste la remplace de la même façon.
+  const mx = pu.x + PLACE_MOTO[0], mz = pu.z + PLACE_MOTO[1];
+  if (!animalManager.animals.some((a) => a.def.key === 'moto' && !a.enService && Math.hypot(a.pos.x - mx, a.pos.z - mz) < 6)) {
+    const m = animalManager.invoquer('moto', mx, mz);
+    if (m) m.yaw = 0;
+  }
 }
+const PLACE_MOTO = [51, 7];
 
 // --- catch celebration ------------------------------------------------------------
 
@@ -8875,7 +8884,7 @@ window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) 
 // souhaite bonne route. La règle est pure (police.js), le branchement dans
 // patrouille.js ; la voix est celle des guides (v538).
 patrouille = creerPatrouille({
-  scene, player, animaux: animalManager,
+  scene, world, player, animaux: animalManager,
   montureConduite: () => (fun.montureConduite ? fun.montureConduite() : null),
   dire: (texte, l) => { if (sonActif()) parlerAVoixHaute(texte, l); },
   langue: () => playerProfile.lang,

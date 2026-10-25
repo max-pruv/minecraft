@@ -649,7 +649,7 @@ export function sireneJouer(oui, { distance = 20, pan = 0 } = {}) {
   if (sirene && sirene.gen !== generation) sirene = null;   // l'ancien contexte est fermé
   if (!sirene) sirene = monterSirene(c);
   const t = c.currentTime;
-  const vol = 0.09 / (1 + Math.max(0, distance) / 22) ** 2;
+  const vol = 0.14 / (1 + Math.max(0, distance) / 22) ** 2;
   sirene.gain.gain.setTargetAtTime(Math.max(0.0001, vol), t, 0.1);
   if (sirene.pan) sirene.pan.pan.setTargetAtTime(Math.max(-1, Math.min(1, pan)), t, 0.1);
   return true;
