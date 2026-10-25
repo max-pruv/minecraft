@@ -1,5 +1,16 @@
 # Ce qui est en cours
 
+## Banc — le portail réparti (claude/portail-rapide, tests seuls) : rouges des portails, mesurés
+
+Trois portails complets sur la branche (le troisième coupé à 46 min de `reseau.js` par un recyclage du conteneur). Aucun rouge n'est causé par la mise à l'écart des voisines :
+
+- `monte.js`, « le personnage de l'enfant est assis dans la voiture » (avatar faux) : preuve STRUCTURELLE — seule la page `tab` est ouverte quand il joue, `aLEcart` n'y réduit rien. Rouge de banc lent, à démonter par une sonde (cadence de la page au moment de la monte).
+- `monte.js`, tranches, passant de Rome, convoi « voisines », feu « piler », rue vide, Moscou ×2 : mêmes rouges avec l'ancien banc (`BANC_DE_COTE=0`, 3 250 s) qu'avec le neuf (3 277 s).
+- `reseau.js`, « hôte sans courtier » et « seule après le départ de l'hôte » : intermittents déclarés, vus 1 fois sur 3 des deux côtés.
+- `maj.js`, loader ×2 (dette déclarée) et `titresLongs: ["v554"]` (un titre du journal du jeu trop long, livré par la v554 : contenu, pas banc).
+- `washington.js` (guides, métro) : verts à la reprise ; une seule page, `aLEcart` sans effet.
+- Le conteneur de cette session tournait ≈ 1,6 fois plus lentement que celui de la v540 (`plafond.js`, sans navigateur, 4 min 36 → 7 min 30) : les durées absolues de ces portails ne se comparent pas à celles de `SUITES`.
+
 ## Les témoins de `monte.js` qui se placent (claude/temoins-monte, tests seuls)
 
 Mesuré : `monte.js` seule sur `origin/main` v547 (copie de travail) et sur la

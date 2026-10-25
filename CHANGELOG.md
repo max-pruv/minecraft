@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## Banc — Le portail se répartit, et les voisines se taisent pendant un chargement (après la v556)
+## Banc — Le portail se répartit, et les voisines se taisent pendant un chargement (après la v557)
 
 Aucune livraison du jeu : seul le banc d'essai change (`tests/`), donc aucun
 `CACHE_VERSION` n'est dû — rien de ce qu'une tablette télécharge ne bouge.
