@@ -1,4 +1,4 @@
-// LA POLICE DANS LE MONDE (v558). La règle vit dans `police.js` (pure, lue
+// LA POLICE DANS LE MONDE (v559). La règle vit dans `police.js` (pure, lue
 // sous node) ; ici on la BRANCHE : ce qui compte comme bêtise, la voiture de
 // police et la moto qui suivent l'enfant, la sirène, les gyrophares, et le
 // contrôle — un policier qui descend, dit à voix haute ce qui s'est passé et

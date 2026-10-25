@@ -1139,7 +1139,7 @@ const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world,
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
 const animalManager = new AnimalManager(scene, world, player, toast);
-let patrouille = null;   // la police (v558), créée plus bas une fois `fun` prêt
+let patrouille = null;   // la police (v559), créée plus bas une fois `fun` prêt
 let marlon = null; // spawned after the spawn point is known
 let cornichon = null;
 let npcs = [];
@@ -1907,7 +1907,7 @@ function updateChunks() {
       const g = rp.vehicule && rp.vehicule.def ? rp.vehicule.def.gabarit || 0 : 0;
       out.push({ x: rp.pos.x, y: rp.pos.y, z: rp.pos.z, cap: (rp.yaw || 0) + Math.PI, gabarit: g > 1 ? g : 0.6 });
     }
-    // et la police en service (v558) : la rue lui cède comme à un ami
+    // et la police en service (v559) : la rue lui cède comme à un ami
     if (patrouille) for (const o of patrouille.obstacles()) out.push(o);
     return out;
   });
@@ -3903,7 +3903,7 @@ function garagiste(dt) {
       && Math.hypot(a.pos.x - x, a.pos.z - z) < 6);
     if (!dejaLa) animalManager.invoquer('voiture', x, z);
   }
-  // ET UNE MOTO (v558) entre la deuxième et la troisième voiture : Max,
+  // ET UNE MOTO (v559) entre la deuxième et la troisième voiture : Max,
   // « j'ajoute aussi le concept de moto » — elle attend au parc comme les
   // voitures, et le garagiste la remplace de la même façon.
   const mx = pu.x + PLACE_MOTO[0], mz = pu.z + PLACE_MOTO[1];
@@ -8147,7 +8147,7 @@ function asseoir(av, a, siege, temps) {
   av.scale.setScalar(c.echelle);
   av.position.set(c.x, c.y, c.z);
   av.rotation.y = 0;                             // visage en −z, comme le nez de la voiture
-  // la fiche peut avoir sa posture (v558) : à califourchon sur une moto
+  // la fiche peut avoir sa posture (v559) : à califourchon sur une moto
   const pose = (a.def && a.def.pose) || POSE_AU_VOLANT;
   av.userData.legs.forEach((l) => { l.rotation.x = pose.cuisses; });
   av.userData.arms.forEach((b) => { b.rotation.x = pose.bras; });
@@ -8876,7 +8876,7 @@ window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) 
 // Les panneaux à lire sur place : une fois par visite, en temps réel (v460).
 // Depuis la v538, dans les cinq grandes villes, dans la langue du profil, et
 // raconté par le guide posé au pied du monument (`createGuidesVilles`).
-// LA POLICE (v558). Une bêtise au volant — une voiture heurtée, un piéton
+// LA POLICE (v559). Une bêtise au volant — une voiture heurtée, un piéton
 // qu'on force à s'écarter, un gros choc, le mobilier renversé — et une
 // voiture de police arrive derrière l'enfant, sirène et gyrophares ; à deux
 // étoiles, une moto la rejoint. On s'en sort en la semant… ou en s'arrêtant :
@@ -9096,7 +9096,7 @@ function frame(now) {
   // qu'on sait ce que `dt` vaut.
   edu.update(dtEcran(), running);
   fun.update(dt);
-  if (running && patrouille) patrouille.update();   // la police (v558)
+  if (running && patrouille) patrouille.update();   // la police (v559)
   majEtatPolice();
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)

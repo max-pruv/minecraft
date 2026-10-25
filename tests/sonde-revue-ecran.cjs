@@ -257,7 +257,7 @@ const ETATS = [
   // LE MOBILIER TOMBÉ (v536) : un réverbère et un feu de Paris renversés
   // comme une voiture lancée les renverse, vus du trottoir — la nuit, la
   // lanterne couchée ne doit plus éclairer la rue
-  // LA POLICE ET LA MOTO (v558), sur la dalle de `sonde-police.cjs` : la
+  // LA POLICE ET LA MOTO (v559), sur la dalle de `sonde-police.cjs` : la
   // poursuite (une bêtise, la voiture de police dans le rétroviseur de la
   // caméra, la pilule des étoiles), puis le contrôle (la police garée DEVANT,
   // le policier à la portière), puis la moto penchée dans un virage.

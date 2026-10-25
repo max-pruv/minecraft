@@ -9883,7 +9883,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         !m.err && n.cadence < 12 && c.depart && c.partRecord !== null && c.partRecord >= 0.8,
         `${m.err || ''} ${JSON.stringify(c)}`);
     }
-    // LA POLICE ET LA MOTO (v558). Max : « dès lors que tu fais une bêtise, un
+    // LA POLICE ET LA MOTO (v559). Max : « dès lors que tu fais une bêtise, un
     // accident, que tu fonces dans quelqu'un… la police ; et la moto ». Une
     // page à soi, une dalle à soi (`sonde-police.cjs`, lue telle quelle) : on
     // fonce VRAIMENT dans une voiture garée (le choc que la physique publie),

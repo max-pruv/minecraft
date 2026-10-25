@@ -69,7 +69,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   closed ») au témoin de l'eau (ligne 6822), au bout de soixante minutes : la
   branche, elle, est allée jusqu'au bout. Une fois vue, à surveiller.
 
-## v558 — LA POLICE ET LA MOTO : ce qui reste, déclaré
+## v559 — LA POLICE ET LA MOTO : ce qui reste, déclaré
 
 - **La police est locale à la tablette.** Les étoiles, les unités, le contrôle
   ne voyagent pas sur le réseau : un ami voit la voiture de l'enfant, pas la
@@ -90,7 +90,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
 - **Pendant la poursuite, la police est derrière la caméra** (relevé n° 29 de
   `docs/revue-ecran.md`) : seules la pilule et la sirène la disent. Décision
   de Max après la tablette.
-- **LE PORTAIL DE LA v558, MESURÉ.** Le portail complet a été coupé deux fois
+- **LE PORTAIL DE LA v559, MESURÉ.** Le portail complet a été coupé deux fois
   par la limite de deux heures de la session, pendant `reseau.js` (la
   dernière suite) : il dure désormais plus de deux heures sur ce banc.
   `reseau.js` a donc été rejouée seule des deux côtés. Rouges, tous déjà

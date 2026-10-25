@@ -250,7 +250,7 @@ export function initFun(ctx) {
   // ne demande donc plus de penser à revenir modifier ce fichier — l'oubli
   // qui, pendant des mois, a laissé le cheval, le cerf et le loup seuls
   // montables alors que le bestiaire s'était étoffé.
-  // `enService` (v558) : une voiture de police en patrouille n'est pas à prendre
+  // `enService` (v559) : une voiture de police en patrouille n'est pas à prendre
   // — elle le devient une fois garée, à la fin du contrôle (patrouille.js).
   const montable = (a) => !!(a && a.def && a.def.montable && !a.baby && !a.horsService && !a.enService);
 

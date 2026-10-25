@@ -168,20 +168,20 @@ n° 19, corrigé).
 | --- | --- | --- | --- | --- | --- | --- |
 | 28 | basse | en vol au-dessus d'une forêt (v553), iPad et iPhone | [jour](revue-ecran/lointain-arbres/ipad-foret-loin-jour.jpg), [nuit](revue-ecran/lointain-arbres/ipad-foret-loin-nuit.jpg) | Au bord du disque maillé, une **couture de teinte** : le paysage lointain est plus clair et voilé que le monde proche, parce que le brouillard commence exactement à ce bord (`fog.near` = rr × 16). Antérieur à la v553, visible sur les captures de la v532. | Faire commencer le brouillard un peu en deçà du bord, ou teinter la grille fine du sous-bois là où `foret` est haute (les témoins de couleur de `plafond.js` lisent l'herbe au sommet près : à décider avec eux). | `src/main.js`, `src/horizon.js` |
 
-## Le relevé de la v558 (la police et la moto), 25 octobre 2026
+## Le relevé de la v559 (la police et la moto), 25 octobre 2026
 
 États `police-poursuite`, `police-controle` et `moto`, sur la dalle de
 `sonde-police.cjs`, à 430 × 932 et 820 × 1180, de jour et de nuit
-(`docs/revue-ecran/v558-police-moto/`). Le contrôle se lit au premier regard :
+(`docs/revue-ecran/v559-police-moto/`). Le contrôle se lit au premier regard :
 la voiture de police garée devant, gyrophare allumé, le policier à côté de la
-portière ([nuit](revue-ecran/v558-police-moto/ipad-police-controle-nuit.jpg)).
+portière ([nuit](revue-ecran/v559-police-moto/ipad-police-controle-nuit.jpg)).
 La pilule (gyrophare et étoiles) tient sous le badge du temps libre, sans rien
 recouvrir. La moto se couche dans le virage, l'enfant à califourchon
-([jour](revue-ecran/v558-police-moto/iphone-moto-jour.jpg)). Le premier jet de
+([jour](revue-ecran/v559-police-moto/iphone-moto-jour.jpg)). Le premier jet de
 l'état `moto` faisait sortir la moto d'une dalle trop petite et capturait sous
 l'eau (le haut de l'image noir) : la sonde prend désormais la dalle de la sonde
 de police, et dit si la moto y est encore (`surLaDalle`).
 
 | # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
 | --- | --- | --- | --- | --- | --- | --- |
-| 29 | moyenne | poursuite de police (v558), iPhone et iPad | [jour](revue-ecran/v558-police-moto/ipad-police-poursuite-jour.jpg) | Pendant la poursuite, la voiture de police roule dix blocs **derrière** l'enfant, donc derrière la caméra de poursuite (6,4) : à l'écran, seule la pilule des étoiles dit qu'elle est là, et la sirène. Au contrôle, elle se gare devant et se voit (v558). | Juger sur la tablette ; si l'enfant ne comprend pas qui le suit, un repère au bord de l'écran du côté de la police, ou la caméra qui se retourne un instant quand elle arrive. Décision de Max. | `src/patrouille.js`, `src/sensations.js` |
+| 29 | moyenne | poursuite de police (v559), iPhone et iPad | [jour](revue-ecran/v559-police-moto/ipad-police-poursuite-jour.jpg) | Pendant la poursuite, la voiture de police roule dix blocs **derrière** l'enfant, donc derrière la caméra de poursuite (6,4) : à l'écran, seule la pilule des étoiles dit qu'elle est là, et la sirène. Au contrôle, elle se gare devant et se voit (v559). | Juger sur la tablette ; si l'enfant ne comprend pas qui le suit, un repère au bord de l'écran du côté de la police, ou la caméra qui se retourne un instant quand elle arrive. Décision de Max. | `src/patrouille.js`, `src/sensations.js` |
