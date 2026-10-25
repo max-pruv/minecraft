@@ -139,7 +139,7 @@ export const DATE_CLAIRIERES = Date.parse('2026-10-18T13:20:00Z');
 // L'HEURE DES PISTES DÉGAGÉES (v548), relue à la fusion (v309) : un bloc posé
 // avant garde, dans son morceau et ses huit voisins, les arbres d'avant — y
 // compris une couronne orpheline contre laquelle il aurait été posé.
-export const DATE_PISTES_DEGAGEES = Date.parse('2026-10-25T16:00:00Z');
+export const DATE_PISTES_DEGAGEES = Date.parse('2026-10-25T12:20:00Z');
 export function solDeToundra(x, z, h) {
   if (h >= NEIGE_TOUNDRA) return BLOCK.SNOW;
   return fbm(x * 0.07, z * 0.07, SEED + 941) > 0.64 ? BLOCK.GRAVEL : BLOCK.GRASS;

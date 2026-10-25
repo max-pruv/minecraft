@@ -47,6 +47,11 @@ au-dessus des 151 563 colonnes de piste du monde, jusqu'à quarante blocs
 du relief et celle des 490 morceaux sont identiques (`b44dcc32…`). Aucune
 feuille au-dessus d'un revêtement sur les dix-neuf disques d'aérodrome
 (sonde, 4 144 feuilles lues).
+Portail : cinq suites vertes ; `carte.js` et `monte.js` rouges sur des
+intermittences de minicarte, d'appui long et de vie de rue, déclarées dans
+`TASKS.md` — `carte.js` rejouée seule : 2 rouges sur la branche, verte sur
+`origin/main`, l'inverse de la v546 ; `monte.js` hors d'atteinte par
+construction (la règle n'est jamais évaluée dans une ville).
 
 ---
 

@@ -31,6 +31,15 @@
 - **Portail de la v547 (rebasée sur la v546)** : rouges déclarés seulement
   (`maj.js` loader, `reglages.js` un choix à deux tablettes, `manhattan.js` le
   taxi roule, `monte.js` par tranches et rue vide), plus un NEUF :
+- [ ] **`monte.js` « à Londres, un passant traverse sur le passage peint d'un
+  carrefour d'avenues sans feu » (v548)** : rouge au portail de la v548
+  (`traversees: 2`), avec quatre autres rouges de vie de rue déjà déclarés
+  (rue fabriquée par tranches, Rome en biais, freinage au feu, rue vide).
+  Preuve STRUCTURELLE que la v548 n'y est pour rien (v291) : sa règle de
+  `treeAt` vient après le rejet `cityAt`, elle n'est jamais évaluée dans une
+  ville, et les 543 feuilles retirées sont toutes hors des villes (la plus
+  proche à 314 blocs du centre de Londres). À rejouer en distribution des deux
+  côtés (v269).
 - [ ] **`carte.js` « minicarte (820 × 1180) : visible dès l'entrée en jeu » et
   « … à pied, en construction, au volant et en avion »** : la minicarte n'est
   pas à l'écran à l'entrée (`entree: null`, `b: null`), à la taille de l'iPad
@@ -38,6 +47,8 @@
   verte sur la branche — en production, la v547 n'y touche pas. Non vu aux
   portails de la v540 à la v544 : à rejouer en distribution (v269) des deux
   côtés, avec le temps écoulé depuis l'entrée dans le message.
+  v548 : rejouée SEULE, rouge sur la branche, VERTE sur `origin/main` v547 —
+  l'inverse de la v546. Vue des deux côtés : une intermittence.
 - [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » (Bolide
   à 0,45)** : rouge sur la branche, VERT sur `origin/main` cette fois (rouge 2
   sur 2 des deux côtés à la v540) — un tirage. Piste, non établie : les poses se
