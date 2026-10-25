@@ -142,3 +142,34 @@ Ces fichiers ne sont **pas** dans la liste `ASSETS` du service worker :
 ils passent par le `STATIC_CACHE` (téléchargés à la première rencontre,
 gardés à travers les mises à jour), comme les modèles du scanner de
 visages — 83 Mo re-téléchargés à chaque livraison auraient tué la cadence.
+
+## La police et la moto (octobre 2026)
+
+Deux modèles fournis par Max, publiés sous licence **Creative Commons
+Attribution 4.0** (CC-BY-4.0), qui exige le crédit ci-dessous, recopié tel quel
+de leur `license.txt` :
+
+> This work is based on "Police car"
+> (https://sketchfab.com/3d-models/police-car-9166b13b6ae341f4bfc093edb71d74f4)
+> by Mateusz Woliński (https://sketchfab.com/jeandiz) licensed under CC-BY-4.0
+> (http://creativecommons.org/licenses/by/4.0/)
+
+> This work is based on "Harley-Davidson Police"
+> (https://sketchfab.com/3d-models/harley-davidson-police-79dc00298bf449d7bcfdf6eb32bd15ac)
+> by Comrade1280 (https://sketchfab.com/comrade1280) licensed under CC-BY-4.0
+> (http://creativecommons.org/licenses/by/4.0/)
+
+Fichiers : `police-car.glb` (la voiture de police) et `moto-police.glb` (la
+moto). Modifications, toutes faites par `scripts/convertir-police.mjs`
+(reproductible, les paquets bruts restent hors du dépôt) :
+- mise au contrat de la flotte : mètres, +Z vers l'avant, roues au sol à
+  y = 0, pivots `Wheel_FL/FR/RL/RR` (la moto : `Wheel_F`, `Wheel_R`) ; la
+  voiture mise à l'échelle sur l'empattement réel (2,913 m) ;
+- carrosserie fusionnée par matériau, maillages simplifiés (meshoptimizer,
+  bords verrouillés), textures redimensionnées et recompressées ;
+- vitrage et rampe passés d'une transmission à une transparence simple ; les
+  feux de la rampe séparés en deux lentilles (`Gyrophare_G`, `Gyrophare_D`) ;
+- la moto redressée de sa béquille (environ 7°) et privée de son socle de
+  vitrine.
+Aucune forme ni texture inventée : ce sont celles des auteurs. Le jeu n'a pas
+d'écran de crédits ; s'il en a un un jour, ces modèles y entrent.

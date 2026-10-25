@@ -196,3 +196,21 @@ jantes, vitrage, plaque « SF90XX ».
 | --- | --- | --- | --- | --- | --- | --- |
 | 31 | basse | SF90 XX (v561), garée de trois quarts, de nuit | [v561](revue-ecran/v561-sf90/planche-iphone-troisquarts-nuit.jpg) | Phares éteints la nuit, comme toute la flotte garée (n° 8). Repeinte dans la rue, la voiture garde sa **livrée rouge** (prises du capot, ouïes arrière) : sur une laque sarcelle, ces accents se lisent comme des pièces d'une autre voiture. | Garder ; ou repeindre la livrée (`Paint_Secondary`) d'un ton accordé à la laque tirée — décision de Max. | `src/vehicules.js` (`repeindre`) |
 | 32 | basse | rue de Paris, de nuit, caméra de la sonde à hauteur de toit | [v561](revue-ecran/v561-sf90/planche-ipad-rue-nuit.jpg) | Une **feuille d'automne** passe à quelques centimètres de l'objectif et couvre un quart de l'écran. Ce n'est pas la voiture : c'est l'essaim de saison (v531), que la caméra de cadrage traverse. | Ne pas dessiner une particule à moins d'un bloc de la caméra. | `src/saisons.js` |
+
+## Le relevé de la v562 (la police et la moto), 25 octobre 2026
+
+États `police-poursuite`, `police-controle` et `moto`, sur la dalle de
+`sonde-police.cjs`, à 430 × 932 et 820 × 1180, de jour et de nuit
+(`docs/revue-ecran/v562-police-moto/`). Le contrôle se lit au premier regard :
+la voiture de police garée devant, gyrophare allumé, le policier à côté de la
+portière ([nuit](revue-ecran/v562-police-moto/ipad-police-controle-nuit.jpg)).
+La pilule (gyrophare et étoiles) tient sous le badge du temps libre, sans rien
+recouvrir. La moto se couche dans le virage, l'enfant à califourchon
+([jour](revue-ecran/v562-police-moto/iphone-moto-jour.jpg)). Le premier jet de
+l'état `moto` faisait sortir la moto d'une dalle trop petite et capturait sous
+l'eau (le haut de l'image noir) : la sonde prend désormais la dalle de la sonde
+de police, et dit si la moto y est encore (`surLaDalle`).
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 33 | moyenne | poursuite de police (v562), iPhone et iPad | [jour](revue-ecran/v562-police-moto/ipad-police-poursuite-jour.jpg) | Pendant la poursuite, la voiture de police roule dix blocs **derrière** l'enfant, donc derrière la caméra de poursuite (6,4) : à l'écran, seule la pilule des étoiles dit qu'elle est là, et la sirène. Au contrôle, elle se gare devant et se voit (v562). | Juger sur la tablette ; si l'enfant ne comprend pas qui le suit, un repère au bord de l'écran du côté de la police, ou la caméra qui se retourne un instant quand elle arrive. Décision de Max. | `src/patrouille.js`, `src/sensations.js` |

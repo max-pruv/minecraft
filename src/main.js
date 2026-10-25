@@ -36,6 +36,7 @@ import { DIRECTIONS_VOISINS } from './arbreshd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { creerGuides, parlerAVoixHaute } from './guides.js';
+import { creerPatrouille } from './patrouille.js';
 import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN, PORTEE_COURONNE,
   ABAISSE_TRES_LOIN, rayonTresLoin, silhouetteArbre } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
@@ -1138,6 +1139,7 @@ const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world,
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
 const animalManager = new AnimalManager(scene, world, player, toast);
+let patrouille = null;   // la police (v562), créée plus bas une fois `fun` prêt
 let marlon = null; // spawned after the spawn point is known
 let cornichon = null;
 let npcs = [];
@@ -1905,6 +1907,8 @@ function updateChunks() {
       const g = rp.vehicule && rp.vehicule.def ? rp.vehicule.def.gabarit || 0 : 0;
       out.push({ x: rp.pos.x, y: rp.pos.y, z: rp.pos.z, cap: (rp.yaw || 0) + Math.PI, gabarit: g > 1 ? g : 0.6 });
     }
+    // et la police en service (v562) : la rue lui cède comme à un ami
+    if (patrouille) for (const o of patrouille.obstacles()) out.push(o);
     return out;
   });
   // et la rue freine devant les piétons (v372) : à cinquante à l'heure, qu'un
@@ -3870,7 +3874,16 @@ function garagiste(dt) {
       && Math.hypot(a.pos.x - x, a.pos.z - z) < 6);
     if (!dejaLa) animalManager.invoquer('voiture', x, z);
   }
+  // ET UNE MOTO (v562) entre la deuxième et la troisième voiture : Max,
+  // « j'ajoute aussi le concept de moto » — elle attend au parc comme les
+  // voitures, et le garagiste la remplace de la même façon.
+  const mx = pu.x + PLACE_MOTO[0], mz = pu.z + PLACE_MOTO[1];
+  if (!animalManager.animals.some((a) => a.def.key === 'moto' && !a.enService && Math.hypot(a.pos.x - mx, a.pos.z - mz) < 6)) {
+    const m = animalManager.invoquer('moto', mx, mz);
+    if (m) m.yaw = 0;
+  }
 }
+const PLACE_MOTO = [51, 7];
 
 // --- catch celebration ------------------------------------------------------------
 
@@ -8105,9 +8118,11 @@ function asseoir(av, a, siege, temps) {
   av.scale.setScalar(c.echelle);
   av.position.set(c.x, c.y, c.z);
   av.rotation.y = 0;                             // visage en −z, comme le nez de la voiture
-  av.userData.legs.forEach((l) => { l.rotation.x = POSE_AU_VOLANT.cuisses; });
-  av.userData.arms.forEach((b) => { b.rotation.x = POSE_AU_VOLANT.bras; });
-  animerHumain(av, temps, 0, POSE_AU_VOLANT);
+  // la fiche peut avoir sa posture (v562) : à califourchon sur une moto
+  const pose = (a.def && a.def.pose) || POSE_AU_VOLANT;
+  av.userData.legs.forEach((l) => { l.rotation.x = pose.cuisses; });
+  av.userData.arms.forEach((b) => { b.rotation.x = pose.bras; });
+  animerHumain(av, temps, 0, pose);
 }
 // OÙ L'ON EST ASSIS, sans y poser personne : la séquence d'embarquement
 // (embarquement.js, v366) y fait arriver l'avatar, et c'est le MÊME calcul
@@ -8832,6 +8847,35 @@ window.__siege = { phase: () => siege?.phase(), forcer: (p) => siege?.forcer(p) 
 // Les panneaux à lire sur place : une fois par visite, en temps réel (v460).
 // Depuis la v538, dans les cinq grandes villes, dans la langue du profil, et
 // raconté par le guide posé au pied du monument (`createGuidesVilles`).
+// LA POLICE (v562). Une bêtise au volant — une voiture heurtée, un piéton
+// qu'on force à s'écarter, un gros choc, le mobilier renversé — et une
+// voiture de police arrive derrière l'enfant, sirène et gyrophares ; à deux
+// étoiles, une moto la rejoint. On s'en sort en la semant… ou en s'arrêtant :
+// le policier descend, dit à voix haute ce qui s'est passé et quoi faire, et
+// souhaite bonne route. La règle est pure (police.js), le branchement dans
+// patrouille.js ; la voix est celle des guides (v538).
+patrouille = creerPatrouille({
+  scene, world, player, animaux: animalManager,
+  montureConduite: () => (fun.montureConduite ? fun.montureConduite() : null),
+  dire: (texte, l) => { if (sonActif()) parlerAVoixHaute(texte, l); },
+  langue: () => playerProfile.lang,
+  casses: () => statsCasse.n,
+});
+window.__patrouille = patrouille;
+// L'ÉTAT : les étoiles, dans la file du centre — un état affiché, pas un
+// message (v516). Le DOM ne s'écrit que quand le nombre change (v263).
+const etatPoliceEl = document.getElementById('etat-police');
+let etatPoliceN = -1;
+function majEtatPolice() {
+  const n = running && patrouille ? patrouille.etoiles() : 0;
+  if (n === etatPoliceN || !etatPoliceEl) return;
+  etatPoliceN = n;
+  etatPoliceEl.classList.toggle('visible', n > 0);
+  etatPoliceEl.dataset.etoiles = String(n);
+  etatPoliceEl.setAttribute('aria-label', n ? `Recherché par la police : ${n} étoile${n > 1 ? 's' : ''} sur 3` : '');
+  etatPoliceEl.innerHTML = n ? ICONES.gyrophare + [0, 1, 2].map((i) => (i < n ? ICONES.etoile : ICONES.etoileVide)).join('') : '';
+}
+
 const guides = creerGuides({
   // Plus de bandeau pendant le jeu (v504) : le guide le dit à voix haute.
   dire: (texte, lieu, l) => { if (sonActif()) parlerAVoixHaute(texte, l); },
@@ -9023,6 +9067,8 @@ function frame(now) {
   // qu'on sait ce que `dt` vaut.
   edu.update(dtEcran(), running);
   fun.update(dt);
+  if (running && patrouille) patrouille.update();   // la police (v562)
+  majEtatPolice();
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
   if (running) guides.update(player.pos.x, player.pos.z);   // les panneaux des guides (v460, v538)

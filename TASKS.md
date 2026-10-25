@@ -152,6 +152,49 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   closed ») au témoin de l'eau (ligne 6822), au bout de soixante minutes : la
   branche, elle, est allée jusqu'au bout. Une fois vue, à surveiller.
 
+## v562 — LA POLICE ET LA MOTO : ce qui reste, déclaré
+
+- **La police est locale à la tablette.** Les étoiles, les unités, le contrôle
+  ne voyagent pas sur le réseau : un ami voit la voiture de l'enfant, pas la
+  police qui le suit. Piste : les étoiles dans la position (`p.v`, comme les
+  feux stop v549), et chaque tablette mène ses unités d'après la piste qu'elle
+  reçoit. À mesurer avant d'écrire : ce que coûte une piste sur le réseau.
+- **La moto a la boîte de collision d'une voiture en longueur** (la boîte est
+  carrée de `gabarit`, 1,2 de large ; c'est le choc de face qui lit la
+  longueur de la voiture). Une moto qui touche un mur de face rebondit à la
+  distance d'une voiture. Visible ? À juger sur la tablette.
+- **Le contrôle reste derrière quand un bloc barre le chemin devant**
+  (`etat().controle.refus` nomme le bloc) : derrière une caméra de poursuite,
+  l'enfant entend la phrase sans voir le policier. Piste : se ranger à droite
+  si la gauche est barrée.
+- **Le policier ne marche pas** (le modèle fourni n'a pas d'armature) : il
+  glisse de sa portière à celle de l'enfant. Un modèle armé, ou un corps
+  Rocketbox habillé en policier, serait une passe à part.
+- **Pendant la poursuite, la police est derrière la caméra** (relevé n° 29 de
+  `docs/revue-ecran.md`) : seules la pilule et la sirène la disent. Décision
+  de Max après la tablette.
+- **LE PORTAIL DE LA v562, MESURÉ.** Le portail complet a été coupé deux fois
+  par la limite de deux heures de la session, pendant `reseau.js` (la
+  dernière suite) : il dure désormais plus de deux heures sur ce banc.
+  `reseau.js` a donc été rejouée seule des deux côtés. Rouges, tous déjà
+  déclarés ou intermittents des deux côtés, aucun sur un chemin de la police
+  (elle ne naît qu'après une bêtise au volant, `patrouille.js`) :
+  - `maj.js` « le loader dit combien de fichiers » (déclaré) ; le titre de
+    sept mots de la v554, corrigé dans cette livraison.
+  - `monte.js` « au feu, la voiture freine au lieu de piler » (v481) et « au
+    frein à main, les pneus crissent » (`crisse.n` 1 pour une barre de 3,
+    rapport 14,5) ; au premier portail, avant le rebase, les deux passants
+    de Rome (déclarés), et ces deux-là verts.
+  - `reglages.js` « l'autre tablette ne le défait pas » au premier portail
+    (déclaré), vert au second.
+  - `reseau.js`, les deux témoins de la v556 (l'ami en temps réel) : au
+    portail, le direct (`vx` absent, la page à 4 images par seconde) ;
+    rejouée seule sur la branche, le nuage (`sautMax` 28,3, 4,5 images par
+    seconde), 98 verts ; rejouée seule sur `origin/main` (v557), le direct
+    (`sautMax` 21,9, 1,5 image par seconde) et « un hôte sans courtier »
+    (déclaré), 96 verts. Intermittents des deux côtés, toujours sous
+    cinq images par seconde : la session de la v556 a la piste.
+
 ## v547 — les voitures gardent leur modèle : ce qui reste, mesuré
 
 - `reseau.js` rejouée seule sur la v547 : 87 verts, 3 rouges, la portière droite

@@ -327,7 +327,9 @@ export function creerEmbarquement(ctx) {
   function monter(a) {
     if (s) { terminer(); return; }
     if (SEQUENCE_ACTIVE && av && a && a.mesh && a.def && a.def.pilote && a.mesh.userData.porte) { monterAvion(a); return; }
-    if (!SEQUENCE_ACTIVE || !av || !a || !a.mesh || !a.def || !a.def.siege || a.def.pilote) { ctx.toggleRide(a); return; }
+    // UNE MOTO S'ENFOURCHE (v562) : ni portière ni marche jusqu'au volant —
+    // on passe la jambe, et l'on est en selle. La fiche le dit (`selle`).
+    if (!SEQUENCE_ACTIVE || !av || !a || !a.mesh || !a.def || !a.def.siege || a.def.pilote || a.def.selle) { ctx.toggleRide(a); return; }
     const g = a.mesh;
     a.montee = true; a.state = 'idle';
     const portes = equiperPortieres(g, portiereRefusee(g));
@@ -762,7 +764,7 @@ export function creerEmbarquement(ctx) {
 
   function monterChez(veh, siege, de, fin, suivre) {
     if (s) { terminer(); return; }
-    if (!SEQUENCE_ACTIVE || !av || !veh || !veh.mesh || !veh.def || !siege) { fin(); return; }
+    if (!SEQUENCE_ACTIVE || !av || !veh || !veh.mesh || !veh.def || !siege || veh.def.selle) { fin(); return; }
     const g = veh.mesh;
     const a = commeMonture(veh);
     const portes = equiperPortieres(g, portiereRefusee(g));
@@ -832,6 +834,16 @@ export function creerEmbarquement(ctx) {
     // un avion au sol qui a une porte descend par son escalier (v400)
     if (SEQUENCE_ACTIVE && av && !opts.presse && a.mesh && a.def && a.def.pilote && a.mesh.userData.porte
       && !player.avionEnVol && (player.avionEtat === undefined || player.avionEtat === 'sol')) { descendreAvion(a); return; }
+    // DESCENDRE DE MOTO : un pas de côté, à gauche (là où l'on pose le pied),
+    // sur une case libre — sinon on reste où l'on est, comme l'ancien geste.
+    if (a.def && a.def.selle) {
+      ctx.toggleRide(null);
+      const gx = Math.cos(a.yaw), gz = -Math.sin(a.yaw);   // la gauche d'une bête qui avance vers (sin, cos)
+      const x = player.pos.x + gx * 1.0, z = player.pos.z + gz * 1.0, y = player.pos.y;
+      const libre = (yy) => !(world.isSolid && world.isSolid(Math.floor(x), Math.floor(yy), Math.floor(z)));
+      if (libre(y + 0.2) && libre(y + 1.2)) { player.pos.x = x; player.pos.z = z; }
+      return;
+    }
     const sansSequence = !SEQUENCE_ACTIVE || !av || !a.mesh || !a.def || !a.def.siege || a.def.pilote;
     if (sansSequence && !opts.presse) { ctx.toggleRide(null); return; }
     const g = a.mesh;
@@ -871,7 +883,7 @@ export function creerEmbarquement(ctx) {
   // pose alors l'enfant à côté, sans séquence.
   function descendreDeChez(veh, siege, de, suivre) {
     if (s) terminer();
-    if (!SEQUENCE_ACTIVE || !av || !veh || !veh.mesh || !veh.def || !siege) return false;
+    if (!SEQUENCE_ACTIVE || !av || !veh || !veh.mesh || !veh.def || !siege || veh.def.selle) return false;
     const g = veh.mesh;
     const a = commeMonture(veh);
     const portes = equiperPortieres(g, portiereRefusee(g));

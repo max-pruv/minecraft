@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 562,
+    titre: 'La police, et la moto',
+    puces: [
+      'Une bêtise au volant ? La police arrive',
+      'Sirène, gyrophares et étoiles',
+      "Arrête-toi : le policier te parle",
+      'Conduis la moto, elle se penche',
+    ],
+  },
+  {
     v: 561,
     titre: 'Une nouvelle Ferrari SF90 XX',
     puces: [

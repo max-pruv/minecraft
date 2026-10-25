@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import { MODELES_AVION } from './avions.js';
 import { construireVoitureRoute, chargerVraieVoiture, chargerVoitureFlotte, FLOTTE, repeindre, VOITURE_FORCEE } from './vehicules.js';
 import { allureDeClasse } from './conduite.js';
+import { construireMoto } from './moto.js';
 
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
@@ -47,6 +48,7 @@ function yeux(g, y, z, ecart = 0.11, taille = 0.05) {
 
 export const MODELES_MONTURE = {
   voiture: voitureNeuve,
+  moto: () => construireMoto(),
   ...MODELES_AVION,
   // L'éléphant : la seule bête du jeu plus haute qu'une maison de plain-pied.
   // Trompe en quatre segments qui descendent en s'affinant, défenses ivoire,
@@ -340,9 +342,13 @@ function voitureNeuve(voeu) {
   // garage muet.
   const voulu = voeu && voeu.flotte
     ? FLOTTE.find((f) => f.fichier === voeu.flotte) || null : null;
+  // le tirage ne sort pas la voiture de police (`horsRue`, v562) : l'usine et
+  // le garage livrent des voitures de tout le monde ; la police, on la prend
+  // à la fin d'un contrôle, ou on la demande par son nom (le vœu)
+  const tirables = FLOTTE.filter((f) => !f.horsRue);
   const enFlotte = voulu || VOITURE_FORCEE || (voeu && voeu.flotte === 'voiture.glb' ? null
-    : Math.random() < FLOTTE.length / (FLOTTE.length + 1)
-      ? FLOTTE[Math.floor(Math.random() * FLOTTE.length)] : null);
+    : Math.random() < tirables.length / (tirables.length + 1)
+      ? tirables[Math.floor(Math.random() * tirables.length)] : null);
   g.userData.flotte = enFlotte ? enFlotte.fichier : 'voiture.glb';
   g.userData.nomVoiture = enFlotte ? enFlotte.nom : 'Bugatti Chiron';
   // ET SA COULEUR (v305) : la teinte que la rue lui avait posée voyage avec
@@ -461,6 +467,31 @@ export const MONTURES = [
     // ni l'un ni l'autre, et cela s'écrit en ne l'écrivant pas. Même
     // discipline que `montable`, `vole`, `gabarit` et `habitacle`.
     moteur: 'voiture', radio: true },
+
+  // LA MOTO (v553). Max : « j'ajoute aussi le concept de moto ». Elle roule
+  // avec la physique d'une voiture (`gabarit` > 1 : `conduite.js`, sa classe
+  // `moto`), et ce qui la distingue vit ici, dans sa fiche :
+  //   · `selle` : on l'enfourche d'un coup — ni portière ni séquence de
+  //     marche jusqu'au volant (embarquement.js) ;
+  //   · `penche` : dans un virage elle se couche vers l'INTÉRIEUR, quand une
+  //     voiture penche vers l'extérieur (sensations.js) ;
+  //   · `pose` : l'enfant est à califourchon, bras tendus vers le guidon
+  //     (main.js, `asseoir`) ;
+  //   · `gabarit` 1,2 : la machine et les genoux du pilote, bien plus étroite
+  //     qu'une voiture — elle se faufile ;
+  //   · `moteur: 'moto'` : un bicylindre plus aigu que la voiture (sons.js) ;
+  //     pas de radio sur une moto.
+  // Le siège est dans le repère du véhicule (nez en −z), mesuré sur la selle
+  // du modèle converti : son avant, à 0,80 du sol.
+  { key: 'moto', name: 'Moto de police', cry: 'Vrrroum !', emoji: '🏍️', speed: 0.01,
+    height: 1.4, width: 0.8, habitat: 'usine', montable: true,
+    allure: allureDeClasse('moto'),
+    assise: 0.8, poursuite: { recul: 4.6, hauteur: 2.1 }, nourrissable: false, immobile: true,
+    siege: { x: 0.03, y: 0.8, z: 0.32 },
+    sieges: [{ x: 0.03, y: 0.88, z: 0.78 }],
+    pose: { cuisses: -1.05, genoux: 1.15, bras: -1.25, coudes: -0.3 },
+    selle: true, penche: true,
+    vole: false, gabarit: 1.2, moteur: 'moto' },
 
   // --- LES AVIONS : le mode `pilote`, le troisième --------------------------
   //
