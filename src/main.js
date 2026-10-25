@@ -1622,9 +1622,20 @@ function rueAutour(wx, wy, wz) {
   const rue = (x, z) => !world.arriveeEnCours() || world.morceauxPrets(x, z) ? CHAUSSEE.has(world.getBlock(x, wy, z)) : null;
   return [rue(wx + 1, wz), rue(wx - 1, wz), rue(wx, wz + 1), rue(wx, wz - 1)];
 }
+function rueAutour2(wx, wy, wz) {
+  const rue = (x, z) => !world.arriveeEnCours() || world.morceauxPrets(x, z) ? CHAUSSEE.has(world.getBlock(x, wy, z)) : null;
+  return [rue(wx + 2, wz), rue(wx - 2, wz), rue(wx, wz + 2), rue(wx, wz - 2)];
+}
 const CAPS_RUE = [0, Math.PI, -Math.PI / 2, Math.PI / 2];
 function versLaRue(wx, wy, wz) {
-  const r = rueAutour(wx, wy, wz);
+  let r = rueAutour(wx, wy, wz);
+  // Le réverbère des villes engendrées est à DEUX blocs du caniveau depuis
+  // qu'il a reculé (villesmonde.js, `reglageMobilier`) : sans chaussée
+  // voisine, on la cherche un bloc plus loin, sinon la crosse tournait vers +x.
+  if (r.indexOf(true) < 0) {
+    const r2 = rueAutour2(wx, wy, wz);
+    if (r2.indexOf(true) >= 0) r = r2;
+  }
   let k = r.indexOf(true);
   if (k < 0) k = r.indexOf(null);
   return k < 0 ? 0 : CAPS_RUE[k];

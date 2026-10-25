@@ -1254,7 +1254,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       'Amsterdam|Westerkerk': 85, 'Prague|L\'horloge astronomique': 70,
       'Stockholm|L\'hôtel de ville': 106,
       'Jérusalem|Le dôme du Rocher': 35, 'Jérusalem|La tour de David': 30,
-      'Los Angeles|L\'hôtel de ville': 138, 'Buenos Aires|L\'Obélisque': 68,
+      // (L'hôtel de ville de Los Angeles a son bâtisseur depuis les rues à la
+      // GTA : il est dans la table du module, plus ici.)
+      'Buenos Aires|L\'Obélisque': 68,
       'Berlin|Berliner Dom': 98, 'Singapour|Marina Bay Sands': 200, 'Bangkok|Wat Arun': 82,
       'Delhi|Rashtrapati Bhavan': 55,
       // Le lot 2, les villes bâties à la main (v350).
@@ -3329,6 +3331,71 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('le sol HD se soude : un cinquième de moins, les mêmes triangles des mêmes valeurs',
       lus > 50 && neuf < 0.8 * vieux && fautes === 0 && coins > 0,
       `${lus} morceaux, ${Mo(vieux)} → ${Mo(neuf)} Mo, ${coins} coins, ${fautes} morceau(x) en écart (${ecarts} coins), ${Date.now() - t0} ms`);
+  }
+
+  // LE MOBILIER DE BORDURE RECULE D'UN BLOC (dette de la v536). Le long des
+  // circuits, une voiture à un bloc de sa voie butait sur 18 à 36 réverbères,
+  // feux et jardinières par kilomètre (`sonde-mobilier-route.cjs`). Le réverbère
+  // et la jardinière reculent contre les façades : aucun n'a plus de chaussée
+  // à côté de lui, la rue garde autant de réverbères (on compte le long de la
+  // même rue, v271), et le feu et le banc ne bougent pas d'un bloc — le feu lit
+  // son axe dans sa position (v273), le banc est solide (v457). Rouge sur
+  // l'ancien code : les réverbères y bordent le caniveau.
+  {
+    const VM = await import('../src/villesmonde.js');
+    const B = await import('../src/blocks.js');
+    const reg = VM.reglageMobilier;
+    // La grandeur est la distance au milieu de la VOIE que roulent les
+    // voitures (le tracé de `tracesCirculation`), pas le voisinage d'une
+    // colonne de chaussée : sur une trame tournée, la case du mobilier est
+    // jugée en son centre (v270) et un voisin de colonne ne dit rien. Une
+    // voiture de 2,26 à un bloc de sa voie a son flanc à 2,13 du milieu : à
+    // moins de 3 blocs, la case la touche (débord compris). Mesuré : 886 sur
+    // six villes à l'ancienne place, 0 reculés.
+    const tous = VM.tracesCirculation(() => 33);
+    const lire = (f) => {
+      const out = { rev: 0, bord: 0, fixes: [] };
+      const segs = [];
+      for (const t of tous.filter((t) => t.cle === f.cle)) for (let i = 0; i < t.pts.length; i++) segs.push([t.pts[i], t.pts[(i + 1) % t.pts.length]]);
+      const R = Math.floor(f.rayon);
+      for (let x = Math.floor(f.ancre.x) - R; x <= f.ancre.x + R; x++) for (let z = Math.floor(f.ancre.z) - R; z <= f.ancre.z + R; z++) {
+        if (VM.solVillesMonde(x, z) !== B.CITY_BLOCK.SIDEWALK) continue;
+        VM.mobilierVillesMonde(x, z, (dy, id) => {
+          if (dy !== 1) return;
+          if (id === B.RUE.REVERBERE || id === B.RUE.JARDINIERE) {
+            if (id === B.RUE.REVERBERE) out.rev++;
+            const cx = x + 0.5, cz = z + 0.5;
+            for (const [a, b] of segs) {
+              const dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz || 1;
+              const s = Math.max(0, Math.min(1, ((cx - a.x) * dx + (cz - a.z) * dz) / l2));
+              if (Math.hypot(cx - a.x - dx * s, cz - a.z - dz * s) < 3) { out.bord++; break; }
+            }
+          } else out.fixes.push(`${x},${z},${id}`);
+        });
+      }
+      return out;
+    };
+    const villes = ['rome', 'zurich', 'tokyo', 'berlin', 'shanghai', 'losangeles', 'madrid', 'moscou'];
+    let bord = 0, rev = 0, rev0 = 0, bord0 = 0, fixesBouges = 0;
+    for (const cle of villes) {
+      const f = VM.VILLES_MONDE.find((v) => v.cle === cle);
+      if (!f) continue;
+      const a = lire(f);
+      bord += a.bord; rev += a.rev;
+      if (reg) {
+        const r0 = reg.recul; reg.recul = 0;
+        const b = lire(f); reg.recul = r0;
+        rev0 += b.rev; bord0 += b.bord;
+        const vus = new Set(b.fixes);
+        fixesBouges += a.fixes.filter((k) => !vus.has(k)).length + (b.fixes.length - a.fixes.length);
+      }
+    }
+    verifier('le réverbère et la jardinière d\'une ville engendrée reculent d\'un bloc : plus un à portée d\'une voiture qui serre le trottoir',
+      rev > 2000 && bord === 0 && (!reg || bord0 > 300),
+      `${bord} à moins de 3 blocs du milieu d'une voie, sur ${rev} réverbères (${villes.length} villes)${reg ? ` ; à l'ancienne place : ${bord0}` : ''}`);
+    verifier('et la rue garde ses réverbères, ses feux et ses bancs à leur place',
+      !!reg && rev >= 0.85 * rev0 && fixesBouges === 0,
+      reg ? `${rev} réverbères pour ${rev0} à l'ancienne place, ${fixesBouges} feux ou bancs déplacés` : 'pas de reglageMobilier (ancien code)');
   }
 
   // UNE BAIE, PAS DEUX (v457). Les villes engendrées posaient deux blocs

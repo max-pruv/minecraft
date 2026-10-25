@@ -1250,6 +1250,31 @@ règles.
   (`MARGE_GTA` à 0,4, les bouches d'avant, la barre de contour et le mobilier
   des entrées) elle rend la constante de la v531 au bit près.
 
+## Le mobilier recule du caniveau (v557) — on déplace un prop, jamais un solide ni un feu
+
+Dettes des v536 et v544, dans les villes engendrées. Trois règles.
+
+- **CE QUI RECULE EST CE QU'ON TRAVERSE À PIED.** Le réverbère et la jardinière
+  (des props, `isProp`) reculent d'un bloc contre les façades
+  (`reglageMobilier.recul`, villesmonde.js) ; le BANC est un bloc solide et
+  reste (le déplacer changerait la forme sous ce qu'un enfant a bâti, v457), et
+  le FEU reste au coin : son axe se lit dans la parité de sa position (v273),
+  et les bouches de métro se choisissent contre lui. Le prop reculé prend sa
+  colonne à l'auvent, sinon la moitié des rues perdaient leurs lampes. Un
+  réverbère loin du caniveau cherche sa chaussée à deux blocs (`versLaRue`).
+  `recul: 0` rend la règle d'avant, pour l'empreinte des 490 morceaux.
+- **LA GRANDEUR EST LA DISTANCE AU MILIEU DE LA VOIE, PAS LE VOISINAGE D'UNE
+  COLONNE.** Sur une trame tournée, la case du mobilier se juge en son centre
+  (v270) : « une colonne de chaussée à côté » restait vraie pour un tiers des
+  réverbères reculés. Le témoin lit le tracé de `tracesCirculation` : aucun à
+  moins de trois blocs (1 158 sur `origin/main`).
+- **UN MONUMENT QUI GAGNE DE L'EMPRISE SE MESURE CONTRE LES ANNEAUX DE SA
+  VILLE.** L'hôtel de ville de Los Angeles est sur la place centrale : des
+  ailes de cinq blocs y écartaient l'anneau d'arrivée (2 044 → 1 532 blocs de
+  circuits), à trois blocs les anneaux restent au bit près. On compare
+  `tracesCirculation` des deux arbres avant de livrer un bâtisseur, même hors
+  des couches 1 à 3 qu'on croit seules lues.
+
 ## Les stations de métro (v529) — on juge une station avec le vrai joueur, à l'aller et au retour
 
 Max : « on ne peut même pas marcher dedans ». Sept règles.

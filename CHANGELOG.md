@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v557 — Le mobilier recule du caniveau, l'hôtel de ville de Los Angeles monte
+
+**Pourquoi.** Deux dettes des villes engendrées. Une voiture qui serrait le
+trottoir à un bloc de sa voie butait sur 18 à 36 réverbères, feux et
+jardinières par kilomètre (`tests/sonde-mobilier-route.cjs`, Rome, Zurich,
+Tokyo, Berlin) : le trottoir fait deux blocs et demi depuis les rues à la GTA,
+et le mobilier n'en occupait que la moitié côté chaussée. Et à Los Angeles,
+l'hôtel de ville — un fût d'un bloc — était à 21 blocs pour une médiane de
+toits de 22 depuis les mêmes rues : plus bas que ses voisins.
+
+**Ce que ça change.**
+- Dans les villes engendrées, le réverbère et la jardinière reculent d'un bloc,
+  contre les façades : à un bloc de sa voie, la voiture ne rencontre plus que
+  les feux (Rome 57 → 17 pièces, toutes des feux). Autant de réverbères le long
+  de la rue (−9 à +10 % selon la ville), et leur crosse se tourne toujours vers
+  la chaussée. Le feu et le banc ne bougent pas d'un bloc.
+- L'hôtel de ville de Los Angeles a sa silhouette : un fût carré à bandeaux, la
+  colonnade, la pyramide à gradins et sa lanterne, à 36 blocs au-dessus des
+  toits du centre (22). Les quatre anneaux de voitures de la ville restent au
+  bloc près.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` (aucun réverbère ni
+jardinière à moins de trois blocs du milieu d'une voie — 1 158 sur
+`origin/main`, 0 ici — et autant de réverbères, aucun feu ni banc déplacé),
+rouges sur `origin/main` ; l'hôtel de ville sort des exceptions déclarées
+(« aucun monument plus bas que les immeubles qui l'entourent »), l'ordre du
+ciel de la ville tenu ; l'empreinte des 490 morceaux, mobilier désarmé, rend la
+constante d'avant au bit près ; le relief ne bouge pas (des props seulement).
+Le grand anneau de Shanghai (32 pas) passe sur la PLACE CENTRALE, pas sur un
+quai : aucun contour ne l'évite sans suivre un voisin (mesuré jusqu'à 3 000
+essais), c'est déclaré dans `TASKS.md`.
+
+---
+
 ## v556 — Les amis bougent en temps réel
 
 **Pourquoi.** Max : « Tu le vois bouger de manière saccadée, toutes les
