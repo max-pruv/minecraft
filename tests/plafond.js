@@ -637,6 +637,51 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       !t.erreur && t.points > 50000 && t.trous === 0, t.erreur || JSON.stringify(t));
   }
 
+  // --- UNE VOITURE TOMBE DANS L'EAU (v559) ----------------------------------
+  // Décision de Max, qui annule la v272 : « s'il tombe dans l'eau, il tombe
+  // dans l'eau ». Le VRAI joueur sous node (`sonde-voiture-eau.cjs`), un port
+  // fabriqué, pleins gaz vers le bassin, sans crochet d'eau : la voiture
+  // plonge, l'eau la freine (elle ne roule plus au fond : seize blocs/s à
+  // travers le bassin, mesuré sans la trainée), le moteur cale sous l'eau,
+  // l'enfant en sort et remonte. Et un gué d'un bloc freine sans noyer.
+  {
+    const { rouleVersLEau } = require('./sonde-voiture-eau.cjs');
+    const src = require('path').resolve(__dirname, '../src');
+    const o = await rouleVersLEau(src, 'aucune').catch((e) => ({ erreur: String(e) }));
+    verifier('une voiture qui roule vers l\'eau y tombe, l\'eau la freine, elle coule, et l\'enfant remonte à la surface',
+      !o.erreur && o.tEau !== null && o.fin && o.fin.d > o.quai && o.fin.d < o.quai + 25 && o.tNoyee !== null && !!o.sortie && o.tSurface !== null && o.tSurface < 4,
+      o.erreur || JSON.stringify({ tEau: o.tEau, vEntree: o.vEntree, tNoyee: o.tNoyee, sortie: o.sortie, tSurface: o.tSurface, fin: o.fin }));
+    const gue = await rouleVersLEau(src, 'aucune', 4, 1).catch((e) => ({ erreur: String(e) }));
+    verifier('un gué d\'un bloc freine la voiture sans la noyer',
+      !gue.erreur && gue.tEau !== null && gue.tNoyee === null && gue.fin.d > gue.quai + 10,
+      gue.erreur || JSON.stringify({ tEau: gue.tEau, tNoyee: gue.tNoyee, fin: gue.fin }));
+  }
+
+  // --- ON NE S'ENFONCE PAS DANS UN VÉHICULE, PUR (v559) ----------------------
+  // Max : « il ne faut pas que les véhicules puissent passer les uns dans les
+  // autres ». « Pas si l'on est déjà dedans » (v245) se jugeait par famille :
+  // collé à une voiture, on traversait celle d'à côté. La règle (`sEnfonce`,
+  // conduite.js) se juge par véhicule et par enfoncement : entrer, ou aller
+  // plus loin, est refusé ; se dégager ou longer reste permis. Sur l'ancien
+  // code la fonction n'existe pas, et le verdict le dit.
+  {
+    const C = await import('../src/conduite.js');
+    if (!C.sEnfonce) verifier('on ne s\'enfonce pas dans un véhicule : la règle', false, 'sEnfonce absent (ancien code)');
+    else {
+      const R = (x, z, cap) => C.rectangleDeBoite(C.boiteVoiture(x, z, cap, 2.2, 1.13));
+      const lui = R(0, 0, Math.PI / 2);                    // une voiture le long de x
+      const cas = {
+        entrer: C.sEnfonce(R(-5, 0, Math.PI / 2), R(-4.2, 0, Math.PI / 2), lui),     // on arrive par l'arrière
+        plusLoin: C.sEnfonce(R(-4.2, 0, Math.PI / 2), R(-3.8, 0, Math.PI / 2), lui), // déjà au contact, on pousse
+        reculer: C.sEnfonce(R(-4.2, 0, Math.PI / 2), R(-4.6, 0, Math.PI / 2), lui),  // on se dégage
+        longer: C.sEnfonce(R(0.3, 2.1, Math.PI / 2), R(1.0, 2.1, Math.PI / 2), lui), // flanc contre flanc, on longe
+        aCote: C.sEnfonce(R(0, 5, Math.PI / 2), R(0.5, 5, Math.PI / 2), lui),        // loin : rien
+      };
+      verifier('on ne s\'enfonce pas dans un véhicule : entrer ou aller plus loin est refusé, reculer et longer restent permis',
+        cas.entrer && cas.plusLoin && !cas.reculer && !cas.longer && !cas.aCote, JSON.stringify(cas));
+    }
+  }
+
   // --- LE MOBILIER SE CASSE, PUR (v536) --------------------------------------
   // La règle (`mobiliercasse.js`) : ce qui se casse, comment ça tombe, quand ça
   // se relève. Sur l'ancien code le module n'existe pas, et le verdict le dit.

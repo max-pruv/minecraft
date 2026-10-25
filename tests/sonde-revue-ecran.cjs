@@ -288,6 +288,14 @@ const ETATS = [
   }, apres: (tab) => tab.evaluate(() => window.__game.player.keys.delete('KeyW')) },
   // Au volant dans une rue de Paris (les rues à la GTA) : la chaussée vue de la
   // place du conducteur, là où la voiture devait tenir dans sa voie.
+  // LA VOITURE TOMBE DANS L'EAU (v559) : un port fabriqué au-dessus du relief
+  // (le même que le témoin de monte.js), pleins gaz vers le bassin. On capture
+  // la voiture dans l'eau (« voiture-plonge »), puis l'enfant remonté à la
+  // surface, la voiture au fond (« voiture-coulee »).
+  { nom: 'voiture-plonge', prep: (tab) => portEtPlongee(tab, false),
+    apres: (tab) => tab.evaluate(() => window.__game.player.keys.clear()) },
+  { nom: 'voiture-coulee', prep: (tab) => portEtPlongee(tab, true),
+    apres: (tab) => tab.evaluate(() => window.__game.player.keys.clear()) },
   { nom: 'volant-ville', async prep(tab) {
     const p = await tab.evaluate(async () => {
       const { adresseParis } = await import('./src/paris.js');
@@ -436,6 +444,56 @@ const ETATS = [
     return tab.evaluate(() => ({ aBord: !!(window.__game.fun.bordDe && window.__game.fun.bordDe()) }));
   } },
 ];
+
+// Un quai de pierre puis un bassin, la berline au bord, l'enfant au volant,
+// pleins gaz vers l'eau. `jusquAuBout` : on attend que l'enfant soit sorti et
+// remonté (la voiture au fond) ; sinon, que la voiture soit dans l'eau.
+async function portEtPlongee(tab, jusquAuBout) {
+  return tab.evaluate(async (fin) => {
+    const g = window.__game;
+    const { BLOCK } = await import('./src/blocks.js');
+    const tenir = (n) => new Promise((f) => setTimeout(f, n));
+    const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+    for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(400); }
+    for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+    g.animalManager.animals.length = 0;
+    g.player.keys.clear(); g.player.flying = false; g.player.pilote = null;
+    const x0 = 31200, z0 = 31500, W = 10, QUAI = 12;
+    let y0 = 0;
+    for (let d = -8; d <= 44; d += 4) for (let w = -W; w <= W; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+    y0 += 2;
+    const surface = y0 - 1, fond = y0 - 5;
+    for (let d = -8; d <= 44; d++) for (let w = -W; w <= W; w++) {
+      if (d <= QUAI) for (let y = fond; y <= y0; y++) g.world.setBlock(x0 + d, y, z0 + w, BLOCK.STONE);
+      else {
+        g.world.setBlock(x0 + d, fond, z0 + w, BLOCK.STONE);
+        for (let y = fond + 1; y <= surface; y++) g.world.setBlock(x0 + d, y, z0 + w, BLOCK.WATER);
+        g.world.setBlock(x0 + d, y0, z0 + w, 0);
+      }
+      for (let h = 1; h <= 8; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w) !== 0) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+    }
+    g.player.yaw = -Math.PI / 2; g.player.pitch = -0.1;
+    g.player.pos.set(x0, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
+    await tenir(1500);
+    g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte: 'berline-citadine' });
+    await tenir(1000);
+    for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); await tenir(500); }
+    if (!auVolant()) return { err: 'pas monté' };
+    g.player.keys.add('KeyW');
+    const t0 = performance.now();
+    if (!fin) {
+      while (performance.now() - t0 < 40000 && !(g.player.pos.x - x0 > QUAI + 3 && g.player.pos.y < y0)) await tenir(100);
+      return { d: +(g.player.pos.x - x0).toFixed(1), y: +g.player.pos.y.toFixed(1), surface, ms: Math.round(performance.now() - t0) };
+    }
+    while (performance.now() - t0 < 60000 && auVolant()) await tenir(200);
+    g.player.keys.clear();
+    const t1 = performance.now();
+    while (performance.now() - t1 < 20000 && g.player.pos.y < surface - 1.2) await tenir(200);
+    await tenir(1500);
+    g.player.pitch = -0.35;
+    return { auVolant: auVolant(), y: +g.player.pos.y.toFixed(1), surface, ms: Math.round(performance.now() - t0) };
+  }, jusquAuBout);
+}
 
 async function monterEnVoiture(tab) {
   return tab.evaluate(async () => {

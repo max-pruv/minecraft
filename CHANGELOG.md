@@ -20,6 +20,66 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v559 — Dans l'eau pour de vrai, et les voitures ne se traversent plus
+
+Deux sujets, deux parties (v279).
+
+### La voiture tombe dans l'eau
+
+**Pourquoi.** Max : « il faut arrêter de mettre des messages d'erreur pour dire
+attention, une voiture ne roule pas dans l'eau… s'il tombe dans l'eau, il tombe
+dans l'eau… j'ai l'impression que le véhicule est arrêté quand il arrive dans
+l'eau ». Depuis la v272, une voiture s'arrêtait net au bord du quai avec un
+bandeau « fais demi-tour ». Et sans cet arrêt, mesuré, la voiture traversait un
+bassin à seize blocs/s en roulant sur le fond : il n'y avait pas d'eau pour
+elle.
+
+**Ce que ça change.** Plus d'arrêt, plus de message. La voiture garde son élan,
+passe par-dessus le quai, plonge ; l'eau la freine, le moteur cale sous l'eau
+et elle coule au fond. Un instant plus tard l'enfant sort de la voiture et
+remonte tout seul à la surface, le temps de nager jusqu'à la rive. La voiture
+noyée reste au fond, on ne la reprend pas. Un gué peu profond freine sans noyer.
+
+**Ce qui le prouve.** Deux témoins sous node (`plafond.js`, le vrai joueur sur
+un port fabriqué : la voiture tombe, coule, l'enfant remonte en moins de quatre
+secondes ; un gué d'un bloc se traverse), un témoin au navigateur (`monte.js` :
+plongée, sortie, surface, voiture hors service, et aucun bandeau sur l'eau —
+rouge sur l'ancien code, arrêtée sur le quai), la fumée (le message retiré ne
+peut plus revenir). Les ponts se franchissent toujours (`sonde-ponts-eau.cjs`).
+
+### Les véhicules ne passent plus les uns dans les autres
+
+**Pourquoi.** Max : « il ne faut pas que les véhicules puissent passer les uns
+dans les autres. Et aujourd'hui c'est encore possible. » La règle « pas si l'on
+est déjà dedans » (v245) se jugeait pour toutes les voitures à la fois : dès
+que la voiture de l'enfant touchait une voiture (l'état que laisse un choc), elle
+ne voyait plus AUCUNE voiture et pouvait la traverser, elle ou sa voisine. Et
+une voiture de la rue ou un train déjà dans la voiture de l'enfant continuaient
+leur route au travers.
+
+**Ce que ça change.** La règle se juge voiture par voiture : on ne peut ni
+entrer dans une voiture, ni s'enfoncer plus loin dans celle qu'on touche ;
+reculer ou longer reste toujours possible. Une voiture de la rue ou un train
+arrivé dans la voiture de l'enfant (ou d'un ami) s'arrête contre elle au lieu
+de la traverser, et repart quand elle s'est dégagée.
+
+**Ce qui le prouve.** Une sonde (`sonde-traverse-vehicules.cjs`) qui mesure
+les recouvrements par paire, des deux côtés : collée à une voiture garée, la
+voiture de l'enfant traversait celle de devant (52 relevés dedans, 2,2 blocs
+d'enfoncement, treize blocs parcourus au travers) — zéro ici, elle s'arrête et
+la pousse ; en roulant dans Paris à la recherche du contact, des voitures de la
+rue entraient dans la nôtre (0, 1, 13, 27 et 35 relevés dedans selon les
+passages) — zéro sur trois passages ici, après avoir bouché un trou que la
+sonde a trouvé (la glissade le long d'un mur ne regardait pas les voitures) ; un témoin pur (`plafond.js` :
+entrer et s'enfoncer refusés, reculer et longer permis) ; un témoin au
+navigateur (`monte.js` : collée à une voiture, la nôtre ne traverse pas celle de
+devant, et elle recule). Et la correction a montré quatre témoins de conduite
+qui roulaient sans le savoir dans la mer ou à son bord (une dalle sous l'eau,
+une dalle trop courte, une aire quittée en roue libre) : la voiture y coulait
+désormais, et la suite se jouait à pied. Leurs dalles sont au sec.
+
+---
+
 ## v558 — Le métro de Washington roule droit le long des quais
 
 **Pourquoi.** La voie du métro de Washington allait d'arrêt en arrêt en
@@ -443,8 +503,6 @@ compte les voitures vues en coque puis en modèle (34 sur l'ancien code, 0
 ici), puis reproduit le geste de Max — relever les voitures en vue, demi-tour
 du regard, retour — et exige le même modèle et la même laque pour chaque
 place. Le témoin de la v495 (la rue rend sa mémoire) reste vert.
-
----
 
 ---
 

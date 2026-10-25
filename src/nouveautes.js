@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 559,
+    titre: 'Plouf ! Et plus de passe-muraille',
+    puces: [
+      'La voiture tombe dans l\'eau et coule',
+      'Tu remontes tout seul à la surface',
+      'Les voitures ne se traversent plus',
+    ],
+  },
+  {
     v: 558,
     titre: 'Le métro roule droit en station',
     puces: [

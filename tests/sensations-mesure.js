@@ -114,10 +114,12 @@ async function mesurerSensations() {
   const virage = { releves: penche.length, tourne: +tourne.toFixed(2),
     penche: med(penche), braque: med(braque), roues };
 
-  // à l'arrêt pour la suite
-  const t3 = performance.now();
-  while (Math.abs(P.vitesseVoiture || 0) > 0.2 && performance.now() - t3 < 10000) await tenir(0.2);
-  P.pos.set(ax, y0 + 1.01, az); P.vel.set(0, 0, 0); P.vitesseVoiture = 0; P.yaw = 0;
+  // à l'arrêt pour la suite — TOUT DE SUITE (v559) : laissée en roue libre,
+  // la voiture sortait de l'aire de quarante blocs et tombait dans la mer,
+  // cent blocs plus bas ; elle y coule désormais et l'enfant en sort, et
+  // toute la suite (son, choc, pente) se mesurait à pied.
+  P.pos.set(ax, y0 + 1.01, az); P.vel.set(0, 0, 0); P.vitesseVoiture = 0; P.yaw = 0; P.glissade = null;
+  if (!auVolant()) return { err: 'plus au volant après le virage', virage };
   await tenir(1.0);
 
   // le son : un analyseur sur la SORTIE du jeu (v268)
