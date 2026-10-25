@@ -12,7 +12,7 @@
 
 import * as THREE from 'three';
 import { MODELES_AVION } from './avions.js';
-import { construireVoitureRoute, chargerVraieVoiture, chargerVoitureFlotte, FLOTTE, repeindre } from './vehicules.js';
+import { construireVoitureRoute, chargerVraieVoiture, chargerVoitureFlotte, FLOTTE, repeindre, VOITURE_FORCEE } from './vehicules.js';
 import { allureDeClasse } from './conduite.js';
 
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
@@ -340,7 +340,7 @@ function voitureNeuve(voeu) {
   // garage muet.
   const voulu = voeu && voeu.flotte
     ? FLOTTE.find((f) => f.fichier === voeu.flotte) || null : null;
-  const enFlotte = voulu || (voeu && voeu.flotte === 'voiture.glb' ? null
+  const enFlotte = voulu || VOITURE_FORCEE || (voeu && voeu.flotte === 'voiture.glb' ? null
     : Math.random() < FLOTTE.length / (FLOTTE.length + 1)
       ? FLOTTE[Math.floor(Math.random() * FLOTTE.length)] : null);
   g.userData.flotte = enFlotte ? enFlotte.fichier : 'voiture.glb';

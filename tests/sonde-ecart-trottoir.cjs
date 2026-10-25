@@ -76,7 +76,11 @@
           const z = kap ? Pz - (Math.cos(a) - Math.cos(a0)) / kap : Pz + Math.sin(a0) * V * tau;
           return { x, y: 0, z, ux: Math.cos(a), uz: Math.sin(a), v: V, demiLarg: 1.13 };
         };
-        for (let tau = -1.5; tau <= 1.5 && surRue; tau += 0.1) { const r = voiture(tau); if (sol(r.x, r.z) !== 'c') surRue = false; }
+        // au pas de la simulation (DT) : à 0,1 s, une voiture en virage coupait
+        // le coin d'un refuge entre deux relevés, et le passant qu'elle venait
+        // chercher sur le trottoir comptait comme « descendu » (les rues à la
+        // GTA : trois cas sur 384, tous ce cas-là, mesuré)
+        for (let tau = -1.5; tau <= 1.5 && surRue; tau += DT) { const r = voiture(tau); if (sol(r.x, r.z) !== 'c') surRue = false; }
         if (!surRue) continue;
         for (const bras of ['ancien', 'neuf']) {
           let x = p.x, z = p.z, e = null, repos = 0, descend = false, contact = false, declenche = false;

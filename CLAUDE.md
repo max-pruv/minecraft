@@ -821,7 +821,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La Revuelto adaptée (v545) — un identifiant de flotte ne change pas, son fichier oui
+## La Revuelto adaptée (v546) — un identifiant de flotte ne change pas, son fichier oui
 
 Max a fourni une adaptation CC-BY-4.0 (BRO) de la Revuelto. Trois règles.
 
@@ -832,7 +832,7 @@ Max a fourni une adaptation CC-BY-4.0 (BRO) de la Revuelto. Trois règles.
   FLOTTE choisit le fichier chargé (`asset || fichier`), l'URL neuve se
   télécharge à la première rencontre, et l'ancien fichier reste sur le disque
   (retour arrière d'une ligne). Même mécanisme, même nom et même endroit que
-  la 911 reconstruite (`claude/porsche-911-v2`).
+  la 911 reconstruite (v545), lu par `fichierCharge`.
 - **UN MODÈLE SOUS LICENCE PORTE SON CRÉDIT DANS `vendor/voitures/LICENSE.md`**,
   le texte exact de son `ATTRIBUTION.txt` et la liste des modifications. Le jeu
   n'a pas d'écran de crédits : si un jour il en a un, ces modèles y entrent.
@@ -842,6 +842,40 @@ Max a fourni une adaptation CC-BY-4.0 (BRO) de la Revuelto. Trois règles.
   paquet. Ce qui se transpose à la tablette : octets, mémoire de textures,
   maillages (appels de dessin), programmes nés (zéro) ; la cadence du banc est
   celle de SwiftShader. Portières non séparées → `portiere: false` (v366).
+
+## La 911 reconstruite (v545) — un fichier neuf a une URL neuve, et « léger » se dit en quoi
+
+Max a fait reconstruire la 911 GT3 RS et en a approuvé le rendu ; il a choisi
+d'essayer le modèle lourd tel quel, puis une version « allégée ». **Avant toute
+nouvelle voiture ou refonte, on lit `docs/standard-creation-voitures.md`** (le
+standard qu'il a demandé, la 911 v2 en référence visuelle). Quatre règles.
+
+- **`fichier` EST L'IDENTIFIANT, `asset` LE FICHIER CHARGÉ.** Garages, réseau
+  et couleur de la rue retiennent `fichier` ; on ne le renomme jamais. Une
+  géométrie neuve prend une URL neuve (`asset`, lu par `fichierCharge`,
+  vehicules.js) : STATIC_CACHE ne retélécharge jamais une URL qu'il connaît
+  (`isStaticAsset`, sw.js). L'ancien fichier reste dans le dépôt : une tablette
+  encore sur l'ancienne version le demande.
+- **« ALLÉGÉ » SE DIT EN QUOI : OCTETS, TRANSFERT OU TRIANGLES.** La version
+  compacte (`scripts/optimiser-glb.py`) est sans perte — 40/40 primitives
+  identiques au modèle approuvé, recalculé par un témoin — et passe de 11,6 à
+  7,7 Mo sur le disque. Elle garde ses 362 868 triangles (8,4 fois l'ancienne
+  911), donc le coût de DESSIN ne bouge pas. Et sans ses doublons elle se
+  compresse MOINS bien au niveau Brotli que Vercel sert (≈ q4, déduit de
+  l'ancienne 911 servie à 1,03 Mo) : ≈ 3,2 Mo transférés contre 2,7. Les
+  `.br`/`.gz` précompressés du paquet ne sont pas livrés : le serveur ne les
+  servirait pas sans en-têtes. Un chiffre de poids se donne avec son unité.
+- **UN MODÈLE LOURD SE JUGE SUR LA TABLETTE, ET LE JEU DONNE LE MOYEN.**
+  `?voiture=911` force ce modèle pour toute voiture neuve ET toute la rue (le
+  pire cas), `?asset=0` rend le fichier d'avant, et `?diag=1` nomme au volant
+  le modèle, le fichier chargé et ses triangles. Jamais un réglage du jeu. La
+  sonde `sonde-911.cjs` compare les deux en ordre alterné ; ses millisecondes
+  sont celles de SwiftShader (v247), ses triangles et ses octets, non.
+- **LES TESTS D'UN PAQUET LIVRÉ DEVIENNENT DES TÉMOINS D'UNE SUITE.** Ceux de la
+  911 tournaient sous `node --test` avec un chargeur à part : aucun portail ne
+  les lançait. Ils vivent dans `tests/porsche-911.mjs`, appelé par `degats.js`
+  (gardien de `vehicules.js` et `portieres.js`), et la table des gardiens les
+  déclare avec le GLB. Un test qu'aucun portail ne lance ne garde rien.
 
 ## Les guides des villes (v538) — un guide est un rôle à part, et il se pose à ciel ouvert
 
@@ -1036,6 +1070,72 @@ mètres ». Cinq règles, toutes mesurées par `sonde-elan-chocs.cjs`.
   vitesse de sortie, la force reste celle de la vitesse RELATIVE. Sans cela un
   taxi de Manhattan pris de face rejetait l'enfant de sept blocs (et
   `origin/main`, joystick lâché, de trente-neuf à cinquante et un).
+## Des rues à la GTA (v544) — une voie, c'est la voiture et un bloc de chaque côté
+
+Max veut rouler dans les villes comme dans GTA. Mesuré avant une ligne : la
+marge du kit (0,4 m de chaque côté de la voiture), dans un monde où une rue se
+lit au bloc, laissait des chaussées où la voiture frôlait le trottoir —
+Washington 4 colonnes de médiane, une rue sur deux à une seule voiture. Huit
+règles.
+
+- **LA LARGEUR SE DEMANDE À LA RÈGLE, LE PAS AU KIT.** `sectionGTA` (voirie.js)
+  est `sectionDeRue` avec un bloc de dégagement (`MARGE_GTA`) : 4,26 · 8,52 ·
+  17,04 de chaussée. Toute ville la lit (sections de Paris, Londres, Nice,
+  Lille, San Francisco, `RUE_VILLE`/`BOULEVARD_VILLE`, voiesdoubles.js). Le PAS
+  de trame se calcule toujours sur la section du KIT (`*_KIT`) : recomposer le
+  pas déplaçait les axes, donc les circuits — 32 villes engendrées sans voiture
+  au premier jet. Ce sont les lots qui reculent, et un plancher d'îlot
+  (`2·t.s + ILOT_MIN + 0,5`) garde un îlot bâtissable.
+- **UNE VILLE À PAS FIGÉ PREND LA LARGEUR SUR SON TROTTOIR.** Washington (maison
+  de 9, pas de 28, v370) : chaussée de grille 3 → 5 colonnes, trottoir 2 → 1 ;
+  les avenues qui longent les musées (`SERREES_DC`) ne s'élargissent pas, elles
+  passeraient sous les galeries (v205). Les liaisons gardent leur bord extérieur.
+- **LA VILLE D'AVANT SE FIGE SOUS CE QU'UN ENFANT A BÂTI, BOUCHES DE MÉTRO
+  COMPRISES.** Copies à l'octet `paris-v531.js`, `londres-v531.js`,
+  `nice-v531.js`, `lille-v531.js`, `sanfrancisco-v531.js`,
+  `villesmonde-v531.js` ; Washington garde sa variante DANS le module
+  (`VAR_V531`), parce qu'une copie coûtait 335 ms d'import. Une colonne où un
+  bloc a été posé avant `DATE_RUES_GTA` (et ses huit voisines,
+  `colonnesRuesGTA`) garde la ville de la v531. Les bouches de métro suivent
+  les trottoirs : `ville.js` et `metromonde.js` ont des bouches choisies contre
+  la ville de la v531 (`surParisV531`, `surVilleV531`), avec des mémos par
+  variante — partagés, ils faisaient choisir à Rome figée les bouches de Rome
+  neuve. Le témoin compare la ville figée à `origin/main` colonne par colonne,
+  métro compris. La date se relit à la fusion (v309).
+- **UN CONTOUR JUGE SON PARTAGE SUR SA VOIE, PAS SUR L'AXE.** Le partage se
+  lit sur l'axe des rues ; à un coin RENTRANT d'un contour, la voie de la
+  voiture déborde de l'axe d'une demi-chaussée de chaque côté. Vingt blocs sur
+  l'axe en faisaient 24,3 dans la voie à Tunis et à Kyoto (chaussée 6,4 → 8,5).
+  La phase 4 retire la chaussée de la barre (`barreContour`) ; un rectangle n'a
+  pas de coin rentrant, sa barre ne change pas. Quand une largeur change, toute
+  barre écrite « sur l'axe » se relit sur la voie.
+- **LA TÊTE D'UNE FILE BOUCLÉE SUIT SA QUEUE.** Le plancher de file (v283) ne
+  regardait que la voiture d'avant ; sur un tracé fermé, devant la voiture 0
+  il y a la dernière, un tour plus loin. Quand toute la boucle s'arrête aux
+  feux, la tête entrait dans la queue (voitures 0 et 14 du huit de Paris :
+  0,4 à 3 % des paires sur la v531, 13 à 14 % avec les rues élargies, 0 après).
+  La queue se lit à l'image d'avant, et seulement si la boucle tient toute sa
+  file pare-chocs contre pare-chocs. Le défaut était en production : c'est un
+  témoin de taux, et la sonde page neuve APRÈS 75 s sur place (l'état que la
+  suite laisse), qui l'ont séparé d'un tirage.
+- **CE QUI SUIT LE TROTTOIR SE RELIT QUAND LE TROTTOIR BOUGE.** Le mobilier
+  (bancs, jardinières) s'est posé sur l'axe des avenues d'entrée : il en est
+  écarté (`surUneEntree`). Une bouche rechoisie (Reuilly–Diderot) perce le
+  piédroit à la case du nom : un piédroit percé par le couloir d'une bouche ne
+  porte pas de plaque (`plaquesParis`). La recherche des bouches va plus loin
+  pour la ville neuve seulement.
+- **MANHATTAN ET LES MÉDINAS NE CHANGENT PAS, ET C'EST DIT.** Manhattan a son
+  plan ; les médinas n'ont pas de voitures (v270).
+- **LE PRIX SE DÉCLARE, ET UN TÉMOIN QUI PORTAIT UNE DIMENSION D'AVANT SE
+  REMESURE DES DEUX CÔTÉS.** Parts de lots : Paris 23,2 → 17,2 %, Londres 34,9
+  → 30,6, Lille 33,7 → 28,8, Nice 63,7 → 60,0, San Francisco 59,4 → 55,8,
+  Washington 53,5 → 53,2, villes engendrées 22,3 → 18,0. Terrasses et combles
+  de `parishd.js` se comptent par lot ; le Financial District garde sa borne de
+  garde à la moitié de la mesure. Le relief ne bouge pas (les deux empreintes
+  de `plafond.js`) ; l'empreinte des 490 morceaux change, et désarmée
+  (`MARGE_GTA` à 0,4, les bouches d'avant, la barre de contour et le mobilier
+  des entrées) elle rend la constante de la v531 au bit près.
+
 ## Les stations de métro (v529) — on juge une station avec le vrai joueur, à l'aller et au retour
 
 Max : « on ne peut même pas marcher dedans ». Sept règles.

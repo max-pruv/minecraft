@@ -1,5 +1,16 @@
 # La flotte de voitures (vendor/voitures/*.glb)
 
+## Reconstruction 911 (octobre 2026)
+
+`porsche-911-gt3-rs-hd-v2-compact.glb` est une reconstruction originale générée
+par `scripts/porsche911-v2.py`, puis compactée sans perte par
+`scripts/optimiser-glb.py` (mêmes triangles et textures, bit pour bit). Elle ne provient pas des archives
+luxurycarfleet et ne réutilise pas leur géométrie. Les références visuelles
+officielles sont listées dans `docs/porsche-911-rebuild.md` ; aucune photo ni
+texture du constructeur n'est incorporée. Même destination privée et familiale,
+sans affiliation avec Porsche. Le niveau de fidélité reste à valider.
+
+
 Cinquante modèles fournis par Max (août 2026, archives
 `luxurycarfleet` partie 1 à 3) pour la diversité des voitures à conduire.
 

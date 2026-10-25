@@ -22,6 +22,10 @@
 // telles que `signaturesDuGlb` les lit. `vehicules.js` compile chacune
 // pendant l'accueil (`chaufferLesProgrammes`).
 export const SIGNATURES_GLB = [
+  'Standard+alpha',           // vitrages de la 911 reconstruite
+  'Standard+map+nrm',         // carbone tissé
+  'Standard+map+atest',       // atlas des marquages
+  'Standard+map',             // flancs des pneus
   'Physical+cc+DS+env',
   'Physical+cc+DS',
   'Physical+cc+alpha+DS',

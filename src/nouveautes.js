@@ -6,12 +6,31 @@
 
 export const NOUVEAUTES = [
   {
-    v: 545,
+    v: 546,
     titre: 'Une nouvelle Lamborghini Revuelto',
     puces: [
       'Une Revuelto orange plus détaillée',
       'Avec son volant et ses compteurs',
       'Modèle de BRO, merci à lui',
+    ],
+  },
+  {
+    v: 545,
+    titre: 'Une nouvelle Porsche 911',
+    puces: [
+      'La 911 GT3 RS refaite en détail',
+      'Ses roues, son aileron, son habitacle',
+      'Toujours dans ton garage',
+    ],
+  },
+  {
+    v: 544,
+    titre: 'Des rues larges pour rouler',
+    puces: [
+      'Toutes les rues sont plus larges',
+      'Une voiture et un bloc de chaque côté',
+      'Ce que tu as bâti ne bouge pas',
+      'Aux feux, les voitures ne s\'emboîtent plus',
     ],
   },
   {

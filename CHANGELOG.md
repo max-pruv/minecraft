@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v545 — Une nouvelle Lamborghini Revuelto
+## v546 — Une nouvelle Lamborghini Revuelto
 
 **Pourquoi.** Max a fourni une adaptation de la Revuelto plus fidèle que le
 modèle paramétrique de la flotte (« Integrate ») : un modèle publié par BRO sous
@@ -56,6 +56,124 @@ portières non séparées.
   ajoutées) et chaque roue tourne autour de son essieu ; zéro programme né en
   dessinant le modèle après la chauffe, au volant ou dans la rue.
 - Revue d'écran côte à côte, iPhone et iPad, jour et nuit (dans la PR).
+
+## v545 — Une nouvelle Porsche 911
+
+**Pourquoi.** Max a fait reconstruire la 911 GT3 RS (992) et en a approuvé le
+rendu : « Intègre cette voiture », puis « Tente de passer cette 911 là,
+effectivement beaucoup plus lourde, on va regarder si ça marche », puis une
+version allégée. L'ancienne 911 de la flotte était un modèle de 43 000
+triangles ; la nouvelle en a 362 868, et rien ne disait ce qu'elle coûte.
+
+**Ce que ça change.**
+- La 911 de la flotte (garages, rue, invocation) est la reconstruction :
+  carrosserie, optiques, roues et freins, aileron, habitacle, quatre textures.
+  Son identifiant ne change pas : une 911 rangée au garage revient en 911, et
+  un ami la voit pareil. Elle n'est téléchargée que quand une 911 apparaît.
+- Le fichier livré est la version compacte, sans perte (40/40 primitives
+  identiques au modèle approuvé) : 7,7 Mo sur le disque au lieu de 11,6. Elle
+  garde ses 362 868 triangles : plus légère à charger, pas à dessiner.
+- Pour juger sur la tablette : `?voiture=911` met la 911 partout (voiture
+  invoquée et toute la rue), `?asset=0` rend l'ancienne, `?diag=1` nomme au
+  volant le modèle, le fichier et ses triangles.
+- `docs/standard-creation-voitures.md`, le standard demandé par Max, devient la
+  référence de toute nouvelle voiture.
+
+**Ce que ça coûte, mesuré** (`tests/sonde-911.cjs`, ordre alterné, banc en
+rendu logiciel : les millisecondes ne se transposent pas à l'iPad, les
+triangles et les octets oui).
+
+| | ancienne 911 | nouvelle 911 |
+| --- | ---: | ---: |
+| triangles du modèle | 43 352 | 362 868 |
+| géométrie en carte graphique | 0,7 Mo | 7,2 Mo |
+| textures du modèle | 13,8 Mo | 17,2 Mo |
+| fichier | 1,56 Mo | 7,74 Mo |
+| transfert (Brotli du serveur, ≈ q4) | 1,03 Mo (mesuré) | ≈ 3,2 Mo (estimé) |
+| au volant, campagne, moyen sans ombres | 3,4–3,5 i/s · 156–160k tri | 1,4–1,5 i/s · 464–467k tri |
+| au volant, moyen avec ombres | 2,3–2,5 i/s | 1,2–1,3 i/s |
+| au volant, palier bas | 3,5–3,8 i/s | 1,4–1,6 i/s |
+| rue de Paris toute en 911, moyen | 1,6–1,8 i/s · ≈ 410k tri | 1,1–1,2 i/s · 675–756k tri |
+
+Plusieurs 911 de la rue partagent la géométrie du prototype (42 géométries
+distinctes pour 4 à 8 voitures, comme 26 pour l'ancienne). Sur le banc, une 911
+dans le champ divise la cadence par 2,3 : c'est le dessin de 300 000 triangles
+de plus en logiciel. Sur l'iPad c'est la carte graphique qui les dessine, et
+c'est là que se juge le prix réel.
+
+**Ce qui le prouve.** Huit témoins sous node (`tests/porsche-911.mjs`, lus par
+`degats.js`) : chargement par le vrai GLTFLoader, compaction bit pour bit,
+géométries finies et poids borné, roues au sol sur leur essieu, programmes
+chauffés, identifiant stable et fichier neuf, portières, textures et matières.
+Un témoin de navigateur au volant de la 911 (sol, volant, conducteur sous le
+pavillon face à la route, laque qui reflète) ; le témoin des feux de détresse
+la compte parmi ses modèles ; la table des programmes la lit dans `monte.js`.
+La revue d'écran (iPhone et iPad, jour et nuit, ancienne contre nouvelle) lit
+bien la voiture de trois quarts ; dans la vue de poursuite, l'aileron se lit
+comme une dalle noire et cache le conducteur — relevé n° 26 de
+`docs/revue-ecran.md`, à trancher sur la tablette.
+
+## v544 — Des rues à la GTA : une voie, c'est la voiture et un bloc de chaque côté
+
+**Pourquoi.** Max veut rouler dans les villes comme dans GTA. Mesuré avant une
+ligne : la marge du kit (`voirie.js`, 0,4 m de chaque côté de la voiture) dans
+un monde où une rue se lit au bloc laissait des chaussées où la voiture de
+l'enfant (2,26 blocs) frôlait le trottoir. Médiane de la traversée de chaussée,
+en colonnes : Paris 6, Londres 6, Nice 6, Lille 6, San Francisco 5,
+Washington 4, villes engendrées 6. À Washington, une rue sur deux n'avait la
+place que d'une voiture.
+
+**Ce que ça change.** Toutes les rues de toutes les villes sont plus larges :
+chaque voie a la voiture plus un bloc de marge de chaque côté (`sectionGTA`) —
+une rue de quartier 4,3 blocs de chaussée, une rue à deux voies 8,5, un
+boulevard 17. La trame ne bouge pas (le pas d'îlot se calcule toujours sur la
+section du kit) : ce sont les lots qui reculent. Washington, dont la maison et
+le pas sont figés, prend la largeur sur son trottoir. Manhattan et les médinas
+ne changent pas. Et aux feux, la tête d'une file qui fait le tour d'un pâté de
+maisons n'entre plus dans la dernière voiture de sa propre file.
+
+Ce qu'un enfant a bâti avant ne bouge pas : sous ses constructions (et sur les
+huit colonnes voisines), la ville d'avant reste, rues, lots, mobilier et
+bouches de métro compris (copies figées `*-v531.js`). Le relief ne change pas.
+
+Le prix, déclaré : moins de lots, donc moins d'immeubles — Paris 23,2 → 17,2 %
+du disque, Londres 34,9 → 30,6, Lille 33,7 → 28,8, Nice 63,7 → 60,0 (le
+quartier Masséna 8,6 → 0,9), San Francisco 59,4 → 55,8, Washington 53,5 → 53,2,
+villes engendrées 22,3 → 18,0. Anneaux de circulation des villes engendrées
+822 → 815 ; San Diego retombe à un circuit (son contresens longerait la baie),
+le grand anneau de Shanghai passe sur le quai du Huangpu. Paris garde quinze
+bouches de métro sur seize (Hôtel de Ville sans), Rome onze sur douze (Lepanto
+sans).
+
+**Ce qui le prouve.**
+
+| ville | médiane avant → après | part à deux voitures | chaussée du disque |
+| --- | --- | --- | --- |
+| Paris | 6 → 9 | 88,5 → 91,4 % | 41,5 → 51,3 % |
+| Londres | 6 → 8 | 81,4 → 87,0 % | 34,8 → 42,5 % |
+| Nice | 6 → 8 | 90,1 → 92,8 % | 19,7 → 25,1 % |
+| Lille | 6 → 8 | 74,9 → 79,7 % | 33,9 → 42,1 % |
+| San Francisco | 5 → 7 | 51,9 → 70,6 % | 19,1 → 24,4 % |
+| Washington | 4 → 7 | 46,7 → 89,8 % | 12,8 → 14,5 % |
+| villes engendrées (médiane) | 6 → 8 | | 41,8 → 52,6 % |
+
+Les témoins qui comptent : la ville figée sous une construction d'enfant est,
+colonne par colonne, celle de `origin/main` (neuf villes, métro compris) ; les
+deux empreintes du relief de `plafond.js` sont intactes ; l'empreinte des 490
+morceaux change et, la livraison désarmée, rend la constante de la v531 au bit
+près ; la largeur de chaussée, ville par ville (`carteMonde.js`) ; les voitures
+l'une dans l'autre au-dessus de Paris, 0,2 à 14 % des paires avant le plancher
+de la tête de file, 0 sur trois passages après (sonde rejouée page neuve, et la
+v531 rend 0,4 à 3 % au même endroit). Les témoins qui portaient une dimension
+d'avant (lots, terrasses, combles, bancs, bouches, plaques, raccords, entrées
+de ville) ont été remesurés des deux côtés et repointés, la mesure dans le
+commentaire.
+
+Revue d'écran (`--etats=paris,volant-ville,voiture-rue-percutee,metro`, iPhone
+et iPad, jour et nuit) dans `docs/revue-ecran/v544/` : la voiture de l'enfant
+tient dans sa voie avec un bloc de chaque côté. Deux défauts vus, d'avant la
+livraison et identiques sur la v534 — la caméra traverse un voyageur du métro
+et un bus — entrent au relevé (`docs/revue-ecran.md`, ligne 25).
 
 ---
 
