@@ -144,7 +144,17 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   (voiesdoubles.js), à remesurer ensemble. (2) San Diego retombe à un circuit :
   son contresens roulerait à 34,1 blocs du centre, sur 46 blocs le long de la
   baie (33,6 sur la v531, même géographie). (3) Le grand anneau de Shanghai
-  passe 32 pas sur le quai de granit du Huangpu (0 sur la v531). (4) Québec ne
+  passe 32 pas sur le granit de la PLACE CENTRALE, autour de la fontaine — pas
+  sur un quai (relevé ASCII des villes à bordures). C'est l'anneau d'arrivée
+  (u de −64 à 0, son côté est sur l'axe central) : le contour à contresens
+  qui fait le tour de la place par l'est existe (deux îlots), mais l'anneau du
+  nord, contourné à son tour, retombe alors sur la place (32 pas lui aussi) —
+  la dispute de la v432. `contournerEnsemble` ne trouve aucun état sans pas
+  fautif ni partage au-delà de la barre, même à 3 000 essais (meilleur : deux
+  segments fautifs), y compris en permettant d'inverser le sens d'un anneau
+  qui n'a plus que du partage. Sur la v531, la sélection donnait d'autres
+  anneaux. Pistes : un anneau de quartier (`ANNEAUX_EN_PLUS`) qui remplace
+  l'anneau d'arrivée, ou une place plus petite (le sol : décision de Max). (4) Québec ne
   voit que 17 blocs à l'entrée de l'A20 (20 sur la v531). (5) *(v555 : Hôtel de
   Ville a retrouvé sa bouche — Saint-Paul passe au nord, couloir sous le
   bassin, escalier jamais — et Reuilly–Diderot sa plaque.)* **Rome Lepanto reste sans bouche, et c'est une
@@ -156,7 +166,9 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   de trottoir (sol de la ville), ou un mur de quai qui borne l'escalier dans le
   fleuve (l'eau change). (6) Nice Masséna : part de lots 8,6 → 0,9 % (le quartier
   des places et jardins est traversé par les collectrices) — question pour Max.
-  (7) Los Angeles : l'hôtel de ville à 21 blocs pour une médiane de toits de 22.
+  (7) Fait (villes à bordures) : l'hôtel de ville de Los Angeles a son
+  bâtisseur, à 36 blocs. Il reste à trois blocs de large au pied (la vraie
+  mairie a des ailes) : plus large, il écartait l'anneau d'arrivée de la place.
   (8) Le partage aux coins rentrants d'un contour se mesure maintenant avec la
   voie (`barreContour = PARTAGE_MAX − t.w`) : neuf villes changent un anneau,
   817 → 815. (9) Rouges de portail, double mesure (`monte.js` seule, branche et
@@ -387,9 +399,15 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   bordure. Une voiture de 2,26 centrée sur sa voie garde 2,1 blocs de marge ;
   à un bloc d'écart vers le trottoir, 60 à 100 pièces par kilomètre. Élargir
   (pas de trame, chaussée, recul du mobilier) change le sol sous ce que les
-  enfants ont bâti : décision de Max, non faite. Piste moins chère, à mesurer :
-  reculer le seul mobilier de bordure d'un bloc dans les villes engendrées
-  (`mobilierVillesMonde`), ce qui ne touche que des blocs de décor. (2) Un
+  enfants ont bâti : décision de Max, non faite. La piste moins chère est
+  faite (villes à bordures) : le réverbère et la jardinière reculent d'un bloc
+  dans les villes engendrées (Rome, à un bloc d'écart : 57 → 17 pièces, toutes
+  des feux). Restent au bord, à dessein : LES FEUX (leur axe se lit dans la
+  parité de leur position, v273 — un bloc de côté changerait la file qu'ils
+  arrêtent ; les bouches de métro se choisissent contre eux) et LES BANCS (un
+  bloc solide : le déplacer change la forme sous ce qu'un enfant a bâti,
+  v457). Les auvents perdent 13 à 18 % de leurs colonnes au profit des
+  réverbères. Les villes bâties à la main ne changent pas. (2) Un
   réverbère, un feu ou une jardinière qu'un ENFANT a posés ne se cassent pas
   (restent des obstacles) : à confirmer par Max. Dettes : Manhattan garde ses
   obstacles (mobilier instancié par lots, rien à coucher seul) ; la casse
