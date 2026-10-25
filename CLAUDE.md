@@ -1250,7 +1250,7 @@ règles.
   (`MARGE_GTA` à 0,4, les bouches d'avant, la barre de contour et le mobilier
   des entrées) elle rend la constante de la v531 au bit près.
 
-## Le mobilier recule du caniveau (vXXX) — on déplace un prop, jamais un solide ni un feu
+## Le mobilier recule du caniveau (v554) — on déplace un prop, jamais un solide ni un feu
 
 Dettes des v536 et v544, dans les villes engendrées. Trois règles.
 

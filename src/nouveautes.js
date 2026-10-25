@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 557,
+    titre: 'Des rues plus faciles en voiture',
+    puces: [
+      'Les lampadaires reculent du trottoir',
+      'Moins de poteaux sur la route',
+      'La mairie de Los Angeles grandit',
+    ],
+  },
+  {
     v: 556,
     titre: 'Les amis bougent sans à-coups',
     puces: [
