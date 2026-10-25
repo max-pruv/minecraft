@@ -146,7 +146,7 @@ export function generationAudio() { return generation; }
 const RECETTES = {
   voiture: { base: 42, harmo: 2.02, gainH: 0.055, gainS: 0.020, filtre: 420, q: 1.2, siffle: 0 },
   avion:   { base: 30, harmo: 2.51, gainH: 0.016, gainS: 0.075, filtre: 900, q: 0.7, siffle: 0.012 },
-  // LA MOTO (v554) : un bicylindre — une fondamentale plus haute et une
+  // LA MOTO (v558) : un bicylindre — une fondamentale plus haute et une
   // harmonique à la quinte (1,5) plutôt qu'à l'octave, ce qui fait le
   // « potato-potato » d'un V2 ; plus de dents que de souffle.
   moto:    { base: 58, harmo: 1.5, gainH: 0.062, gainS: 0.016, filtre: 520, q: 1.5, siffle: 0 },
@@ -604,7 +604,7 @@ export function klaxonRue({ distance = 10, pan = 0, ton = 1, duree = 0.45 } = {}
 }
 export const klaxonsRueJoues = () => klaxonsRue;
 
-// LA SIRÈNE DE POLICE (v554) : le « wail » — une note qui monte et descend
+// LA SIRÈNE DE POLICE (v558) : le « wail » — une note qui monte et descend
 // entre 650 et 1 450 Hz en quatre secondes, deux dents de scie à peine
 // désaccordées et passées bas pour qu'elle ne perce pas les oreilles d'un
 // enfant de sept ans. Placée dans l'espace comme le klaxon de la rue : plus

@@ -389,7 +389,7 @@ class Animal {
     }
   }
 
-  // Une bête MENÉE de l'extérieur (une unité de police, v554) : la position et
+  // Une bête MENÉE de l'extérieur (une unité de police, v558) : la position et
   // le cap sont déjà posés, on ne fait que les montrer et faire rouler les roues.
   poser() {
     this.mesh.position.copy(this.pos);
@@ -535,7 +535,7 @@ export class AnimalManager {
       // la trouvait à des milliers de blocs : retirée, l'enfant restait à pied
       // avec la carrure d'une voiture, coincé entre deux murs. La règle vit
       // sur la bête (`montee`, posé par fun.js), comme `montable` dans sa fiche.
-      // Une unité de police en service (v554) est menée par patrouille.js, qui
+      // Une unité de police en service (v558) est menée par patrouille.js, qui
       // la retire elle-même quand la poursuite s'achève.
       if (!a.montee && !a.enService && a.pos.distanceTo(this.player.pos) > 70) {
         // CE QU'ON RETIRE SE REND (v238). Une bête naît toutes les secondes et
@@ -547,7 +547,7 @@ export class AnimalManager {
         this.animals = this.animals.filter((o) => o !== a);
         continue;
       }
-      // UNE UNITÉ MENÉE (v554) : `patrouille.js` pose sa position et son cap
+      // UNE UNITÉ MENÉE (v558) : `patrouille.js` pose sa position et son cap
       // à chaque image, le long de la piste de l'enfant ; le bestiaire ne lui
       // applique ni gravité ni vagabondage — seulement ce qui se voit.
       if (a.menee) { a.poser(); continue; }

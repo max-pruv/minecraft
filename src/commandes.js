@@ -90,7 +90,7 @@ export const ICONES = {
   // LIBRE : une horloge, pour « libre jusqu'à 18 h » (le badge du temps libre).
   libre: T('<circle cx="12" cy="12" r="8.6"/><path d="M12 7v5.2l3.4 2.2"/>', 2.4),
   etincelle: T('<path d="M12 3.5 13.9 10.1 20.5 12l-6.6 1.9L12 20.5l-1.9-6.6L3.5 12l6.6-1.9z" fill="currentColor"/>', 1.6),
-  // LA POLICE (v554) : une étoile pleine par « bêtise » qui compte, une vide
+  // LA POLICE (v558) : une étoile pleine par « bêtise » qui compte, une vide
   // pour ce qui manque, et le gyrophare devant — un dôme sur son socle, deux
   // éclats. Rien d'emprunté (invariant 4).
   etoile: T('<path d="m12 3.2 2.6 5.5 6 .7-4.5 4.1 1.2 5.9L12 16.4l-5.3 3 1.2-5.9-4.5-4.1 6-.7z" fill="currentColor"/>', 1.8),

@@ -281,7 +281,7 @@ const GARDIENS = {
   // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/radio.js': ['monte.js', 'reglages.js', 'reseau.js'],   // le programme de la radio (v543), pur
-  // LA POLICE ET LA MOTO (v554) : la règle pure, son branchement, la moto ;
+  // LA POLICE ET LA MOTO (v558) : la règle pure, son branchement, la moto ;
   // leurs témoins vivent dans monte.js (sous node et dans la page)
   'src/police.js': ['monte.js'],
   'src/patrouille.js': ['monte.js'],
