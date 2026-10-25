@@ -450,10 +450,14 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   étendue choisie, qu'aucune page de `reglages.js` ne range). À démonter : la
   course entre le battement de l'autre tablette et le clic (v374) semble revenue
   — compter les écritures des deux tablettes par `sonde-reglages-deux.cjs`.
-- [ ] **Trou de ciel au bord des morceaux maillés, en vol** (revue d'écran
-  v532, relevé n° 19 de `docs/revue-ecran.md`) — visible avec et sans couronne ;
-  le brouillard reculé de « Loin » le rend plus visible. À sonder colonne par
-  colonne (découpe de la grille fine contre `chunkMeshes`).
+- [x] **Trou de ciel au bord des morceaux maillés, en vol** (revue d'écran
+  v532, relevé n° 19) — **fait en v553** : l'index de la grille fine ne
+  défilait pas avec ses sommets entre deux découpes (`decalerDecoupe`,
+  `sonde-trou-horizon.cjs` : 346 pixels de ciel → 0). Reste, déclaré : la
+  couronne exclut le carré de la fine tel qu'il était à SA découpe ; quand la
+  fine défile, une bande de ses cases d'arrière part avant que la couronne ne
+  la reprenne — derrière l'avion, hors du cône, donc invisible ; à remesurer
+  si un jour on vole en marche arrière.
 - [ ] **POUR MAX : la sûreté de son iPhone** — « Loin » choisi, il joue
   « Normal » par sûreté depuis deux plantages de la v406–v411 ; aucun
   plantage depuis (journal_appareil). Retoucher « Loin » dans les Réglages
@@ -567,10 +571,13 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
 - [ ] **Les arbres beaux partout (v528) : ce qui reste.** (1) Au bord du
   disque chargé, la part de couronne d'un arbre dont la base est dans un
   morceau pas encore maillé manque (ses cubes se taisent dans le voisin) —
-  dans le brouillard, mais à regarder en vol rapide. (2) Le paysage lointain
-  (horizon.js) n'a aucun arbre : une forêt au-delà des morceaux maillés est
-  une prairie verte ; des silhouettes instanciées par `treeAt` y seraient la
-  suite. (3) ~~Le palier bas et le rendu logiciel gardent les cubes (pas de
+  dans le brouillard, mais à regarder en vol rapide. (2) ~~Le paysage lointain
+  (horizon.js) n'a aucun arbre.~~ **Fait en v553** sur la grille fine (une
+  silhouette par case boisée, `world.foret`, 1 196 instances au-dessus d'une
+  forêt à rr 12, 16 triangles chacune, 0,87 Mo à capacité pleine). Restent :
+  la couronne et le très lointain sans arbres (à mille blocs, un pixel) ; le
+  coût de dessin à relire sur l'iPhone (`?diag=1` en vol au-dessus d'une
+  forêt) — le banc rend en logiciel, où les arbres lointains sont coupés. (3) ~~Le palier bas et le rendu logiciel gardent les cubes (pas de
   couche HD).~~ **Le palier bas a ses arbres en cartes depuis la v541** (le
   modèle lointain partout, le matériau HD chauffé à l'accueil) ; le rendu
   logiciel seul garde les cubes, par la règle de la couche (v287), et

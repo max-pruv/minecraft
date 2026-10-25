@@ -36,7 +36,7 @@ import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { creerGuides, parlerAVoixHaute } from './guides.js';
 import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN, PORTEE_COURONNE,
-  ABAISSE_TRES_LOIN, rayonTresLoin } from './horizon.js';
+  ABAISSE_TRES_LOIN, rayonTresLoin, silhouetteArbre } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
 import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
@@ -695,11 +695,38 @@ function chaufferLaCoucheHD(camera) {
   } finally { renderer.setRenderTarget(avant); m.geometry.dispose(); }
 }
 
+// LE BÂTI ET LES ARBRES LOINTAINS SE CHAUFFENT À L'ACCUEIL (v553). Ils
+// partagent un matériau (Lambert, couleurs de sommet, instance teinte) ; nés
+// vides (`count` 0), leur programme se compilait au premier arbre ou au
+// premier toit vu au loin — en vol, au-dessus d'une forêt. Une instance du
+// MÊME matériau, vers l'écran et vers la cible des reflets (ils sont du décor,
+// couche 4), comme la couche HD juste au-dessus.
+function chaufferLeLointain(camera) {
+  const ici = new THREE.Scene();
+  const m = new THREE.InstancedMesh(silhouetteArbre(), horizon.materiauBati, 1);
+  m.setColorAt(0, new THREE.Color(1, 1, 1));
+  ici.add(decor(m));
+  const cible = refletsVoiture(), avant = renderer.getRenderTarget();
+  try {
+    renderer.compile(ici, camera, scene);
+    if (cible) { renderer.setRenderTarget(cible); renderer.compile(ici, camera, scene); }
+  } finally { renderer.setRenderTarget(avant); m.geometry.dispose(); m.dispose(); }
+}
+
 // LE PAYSAGE LOINTAIN. Il lit `terrainHeight` — une fonction PURE — et remplit
 // exactement ce que les morceaux n'ont pas eu le temps de bâtir. Voir
 // `horizon.js` : au-dessus d'une ville, le monde ne maille que quarante-deux
 // morceaux par seconde quand voler en réclame cent soixante-cinq.
-const horizon = new Horizon(world, RAYON_HORIZON);
+// LES ARBRES LOINTAINS (v553) : une silhouette par case boisée de la grille
+// fine, posée par la question de la carte (`world.foret`). Coupés en rendu
+// logiciel comme le bâti lointain (du remplissage que SwiftShader paie au
+// processeur), et alors ni lus ni posés ; `?arbresloin=1` les force, pour les
+// témoins et la revue d'écran, `?arbresloin=0` les coupe.
+const ARBRES_LOIN = (() => {
+  const v = new URLSearchParams(location.search).get('arbresloin');
+  return v != null ? v !== '0' : !renduLogiciel();
+})();
+const horizon = new Horizon(world, RAYON_HORIZON, { arbres: ARBRES_LOIN });
 scene.add(decor(horizon.objet()));
 // La couronne lointaine du palier « Loin » (v497) : `null` partout ailleurs.
 const horizonLoin = RAYON_LOIN ? new Horizon(world, RAYON_LOIN,
@@ -9112,6 +9139,8 @@ requestAnimationFrame(() => {
     try { chaufferStations(renderer, camera, scene); } catch (e) { console.warn('chauffe des stations', e); }
     // les effets de saison (v530) : un essaim neuf, son matériau exact
     try { effetSaison.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe de la saison', e); }
+    // le bâti et les arbres lointains (v553) : un matériau, un programme
+    try { chaufferLeLointain(camera); } catch (e) { console.warn('chauffe du lointain', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };

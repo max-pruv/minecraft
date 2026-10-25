@@ -1667,6 +1667,32 @@ Max : « le mode Loin n'est pas assez loin ». Trois règles.
   comme la couronne deux sous la fine. `?loin=2560` rend la v504 au sommet
   près.
 
+## Le lointain défile et a ses arbres (v553) — un index de grille désigne des sommets, pas des cases du monde
+
+Deux règles.
+
+- **CE QUI DÉFILE DÉFILE EN ENTIER.** `maj` (horizon.js) décale hauteurs,
+  sommets et couleurs d'une case tous les huit blocs ; l'index de triangles,
+  lui, n'était refait qu'à la découpe (quatre par seconde), et entre deux il
+  désignait les sommets d'à côté : la zone omise glissait hors du disque
+  maillé — la bande de ciel du relevé n° 19, large de ce qu'on vole en un
+  quart de seconde. `decalerDecoupe` décale l'index avec les sommets. Trouvé
+  par une image à fond magenta et un rayon par pixel
+  (`sonde-trou-horizon.cjs`) : chaque pixel de ciel tombait sur une case non
+  maillée que l'index omettait, `glisse` ≠ 0. Tout tampon tenu en coordonnées
+  de grille (index, mais aussi tout tableau par sommet qu'on ajoute) passe par
+  le défilement, ou il ment entre deux découpes.
+- **LES ARBRES LOINTAINS SONT DU BÂTI LOINTAIN.** Une silhouette par case
+  boisée de la grille fine (`opts.arbres`), posée à la découpe par la question
+  de la carte (`world.foret`, le bruit de `treeAt` et `bosquet`) — jamais sur
+  un morceau maillé, jamais en ville ni sur l'eau. Même matériau que le bâti
+  (`materiauBati`) donc même programme, chauffé à l'accueil
+  (`chaufferLeLointain`, vers l'écran et la cible des reflets). Coupés en
+  rendu logiciel (`ARBRES_LOIN`, main.js), et alors ni lus ni posés ;
+  `?arbresloin=1` les force. Les grilles lointaines (couronne, très lointain)
+  n'en portent pas : à mille blocs un arbre fait un pixel. La fidélité se
+  mesure colonne par colonne contre `treeAt`, jamais à l'œil.
+
 ## La sûreté garde le lointain (v532) — un disjoncteur ne retire que ce qui coûte ce qu'il protège
 
 Max : « on ne voit pas du tout quatre fois plus loin ». Deux règles.

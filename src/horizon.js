@@ -173,6 +173,61 @@ function teindre(col, o, c, h) {
   col[o + 2] = Math.min(1, c[2] / 255 * teinte);
 }
 
+// LA SILHOUETTE D'UN ARBRE LOINTAIN (v553), à l'échelle unité : une couronne
+// à huit facettes (un octaèdre dont la pointe monte plus haut qu'elle ne
+// descend) sur un fût à trois pans. Non indexée, pour des facettes franches
+// sous la lumière ; la couleur de sommet assombrit le fût, l'instance teint le
+// tout. Seize triangles : à quatre cents blocs, c'est déjà plus qu'un pixel.
+export function silhouetteArbre() {
+  const p = [], c = [];
+  const tri = (a, b, d, v) => { p.push(...a, ...b, ...d); c.push(v, v, v, v, v, v, v, v, v); };
+  const H = 1, B = 0.36, M = 0.56, R = 0.5;
+  const top = [0, H, 0], bas = [0, B, 0];
+  const anneau = [[R, M, 0], [0, M, -R], [-R, M, 0], [0, M, R]];
+  for (let i = 0; i < 4; i++) {
+    const q = anneau[i], r = anneau[(i + 1) % 4];
+    tri(q, r, top, 1);                       // le dessus, vers le ciel
+    tri(r, q, bas, 0.78);                    // le dessous, à l'ombre
+  }
+  const F = 0.07, bases = [[F, 0, 0], [-F / 2, 0, F * 0.87], [-F / 2, 0, -F * 0.87]];
+  for (let i = 0; i < 3; i++) {
+    const q = bases[i], r = bases[(i + 1) % 3];
+    const q2 = [q[0], B + 0.05, q[2]], r2 = [r[0], B + 0.05, r[2]];
+    tri(q, r, r2, 0.42); tri(q, r2, q2, 0.42);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(p), 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(c), 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// Sous ce seuil de forêt, `treeAt` ne plante qu'un arbre isolé tous les
+// vingt cases (mesuré : 0,05 à 0,07 arbre par case) — de la prairie, vue de
+// loin. Au-dessus, 0,5 à 2 arbres par case, et une silhouette sur deux à une
+// sur une.
+export const ARBRE_SEUIL = 0.15;
+
+// L'essence d'une silhouette lointaine : la même que `treeAt` plante dans ce
+// climat (`it`, INDICE_CLIMAT), en largeur, hauteur et couleur — le feuillage
+// de la carte sous la teinte du climat (perçue, comme tout le paysage lointain).
+const FEUILLES = MAP_COLORS[BLOCK.LEAVES] || [54, 116, 38];
+const teinteFeuilles = (it, f = 1) => {
+  const t = TEINTE_FEUILLES[it] || [1, 1, 1];
+  return [Math.min(1, FEUILLES[0] * t[0] * f / 255), Math.min(1, FEUILLES[1] * t[1] * f / 255), Math.min(1, FEUILLES[2] * t[2] * f / 255)];
+};
+export function essenceLointaine(it, t) {
+  if (it === INDICE_CLIMAT.taiga) return t < 0.85 ? { l: 3.6, h: 10, c: teinteFeuilles(it, 0.85) } : { l: 4.2, h: 9, c: teinteFeuilles(0, 1.25) };
+  if (it === INDICE_CLIMAT.tropiques) return { l: 7, h: 10, c: teinteFeuilles(it, 1) };
+  if (it === INDICE_CLIMAT.mediterranee) return t < 0.65 ? { l: 5, h: 5, c: teinteFeuilles(it, 0.9) } : { l: 7, h: 8, c: teinteFeuilles(it, 0.8) };
+  if (it === INDICE_CLIMAT.savane) return { l: 7, h: 6, c: teinteFeuilles(it, 0.9) };
+  if (it === INDICE_CLIMAT.toundra) return { l: 3, h: 4, c: teinteFeuilles(it, 1.1) };
+  // la forêt tempérée : chênes, pins, bouleaux, dans les parts de `treeAt`
+  if (t < 0.55) return { l: 6.5, h: 8.5, c: teinteFeuilles(it, 1) };
+  if (t < 0.85) return { l: 3.8, h: 9.5, c: teinteFeuilles(it, 0.8) };
+  return { l: 4.6, h: 9, c: teinteFeuilles(it, 1.3) };
+}
+
 // L'état d'un sommet : à remplir (0), relief et couleur posés mais la règle
 // des bords pas encore lue, ou fini.
 const A_RAFFINER = 1, FAIT = 2;
@@ -308,6 +363,9 @@ export class Horizon {
     this.estNY = new Uint8Array(N * N);
     // le climat de chaque sommet d'herbe (v345) : la règle des bords le relit
     this.climats = new Uint8Array(N * N);
+    // la forêt sous chaque sommet (v553) : la densité que la carte lit
+    // (`world.foret`, le bruit de `treeAt` et ses bosquets), 0 hors des bois
+    this.foretSommet = new Float32Array(N * N);
     this.sansNY = false;                     // Manhattan dessine ses propres silhouettes
     // Le filtre des sept villes bâties à la main, par BOÎTE. Manhattan déborde
     // de son disque du registre (TerreUrbaine la tient dans 1 300 blocs).
@@ -376,6 +434,28 @@ export class Horizon {
     this.bat.name = 'horizon-bati';
     decor(this.bat);
     this.mesh.add(this.bat);                 // il suit le paysage dans la scène
+
+    // LES ARBRES LOINTAINS (v553). Au-delà des morceaux maillés, une forêt
+    // était une prairie verte. Une silhouette par case boisée : une couronne
+    // à huit facettes sur un fût à trois pans, posée, étirée et teinte par
+    // instance — un pin est la même silhouette, haute et étroite, un parasol
+    // la même, large et basse. Elle partage le MATÉRIAU du bâti lointain, donc
+    // son programme (Lambert, couleurs de sommet, instance teinte) : aucune
+    // clé neuve, et la chauffe de l'accueil (`chaufferLeLointain`, main.js)
+    // compile les deux d'un coup. Seulement la grille fine (`opts.arbres`) : à
+    // mille blocs un arbre fait un pixel, et la couronne garde son herbe.
+    this.arbres = opts.arbres === true;
+    this.capaciteArbres = this.arbres ? Math.min(12000, this.CASES * this.CASES) : 1;
+    this.arb = new THREE.InstancedMesh(silhouetteArbre(), this.materiauBati, this.capaciteArbres);
+    this.arb.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.arb.setColorAt(0, new THREE.Color(1, 1, 1));
+    this.arb.instanceColor.setUsage(THREE.DynamicDrawUsage);
+    this.arb.count = 0;
+    this.arb.frustumCulled = false;
+    this.arb.renderOrder = 1;
+    this.arb.name = 'horizon-arbres';
+    decor(this.arb);
+    this.mesh.add(this.arb);
   }
 
   objet() { return this.mesh; }
@@ -393,14 +473,16 @@ export class Horizon {
     if (this.ox === null) { this.ox = nox; this.oz = noz; this.pret.fill(0); this.curseur = 0; }
     else if (nox !== this.ox || noz !== this.oz) {
       const dix = nox - this.ox, diz = noz - this.oz;
-      if (Math.abs(dix) >= N || Math.abs(diz) >= N) { this.pret.fill(0); }
+      if (Math.abs(dix) >= N || Math.abs(diz) >= N) { this.pret.fill(0); this.geo.setDrawRange(0, 0); }
       else {
+        this.decalerDecoupe(dix, diz);
         decaler(this.hauteurs, N, 1, dix, diz);
         decaler(this.pret, N, 1, dix, diz);
         decaler(this.bati, N, 1, dix, diz);
         decaler(this.toits, N, 3, dix, diz);
         decaler(this.estNY, N, 1, dix, diz);
         decaler(this.climats, N, 1, dix, diz);
+        decaler(this.foretSommet, N, 1, dix, diz);
         // LES SOMMETS DÉFILENT AUSSI, et c'est ce qui rend l'affaire tenable.
         // Mon premier jet réécrivait les 25 921 sommets — position, couleur,
         // biome — à CHAQUE image où quelque chose bougeait : huit millisecondes
@@ -457,6 +539,35 @@ export class Horizon {
     return faites;
   }
 
+  // LA DÉCOUPE DÉFILE AVEC LA GRILLE (v553). L'index de triangles désigne des
+  // SOMMETS de la grille, pas des cases du monde : quand `maj` décale les
+  // sommets d'une case, un index resté tel quel dessine chaque triangle huit
+  // blocs plus loin. La zone omise — le disque des morceaux maillés — glissait
+  // donc avec le joueur entre deux découpes (quatre par seconde) : devant lui,
+  // une bande de ciel au bord du monde chargé, et derrière, la grille fine
+  // dessinée sous les morceaux. C'est le trou de la revue d'écran (relevé
+  // n° 19), large de ce qu'on vole en un quart de seconde. On décale l'index
+  // comme les sommets ; un triangle dont la case sort de la grille part.
+  decalerDecoupe(dix, diz) {
+    const N = this.N, CASES = this.CASES;
+    const idx = this.geo.index.array, n = this.geo.drawRange.count;
+    if (!(n > 0) || n === Infinity) return;
+    const delta = dix * N + diz;
+    let w = 0;
+    for (let t = 0; t < n; t += 6) {
+      const a = idx[t], ix = (a / N) | 0, iz = a - ix * N;
+      const nix = ix - dix, niz = iz - diz;
+      if (nix < 0 || niz < 0 || nix >= CASES || niz >= CASES) continue;
+      const na = a - delta, nb = na + 1, nc = na + N, nd = nc + 1;
+      idx[w] = na; idx[w + 1] = nb; idx[w + 2] = nc;
+      idx[w + 3] = nb; idx[w + 4] = nd; idx[w + 5] = nc;
+      w += 6;
+    }
+    this.geo.setDrawRange(0, w);
+    this.geo.index.needsUpdate = true;
+    if (this.oxDecoupe != null) { this.oxDecoupe += dix; this.ozDecoupe += diz; }
+  }
+
   ecrireSommet(i, x, z, h) {
     const pos = this.geo.attributes.position.array;
     const col = this.geo.attributes.color.array;
@@ -483,6 +594,9 @@ export class Horizon {
       this.bati[i] = 0;
       this.estNY[i] = 0;
     }
+    // la forêt de ce sommet (v553) : de l'herbe de campagne, là où `treeAt`
+    // peut planter (ni l'eau, ni la neige, ni une ville)
+    this.foretSommet[i] = this.arbres && id === BLOCK.GRASS && !u && h > WATER_LEVEL + 1 && h < 58 ? this.world.foret(x, z) : 0;
     teindre(col, o, c, h);
     // De l'herbe de campagne : la règle des bords (v340) passera après.
     this.pret[i] = id === BLOCK.GRASS && !u && this.falaises ? A_RAFFINER : FAIT;
@@ -555,6 +669,8 @@ export class Horizon {
     let n = 0;
     const mat = this.bat.instanceMatrix.array, col = this.bat.instanceColor.array, cap = this.capacite;
     let nb = 0;
+    const matA = this.arb.instanceMatrix.array, colA = this.arb.instanceColor.array, capA = this.capaciteArbres;
+    let na = 0;
     // La couronne lointaine (v497) : le carré de la grille fine est à elle,
     // et au-delà de sa portée le brouillard est plein — on n'y dessine rien.
     const pas = this.pas, k8 = pas / 8;
@@ -614,6 +730,33 @@ export class Horizon {
           col[nb * 3] = this.toits[a * 3]; col[nb * 3 + 1] = this.toits[a * 3 + 1]; col[nb * 3 + 2] = this.toits[a * 3 + 2];
           nb++;
         }
+        if (this.arbres && na < capA && this.foretSommet[a] > 0) {
+          const f = this.foretSommet[a];
+          const t = hacher(wx + 11, wz - 5);
+          // une silhouette dès la lisière ; une seconde dans le cœur d'un bois,
+          // où `treeAt` plante 1,5 à 2 arbres par case (mesuré)
+          const nombre = f >= ARBRE_SEUIL && t < Math.min(1, 0.2 + 0.9 * f) ? (f > 0.55 && hacher(wz + 31, wx - 13) < f - 0.35 ? 2 : 1) : 0;
+          if (nombre) {
+            const pos = this.geo.attributes.position.array;
+            const y0 = Math.min(pos[a * 3 + 1], pos[b * 3 + 1], pos[c * 3 + 1], pos[d * 3 + 1]);
+            for (let q = 0; q < nombre && na < capA; q++) {
+              const sx = wx + q * 3, sz = wz - q * 5;     // le second arbre a ses propres tirages
+              const e = essenceLointaine(this.climats[a], hacher(sz - 9, sx + 3));
+              const g = 0.75 + 0.5 * hacher(sx - 2, sz + 17);        // l'arbre a son âge
+              const sl = e.l * g * (0.8 + 0.3 * f), sh = e.h * g;
+              const r = hacher(sx + 5, sz + 23) * Math.PI * 2, cs = Math.cos(r), sn = Math.sin(r);
+              const ox = nombre === 1 ? 2 + t * 4 : q === 0 ? 1 + t * 2.5 : 4.5 + hacher(sx + 7, sz) * 2.5;
+              const oz = nombre === 1 ? 2 + hacher(wz + 1, wx - 7) * 4 : q === 0 ? 1 + hacher(wz + 1, wx - 7) * 2.5 : 4.5 + hacher(sz, sx + 9) * 2.5;
+              const m = matA, k = na * 16;
+              m[k] = cs * sl; m[k + 1] = 0; m[k + 2] = -sn * sl; m[k + 3] = 0;
+              m[k + 4] = 0; m[k + 5] = sh; m[k + 6] = 0; m[k + 7] = 0;
+              m[k + 8] = sn * sl; m[k + 9] = 0; m[k + 10] = cs * sl; m[k + 11] = 0;
+              m[k + 12] = wx + ox; m[k + 13] = y0 - 0.4; m[k + 14] = wz + oz; m[k + 15] = 1;
+              colA[na * 3] = e.c[0]; colA[na * 3 + 1] = e.c[1]; colA[na * 3 + 2] = e.c[2];
+              na++;
+            }
+          }
+        }
         idx[n] = a; idx[n + 1] = b; idx[n + 2] = c;
         idx[n + 3] = b; idx[n + 4] = d; idx[n + 5] = c;
         n += 6;
@@ -621,7 +764,14 @@ export class Horizon {
     }
     this.geo.index.needsUpdate = true;
     this.geo.setDrawRange(0, n);
+    this.oxDecoupe = this.ox; this.ozDecoupe = this.oz;
     this.bat.count = nb;
+    this.arb.count = na;
+    if (na > 0) {
+      this.arb.instanceMatrix.clearUpdateRanges?.();
+      this.arb.instanceMatrix.needsUpdate = true;
+      this.arb.instanceColor.needsUpdate = true;
+    }
     if (nb > 0) {
       this.bat.instanceMatrix.clearUpdateRanges?.();
       this.bat.instanceMatrix.needsUpdate = true;
@@ -638,6 +788,6 @@ export class Horizon {
       else if (this.pret[i] === A_RAFFINER) aRaffiner++;
     }
     return { pas: this.pas, rayon: this.rayon, colonnes: this.N * this.N, manquantes, aRaffiner,
-      triangles: this.geo.drawRange.count / 3, bati: this.bat.count };
+      triangles: this.geo.drawRange.count / 3, bati: this.bat.count, arbres: this.arb.count };
   }
 }

@@ -20,6 +20,42 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v553 — Des arbres au loin, et plus de trou de ciel en vol
+
+**Pourquoi.** Deux dettes du paysage lointain. (1) La revue d'écran de la v532
+(relevé n° 19) voyait en vol, sous l'aile, une bande de ciel entre le monde
+chargé et le paysage lointain. Mesuré (`tests/sonde-trou-horizon.cjs` : une
+image au fond magenta, un rayon par pixel) : 346 pixels de ciel au bord du
+disque maillé, tous sur des cases que la grille fine OMETTAIT alors qu'aucun
+morceau n'y était maillé. La cause : l'index de triangles de la grille désigne
+des sommets, que la grille décale d'une case tous les huit blocs ; il n'était
+refait qu'à la découpe, quatre fois par seconde — entre deux, la zone omise
+glissait avec l'avion hors du disque maillé. (2) Une forêt au-delà des
+morceaux maillés était une prairie verte.
+
+**Ce que ça change.**
+- En vol, plus de bande de ciel au bord du monde chargé : l'index défile avec
+  les sommets.
+- Au loin, les forêts ont leurs arbres : une silhouette par case boisée, de
+  l'essence du climat (chênes, pins, bouleaux, parasols, feuillus des
+  tropiques), posée là où la carte et `treeAt` mettent la forêt, jamais sur un
+  morceau maillé. Un seul appel de dessin, le matériau du bâti lointain (aucun
+  programme neuf), chauffé à l'accueil avec lui.
+- Coupés en rendu logiciel comme le bâti lointain ; `?arbresloin=1` les force,
+  `?arbresloin=0` les coupe.
+
+**Ce qui le prouve.** Quatre témoins de `plafond.js` et un de `maj.js`, tous
+vérifiés rouges sur l'ancien code : la découpe défile (avancer de quarante
+blocs sans redécouper laisse zéro trou et zéro case sous un morceau maillé —
+des centaines sur l'ancien code) ; au-dessus d'une forêt réelle, plus d'un
+millier de silhouettes, aucune sur un morceau maillé ; une case à silhouette
+porte neuf fois plus d'arbres de `treeAt` qu'une case sans ; moins d'un
+mégaoctet ; et en vol au-dessus de la forêt, aucune clé de programme neuve
+depuis l'accueil. La sonde du trou rend zéro pixel de ciel au bord du disque
+(346 avant).
+
+---
+
 ## v552 — On monte en passager dans l'avion d'un ami
 
 **Pourquoi.** Max (20 octobre) : « pouvoir rentrer dans une voiture, avion…
