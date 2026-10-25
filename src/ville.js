@@ -21,6 +21,20 @@
 
 import { BLOCK, CITY_BLOCK, DECOR_START, METRO_BLOCK } from './blocks.js';
 import { adresseParis, solParis, lotParisLibre, PARIS, CITE, zCite } from './paris.js';
+import * as PARIS_V531 from './paris-v531.js';
+// LES BOUCHES SE CHOISISSENT CONTRE UN PARIS (les rues à la GTA). Les trottoirs
+// ont bougé avec la chaussée, et les bouches avec eux (13 sur 16). Sous ce
+// qu'un enfant a bâti avant `DATE_RUES_GTA`, le monde garde le Paris de la
+// v531 — et le métro qu'on y creusait : ses bouches se choisissent par la même
+// règle contre le sol d'alors (`surParisV531`), et `creuserMetroParis` les lit
+// quand on le lui demande. Le reste du métro (tunnel, quais) ne dépend pas
+// des rues.
+let solParisLu = solParis, lotParisLu = lotParisLibre;
+function surParisV531(f) {
+  const a = solParisLu, b = lotParisLu;
+  solParisLu = PARIS_V531.solParis; lotParisLu = PARIS_V531.lotParisLibre;
+  try { return f(); } finally { solParisLu = a; lotParisLu = b; }
+}
 
 const uni = (couleur) => DECOR_START + couleur * 10;
 
@@ -482,7 +496,7 @@ const PENTE_ESC = 0.7;
 export const LONG_ESC = Math.ceil(MARCHES / PENTE_ESC);
 export const marcheEn = (le) => Math.round(PENTE_ESC * le);
 export const praticable = (x, z) => {
-  const s = solParis(Math.floor(x), Math.floor(z));
+  const s = solParisLu(Math.floor(x), Math.floor(z));
   // un arbre d'alignement cède sa place à la trémie (on dégage son fût)
   return (s === CITY_BLOCK.SIDEWALK || s === BLOCK.GRASS || s === BLOCK.LEAVES);
 };
@@ -504,8 +518,8 @@ export function emprisesTremie(q, b) {
 }
 const pasUneRue = (x, z) => {
   const xi = Math.floor(x), zi = Math.floor(z);
-  const s = solParis(xi, zi);
-  return (s === CITY_BLOCK.SIDEWALK || s === BLOCK.GRASS || s === BLOCK.LEAVES) && !lotParisLibre(xi, zi);
+  const s = solParisLu(xi, zi);
+  return (s === CITY_BLOCK.SIDEWALK || s === BLOCK.GRASS || s === BLOCK.LEAVES) && !lotParisLu(xi, zi);
 };
 export function emprisesEscalier(q, b) {
   // tout le chemin, du couloir au palier : jamais sous le fleuve
@@ -516,7 +530,7 @@ export function emprisesEscalier(q, b) {
   for (let t = LIGNE1.demiVoute; t <= b.o; t++) for (const d of [-2, 0, 2]) out.push(vers(q, b.a + d, t * b.cote));
   return out;
 }
-export const pasDEau = ([x, z]) => solParis(Math.floor(x), Math.floor(z)) !== BLOCK.WATER;
+export const pasDEau = ([x, z]) => solParisLu(Math.floor(x), Math.floor(z)) !== BLOCK.WATER;
 // CE QUI EST DÉJÀ SOUS TERRE : le tunnel (6,5 blocs de l'axe), chaque station
 // (son rectangle élargi), et les escaliers déjà posés. Deux escaliers voisins
 // se croisaient — Saint-Paul et Bastille, mesuré : une marche de l'un posée à
@@ -566,13 +580,20 @@ export function placesDe(q, k, evite = null) {
     }
     return true;
   };
-  const tient = (b) => emprisesTremie(q, b).every(([x, z]) => praticable(x, z) && !lotParisLibre(Math.floor(x), Math.floor(z))
+  const tient = (b) => emprisesTremie(q, b).every(([x, z]) => praticable(x, z) && !lotParisLu(Math.floor(x), Math.floor(z))
     && !(evite && evite(x, z)))
     && emprisesEscalier(q, b).every(pasDEau) && libre(b);
   const As = [];
   for (let a = 2; a <= LIGNE1.demiStation - 2; a++) As.push(a, -a);
   const out = [];
-  for (const o of [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 8]) {
+  // LES RUES À LA GTA ÉLOIGNENT LE TROTTOIR DE LA LIGNE : un boulevard gagne
+  // deux blocs de chaussée de chaque côté, et Gare de Lyon et Reuilly–Diderot
+  // n'avaient plus de trottoir à portée (12 bouches sur 16, mesuré). Le Paris
+  // neuf cherche donc plus loin ; celui de la v531 garde sa recherche d'avant,
+  // au bloc près (c'est ce qui garde ses bouches identiques).
+  const neuf = solParisLu === solParis;
+  const loin = neuf ? [29, 30, 31, 32, 33, 34] : [];
+  for (const o of [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 8, ...loin]) {
     for (const cote of [1, -1]) {
       for (const a of As) {
         for (const sg of [-Math.sign(a), Math.sign(a)]) {
@@ -585,7 +606,7 @@ export function placesDe(q, k, evite = null) {
   }
   // l'escalier droit vers le trottoir, pour une station sous une place ou dans
   // un virage de la ligne
-  for (const o of [LIGNE1.demiVoute + 2, 12, 15, 18]) {
+  for (const o of [LIGNE1.demiVoute + 2, 12, 15, 18, ...(neuf ? [21, 24, 27] : [])]) {
     for (const cote of [1, -1]) {
       for (const a of [0, ...As]) {
         const b = { a, sg: 1, o, cote, perp: true };
@@ -667,7 +688,7 @@ export const BOUCHES_V473 = choisirBouches(null);
 // Hôtel de Ville déplacé n'a plus de place qui ne croise pas l'escalier de
 // Saint-Paul : une station qu'on ne sert plus libère ses voisines dont
 // l'escalier croise toutes ses places, et l'on recherche ces deux-là ensemble.
-export const BOUCHES_LIGNE1 = (() => {
+function bouchesLigne1(BOUCHES_V473) {
   let liberes = new Set();
   for (let tour = 0; tour < 3; tour++) {
     const choix = choisirBouches(dansNotreDame, BOUCHES_V473, liberes);
@@ -686,7 +707,11 @@ export const BOUCHES_LIGNE1 = (() => {
     }
   }
   return choisirBouches(dansNotreDame, BOUCHES_V473, liberes);
-})();
+}
+export const BOUCHES_LIGNE1 = bouchesLigne1(BOUCHES_V473);
+// les mêmes, choisies contre le Paris de la v531
+export const BOUCHES_V473_V531 = surParisV531(() => choisirBouches(null));
+export const BOUCHES_LIGNE1_V531 = surParisV531(() => bouchesLigne1(BOUCHES_V473_V531));
 
 // LES DEUX VOIES. Le métro parisien roule à droite ; au terminus, demi-tour
 // dans le tiroir.
@@ -727,8 +752,9 @@ export function arretsLigne1Paris() {
 const CASE = 8;
 const GRILLE1 = new Map();
 const GRILLE1_V473 = new Map();
+const GRILLE1_V531 = new Map(), GRILLE1_V473_V531 = new Map();
 const cle1 = (bx, bz) => bx * 65536 + bz;
-function ranger1(x0, x1, z0, z1, obj, grilles = [GRILLE1, GRILLE1_V473]) {
+function ranger1(x0, x1, z0, z1, obj, grilles = [GRILLE1, GRILLE1_V473, GRILLE1_V531, GRILLE1_V473_V531]) {
   for (let bx = Math.floor(x0 / CASE); bx <= Math.floor(x1 / CASE); bx++) {
     for (let bz = Math.floor(z0 / CASE); bz <= Math.floor(z1 / CASE); bz++) {
       const k = cle1(bx, bz);
@@ -756,7 +782,7 @@ for (const q of QUAIS_LIGNE1) {
       { quoi: 'gabarit', x0: a.x, z0: a.z, x1: b.x, z1: b.z });
   }
 }
-for (const [liste, g] of [[BOUCHES_LIGNE1, GRILLE1], [BOUCHES_V473, GRILLE1_V473]]) {
+for (const [liste, g] of [[BOUCHES_LIGNE1, GRILLE1], [BOUCHES_V473, GRILLE1_V473], [BOUCHES_LIGNE1_V531, GRILLE1_V531], [BOUCHES_V473_V531, GRILLE1_V473_V531]]) {
   for (const b of liste) {
     if (!b) continue;
     const r = Math.abs(b.a) + LONG_ESC + 5 + b.o;
@@ -882,6 +908,10 @@ export function plaquesParis() {
       const le0 = 12 * m + 8.5;          // le milieu des cases li 8 et 9
       if (Math.abs(le0) > L - 1) continue;
       for (const sg of [1, -1]) {
+        // un piédroit que le couloir d'une bouche perce ne porte pas de plaque
+        // (les rues à la GTA : la bouche de Reuilly–Diderot, rechoisie, y
+        // débouche juste à la case du nom)
+        if (BOUCHES_LIGNE1.some((b) => b && b.q === q && b.cote === sg && Math.abs(le0 - (b.a + (b.cq || 0))) < 1.5)) continue;
         const px = q.x + q.dx * le0 - q.dz * sg * MUR_QUAI, pz = q.z + q.dz * le0 + q.dx * sg * MUR_QUAI;
         const cases = [];                 // les cases de mur autour, et leurs coins
         for (let ix = Math.floor(px) - 4; ix <= Math.floor(px) + 4; ix++) {
@@ -996,10 +1026,14 @@ function boucheParisN(s, cx, cz, x, z, h, o) {
 // de surface), `poser(y, id)` en cote ABSOLUE. Rend vrai si elle a creusé.
 // `ancien` : la géométrie de la v473, pour ce qui touche la surface sous une
 // colonne où un enfant a bâti avant `DATE_STATIONS` (world.js).
-export function creuserMetroParis(x, z, h, poser, ancien = false) {
+// `v531` : les bouches choisies contre le Paris de la v531, sous une colonne où
+// un enfant a bâti avant les rues à la GTA.
+export function creuserMetroParis(x, z, h, poser, ancien = false, v531 = false) {
+  if (v531 && solParisLu !== PARIS_V531.solParis) return surParisV531(() => creuserMetroParis(x, z, h, poser, ancien, true));
   if (!METRO_PARIS.actif) return false;
   const neuf = METRO_PARIS.stations && !ancien;
-  const segs = (neuf ? GRILLE1 : GRILLE1_V473).get(cle1(Math.floor(x / CASE), Math.floor(z / CASE)));
+  const segs = (v531 ? (neuf ? GRILLE1_V531 : GRILLE1_V473_V531) : (neuf ? GRILLE1 : GRILLE1_V473))
+    .get(cle1(Math.floor(x / CASE), Math.floor(z / CASE)));
   if (!segs) return false;
   const cx = x + 0.5, cz = z + 0.5;
   const yr = LIGNE1.voie;

@@ -482,7 +482,7 @@ export const FLOTTE = [
   { fichier: 'pagani-zonda-cinque.glb', classe: 'sportive', nom: 'Pagani Zonda Cinque' },
   { fichier: 'pininfarina-battista.glb', classe: 'hypercar', nom: 'Automobili Pininfarina Battista' },
   { fichier: 'porsche-718-cayman-gt4-rs.glb', classe: 'gt', nom: 'Porsche 718 Cayman GT4 RS' },
-  // LA 911 RECONSTRUITE (v544) : `fichier` reste l'IDENTIFIANT (garages,
+  // LA 911 RECONSTRUITE (v545) : `fichier` reste l'IDENTIFIANT (garages,
   // réseau, couleur de la rue) ; `asset` est le fichier CHARGÉ. Une URL neuve
   // renouvelle le modèle dans STATIC_CACHE, où une URL connue ne se
   // retélécharge jamais (sw.js, `isStaticAsset`).
@@ -546,7 +546,7 @@ export function allureDe(fichier, secours = 3.4) {
 
 const chargementsFlotte = new Map();
 
-// L'ESSAI D'UN MODÈLE, DEPUIS L'ADRESSE (v544). Un modèle lourd se juge sur
+// L'ESSAI D'UN MODÈLE, DEPUIS L'ADRESSE (v545). Un modèle lourd se juge sur
 // la tablette, pas au banc (v247) : `?voiture=911` force ce modèle pour toute
 // voiture neuve ET toute voiture de la rue (une sous-chaîne du `fichier`), et
 // `?asset=0` désarme le champ `asset` — le fichier historique revient, pour
@@ -1844,6 +1844,18 @@ class Convoi {
     // les coins se touchent — mesuré à Tokyo, 19 relevés « file à l'arrêt » —
     // on y garde le 1,6 d'avant.)
     const miniDroit = 2 * this.demiLong + 1.0, miniVirage = 2 * this.demiLong + 1.6;
+    // LA TÊTE D'UNE FILE BOUCLÉE SUIT SA QUEUE (les rues à la GTA). Le tracé
+    // est fermé : devant la voiture 0, il y a la dernière, un tour plus loin.
+    // Le plancher de la v283 ne regardait que i − 1 ; quand toute la boucle
+    // s'arrête aux feux, la tête rattrapait la queue et entrait dedans (le
+    // convoi du huit de Paris, voitures 0 et 14, sur `origin/main` aussi :
+    // 0,4 à 3 % des paires examinées, 13 à 14 % avec les rues élargies). La
+    // queue est lue telle qu'elle était à l'image d'avant (on avance en ordre
+    // croissant), et seulement si la boucle peut tenir toute sa file pare-chocs
+    // contre pare-chocs — sinon la borne n'aurait pas de solution.
+    const L = this.parcours.longueur;
+    const queue = n > 1 && L >= n * miniVirage && !(this.pris && this.pris.has(n - 1))
+      ? ((this.base[n - 1] - this.base[0]) % L + L) % L : 0;
     for (let i = 0; i < n; i++) {
       const pas = this.base[i] - ancien[i];
       const vConv = dt > 0 ? Math.max(0, pas / dt) : 0;
@@ -1868,7 +1880,7 @@ class Convoi {
       // vitesse qu'elle peut perdre au freinage d'urgence avant le plancher :
       // elle y arrive en freinant.
       const devant = this.devantSurLaLigne(i);
-      if (v > 0 && this.cause[i] === 1 && this.cible[i] !== Infinity && (i > 0 || devant)) {
+      if (v > 0 && this.cause[i] === 1 && this.cible[i] !== Infinity && (i > 0 || devant || queue)) {
         const ici = ancien[i] - this.retard[i];
         const miniIci = Math.abs(this.parcours.courbure(ici)) > 0.03 || Math.abs(this.parcours.courbure(ici + 3)) > 0.03
           || Math.abs(this.parcours.courbure(ici + 5)) > 0.03 ? miniVirage : miniDroit;
@@ -1884,6 +1896,7 @@ class Convoi {
           if (v > vMax) v = vMax;
         };
         if (i > 0) borne(this.base[i - 1] - this.retard[i - 1], this.vLoc[i - 1] >= 0 ? this.vLoc[i - 1] : vConv);
+        else if (queue && !devant) borne(this.base[0] + queue - this.retard[n - 1], this.vLoc[n - 1] >= 0 ? this.vLoc[n - 1] : vConv);
         // ET SUR LA LIGNE (v423) : devant elle, la voiture de l'autre convoi
         // a son propre plancher, qui recolle aussi en une image
         if (devant) {
@@ -1901,6 +1914,9 @@ class Convoi {
         || Math.abs(this.parcours.courbure(dq + 5)) > 0.03 ? miniVirage : miniDroit;
       if (i > 0) {
         const plancher = this.retard[i - 1] - (this.base[i - 1] - this.base[i]) + mini;
+        if (r < plancher) r = plancher;
+      } else if (queue && !devant) {
+        const plancher = this.retard[n - 1] - queue + mini;
         if (r < plancher) r = plancher;
       }
       // ET UNE LIGNE NON PLUS (v423) : là où la jumelle d'une seconde voie
@@ -1922,7 +1938,8 @@ class Convoi {
         if ((q.x - joueur.x) ** 2 + (q.z - joueur.z) ** 2 > (VU_VOITURE + 15) ** 2) r = Math.max(this.retard[i - 1], r - Math.max(2, r) * dt);
       } else if (r > 0 && i === 0 && this.cible[0] === Infinity) {
         const q = this.parcours.a(this.base[0] - r);
-        if ((q.x - joueur.x) ** 2 + (q.z - joueur.z) ** 2 > (VU_VOITURE + 15) ** 2) r = Math.max(0, r - Math.max(2, r) * dt);
+        const sol = queue && !devant ? Math.max(0, this.retard[n - 1] - queue + mini) : 0;
+        if ((q.x - joueur.x) ** 2 + (q.z - joueur.z) ** 2 > (VU_VOITURE + 15) ** 2) r = Math.max(sol, r - Math.max(2, r) * dt);
       }
       const obtenu = pas - (r - this.retard[i]);
       this.retard[i] = r;
@@ -2095,6 +2112,11 @@ class Convoi {
       for (let i = 1; i < this.nb; i++) {
         const plancher = this.retard[i - 1] - this.ecart + mini;
         if (this.retard[i] < plancher) this.retard[i] = plancher;
+      }
+      // et la tête derrière la queue, un tour plus loin (le tracé est fermé)
+      if (this.nb > 1 && this.parcours.longueur >= this.nb * mini && !(this.pris && this.pris.has(this.nb - 1))) {
+        const plancher = this.retard[this.nb - 1] - this.ecart + mini;
+        if (this.retard[0] < plancher) this.retard[0] = plancher;
       }
       // et l'allure obtenue : ce que `dElement(i)` a réellement avancé.
       for (let i = 0; i < this.nb; i++) {

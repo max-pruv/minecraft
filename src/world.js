@@ -63,7 +63,7 @@ import {
 import {
   WASHINGTON, WASHINGTON_R, surTerreWashington, dansEauWashington, hauteurWashington, solWashington,
   batirColonneWashington, MONUMENTS_DC, QUAIS_METRO, pontWashington, COTE_PONT_DC,
-  VOIES_CIRCUITS_DC, creuserMetroWashington, ZONE_WASHINGTON, EMPRISE_METRO_DC, SURFACE_STATIONS,
+  VOIES_CIRCUITS_DC, solWashingtonV531, batirColonneWashingtonV531, pontWashingtonV531, VOIES_CIRCUITS_DC_V531, creuserMetroWashington, ZONE_WASHINGTON, EMPRISE_METRO_DC, SURFACE_STATIONS,
 } from './washington.js';
 import {
   buildCapitole, buildObelisque, buildLincoln, buildMemorialGuerre, buildMaisonBlanche,
@@ -89,6 +89,14 @@ import * as NICE_V340 from './nice-v340.js';
 import * as SF_V343 from './sanfrancisco-v343.js';
 import * as LILLE_V344 from './lille-v344.js';
 import * as WASHINGTON_V367 from './washington-v367.js';
+// Les villes d'avant les rues à la GTA (figées en v531), sous ce qu'un enfant
+// a bâti avant `DATE_RUES_GTA`.
+import * as PARIS_V531 from './paris-v531.js';
+import * as LONDRES_V531 from './londres-v531.js';
+import * as NICE_V531 from './nice-v531.js';
+import * as SF_V531 from './sanfrancisco-v531.js';
+import * as LILLE_V531 from './lille-v531.js';
+import * as VM_V531 from './villesmonde-v531.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans, PAS_PILE, EP_TABLIER, EMPRISE } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
@@ -2185,6 +2193,11 @@ function dansJardinsParis(x, z, t) {
   return du * du + dv * dv <= r * r;
 }
 const DC_NEUF = { solWashington, batirColonneWashington, VOIES_CIRCUITS_DC };
+// Washington d'avant les rues à la GTA : une variante gardée dans son module
+// (`washington.js`, la copie aurait coûté 335 ms au chargement).
+const DC_V531 = { solWashington: solWashingtonV531, batirColonneWashington: batirColonneWashingtonV531, VOIES_CIRCUITS_DC: VOIES_CIRCUITS_DC_V531 };
+const MOBILIER_LONDRES_V531 = LONDRES_V531.MONUMENTS_LONDRES.find((m) => m.nom === 'Le mobilier de Londres');
+const VM_NEUF = { solVillesMonde, pontVillesMonde, batirColonneVillesMonde, mobilierVillesMonde };
 // LE MÉTRO SOUS TOUTE LA BOÎTE DE WASHINGTON (v485). La ville s'arrête au
 // cercle du registre (187 blocs) ; la boîte va jusqu'au coin de Georgetown, à
 // Arlington et au Pentagone. Hors du cercle, rien ne creusait : les quais
@@ -2219,6 +2232,24 @@ function dansStations(x, z, t) {
   const du = x - PARIS.x, dv = z - PARIS.z, r = PARIS.r + 2;
   return du * du + dv * dv <= r * r;
 }
+// LES RUES À LA GTA (la chaussée de toutes les villes s'élargit, `voirie.js`,
+// `sectionGTA`). Une rue plus large mange le front des lots : là où il y avait
+// une façade il y a de la chaussée, et un trottoir plus loin. Sous une colonne
+// où un enfant a posé ou creusé un bloc avant cette date (et ses huit
+// voisines, `colonnesRuesGTA`), le monde garde la ville de la v531 — la règle
+// de la v339, pour toutes les villes à la fois. Une colonne déjà gardée plus
+// ancienne (`colonnesVilleAvant`, `PARIS_AVANT`) garde la plus ancienne : le
+// bloc a été posé contre elle. La date se relit à la fusion (v309).
+export const DATE_RUES_GTA = Date.UTC(2026, 9, 24, 23, 25, 0);
+const VILLES_GTA = [PARIS, LONDRES, NICE, SF, LILLE, { x: WASHINGTON.x, z: WASHINGTON.z, r: 268 }];
+function dansRuesGTA(x, z, t) {
+  if (!(t <= DATE_RUES_GTA)) return false;
+  for (const a of VILLES_GTA) {
+    const du = x - a.x, dv = z - a.z, r = a.r + 2;
+    if (du * du + dv * dv <= r * r) return true;
+  }
+  return dansVilleMonde(x, z);
+}
 function dansVilleAvant(x, z, t) {
   if (!(t <= DATE_FIGEE_MAX)) return false;
   for (const f of VILLES_FIGEES) {
@@ -2235,6 +2266,11 @@ function dansVilleAvant(x, z, t) {
 // garde la portée d'avant, sinon le monde d'avant ne rendrait plus la
 // production au bloc près.
 const PARIS_NEUF = { solParis, lotParisLibre, batirColonneParis, pontParis, murDeQuai: murDeQuaiParis, VOIES: VOIES_PARIS, cle: 'paris', porteeFeux: PORTEE_FEUX_PARIS };
+const PARIS_GTA_AVANT = {
+  solParis: PARIS_V531.solParis, lotParisLibre: PARIS_V531.lotParisLibre, batirColonneParis: PARIS_V531.batirColonneParis,
+  pontParis: PARIS_V531.pontParis, murDeQuai: PARIS_V531.murDeQuaiParis, VOIES: PARIS_V531.VOIES_PARIS, cle: 'paris-v531',
+  porteeFeux: PARIS_V531.PORTEE_FEUX_PARIS,
+};
 const PARIS_AVANT = {
   solParis: PARIS_V302.solParis, lotParisLibre: PARIS_V302.lotParisLibre, batirColonneParis: PARIS_V302.batirColonneParis,
   pontParis: PARIS_V302.pontParis, VOIES: PARIS_V302.VOIES_PARIS, cle: 'paris-v302',
@@ -3069,6 +3105,7 @@ export class World {
     this.colonnesJardinsParis = new Set(); // les colonnes de Paris où le jardin d'avant reste sous une voie (v512)
     this.colonnesMetroDC = new Set();     // celles de la boîte de Washington où le métro ne touche pas la surface (v485)
     this.colonnesStations = new Set();    // celles où les stations de la v529 ne touchent pas la surface
+    this.colonnesRuesGTA = new Set();     // celles de toutes les villes où les rues d'avant la GTA restent (v531)
     this.colonnesVilleAvant = new Set();  // celles de Londres, de Nice, de San Francisco, de Lille et de Washington où la ville d'avant le kit reste (v339, v359, v361, v370, v370)
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
@@ -3115,13 +3152,13 @@ export class World {
     // qui franchit la Saône roule sur le tablier, pas dans le lit — c'est
     // exactement la leçon de la Tamise (v210 : « le terrain n'est pas la
     // surface roulable »), et elle ne s'appliquait qu'à Londres.
-    const pvm = pontVillesMonde(x, z);
+    const pvm = (this.ruesAvantGTA(x, z) ? VM_V531 : VM_NEUF).pontVillesMonde(x, z);
     if (pvm) return h > pvm.cote ? h : pvm.cote;
     // Et les neuf ponts de Paris, à la cote de la ville (v294).
     if (c && c.key === 'paris' && pontParis(x, z)) return h > c.base ? h : c.base;
     // Et les deux ponts de l'Anacostia (v444), à la cote de la rue — sauf sous
     // la Washington d'avant, qui n'en a pas.
-    if (h < COTE_PONT_DC && pontWashington(x, z) !== null && !this.conf.villesAvant
+    if (h < COTE_PONT_DC && (this.ruesAvantGTA(x, z) ? pontWashingtonV531 : pontWashington)(x, z) !== null && !this.conf.villesAvant
       && !(this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(x, z)))) return COTE_PONT_DC;
     return h;
   }
@@ -4063,14 +4100,15 @@ export class World {
           // sous les colonnes où un enfant a bâti avant sa date.
           const dcAvant = this.conf.villesAvant
             || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz)));
-          const DC = dcAvant ? WASHINGTON_V367 : DC_NEUF;
+          const dcGTA = !dcAvant && this.ruesAvantGTA(wx, wz);
+          const DC = dcAvant ? WASHINGTON_V367 : dcGTA ? DC_V531 : DC_NEUF;
           const solWashington = DC.solWashington;
           const sw = solWashington(wx, wz);
           // LES PONTS DE L'ANACOSTIA (v444) : sur l'eau et la berge qui
           // descend, le tablier est à la cote de la rue ; le lit et l'eau
           // restent dessous, le relief ne bouge pas. Le métro, lui, se creuse
           // depuis le vrai relief (`h`).
-          const hp = !dcAvant && h < COTE_PONT_DC && pontWashington(wx, wz) !== null ? COTE_PONT_DC : h;
+          const hp = !dcAvant && h < COTE_PONT_DC && (dcGTA ? pontWashingtonV531 : pontWashington)(wx, wz) !== null ? COTE_PONT_DC : h;
           // Les ormes du Mall et les bosquets des parcs poussent ici — fût et
           // couronne — comme dans toute ville de la boucle générique. Sans cet
           // appel, ARBRE était posé À PLAT : de la pelouse sur le gravier des
@@ -4081,7 +4119,7 @@ export class World {
           // ce qui compte quand les deux pourraient répondre.
           if (!arbreDeVille(data, x, z, hp, wx, wz, solWashington, sw)
             && !feuDeVille(data, x, z, hp, wx, wz, sw,
-              feuxDeVille(dcAvant ? 'dc-v367' : 'dc', WASHINGTON, DC.VOIES_CIRCUITS_DC, solWashington))
+              feuxDeVille(dcAvant ? 'dc-v367' : dcGTA ? 'dc-v531' : 'dc', WASHINGTON, DC.VOIES_CIRCUITS_DC, solWashington))
             && !lampadaireDeVille(data, x, z, hp, wx, wz, solWashington, sw) && sw !== null) {
             data[World.index(x, hp, z)] = sw;
           }
@@ -4122,7 +4160,7 @@ export class World {
           // la ville d'avant la v306 dans le monde d'avant (`CONF_AVANT`),
           // celle d'aujourd'hui dans le jeu — qui cède, sans bâtir, là où un
           // enfant avait bâti avant la date (`DATE_PARIS_DOUBLE`)
-          const PV = this.conf.parisAvant ? PARIS_AVANT : PARIS_NEUF;
+          const PV = this.conf.parisAvant ? PARIS_AVANT : this.ruesAvantGTA(wx, wz) ? PARIS_GTA_AVANT : PARIS_NEUF;
           const cede = !this.conf.parisAvant && this.colonnesCedees.size > 0 && this.colonnesCedees.has(cleColonneParis(wx, wz));
           // le jardin d'avant la v512 sous une colonne où un enfant a bâti
           const jAvant = !this.conf.voiesJardinsParis
@@ -4186,11 +4224,14 @@ export class World {
           // le métro de Washington. Seulement dans le monde d'aujourd'hui.
           if (this.conf.metroParis && !this.conf.parisAvant) {
             const ecrire = (wy, id) => { if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id; };
+            // sous ce qu'un enfant a bâti avant les rues à la GTA, le métro du
+            // Paris de la v531 : ses bouches suivaient les trottoirs d'alors
+            const v531 = PV === PARIS_GTA_AVANT;
             if (this.colonnesStations.size > 0 && this.colonnesStations.has(cleColonneParis(wx, wz))) {
               // sous ce qu'un enfant a bâti : la v473 près du sol (v529)
-              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy <= h + SURFACE_STATIONS) ecrire(wy, id); });
-              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy > h + SURFACE_STATIONS) ecrire(wy, id); }, true);
-            } else creuserMetroParis(wx, wz, h, ecrire);
+              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy <= h + SURFACE_STATIONS) ecrire(wy, id); }, false, v531);
+              creuserMetroParis(wx, wz, h, (wy, id) => { if (wy > h + SURFACE_STATIONS) ecrire(wy, id); }, true, v531);
+            } else creuserMetroParis(wx, wz, h, ecrire, false, v531);
           }
           continue;
         }
@@ -4204,18 +4245,25 @@ export class World {
         const villeAvant = city && (city.key === 'londres' || city.key === 'nice' || city.key === 'sf' || city.key === 'lille') && (this.conf.villesAvant
           || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz))));
         const londresAvant = villeAvant && city.key === 'londres';
+        const gta = !villeAvant && city && this.ruesAvantGTA(wx, wz);
         for (const [cle, sol, libre, batir, pont, ancre, voies, cleFeux, portee] of [
           villeAvant && city.key === 'nice'
             ? ['nice', NICE_V340.solNice, NICE_V340.lotNiceLibre, NICE_V340.batirColonneNice, null, NICE,
               NICE_V340.VOIES_NICE, 'nice-v340']
+            : gta ? ['nice', NICE_V531.solNice, NICE_V531.lotNiceLibre, NICE_V531.batirColonneNice, null, NICE,
+              NICE_V531.VOIES_NICE, 'nice-v531', NICE_V531.PORTEE_FEUX_NICE]
             : ['nice', solNice, lotNiceLibre, batirColonneNice, null, NICE, VOIES_NICE, 'nice', PORTEE_FEUX_NICE],
           villeAvant && city.key === 'lille'
             ? ['lille', LILLE_V344.solLille, LILLE_V344.lotLilleLibre, LILLE_V344.batirColonneLille, null, LILLE,
               LILLE_V344.VOIES_LILLE, 'lille-v344']
+            : gta ? ['lille', LILLE_V531.solLille, LILLE_V531.lotLilleLibre, LILLE_V531.batirColonneLille, null, LILLE,
+              LILLE_V531.VOIES_LILLE, 'lille-v531', LILLE_V531.PORTEE_FEUX_LILLE]
             : ['lille', solLille, lotLilleLibre, batirColonneLille, null, LILLE, VOIES_LILLE, 'lille', PORTEE_FEUX_LILLE],
           londresAvant
             ? ['londres', LONDRES_V332.solLondres, LONDRES_V332.lotLondresLibre, LONDRES_V332.batirColonneLondres,
               LONDRES_V332.pontLondres, LONDRES, LONDRES_V332.VOIES_LONDRES, 'londres-v332']
+            : gta ? ['londres', LONDRES_V531.solLondres, LONDRES_V531.lotLondresLibre, LONDRES_V531.batirColonneLondres,
+              LONDRES_V531.pontLondres, LONDRES, LONDRES_V531.VOIES_LONDRES, 'londres-v531', LONDRES_V531.PORTEE_FEUX_LONDRES]
             : ['londres', solLondres, lotLondresLibre, batirColonneLondres, pontLondres, LONDRES, VOIES_LONDRES,
               'londres', PORTEE_FEUX_LONDRES],
         ]) {
@@ -4262,10 +4310,12 @@ export class World {
 
         if (city && city.key === 'sf') {
           // San Francisco d'avant le kit (v361), comme Londres et Nice.
-          const V = villeAvant ? SF_V343 : null;
+          const V = villeAvant ? SF_V343 : gta ? SF_V531 : null;
           const sol = V ? V.solSF : solSF, libre = V ? V.lotSFLibre : lotSFLibre;
           const batir = V ? V.batirColonneSF : batirColonneSF;
-          const feux = V ? feuxDeVille('sf-v359', SF, V.VOIES_SF, sol) : feuxDeVille('sf', SF, VOIES_SF, sol, PORTEE_FEUX_SF);
+          const feux = villeAvant ? feuxDeVille('sf-v359', SF, V.VOIES_SF, sol)
+            : gta ? feuxDeVille('sf-v531', SF, V.VOIES_SF, sol, V.PORTEE_FEUX_SF)
+              : feuxDeVille('sf', SF, VOIES_SF, sol, PORTEE_FEUX_SF);
           const ss = sol(wx, wz);
           if (feuDeVille(data, x, z, h, wx, wz, ss, feux)) {
             // le trottoir et son feu tricolore sont posés (v274)
@@ -4304,9 +4354,11 @@ export class World {
         // Les huit villes iconiques : leur sol, et leurs maisons quand la
         // colonne est un lot à bâtir.
         {
+          const VMx = this.ruesAvantGTA(wx, wz) ? VM_V531 : VM_NEUF;
+          const solVillesMonde = VMx.solVillesMonde, pontVillesMonde = VMx.pontVillesMonde;
           const svm = solVillesMonde(wx, wz);
           if (svm === 'lot') {
-            batirColonneVillesMonde(wx, wz, (dy, id) => {
+            VMx.batirColonneVillesMonde(wx, wz, (dy, id) => {
               const wy = h + dy - 1;
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
             });
@@ -4342,7 +4394,7 @@ export class World {
             // Le trottoir porte son mobilier : auvents des boutiques,
             // lampadaires, bancs, bacs à fleurs. Cf. mobilierVillesMonde.
             if (svm === CITY_BLOCK.SIDEWALK) {
-              mobilierVillesMonde(wx, wz, (dy, id) => {
+              VMx.mobilierVillesMonde(wx, wz, (dy, id) => {
                 const wy = h + dy;
                 if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
               });
@@ -4396,9 +4448,11 @@ export class World {
           const wx = baseX + x, wz = baseZ + z;
           if (!metroMondePres(wx, wz)) continue;
           const h = reliefs ? reliefs[(x + 1) + (z + 1) * N2] : this.terrainHeight(wx, wz);
+          // sous ce qu'un enfant a bâti avant les rues à la GTA : le métro de
+          // la ville de la v531 (ses bouches suivaient les trottoirs d'alors)
           creuserMetroMonde(wx, wz, h, (wy, id) => {
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
-          });
+          }, this.ruesAvantGTA(wx, wz));
         }
       }
     }
@@ -4725,12 +4779,20 @@ export class World {
       // celle du relief sous lui.
       let baseY = lm.ancre ? this.terrainHeight(lm.ancre.x, lm.ancre.z) : this.terrainHeight(lm.x, lm.z);
       if (lm.waterBase) baseY = Math.max(baseY, WATER_LEVEL - 1);
-      lm.build((dx, dy, dz, id) => {
+      // Un repère posé d'après les rues (le mobilier de Londres : ses bus et
+      // ses taxis se garent sur la chaussée, v339) a sa pose d'avant les rues à
+      // la GTA : sous ce qu'un enfant a bâti avant la date, c'est elle qu'on
+      // pose, et la neuve n'y écrit rien.
+      const avant = lm.name === 'Le mobilier de Londres' && this.colonnesRuesGTA.size > 0 ? MOBILIER_LONDRES_V531 : null;
+      const pose = (gele) => (dx, dy, dz, id) => {
         const lx = lm.x + dx - baseX, lz = lm.z + dz - baseZ;
         const wy = baseY + dy;
         if (lx < 0 || lx >= CHUNK || lz < 0 || lz >= CHUNK || wy < 0 || wy >= HEIGHT) return;
+        if (avant && this.ruesAvantGTA(lm.x + dx, lm.z + dz) !== gele) return;
         data[World.index(lx, wy, lz)] = id;
-      });
+      };
+      lm.build(pose(false));
+      if (avant) avant.build(pose(true));
     }
 
     // Re-apply player edits inside this chunk — par l'index du journal (v403),
@@ -4873,6 +4935,7 @@ export class World {
     this.editTimes.set(k, t);
     if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
     if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
+    if (dansRuesGTA(x, z, t)) marquerParisCede(this.colonnesRuesGTA, x, z);
     if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
     if (dansJardinsParis(x, z, t)) marquerParisCede(this.colonnesJardinsParis, x, z);
     if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
@@ -5128,6 +5191,11 @@ export class World {
   // Un lot de la trame générique de Londres reste-t-il ? (v447) Oui si une de
   // ses colonnes est marquée — le marquage couvre déjà les huit voisines d'un
   // bloc d'enfant.
+  // La ville d'avant les rues à la GTA reste-t-elle sur cette colonne ?
+  ruesAvantGTA(x, z) {
+    return this.colonnesRuesGTA.size > 0 && this.colonnesRuesGTA.has(cleColonneParis(x, z));
+  }
+
   lotTrameLondresGarde(x0, x1, z0, z1) {
     if (this.colonnesTrameLondres.size === 0) return false;
     for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) {
@@ -5141,6 +5209,7 @@ export class World {
     // deux sont appelés partout où un journal s'installe d'un bloc
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
+    this.colonnesRuesGTA.clear();
     this.colonnesTrameLondres.clear();
     this.colonnesJardinsParis.clear();
     this.colonnesMetroDC.clear();
@@ -5148,13 +5217,14 @@ export class World {
     this.morceauxAvantClimat.clear();
     this.morceauxAvantClairieres.clear();
     for (const [k, t] of this.editTimes) {
-      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS || t <= DATE_CLAIRIERES || t <= DATE_STATIONS)) continue;
+      if (!(t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS || t <= DATE_CLAIRIERES || t <= DATE_STATIONS || t <= DATE_RUES_GTA)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
       if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
       if (t <= DATE_CLAIRIERES) this.marquerAvantClairieres(x, z);
       if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
       if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
+      if (dansRuesGTA(x, z, t)) marquerParisCede(this.colonnesRuesGTA, x, z);
       if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
       if (dansJardinsParis(x, z, t)) marquerParisCede(this.colonnesJardinsParis, x, z);
       if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
@@ -5289,6 +5359,7 @@ export class World {
     this.monumentsTouches.clear();
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
+    this.colonnesRuesGTA.clear();
     this.colonnesTrameLondres.clear();
     this.colonnesJardinsParis.clear();
     this.colonnesMetroDC.clear();
@@ -5308,6 +5379,7 @@ export class World {
     this.monumentsTouches.clear();
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
+    this.colonnesRuesGTA.clear();
     this.colonnesTrameLondres.clear();
     this.colonnesJardinsParis.clear();
     this.colonnesMetroDC.clear();

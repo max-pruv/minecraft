@@ -39,7 +39,7 @@ Pour viser beaucoup moins de triangles, prévoir une optimisation perceptuelle/
 LOD séparée avec comparaison des vues approuvées ; ce ne serait plus une
 transformation strictement sans perte.
 
-## Ce que le dépôt livre, et le transfert mesuré (v544)
+## Ce que le dépôt livre, et le transfert mesuré (v545)
 
 Le dépôt livre le GLB compact seul. Les `.br` et `.gz` ne sont pas versionnés :
 Vercel compresse déjà les fichiers à la volée (`content-encoding: br`, vérifié

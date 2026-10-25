@@ -1,4 +1,4 @@
-// CE QUE COÛTE LA 911 RECONSTRUITE (v544) — l'ancienne et la neuve, dans les
+// CE QUE COÛTE LA 911 RECONSTRUITE (v545) — l'ancienne et la neuve, dans les
 // mêmes conditions, en ordre alterné (ABBA, v268). Usage :
 //   node tests/sonde-911.cjs [tours=1] [configs=moyen:1,moyen:0,bas:0]
 // Une config est « palier:ombres ». Chaque page force la 911 partout

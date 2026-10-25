@@ -29,9 +29,9 @@
 import { VOIES_PARIS, PARIS } from './paris.js';
 import { villeMondeEn } from './villesmonde.js';
 import { routeEn, largeurA } from './routes.js';
-import { sectionDeRue, LARGEUR_VOITURE } from './voirie.js';
+import { sectionGTA, LARGEUR_VOITURE } from './voirie.js';
 
-const BOULEVARD = sectionDeRue('boulevard');
+const BOULEVARD = sectionGTA('boulevard');   // les rues à la GTA : la section des villes
 // le centre de la voie EXTÉRIEURE d'un sens, depuis l'axe de la rue
 const VOIE_EXTERIEURE = 1.5 * BOULEVARD.voie;
 // deux voitures côte à côte, avec la marge du kit (0,4 m de chaque côté) :

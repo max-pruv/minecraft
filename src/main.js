@@ -8512,7 +8512,7 @@ function updateHud(dt) {
     + texteBlocVise();
 }
 
-// LE MODÈLE AU VOLANT SE NOMME, AVEC CE QU'IL PÈSE (v544). Un modèle lourd
+// LE MODÈLE AU VOLANT SE NOMME, AVEC CE QU'IL PÈSE (v545). Un modèle lourd
 // (la 911 reconstruite : 363 000 triangles, onze fois la moyenne de la
 // flotte) se juge sur la tablette : le nom, le fichier chargé (`?asset=0` rend
 // l'ancien) et les triangles du modèle, comptés une fois par modèle.

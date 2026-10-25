@@ -82,7 +82,7 @@ const GARDIENS = {
   'vendor/humains/femme-manteau.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/garcon.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/fille.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
-  // La 911 reconstruite (v544) : ses témoins vivent dans porsche-911.mjs, que
+  // La 911 reconstruite (v545) : ses témoins vivent dans porsche-911.mjs, que
   // degats.js lance ; la table des programmes la lit dans monte.js.
   'vendor/voitures/porsche-911-gt3-rs-hd-v2-compact.glb': ['degats.js', 'monte.js'],
   'tests/porsche-911.mjs': ['degats.js'],
@@ -163,6 +163,12 @@ const GARDIENS = {
   'src/nice-v340.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Nice d'avant le kit, sous ce qu'un enfant a bâti (v359)
   'src/sanfrancisco-v343.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la San Francisco d'avant le kit, sous ce qu'un enfant a bâti (v361)
   'src/lille-v344.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Lille d'avant le kit, sous ce qu'un enfant a bâti (v368)
+  'src/paris-v531.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // Paris d'avant les rues à la GTA, sous ce qu'un enfant a bâti
+  'src/londres-v531.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // Londres d'avant les rues à la GTA, sous ce qu'un enfant a bâti
+  'src/nice-v531.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // Nice d'avant les rues à la GTA, sous ce qu'un enfant a bâti
+  'src/lille-v531.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // Lille d'avant les rues à la GTA, sous ce qu'un enfant a bâti
+  'src/sanfrancisco-v531.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // San Francisco d'avant les rues à la GTA, sous ce qu'un enfant a bâti
+  'src/villesmonde-v531.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // les villes engendrées d'avant les rues à la GTA, sous ce qu'un enfant a bâti
   'src/carte.js': ['carte.js', 'carteMonde.js', 'manhattan.js'],
   // La capitale : son relief, son métro et ses bâtiments ouverts. Elle touche
   // au sol de la carte, donc le témoin du plafond la surveille aussi.

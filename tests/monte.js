@@ -2343,24 +2343,44 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         if (Math.abs(cote) > DEMI + (t < 0.8 ? marge : 0.45)) return null;
         return { ux: r.ux, uz: r.uz, cote: cote >= 0 ? 1 : -1, lat: cote, t, demi: DEMI, rx: r.x, rz: r.z };
       };
-      // les coins : un trottoir dont la bordure est à 1,2 bloc, au plus près des feux
-      const coins = [], vus = new Set();
-      for (const f of (window.__feux() || [])) {
+      // les coins : un trottoir dont la bordure est à 1,2 bloc, au plus près des feux.
+      // LES FEUX NE VIENNENT QUE DES MORCEAUX MAILLÉS autour de l'enfant (au
+      // banc, rr=2) : depuis les rues à la GTA les coins des carrefours sont
+      // plus écartés, et la même place en livrait 18 au lieu de 26 — trois
+      // scénarios au lieu de six (sonde, Rome, des deux côtés : la part de
+      // coins qui marchent est la même, 2,4 et 2,5 %). S'il en manque, on va
+      // les chercher au feu le plus lointain, trois fois au plus, puis on
+      // revient : le verdict ne change pas, la mise en place si.
+      const origine = g.player.pos.clone();
+      const tousLesFeux = new Map(), visites = new Set();
+      const releverFeux = () => { for (const f of (window.__feux() || [])) tousLesFeux.set(f.x + ',' + f.z, f); };
+      let coins, scenarios, valides = 0, sauts = 0;
+      const chercher = () => {
+      coins = []; scenarios = [];
+      const vus = new Set();
+      for (const f of tousLesFeux.values()) {
         const cl = Math.round(f.x / 6) + ',' + Math.round(f.z / 6);
         if (vus.has(cl)) continue;
-        for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+        for (let dx = -5; dx <= 5; dx++) for (let dz = -5; dz <= 5; dz++) {
           const x = Math.floor(f.x) + dx + 0.5, z = Math.floor(f.z) + dz + 0.5;
           if (sol(x, z) !== 't') continue;
           for (const [ux, uz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (sol(x + ux * 1.2, z + uz * 1.2) === 'c') coins.push({ x, z, ux, uz });
         }
         vus.add(cl);
       }
-      const scenarios = [], pris = new Set();
+      // tous les passants jouent ensemble et un passant ne s'anime qu'à moins de
+      // 80 blocs de l'enfant (presence.js) : voir le choix du groupe plus bas
+      coins.sort((p, q) => Math.hypot(p.x - origine.x, p.z - origine.z) - Math.hypot(q.x - origine.x, q.z - origine.z));
+      const pris = new Set();
       for (const p of coins) {
-        if (scenarios.length >= 6) break;
         const k = Math.floor(p.x) + ',' + Math.floor(p.z);
         if (pris.has(k)) continue;
-        cherche: for (const sens of [1, -1]) for (const phi of [-60, -45, -30, -15, 15, 30, 45, 60]) for (const dP of [1.5, 2.5, 3.5]) {
+        // jusqu'à 7,5 blocs du trottoir et 75° : depuis les rues à la GTA la
+        // chaussée fait 8,5 blocs, et la voie d'en face est à 6,4 de la
+        // bordure — trois et demi n'en trouvaient plus que deux à Rome, et
+        // 5,5 rendait 2 à 5 scénarios selon les passages (seule, branche),
+        // contre 5 sur la v534. On cherche plus large, le verdict ne bouge pas.
+        cherche: for (const sens of [1, -1]) for (const phi of [-75, -60, -45, -30, -15, 15, 30, 45, 60, 75]) for (const dP of [1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5]) {
           const sc = { p, Px: p.x + p.ux * dP, Pz: p.z + p.uz * dP, a: Math.atan2(-p.ux * sens, p.uz * sens) + phi * Math.PI / 180 };
           // une voiture roule sur la chaussée : son centre y reste au passage
           let surRue = true;
@@ -2377,11 +2397,41 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           scenarios.push(sc); pris.add(k); break cherche;
         }
       }
-      if (scenarios.length < 3 || tous.length < scenarios.length) return { err: `${scenarios.length} scénario(s), ${tous.length} passant(s)`, coins: coins.length };
+      // autour de chaque ancre, on ajoute les plus proches tant que tous restent
+      // à 70 blocs de leur barycentre, où l'enfant sera posé ; on garde le plus
+      // grand groupe
+      let best = [];
+      const rayon = (gr) => { const cx = gr.reduce((a, q) => a + q.p.x, 0) / gr.length, cz = gr.reduce((a, q) => a + q.p.z, 0) / gr.length;
+        return Math.max(...gr.map((q) => Math.hypot(q.p.x - cx, q.p.z - cz))); };
+      for (const ancre of scenarios) {
+        const tri = [...scenarios].sort((q, r) => Math.hypot(q.p.x - ancre.p.x, q.p.z - ancre.p.z) - Math.hypot(r.p.x - ancre.p.x, r.p.z - ancre.p.z));
+        const gr = [];
+        for (const q of tri) { if (gr.length >= 6) break; if (rayon([...gr, q]) <= 70) gr.push(q); }
+        if (gr.length > best.length) best = gr;
+      }
+      valides = scenarios.length; scenarios = best.slice(0, 6);
+      };
+      releverFeux(); chercher();
+      for (let saut = 0; saut < 3 && scenarios.length < 3; saut++) {
+        let cible = null, dc = -1;
+        for (const f of tousLesFeux.values()) {
+          const d = Math.hypot(f.x - origine.x, f.z - origine.z), k = Math.round(f.x / 6) + ',' + Math.round(f.z / 6);
+          if (d <= 90 && d > dc && !visites.has(k)) { dc = d; cible = f; }
+        }
+        if (!cible) break;
+        visites.add(Math.round(cible.x / 6) + ',' + Math.round(cible.z / 6));
+        g.player.pos.set(cible.x, w.sommetColonne(Math.floor(cible.x), Math.floor(cible.z)) + 2.5, cible.z);
+        g.player.vel.set(0, 0, 0);
+        await new Promise((f) => setTimeout(f, 2500));
+        releverFeux(); chercher(); sauts++;
+      }
+      g.player.pos.copy(origine); g.player.vel.set(0, 0, 0);
+      if (scenarios.length < 3 || tous.length < scenarios.length) return { err: `${scenarios.length} scénario(s), ${tous.length} passant(s)`, coins: coins.length, valides, sauts, feux: tousLesFeux.size };
       const gens = tous.slice(0, scenarios.length);
       const sauveHook = w.vehiculeApproche, sauvePos = g.player.pos.clone();
       const pensees = gens.map((h) => h.think);
-      g.player.pos.set(scenarios[0].p.x, w.sommetColonne(Math.floor(scenarios[0].p.x), Math.floor(scenarios[0].p.z)) + 2.5, scenarios[0].p.z);
+      const bx = scenarios.reduce((a, q) => a + q.p.x, 0) / scenarios.length, bz = scenarios.reduce((a, q) => a + q.p.z, 0) / scenarios.length;
+      g.player.pos.set(bx, w.sommetColonne(Math.floor(bx), Math.floor(bz)) + 2.5, bz);
       g.player.vel.set(0, 0, 0);
       gens.forEach((h, i) => {
         const p = scenarios[i].p;
