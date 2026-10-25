@@ -821,6 +821,40 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La 911 reconstruite (v545) — un fichier neuf a une URL neuve, et « léger » se dit en quoi
+
+Max a fait reconstruire la 911 GT3 RS et en a approuvé le rendu ; il a choisi
+d'essayer le modèle lourd tel quel, puis une version « allégée ». **Avant toute
+nouvelle voiture ou refonte, on lit `docs/standard-creation-voitures.md`** (le
+standard qu'il a demandé, la 911 v2 en référence visuelle). Quatre règles.
+
+- **`fichier` EST L'IDENTIFIANT, `asset` LE FICHIER CHARGÉ.** Garages, réseau
+  et couleur de la rue retiennent `fichier` ; on ne le renomme jamais. Une
+  géométrie neuve prend une URL neuve (`asset`, lu par `fichierCharge`,
+  vehicules.js) : STATIC_CACHE ne retélécharge jamais une URL qu'il connaît
+  (`isStaticAsset`, sw.js). L'ancien fichier reste dans le dépôt : une tablette
+  encore sur l'ancienne version le demande.
+- **« ALLÉGÉ » SE DIT EN QUOI : OCTETS, TRANSFERT OU TRIANGLES.** La version
+  compacte (`scripts/optimiser-glb.py`) est sans perte — 40/40 primitives
+  identiques au modèle approuvé, recalculé par un témoin — et passe de 11,6 à
+  7,7 Mo sur le disque. Elle garde ses 362 868 triangles (8,4 fois l'ancienne
+  911), donc le coût de DESSIN ne bouge pas. Et sans ses doublons elle se
+  compresse MOINS bien au niveau Brotli que Vercel sert (≈ q4, déduit de
+  l'ancienne 911 servie à 1,03 Mo) : ≈ 3,2 Mo transférés contre 2,7. Les
+  `.br`/`.gz` précompressés du paquet ne sont pas livrés : le serveur ne les
+  servirait pas sans en-têtes. Un chiffre de poids se donne avec son unité.
+- **UN MODÈLE LOURD SE JUGE SUR LA TABLETTE, ET LE JEU DONNE LE MOYEN.**
+  `?voiture=911` force ce modèle pour toute voiture neuve ET toute la rue (le
+  pire cas), `?asset=0` rend le fichier d'avant, et `?diag=1` nomme au volant
+  le modèle, le fichier chargé et ses triangles. Jamais un réglage du jeu. La
+  sonde `sonde-911.cjs` compare les deux en ordre alterné ; ses millisecondes
+  sont celles de SwiftShader (v247), ses triangles et ses octets, non.
+- **LES TESTS D'UN PAQUET LIVRÉ DEVIENNENT DES TÉMOINS D'UNE SUITE.** Ceux de la
+  911 tournaient sous `node --test` avec un chargeur à part : aucun portail ne
+  les lançait. Ils vivent dans `tests/porsche-911.mjs`, appelé par `degats.js`
+  (gardien de `vehicules.js` et `portieres.js`), et la table des gardiens les
+  déclare avec le GLB. Un test qu'aucun portail ne lance ne garde rien.
+
 ## Les guides des villes (v538) — un guide est un rôle à part, et il se pose à ciel ouvert
 
 Trois règles.

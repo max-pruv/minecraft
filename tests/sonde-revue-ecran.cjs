@@ -215,6 +215,24 @@ const ETATS = [
     await attendreMonde(tab);
     return r;
   } },
+  // Une voiture garée vue de trois quarts avant, à six blocs (v545) : avec
+  // `--params=&voiture=911` c'est la 911, et `&asset=0` rend l'ancienne.
+  { nom: 'voiture-trois-quarts', async prep(tab, ctx) {
+    await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw, pitch: -0.12 });
+    return tab.evaluate(async () => {
+      const g = window.__game;
+      const tenir = (n) => new Promise((f) => setTimeout(f, n * 1000));
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const y = g.player.yaw;
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x - Math.sin(y) * 6, g.player.pos.z - Math.cos(y) * 6);
+      const t0 = performance.now();
+      while (performance.now() - t0 < 20000 && !(a && a.mesh.userData.modele)) await tenir(0.3);
+      if (a) a.yaw = y + 0.75;   // le nez vers la caméra, de trois quarts
+      await tenir(1);
+      return { modele: a && a.mesh.userData.flotte };
+    });
+  } },
   { nom: 'volant-arret', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
     return monterEnVoiture(tab);

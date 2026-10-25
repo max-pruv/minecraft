@@ -20,6 +20,62 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v545 — Une nouvelle Porsche 911
+
+**Pourquoi.** Max a fait reconstruire la 911 GT3 RS (992) et en a approuvé le
+rendu : « Intègre cette voiture », puis « Tente de passer cette 911 là,
+effectivement beaucoup plus lourde, on va regarder si ça marche », puis une
+version allégée. L'ancienne 911 de la flotte était un modèle de 43 000
+triangles ; la nouvelle en a 362 868, et rien ne disait ce qu'elle coûte.
+
+**Ce que ça change.**
+- La 911 de la flotte (garages, rue, invocation) est la reconstruction :
+  carrosserie, optiques, roues et freins, aileron, habitacle, quatre textures.
+  Son identifiant ne change pas : une 911 rangée au garage revient en 911, et
+  un ami la voit pareil. Elle n'est téléchargée que quand une 911 apparaît.
+- Le fichier livré est la version compacte, sans perte (40/40 primitives
+  identiques au modèle approuvé) : 7,7 Mo sur le disque au lieu de 11,6. Elle
+  garde ses 362 868 triangles : plus légère à charger, pas à dessiner.
+- Pour juger sur la tablette : `?voiture=911` met la 911 partout (voiture
+  invoquée et toute la rue), `?asset=0` rend l'ancienne, `?diag=1` nomme au
+  volant le modèle, le fichier et ses triangles.
+- `docs/standard-creation-voitures.md`, le standard demandé par Max, devient la
+  référence de toute nouvelle voiture.
+
+**Ce que ça coûte, mesuré** (`tests/sonde-911.cjs`, ordre alterné, banc en
+rendu logiciel : les millisecondes ne se transposent pas à l'iPad, les
+triangles et les octets oui).
+
+| | ancienne 911 | nouvelle 911 |
+| --- | ---: | ---: |
+| triangles du modèle | 43 352 | 362 868 |
+| géométrie en carte graphique | 0,7 Mo | 7,2 Mo |
+| textures du modèle | 13,8 Mo | 17,2 Mo |
+| fichier | 1,56 Mo | 7,74 Mo |
+| transfert (Brotli du serveur, ≈ q4) | 1,03 Mo (mesuré) | ≈ 3,2 Mo (estimé) |
+| au volant, campagne, moyen sans ombres | 3,4–3,5 i/s · 156–160k tri | 1,4–1,5 i/s · 464–467k tri |
+| au volant, moyen avec ombres | 2,3–2,5 i/s | 1,2–1,3 i/s |
+| au volant, palier bas | 3,5–3,8 i/s | 1,4–1,6 i/s |
+| rue de Paris toute en 911, moyen | 1,6–1,8 i/s · ≈ 410k tri | 1,1–1,2 i/s · 675–756k tri |
+
+Plusieurs 911 de la rue partagent la géométrie du prototype (42 géométries
+distinctes pour 4 à 8 voitures, comme 26 pour l'ancienne). Sur le banc, une 911
+dans le champ divise la cadence par 2,3 : c'est le dessin de 300 000 triangles
+de plus en logiciel. Sur l'iPad c'est la carte graphique qui les dessine, et
+c'est là que se juge le prix réel.
+
+**Ce qui le prouve.** Huit témoins sous node (`tests/porsche-911.mjs`, lus par
+`degats.js`) : chargement par le vrai GLTFLoader, compaction bit pour bit,
+géométries finies et poids borné, roues au sol sur leur essieu, programmes
+chauffés, identifiant stable et fichier neuf, portières, textures et matières.
+Un témoin de navigateur au volant de la 911 (sol, volant, conducteur sous le
+pavillon face à la route, laque qui reflète) ; le témoin des feux de détresse
+la compte parmi ses modèles ; la table des programmes la lit dans `monte.js`.
+La revue d'écran (iPhone et iPad, jour et nuit, ancienne contre nouvelle) lit
+bien la voiture de trois quarts ; dans la vue de poursuite, l'aileron se lit
+comme une dalle noire et cache le conducteur — relevé n° 26 de
+`docs/revue-ecran.md`, à trancher sur la tablette.
+
 ## v544 — Des rues à la GTA : une voie, c'est la voiture et un bloc de chaque côté
 
 **Pourquoi.** Max veut rouler dans les villes comme dans GTA. Mesuré avant une

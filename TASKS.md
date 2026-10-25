@@ -40,6 +40,24 @@
   y rend parfois les deux signes. À reprendre : le témoin doit se placer
   lui-même (un couloir plat et dégagé, v285).
 
+
+## v545 — LA 911 RECONSTRUITE : ce qui reste, et ce que Max juge sur sa tablette
+
+- [ ] **POUR MAX, SUR LA TABLETTE — la 911 tient-elle ?** Deux adresses, même
+  endroit, `?diag=1` : `?voiture=911&diag=1` puis `?voiture=911&asset=0&diag=1`.
+  Invoquer une voiture, monter, rouler en campagne puis dans Paris (la rue est
+  alors TOUTE en 911 : le pire cas). Relever la ligne « i/s médiane · pire
+  image » et la ligne « modèle … k tri ». Au banc la cadence est divisée par 2,3
+  (dessin logiciel) ; la carte graphique de l'iPad décide du vrai prix.
+- [ ] **Si ça ne tient pas : un niveau de détail lointain, pas une décimation
+  d'office.** Le modèle approuvé reste de près ; une version de quelques
+  dizaines de milliers de triangles se montre au-delà d'une dizaine de blocs
+  et dans la rue. Elle demande sa revue visuelle (standard des voitures).
+- [ ] **Le transfert.** Compacte, la 911 se compresse moins bien au Brotli
+  du serveur (≈ 3,2 Mo contre 2,7 pour l'original) ; servir le `.br` maximal
+  (1,85 Mo) demande des en-têtes. À mesurer sur l'URL déployée (`curl`, voir
+  `docs/voitures-poids-et-compression.md`).
+
 ## v543 — LA VOITURE COMME DANS GTA : les rouges du portail
 
 - [ ] **Rouges du portail de la v543 (la voiture comme dans GTA), tous déjà

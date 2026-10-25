@@ -407,6 +407,7 @@ const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
 // et le pickup en alternance), les autres viennent de la flotte au pas de 17.
 // La règle ne lit que `n` : la même rue sur deux tablettes (v305).
 export function choixFlotte(n, ville) {
+  if (VOITURE_FORCEE) return VOITURE_FORCEE;
   const choix = FLOTTE.filter((e) => (ville === 'ny' ? e.ville === 'ny' : e.ville !== 'ny'));
   if (ville !== 'ny' && n % 6 === 0) return FLOTTE.find((e) => e.fichier === 'berline-citadine');
   if (ville !== 'ny' && n % 6 === 3) return FLOTTE.find((e) => e.fichier === (((n % 12) + 12) % 12 === 3 ? 'fourgonnette' : 'pickup'));
@@ -481,7 +482,11 @@ export const FLOTTE = [
   { fichier: 'pagani-zonda-cinque.glb', classe: 'sportive', nom: 'Pagani Zonda Cinque' },
   { fichier: 'pininfarina-battista.glb', classe: 'hypercar', nom: 'Automobili Pininfarina Battista' },
   { fichier: 'porsche-718-cayman-gt4-rs.glb', classe: 'gt', nom: 'Porsche 718 Cayman GT4 RS' },
-  { fichier: 'porsche-911-gt3-rs.glb', classe: 'sportive', nom: 'Porsche 911 GT3 RS (992)' },
+  // LA 911 RECONSTRUITE (v545) : `fichier` reste l'IDENTIFIANT (garages,
+  // réseau, couleur de la rue) ; `asset` est le fichier CHARGÉ. Une URL neuve
+  // renouvelle le modèle dans STATIC_CACHE, où une URL connue ne se
+  // retélécharge jamais (sw.js, `isStaticAsset`).
+  { fichier: 'porsche-911-gt3-rs.glb', asset: 'porsche-911-gt3-rs-hd-v2-compact.glb', classe: 'sportive', nom: 'Porsche 911 GT3 RS (992)' },
   { fichier: 'porsche-918-spyder.glb', classe: 'hypercar', nom: 'Porsche 918 Spyder' },
   { fichier: 'porsche-carrera-gt.glb', classe: 'sportive', nom: 'Porsche Carrera GT' },
   { fichier: 'porsche-taycan-turbo-s.glb', classe: 'gt', nom: 'Porsche Taycan Turbo S' },
@@ -540,6 +545,19 @@ export function allureDe(fichier, secours = 3.4) {
 }
 
 const chargementsFlotte = new Map();
+
+// L'ESSAI D'UN MODÈLE, DEPUIS L'ADRESSE (v545). Un modèle lourd se juge sur
+// la tablette, pas au banc (v247) : `?voiture=911` force ce modèle pour toute
+// voiture neuve ET toute voiture de la rue (une sous-chaîne du `fichier`), et
+// `?asset=0` désarme le champ `asset` — le fichier historique revient, pour
+// comparer les deux au même endroit. Jamais un réglage du jeu.
+const ADRESSE_FLOTTE = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+const VOULUE = ADRESSE_FLOTTE && ADRESSE_FLOTTE.get('voiture');
+export const VOITURE_FORCEE = VOULUE ? FLOTTE.find((f) => f.fichier.includes(VOULUE)) || null : null;
+const SANS_ASSET = !!ADRESSE_FLOTTE && ADRESSE_FLOTTE.get('asset') === '0';
+export function fichierCharge(entree, sansAsset = SANS_ASSET) {
+  return sansAsset ? entree.fichier : (entree.asset || entree.fichier);
+}
 
 // CINQ IMAGES POUR TOUTE LA FLOTTE, ET CHAQUE MODÈLE DÉCODAIT LES SIENNES (v409).
 //
@@ -733,7 +751,7 @@ export function chargerVoitureFlotte(entree) {
     partagerTout(modele);   // le prototype ne se rend jamais (v495)
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
-  const chargement = new GLTFLoader().register(partageDesTextures).loadAsync('./vendor/voitures/' + entree.fichier)
+  const chargement = new GLTFLoader().register(partageDesTextures).loadAsync('./vendor/voitures/' + fichierCharge(entree))
     .then((gltf) => {
       const cadre = new THREE.Group();
       // On remet le modèle au manifeste AVANT de l'accrocher : la rotation et

@@ -49,7 +49,7 @@ import { createSky } from './sky.js';
 import { createSiege } from './siege.js';
 import { createVie, createGuidesVilles } from './vie.js';
 import { TOUS_LES_GUIDES } from './guidesvilles.js';
-import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte } from './vehicules.js';
+import { createVehicules, lancerReflets, avancerReflets, refletsVoiture, chaufferLesProgrammes, programmesChauffes, programmesAChauffer, graineDeVille, construireVoitureRoute, signaturesAChauffer, materielDeSignature, FLOTTE, chargerVoitureFlotte, fichierCharge } from './vehicules.js';
 import { decor, voirTout } from './couches.js';
 import { creerNomsDeStations, chaufferStations } from './stations.js';
 import { contexteAudio, sortieAudio, reglerSon, sonActif, etatSon, radioEnCours, generationAudio, radioSuivante, radioTitre, radioIndice, radioMemoire, radioRestaurer, klaxonTenir, klaxonRue } from './sons.js';
@@ -8505,10 +8505,31 @@ function updateHud(dt) {
       classe: player.ficheVoiture && player.ficheVoiture.classe, v: player.vitesseVoiture, vmax: player.vitesseVoitureMax,
       devant: mondeDevant((cx, cz) => chunkMeshes.has(World.key(cx, cz)), player.pos.x, player.pos.z, player.yaw + (player.derive || 0) + (player.vitesseVoiture < 0 ? Math.PI : 0), CHUNK),
       roueLibre: player.roueLibre, pente: player.pente, atterrissage: player.atterrissage, suivi: player.suivi, derapage: player.derapage }) : '')
+    + texteModeleConduit()
     + texteRoulage()
     + texteDegats()
     + texteEmbarquement()
     + texteBlocVise();
+}
+
+// LE MODÈLE AU VOLANT SE NOMME, AVEC CE QU'IL PÈSE (v545). Un modèle lourd
+// (la 911 reconstruite : 363 000 triangles, onze fois la moyenne de la
+// flotte) se juge sur la tablette : le nom, le fichier chargé (`?asset=0` rend
+// l'ancien) et les triangles du modèle, comptés une fois par modèle.
+const trianglesDuModele = new Map();
+function texteModeleConduit() {
+  const a = fun.montureConduite ? fun.montureConduite() : null;
+  const u = a && a.mesh && a.mesh.userData;
+  if (!u || !u.flotte) return '';
+  const entree = FLOTTE.find((f) => f.fichier === u.flotte);
+  if (!entree || !u.modele) return `\nmodèle ${u.nomVoiture || u.flotte} · en attente du fichier`;
+  const fichier = fichierCharge(entree);
+  if (!trianglesDuModele.has(fichier)) {
+    let t = 0;
+    u.modele.traverse((o) => { if (o.isMesh && o.geometry) t += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
+    trianglesDuModele.set(fichier, Math.round(t));
+  }
+  return `\nmodèle ${entree.nom} · ${fichier} · ${(trianglesDuModele.get(fichier) / 1000).toFixed(0)}k tri`;
 }
 
 // LE BLOC VISÉ SE NOMME, ET DIT QUI L'A POSÉ (v490). Le nom sous le réticule

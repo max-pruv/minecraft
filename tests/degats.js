@@ -32,6 +32,22 @@ function verifier(nom, ok, detail = '') {
 }
 
 (async () => {
+  // ---------------------------------------------------- la 911 reconstruite
+  // Les témoins du paquet de la 911 (v545), sous node, avant le navigateur :
+  // `portieres.js` et le GLTFLoader importent « three », qu'un crochet de
+  // résolution leur donne comme l'import map de la page (celui de plafond.js).
+  try {
+    const { register } = require('node:module');
+    const { pathToFileURL } = require('url');
+    const trois = pathToFileURL(require('path').resolve(__dirname, '../vendor/three.module.min.js')).href;
+    register('data:text/javascript,' + encodeURIComponent(
+      `export async function resolve(s, c, n) { return s === 'three' ? { url: ${JSON.stringify(trois)}, shortCircuit: true } : n(s, c); }`));
+    const { temoinsPorsche911 } = await import('./porsche-911.mjs');
+    for (const [nom, ok, detail] of await temoinsPorsche911()) verifier(nom, ok, detail);
+  } catch (e) {
+    verifier('911 : les témoins du modèle reconstruit se chargent sous node', false, String(e && e.message || e).slice(0, 200));
+  }
+
   // ---------------------------------------------------------------- la règle
   const D = await import('../src/degats.js').catch(() => null);
   verifier('la règle des dégâts existe, et elle se lit sans navigateur', !!D);
@@ -175,6 +191,52 @@ function verifier(nom, ok, detail = '') {
     const tab = await banc.jouerSeul('Dégâts', { rr: 2, pret: true });
     const erreurs = [];
     tab.on('pageerror', (e) => erreurs.push(String(e.message || e)));
+
+    // LA 911 RECONSTRUITE AU VOLANT (v545). Un modèle neuf passe les contrats de
+    // la flotte que les autres témoins supposent sur un tirage : posée au sol
+    // (v230), un volant (`Interior_SteeringWheel`), l'enfant assis sous le
+    // pavillon MESURÉ de ce modèle et face à la route (v249), la laque qui lit
+    // la sonde des reflets (v245). On l'invoque par son identifiant — le vœu
+    // d'une voiture garée — donc sans paramètre d'adresse.
+    const p911 = await tab.evaluate(async () => {
+      const g = window.__game, THREE = await import('three');
+      const tenir = (n) => new Promise((f) => setTimeout(f, n * 1000));
+      for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
+      g.animalManager.animals.length = 0;
+      const y = g.player.yaw;
+      const auto = g.animalManager.invoquer('voiture', g.player.pos.x - Math.sin(y) * 3, g.player.pos.z - Math.cos(y) * 3, false, { flotte: 'porsche-911-gt3-rs.glb' });
+      const t0 = performance.now();
+      while (performance.now() - t0 < 30000 && !(auto && auto.mesh.userData.modele)) await tenir(0.3);
+      if (!auto || !auto.mesh.userData.modele) return { err: 'modèle jamais arrivé' };
+      for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenir(0.6); }
+      await tenir(1.5);
+      const a = g.fun.montureConduite && g.fun.montureConduite(), av = g.avatarLocal;
+      if (!a || !av) { return { err: 'pas au volant', monte: !!a, avatar: !!av }; }
+      const modele = a.mesh.userData.modele;
+      a.mesh.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(modele, true);
+      let volant = false, laque = 0, laqueReflet = 0;
+      modele.traverse((o) => {
+        if (/steeringwheel/i.test(o.name || '')) volant = true;
+        if (o.isMesh && /paint_primary/i.test((o.material && o.material.name) || '')) { laque++; if (o.material.envMap) laqueReflet++; }
+      });
+      const crane = av.position.y + (0.77 + 0.706) * av.scale.x;
+      const cache = a.plafondSiege ? a.plafondSiege.y : null;
+      const toit = cache instanceof Map ? (cache.get(`${a.def.siege.x}|${a.def.siege.z}`) ?? null) : cache;
+      const visage = av.getWorldDirection(new THREE.Vector3()).negate();
+      const route = new THREE.Vector3(-Math.sin(g.player.yaw), 0, -Math.cos(g.player.yaw));
+      const r = { fichier: a.mesh.userData.flotte, forme: a.mesh.userData.proto && a.mesh.userData.proto.userData.forme,
+        sol: +(b.min.y - a.mesh.position.y).toFixed(3), volant, laque, laqueReflet, assis: av.parent === a.mesh,
+        crane: +crane.toFixed(2), toit: toit == null ? null : +toit.toFixed(2), regard: +visage.dot(route).toFixed(2) };
+      document.getElementById('ride-btn').click(); await tenir(0.8);
+      for (const x of [...g.animalManager.animals]) g.animalManager.scene.remove(x.mesh);
+      g.animalManager.animals.length = 0;
+      return r;
+    });
+    verifier('la 911 reconstruite : posée sur ses roues, un volant, l\'enfant assis sous son pavillon face à la route, la laque qui reflète',
+      !p911.err && p911.fichier === 'porsche-911-gt3-rs.glb' && Math.abs(p911.sol) < 0.08 && p911.volant && p911.assis
+        && p911.toit != null && p911.crane < p911.toit && p911.regard > 0.9 && p911.laque > 0 && p911.laqueReflet === p911.laque,
+      JSON.stringify(p911));
 
     // UNE DALLE À L'ÉCART, UN MUR AU BOUT, DEUX VOITURES DU MÊME MODÈLE. Le
     // témoin se place lui-même (v284) : on descend, on retire les bêtes, puis
@@ -1023,7 +1085,7 @@ function verifier(nom, ok, detail = '') {
       const g = window.__game, THREE = await import('three'), V = await import('./src/vehicules.js');
       if (!V.feuxDeDetresse || !V.posesDetresse) return { err: 'feuxDeDetresse non publié (ancien code)' };
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
-      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb'];
+      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'porsche-911-gt3-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb'];
       const rc = new THREE.Raycaster(); rc.layers.enableAll();
       const avantCles = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
       const res = [];
@@ -1059,11 +1121,11 @@ function verifier(nom, ok, detail = '') {
         res.push({ f, n: gr ? gr.children.length : 0, ecarts, clignote: vus.size === 2 });
       }
       const neuves = g.renderer.info.programs.map((q) => q.cacheKey).filter((k) => !avantCles.has(k));
-      return { res, neuves: neuves.length };
+      return { res, attendus: modeles.length, neuves: neuves.length };
     });
     const surLaTole = (r) => !r.err && r.n === 4 && r.ecarts.every((e) => e !== null && e > -0.02 && e < 0.06) && r.clignote;
     verifier('les feux de détresse se posent SUR la carrosserie, aux quatre coins, du plus petit modèle au plus grand, et ils clignotent — sans compiler un programme',
-      !detresse.err && detresse.res.length === 7 && detresse.res.every(surLaTole) && detresse.neuves === 0,
+      !detresse.err && detresse.res.length === detresse.attendus && detresse.res.every(surLaTole) && detresse.neuves === 0,
       JSON.stringify(detresse));
 
     verifier('aucune erreur JavaScript de bout en bout', erreurs.length === 0, JSON.stringify(erreurs.slice(0, 4)));
