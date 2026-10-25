@@ -14297,3 +14297,33 @@ réalistes comme GTA. » Quatre règles.
   et c'est la preuve structurelle (v291) qui dispense de rejouer les dix-sept
   gardiens de `mesher.js` — seules `plafond.js` et `parishd.js` arment les
   arbres, et toutes deux sont rejouées seules.
+
+## Les arbres du bord (v554) — ce qu'un morceau tait, il le dessine tant que personne d'autre ne le fait
+
+Deux dettes des arbres, une mesure. Deux règles.
+
+- **UNE DETTE SE REMESURE CONTRE CE QUI A CHANGÉ DEPUIS QU'ELLE EST ÉCRITE.**
+  La demi-couronne à la frontière de `RAYON_HD` (v499) supposait des cubes de
+  feuilles émis côté loin. Depuis la v528, les cubes d'un arbre reconnu ne
+  s'émettent NULLE PART, et chaque arbre n'a qu'un dessinateur, le morceau de
+  sa base, proche ou lointain d'un seul tenant : le mélange est impossible par
+  construction, et le témoin de `plafond.js` le garde (le `solid` d'un morceau
+  ne dépend pas de son détail). Ce qui restait vrai était l'autre dette (v528) :
+  tant que le morceau de la base n'est pas maillé, la part de couronne tue chez
+  le voisin MANQUE — sous node (`sonde-arbres-frontiere.cjs`), sept arbres et
+  147 cases au bord d'un disque de rayon douze, et chaque arrivée.
+- **LE MORCEAU PORTE AUSSI LE MODÈLE LOINTAIN DE SES ARBRES DU BORD, ET
+  `main.js` NE LE MONTRE QUE POUR UN VOISIN ABSENT.** `reconnaitreArbres` rend
+  `bord` (les fûts hors du morceau qui y ont des feuilles) ; le mailleur émet
+  leur modèle lointain APRÈS ceux du morceau, dans `arbresLoin`, rangé par
+  direction du voisin (`DIRECTIONS_VOISINS`, en cercle), avec le climat de SON
+  morceau ; `arbresBord` donne les plages d'indices. `montrerArbresBord`
+  dessine par groupes (un tableau d'un seul matériau : aucune clé neuve) la
+  plage du morceau quand le détail ne l'est pas, et chaque direction dont le
+  voisin n'est pas dans `chunkMeshes` ; un morceau qui arrive ou s'en va relaie
+  ses huit voisins (`relayerArbresVoisins`). Le modèle est celui que le voisin
+  dessine, sommet pour sommet (témoin) : un arbre ne change pas quand son
+  voisin arrive, et il n'est jamais dessiné deux fois. Le prix, déclaré :
+  `arbresLoin` gagne 70 % (0,96 Mo pour 169 morceaux de forêt, 4,8 % du
+  `solid`, mesuré ; le maillage reste dans le bruit, 5,0 contre 4,9 ms), et un morceau du bord du disque coûte un ou deux appels de dessin
+  au lieu d'un ; l'intérieur, rien.
