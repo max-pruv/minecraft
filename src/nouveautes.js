@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 553,
+    titre: 'Des arbres au loin',
+    puces: [
+      'Les forêts lointaines ont leurs arbres',
+      'Plus de trou de ciel en vol',
+    ],
+  },
+  {
     v: 552,
     titre: "Passager dans l'avion d'un ami",
     puces: [

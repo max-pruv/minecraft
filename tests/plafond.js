@@ -4608,6 +4608,104 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         !r.err && r.lus > 20 && r.sous === r.lus && r.mo < 4, JSON.stringify(r));
     }
 
+    // LA DÉCOUPE DÉFILE AVEC LA GRILLE (v553). Le « trou de ciel au bord des
+    // morceaux maillés, en vol » (revue d'écran v532, relevé n° 19) : l'index
+    // de triangles de la grille fine désigne des SOMMETS, que `maj` décale
+    // d'une case tous les huit blocs ; resté tel quel jusqu'à la découpe
+    // suivante (quatre par seconde), il dessinait chaque case huit blocs plus
+    // loin — la zone omise sortait du disque maillé, devant soi. On fige un
+    // disque de morceaux « maillés », on découpe, on avance de quarante blocs
+    // SANS redécouper, et l'on compte devant soi les cases qui ne sont ni
+    // maillées ni dessinées (des trous) et celles dessinées sous un morceau
+    // maillé. Sur l'ancien code : des centaines de chaque.
+    {
+      const r = await tab.evaluate(async () => {
+        const { Horizon } = await import('./src/horizon.js');
+        const w = window.__game.world;
+        const x = 1200, z = -900, R = 7;
+        const h = new Horizon(w, 632);
+        while (h.maj(x, z, 1e9) > 0 && h.etat().manquantes > 0) { /* tout remplir */ }
+        const pcx = Math.floor(x / 16), pcz = Math.floor(z / 16);
+        const maille = (cx, cz) => (cx - pcx) ** 2 + (cz - pcz) ** 2 <= R * R;
+        h.majDecoupe(maille, x, z, 0, -1);
+        const x2 = x, z2 = z - 40;
+        let n = 0;
+        while (h.maj(x2, z2, 1e9) > 0 && h.etat().manquantes > 0 && n++ < 50) { /* les bandes neuves */ }
+        const dess = new Set(), idx = h.geo.index.array, pos = h.geo.attributes.position.array;
+        for (let k = 0; k < h.geo.drawRange.count; k += 6) {
+          const a = idx[k];
+          dess.add(Math.round(pos[a * 3] / 8) + ',' + Math.round(pos[a * 3 + 2] / 8));
+        }
+        let trous = 0, sous = 0, lues = 0;
+        for (let cx = Math.floor((x2 - 260) / 8); cx < Math.floor((x2 + 260) / 8); cx++) {
+          for (let cz = Math.floor((z2 - 260) / 8); cz < Math.floor(z2 / 8); cz++) {
+            const wx = cx * 8, wz = cz * 8;
+            if (Math.hypot(wx - x2, wz - z2) > 260) continue;
+            lues++;
+            const m = maille(Math.floor(wx / 16), Math.floor(wz / 16)), d = dess.has(cx + ',' + cz);
+            if (!m && !d) trous++;
+            if (m && d) sous++;
+          }
+        }
+        h.geo.dispose();
+        return { lues, trous, sous, decalage: [h.ox - h.oxDecoupe, h.oz - h.ozDecoupe] };
+      });
+      verifier('en vol, la découpe défile avec la grille fine : aucun trou de ciel au bord des morceaux maillés, rien de dessiné sous eux',
+        r.lues > 500 && r.trous === 0 && r.sous === 0, JSON.stringify(r));
+    }
+
+    // LES ARBRES LOINTAINS (v553). Une forêt au-delà des morceaux maillés était
+    // une prairie verte. La grille fine pose une silhouette par case boisée —
+    // la question de la carte (`world.foret` : le bruit de `treeAt` et ses
+    // bosquets) — en un appel de dessin, et jamais sur un morceau maillé. On
+    // éprouve ce que l'enfant verrait : au-dessus d'une forêt réelle, des
+    // centaines d'arbres ; aucun sur un morceau maillé ; et ils sont où
+    // `treeAt` plante — une case à silhouette porte des arbres, colonne par
+    // colonne, bien plus qu'une case sans. Sur l'ancien code : aucun arbre.
+    {
+      const r = await tab.evaluate(async () => {
+        const { Horizon } = await import('./src/horizon.js');
+        const w = window.__game.world;
+        const x = -1176, z = -1648, R = 4;   // une forêt tempérée dense (foret > 0,9), loin des villes
+        const h = new Horizon(w, 632, { arbres: true });
+        while (h.maj(x, z, 1e9) > 0 && h.etat().manquantes > 0) { /* tout remplir */ }
+        const pcx = Math.floor(x / 16), pcz = Math.floor(z / 16);
+        const maille = (cx, cz) => Math.abs(cx - pcx) <= R && Math.abs(cz - pcz) <= R;
+        h.majDecoupe(maille, x, z, 0, -1);
+        if (!h.arb) { h.geo.dispose(); return { arbres: 0 }; }
+        const m = h.arb.instanceMatrix.array, nA = h.arb.count;
+        const avec = new Set();
+        let surMaille = 0;
+        for (let i = 0; i < nA; i++) {
+          const ax = m[i * 16 + 12], az = m[i * 16 + 14];
+          if (maille(Math.floor(ax / 16), Math.floor(az / 16))) surMaille++;
+          avec.add(Math.floor(ax / 8) + ',' + Math.floor(az / 8));
+        }
+        // la fidélité, sur un échantillon de cases à moins de 300 blocs
+        let casesA = 0, arbresA = 0, casesS = 0, arbresS = 0;
+        for (let cx = Math.floor((x - 300) / 8); cx < Math.floor((x + 300) / 8); cx += 3) {
+          for (let cz = Math.floor((z - 300) / 8); cz < Math.floor((z - 60) / 8); cz += 3) {
+            const wx = cx * 8, wz = cz * 8;
+            if (maille(Math.floor(wx / 16), Math.floor(wz / 16))) continue;
+            let n = 0;
+            for (let a = 0; a < 8; a++) for (let b = 0; b < 8; b++) if (w.treeAt(wx + a, wz + b)) n++;
+            if (avec.has(cx + ',' + cz)) { casesA++; arbresA += n; } else { casesS++; arbresS += n; }
+          }
+        }
+        const octets = h.arb.instanceMatrix.array.byteLength + h.arb.instanceColor.array.byteLength + h.arb.geometry.attributes.position.array.byteLength * 3;
+        const tri = h.arb.geometry.attributes.position.count / 3;
+        h.geo.dispose();
+        return { arbres: nA, surMaille, casesA, casesS, parCaseA: +(arbresA / Math.max(1, casesA)).toFixed(2),
+          parCaseS: +(arbresS / Math.max(1, casesS)).toFixed(3), mo: +(octets / 1048576).toFixed(2), triangles: nA * tri,
+          nom: h.arb.name, materiauPartage: h.arb.material === h.materiauBati };
+      });
+      verifier('au loin, une forêt a ses arbres : des centaines de silhouettes en un appel, aucune sur un morceau maillé',
+        r.arbres > 300 && r.surMaille === 0 && r.materiauPartage === true, JSON.stringify(r));
+      verifier('et ils sont où `treeAt` plante : une case à silhouette porte quatre fois plus d\'arbres qu\'une case sans',
+        r.casesA > 20 && r.casesS > 50 && r.parCaseA > 4 * r.parCaseS && r.parCaseA >= 0.5, JSON.stringify(r));
+      verifier('les arbres lointains tiennent en moins d\'un mégaoctet', r.mo > 0 && r.mo < 1, JSON.stringify(r));
+    }
+
     // LES FALAISES ET LES BERGES, VUES DE LOIN (v340). Le monde proche montre
     // la roche d'une falaise et le sable d'une grève depuis la v326 ;
     // `horizon.js` gardait le vert de la carte partout. On remplit un paysage

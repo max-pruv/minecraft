@@ -117,6 +117,15 @@ const ETATS = [
     await dormir(2500);
     return { monde: s + ' s', ...(await tab.evaluate(() => ({ vole: window.__game.player.flying }))) };
   } },
+  // La forêt vue de haut (v553) : le paysage lointain au-delà des morceaux
+  // maillés — ses arbres instanciés, et le bord du disque maillé où la revue
+  // de la v532 avait vu un trou de ciel (relevé n° 19).
+  { nom: 'foret-loin', async prep(tab) {
+    const s = await poserEt(tab, { x: -1176, z: -1648, yaw: 0, pitch: -0.3, vol: true });
+    await tab.evaluate(() => { const g = window.__game; if (!g.player.flying) g.player.toggleFly(); g.player.pos.y = g.world.terrainHeight(-1176, -1648) + 110; });
+    await dormir(6000);
+    return { monde: s + ' s', ...(await tab.evaluate(() => ({ vole: window.__game.player.flying, arbresLoin: window.__game.horizon.arb ? window.__game.horizon.arb.count : 0 }))) };
+  } },
   { nom: 'paris', async prep(tab) {
     const p = await tab.evaluate(async () => {
       const { adresseParis } = await import('./src/paris.js');
