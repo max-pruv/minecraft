@@ -16,7 +16,7 @@ export const NOUVEAUTES = [
   },
   {
     v: 554,
-    titre: 'Des arbres entiers au bord du monde',
+    titre: 'Arbres entiers au bord du monde',
     puces: [
       'Plus de couronne coupée au loin',
       'Même en arrivant quelque part',
