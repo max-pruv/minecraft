@@ -38,13 +38,13 @@ mouvement continu chez les autres, par le lien direct, à travers l'hôte et par
 le nuage. Chaque position part avec l'heure de son envoi et, au volant, sa
 vitesse ; l'autre tablette rejoue l'ami avec un léger retard (de deux
 dixièmes de seconde en direct à un peu plus d'une demi-seconde par le nuage,
-réglé tout seul) en glissant entre deux relevés, et prolonge son mouvement un
-quart de seconde au plus quand un relevé tarde. Une téléportation se pose
+réglé tout seul) en glissant entre deux relevés, et prolonge son mouvement une
+demi-seconde au plus quand un relevé tarde. Une téléportation se pose
 d'un coup. Une tablette restée sur l'ancienne version est suivie comme avant.
 
 **Ce qui le prouve.** Quatre témoins dans `reseau.js` : la règle pure sous
 node (paquets du nuage, désordre, téléportation, ancienne version) ; en direct,
-le pire bond d'une image à l'autre (13 à 25 blocs → 0,4 à 2,1, barre 6) et le
+le pire bond d'une image à l'autre (13 à 25 blocs → 0,4 à 2,1 d'ordinaire, barre 8) et le
 champ sur `pos` ; par l'hôte, l'heure d'envoi qui traverse `rpos` (rouge sur
 l'ancien code) ; par le nuage, la part des images à la vraie vitesse (0,21 à
 0,37 → 0,69 à 0,98, barre 0,55). Portail : seize suites vertes ; `monte.js`

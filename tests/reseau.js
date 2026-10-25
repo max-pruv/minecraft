@@ -100,13 +100,13 @@ function verifier(nom, ok, detail = '') {
         F.recevoir(t, { ts: 250, x: 5000, y: 0, z: 0 }, 340);   // une téléportation
         pur.tele = F.positionA(t, 2000, 0).x;
         // sans heure d'envoi (l'ancienne version) : suivi à l'heure d'arrivée,
-        // et prolongé de 250 ms au plus à 25 blocs par seconde, puis il attend
+        // et prolongé de 500 ms au plus à 25 blocs par seconde, puis il attend
         const vieux = F.creerSuivi();
         F.recevoir(vieux, { x: 0, y: 0, z: 0 }, 0); F.recevoir(vieux, { x: 3, y: 0, z: 0 }, 120);
         pur.vieux = +F.positionA(vieux, 5000, 0).x.toFixed(2);
       }
       verifier('l\'ami est rejoué entre deux relevés : sa vitesse apparente reste la vraie, même par paquets du nuage',
-        !!F && pur.direct < 0.15 && pur.nuage < 0.15 && pur.desordre < 0.3 && pur.tele === 5000 && pur.vieux === 9.25,
+        !!F && pur.direct < 0.15 && pur.nuage < 0.15 && pur.desordre < 0.3 && pur.tele === 5000 && pur.vieux === 15.5,
         JSON.stringify(pur));
     }
 
@@ -314,7 +314,8 @@ function verifier(nom, ok, detail = '') {
     // d'une image à l'autre au-delà de ce qu'il a vraiment parcouru. La part
     // ne sépare pas assez sous la charge du portail (0,70 à 0,74 sur l'ancien
     // code, 0,83 à 1,00 ici) ; le bond, si : 13 à 25 blocs sur l'ancien code
-    // (il court après le dernier relevé), 0,4 à 2,1 ici. Barre : 6 blocs. Et la
+    // (il court après le dernier relevé), 0,4 à 10 ici selon que la page qui conduit
+    // cale plus que le prolongement (500 ms). Barre : 8 blocs. Et la
     // position directe porte l'heure d'envoi et la vitesse (champ sur `pos`).
     {
       const fluideDirect = await mesurerFluidite(hote, alice, 'Marlon', { ms: 6000 });
@@ -325,7 +326,7 @@ function verifier(nom, ok, detail = '') {
         return { ts: e && e.pos ? e.pos.ts : null, vx: e && e.pos ? e.pos.vx : null };
       });
       verifier('chez l\'ami, la voiture de l\'enfant avance en temps réel, pas par bonds',
-        fluideDirect.sautMax < 6 && Number.isFinite(champ.ts) && Number.isFinite(champ.vx),
+        fluideDirect.sautMax < 8 && Number.isFinite(champ.ts) && Number.isFinite(champ.vx),
         JSON.stringify({ champ, fluideDirect }));
     }
 

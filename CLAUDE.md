@@ -885,7 +885,7 @@ Max : « tu le vois bouger de manière saccadée ». Trois règles.
   s'accordent pas : l'écart entre elles est le plus petit délai jamais vu, qui
   ne remonte jamais (un écart qui remonte ferait reculer l'ami). Le retard
   monte à mi-vitesse et redescend à 12 % : jamais de saut. Au-delà de
-  `EXTRAPOLE_MAX` (250 ms) sans relevé, l'ami attend. Tout en temps réel.
+  `EXTRAPOLE_MAX` (500 ms : une page qui cale perd autant de relevés) sans relevé, l'ami attend. Tout en temps réel.
 - **UN RELEVÉ EN RETARD SE RANGE À SA PLACE.** Par le nuage, deux écritures
   parties ensemble se publient dans le désordre (75 envoyés, une quarantaine
   reçus dans l'ordre en neuf secondes, mesuré) : on l'insère, on ne le jette
