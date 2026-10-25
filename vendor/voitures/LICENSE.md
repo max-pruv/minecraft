@@ -63,6 +63,36 @@ longueur 4,739 m contre 4,947 m réels, portières non séparées — d'où
 Le visualiseur three.js du paquet n'est pas repris. Les rendus et le rapport de
 fabrication sont dans `docs/revuelto/`. Même usage privé et familial.
 
+**La SF90 XX Stradale (octobre 2026)** — `ferrari-sf90-xx.glb`, fournie par
+Max, remplace à l'affichage `ferrari-sf90.glb` (gardée sur le disque ;
+l'identifiant `fichier` des sauvegardes ne change pas, le champ `asset` de
+FLOTTE choisit le fichier chargé). C'est l'adaptation d'un modèle publié sous
+licence **Creative Commons Attribution 4.0** (CC-BY-4.0), qui exige le crédit
+ci-dessous, recopié tel quel de son `license.txt` (copie dans `docs/sf90-xx/`) :
+
+> This work is based on "2023 Ferrari SF90 XX Stradale"
+> (https://sketchfab.com/3d-models/2023-ferrari-sf90-xx-stradale-2c80c667232544649328cf3589921bcd)
+> by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-4.0
+> (http://creativecommons.org/licenses/by/4.0/)
+
+Modifications apportées à l'œuvre d'origine, toutes par
+`scripts/ferrari-sf90-xx.py` (reproductible, empreintes du paquet dans
+`docs/sf90-xx/SHA256.json`) :
+- transformations cuites, puis posées au manifeste (mètres, +Z vers le nez,
+  roues à y = 0) ; échelle uniforme sur l'empattement réel (2,650 m) ;
+- maillages fusionnés par matériau (1 097 → 32), sommets identiques fusionnés,
+  sommets inutilisés retirés ; aucune simplification : 262 651 triangles ;
+- pièces de roue réparties en quatre pivots `Wheel_FL/FR/RL/RR`, étriers fixes ;
+  volant (`Interior_SteeringWheel`) découpé dans l'habitacle ;
+- matériaux renommés et simplifiés : couleurs de sommets, tangentes et second
+  jeu d'UV retirés, spéculaire et transmission retirés (vitrages en
+  transparence simple), cartes métal/rugosité remplacées par leur moyenne,
+  vernis sur la laque ; 29 images d'origine recopiées octet pour octet.
+
+Le modèle n'est affilié ni à Ferrari ni à Sketchfab ; marques et écussons
+restent ceux du modèle d'origine. Portières non séparées — d'où
+`portiere: false`. Même usage privé et familial.
+
 Caractéristiques communes (héritées du manifeste, le code s'y fie) :
 - unités en mètres, +Y vers le haut, **+Z vers le nez**, origine au centre
   du corps, roues posées à y = 0 — d'où la rotation π unique au chargement ;

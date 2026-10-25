@@ -49,6 +49,7 @@ export const SIGNATURES_GLB = [
   'Physical+DS',              // ses feux arrière (intensité émissive)
   'Physical+map+DS',          // la lampe des phares, texturée et émissive
   'Standard+emap+DS',         // le combiné d'instruments rétroéclairé
+  'Standard+map+nrm+DS',      // SF90 XX (Ddiaz Design) : carbone, moteur, grilles, jantes, habitacle
 ];
 
 // ET CE QUE LE JEU FABRIQUE LUI-MÊME, mesuré à l'arrivée à Paris une fois les

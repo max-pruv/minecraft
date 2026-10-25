@@ -153,3 +153,18 @@ livraison ne change que le modèle.
 | # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
 | --- | --- | --- | --- | --- | --- | --- |
 | 27 | basse | Revuelto adaptée (v546), au volant et de trois quarts | [v546](revue-ecran/v546-revuelto/planche-iphone-troisquarts-jour.jpg) | Le modèle est un **travail en cours** de l'aveu du paquet : jointures de panneaux et habitacle à reprendre, 4,74 m de long contre 4,95 m réels, portières non séparées. À hauteur d'enfant et à cinq blocs, rien de cela ne se lit ; la voiture est nettement plus fidèle que l'ancienne. Ses phares sont éteints la nuit, comme toute la flotte garée (n° 8). | Juger sur la tablette ; la reprise des panneaux appartient au paquet de Max, pas au jeu. | `vendor/voitures/lamborghini-revuelto-wip.glb` |
+
+## Le relevé de la v553 (la SF90 XX Stradale), 25 octobre 2026
+
+Planches « ancienne | neuve » dans `docs/revue-ecran/v553-sf90/` :
+`volant`, `troisquarts` et `rue` (une SF90 de la circulation, cadrée de
+côté), iPhone et iPad, jour et nuit, rejouables par
+`tests/sonde-captures-sf90.cjs` (le bras « ancienne » se choisit par
+`?asset=0`). Rien ne bouge dans l'interface : la livraison ne change que le
+modèle, et il se lit tout de suite comme une Ferrari — aileron, prises d'air,
+jantes, vitrage, plaque « SF90XX ».
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 28 | basse | SF90 XX (v553), garée de trois quarts, de nuit | [v553](revue-ecran/v553-sf90/planche-iphone-troisquarts-nuit.jpg) | Phares éteints la nuit, comme toute la flotte garée (n° 8). Repeinte dans la rue, la voiture garde sa **livrée rouge** (prises du capot, ouïes arrière) : sur une laque sarcelle, ces accents se lisent comme des pièces d'une autre voiture. | Garder ; ou repeindre la livrée (`Paint_Secondary`) d'un ton accordé à la laque tirée — décision de Max. | `src/vehicules.js` (`repeindre`) |
+| 29 | basse | rue de Paris, de nuit, caméra de la sonde à hauteur de toit | [v553](revue-ecran/v553-sf90/planche-ipad-rue-nuit.jpg) | Une **feuille d'automne** passe à quelques centimètres de l'objectif et couvre un quart de l'écran. Ce n'est pas la voiture : c'est l'essaim de saison (v531), que la caméra de cadrage traverse. | Ne pas dessiner une particule à moins d'un bloc de la caméra. | `src/saisons.js` |

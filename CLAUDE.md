@@ -873,6 +873,37 @@ déjà conducteur ». Quatre règles.
   est posé à la main (`update` suspendu), sinon sa physique le ramène au sol
   pendant la mesure.
 
+## La SF90 XX Stradale (v553) — un paquet Sketchfab passe par un script, et ses matériaux par la table des programmes
+
+Max a fourni le paquet glTF de Ddiaz Design (CC-BY-4.0). Trois règles.
+
+- **UN PAQUET QUI NE TIENT PAS LE MANIFESTE SE CUIT HORS LIGNE, PAR UN SCRIPT
+  REPRODUCTIBLE.** 1 097 maillages (autant d'appels de dessin) et les 648
+  pièces des QUATRE roues sous un seul nœud nommé « Front_L » :
+  `normaliserVoiture` ne peut pas en faire quatre roues, elle lit les noms.
+  `scripts/ferrari-sf90-xx.py` cuit les transformations, pose au manifeste
+  (échelle sur l'empattement réel, nez vers +Z déduit du moteur central
+  arrière), répartit les pièces de roue par QUADRANT, découpe le volant de
+  l'habitacle par composantes connexes dans une boîte mesurée, fusionne par
+  matériau et compacte sans perte. Il refait le fichier au bit près ; les
+  empreintes du paquet sont dans `docs/sf90-xx/`. Le prochain paquet du même
+  genre se cuit ainsi, jamais à la main dans un éditeur.
+- **UN MATÉRIAU DÉPOSÉ RETOMBE SUR UN PROGRAMME DÉJÀ CHAUFFÉ, OU IL SE
+  DÉCLARE.** Ce qui crée une signature (v246) sans rien montrer part au
+  script : couleurs de sommets (le visualiseur de Sketchfab ne les montre pas
+  par défaut, leur alpha valait zéro), tangentes, second jeu d'UV, spéculaire
+  constant. La transmission (une passe de rendu de plus par image) devient une
+  transparence simple ; une carte métal/rugosité, sa moyenne. Il ne reste
+  qu'UNE signature neuve (`Standard+map+nrm+DS`), déclarée dans
+  `signatures.js`. On compte les signatures du fichier de sortie
+  (`signaturesDuGlb`) avant de le livrer.
+- **UN BRAS « AVANT » SE CHOISIT DANS L'ADRESSE.** Retirer `asset` de FLOTTE
+  dans une page ouverte ne change rien si le prototype est déjà chargé : la
+  première planche de la sonde montrait deux XX. `?asset=0` choisit le fichier
+  d'avant dès le démarrage (`sonde-captures-sf90.cjs`, et désormais celle de
+  la Revuelto). Le prix se déclare : 262 651 triangles, 8,7 Mo, ≈ 6,3 Mo
+  transférés, portières non séparées (`portiere: false`).
+
 ## La Revuelto adaptée (v546) — un identifiant de flotte ne change pas, son fichier oui
 
 Max a fourni une adaptation CC-BY-4.0 (BRO) de la Revuelto. Trois règles.

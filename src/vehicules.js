@@ -455,7 +455,12 @@ export const FLOTTE = [
   { fichier: 'ferrari-daytona-sp3.glb', classe: 'sportive', nom: 'Ferrari Daytona SP3' },
   { fichier: 'ferrari-f40.glb', classe: 'sportive', nom: 'Ferrari F40' },
   { fichier: 'ferrari-laferrari.glb', classe: 'hypercar', nom: 'Ferrari LaFerrari' },
-  { fichier: 'ferrari-sf90.glb', classe: 'sportive', nom: 'Ferrari SF90 Stradale' },
+  // La SF90 XX Stradale de Ddiaz Design (CC-BY-4.0, vendor/voitures/LICENSE.md),
+  // posée au manifeste par scripts/ferrari-sf90-xx.py, remplace à l'affichage
+  // l'ancienne SF90 : même identifiant pour les garages et le réseau, URL neuve
+  // (`asset`) pour le cache. Portières non séparées dans le modèle : `portiere:
+  // false` (v366), comme la Revuelto.
+  { fichier: 'ferrari-sf90.glb', asset: 'ferrari-sf90-xx.glb', classe: 'sportive', nom: 'Ferrari SF90 XX Stradale', portiere: false },
   { fichier: 'ford-gt.glb', classe: 'sportive', nom: 'Ford GT' },
   { fichier: 'koenigsegg-cc850.glb', classe: 'hypercar', nom: 'Koenigsegg CC850' },
   { fichier: 'koenigsegg-gemera.glb', classe: 'hypercar', nom: 'Koenigsegg Gemera' },

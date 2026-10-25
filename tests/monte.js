@@ -586,12 +586,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, yaw: g.player.yaw, flying: g.player.flying };
     });
     await dormir(900);
-    const revuelto = await tab.evaluate(async () => {
+    const adaptee = (spec) => tab.evaluate(async (spec) => {
       const g = window.__game, THREE = await import('three'), V = await import('./src/vehicules.js');
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
-      const entree = V.FLOTTE.find((e) => e.fichier === 'lamborghini-revuelto.glb');
+      const entree = V.FLOTTE.find((e) => e.fichier === spec.fichier);
       const proto = entree ? await V.chargerVoitureFlotte(entree) : null;
-      if (!proto) return { err: 'Revuelto non chargée' };
+      if (!proto) return { err: spec.fichier + ' non chargée' };
       // une dalle de pierre à soi, loin de tout (le couloir du témoin d'avant est en mer, v380)
       const { BLOCK } = await import('./src/blocks.js');
       const x0 = 43000, z0 = 43000; let y0 = 0;
@@ -615,7 +615,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
       g.animalManager.animals.length = 0;
       const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
-      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 3, g.player.pos.z + fz * 3, false, { flotte: 'lamborghini-revuelto.glb' });
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 3, g.player.pos.z + fz * 3, false, { flotte: spec.fichier });
       const t0 = performance.now();
       while (performance.now() - t0 < 30000 && !a.mesh.userData.roues) await dodo(300);
       for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(700); }
@@ -633,9 +633,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           regarde: +visage.dot(route).toFixed(2), crane: +crane.toFixed(2), toit: toit === null ? null : +toit.toFixed(2) };
       }
       for (let e = 0; e < 6 && g.fun.montureConduite && g.fun.montureConduite(); e++) { document.getElementById('ride-btn').click(); await dodo(500); }
-      return { asset: entree.asset || null, laque: mats.has('Paint_Arancio'), roues, volant, images: images.size, portiere: entree.portiere,
+      return { asset: entree.asset || null, laque: mats.has(spec.laque), roues, volant, images: images.size, portiere: entree.portiere,
         longueur: +(b.max.z - b.min.z).toFixed(2), sol: +b.min.y.toFixed(3), forme: proto.userData.forme, rayon: +(proto.userData.rayonRoue || 0).toFixed(3), siege };
-    });
+    }, spec);
+    const revuelto = await adaptee({ fichier: 'lamborghini-revuelto.glb', laque: 'Paint_Arancio' });
+    // ET LA SF90 XX STRADALE (v553), posée au manifeste par
+    // scripts/ferrari-sf90-xx.py : mêmes contrats, sa laque `Paint_Primary_XX`
+    // (l'ancienne SF90 n'a que `Paint_Primary`), ses vingt-neuf images, 4,84 m.
+    const sf90 = await adaptee({ fichier: 'ferrari-sf90.glb', laque: 'Paint_Primary_XX' });
     await tab.evaluate((av) => {
       const g = window.__game;
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
@@ -651,6 +656,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && !!revuelto.siege && revuelto.siege.dansVoiture && revuelto.siege.dansLeCadre && revuelto.siege.regarde > 0.9
         && (revuelto.siege.toit === null || revuelto.siege.crane < revuelto.siege.toit),
       JSON.stringify(revuelto));
+    verifier('la SF90 XX Stradale se charge par son asset, au sol, avec ses roues, son volant, ses images, sans portière, et l\'enfant y est assis sous le pavillon',
+      !sf90.err && sf90.asset === 'ferrari-sf90-xx.glb' && sf90.laque && sf90.roues === 4 && sf90.volant
+        && sf90.images >= 20 && sf90.portiere === false && sf90.longueur > 4.7 && sf90.longueur < 5.0
+        && Math.abs(sf90.sol) < 0.02 && sf90.rayon > 0.30 && sf90.rayon < 0.40
+        && !!sf90.siege && sf90.siege.dansVoiture && sf90.siege.dansLeCadre && sf90.siege.regarde > 0.9
+        && (sf90.siege.toit === null || sf90.siege.crane < sf90.siege.toit),
+      JSON.stringify(sf90));
 
     // --- ce qui ne se monte pas ---------------------------------------------
     await poserDevant(tab, 'chicken');
