@@ -415,7 +415,12 @@ const MM_ECART = 2.2;
 // metromonde.js, la barre de partage des contours et le mobilier des entrées
 // dans villesmonde.js), la branche rend 4cf5d456…, la constante de la v531,
 // au bit près — rien d'autre n'a bougé.
-const EMPREINTE_MORCEAUX_V357 = 'b44dcc329d64fb1c5e7930d3b3d361f19e0a361a656dfbde233b368430821088';
+// v554 : les bouches rendues de la ligne 1 (Hôtel de Ville au sud, Saint-Paul
+// au nord, Reuilly–Diderot à trois blocs de la case du nom). Désarmées (ni
+// libération de la station qui perce une plaque, ni dernier recours, ni filtre
+// de la case du nom, dans `bouchesLigne1` et `choisirBouches` de ville.js), la
+// branche rend b44dcc32…, la constante de la v553, au bit près.
+const EMPREINTE_MORCEAUX_V357 = '9fc2d3215a80ac3bd5e2648daf79265b4894187a0bf8966f430a74705e89b8eb';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -3166,9 +3171,23 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const t0 = Date.now();
     const r = await mesurerLigne1();
     const ratees = (r.descentes || []).filter((d) => !d.arrive).map((d) => d.nom);
-    verifier('la ligne 1 de Paris : seize stations, une bouche par station sauf Nation, et de chaque bouche on descend au quai',
-      !r.absente && r.stations === 16 && r.bouches >= 15 && ratees.length === 0,
+    // Seize sur seize depuis la v554 : Hôtel de Ville, Saint-Paul et la
+    // Bastille se disputaient le seul trottoir au sud de la ligne, et Hôtel de
+    // Ville n'avait plus de bouche (15/16 sur la v553). Rouge sur l'ancien code.
+    verifier('la ligne 1 de Paris : seize stations, une bouche par station, et de chaque bouche on descend au quai',
+      !r.absente && r.stations === 16 && r.bouches === 16 && ratees.length === 0,
       r.absente ? 'aucune ligne 1 (ville.js ne la publie pas)' : `${r.bouches}/${r.stations} bouches, descentes ratées : ${ratees.join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
+    // ET CHAQUE STATION GARDE SES QUATRE PLAQUES (v554) : le couloir d'une
+    // bouche rechoisie ne perce plus le piédroit à la case du nom. Rouge sur la
+    // v553 : Reuilly–Diderot en avait trois (63 plaques sur 64).
+    {
+      const V = await import('../src/ville.js');
+      const pl = V.plaquesParis();
+      const manque = pl.filter((x) => x.plaques.length < 4).map((x) => `${x.nom} ${x.plaques.length}`);
+      verifier('chaque station de la ligne 1 porte ses quatre plaques de nom',
+        pl.length === 16 && manque.length === 0,
+        `${pl.reduce((n, x) => n + x.plaques.length, 0)} plaques ; à moins de quatre : ${manque.join(', ') || 'aucune'}`);
+    }
     verifier('rien ne barre les rames, la Seine reste pleine, et aucune bouche ne mure une rue ni un circuit',
       !r.absente && r.lus > 1000 && r.gabarit === 0 && r.poches === 0 && r.surChaussee === 0 && r.mure === 0 && r.circuits > 0,
       r.absente ? 'aucune ligne 1' : JSON.stringify({ gabarit: r.gabarit, lus: r.lus, poches: r.poches, surChaussee: r.surChaussee, mure: r.mure, circuits: r.circuits }));
@@ -3190,8 +3209,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('la ligne A de Rome : douze stations, une bouche par station, et de chaque bouche on descend au quai',
       // Lepanto n'a plus de bouche depuis les rues à la GTA : son trottoir s'est
       // éloigné de la ligne, et aucune des 22 076 places essayées jusqu'à
-      // quarante blocs ne le tient (refus « rue », mesuré) — dette déclarée
-      // dans TASKS.md. Toute autre station sans bouche rougit.
+      // quarante blocs ne le tient (refus « rue », mesuré). Remesuré en v554 au
+      // quart de bloc, pied jusqu'au bout du quai, coins et feux permis : 666
+      // trémies tiennent sur le trottoir, et TOUTES ont leur escalier sous le
+      // Tibre (jusqu'à la marche 15) — une décision de sol, déclarée dans
+      // TASKS.md. Toute autre station sans bouche rougit.
       !!L && L.stations === 12 && L.bouches >= 11 && L.sansBouche.every((n) => n === 'Lepanto') && ratees.length === 0,
       !L ? 'aucune ligne A (metromonde.js absent)' : `${L.bouches}/${L.stations} bouches (sans : ${L.sansBouche.join(', ') || 'aucune'}), descentes ratées : ${ratees.join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
     verifier('rien ne barre les rames de Rome, le Tibre reste plein, et la bouche ne touche que le trottoir',
@@ -3226,12 +3248,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const r = await mesurer(require('path').resolve(__dirname, '..'));
     const st = r.stations;
     const rates = st.filter((x) => !(x.joueur && x.joueur.arrive && x.retour && x.retour.arrive));
-    verifier('de la rue au quai et du quai à la rue, le vrai joueur passe dans les trente-cinq stations',
-      st.length === 35 && rates.length === 0,
+    // trente-six depuis la v554 : Hôtel de Ville a retrouvé sa bouche
+    verifier('de la rue au quai et du quai à la rue, le vrai joueur passe dans les trente-six stations',
+      st.length === 36 && rates.length === 0,
       `${st.length - rates.length}/${st.length} stations ; ratées : ${rates.map((x) => `${x.ville} ${x.nom}${x.arrive ? (x.joueur && x.joueur.arrive ? ' (remontée ' + JSON.stringify(x.retour.bute) + ')' : ' (descente ' + JSON.stringify(x.joueur.bute) + ')') : ' (pas de chemin)'}`).join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
     const bas = st.filter((x) => x.arrive && (x.hautMin < 3 || x.sous4 > 8 || x.sautsBas > 0 || x.sautsRetour > 2));
     verifier('et la tête passe : jamais moins de trois blocs d\'air, quatre presque partout, aucun élan qui cogne en descendant',
-      st.length === 35 && bas.length === 0 && rates.length === 0,
+      st.length === 36 && bas.length === 0 && rates.length === 0,
       `${bas.map((x) => `${x.nom} : plafond ${x.hautMin}, ${x.sous4} cases sous 4, élans cognés ${x.sautsBas}/${x.sautsRetour}`).join(' ; ') || 'partout'} (max cases sous 4 : ${Math.max(...st.filter((x) => x.arrive).map((x) => x.sous4))})`);
     verifier('le passage des rames reste libre sur les deux réseaux',
       r.lus > 10000 && r.gabarit === 0, `${r.gabarit} pleins sur ${r.lus} points`);

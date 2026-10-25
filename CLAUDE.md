@@ -1279,6 +1279,35 @@ Max : « on ne peut même pas marcher dedans ». Sept règles.
   près. Quand un module gagne un calcul à son chargement, on chronomètre
   `import('./src/world.js')` des deux côtés.
 
+## Les bouches rendues (v554) — un dernier recours s'ajoute après les places ordinaires
+
+Hôtel de Ville sans bouche depuis les rues à la GTA, Reuilly–Diderot sans une
+de ses plaques. Quatre règles.
+
+- **TROIS STATIONS QUI SE DISPUTENT UN TROTTOIR SE MESURENT PAIRE PAR PAIRE.**
+  Chaque place d'Hôtel de Ville recouvrait la seule place de Saint-Paul qui
+  laisse la Bastille, et chaque place de la Bastille recouvrait les autres
+  places de Saint-Paul : aucune libération de voisin n'y peut rien. Une
+  empreinte plus juste et une libération en chaîne ont été écrites, mesurées
+  et retirées (aucune combinaison de plus) : non-résultats.
+- **LE COULOIR PEUT PASSER SOUS UN BASSIN, L'ESCALIER JAMAIS.** Le couloir est
+  au niveau du quai (plafond à 24, lit à 27) : la règle même de la voûte des
+  stations (v473). C'est un DERNIER RECOURS (`placesDe(…, recours)`), servi
+  seulement à la station qui n'a rien, et ses places s'AJOUTENT après les
+  ordinaires : une bouche gardée reste trouvée à son rang, et ni les autres
+  stations, ni le Paris de la v531, ni les bouches de la v473 ne bougent.
+  L'escalier monte : sous l'eau il ouvrirait le fleuve (Lepanto, Rome : 666
+  trémies sur trottoir, toutes avec l'escalier sous le Tibre — déclaré).
+- **UNE BOUCHE RECHOISIE N'ENTRE PAS PAR LA CASE DU NOM** (`perceLaPlaque`) :
+  libérée, elle évite les cases 8 et 9 de chaque douzaine, à trois blocs (à un
+  et demi, la plaque rendue flottait au bord du couloir) ; gardée, elle reste.
+  Un témoin compte quatre plaques par station.
+- **DEUX STATIONS VOISINES SE CHEVAUCHENT, ET `SOUS_TERRE` N'EN GARDE
+  QU'UNE PAR COLONNE.** Hôtel de Ville et Châtelet sont à dix-neuf blocs pour
+  des quais de vingt-cinq : le premier jet du recours perçait le piédroit de
+  Châtelet (une plaque sans appui, vue par le portail). Le recours se juge
+  contre le rectangle de chaque autre station (`horsDesAutresStations`).
+
 ## Montmartre et les jardins (v512) — une cote se lit sous la voiture, et une voie traverse un jardin déclaré
 
 Trois règles.

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 555,
+    titre: 'Le métro Hôtel de Ville rouvre',
+    puces: [
+      'Une nouvelle entrée de métro',
+      'Le couloir passe sous l’eau',
+      'Chaque station garde son nom',
+    ],
+  },
+  {
     v: 554,
     titre: 'Des arbres entiers au bord du monde',
     puces: [

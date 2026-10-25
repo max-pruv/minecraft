@@ -253,7 +253,7 @@ async function mesurer(racine, { joueur = true, seul = null, garderPts = false }
         for (let e = 0.05; e <= 1.2; e += 0.05) if (plein(x - p.nx * e, y, z - p.nz * e)) { adosse++; break; }
       }
       if (dans) noms.dans++;
-      if (adosse < 0.75 * n) noms.flottants++;   // un mur en biais fait des marches : le bout du plan peut s'en écarter
+      if (adosse < 0.75 * n) { noms.flottants++; (noms.quiFlotte ||= []).push(`${st.nom} ${adosse}/${n}`); }   // un mur en biais fait des marches : le bout du plan peut s'en écarter
     }
   }
   return { stations: out, gabarit, lus, noms };

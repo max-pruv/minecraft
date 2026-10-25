@@ -521,12 +521,17 @@ const pasUneRue = (x, z) => {
   const s = solParisLu(xi, zi);
   return (s === CITY_BLOCK.SIDEWALK || s === BLOCK.GRASS || s === BLOCK.LEAVES) && !lotParisLu(xi, zi);
 };
-export function emprisesEscalier(q, b) {
+export function emprisesEscalier(q, b, couloir = true) {
   // tout le chemin, du couloir au palier : jamais sous le fleuve
   const out = [];
   for (let m = -1; m <= LONG_ESC + 2; m++) {
     for (let t = -2; t <= 2; t++) out.push(pointEsc(q, b, m, t));
   }
+  if (couloir) out.push(...emprisesCouloir(q, b));
+  return out;
+}
+export function emprisesCouloir(q, b) {
+  const out = [];
   for (let t = LIGNE1.demiVoute; t <= b.o; t++) for (const d of [-2, 0, 2]) out.push(vers(q, b.a + d, t * b.cote));
   return out;
 }
@@ -561,7 +566,26 @@ export const empreinteEsc = (q, b) => {
   for (let m = -2; m <= LONG_ESC + 3; m++) for (let t = -3; t <= 3; t++) out.add(cleCol(...pointEsc(q, b, m, t)));
   return out;
 };
-export function placesDe(q, k, evite = null) {
+// Deux stations voisines se chevauchent (Hôtel de Ville et Châtelet sont à
+// dix-neuf blocs, leurs quais en font vingt-cinq) : `SOUS_TERRE` ne garde
+// qu'une station par colonne, et le couloir d'Hôtel de Ville, cherché en
+// dernier recours, perçait le piédroit de Châtelet à côté de son nom (le
+// portail l'a dit : une plaque sans appui). Le recours se juge donc contre le
+// rectangle de CHAQUE autre station.
+function horsDesAutresStations(q, k, b) {
+  const pts = [...emprisesCouloir(q, b), ...emprisesEscalier(q, b, false)];
+  for (let j = 0; j < QUAIS_LIGNE1.length; j++) {
+    if (j === k) continue;
+    const s = QUAIS_LIGNE1[j];
+    if (Math.hypot(s.x - q.x, s.z - q.z) > 80) continue;
+    for (const [x, z] of pts) {
+      const ex = x - s.x, ez = z - s.z;
+      if (Math.abs(ex * s.dx + ez * s.dz) <= LIGNE1.demiStation + 2 && Math.abs(-ex * s.dz + ez * s.dx) <= LIGNE1.demiVoute + 2) return false;
+    }
+  }
+  return true;
+}
+export function placesDe(q, k, evite = null, recours = false) {
   const libre = (b) => {
     for (let m = 1; m <= LONG_ESC + 2; m++) {
       for (let t = -3; t <= 3; t++) {
@@ -580,12 +604,18 @@ export function placesDe(q, k, evite = null) {
     }
     return true;
   };
-  const tient = (b) => emprisesTremie(q, b).every(([x, z]) => praticable(x, z) && !lotParisLu(Math.floor(x), Math.floor(z))
+  const tient = (b, recours) => emprisesTremie(q, b).every(([x, z]) => praticable(x, z) && !lotParisLu(Math.floor(x), Math.floor(z))
     && !(evite && evite(x, z)))
-    && emprisesEscalier(q, b).every(pasDEau) && libre(b);
+    && (recours
+      // LE COULOIR PASSE SOUS LE BASSIN, PAS L'ESCALIER (v554, dernier
+      // recours). Le couloir est au niveau du quai, son plafond à six blocs
+      // au-dessus de la voie (24), le lit à 27 : trois blocs de terre entre
+      // les deux, la règle même de la voûte des stations (v473). L'escalier,
+      // lui, monte : il ne passe jamais sous une colonne d'eau.
+      ? emprisesEscalier(q, b, false).every(pasDEau) && horsDesAutresStations(q, k, b)
+      : emprisesEscalier(q, b).every(pasDEau)) && libre(b);
   const As = [];
   for (let a = 2; a <= LIGNE1.demiStation - 2; a++) As.push(a, -a);
-  const out = [];
   // LES RUES À LA GTA ÉLOIGNENT LE TROTTOIR DE LA LIGNE : un boulevard gagne
   // deux blocs de chaussée de chaque côté, et Gare de Lyon et Reuilly–Diderot
   // n'avaient plus de trottoir à portée (12 bouches sur 16, mesuré). Le Paris
@@ -593,29 +623,39 @@ export function placesDe(q, k, evite = null) {
   // au bloc près (c'est ce qui garde ses bouches identiques).
   const neuf = solParisLu === solParis;
   const loin = neuf ? [29, 30, 31, 32, 33, 34] : [];
-  for (const o of [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 8, ...loin]) {
-    for (const cote of [1, -1]) {
-      for (const a of As) {
-        for (const sg of [-Math.sign(a), Math.sign(a)]) {
-          const b = { a, sg, o, cote };
-          if (tient(b)) out.push(b);
+  const collecte = (rec) => {
+    const out = [];
+    for (const o of [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 8, ...loin]) {
+      for (const cote of [1, -1]) {
+        for (const a of As) {
+          for (const sg of [-Math.sign(a), Math.sign(a)]) {
+            const b = { a, sg, o, cote };
+            if (tient(b, rec)) out.push(b);
+            if (out.length >= 40) return out;
+          }
+        }
+      }
+    }
+    // l'escalier droit vers le trottoir, pour une station sous une place ou dans
+    // un virage de la ligne
+    for (const o of [LIGNE1.demiVoute + 2, 12, 15, 18, ...(neuf ? [21, 24, 27] : [])]) {
+      for (const cote of [1, -1]) {
+        for (const a of [0, ...As]) {
+          const b = { a, sg: 1, o, cote, perp: true };
+          if (tient(b, rec)) out.push(b);
           if (out.length >= 40) return out;
         }
       }
     }
-  }
-  // l'escalier droit vers le trottoir, pour une station sous une place ou dans
-  // un virage de la ligne
-  for (const o of [LIGNE1.demiVoute + 2, 12, 15, 18, ...(neuf ? [21, 24, 27] : [])]) {
-    for (const cote of [1, -1]) {
-      for (const a of [0, ...As]) {
-        const b = { a, sg: 1, o, cote, perp: true };
-        if (tient(b)) out.push(b);
-        if (out.length >= 40) return out;
-      }
-    }
-  }
-  return out;
+    return out;
+  };
+  const out = collecte(false);
+  if (!recours) return out;
+  // le recours s'ajoute APRÈS les places ordinaires : une bouche gardée reste
+  // trouvée à son rang, et le choix ne change que pour qui n'avait rien
+  const cle = (b) => `${b.a}|${b.sg}|${b.o}|${b.cote}|${!!b.perp}`;
+  const deja = new Set(out.map(cle));
+  return out.concat(collecte(true).filter((b) => !deja.has(cle(b))));
 }
 // UNE TRÉMIE NE SORT PAS DANS UN MONUMENT (v529). Les repères se posent APRÈS
 // les colonnes (v205) : la bouche d'Hôtel de Ville de la v473 sortait dans le
@@ -631,9 +671,26 @@ export const dansNotreDame = (x, z) => Math.abs(Math.floor(x) - NOTRE_DAME.x) <=
 // restent à leur place, au bloc près — on n'ouvre pas une trémie neuve et on
 // n'en referme pas une vieille pour en déplacer UNE (v529) ; seules celles qui
 // ne tiennent plus se cherchent, autour des autres.
-function choisirBouches(evite, garder = null, liberes = new Set()) {
+// LE COULOIR D'UNE BOUCHE RECHOISIE NE PERCE PAS LA CASE DU NOM (v554). Le
+// nom de la station est posé sur le piédroit, devant les cases 8 et 9 de
+// chaque douzaine (`plaquesParis`) ; un couloir qui y débouche le perce, et la
+// plaque de ce côté disparaît — Reuilly–Diderot, rechoisie par les rues à la
+// GTA, en avait perdu une. Une bouche qu'on rechoisit l'évite — de trois
+// blocs : le couloir fait trois de large, la plaque jusqu'à 2,6, et à un bloc
+// et demi la plaque rendue flottait sur le bord du couloir (le portail l'a
+// dit). Une bouche gardée reste où elle est.
+const COULOIR_CQ = (b) => (!b.perp && Math.abs(b.a - b.sg * 3.5) <= LIGNE1.demiStation - 2.5 ? -b.sg * 3.5 : 0);
+export const perceLaPlaque = (b, marge = 1.5) => {
+  for (let m = -2; m <= 1; m++) {
+    const le0 = 12 * m + 8.5;
+    if (Math.abs(le0) <= LIGNE1.demiStation - 1 && Math.abs(le0 - (b.a + COULOIR_CQ(b))) < marge) return true;
+  }
+  return false;
+};
+function choisirBouches(evite, garder = null, liberes = new Set(), recours = false) {
   const places = QUAIS_LIGNE1.map((q, k) => {
-    const toutes = placesDe(q, k, evite);
+    let toutes = placesDe(q, k, evite, recours);
+    if (liberes.has(k) && solParisLu === solParis) toutes = toutes.filter((b) => !perceLaPlaque(b, 3));
     const g = garder && !liberes.has(k) && garder[k];
     const meme = g && toutes.find((b) => b.a === g.a && b.sg === g.sg && b.o === g.o && b.cote === g.cote && !!b.perp === !!g.perp);
     return (meme ? [meme] : toutes).map((b) => ({ b, e: empreinteEsc(q, b) }));
@@ -677,7 +734,7 @@ function choisirBouches(evite, garder = null, liberes = new Set()) {
     // trois blocs et demi derrière le pied de l'escalier, pour que les
     // portillons soient ENTRE le quai et la rue. Seulement s'il reste sur le
     // quai — au-delà du bout du quai, il déboucherait dans le mur de fin.
-    const cq = !b.perp && Math.abs(b.a - b.sg * 3.5) <= LIGNE1.demiStation - 2.5 ? -b.sg * 3.5 : 0;
+    const cq = COULOIR_CQ(b);
     choix[k] = { nom: q.nom, q, ...b, tx, tz, cq };
   }
   return choix;
@@ -689,7 +746,7 @@ export const BOUCHES_V473 = choisirBouches(null);
 // Saint-Paul : une station qu'on ne sert plus libère ses voisines dont
 // l'escalier croise toutes ses places, et l'on recherche ces deux-là ensemble.
 function bouchesLigne1(BOUCHES_V473) {
-  let liberes = new Set();
+  let liberes = new Set(BOUCHES_V473.map((b, k) => (b && perceLaPlaque(b) ? k : -1)).filter((k) => k >= 0));
   for (let tour = 0; tour < 3; tour++) {
     const choix = choisirBouches(dansNotreDame, BOUCHES_V473, liberes);
     const perdues = choix.map((b, k) => (!b && BOUCHES_V473[k] ? k : -1)).filter((k) => k >= 0);
@@ -706,7 +763,14 @@ function bouchesLigne1(BOUCHES_V473) {
       });
     }
   }
-  return choisirBouches(dansNotreDame, BOUCHES_V473, liberes);
+  // LE DERNIER RECOURS (v554) : Hôtel de Ville, Saint-Paul et la Bastille se
+  // disputent le seul trottoir au sud de la ligne (chaque place de l'un
+  // recouvre une place de l'autre, mesuré), et le trottoir élargi du nord est
+  // derrière le bassin. Une station encore sans bouche cherche aussi les
+  // places dont seul le COULOIR passe sous l'eau, après les places ordinaires.
+  const choix = choisirBouches(dansNotreDame, BOUCHES_V473, liberes);
+  if (choix.every((b, k) => b || !BOUCHES_V473[k])) return choix;
+  return choisirBouches(dansNotreDame, BOUCHES_V473, liberes, true);
 }
 export const BOUCHES_LIGNE1 = bouchesLigne1(BOUCHES_V473);
 // les mêmes, choisies contre le Paris de la v531
