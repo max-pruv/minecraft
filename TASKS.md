@@ -588,6 +588,12 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   −58,3 sans) — rejouée seule : 3 rouges sur la branche, 5 sur `origin/main`
   (v547), même famille, la radio verte. `reseau.js` : « un hôte sans courtier
   est trouvé » et « il le REJOINT », l'intermittence déclarée plus bas.
+  Au portail suivant (base v557) : `parent.js` « la suite va au bout »
+  (Execution context was destroyed) — rejouée SEULE sur la branche, 28 vertes,
+  zéro rouge ; `maj.js` « titresLongs v554 » : l'entrée v554 d'une autre
+  livraison (« Des arbres entiers au bord du monde », sept mots pour une barre
+  à six), présente telle quelle sur `origin/main` ; `monte.js` « deux voitures
+  ne sont jamais l'une dans l'autre — en taux », déclaré plus bas.
   PREUVE STRUCTURELLE : la livraison ne change que la géométrie du métro dans
   l'emprise de Washington ; aucune de ces suites n'y joue ses témoins.
 - [x] **Les stations en virage (v529) : la voie croise les bouts du quai.**
