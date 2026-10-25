@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 551,
+    titre: 'La minicarte arrive tout de suite',
+    puces: [
+      'La minicarte est là dès Jouer',
+      'Le chrono ne la cache plus',
+    ],
+  },
+  {
     v: 550,
     titre: 'Le taxi a ses phares',
     puces: [

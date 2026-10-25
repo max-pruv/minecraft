@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v551 — La minicarte est là dès la première image
+
+**Pourquoi.** Depuis la v540, la minicarte est toujours affichée — mais elle ne
+s'écrivait qu'à la fin de la PREMIÈRE image de la partie, la plus lente (le
+monde autour se maille). Sur l'iPad du banc, cette image durait jusqu'à 1,7 s :
+le témoin de `carte.js` trouvait la minicarte absente à l'entrée (un rouge
+neuf du portail de la v547, en production). Et tant que la minicarte n'était
+pas posée, le badge du temps libre restait centré sur l'écran — à la taille de
+l'iPhone, il la recouvrait (déclaré en v533).
+
+**Ce que ça change.** En touchant « Jouer », la minicarte et le badge du temps
+libre sont à leur place dans la même image que le jeu : plus d'écran sans
+carte, plus de badge par-dessus elle, sur l'iPad comme sur l'iPhone.
+
+**Ce qui le prouve.** Trois témoins dans `carte.js` : la boucle du jeu
+neutralisée, « Jouer » touché, la minicarte lue dans la même tâche (rouge sur
+la v550 à coup sûr, `display: none`) ; à l'entrée, le badge contourne la
+minicarte, à 430 × 932, 420 × 760 et 820 × 1180, le temps écoulé depuis le jeu
+dans le message ; et le témoin des quatre modes (à pied, construction, volant,
+avion) joué aussi à 420 × 760. La sonde `sonde-minicarte-entree.cjs` : 1
+entrée sans minicarte sur 4 (puis 0 sur 6) sur l'ancien code, 0 sur 6 ici —
+une intermittence, que le témoin provoqué rend certaine.
+
+---
+
 ## v550 — Le taxi jaune a ses phares au nez
 
 **Pourquoi.** De nuit, le taxi jaune de New York portait ses phares — et ses
