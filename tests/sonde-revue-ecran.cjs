@@ -135,6 +135,39 @@ const ETATS = [
     const s = await poserEt(tab, { x: p.x, z: p.z, yaw: Math.PI / 2, pitch: 0.02 });
     return { monde: s + ' s' };
   } },
+  // Les villes à bordures : une rue de Rome le long d'un circuit, depuis la
+  // voie (le mobilier contre les façades), l'hôtel de ville de Los Angeles vu
+  // de la rue, et la place de Shanghai vue du ciel (l'anneau qui la traverse).
+  { nom: 'rome-rue', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const VM = await import('./src/villesmonde.js');
+      const t = VM.tracesCirculation(() => 33).find((q) => q.cle === 'rome');
+      const a = t.pts[0], b = t.pts[1];
+      const L = Math.hypot(b.x - a.x, b.z - a.z), m = Math.min(12, L / 3);
+      return { x: a.x + (b.x - a.x) * m / L, z: a.z + (b.z - a.z) * m / L, yaw: Math.atan2(-(b.x - a.x), -(b.z - a.z)) };
+    });
+    const s = await poserEt(tab, { x: p.x - 0.5, z: p.z - 0.5, yaw: p.yaw, pitch: 0.0 });
+    return { monde: s + ' s' };
+  } },
+  { nom: 'la-mairie', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const VM = await import('./src/villesmonde.js');
+      const f = VM.VILLES_MONDE.find((v) => v.cle === 'losangeles');
+      const [du, dv] = f.local(34.0537, -118.2427);
+      return { x: f.ancre.x + du, z: f.ancre.z + dv };
+    });
+    const s = await poserEt(tab, { x: p.x - 26, z: p.z + 18, yaw: Math.atan2(-26, 18), pitch: 0.42 });
+    return { monde: s + ' s' };
+  } },
+  { nom: 'shanghai-place', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const VM = await import('./src/villesmonde.js');
+      const f = VM.VILLES_MONDE.find((v) => v.cle === 'shanghai');
+      return { x: f.ancre.x, z: f.ancre.z, y: window.__game.world.terrainHeight(Math.floor(f.ancre.x), Math.floor(f.ancre.z)) + 45 };
+    });
+    const s = await poserEt(tab, { x: p.x, y: p.y, z: p.z + 40, yaw: 0, pitch: -0.9, vol: true });
+    return { monde: s + ' s' };
+  } },
   // Un guide au pied de son monument (v538) : Capucine sous la tour Eiffel,
   // vue à cinq blocs, face à elle — le corps, le fanion, ce qui l'entoure.
   { nom: 'guide', async prep(tab) {

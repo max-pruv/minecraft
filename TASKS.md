@@ -1,5 +1,16 @@
 # Ce qui est en cours
 
+## Banc — le portail réparti (claude/portail-rapide, tests seuls) : rouges des portails, mesurés
+
+Trois portails complets sur la branche (le troisième coupé à 46 min de `reseau.js` par un recyclage du conteneur). Aucun rouge n'est causé par la mise à l'écart des voisines :
+
+- `monte.js`, « le personnage de l'enfant est assis dans la voiture » (avatar faux) : preuve STRUCTURELLE — seule la page `tab` est ouverte quand il joue, `aLEcart` n'y réduit rien. Rouge de banc lent, à démonter par une sonde (cadence de la page au moment de la monte).
+- `monte.js`, tranches, passant de Rome, convoi « voisines », feu « piler », rue vide, Moscou ×2 : mêmes rouges avec l'ancien banc (`BANC_DE_COTE=0`, 3 250 s) qu'avec le neuf (3 277 s).
+- `reseau.js`, « hôte sans courtier » et « seule après le départ de l'hôte » : intermittents déclarés, vus 1 fois sur 3 des deux côtés.
+- `maj.js`, loader ×2 (dette déclarée) et `titresLongs: ["v554"]` (un titre du journal du jeu trop long, livré par la v554 : contenu, pas banc).
+- `washington.js` (guides, métro) : verts à la reprise ; une seule page, `aLEcart` sans effet.
+- Le conteneur de cette session tournait ≈ 1,6 fois plus lentement que celui de la v540 (`plafond.js`, sans navigateur, 4 min 36 → 7 min 30) : les durées absolues de ces portails ne se comparent pas à celles de `SUITES`.
+
 ## Les témoins de `monte.js` qui se placent (claude/temoins-monte, tests seuls)
 
 Mesuré : `monte.js` seule sur `origin/main` v547 (copie de travail) et sur la
@@ -137,6 +148,14 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   chargement (≈ 36 maillages), ou réduire ses textures à 512 px (31 → ≈ 8 Mo).
   Proposé à Max, pas fait.
 
+- [ ] **Portail de la v557 (villes à bordures), rouges déclarés.** `washington.js` :
+  « sur le quai, une rame Orange arrive et propose de monter » (pas de bouton à
+  58 s) et la descente qui en dépend, rouges au portail ; rejouée SEULE, verte
+  sur la branche ET sur `origin/main` v553 (`{"t":58.25}` des deux côtés) — un
+  rouge de charge, à rejouer en distribution (v269). `monte.js` : « à Rome
+  aussi, un passant traverse sur le passage peint » et « les passants de la
+  ville d'arrivée se posent quand le monde est là », déjà déclarés, le premier
+  rouge aussi sur `origin/main` rejouée seule.
 - [ ] **Les rues à la GTA (v544), ce qui reste, déclaré.** (1) Les convois des
   villes bâties à la main roulent à `DECALAGE_AVENUE` (1,3 bloc) de l'axe
   (v372) quand le milieu de la voie GTA est à 2,13 : recentrer touche les tours
@@ -144,14 +163,31 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   (voiesdoubles.js), à remesurer ensemble. (2) San Diego retombe à un circuit :
   son contresens roulerait à 34,1 blocs du centre, sur 46 blocs le long de la
   baie (33,6 sur la v531, même géographie). (3) Le grand anneau de Shanghai
-  passe 32 pas sur le quai de granit du Huangpu (0 sur la v531). (4) Québec ne
-  voit que 17 blocs à l'entrée de l'A20 (20 sur la v531). (5) Paris Hôtel de
-  Ville et Rome Lepanto n'ont plus de bouche de métro (le trottoir élargi ne
-  laisse pas de place hors des lots et des voies) ; à Reuilly–Diderot la bouche
-  rechoisie perce le piédroit à la case du nom, la plaque de ce côté est retirée
-  (179 au lieu de 180). (6) Nice Masséna : part de lots 8,6 → 0,9 % (le quartier
+  passe 32 pas sur le granit de la PLACE CENTRALE, autour de la fontaine — pas
+  sur un quai (relevé ASCII des villes à bordures). C'est l'anneau d'arrivée
+  (u de −64 à 0, son côté est sur l'axe central) : le contour à contresens
+  qui fait le tour de la place par l'est existe (deux îlots), mais l'anneau du
+  nord, contourné à son tour, retombe alors sur la place (32 pas lui aussi) —
+  la dispute de la v432. `contournerEnsemble` ne trouve aucun état sans pas
+  fautif ni partage au-delà de la barre, même à 3 000 essais (meilleur : deux
+  segments fautifs), y compris en permettant d'inverser le sens d'un anneau
+  qui n'a plus que du partage. Sur la v531, la sélection donnait d'autres
+  anneaux. Pistes : un anneau de quartier (`ANNEAUX_EN_PLUS`) qui remplace
+  l'anneau d'arrivée, ou une place plus petite (le sol : décision de Max). (4) Québec ne
+  voit que 17 blocs à l'entrée de l'A20 (20 sur la v531). (5) *(v555 : Hôtel de
+  Ville a retrouvé sa bouche — Saint-Paul passe au nord, couloir sous le
+  bassin, escalier jamais — et Reuilly–Diderot sa plaque.)* **Rome Lepanto reste sans bouche, et c'est une
+  décision de sol pour Max** : remesuré au quart de bloc, pied jusqu'au bout du
+  quai, `o` jusqu'à 40, coins et feux permis, 666 trémies tiennent sur le
+  trottoir et TOUTES ont leur escalier sous le Tibre (jusqu'à la marche 15, le
+  plafond à 31 pour un lit à 26). La bouche de la v531 (19,5/−1/−6,5) a 10
+  colonnes de chaussée sous sa trémie sur 27. Pistes : rendre à Lepanto un bout
+  de trottoir (sol de la ville), ou un mur de quai qui borne l'escalier dans le
+  fleuve (l'eau change). (6) Nice Masséna : part de lots 8,6 → 0,9 % (le quartier
   des places et jardins est traversé par les collectrices) — question pour Max.
-  (7) Los Angeles : l'hôtel de ville à 21 blocs pour une médiane de toits de 22.
+  (7) Fait (villes à bordures) : l'hôtel de ville de Los Angeles a son
+  bâtisseur, à 36 blocs. Il reste à trois blocs de large au pied (la vraie
+  mairie a des ailes) : plus large, il écartait l'anneau d'arrivée de la place.
   (8) Le partage aux coins rentrants d'un contour se mesure maintenant avec la
   voie (`barreContour = PARTAGE_MAX − t.w`) : neuf villes changent un anneau,
   817 → 815. (9) Rouges de portail, double mesure (`monte.js` seule, branche et
@@ -382,9 +418,15 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   bordure. Une voiture de 2,26 centrée sur sa voie garde 2,1 blocs de marge ;
   à un bloc d'écart vers le trottoir, 60 à 100 pièces par kilomètre. Élargir
   (pas de trame, chaussée, recul du mobilier) change le sol sous ce que les
-  enfants ont bâti : décision de Max, non faite. Piste moins chère, à mesurer :
-  reculer le seul mobilier de bordure d'un bloc dans les villes engendrées
-  (`mobilierVillesMonde`), ce qui ne touche que des blocs de décor. (2) Un
+  enfants ont bâti : décision de Max, non faite. La piste moins chère est
+  faite (villes à bordures) : le réverbère et la jardinière reculent d'un bloc
+  dans les villes engendrées (Rome, à un bloc d'écart : 57 → 17 pièces, toutes
+  des feux). Restent au bord, à dessein : LES FEUX (leur axe se lit dans la
+  parité de leur position, v273 — un bloc de côté changerait la file qu'ils
+  arrêtent ; les bouches de métro se choisissent contre eux) et LES BANCS (un
+  bloc solide : le déplacer change la forme sous ce qu'un enfant a bâti,
+  v457). Les auvents perdent 13 à 18 % de leurs colonnes au profit des
+  réverbères. Les villes bâties à la main ne changent pas. (2) Un
   réverbère, un feu ou une jardinière qu'un ENFANT a posés ne se cassent pas
   (restent des obstacles) : à confirmer par Max. Dettes : Manhattan garde ses
   obstacles (mobilier instancié par lots, rien à coucher seul) ; la casse
@@ -478,8 +520,18 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   - [ ] **la séquence de l'escalier chez l'ami** n'a pas de témoin au portail
     (le banc saute les séquences) : `EMBARQ=1 node tests/sonde-passager-avion.cjs`
     la rejoue.
-- [ ] **Les autres joueurs bougent par saccades, surtout en voiture et en avion
-  (demande de Max, 20 octobre 2026).** « Tu le vois bouger de manière saccadée,
+- [x] **Les autres joueurs bougent par saccades — fait (amis-fluides, v556).**
+  Mesuré, puis remédié par (1)-(3) : `ts` et la vitesse dans `pos`,
+  `src/fluidite.js` rejoue l'ami entre deux relevés. Ce qui reste, déclaré :
+  la fluidité RELAYÉE ne se mesure pas au banc (trois pages sur quatre cœurs :
+  l'hôte et l'observatrice calent des secondes, et sur `origin/main` même
+  l'ami relayé ne bougeait pas pendant la fenêtre) — son témoin juge le CHAMP
+  (`ts` à travers `rpos`) et publie la fluidité dans son message ; (4), la
+  cadence d'envoi plus serrée, n'est pas demandée par la mesure (en direct
+  0,98 des images à la vraie vitesse avec 120 ms) ; la mesure sur la tablette
+  reste à faire : `window.__game.remotePlayers` porte `suivi.retard` (ms) et
+  `suivi.recus`, à lire en partie à deux. L'ancienne entrée, pour mémoire :
+  (demande de Max, 20 octobre 2026). « Tu le vois bouger de manière saccadée,
   toutes les secondes il a avancé… c'est pas très real time. » Ce qui est dans
   le code, pas encore mesuré : `startPosLoop` (net.js:1765) envoie la position
   toutes les 120 ms, sans vitesse ; `updateRemotePlayers` (main.js:4881) court
@@ -528,24 +580,42 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   passage sur deux. `degats.js` « percuter une voiture de la rue » : rouge sur
   `origin/main`, déjà déclaré. `reglages.js` « un choix fait sur une
   tablette » : même rouge des deux côtés, déjà déclaré.
-- [ ] **Les stations en virage (v529) : la voie croise les bouts du quai.**
-  À Washington, la trace d'une ligne est décalée de ±4 en suivant SON cap à
-  chaque point ; dans une station posée sur un virage (Smithsonian, McPherson
-  Square, Foggy Bottom, Arlington Cemetery, Metro Center, L'Enfant Plaza,
-  Gallery Place…), la voie converge vers l'axe et passe à 0,1–0,7 bloc de
-  l'axe du quai central vers les bouts (|le| 6 à 10, mesuré). Le gabarit,
-  creusé en dernier, ouvre alors le quai à ces bouts : la rame roule sur le
-  bord du quai, et il n'y a pas de place pour un pylône (cinq stations sans
-  pylône, leur nom n'est que sur le mur d'en face). Même chose, en plus petit,
-  au bout du quai de la Bastille à Paris. Remède : redresser la trace sur
-  ±DEMI_STATION autour de chaque arrêt — cela change les tunnels, la durée des
-  tours (l'Orange et l'Argent ont des tours de même durée, v468) et les portes
-  de la rame (v489) : une livraison à elle, à mesurer avant.
-- [ ] **Quelques cases à trois blocs d’air restent (v529)** : en haut de
-  chaque escalier, sous le bloc de la rue (on ne creuse jamais dans la rue),
-  et au-dessus des portillons. La sonde les compte (1 à 6 par station) ; le
-  vrai joueur passe aux deux sens. `DATE_STATIONS` (world.js) se relit à la
-  fusion.
+- [ ] **Rouges du portail de la v558 (les voies droites du métro de
+  Washington) : aucun de la livraison.** Quinze suites vertes (dont
+  `washington.js`, `plafond.js`, `metro.js`). `monte.js` : la rue de Rome et
+  de Kyoto (flâneur, passant au feu, passage peint), la rue vide, « Atterrissage
+  vers <ville> », et une fois « une station s'entend » (radio, −51,6 dB pour
+  −58,3 sans) — rejouée seule : 3 rouges sur la branche, 5 sur `origin/main`
+  (v547), même famille, la radio verte. `reseau.js` : « un hôte sans courtier
+  est trouvé » et « il le REJOINT », l'intermittence déclarée plus bas.
+  Au portail suivant (base v557) : `parent.js` « la suite va au bout »
+  (Execution context was destroyed) — rejouée SEULE sur la branche, 28 vertes,
+  zéro rouge ; `maj.js` « titresLongs v554 » : l'entrée v554 d'une autre
+  livraison (« Des arbres entiers au bord du monde », sept mots pour une barre
+  à six), présente telle quelle sur `origin/main` ; `monte.js` « deux voitures
+  ne sont jamais l'une dans l'autre — en taux », déclaré plus bas.
+  PREUVE STRUCTURELLE : la livraison ne change que la géométrie du métro dans
+  l'emprise de Washington ; aucune de ces suites n'y joue ses témoins.
+- [x] **Les stations en virage (v529) : la voie croise les bouts du quai.**
+  Fait en v558 : la trace suit l'axe du quai autour de chaque arrêt, puis une
+  courbe d'Hermite au rayon ≥ 4,5 (2 590 points de voie dans les quais → 478,
+  cinq stations sans pylône → zéro, 34 rebroussements → zéro). CE QUI RESTE :
+  (1) les demi-tours des terminus (Eastern Market, Pentagon, Union Station,
+  Dupont Circle, Mount Vernon Square, Waterfront) : l'arc du tiroir (`TIROIR`
+  9 < `DEMI_STATION` 12) mord le coin du quai, dix points par terminus —
+  allonger le tiroir sort de l'emprise du métro, à mesurer avant ;
+  (2) Metro Center et McPherson Square, à seize blocs : leurs quais se
+  chevauchent, la voie n'y est droite que sur quelques blocs (~240 points) —
+  une affaire de PLAN ; (3) au bout du quai de la Bastille à Paris, même
+  défaut en plus petit (`ville.js`, zone d'une autre session).
+- [ ] **Quelques cases à trois blocs d'air restent (v529, remesuré en v558)** :
+  celles « au-dessus des portillons » étaient la sonde qui montait SUR le
+  portillon (corrigé : un portillon n'est pas un sol, le passage voisin a
+  quatre blocs). Restent une ou deux cases par station de Washington, toutes
+  en haut de l'escalier de la rue, sous le bloc de la rue lui-même (sol − 3) :
+  le remède est d'allonger la trémie d'un bloc, donc de creuser la rue —
+  surface qui bouge, date neuve, décision à prendre. Le vrai joueur passe aux
+  deux sens. `DATE_STATIONS` (world.js) se relit à la fusion.
 - [ ] **Rouges de portail de la v528 (les arbres au loin) : aucun de la
   livraison.** Seul rouge à moi : `parishd.js` lisait « cubes cachés » sur
   `plat` caché — repointé sur `arbresLoin`, vert. Restent `degats.js` (percuter
@@ -1988,6 +2058,11 @@ v522 ne touche pas ; la distribution reste à faire.
   distance d'Alice à Marlon (la rue ne cède qu'aux amis à moins de 90 blocs
   d'elle), pour que le prochain rouge se démonte. Piste : le rattrapage à
   1,3 × de la grille d'une voiture très en retard.
+  Revu au portail de la v556 (amis-fluides) : rouge une fois sur quatre
+  passages de la branche, mais sans la situation — « arrive 0, personne », aucune
+  voiture de la rue venue en cinq essais ; vert sur `origin/main` rejouée seule
+  au même moment. Marlon y est posé à l'arrêt : l'ami rejoué entre deux
+  relevés n'y change rien (sa position dessinée est la même à 0,2 s près).
   Et `monte.js` rejouée SEULE : branche — « se téléporter ne compile plus de
   programmes » rouge (Paris : 3 programmes `physical` neufs) et l'écran figé
   (26,3 %) ; `origin/main` v356 — l'écran figé seul (20,7 %), Paris à zéro. La

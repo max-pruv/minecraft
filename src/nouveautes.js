@@ -6,12 +6,48 @@
 
 export const NOUVEAUTES = [
   {
-    v: 555,
+    v: 559,
     titre: 'Une nouvelle Ferrari SF90 XX',
     puces: [
       'Une vraie SF90 XX Stradale',
       'Avec son volant et son aileron',
       'Modèle de Ddiaz Design, merci',
+    ],
+  },
+  {
+    v: 558,
+    titre: 'Le métro roule droit en station',
+    puces: [
+      'La rame longe le quai sans rouler dessus',
+      'Chaque station a son panneau',
+      'Des virages doux entre les stations',
+    ],
+  },
+  {
+    v: 557,
+    titre: 'Des rues plus faciles en voiture',
+    puces: [
+      'Les lampadaires reculent du trottoir',
+      'Moins de poteaux sur la route',
+      'La mairie de Los Angeles grandit',
+    ],
+  },
+  {
+    v: 556,
+    titre: 'Les amis bougent sans à-coups',
+    puces: [
+      'Un ami en voiture roule en douceur',
+      'Même quand le réseau est lent',
+      'Pareil en avion et à pied',
+    ],
+  },
+  {
+    v: 555,
+    titre: 'Le métro Hôtel de Ville rouvre',
+    puces: [
+      'Une nouvelle entrée de métro',
+      'Le couloir passe sous l’eau',
+      'Chaque station garde son nom',
     ],
   },
   {

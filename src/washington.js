@@ -1208,6 +1208,88 @@ const PENTE = 0.28;            // la pente maximale de la voie, en blocs par blo
 const TIROIR = 9;              // le prolongement au-delà du terminus
 const PONT_Y = WATER_LEVEL_DC + 4;   // le tablier du pont de la Jaune
 
+// LA VOIE EST DROITE LE LONG DU QUAI (v558). La trace va d'arrêt en arrêt en
+// ligne droite : dans une station posée sur un virage (Smithsonian, un quart
+// de tour), chaque voie, décalée de ±4 selon SON cap, convergeait vers l'axe
+// et croisait le quai central à ses bouts — le gabarit, creusé en dernier,
+// ouvrait le quai, la rame roulait sur son bord, et il n'y avait plus de place
+// pour un pylône (cinq stations sans). Autour de chaque arrêt, les points de
+// la trace sont ramenés sur l'AXE du quai (le cap que `QUAIS` lui donne, pris
+// sur la trace d'avant : la station ne tourne pas, ses bouches ne bougent
+// pas), sur DEMI_STATION + 1 de chaque côté quand la place le permet — la
+// moitié du tronçon jusqu'à l'arrêt voisin, moins le raccord —, puis
+// raccordés par une courbe dont le rayon ne descend pas sous `RAYON_MIN_VOIE`. Les mêmes
+// points, le même nombre : les rangs d'arrêt, les grilles horaires et le reste
+// de la ligne ne bougent pas. Metro Center et McPherson Square sont à seize
+// blocs : leurs quais se chevauchent, la voie n'y est droite que sur six.
+const RAYON_MIN_VOIE = 4.5;   // le rayon du raccord : plus que l'écart d'une voie
+function axeAuxArrets(pts) {
+  const axes = new Map();
+  for (let i = 1; i < pts.length - 1; i++) {
+    if (!pts[i].arret) continue;
+    const a = pts[i - 1], b = pts[i + 1];
+    const len = Math.hypot(b.u - a.u, b.v - a.v) || 1;
+    axes.set(i, [(b.u - a.u) / len, (b.v - a.v) / len]);
+  }
+  return axes;
+}
+// Entre deux arrêts, un tronçon : la voie part du premier dans l'axe de son
+// quai, arrive au second dans l'axe du sien, et entre les deux une courbe
+// d'Hermite. Le raccord se mesure à ce qu'il doit tourner : la voie est
+// décalée de ±4, et une courbe plus serrée que ce décalage replie la voie du
+// dedans sur elle-même (vu à la sonde au premier jet, qui raccordait au tracé
+// d'avant sur deux blocs : la voie revenait en arrière à L'Enfant Plaza).
+function raccorderTroncon(pts, i, j, dA, dB) {
+  const A = pts[i], B = pts[j], n = j - i;
+  const cu = B.u - A.u, cv = B.v - A.v, c = Math.hypot(cu, cv) || 1, h = c / n;
+  if (!dB) dB = [cu / c, cv / c];
+  const forme = (L) => {
+    const P0 = { u: A.u + dA[0] * L * h, v: A.v + dA[1] * L * h };
+    const P1 = { u: B.u - dB[0] * L * h, v: B.v - dB[1] * L * h };
+    const m = n - 2 * L, cc = Math.hypot(P1.u - P0.u, P1.v - P0.v);
+    const out = [A];
+    for (let k = 1; k < n; k++) {
+      if (k <= L) { out.push({ u: A.u + dA[0] * k * h, v: A.v + dA[1] * k * h }); continue; }
+      if (k >= n - L) { out.push({ u: B.u - dB[0] * (n - k) * h, v: B.v - dB[1] * (n - k) * h }); continue; }
+      const t = (k - L) / m, t2 = t * t, t3 = t2 * t;
+      const h00 = 2 * t3 - 3 * t2 + 1, h10 = t3 - 2 * t2 + t, h01 = -2 * t3 + 3 * t2, h11 = t3 - t2;
+      out.push({
+        u: h00 * P0.u + h10 * dA[0] * cc + h01 * P1.u + h11 * dB[0] * cc,
+        v: h00 * P0.v + h10 * dA[1] * cc + h01 * P1.v + h11 * dB[1] * cc,
+      });
+    }
+    out.push(B);
+    return out;
+  };
+  // la courbure la plus forte : l'angle entre deux pas, sur leur longueur
+  const courbure = (f) => {
+    let pire = 0;
+    for (let k = 1; k < f.length - 1; k++) {
+      const x1 = f[k].u - f[k - 1].u, z1 = f[k].v - f[k - 1].v, x2 = f[k + 1].u - f[k].u, z2 = f[k + 1].v - f[k].v;
+      const l1 = Math.hypot(x1, z1), l2 = Math.hypot(x2, z2);
+      if (!l1 || !l2) continue;
+      const a = Math.acos(Math.max(-1, Math.min(1, (x1 * x2 + z1 * z2) / (l1 * l2))));
+      pire = Math.max(pire, a / ((l1 + l2) / 2));
+    }
+    return pire;
+  };
+  let f = null;
+  for (let L = Math.min(DEMI_STATION + 1, Math.floor(n / 2) - 1); L >= 0; L--) {
+    f = forme(L);
+    if (courbure(f) <= 1 / RAYON_MIN_VOIE) break;
+  }
+  for (let k = 1; k < n; k++) { pts[i + k].u = f[k].u; pts[i + k].v = f[k].v; }
+}
+const AXES_AVANT = new Map();   // ligne → (arrêt → cap du quai)
+function redresserAuxArrets(pts, nom) {
+  const axes = axeAuxArrets(pts);
+  AXES_AVANT.set(nom, new Map([...axes].map(([i, d]) => [pts[i].arret.nom, d])));
+  const rangs = [...axes.keys()].sort((a, b) => a - b);
+  for (let r = 0; r < rangs.length - 1; r++) {
+    raccorderTroncon(pts, rangs[r], rangs[r + 1], axes.get(rangs[r]), axes.get(rangs[r + 1]));
+  }
+}
+
 // Chaque ligne, échantillonnée bloc par bloc, avec sa cote.
 function calculerTrace(ligne) {
   if (ligne.tronc) return calculerBranche(ligne);
@@ -1234,6 +1316,7 @@ function calculerTrace(ligne) {
   };
   prolonger(pts[pts.length - 2], pts[pts.length - 1], 'fin');
   prolonger(pts[1], pts[0], 'debut');
+  redresserAuxArrets(pts, ligne.nom);
 
   const sol = pts.map((p) => solDeWashington(WASHINGTON.x + p.u, WASHINGTON.z + p.v));
 
@@ -1285,6 +1368,11 @@ function calculerBranche(ligne) {
   for (let k = 1; k <= n; k++) {
     branche.push({ u: a.u + (b.u - a.u) * k / n, v: a.v + (b.v - a.v) * k / n, arret: null });
   }
+  // la branche quitte le quai commun dans l'axe du quai (v558) : le cap de
+  // la station est celui du tronc, pris autour de l'arrêt AVANT redressement
+  // (le même que `QUAIS`)
+  const tout = [a, ...branche];
+  raccorderTroncon(tout, 0, n, AXES_AVANT.get(ligne.tronc).get(a.arret.nom), null);
   // l'enveloppe basse de la branche, le quai commun pour origine : quatorze
   // blocs sous la rue (sous le LIT du fleuve), jamais plus raide que la voie
   const bas = branche.map((p) => solDeWashington(WASHINGTON.x + p.u, WASHINGTON.z + p.v) - PROFONDEUR);
@@ -1306,8 +1394,11 @@ for (const [nom, pts] of TRACES) {
     if (!pts[i].arret) continue;
     const s = pts[i].arret;
     const av = pts[Math.max(0, i - 1)], ap = pts[Math.min(pts.length - 1, i + 1)];
-    const du = ap.u - av.u, dv = ap.v - av.v;
-    const len = Math.hypot(du, dv) || 1;
+    // le cap pris AVANT le redressement (v558), au bit près : la voie est
+    // droite dans cet axe, et les bouches qui en dépendent ne bougent pas
+    const fixe = AXES_AVANT.get(nom)?.get(s.nom);
+    const du = fixe ? fixe[0] : ap.u - av.u, dv = fixe ? fixe[1] : ap.v - av.v;
+    const len = fixe ? 1 : Math.hypot(du, dv) || 1;
     const existant = QUAIS.get(s.nom);
     if (existant && existant.y <= pts[i].y) continue;
     QUAIS.set(s.nom, {
@@ -1352,6 +1443,16 @@ const voieProche = (u, v, test) => {
   }
   return false;
 };
+// LA VOIE REDRESSÉE NE TOUCHE PAS LA SURFACE (v558). Les tunnels ne bougent
+// qu'en profondeur ; ce qui change près du sol, c'est le bout du quai où l'on
+// pose l'escalier (`fin`, `k0`), qui se choisit contre les voies. Mesuré sur
+// les 79 560 colonnes de l'emprise : deux stations changent un bloc à moins
+// de trois blocs du sol, Foggy Bottom et Arlington Cemetery, dont les
+// mezzanines longent le lit du Potomac (99 colonnes). Elles gardent le choix
+// de la v547 — la voie droite ne coupe plus leur escalier — et rien n'a donc
+// besoin d'une date neuve : un témoin de `washington.js` compare l'empreinte
+// de la surface à celle d'avant.
+const ESCALIER_GARDE = { 'Foggy Bottom': [-1, -2], 'Arlington Cemetery': [-1, -2] };
 export const BOUCHES_METRO = QUAIS_METRO.map((q) => {
   const cotes = [[-q.dv, q.du], [q.dv, -q.du], [q.du, q.dv], [-q.du, -q.dv]];
   const sol = Math.round(solDeWashington(WASHINGTON.x + q.u, WASHINGTON.z + q.v));
@@ -1424,6 +1525,9 @@ export const BOUCHES_METRO = QUAIS_METRO.map((q) => {
       if (n < mieux) { mieux = n; fin = e; k0 = k; }
     }
   }
+  // l'escalier qui touche presque le lit du fleuve garde sa place (v558)
+  const garde = ESCALIER_GARDE[q.nom];
+  if (garde) { fin = garde[0]; k0 = garde[1]; }
   q.fin = fin; q.k0 = k0;
   // LES PYLÔNES DU NOM (v529) : au milieu et vers les bouts, là où ni
   // l'escalier ni le passage d'une rame ne les coupe — une station dans un
@@ -1850,8 +1954,12 @@ function creuserMetro(u, v, h, poser, ancien = false) {
       let t = len2 > 0 ? ((u - s.u0) * du + (v - s.v0) * dv) / len2 : 0;
       t = t < 0 ? 0 : t > 1 ? 1 : t;
       if (Math.hypot(u - (s.u0 + t * du), v - (s.v0 + t * dv)) > 1.4) continue;
+      // sur une marche de la voie, la rame passe d'une cote à l'autre : on
+      // dégage les deux (v558 — le redressement a déplacé des marches dans
+      // les courbes, où l'arrondi du creusement et celui de la rame divergent)
       const yr = Math.round(s.y0 + (s.y1 - s.y0) * t);
-      gabarit.push([yr + 1, yr + 3]);
+      // — et jamais à moins de quatre blocs du sol : la surface ne bouge pas
+      gabarit.push([(yr < h - 4 ? Math.min(yr, s.y0, s.y1) : yr) + 1, yr + 3]);
       continue;
     }
     if (s.quoi === 'voie') {

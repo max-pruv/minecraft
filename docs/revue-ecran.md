@@ -168,9 +168,9 @@ n° 19, corrigé).
 | --- | --- | --- | --- | --- | --- | --- |
 | 28 | basse | en vol au-dessus d'une forêt (v553), iPad et iPhone | [jour](revue-ecran/lointain-arbres/ipad-foret-loin-jour.jpg), [nuit](revue-ecran/lointain-arbres/ipad-foret-loin-nuit.jpg) | Au bord du disque maillé, une **couture de teinte** : le paysage lointain est plus clair et voilé que le monde proche, parce que le brouillard commence exactement à ce bord (`fog.near` = rr × 16). Antérieur à la v553, visible sur les captures de la v532. | Faire commencer le brouillard un peu en deçà du bord, ou teinter la grille fine du sous-bois là où `foret` est haute (les témoins de couleur de `plafond.js` lisent l'herbe au sommet près : à décider avec eux). | `src/main.js`, `src/horizon.js` |
 
-## Le relevé de la v555 (la SF90 XX Stradale), 25 octobre 2026
+## Le relevé de la v559 (la SF90 XX Stradale), 25 octobre 2026
 
-Planches « ancienne | neuve » dans `docs/revue-ecran/v555-sf90/` :
+Planches « ancienne | neuve » dans `docs/revue-ecran/v559-sf90/` :
 `volant`, `troisquarts` et `rue` (une SF90 de la circulation, cadrée de
 côté), iPhone et iPad, jour et nuit, rejouables par
 `tests/sonde-captures-sf90.cjs` (le bras « ancienne » se choisit par
@@ -180,5 +180,5 @@ jantes, vitrage, plaque « SF90XX ».
 
 | # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
 | --- | --- | --- | --- | --- | --- | --- |
-| 29 | basse | SF90 XX (v555), garée de trois quarts, de nuit | [v555](revue-ecran/v555-sf90/planche-iphone-troisquarts-nuit.jpg) | Phares éteints la nuit, comme toute la flotte garée (n° 8). Repeinte dans la rue, la voiture garde sa **livrée rouge** (prises du capot, ouïes arrière) : sur une laque sarcelle, ces accents se lisent comme des pièces d'une autre voiture. | Garder ; ou repeindre la livrée (`Paint_Secondary`) d'un ton accordé à la laque tirée — décision de Max. | `src/vehicules.js` (`repeindre`) |
-| 30 | basse | rue de Paris, de nuit, caméra de la sonde à hauteur de toit | [v555](revue-ecran/v555-sf90/planche-ipad-rue-nuit.jpg) | Une **feuille d'automne** passe à quelques centimètres de l'objectif et couvre un quart de l'écran. Ce n'est pas la voiture : c'est l'essaim de saison (v531), que la caméra de cadrage traverse. | Ne pas dessiner une particule à moins d'un bloc de la caméra. | `src/saisons.js` |
+| 29 | basse | SF90 XX (v559), garée de trois quarts, de nuit | [v559](revue-ecran/v559-sf90/planche-iphone-troisquarts-nuit.jpg) | Phares éteints la nuit, comme toute la flotte garée (n° 8). Repeinte dans la rue, la voiture garde sa **livrée rouge** (prises du capot, ouïes arrière) : sur une laque sarcelle, ces accents se lisent comme des pièces d'une autre voiture. | Garder ; ou repeindre la livrée (`Paint_Secondary`) d'un ton accordé à la laque tirée — décision de Max. | `src/vehicules.js` (`repeindre`) |
+| 30 | basse | rue de Paris, de nuit, caméra de la sonde à hauteur de toit | [v559](revue-ecran/v559-sf90/planche-ipad-rue-nuit.jpg) | Une **feuille d'automne** passe à quelques centimètres de l'objectif et couvre un quart de l'écran. Ce n'est pas la voiture : c'est l'essaim de saison (v531), que la caméra de cadrage traverse. | Ne pas dessiner une particule à moins d'un bloc de la caméra. | `src/saisons.js` |

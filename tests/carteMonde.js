@@ -1887,7 +1887,12 @@ const VRAIES_KM = [
       // 58 → 17 dans la fenêtre de ±40 blocs, mais 32,6 → 29,6 pour mille
       // colonnes de trottoir sur tout son disque, et 44,2 → 41,9 sur toutes les
       // villes à trame (mesuré) — la densité tient, la fenêtre tire au sort
-      !(c.lampes >= 40 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 15 && c.diversite >= 20));
+      // les réverbères : la bande reculée d'un bloc (villes à bordures) en
+      // laisse 43 au lieu de 52 dans la fenêtre de Rome (décompte pur, avant
+      // les monuments), mais 1 016 contre 1 117 sur tout son disque — la rue
+      // garde sa densité, le témoin de `plafond.js` la mesure. Une barre de
+      // garde se pose à la moitié de ce qu'on a mesuré (v237), pas à ras.
+      !(c.lampes >= 25 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 15 && c.diversite >= 20));
     verifier('et du mobilier : lampadaires, bancs — et la diversité se compte',
       sansVie.length === 0,
       sansVie.map(([v]) => v).join(' · ')

@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v555 — Une nouvelle Ferrari SF90 XX Stradale
+## v559 — Une nouvelle Ferrari SF90 XX Stradale
 
 **Pourquoi.** Max a fourni un modèle Sketchfab de la SF90 XX Stradale
 (Ddiaz Design, CC-BY-4.0) à intégrer. La SF90 de la flotte était une
@@ -60,9 +60,194 @@ alpha nul, de la transmission sur les vitres (une passe de rendu de plus).
   témoin des feux de détresse de `degats.js`.
 - Revue d'écran ancienne | neuve, iPhone et iPad, jour et nuit, au volant,
   garée et dans la rue (`tests/sonde-captures-sf90.cjs`, planches dans
-  `docs/revue-ecran/v555-sf90/`).
+  `docs/revue-ecran/v559-sf90/`).
 
 ---
+
+
+---
+
+## v558 — Le métro de Washington roule droit le long des quais
+
+**Pourquoi.** La voie du métro de Washington allait d'arrêt en arrêt en
+ligne droite. Dans une station posée sur un virage — Smithsonian prend un
+quart de tour sous son quai —, chaque voie, décalée de quatre blocs selon
+son propre cap, se rapprochait de l'axe et traversait le quai central à ses
+deux bouts : le passage des rames, creusé en dernier, ouvrait le quai, la
+rame roulait sur son bord, et il n'y avait plus de place pour le pylône du
+nom. Mesuré (`geo` des points de voie contre l'axe de chaque quai) : 2 590
+points de voie dans les quais, cinq stations sans un seul pylône
+(Smithsonian, McPherson Square, Foggy Bottom, Arlington Cemetery, Gallery
+Place), et 34 endroits où la voie du dedans revenait en arrière.
+
+**Ce que ça change.**
+- Le long de chaque quai, la voie est droite, dans l'axe de la station : la
+  rame longe le bord du quai au lieu de rouler dessus.
+- Entre deux stations, la voie tourne par une courbe douce, jamais plus
+  serrée que quatre blocs et demi : plus aucune voie ne se replie.
+- Chaque station a désormais au moins un pylône avec son nom, et l'escalier
+  du quai se pose au bout du quai plutôt qu'en son milieu.
+- Ce qu'on voit depuis la rue ne bouge pas d'un bloc : les tunnels ne
+  changent qu'en profondeur.
+
+**Ce qui le prouve.** Trois témoins neufs dans `washington.js`, rouges sur
+l'ancien code : les points de voie dans les quais (2 590 → 478, barre 1 200 ;
+ce qui reste, ce sont les demi-tours des terminus et les quais qui se
+chevauchent de Metro Center et McPherson Square, à seize blocs l'un de
+l'autre) avec zéro station sans pylône ; zéro rebroussement de voie (34
+avant) ; et l'empreinte de tout ce que le métro pose à moins de trois blocs
+du sol, sur les 79 560 colonnes de l'emprise, identique à la v547 — Foggy
+Bottom et Arlington Cemetery, dont la mezzanine longe le lit du Potomac,
+gardent leur escalier pour cela, et aucune date neuve n'est nécessaire. Le
+vrai joueur descend et remonte toujours dans les trente-cinq stations, le
+passage des rames reste sans un bloc plein (12 830 points), la durée d'un
+tour de l'Orange et de l'Argent reste celle de la Bleue (202,5 s), et
+l'import de `world.js` ne coûte rien de plus (1,17 s des deux côtés).
+L'empreinte des 490 morceaux change (Washington est un des neuf lieux) :
+désarmée, elle rend la constante d'avant au bit près. La sonde des stations
+ne pose plus le pied sur un portillon : les cases « sous quatre blocs d'air »
+qui restent sont toutes en haut de l'escalier de la rue, sous le bloc de la
+rue lui-même — déclarées. Captures avant / après (Smithsonian, Foggy Bottom,
+Archives) dans `docs/captures/stations-virages/`. Portail : seize suites
+vertes ; `monte.js` rouge sur des témoins de la rue déjà déclarés, rejouée
+seule : 3 rouges sur la branche, 5 sur `origin/main`, même famille.
+
+## Banc — Le portail se répartit, et les voisines se taisent pendant un chargement (après la v557)
+
+Aucune livraison du jeu : seul le banc d'essai change (`tests/`), donc aucun
+`CACHE_VERSION` n'est dû — rien de ce qu'une tablette télécharge ne bouge.
+
+**Pourquoi.** Max : « accélérer la CI… beaucoup plus rapide, beaucoup plus
+sélective, à qualité égale ». Les sessions attendaient 75 à 170 minutes leur
+portail. Mesuré sur `origin/main` (v540) : **108 minutes** — `monte.js` 37,
+`reseau.js` 21, `maj.js` 10 —, des durées inscrites dans `tout.js` qui
+dataient de la v251, et un conteneur à quatre cœurs déjà saturé (3,1 à 3,6
+cœurs dans chaque suite de navigateur).
+
+**Ce que ça change.**
+- `npm test -- --tranche=k/n` joue une tranche des suites choisies, réparties
+  par durée mesurée ; n machines rendent le portail en parallèle, chaque suite
+  entière, rien de sauté. En deux tranches : 54 et 87 minutes, au lieu de 108.
+- Une suite rouge au dernier portail passe en tête au suivant : un rouge qui
+  revient se voit en minutes.
+- Pendant qu'une tablette se charge ou rejoint une partie, les pages déjà
+  ouvertes réduisent leur image à 16 × 16 et la retrouvent avant que le témoin
+  ne reprenne la main : `reseau.js` seule, 35 min 30 → 33 min 47.
+- Les dix-sept durées de `SUITES` sont remesurées.
+
+**Ce qui le prouve.**
+- `reseau.js` rejouée seule, même code, même conteneur, horodatée ligne par
+  ligne : 2 130 → 2 027 s, 88 verts des deux côtés hors intermittences déjà
+  déclarées (« un hôte sans courtier », « seule après le départ de l'hôte »).
+  Les scénarios où l'hôte attendait en jeu gagnent 30 à 60 s chacun.
+- `monte.js` avec l'ancien banc (`BANC_DE_COTE=0`) : 3 250 s, contre 3 277 au
+  portail avec le nouveau — inchangée, mêmes familles de rouges déclarés.
+- `sonde-de-cote-pause.cjs` : réduire la FENÊTRE met une page de bureau en
+  pause (verrou du pointeur perdu) ; réduire le CANVAS la laisse en jeu. Le
+  premier jet, à la fenêtre, avait rendu neuf rouges : c'est la sonde qui l'a
+  démonté.
+- La sélection à la ligne par couverture V8, écrite et rejouée sur les 24
+  dernières livraisons : **0 %** de gain. Elle est retirée, et la raison est
+  écrite dans `CLAUDE.md` pour qu'on ne la reconstruise pas.
+
+## v557 — Le mobilier recule du caniveau, l'hôtel de ville de Los Angeles monte
+
+**Pourquoi.** Deux dettes des villes engendrées. Une voiture qui serrait le
+trottoir à un bloc de sa voie butait sur 18 à 36 réverbères, feux et
+jardinières par kilomètre (`tests/sonde-mobilier-route.cjs`, Rome, Zurich,
+Tokyo, Berlin) : le trottoir fait deux blocs et demi depuis les rues à la GTA,
+et le mobilier n'en occupait que la moitié côté chaussée. Et à Los Angeles,
+l'hôtel de ville — un fût d'un bloc — était à 21 blocs pour une médiane de
+toits de 22 depuis les mêmes rues : plus bas que ses voisins.
+
+**Ce que ça change.**
+- Dans les villes engendrées, le réverbère et la jardinière reculent d'un bloc,
+  contre les façades : à un bloc de sa voie, la voiture ne rencontre plus que
+  les feux (Rome 57 → 17 pièces, toutes des feux). Autant de réverbères le long
+  de la rue (−9 à +10 % selon la ville), et leur crosse se tourne toujours vers
+  la chaussée. Le feu et le banc ne bougent pas d'un bloc.
+- L'hôtel de ville de Los Angeles a sa silhouette : un fût carré à bandeaux, la
+  colonnade, la pyramide à gradins et sa lanterne, à 36 blocs au-dessus des
+  toits du centre (22). Les quatre anneaux de voitures de la ville restent au
+  bloc près.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` (aucun réverbère ni
+jardinière à moins de trois blocs du milieu d'une voie — 1 158 sur
+`origin/main`, 0 ici — et autant de réverbères, aucun feu ni banc déplacé),
+rouges sur `origin/main` ; l'hôtel de ville sort des exceptions déclarées
+(« aucun monument plus bas que les immeubles qui l'entourent »), l'ordre du
+ciel de la ville tenu ; l'empreinte des 490 morceaux, mobilier désarmé, rend la
+constante d'avant au bit près ; le relief ne bouge pas (des props seulement).
+Le grand anneau de Shanghai (32 pas) passe sur la PLACE CENTRALE, pas sur un
+quai : aucun contour ne l'évite sans suivre un voisin (mesuré jusqu'à 3 000
+essais), c'est déclaré dans `TASKS.md`.
+
+---
+
+## v556 — Les amis bougent en temps réel
+
+**Pourquoi.** Max : « Tu le vois bouger de manière saccadée, toutes les
+secondes il a avancé… c'est pas très real time. » Chaque tablette envoie sa
+position toutes les 120 ms, sans heure ni vitesse, et l'autre dessinait l'ami
+en courant après la DERNIÈRE position reçue. Mesuré au banc
+(`tests/sonde-amis-fluides.cjs`, l'ami au volant à 30 blocs par seconde, sa
+dessinée relevée image par image chez l'autre) : en direct, des bonds jusqu'à
+quatorze blocs d'un coup et 74 % des images à la vraie vitesse ; par le nuage,
+où les relevés arrivent une demi-seconde à la fois et parfois dans le
+désordre, l'ami immobile sur 40 % des images puis bondissant, 21 % des images
+à la vraie vitesse.
+
+**Ce que ça change.** L'ami, à pied, en voiture ou en avion, avance d'un
+mouvement continu chez les autres, par le lien direct, à travers l'hôte et par
+le nuage. Chaque position part avec l'heure de son envoi et, au volant, sa
+vitesse ; l'autre tablette rejoue l'ami avec un léger retard (de deux
+dixièmes de seconde en direct à un peu plus d'une demi-seconde par le nuage,
+réglé tout seul) en glissant entre deux relevés, et prolonge son mouvement une
+demi-seconde au plus quand un relevé tarde. Une téléportation se pose
+d'un coup. Une tablette restée sur l'ancienne version est suivie comme avant.
+
+**Ce qui le prouve.** Quatre témoins dans `reseau.js` : la règle pure sous
+node (paquets du nuage, désordre, téléportation, ancienne version) ; en direct,
+le pire bond d'une image à l'autre (13 à 25 blocs → 0,4 à 2,1 d'ordinaire, barre 8) et le
+champ sur `pos` ; par l'hôte, l'heure d'envoi qui traverse `rpos` (rouge sur
+l'ancien code) ; par le nuage, la part des images à la vraie vitesse (0,21 à
+0,37 → 0,69 à 0,98, barre 0,55). Portail : seize suites vertes ; `monte.js`
+rend quatre rouges de la famille rue et circulation déjà déclarée (une partie
+seule n'a pas d'ami à dessiner : rien de ce que la livraison change n'y est
+atteint).
+
+## v555 — Hôtel de Ville retrouve sa bouche de métro
+
+**Pourquoi.** Depuis les rues à la GTA (v544), la station Hôtel de Ville de la
+ligne 1 n'avait plus de bouche : on ne pouvait y descendre que par Saint-Paul.
+Mesuré, paire par paire : chaque place d'Hôtel de Ville recouvre la seule
+place de Saint-Paul qui laisse la Bastille, et chaque place de la Bastille
+recouvre les autres places de Saint-Paul — le trottoir au sud de la ligne ne
+tient pas trois escaliers. Et à Reuilly–Diderot, la bouche rechoisie entrait
+dans le quai par la case du nom : la plaque de ce côté avait disparu.
+
+**Ce que ça change.**
+- Hôtel de Ville a de nouveau sa bouche, sur le trottoir du sud ; pour lui
+  laisser la place, celle de Saint-Paul passe au nord, sur le trottoir du
+  bassin : son couloir passe SOUS l'eau, au niveau du quai, quatre blocs de
+  terre sous le lit ; l'escalier, lui, ne passe jamais sous l'eau. Les seize
+  stations de Paris ont leur bouche.
+- Reuilly–Diderot garde ses quatre plaques : sa bouche s'est décalée de deux
+  blocs.
+- Rien d'autre ne bouge : les treize autres bouches, le Paris de la v531
+  (gardé sous ce qu'un enfant a bâti) et les bouches de la v473.
+- Rome Lepanto reste sans bouche, et c'est une question pour Max : les 666
+  places qui tiennent sur le trottoir ont toutes leur escalier sous le Tibre
+  (`TASKS.md`).
+
+**Ce qui le prouve.** Trois témoins de `plafond.js`, rouges sur la v554 :
+seize bouches sur seize (15), quatre plaques par station (Reuilly–Diderot 3),
+et le vrai joueur qui descend et remonte dans trente-six stations (35), sans
+une plaque qui flotte — le premier jet perçait le piédroit de Châtelet, à
+dix-neuf blocs d'Hôtel de Ville, et c'est ce témoin qui l'a dit. La
+sonde de marche (`sonde-stations.cjs`) : 36/36 quais atteints, 36/36 rues
+retrouvées ; `sonde-metro-paris.mjs` : aucune poche dans la Seine, aucune rue
+murée.
 
 ## v554 — Les arbres gardent toute leur couronne au bord du monde
 
