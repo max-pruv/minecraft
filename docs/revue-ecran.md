@@ -167,3 +167,19 @@ n° 19, corrigé).
 | # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
 | --- | --- | --- | --- | --- | --- | --- |
 | 28 | basse | en vol au-dessus d'une forêt (v553), iPad et iPhone | [jour](revue-ecran/lointain-arbres/ipad-foret-loin-jour.jpg), [nuit](revue-ecran/lointain-arbres/ipad-foret-loin-nuit.jpg) | Au bord du disque maillé, une **couture de teinte** : le paysage lointain est plus clair et voilé que le monde proche, parce que le brouillard commence exactement à ce bord (`fog.near` = rr × 16). Antérieur à la v553, visible sur les captures de la v532. | Faire commencer le brouillard un peu en deçà du bord, ou teinter la grille fine du sous-bois là où `foret` est haute (les témoins de couleur de `plafond.js` lisent l'herbe au sommet près : à décider avec eux). | `src/main.js`, `src/horizon.js` |
+
+### v554 — trois vrais avions : A320, A321 et F-35
+
+États `avion-sol`, `avion-vol`, `aeroport-roulage`, `aeroport-ciel`, iPhone
+et iPad, jour et nuit, plus les vues de modèle de
+`tests/sonde-avions-deposes.cjs` et la porte qui s'ouvre de
+`tests/sonde-embarquement-deposes.cjs` (préfixe `modele-`), dans
+`docs/revue-ecran/v554-avions/`. L'Airbus se lit au premier regard (livrée
+A320, réacteurs, train), le F-35 aussi ; l'escalier se pose contre la porte
+dessinée sur la livrée, la verrière du F-35 bascule. Rien ne change dans
+l'interface.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 29 | basse | au roulage, de jour (v554) | [roulage](revue-ecran/v554-avions/ipad-aeroport-roulage-jour.jpg) | Les feux de navigation font deux grosses boules rouge et verte au bout des ailes vues de la caméra de poursuite ; leur taille est celle de la v533, la même sur l'avion sculpté. | Réduire le rayon des lentilles de navigation, ou les estomper de jour (à mesurer avec le témoin des feux de monte.js). | `src/avions.js` |
+| 30 | basse | Orly vu du ciel (v554) | (aucune — capture locale) | Sur l'état `aeroport-ciel`, l'aire d'Orly est vide : l'aéroportiste ne fait naître les appareils qu'à portée de l'enfant, et la sonde prend la vue avant. Antérieur. | Faire attendre à la sonde un appareil au poste. | `tests/sonde-revue-ecran.cjs` |
