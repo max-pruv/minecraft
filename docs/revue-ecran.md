@@ -181,3 +181,18 @@ prise après celle de jour : l'enfant y est déjà sorti.
 | --- | --- | --- | --- | --- | --- | --- |
 | 29 | basse | voiture dans l'eau, de jour (v560) | [v560](revue-ecran/v560-eau/iphone-voiture-plonge-jour.jpg) | Des **feuilles d'automne** flottent haut dans le ciel au-dessus du bassin, loin de tout arbre (la v531 les voulait sur leur colonne). Hors de la livraison. | Vérifier ce qui « porte » une feuille au-dessus d'un plan d'eau fabriqué au-dessus du relief | `src/saisons.js` |
 | 30 | basse | voiture dans l'eau, de jour (v560) | [v560](revue-ecran/v560-eau/iphone-voiture-plonge-jour.jpg) | Une pilule « Salle Ronde · Les marches du palais » s'affiche en haut au milieu, loin de toute ville visible — un panneau de lieu lu à distance ? Hors de la livraison. | Lire quelle règle pose cette pilule à (31 200, 31 500) | `src/main.js` (file centrale) |
+
+## Le relevé de la v561 (la SF90 XX Stradale), 25 octobre 2026
+
+Planches « ancienne | neuve » dans `docs/revue-ecran/v561-sf90/` :
+`volant`, `troisquarts` et `rue` (une SF90 de la circulation, cadrée de
+côté), iPhone et iPad, jour et nuit, rejouables par
+`tests/sonde-captures-sf90.cjs` (le bras « ancienne » se choisit par
+`?asset=0`). Rien ne bouge dans l'interface : la livraison ne change que le
+modèle, et il se lit tout de suite comme une Ferrari — aileron, prises d'air,
+jantes, vitrage, plaque « SF90XX ».
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 31 | basse | SF90 XX (v561), garée de trois quarts, de nuit | [v561](revue-ecran/v561-sf90/planche-iphone-troisquarts-nuit.jpg) | Phares éteints la nuit, comme toute la flotte garée (n° 8). Repeinte dans la rue, la voiture garde sa **livrée rouge** (prises du capot, ouïes arrière) : sur une laque sarcelle, ces accents se lisent comme des pièces d'une autre voiture. | Garder ; ou repeindre la livrée (`Paint_Secondary`) d'un ton accordé à la laque tirée — décision de Max. | `src/vehicules.js` (`repeindre`) |
+| 32 | basse | rue de Paris, de nuit, caméra de la sonde à hauteur de toit | [v561](revue-ecran/v561-sf90/planche-ipad-rue-nuit.jpg) | Une **feuille d'automne** passe à quelques centimètres de l'objectif et couvre un quart de l'écran. Ce n'est pas la voiture : c'est l'essaim de saison (v531), que la caméra de cadrage traverse. | Ne pas dessiner une particule à moins d'un bloc de la caméra. | `src/saisons.js` |

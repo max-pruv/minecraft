@@ -87,6 +87,8 @@ const GARDIENS = {
   // La 911 reconstruite (v545) : ses témoins vivent dans porsche-911.mjs, que
   // degats.js lance ; la table des programmes la lit dans monte.js.
   'vendor/voitures/porsche-911-gt3-rs-hd-v2-compact.glb': ['degats.js', 'monte.js'],
+  // La SF90 XX Stradale (v561) : son témoin vit dans monte.js, ses feux dans degats.js.
+  'vendor/voitures/ferrari-sf90-xx.glb': ['degats.js', 'monte.js'],
   // La MC12 GT1 (v559) : son témoin vit dans monte.js, ses feux dans
   // degats.js (la flotte sous node et les feux de détresse en page).
   'vendor/voitures/maserati-mc12-gt1.glb': ['degats.js', 'monte.js'],

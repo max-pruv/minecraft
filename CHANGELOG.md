@@ -20,6 +20,52 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v561 — Une nouvelle Ferrari SF90 XX Stradale
+
+**Pourquoi.** Max a fourni un modèle Sketchfab de la SF90 XX Stradale
+(Ddiaz Design, CC-BY-4.0) à intégrer. La SF90 de la flotte était une
+sculpture générique : une caisse rouge arrondie, sans aileron, sans vitrage
+lisible, sans habitacle reconnaissable — vue de trois quarts, rien ne disait
+Ferrari. Le paquet, lui, ne pouvait pas entrer tel quel : 2 201 nœuds,
+1 097 maillages (autant d'appels de dessin), les 648 pièces des quatre roues
+réunies sous un seul nœud nommé « Front_L », des couleurs de sommets à
+alpha nul, de la transmission sur les vitres (une passe de rendu de plus).
+
+**Ce que ça change.**
+- Toute SF90 du jeu — garée, au garage, dans la rue, chez un ami — est la XX :
+  grand aileron arrière, prises d'air, jantes et étriers, vitrage et habitacle
+  avec son volant. Elle se repeint dans la rue comme les autres (sa livrée
+  rouge reste) ; une sur trois garde son gris d'origine.
+- Même identifiant `ferrari-sf90.glb` pour les garages et le réseau ; le
+  fichier chargé est `ferrari-sf90-xx.glb` (`asset`), téléchargé une fois à la
+  première rencontre. `?voiture=sf90` la met partout pour la juger sur la
+  tablette, `?asset=0` rend l'ancienne.
+- Prix déclaré : 262 651 triangles (6,7 fois l'ancienne, 0,72 fois la 911
+  approuvée), 8,7 Mo sur le disque, ≈ 6,3 Mo transférés (Brotli q4, contre
+  1,4 pour l'ancienne). Pas de portière qui s'ouvre : elles ne sont pas
+  séparées dans le modèle (`portiere: false`, comme la Revuelto).
+
+**Ce qui le prouve.**
+- `scripts/ferrari-sf90-xx.py` refait le GLB au bit près depuis le paquet
+  (empreintes dans `docs/sf90-xx/SHA256.json`) : 32 maillages, quatre pivots
+  de roue, le volant, 4,84 m de long pour 4,85 réels, 1,22 m de haut.
+- Un seul programme neuf à chauffer (`Standard+map+nrm+DS`), déclaré dans
+  `signatures.js` ; le témoin de la table des programmes le lit dans le fichier.
+- Un témoin neuf dans `monte.js` (le témoin de la Revuelto, rendu commun) :
+  chargée par son asset, au sol, quatre roues, volant, images, sans portière,
+  l'enfant assis sous le pavillon face à la route. Rouge sur l'ancien code
+  (pas d'asset).
+- Ses phares, feux de détresse et feux stop sont sur la tôle
+  (`sonde-feux-flotte.mjs` : 57 modèles, zéro faute), et elle entre dans le
+  témoin des feux de détresse de `degats.js`.
+- Revue d'écran ancienne | neuve, iPhone et iPad, jour et nuit, au volant,
+  garée et dans la rue (`tests/sonde-captures-sf90.cjs`, planches dans
+  `docs/revue-ecran/v561-sf90/`).
+
+---
+
+
+---
 ## v560 — Dans l'eau pour de vrai, et les voitures ne se traversent plus
 
 Deux sujets, deux parties (v279).

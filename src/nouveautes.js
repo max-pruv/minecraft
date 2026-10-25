@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 561,
+    titre: 'Une nouvelle Ferrari SF90 XX',
+    puces: [
+      'Une vraie SF90 XX Stradale',
+      'Avec son volant et son aileron',
+      'Modèle de Ddiaz Design, merci',
+    ],
+  },
+  {
     v: 560,
     titre: 'Plouf ! Et plus de passe-muraille',
     puces: [
