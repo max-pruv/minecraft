@@ -549,6 +549,10 @@ export function allureDe(fichier, secours = 3.4) {
 }
 
 const chargementsFlotte = new Map();
+// LES PROTOTYPES DÉJÀ LÀ (v547), lus SANS attendre une promesse : une voiture
+// de la rue dont le modèle est chargé s'habille dans l'image même où elle naît,
+// et l'enfant ne voit jamais sa coque d'attente.
+const protosPrets = new Map();
 
 // L'ESSAI D'UN MODÈLE, DEPUIS L'ADRESSE (v545). Un modèle lourd se juge sur
 // la tablette, pas au banc (v247) : `?voiture=911` force ce modèle pour toute
@@ -753,6 +757,7 @@ export function chargerVoitureFlotte(entree) {
     const modele=entree.fabrique(),rt=refletsVoiture();
     if(rt)modele.traverse(o=>{if(o.isMesh&&(o.material.isMeshStandardMaterial||o.material.isMeshPhysicalMaterial))refleter(o,o.material,.75);});
     partagerTout(modele);   // le prototype ne se rend jamais (v495)
+    protosPrets.set(entree.fichier, modele);
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
   const chargement = new GLTFLoader().register(partageDesTextures).loadAsync('./vendor/voitures/' + fichierCharge(entree))
@@ -800,6 +805,7 @@ export function chargerVoitureFlotte(entree) {
       // et les matériaux de TOUT le modèle — renvoyés à la carte graphique et
       // recompilés à l'image suivante, pour chaque voiture de la rue.
       partagerTout(porteur);
+      protosPrets.set(entree.fichier, porteur);
       return porteur;
     }).catch(() => null);
   chargementsFlotte.set(entree.fichier, chargement);
@@ -2166,6 +2172,16 @@ class Convoi {
       return;
     }
     const dTete = Math.hypot(tete.x - joueur.x, tete.z - joueur.z);
+    // LES MODÈLES SE DEMANDENT AVANT QU'UNE VOITURE NE SE MONTRE (v547) : à la
+    // marge du rendu, cent blocs avant la portée. Une voiture qui entre dans
+    // le champ trouve alors son modèle prêt, et ne reste pas cachée.
+    if (!this.modelesDemandes && this.modeles && dTete < portee + trainee + MARGE_RENDRE) {
+      this.modelesDemandes = true;
+      for (const f of new Set(this.modeles)) {
+        const e = FLOTTE.find((x) => x.fichier === f);
+        if (e) chargerVoitureFlotte(e);
+      }
+    }
     if (dTete > portee + trainee) {
       // tout le convoi est loin : au-delà de la marge, il rend ses maillages
       if (dTete > portee + trainee + MARGE_RENDRE) {
@@ -2215,8 +2231,10 @@ class Convoi {
         m.rotation.order = 'YXZ';
         m.rotation.z = roulis;
       }
-      m.visible = true;
-      if (this.routier) {
+      // une voiture qui attend son modèle ne se montre pas en coque (v547), et
+      // ses feux (détresse, stop) ne se posent que sur le modèle qu'on voit
+      m.visible = !m.userData.attente;
+      if (this.routier && m.visible) {
         feuxDeDetresse(m, this.heurte[i] > 0);
         // LES FEUX STOP DE LA RUE (v543) : une voiture qui attend (un feu,
         // l'enfant, une file) ou qui perd de la vitesse freine ; une voiture
@@ -2772,7 +2790,7 @@ export function createVehicules({ scene, player }) {
 
   // UNE VOITURE DE VILLE. La coque sculptée est posée tout de suite — il faut
   // un maillage dans la seconde — puis le vrai modèle de la flotte la
-  // remplace dès qu'il arrive du réseau. C'est le même échange qu'aux
+  // remplace dès qu'il est là (cachée d'ici là depuis la v544). C'est le même échange qu'aux
   // montures, à un détail près : ici on garde une trace des pivots de roue,
   // parce que c'est le convoi qui les fait tourner.
   function voitureDeVille(n, teinte, ville) {
@@ -2783,39 +2801,59 @@ export function createVehicules({ scene, player }) {
     // flotte — c'est le même soin que pour la voiture garée.
     g.userData.flotte = entree.fichier;
     g.userData.nomVoiture = entree.nom;
+    // UNE VOITURE NE CHANGE PAS DE MODÈLE SOUS LES YEUX DE L'ENFANT (v547).
+    // Max : « on tourne la tête une seconde, on revient, et c'est un autre
+    // modèle ». C'était la coque d'attente : montrée dès la naissance, puis
+    // remplacée par le modèle de la flotte une image (fichier déjà chargé) à
+    // une seconde (fichier à télécharger) plus tard — mesuré, deux voitures
+    // sur cinq à Paris et à Rome (`sonde-voitures-persistantes.cjs`). Le
+    // modèle déjà là habille la voiture tout de suite ; sinon elle reste
+    // CACHÉE (`attente`, que `montrer` lit) jusqu'à son modèle. La coque ne se
+    // montre que si le fichier manque : elle est alors la voiture, pour toute
+    // sa vie. Le modèle et la laque restent des fonctions de la place (v305).
     const chargement = chargerVoitureFlotte(entree);
-    if (chargement) {
+    // UNE LAQUE PAR VOITURE (v246). Max : « assure-toi que toutes les
+    // villes ont de la diversité dans les voitures ». Un modèle de la
+    // flotte arrivait toujours dans SA couleur cuite dans le fichier :
+    // vingt Bugatti bleues dans vingt villes. Deux voitures sur trois
+    // prennent la teinte tirée pour elles, la troisième garde sa livrée
+    // d'origine — une voiture dont la couleur fait l'identité (un taxi,
+    // une Ferrari rouge) ne doit pas disparaître de la rue. La laque
+    // seule est repeinte : vitres, chromes et carbone gardent leur rendu.
+    // Posée dès la naissance (v547) : elle ne dépend que de la place.
+    const laque = entree.laque ? entree.laque === 'toujours'
+      : entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0;
+    g.userData.laque = laque ? teinte : null;
+    // ce que la rue a réellement peint, quelle que soit la règle : c'est
+    // ce qui part avec la voiture quand l'enfant la prend (v305)
+    g.userData.peinture = laque || entree.fichier === 'berline-citadine' ? teinte : null;
+    const habiller = (proto) => {
+      g.userData.attente = false;
+      for (const nom of ['caisse', 'verriere', 'tronc']) {
+        const membre = g.userData.membres[nom];
+        // LA COQUE D'ATTENTE SE REND AUSSI (v495) : trois géométries
+        // fusionnées et deux matériaux à elle, par voiture, qu'on retirait
+        // du groupe sans jamais les rendre au pilote.
+        if (membre) { g.remove(membre); liberer(membre); }
+      }
+      const modele = proto.clone(true);
+      if (g.userData.peinture != null) repeindre(modele, entree.fichier, teinte);
+      g.add(modele);
+      const roues = [];
+      modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
+      g.userData.roues = roues;
+      g.userData.rayonRoue = proto.userData.rayonRoue || 0.34;
+    };
+    const pret = protosPrets.get(entree.fichier);
+    if (pret) habiller(pret);
+    else if (chargement) {
+      g.userData.attente = true;
       chargement.then((proto) => {
+        // pas de modèle : la coque reste, et se montre (elle est la voiture)
+        if (!proto) { g.userData.attente = false; return; }
         // rendue avant que son modèle n'arrive (v495) : on n'y accroche rien
-        if (!proto || !g.userData.membres || g.userData.rendue) return;
-        for (const nom of ['caisse', 'verriere', 'tronc']) {
-          const membre = g.userData.membres[nom];
-          // LA COQUE D'ATTENTE SE REND AUSSI (v495) : trois géométries
-          // fusionnées et deux matériaux à elle, par voiture, qu'on retirait
-          // du groupe sans jamais les rendre au pilote.
-          if (membre) { g.remove(membre); liberer(membre); }
-        }
-        const modele = proto.clone(true);
-        // UNE LAQUE PAR VOITURE (v246). Max : « assure-toi que toutes les
-        // villes ont de la diversité dans les voitures ». Un modèle de la
-        // flotte arrivait toujours dans SA couleur cuite dans le fichier :
-        // vingt Bugatti bleues dans vingt villes. Deux voitures sur trois
-        // prennent la teinte tirée pour elles, la troisième garde sa livrée
-        // d'origine — une voiture dont la couleur fait l'identité (un taxi,
-        // une Ferrari rouge) ne doit pas disparaître de la rue. La laque
-        // seule est repeinte : vitres, chromes et carbone gardent leur rendu.
-        const laque = entree.laque ? entree.laque === 'toujours'
-          : entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0;
-        g.userData.laque = laque ? teinte : null;
-        // ce que la rue a réellement peint, quelle que soit la règle : c'est
-        // ce qui part avec la voiture quand l'enfant la prend (v305)
-        g.userData.peinture = laque || entree.fichier === 'berline-citadine' ? teinte : null;
-        if (g.userData.peinture != null) repeindre(modele, entree.fichier, teinte);
-        g.add(modele);
-        const roues = [];
-        modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
-        g.userData.roues = roues;
-        g.userData.rayonRoue = proto.userData.rayonRoue || 0.34;
+        if (!g.userData.membres || g.userData.rendue) return;
+        habiller(proto);
       });
     }
     return g;

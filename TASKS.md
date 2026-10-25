@@ -1,5 +1,51 @@
 # Ce qui est en cours
 
+## v547 — les voitures gardent leur modèle : ce qui reste, mesuré
+
+- `reseau.js` rejouée seule sur la v547 : 87 verts, 3 rouges, la portière droite
+  (entrée, descente) et « la voiture de l'ami se refait pendant la marche », même
+  page, `phases: []`. Déclarés (lignes plus bas, v465 et suivantes), vus aussi sur
+  `origin/main` ; et ils ne lisent que la voiture de l'AMI (une monture), que la
+  v547 ne touche pas (`voitureDeVille` seule). Rejouée seule sur la v545 : verte.
+
+- **Rouges du portail de la v547 : aucun de la livraison** (la suite `monte.js`
+  y était morte d'une faute de nom, corrigée ; rejouée seule, le témoin neuf est
+  vert : 0 bascule sur 50 voitures, 18 places suivies au demi-tour).
+  `monte.js` seule, branche contre `origin/main` v540 (`git worktree`) : même
+  famille de rouges déclarés (feu, rue vide, Moscou « pleines »). Moscou
+  « modèles ET couleurs » vert sur `origin/main` (7 visibles, barre 6) et rouge
+  sur la branche : sur page neuve, deux passages alternés de chaque côté
+  (`moscou.cjs` du brouillon), la même distribution — 15 → 33 voitures
+  visibles en 45 s, aucune cachée en attente : c'est le compte de six au moment
+  où la suite y arrive, pas la règle neuve. `maj.js` (le loader, déclaré) :
+  rouge sur `origin/main`, vert sur la branche.
+- **Second portail, rebasé sur la v541** (chargé : `visio.js` radio, `washington.js`
+  Air et l'Espace, `maj.js` loader, `reseau.js` trio « à trois », `monte.js`
+  ×8 — tous des familles déclarées). Un seul inconnu : `monte.js` « une voiture
+  heurtée… feux de détresse » (`clignote: false`), vert sur `origin/main`, vert
+  sur la branche rejouée seule avant ET après le rebase (130:5, 130:9). Piste :
+  le clignotement ne se relit qu'à l'image, et le témoin échantillonne un état
+  de 0,7 s de période à une image par seconde sous charge. `monte.js` et
+  `reseau.js` rejouées seules : rouges déclarés seulement (voisines, rue vide ;
+  départ de l'hôte, 1/3 des deux côtés).
+- **Portail de la v547 (rebasée sur la v546)** : rouges déclarés seulement
+  (`maj.js` loader, `reglages.js` un choix à deux tablettes, `manhattan.js` le
+  taxi roule, `monte.js` par tranches et rue vide), plus un NEUF :
+- [ ] **`carte.js` « minicarte (820 × 1180) : visible dès l'entrée en jeu » et
+  « … à pied, en construction, au volant et en avion »** : la minicarte n'est
+  pas à l'écran à l'entrée (`entree: null`, `b: null`), à la taille de l'iPad
+  seulement. Rejouée SEULE : rouge sur `origin/main` v546 (`git worktree`),
+  verte sur la branche — en production, la v547 n'y touche pas. Non vu aux
+  portails de la v540 à la v544 : à rejouer en distribution (v269) des deux
+  côtés, avec le temps écoulé depuis l'entrée dans le message.
+- [ ] **`degats.js` « les feux de détresse se posent SUR la carrosserie » (Bolide
+  à 0,45)** : rouge sur la branche, VERT sur `origin/main` cette fois (rouge 2
+  sur 2 des deux côtés à la v540) — un tirage. Piste, non établie : les poses se
+  mémorisent par MODÈLE (`posesParModele`) sur la première voiture qui allume
+  ses feux ; si la voiture de la rue que le témoin précédent percute est une
+  Bolide, ses poses sont calculées sur une tôle enfoncée. La voiture percutée
+  change d'un passage à l'autre (7 clones contre 11). À vérifier : vider
+  `posesParModele` dans le témoin, ou ne mémoriser que sur un modèle intact.
 ## v546 — LA REVUELTO ADAPTÉE : ce qui reste, mesuré
 
 - [ ] **Le taxi jaune de New York porte ses phares au pare-brise.**
