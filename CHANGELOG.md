@@ -20,6 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+<<<<<<< HEAD
 ## v553 — Des arbres au loin, et plus de trou de ciel en vol
 
 **Pourquoi.** Deux dettes du paysage lointain. (1) La revue d'écran de la v532
@@ -200,6 +201,34 @@ intermittences de minicarte, d'appui long et de vie de rue, déclarées dans
 `TASKS.md` — `carte.js` rejouée seule : 2 rouges sur la branche, verte sur
 `origin/main`, l'inverse de la v546 ; `monte.js` hors d'atteinte par
 construction (la règle n'est jamais évaluée dans une ville).
+=======
+## v548 — Les arbres gardent toute leur couronne au bord du monde
+
+**Pourquoi.** Deux dettes des vrais arbres. (1) Au bord de la portée du détail
+(v499), un arbre pouvait montrer son relief d'un côté et les cubes de sa
+couronne de l'autre. (2) Depuis la v528, les feuilles d'un arbre dont la base
+est dans un morceau voisin se taisent, et c'est le voisin qui dessine l'arbre :
+tant qu'il n'est pas maillé — au bord du disque chargé, ou juste après une
+arrivée —, cette part de couronne MANQUAIT. Mesuré sous node
+(`tests/sonde-arbres-frontiere.cjs`) : sept arbres et 147 cases de feuilles
+tues au bord d'un disque de rayon douze, neuf arbres au rayon trois.
+
+**Ce que ça change.** Plus d'arbre amputé d'un quartier de couronne en vol ou à
+l'arrivée : un morceau dessine aussi, en cartes lointaines, les arbres du bord
+dont le voisin n'est pas encore là, et cède dès que le voisin arrive — le
+même arbre, au sommet près. La dette (1) était déjà caduque depuis la v528
+(un arbre n'a qu'un dessinateur, proche ou lointain) : c'est désormais prouvé.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` : sur la forêt témoin,
+quatorze directions de voisins, 1 344 sommets d'arbres du bord, tous présents
+dans le modèle que le voisin dessine, et le `solid` d'un morceau identique
+avec ou sans détail ; rouge sur `origin/main` (zéro direction). Prix mesuré :
++0,96 Mo pour 169 morceaux de forêt (4,8 % du `solid`), maillage dans le
+bruit (5,0 contre 4,9 ms). Revue d'écran `foret` et `foret-vol`, iPhone et
+iPad, jour et nuit. Portail : rouges déjà déclarés seulement, rejoués seuls
+des deux côtés (`manhattan.js` au long cap, `monte.js` feu et rue vide,
+`reseau.js` portière droite).
+>>>>>>> 24486b4 (Journal : les arbres gardent toute leur couronne au bord du monde)
 
 ---
 
