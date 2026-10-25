@@ -42,7 +42,12 @@ async function mesurer(racine, { joueur = true, seul = null, garderPts = false }
   const cam = { position: { copy() {} }, rotation: { set() {} } };
   const bloc = (x, y, z) => w.getBlock(Math.floor(x), Math.floor(y), Math.floor(z));
   const plein = (x, y, z) => B.isSolid(bloc(x, y, z));
-  const ok = (x, y, z) => plein(x, y - 1, z) && !plein(x, y, z) && !plein(x, y + 1, z);
+  // UN PORTILLON N'EST PAS UN SOL (v558) : on passe ENTRE deux portillons,
+  // pas par-dessus. Le chemin à la grille montait sur un portillon, sous
+  // trois blocs d'air, quand le passage voisin en a quatre — et la sonde
+  // comptait cette case « sous 4 » dans chaque station de Washington.
+  const portillon = B.METRO_BLOCK && B.METRO_BLOCK.PORTILLON;
+  const ok = (x, y, z) => plein(x, y - 1, z) && bloc(x, y - 1, z) !== portillon && !plein(x, y, z) && !plein(x, y + 1, z);
   // l'air libre au-dessus des pieds, borné à huit
   const libre = (x, y, z) => { let n = 0; while (n < 8 && !plein(x, y + n, z)) n++; return n; };
 

@@ -24,6 +24,10 @@ const VUES = [
   ['dc', 'Archives', 'escalier'],
   ['dc', 'Archives', 'mezzanine'],
   ['dc', 'Dupont Circle', 'quai'],
+  // les stations en virage (v548) : la voie redressée le long du quai
+  ['dc', 'Smithsonian', 'quai'],
+  ['dc', 'Smithsonian', 'face'],
+  ['dc', 'Foggy Bottom', 'quai'],
 ];
 
 (async () => {
