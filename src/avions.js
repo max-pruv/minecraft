@@ -700,9 +700,34 @@ export const AVIONS_GLB = {
     porte: { type: 'echelle', x: -0.5, y: 1.55, z: -3.0, demiLong: 5,
       ouvrant: 'verriere', axe: 'x', angle: -0.9 },
   },
+  // LE JET D'AFFAIRES (v565) — une variante de l'avion de ligne, PLUS COURTE
+  // que son gabarit : treize blocs pour seize, la proportion d'un jet de la
+  // classe du G650 (30 m) contre l'A320 (37,6 m), à la même échelle. Pas de
+  // train dans l'archive : le jeu lui fabrique ses trois jambes, aux cotes
+  // d'un vrai jet d'affaires (roulette à 3 m du nez, empattement 13,7 m,
+  // voie 4,3 m, à 0,428 bloc/m). Sa cabine est plus étroite que celle d'un
+  // avion de ligne (axe 1,08, rayon 0,65, mesurés par le convertisseur) :
+  // il porte ses SIÈGES, qui remplacent ceux de l'espèce pour cet appareil.
+  jet: {
+    espece: 'avionligne', fichier: 'jet-prive.glb', nom: 'Jet privé', long: 13,
+    trainAtelier: { nez: { z: -5.2, r: 0.15 }, principal: { x: 0.92, r: 0.2 }, zPrincipal: 0.65, ventre: 0.47 },
+    trainPrincipal: 0.65,
+    tuyeres: [{ x: -0.99, y: 1.57, z: 3.109, rayon: 0.2 }, { x: 0.99, y: 1.571, z: 3.109, rayon: 0.199 }],
+    // la porte DESSINÉE sur la livrée, relevée sur une capture de côté : juste
+    // derrière le cockpit, de z −5,77 à −5,34, seuil à 0,78, haut à 1,39 ; le
+    // flanc y est à x −0,45 à mi-hauteur. Le panneau prend la couleur de la
+    // livrée — un jet noir n'a pas une porte blanche.
+    panneau: { x: -0.47, y: 1.135, z: -5.77, h: 0.61, l: 0.43, couleur: 0x121214 },
+    porte: { type: 'escalier', x: -0.5, y: 0.78, z: -5.55, demiLong: 6.5,
+      ouvrant: 'porte_avant', baie: 'porte_baie', cachee: true, axe: 'y', angle: -1.5 },
+    // deux de front, deux rangs, dans la cabine (fuselage de 0,44 à 1,72 entre
+    // z −3,5 et −2,5) : des hanches à 0,9 mettent le crâne à 1,61
+    sieges: [{ x: -0.24, y: 0.9, z: -3.4 }, { x: 0.24, y: 0.9, z: -3.4 },
+      { x: -0.24, y: 0.9, z: -2.1 }, { x: 0.24, y: 0.9, z: -2.1 }],
+  },
 };
 // L'ordre est la préférence : une espèce prend la première variante prête.
-export const VARIANTES_AVION = { avionligne: ['a320', 'a321'], chasseur: ['f35'] };
+export const VARIANTES_AVION = { avionligne: ['a320', 'a321', 'jet'], chasseur: ['f35'] };
 
 // Le modèle sculpté se rejoue par `?avions=0`, pour comparer au même endroit
 // (la discipline de `?asset=0`, v545) — jamais un réglage du jeu.
@@ -743,13 +768,14 @@ export function varianteAvion(espece, voeu = null) {
   return liste.find((v) => protosAvion.has(v)) || null;
 }
 
-// QUEL AVION DE LIGNE SE GARE OÙ : l'A321, le plus long des deux, sur les
-// grandes plates-formes (`hub`), l'A320 ailleurs et à Roissy, sa maison. Une
-// règle lue sur le profil de l'aérodrome — jamais un tirage : deux tablettes
-// voient le même appareil au même poste.
+// QUEL AVION DE LIGNE SE GARE OÙ : l'A321, le plus long, sur les grandes
+// plates-formes (`hub`), le jet d'affaires sur les aéroports de ville
+// (`ville` : Orly, Barcelone, Rome, Delhi, San Francisco — v565), l'A320 à
+// Roissy, sa maison. Une règle lue sur le profil de l'aérodrome — jamais un
+// tirage : deux tablettes voient le même appareil au même poste.
 export function varianteDuPoste(espece, profil) {
   if (espece !== 'avionligne') return null;
-  return profil === 'hub' ? 'a321' : 'a320';
+  return profil === 'hub' ? 'a321' : profil === 'ville' ? 'jet' : 'a320';
 }
 
 function depuisModele(cle) {
@@ -758,10 +784,13 @@ function depuisModele(cle) {
   if (def.trainAtelier) trains(a, def.trainAtelier);
   if (def.panneau) {
     const p = def.panneau;
+    // la taille de la porte : celle d'un avion de ligne, sauf si la fiche dit
+    // la sienne (`h`, `l` : la porte d'un jet d'affaires est plus petite)
+    const h = p.h || 0.9, l = p.l || 0.6;
     a.membre('porte_avant', [p.x, p.y, p.z]);
-    a.boite(0xe6e6e0, { p: [p.x - 0.03, p.y - 0.05, p.z + 0.3], e: [0.05, 0.9, 0.6] });
+    a.boite(p.couleur ?? 0xe6e6e0, { p: [p.x - 0.03, p.y - 0.05, p.z + l / 2], e: [0.05, h, l] });
     a.membre('porte_baie', [p.x, p.y, p.z]);
-    a.boite(SOMBRE, { p: [p.x - 0.01, p.y - 0.05, p.z + 0.3], e: [0.03, 0.86, 0.56] });
+    a.boite(SOMBRE, { p: [p.x - 0.01, p.y - 0.05, p.z + l / 2], e: [0.03, h - 0.04, l - 0.04] });
     a.membre('tronc');
   }
   const g = a.finir();
@@ -776,6 +805,9 @@ function depuisModele(cle) {
     if (enfant.name && enfant.name !== 'corps') m[enfant.name] = enfant;
   }
   g.userData.porte = def.porte ? { ...def.porte } : null;
+  // des sièges propres à l'appareil (une cabine plus étroite que celle de son
+  // espèce) : animals.js et main.js les préfèrent à ceux de la fiche
+  if (def.sieges) g.userData.sieges = def.sieges.map((q) => ({ ...q }));
   if (!feuxMemo.has(cle)) feuxMemo.set(cle, {});
   g.userData.feuxNav = feuxNavigation(g, feuxMemo.get(cle));
   g.userData.tuyeres = def.tuyeres.map((t) => { const f = flamme(t); g.add(f); return f; });

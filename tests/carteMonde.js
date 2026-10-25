@@ -4878,11 +4878,11 @@ const VRAIES_KM = [
       if (av.AVIONS_GLB && av.chargerAvionsDeposes) {
         await av.chargerAvionsDeposes();
         for (const [cle, def] of Object.entries(av.AVIONS_GLB)) {
-          liste.push([cle, def.espece, () => av.MODELES_AVION[def.espece]({ variante: cle }), true]);
+          liste.push([cle, def.espece, () => av.MODELES_AVION[def.espece]({ variante: cle }), true, def.long || null]);
         }
       }
       const out = {};
-      for (const [nom, espece, faire, depose] of liste) {
+      for (const [nom, espece, faire, depose, longVoulue] of liste) {
         const g = faire();
         // un modèle déposé qui n'a pas pu se charger rend le sculpté : on le
         // dit au lieu de le mesurer sous le nom d'un autre
@@ -4911,6 +4911,9 @@ const VRAIES_KM = [
         out[nom] = { espece, depose,
           long: +(bb.max.z - bb.min.z).toFixed(2),
           reserve: GAB[espece] ? GAB[espece].long : null,
+          // un déposé PLUS COURT que son gabarit le déclare (le jet d'affaires,
+          // v565) : sa longueur se mesure contre ce qu'il annonce
+          voulue: longVoulue,
           envergure: +(bb.max.x - bb.min.x).toFixed(2),
           envAnnoncee: GAB[espece] ? (GAB[espece].envergure ?? null) : null,
           haut: +(bb.max.y - bb.min.y).toFixed(2),
@@ -4966,8 +4969,9 @@ const VRAIES_KM = [
     //    doit aussi tenir dans son envergure et sa hauteur annoncées — plus
     //    petit, il laisse de la marge ; plus grand, ses ailes mordraient le
     //    voisin ou l'herbe. Et il est posé sur ses roues.
-    verifier('les avions déposés (A320, A321, F-35) tiennent dans le gabarit de leur espèce, posés sur leurs roues',
-      deposes.length === 3 && deposes.every(([, d]) => !d.absent && d.long <= d.reserve + 0.05 && d.long >= d.reserve - 0.1
+    verifier('les avions déposés (A320, A321, F-35, jet privé) tiennent dans le gabarit de leur espèce, posés sur leurs roues',
+      deposes.length === 4 && deposes.every(([, d]) => !d.absent && d.long <= d.reserve + 0.05 && d.long >= (d.voulue || d.reserve) - 0.1
+        && (!d.voulue || d.long <= d.voulue + 0.05)
         && d.envergure <= d.envAnnoncee + 0.15 && d.haut <= d.hautAnnonce + 0.15 && d.sous >= -0.02),
       deposes.map(([n, d]) => d.absent ? `${n} absent` : `${n} ${d.long}/${d.reserve} env ${d.envergure}/${d.envAnnoncee} haut ${d.haut}/${d.hautAnnonce} sous ${d.sous}`).join(' · ') || 'aucun avion déposé');
     // 5. ET ILS TIENNENT LE CONTRAT DES AVIONS DU JEU (v563), sans quoi le
@@ -5001,7 +5005,12 @@ const VRAIES_KM = [
           && f.position.y >= b.min.y && f.position.y <= b.max.y && f.position.z >= b.min.z - 0.3 && f.position.z <= b.max.z + 0.3);
         out[cle] = { variante: ud.variante, train: (ud.train || []).length,
           ouvrant: !!(ud.porte && m[ud.porte.ouvrant]), tuyeres: (ud.tuyeres || []).length, attendues: def.tuyeres.length,
-          dedans, feux: !!ud.feuxNav };
+          dedans, feux: !!ud.feuxNav,
+          // des sièges propres (le jet, v565) : portés par le modèle, et DANS
+          // sa boîte (le crâne, 0,71 au-dessus des hanches, sous le toit)
+          sieges: def.sieges ? ((ud.sieges || []).length === def.sieges.length
+            && ud.sieges.every((q) => q.x > b.min.x && q.x < b.max.x && q.z > b.min.z && q.z < b.max.z && q.y + 0.71 < b.max.y)) : true,
+          poste: av.varianteDuPoste ? av.varianteDuPoste(def.espece, 'ville') : null };
       }
       return out;
     });
@@ -5024,9 +5033,10 @@ const VRAIES_KM = [
       }
       return out;
     })();
-    verifier('les avions déposés tiennent le contrat du jeu — train, porte, flammes dans la tuyère, feux, fichiers propres',
-      !contrat.absent && !fichiersAvions.absent && Object.keys(contrat).length === 3
-        && Object.entries(contrat).every(([c, r]) => r.variante === c && r.train === 3 && r.ouvrant && r.tuyeres === r.attendues && r.dedans && r.feux)
+    verifier('les avions déposés tiennent le contrat du jeu — train, porte, flammes dans la tuyère, feux, sièges, fichiers propres, le jet aux aéroports de ville',
+      !contrat.absent && !fichiersAvions.absent && Object.keys(contrat).length === 4
+        && Object.entries(contrat).every(([c, r]) => r.variante === c && r.train === 3 && r.ouvrant && r.tuyeres === r.attendues && r.dedans && r.feux && r.sieges)
+        && contrat.jet && contrat.jet.poste === 'jet'
         && Object.values(fichiersAvions).every((f) => f.racine && f.yeux === 0 && f.extensions.length === 0 && f.tris <= 40000)
         && fichiersAvions['airbus-a321.glb'] && fichiersAvions['airbus-a321.glb'].train === 3
         && fichiersAvions['chasseur-f35.glb'] && fichiersAvions['chasseur-f35.glb'].train === 3 && fichiersAvions['chasseur-f35.glb'].verriere,

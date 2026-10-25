@@ -1,4 +1,4 @@
-// SONDE (v563) : les avions déposés (A320, A321, F-35) dans le jeu.
+// SONDE (v563) : les avions déposés (A320, A321, F-35, jet privé — v565) dans le jeu.
 // Pour chaque variante : on la fait naître sur une dalle, on relève ce que le
 // jeu a posé (modèle, membres, roues au sol, flammes, feux), puis des captures
 // de trois quarts et de côté par une caméra à part (`layers.enableAll`, v250),
@@ -16,11 +16,11 @@ const HEURE = process.argv[3] === 'nuit' ? 0.75 : 0.3;
     const prets = await p.evaluate(async () => {
       const m = await import('/src/avions.js');
       const t0 = performance.now();
-      while (m.avionsPrets().length < 3 && performance.now() - t0 < 60000) await new Promise((r) => setTimeout(r, 200));
+      while (m.avionsPrets().length < 4 && performance.now() - t0 < 60000) await new Promise((r) => setTimeout(r, 200));
       return { prets: m.avionsPrets(), ms: Math.round(performance.now() - t0) };
     });
     console.log('prêts', JSON.stringify(prets));
-    for (const [espece, variante] of [['avionligne', 'a320'], ['avionligne', 'a321'], ['chasseur', 'f35'], ['concorde', null]]) {
+    for (const [espece, variante] of [['avionligne', 'a320'], ['avionligne', 'a321'], ['avionligne', 'jet'], ['chasseur', 'f35'], ['concorde', null]]) {
       const r = await p.evaluate(async ({ espece, variante, heure }) => {
         const THREE = await import('three');
         const g = window.__game, am = g.animalManager;
@@ -51,7 +51,7 @@ const HEURE = process.argv[3] === 'nuit' ? 0.75 : 0.3;
       }, { espece, variante, heure: HEURE });
       console.log(espece, variante, JSON.stringify(r));
       const nom = variante || espece;
-      for (const [vue, train, gaz] of [['trois-quarts', 1, 0], ['cote', 1, 0], ['vol', 0, 1]]) {
+      for (const [vue, train, gaz] of [['trois-quarts', 1, 0], ['cote', 1, 0], ['gauche', 1, 0], ['vol', 0, 1]]) {
         const png = await p.evaluate(async ({ vue, train, gaz }) => {
           const THREE = await import('three');
           const g = window.__game, a = window.__avion, ud = a.mesh.userData;
@@ -64,7 +64,7 @@ const HEURE = process.argv[3] === 'nuit' ? 0.75 : 0.3;
           const cam = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 400);
           cam.layers.enableAll();
           const L = new THREE.Box3().setFromObject(a.mesh).getSize(new THREE.Vector3()).length();
-          const d = vue === 'cote' ? new THREE.Vector3(1, 0.12, 0) : vue === 'vol' ? new THREE.Vector3(0.8, 0.35, 0.9) : new THREE.Vector3(-0.9, 0.45, -1.0);
+          const d = vue === 'cote' ? new THREE.Vector3(1, 0.12, 0) : vue === 'gauche' ? new THREE.Vector3(-1, 0.12, 0) : vue === 'vol' ? new THREE.Vector3(0.8, 0.35, 0.9) : new THREE.Vector3(-0.9, 0.45, -1.0);
           cam.position.copy(c).add(d.normalize().multiplyScalar(L * 0.95));
           cam.lookAt(c.x, c.y + 1, c.z);
           window.__camSonde = cam;
