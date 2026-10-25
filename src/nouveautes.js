@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 548,
+    titre: 'Des pistes bien dégagées',
+    puces: [
+      'Plus de feuilles en l\'air près des pistes',
+      'Les avions roulent sans rien traverser',
+    ],
+  },
+  {
     v: 547,
     titre: 'Les voitures gardent leur modèle',
     puces: [

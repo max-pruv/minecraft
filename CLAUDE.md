@@ -11371,6 +11371,18 @@ tous sur le hangar posé dans l'axe de la rangée. Quatre règles.
   rapprochés de sept blocs (64 → 57) pour que chaque aile garée reste à douze
   blocs du bord (le témoin de la v280), prolongements re-mesurés. La seconde piste des hubs passe de z 15 à 25.
 
+### Ce qu'un ouvrage vide, on n'y plante rien (v548)
+
+Une règle. Une tranchée qui écrit de l'AIR au-dessus d'un sol efface le tronc
+d'un arbre planté là et laisse la couronne qui déborde au-dehors : 543
+feuilles suspendues le long des pistes prolongées, nées de la correction même
+qui avait dégagé les pistes (v530). Le remède n'est pas de vider plus large
+(on vide toujours une couronne de trop), c'est de demander à `treeAt` : un
+arbre ne pousse pas dans une emprise qu'un ouvrage vide (`videParUnTroncon`,
+même géométrie que `batirTroncon`). Et une correction qui n'a pas de témoin
+n'est pas finie : celle de la v530 n'en avait pas, et ce sont ses deux
+témoins (`plafond.js`) qui ont trouvé ce qu'elle cassait.
+
 ### Les aérodromes (`aeroport.js`) — la piste prend le diamètre (v280)
 
 Max, trois demandes en une phrase : « supprime les avions qui ne volent pas, en

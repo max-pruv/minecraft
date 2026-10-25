@@ -1819,6 +1819,57 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     }
   }
 
+  // RIEN NE FLOTTE AU-DESSUS D'UNE PISTE, ET AUCUN ARBRE N'Y PERD SON TRONC
+  // (v548). Vu en v480 : des couronnes sans tronc au-dessus des pistes de
+  // Roissy et d'Andrews. Sur la v529, la sonde rend des feuilles et du bois
+  // au-dessus de neuf pistes (Francfort 83 blocs, Singapour 120, Los Angeles
+  // 37) ; la v530 les a retirées en vidant la tranchée plus haut
+  // (`DEGAGE_CIME`) — sans témoin. Et ce faisant elle efface le TRONC d'un
+  // arbre planté dans l'emprise du prolongement, dont la couronne déborde
+  // au-dehors : 543 feuilles suspendues au-dessus de l'herbe, mesurées
+  // (rouge sur `origin/main`). Le premier verdict lit chaque piste du monde,
+  // prolongements et Changi compris, jusqu'à quarante blocs au-dessus du
+  // revêtement ; le second demande à `treeAt` les arbres qui touchent l'emprise
+  // d'un tronçon (sa boîte, plus la portée d'une couronne) et lit leur tronc.
+  {
+    const W = await import('../src/world.js');
+    const { BLOCK: B } = await import('../src/blocks.js');
+    const { pistesDuMonde } = await import('../src/approche.js');
+    const { tronconsDePiste } = await import('../src/aeroport.js');
+    const w = new W.World();
+    let colonnes = 0, plein = 0; const ou = {};
+    for (const p of pistesDuMonde()) {
+      for (let x = p.x0; x <= p.x1; x++) for (let z = p.z - p.demi; z <= p.z + p.demi; z++) {
+        colonnes++;
+        for (let y = p.sol + 1; y <= p.sol + 40; y++) {
+          const id = w.getBlock(x, y, z);
+          if (id !== B.AIR && id !== B.WATER) { plein++; ou[p.cle] = (ou[p.cle] || 0) + 1; }
+        }
+      }
+    }
+    verifier('rien ne flotte au-dessus d\'une piste, prolongements et Changi compris',
+      colonnes > 50000 && plein === 0,
+      `${plein} bloc(s) au-dessus de ${colonnes} colonnes de piste ${JSON.stringify(ou)}`);
+    let arbres = 0, sansTronc = 0; const ex = [];
+    const vus = new Set();
+    for (const a of AERO) for (const t of tronconsDePiste(a)) {
+      const m = t.box + 3;
+      for (let x = t.x - m; x <= t.x + m; x++) for (let z = t.z - m; z <= t.z + m; z++) {
+        const k = x + ',' + z;
+        if (vus.has(k)) continue;
+        vus.add(k);
+        const tr = w.treeAt(x, z);
+        if (!tr) continue;
+        arbres++;
+        const id = w.getBlock(x, tr.h + 1, z);
+        if (id !== B.LOG && id !== B.BIRCH) { sansTronc++; if (ex.length < 3) ex.push(`${a.cle} (${x - a.x}, ${z - a.z})`); }
+      }
+    }
+    verifier('aucun arbre ne perd son tronc dans la tranchée d\'une piste prolongée',
+      arbres > 50 && sansTronc === 0,
+      `${sansTronc} arbre(s) sans tronc sur ${arbres} autour des tronçons ${ex.join(', ')}`);
+  }
+
   // ET MÊME EXIGENCE POUR LES DEUX CENT SOIXANTE-NEUF VILLES ENGENDRÉES,
   // qui ont pris 1,8 fois leur emprise en v200.
   //
