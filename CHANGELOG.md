@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v554 — Le mobilier recule du caniveau, l'hôtel de ville de Los Angeles monte
+## v557 — Le mobilier recule du caniveau, l'hôtel de ville de Los Angeles monte
 
 **Pourquoi.** Deux dettes des villes engendrées. Une voiture qui serrait le
 trottoir à un bloc de sa voie butait sur 18 à 36 réverbères, feux et

@@ -137,7 +137,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   chargement (≈ 36 maillages), ou réduire ses textures à 512 px (31 → ≈ 8 Mo).
   Proposé à Max, pas fait.
 
-- [ ] **Portail de la v554 (villes à bordures), rouges déclarés.** `washington.js` :
+- [ ] **Portail de la v557 (villes à bordures), rouges déclarés.** `washington.js` :
   « sur le quai, une rame Orange arrive et propose de monter » (pas de bouton à
   58 s) et la descente qui en dépend, rouges au portail ; rejouée SEULE, verte
   sur la branche ET sur `origin/main` v553 (`{"t":58.25}` des deux côtés) — un
