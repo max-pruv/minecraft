@@ -419,6 +419,79 @@ function buildLighthouse(set) { // rayé rouge et blanc
   for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) set(dx, 17, dz, BLOCK.SLAB_STONE);
 }
 
+// LA TOUR EIFFEL DU MODÈLE (v564). Max a fourni un vrai modèle de la tour
+// (`paris-monuments-hd.js`) ; le voxel est son squelette et suit SES cotes —
+// c'est le voxel qui arrête l'enfant, et ce que le modèle ne couvre pas reste
+// en cubes (v292). Chaque couche ci-dessous est relevée sur le modèle mis à
+// l'échelle du jeu (coupes au bloc, `scripts/tour-eiffel.mjs`) : les quatre
+// socles de maçonnerie à ±5..8, les jambes qui se penchent jusqu'au premier
+// étage (11 à 14), le second (22 à 26), le fût, le dernier étage (59 à 62).
+//
+// ET C'EST ENCORE UN TREILLIS. Rempli cellule par cellule depuis le modèle, le
+// voxel était une cheminée pleine (vu en capture) : de loin, là où la couche HD
+// ne va pas, on n'aurait plus reconnu la tour. On garde donc la grammaire de
+// la v292 : des montants aux coins, une ceinture toutes les trois couches, une
+// diagonale sur les faces larges, les étages en anneaux. Le dessous reste
+// ouvert : entre les socles, l'enfant passe sous la tour jusqu'à huit blocs.
+//
+// Le monde d'avant garde la tour d'avant (`build` de LANDMARKS_V317, v357).
+function buildEiffelModele(set) {
+  const FER = BLOCK.DARKBRICK;
+  for (let dx = -8; dx <= 8; dx++) for (let dz = -8; dz <= 8; dz++) set(dx, -1, dz, CITY_BLOCK.SIDEWALK);
+  const cheb = (x, z) => Math.max(Math.abs(x), Math.abs(z));
+  // Une couche entière, par une règle sur la distance au centre.
+  const couche = (y, garde, id = FER) => {
+    for (let x = -8; x <= 8; x++) for (let z = -8; z <= 8; z++) if (garde(x, z, cheb(x, z))) set(x, y, z, id);
+  };
+  // Les quatre jambes : un carré [a, b] dans chaque quart, montants aux coins,
+  // ceinture pleine quand on la demande.
+  const jambes = (y, a, b, ceinture) => couche(y, (x, z) => {
+    const u = Math.abs(x), v = Math.abs(z);
+    if (u < a || u > b || v < a || v > b) return false;
+    const bordU = u === a || u === b, bordV = v === a || v === b;
+    return ceinture ? bordU || bordV : bordU && bordV;
+  });
+  // Le fût : un carré de demi-côté R, montants aux coins, ceinture, et sur une
+  // face assez large une diagonale d'un bloc par couche (v292).
+  const fut = (y, R) => {
+    if (y % 3 === 0) { couche(y, (x, z, c) => c === R); return; }
+    couche(y, (x, z) => Math.abs(x) === R && Math.abs(z) === R);
+    if (R >= 2) {
+      const d = y % 3 === 1 ? -1 : 1;
+      set(d, y, -R, FER); set(-d, y, R, FER); set(-R, y, -d, FER); set(R, y, d, FER);
+    }
+  };
+
+  couche(0, (x, z) => Math.abs(x) >= 5 && Math.abs(z) >= 5, BLOCK.STONE);      // les socles
+  for (let y = 1; y <= 3; y++) jambes(y, 5, 7, y === 1);
+  for (let y = 4; y <= 7; y++) jambes(y, 4, 6, y === 4 || y === 7);
+  // Sous le premier étage : la poutre de rive à ±5 et l'anneau intérieur à ±3
+  // (deux couches sur les trois que le modèle occupe : la masse de l'étage se
+  // lit déjà assez de loin).
+  couche(9, (x, z, c) => c === 5 || c === 3);
+  couche(10, (x, z, c) => c === 5 || (Math.abs(x) >= 3 && Math.abs(z) >= 3 && c <= 4));
+  // LE PREMIER ÉTAGE : un plancher, ses deux façades, sa terrasse en retrait.
+  couche(11, (x, z, c) => c >= 2 && c <= 5);
+  for (const y of [12, 13]) couche(y, (x, z, c) => c === 5 || c === 2);
+  // (sans les cellules des axes au bord du trou : le modèle n'y pose rien)
+  couche(14, (x, z, c) => c >= 2 && c <= 4 && !(c <= 3 && (x === 0 || z === 0)));
+  for (let y = 15; y <= 16; y++) jambes(y, 2, 4, y === 15);
+  for (let y = 17; y <= 21; y++) jambes(y, 1, 3, y === 17 || y === 20);
+  // LE SECOND ÉTAGE.
+  couche(22, (x, z, c) => (c >= 2 && c <= 3) || (Math.abs(x) === 1 && Math.abs(z) === 1));
+  for (const y of [23, 24]) couche(y, (x, z, c) => c === 2);
+  couche(25, (x, z, c) => c >= 2 && c <= 3);
+  couche(26, (x, z, c) => c <= 3 && !(Math.abs(x) === 3 && Math.abs(z) === 3));
+  for (let y = 27; y <= 33; y++) fut(y, 2);
+  for (let y = 34; y <= 58; y++) fut(y, 1);
+  // LE TROISIÈME ÉTAGE, la salle vitrée : un anneau plein, qu'on lit de loin.
+  for (let y = 59; y <= 62; y++) couche(y, (x, z, c) => c === 1);
+  fut(63, 1);
+  couche(64, (x, z, c) => c <= 1);
+  for (let y = 65; y <= 67; y++) set(0, y, 0, FER);                           // la flèche
+  set(0, 68, 0, BLOCK.GOLD);                                                  // le phare
+}
+
 function buildArch(set) {
   // L'ARC DE TRIOMPHE. L'ancien faisait neuf blocs de large sur trois de
   // profondeur : vu du ciel, une dalle ; vu de la rue, un pilier. Or l'arc de
@@ -1249,6 +1322,8 @@ const LANDMARKS_V317 = [
       x: PARIS.x + p.u, z: PARIS.z + p.v, box: Math.max(p.socle[0], p.socle[1]), build,
       // le Moulin Rouge du monde d'aujourd'hui borde le boulevard (v512)
       ...(nom === 'Moulin Rouge' ? { tour: buildMoulinRougeNord } : {}),
+      // la tour du modèle de Johnson Martin (v564) ; le monde d'avant garde l'ancienne
+      ...(nom === 'Tour Eiffel' ? { tour: buildEiffelModele } : {}),
       // v306 : Paris doublé se lit à 1,7 bloc par pixel quand il tient entier
       // sur un téléphone ; ses monuments restent sur le plan (carte.js)
       seuil: 2.2,

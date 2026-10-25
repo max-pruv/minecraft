@@ -8057,6 +8057,41 @@ murs de la caserne posée au cœur de la ville. Cinq règles.
   écrit son terrain se trompe de terrain » (v285), du côté d'une sonde. On
   publie donc la TABLE des huit et l'on roule sur celui qu'on a mesuré.
 
+## La tour Eiffel du modèle de Max (v564) — un modèle fourni se prépare dans le repère du jeu
+
+Max a fourni « Eiffel Tower » de Johnson Martin (Sketchfab, CC-BY-4.0, 453 397
+triangles). `scripts/tour-eiffel.mjs` en fait `src/tour-eiffel-donnees.js`,
+que `paris-monuments-hd.js` lit à la place des poutres de l'atelier. Cinq règles.
+
+- **ON DÉCIME DANS LE REPÈRE DU JEU, AVEC UNE ERREUR EN BLOCS.** Décimé dans
+  celui du modèle (erreur relative), le sommet se cassait dès 15 000 triangles
+  pendant que les jambes gardaient un détail invisible (vu en capture). Mis
+  d'abord à l'échelle, une erreur de 0,025 bloc rend 39 799 triangles qu'on ne
+  distingue pas de l'original.
+- **UN MODÈLE FOURNI SE MET À NOS DEUX ÉCHELLES, ET LA BOÎTE DU REPÈRE BORNE
+  L'EMPRISE.** La hauteur reste celle du ciel (69, v335), l'emprise remplit le
+  parvis (socles à ±8,4 dans la boîte de 9) : les rues autour du socle ne
+  bougent pas. Plus étroit (l'emprise du voxel d'avant), le modèle était une
+  aiguille de télévision.
+- **QUAND LE MODÈLE EST LA RÉFÉRENCE, C'EST LE VOXEL QUI LE SUIT** — l'inverse
+  de la v292, où le modèle d'auteur suivait le voxel. Le bâtisseur neuf
+  (`buildEiffelModele`) est un champ `tour` : le monde d'avant garde l'ancien
+  (v357), et un bâtisseur de monument ne touche pas `terrainHeight`. Ses cotes
+  sont RELEVÉES sur le modèle couche par couche, et sa couverture se mesure :
+  zéro cube hors du modèle, zéro mur invisible (`sonde-monuments-hd.cjs`).
+- **UN VOXEL REMPLI DEPUIS UN MODÈLE EST UNE CHEMINÉE.** Toute cellule où le
+  modèle a de la surface donnait un fût plein (vu en capture) ; or c'est le
+  voxel qu'on voit au-delà de la couche HD. Le bâtisseur garde la grammaire du
+  treillis (montants, ceintures toutes les trois couches, diagonales, étages en
+  anneaux), et un témoin borne le fût à neuf blocs par couche.
+- **UNE GÉOMÉTRIE QUE LE WORKER ET LE FIL PRINCIPAL LISENT S'IMPORTE, SANS
+  PROMESSE.** Varints et base64 décodés à l'import, aucun décodeur asynchrone
+  (celui de meshoptimizer attend son wasm). Et un modèle indexé s'émet par
+  COINS (`face.c`, un sommet et sa normale lissée jusqu'à 40°) : une fois par
+  morceau au lieu d'une fois par triangle — +158 → +45 ms sur le morceau
+  central, 14,8 → 11,4 Mo pour les quatre morceaux. Le crédit vit dans
+  `vendor/TOUR_EIFFEL_LICENSE` et dans `CREDIT`, qu'un témoin lit.
+
 ## Les monuments de Paris sont des modèles, le voxel reste le squelette (v292)
 
 Quatrième livraison du programme. Sept règles, et cinq viennent d'une mesure qui

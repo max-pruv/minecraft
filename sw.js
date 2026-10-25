@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v563';
+const CACHE_VERSION = 'web-minecraft-v564';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -81,6 +81,7 @@ const ASSETS = [
   './src/washington-v367.js',
   './src/voirie.js',
   './src/paris-monuments-hd.js',
+  './src/tour-eiffel-donnees.js',
   './src/echelle-monuments.js',
   './src/voies.js',
   './src/parc.js',

@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v564 — La vraie tour Eiffel
+
+**Pourquoi.** Max a fourni un modèle 3D de la tour Eiffel (« Eiffel Tower » de
+Johnson Martin, Sketchfab, CC-BY-4.0) : 453 397 triangles, les quatre socles
+de maçonnerie, les arches, le treillis jusqu'au phare. La nôtre était faite de
+poutres posées à la main (12 632 triangles) : de près, un pylône. « On fait la
+tour Eiffel sur la base de ce modèle. »
+
+**Ce que ça change.**
+- De près, la tour Eiffel est ce modèle : le treillis des jambes, les arches,
+  les trois étages et leurs garde-corps, le vitrage, le sommet.
+- Elle est un peu plus large qu'avant (ses socles vont jusqu'au bord du parvis,
+  ±8,4 blocs), toujours haute de 69 blocs : sa silhouette ressemble davantage à
+  la vraie.
+- De loin, là où la couche HD ne va pas, son squelette en blocs suit le modèle :
+  socles de pierre, jambes penchées, premier et second étages, fût, salle du
+  sommet — et reste un treillis. On passe toujours dessous.
+- Le crédit de l'auteur est dans `vendor/TOUR_EIFFEL_LICENSE`.
+
+**Ce qui le prouve.** Deux témoins neufs dans `parishd.js` : la géométrie émise
+est le modèle (plus de 30 000 faces, 68 blocs de haut, emprise dans la boîte du
+repère, crédit présent — rouge sur l'ancien code, qui n'a pas le fichier), et le
+voxel le suit en treillis (64 blocs de socle, rien sous la tour jusqu'au premier
+étage, un fût de 4 à 9 blocs par couche au-dessus du second, le monde d'avant
+garde l'ancienne tour). Les témoins de la v292 et de la v295 tiennent : zéro
+cube de voxel hors du modèle (seize sur la v295, deux au premier jet de
+celle-ci), zéro mur invisible, 0,8 % de modèle sans voxel derrière et aucun à
+hauteur d'enfant (`sonde-monuments-hd.cjs`). L'empreinte des 490 morceaux
+témoins est inchangée. Prix mesuré : le morceau central de la tour coûte
++45 ms au mailleur (l'ancienne +16, une fois par visite), ses quatre morceaux
++3,5 Mo de tampons ; `tour-eiffel-donnees.js` pèse 142 Ko compressés.
+
+---
 ## v563 — Trois vrais avions : A320, A321 et F-35
 
 **Pourquoi.** Les avions de ligne et le chasseur étaient sculptés par le jeu,

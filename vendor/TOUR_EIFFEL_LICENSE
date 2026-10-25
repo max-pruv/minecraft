@@ -1,0 +1,14 @@
+src/tour-eiffel-donnees.js — la géométrie de la tour Eiffel dessinée de près (v564).
+
+This work is based on "Eiffel Tower"
+(https://sketchfab.com/3d-models/eiffel-tower-6830e60d2c1048f2a33e92679664f652)
+by Johnson Martin (https://sketchfab.com/Johnson-Martin)
+licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+
+Fourni par Max (octobre 2026). Modifications : décimé de 453 397 à 39 799
+triangles (meshoptimizer, erreur de 0,025 bloc), mis à l'échelle du jeu
+(69 blocs de haut, socles à ±8,4 blocs), réorienté y vers le haut, quantifié
+au 1/256e de bloc et codé en base64 par scripts/tour-eiffel.mjs. Les trois
+matériaux d'origine deviennent le fer, la maçonnerie des socles et le vitrage
+des étages de la couche HD (paris-monuments-hd.js). Le paquet d'origine
+(scene.gltf, scene.bin) n'est pas dans le dépôt.
