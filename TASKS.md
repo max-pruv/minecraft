@@ -580,24 +580,26 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   passage sur deux. `degats.js` « percuter une voiture de la rue » : rouge sur
   `origin/main`, déjà déclaré. `reglages.js` « un choix fait sur une
   tablette » : même rouge des deux côtés, déjà déclaré.
-- [ ] **Les stations en virage (v529) : la voie croise les bouts du quai.**
-  À Washington, la trace d'une ligne est décalée de ±4 en suivant SON cap à
-  chaque point ; dans une station posée sur un virage (Smithsonian, McPherson
-  Square, Foggy Bottom, Arlington Cemetery, Metro Center, L'Enfant Plaza,
-  Gallery Place…), la voie converge vers l'axe et passe à 0,1–0,7 bloc de
-  l'axe du quai central vers les bouts (|le| 6 à 10, mesuré). Le gabarit,
-  creusé en dernier, ouvre alors le quai à ces bouts : la rame roule sur le
-  bord du quai, et il n'y a pas de place pour un pylône (cinq stations sans
-  pylône, leur nom n'est que sur le mur d'en face). Même chose, en plus petit,
-  au bout du quai de la Bastille à Paris. Remède : redresser la trace sur
-  ±DEMI_STATION autour de chaque arrêt — cela change les tunnels, la durée des
-  tours (l'Orange et l'Argent ont des tours de même durée, v468) et les portes
-  de la rame (v489) : une livraison à elle, à mesurer avant.
-- [ ] **Quelques cases à trois blocs d’air restent (v529)** : en haut de
-  chaque escalier, sous le bloc de la rue (on ne creuse jamais dans la rue),
-  et au-dessus des portillons. La sonde les compte (1 à 6 par station) ; le
-  vrai joueur passe aux deux sens. `DATE_STATIONS` (world.js) se relit à la
-  fusion.
+- [x] **Les stations en virage (v529) : la voie croise les bouts du quai.**
+  Fait en v554 : la trace suit l'axe du quai autour de chaque arrêt, puis une
+  courbe d'Hermite au rayon ≥ 4,5 (2 590 points de voie dans les quais → 478,
+  cinq stations sans pylône → zéro, 34 rebroussements → zéro). CE QUI RESTE :
+  (1) les demi-tours des terminus (Eastern Market, Pentagon, Union Station,
+  Dupont Circle, Mount Vernon Square, Waterfront) : l'arc du tiroir (`TIROIR`
+  9 < `DEMI_STATION` 12) mord le coin du quai, dix points par terminus —
+  allonger le tiroir sort de l'emprise du métro, à mesurer avant ;
+  (2) Metro Center et McPherson Square, à seize blocs : leurs quais se
+  chevauchent, la voie n'y est droite que sur quelques blocs (~240 points) —
+  une affaire de PLAN ; (3) au bout du quai de la Bastille à Paris, même
+  défaut en plus petit (`ville.js`, zone d'une autre session).
+- [ ] **Quelques cases à trois blocs d'air restent (v529, remesuré en v554)** :
+  celles « au-dessus des portillons » étaient la sonde qui montait SUR le
+  portillon (corrigé : un portillon n'est pas un sol, le passage voisin a
+  quatre blocs). Restent une ou deux cases par station de Washington, toutes
+  en haut de l'escalier de la rue, sous le bloc de la rue lui-même (sol − 3) :
+  le remède est d'allonger la trémie d'un bloc, donc de creuser la rue —
+  surface qui bouge, date neuve, décision à prendre. Le vrai joueur passe aux
+  deux sens. `DATE_STATIONS` (world.js) se relit à la fusion.
 - [ ] **Rouges de portail de la v528 (les arbres au loin) : aucun de la
   livraison.** Seul rouge à moi : `parishd.js` lisait « cubes cachés » sur
   `plat` caché — repointé sur `arbresLoin`, vert. Restent `degats.js` (percuter

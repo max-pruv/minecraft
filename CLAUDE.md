@@ -1330,6 +1330,42 @@ règles.
   (`MARGE_GTA` à 0,4, les bouches d'avant, la barre de contour et le mobilier
   des entrées) elle rend la constante de la v531 au bit près.
 
+## Les voies droites le long des quais (v558) — une trace d'arrêt en arrêt se redresse dans l'axe du quai, et la surface se prouve par une empreinte
+
+Trois règles.
+
+- **UNE VOIE DÉCALÉE SUIT LE CAP DE SA TRACE, DONC LA TRACE SUIT LE QUAI.**
+  La trace allait d'arrêt en arrêt en ligne droite ; dans une station en
+  virage, la voie décalée de ±4 (`ECART_VOIE`) selon son cap traversait le
+  quai central aux bouts (2 590 points, cinq stations sans pylône). Autour de
+  chaque arrêt, la trace suit l'axe du quai (`AXES_AVANT`, le cap pris AVANT
+  de bouger un point : la station ne tourne pas, ses bouches ne bougent pas),
+  puis rejoint l'arrêt suivant par une courbe d'Hermite (`raccorderTroncon`),
+  le plus long possible jusqu'à `DEMI_STATION + 1`. Les mêmes points, le même
+  nombre : rangs d'arrêt, grilles horaires et tours égaux de l'Orange et de
+  l'Argent (v468) tiennent par construction ; la branche part du quai commun
+  dans l'axe du tronc.
+- **UNE COURBE PLUS SERRÉE QUE L'ÉCART D'UNE VOIE REPLIE LA VOIE DU DEDANS.**
+  Le premier jet raccordait au tracé d'avant sur deux blocs : la voie revenait
+  en arrière à L'Enfant Plaza. Le rayon du raccord ne descend pas sous
+  `RAYON_MIN_VOIE` (4,5, plus que l'écart de 4), mesuré pas à pas ; la
+  longueur droite cède avant le rayon. Zéro rebroussement (34 avant, déjà aux
+  coins). Metro Center et McPherson Square, à seize blocs, se chevauchent : la
+  voie n'y est droite que sur quelques blocs, et c'est déclaré.
+- **CE QUI BOUGE EN PROFONDEUR SE PROUVE PAR CE QUI NE BOUGE PAS EN
+  SURFACE.** Un témoin hache tout ce que `creuserMetroWashington` pose à moins
+  de trois blocs du sol sur les 79 560 colonnes de l'emprise, gardées ou non,
+  et le compare à la v547. Le choix du bout de l'escalier (`fin`, `k0`) se fait
+  contre les voies : à Foggy Bottom et Arlington Cemetery, au bord du lit du
+  Potomac, il changeait la mezzanine près du sol — elles gardent leur choix
+  (`ESCALIER_GARDE`), et aucune date neuve n'est nécessaire. Une trace qui
+  bougerait près du sol en demanderait une (v485, v309). Le gabarit dégage les
+  deux cotes d'une marche de la voie, jamais à moins de quatre blocs du sol.
+
+Et **un portillon n'est pas un sol** : la sonde des stations montait dessus,
+sous trois blocs d'air, quand le passage voisin en a quatre. Les cases « sous
+4 » qui restent sont en haut de l'escalier de la rue, sous le bloc de la rue —
+on ne creuse pas la rue.
 ## Le mobilier recule du caniveau (v557) — on déplace un prop, jamais un solide ni un feu
 
 Dettes des v536 et v544, dans les villes engendrées. Trois règles.
@@ -14459,7 +14495,7 @@ réalistes comme GTA. » Quatre règles.
   gardiens de `mesher.js` — seules `plafond.js` et `parishd.js` arment les
   arbres, et toutes deux sont rejouées seules.
 
-## Les arbres du bord (v554) — ce qu'un morceau tait, il le dessine tant que personne d'autre ne le fait
+## Les arbres du bord (v558) — ce qu'un morceau tait, il le dessine tant que personne d'autre ne le fait
 
 Deux dettes des arbres, une mesure. Deux règles.
 

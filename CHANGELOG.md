@@ -20,6 +20,51 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v558 — Le métro de Washington roule droit le long des quais
+
+**Pourquoi.** La voie du métro de Washington allait d'arrêt en arrêt en
+ligne droite. Dans une station posée sur un virage — Smithsonian prend un
+quart de tour sous son quai —, chaque voie, décalée de quatre blocs selon
+son propre cap, se rapprochait de l'axe et traversait le quai central à ses
+deux bouts : le passage des rames, creusé en dernier, ouvrait le quai, la
+rame roulait sur son bord, et il n'y avait plus de place pour le pylône du
+nom. Mesuré (`geo` des points de voie contre l'axe de chaque quai) : 2 590
+points de voie dans les quais, cinq stations sans un seul pylône
+(Smithsonian, McPherson Square, Foggy Bottom, Arlington Cemetery, Gallery
+Place), et 34 endroits où la voie du dedans revenait en arrière.
+
+**Ce que ça change.**
+- Le long de chaque quai, la voie est droite, dans l'axe de la station : la
+  rame longe le bord du quai au lieu de rouler dessus.
+- Entre deux stations, la voie tourne par une courbe douce, jamais plus
+  serrée que quatre blocs et demi : plus aucune voie ne se replie.
+- Chaque station a désormais au moins un pylône avec son nom, et l'escalier
+  du quai se pose au bout du quai plutôt qu'en son milieu.
+- Ce qu'on voit depuis la rue ne bouge pas d'un bloc : les tunnels ne
+  changent qu'en profondeur.
+
+**Ce qui le prouve.** Trois témoins neufs dans `washington.js`, rouges sur
+l'ancien code : les points de voie dans les quais (2 590 → 478, barre 1 200 ;
+ce qui reste, ce sont les demi-tours des terminus et les quais qui se
+chevauchent de Metro Center et McPherson Square, à seize blocs l'un de
+l'autre) avec zéro station sans pylône ; zéro rebroussement de voie (34
+avant) ; et l'empreinte de tout ce que le métro pose à moins de trois blocs
+du sol, sur les 79 560 colonnes de l'emprise, identique à la v547 — Foggy
+Bottom et Arlington Cemetery, dont la mezzanine longe le lit du Potomac,
+gardent leur escalier pour cela, et aucune date neuve n'est nécessaire. Le
+vrai joueur descend et remonte toujours dans les trente-cinq stations, le
+passage des rames reste sans un bloc plein (12 830 points), la durée d'un
+tour de l'Orange et de l'Argent reste celle de la Bleue (202,5 s), et
+l'import de `world.js` ne coûte rien de plus (1,17 s des deux côtés).
+L'empreinte des 490 morceaux change (Washington est un des neuf lieux) :
+désarmée, elle rend la constante d'avant au bit près. La sonde des stations
+ne pose plus le pied sur un portillon : les cases « sous quatre blocs d'air »
+qui restent sont toutes en haut de l'escalier de la rue, sous le bloc de la
+rue lui-même — déclarées. Captures avant / après (Smithsonian, Foggy Bottom,
+Archives) dans `docs/captures/stations-virages/`. Portail : seize suites
+vertes ; `monte.js` rouge sur des témoins de la rue déjà déclarés, rejouée
+seule : 3 rouges sur la branche, 5 sur `origin/main`, même famille.
+
 ## Banc — Le portail se répartit, et les voisines se taisent pendant un chargement (après la v557)
 
 Aucune livraison du jeu : seul le banc d'essai change (`tests/`), donc aucun
