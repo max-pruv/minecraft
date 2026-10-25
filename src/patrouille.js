@@ -1,4 +1,4 @@
-// LA POLICE DANS LE MONDE (v554). La règle vit dans `police.js` (pure, lue
+// LA POLICE DANS LE MONDE (v558). La règle vit dans `police.js` (pure, lue
 // sous node) ; ici on la BRANCHE : ce qui compte comme bêtise, la voiture de
 // police et la moto qui suivent l'enfant, la sirène, les gyrophares, et le
 // contrôle — un policier qui descend, dit à voix haute ce qui s'est passé et
@@ -244,20 +244,25 @@ export function creerPatrouille(ctx) {
   // LE CONTRÔLE COMMENCE PAR SE GARER DEVANT L'ENFANT. Derrière lui, la
   // voiture de police est derrière la caméra de poursuite : l'enfant ne la
   // verrait jamais (mesuré : à l'arrêt, sept blocs derrière pour une caméra à
-  // 6,4). Elle le double par sa gauche, à trois blocs de côté, et se range
+  // 6,4). Elle le double par sa gauche, un bloc au large de sa portière, et se range
   // huit blocs devant lui — gyrophares face à la caméra —, si le chemin est
   // libre ; sinon elle reste derrière, comme avant. Puis le policier descend.
-  const VOIE_DEPASSE = 3, DEVANT = 8, VITESSE_DEPASSE = 7;
+  // Une courbe à deux poignées posées à côté de l'enfant : au plus près, la
+  // police passe à ~3,3 blocs de son centre (deux demi-largeurs de voiture,
+  // 2,26, plus un bloc). Une seule poignée passait à 1,6 et frôlait sa portière.
+  const VOIE_DEPASSE = 4.3, DEVANT = 8, VITESSE_DEPASSE = 7;
+  let refusDevant = null;          // le dernier bloc qui a barré le chemin (diagnostic)
   function cheminDevant(u) {
     const ay = player.yaw + Math.PI;                         // le cap de la voiture de l'enfant
     const fx = Math.sin(ay), fz = Math.cos(ay), gx = Math.cos(ay), gz = -Math.sin(ay);
+    const C = (f, g) => ({ x: player.pos.x + fx * f + gx * g, z: player.pos.z + fz * f + gz * g });
     const P0 = { x: u.a.pos.x, z: u.a.pos.z };
-    const P1 = { x: player.pos.x + gx * VOIE_DEPASSE, z: player.pos.z + gz * VOIE_DEPASSE };
-    const P2 = { x: player.pos.x + fx * DEVANT + gx * 0.4, z: player.pos.z + fz * DEVANT + gz * 0.4 };
+    const P1 = C(-2, VOIE_DEPASSE), P2 = C(2, VOIE_DEPASSE), P3 = C(DEVANT, 0.4);
     const pts = [];
     for (let i = 0; i <= 24; i++) {
-      const t = i / 24, a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, c = t * t;
-      pts.push({ x: a * P0.x + b * P1.x + c * P2.x, z: a * P0.z + b * P1.z + c * P2.z });
+      const t = i / 24, m = 1 - t;
+      const a = m * m * m, b = 3 * m * m * t, c = 3 * m * t * t, d = t * t * t;
+      pts.push({ x: a * P0.x + b * P1.x + c * P2.x + d * P3.x, z: a * P0.z + b * P1.z + c * P2.z + d * P3.z });
     }
     // libre : aucun bloc plein à hauteur de carrosserie sous l'emprise
     if (world && world.isSolid) {
@@ -267,7 +272,13 @@ export function creerPatrouille(ctx) {
         const dx = p.x - q.x, dz = p.z - q.z, n = Math.hypot(dx, dz) || 1;
         const lx = -dz / n, lz = dx / n;
         for (const k of [-1.1, 0, 1.1]) for (const h of [0, 1]) {
-          if (world.isSolid(Math.floor(p.x + lx * k), y + h, Math.floor(p.z + lz * k))) return null;
+          const bx = Math.floor(p.x + lx * k), bz = Math.floor(p.z + lz * k);
+          if (world.isSolid(bx, y + h, bz)) { refusDevant = { x: bx, y: y + h, z: bz, id: world.getBlock(bx, y + h, bz) }; return null; }
+        }
+        // et un sol sous la ligne : on ne se gare pas au-dessus d'un vide
+        // (un bord de falaise, une berge) — on reste alors derrière
+        if (!world.isSolid(Math.floor(p.x), y - 1, Math.floor(p.z)) && !world.isSolid(Math.floor(p.x), y - 2, Math.floor(p.z))) {
+          refusDevant = { x: Math.floor(p.x), y: y - 1, z: Math.floor(p.z), id: 0 }; return null;
         }
       }
     }
@@ -465,7 +476,7 @@ export function creerPatrouille(ctx) {
       points: etat.points, etoiles: etoiles(etat.points), derniere: etat.derniere && etat.derniere.quoi,
       unites: unites.map((u) => ({ type: u.type, x: u.a.pos.x, z: u.a.pos.z, v: u.v, ecart: piste.fin - u.s })),
       controle: controle ? { etape: controle.etape, texte: controle.texte || null, cle: controle.cle,
-        devant: !!controle.chemin,
+        devant: !!controle.chemin, refus: controle.chemin ? null : refusDevant,
         x: controle.agent ? controle.agent.position.x : null, z: controle.agent ? controle.agent.position.z : null } : null,
       piste: piste.fin - piste.debut,
     }),

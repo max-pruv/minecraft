@@ -1,4 +1,4 @@
-// LA POLICE ET LA MOTO, DE BOUT EN BOUT, SUR UNE DALLE À SOI (v554).
+// LA POLICE ET LA MOTO, DE BOUT EN BOUT, SUR UNE DALLE À SOI (v558).
 //
 //  · `passage(page)` — la police. Une voiture, une VRAIE bêtise : on fonce
 //    dans une voiture garée devant soi (le choc que la physique publie, pas un
@@ -37,11 +37,14 @@ async function dalle(page, x0, z0, D) {
 
 async function passage(page) {
   const x0 = 47000, z0 = 47000;
-  const y0 = await dalle(page, x0, z0, 80);
+  // la dalle est large : en tournant cinquante secondes, la voiture dérive
+  // (mesuré : jusqu'à 90 blocs du centre, puis la chute hors de la dalle)
+  const y0 = await dalle(page, x0, z0, 130);
   return page.evaluate(async ([x0, z0, y0]) => {
     const g = window.__game, P = g.player, am = g.animalManager, pat = window.__patrouille;
     const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
     const out = {};
+    if (window.__sondeTrace) window.__traceCtrl = [];
     if (!pat) return { err: 'pas de patrouille (window.__patrouille)' };
     // la règle pure, lue dans la page
     const R = await import('./src/police.js');
@@ -132,7 +135,9 @@ async function passage(page) {
     while (performance.now() - t1 < 15000 && !pat.etat().unites.some((u) => u.type === 'moto')) await dodo(300);
     out.moto = pat.etat().unites.find((u) => u.type === 'moto') || null;
     out.etoiles2 = pat.etoiles();
-    // on s'arrête
+    // on s'arrête — et l'on dit si c'est sur la dalle (sinon le contrôle
+    // juge un terrain que le témoin n'a pas posé)
+    out.surDalle = Math.abs(P.pos.x - x0) < 120 && Math.abs(P.pos.z - z0) < 120 && Math.abs(P.pos.y - y0 - 1) < 0.6;
     P.touchMove.f = 0; P.touchMove.s = 0;
     const t2 = performance.now();
     let ctrl = null, distMin = Infinity;
@@ -140,15 +145,25 @@ async function passage(page) {
       await dodo(300);
       const e = pat.etat();
       for (const u of e.unites) distMin = Math.min(distMin, Math.hypot(u.x - P.pos.x, u.z - P.pos.z));
-      if (e.controle && !ctrl) ctrl = { ms: Math.round(performance.now() - t2), ...e.controle };
+      if (e.controle && !ctrl) ctrl = { ms: Math.round(performance.now() - t2), ...e.controle, ou: { dx: +(P.pos.x - x0).toFixed(1), dz: +(P.pos.z - z0).toFixed(1), dy: +(P.pos.y - y0).toFixed(2), yaw: +P.yaw.toFixed(2) } };
+      if (e.controle && window.__traceCtrl) { const ay = P.yaw + Math.PI; for (const u of e.unites) window.__traceCtrl.push([e.controle.etape, u.type, +((u.x - P.pos.x) * Math.sin(ay) + (u.z - P.pos.z) * Math.cos(ay)).toFixed(1), +((u.x - P.pos.x) * Math.cos(ay) - (u.z - P.pos.z) * Math.sin(ay)).toFixed(1)]); }
       if (e.controle && e.controle.etape === 'parle' && ctrl) ctrl.parle = true;
       if (ctrl && !e.controle) break;
     }
     out.controle = ctrl;
     out.distanceMin = +distMin.toFixed(2);
+    if (window.__traceCtrl) out.trace = window.__traceCtrl;
     out.dits = dits;
     out.apres = { etat: pat.etat(), pilule: pilule() };
     out.gareeMontable = am.animals.filter((x) => x.mesh.userData.flotte === 'police-car.glb' && !x.enService && !x.menee).length;
+    // où la voiture de police s'est garée, dans le repère de l'enfant (devant
+    // = le long de son cap, côté = à sa gauche) : c'est ce que la caméra voit
+    {
+      const ay = P.yaw + Math.PI, fx = Math.sin(ay), fz = Math.cos(ay);
+      const v = am.animals.find((x) => x.mesh.userData.flotte === 'police-car.glb' && !x.menee);
+      out.garee = v ? { devant: +((v.pos.x - P.pos.x) * fx + (v.pos.z - P.pos.z) * fz).toFixed(1),
+        cote: +((v.pos.x - P.pos.x) * Math.cos(ay) - (v.pos.z - P.pos.z) * Math.sin(ay)).toFixed(1) } : null;
+    }
     // et l'on rend la main : on descend, la patrouille à zéro
     for (let i = 0; i < 6 && g.fun.montureConduite && g.fun.montureConduite(); i++) { document.getElementById('ride-btn').click(); await dodo(500); }
     pat.remiseAZero();
@@ -234,6 +249,7 @@ if (require.main === module) (async () => {
   await banc.ouvrir();
   try {
     const page = await banc.jouerSeul('Policia', { pret: true });
+    if (process.env.TRACE) await page.evaluate(() => { window.__sondeTrace = 1; });
     page.on('pageerror', (e) => console.log('ERREUR', e.message));
     if (!process.env.MOTO_SEULE) console.log(JSON.stringify(await passage(page), null, 1));
     console.log(JSON.stringify(await passageMoto(page), null, 1));

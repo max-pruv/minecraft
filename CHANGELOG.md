@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v559 — La police, et la moto
+
+**Pourquoi.** Max : « dès que tu fais une bêtise, un accident, que tu fonces
+dans quelqu'un… la police ; et la moto ». Il a fourni trois modèles
+(CC-BY-4.0) : une voiture de police, une moto de police et un policier. Rien
+dans le jeu ne répondait à une bêtise au volant, et il n'y avait pas de
+deux-roues.
+
+**Ce que ça change.**
+- Foncer dans une voiture, rentrer fort dans un mur, faire s'écarter un passant
+  à vive allure, renverser le mobilier de la rue : c'est une bêtise. Une
+  pilule (gyrophare et étoiles) dit combien la police s'y intéresse ; elle
+  oublie peu à peu quand elle ne voit plus l'enfant.
+- La voiture de police (le modèle fourni) arrive derrière, sirène et
+  gyrophares rouge et bleu, et suit le chemin même de l'enfant ; à deux
+  étoiles une moto de police la rejoint.
+- Si l'enfant s'arrête, la police le double et se gare devant lui, le policier
+  descend, vient à sa portière et dit à voix haute ce qui s'est passé et quoi
+  faire (« Ralentis quand il y a des piétons. Bonne route ! »). Les étoiles
+  tombent, et la voiture de police reste garée : on peut la conduire, gyrophares
+  allumés. Personne n'est jamais touché ni poursuivi pour toujours.
+- La moto se conduit : on l'enfourche, on est à califourchon, elle a son bruit
+  de moteur et se couche dans les virages. Une attend sur le parc de la
+  Giga-usine.
+
+**Ce qui le prouve.** Quatorze témoins dans `monte.js`, qui lisent
+`tests/sonde-police.cjs` tel quel, sur une dalle à soi, avec un VRAI choc :
+les règles pures, une bêtise réelle, la voiture de police qui apparaît
+derrière, la sirène lue dans sa bande sur la sortie audio, la pilule, les
+gyrophares qui alternent, la moto à la seconde bêtise, le contrôle qui double à
+plus de 2,6 blocs et se gare devant, la phrase dite, les étoiles remises à zéro
+et la voiture garée montable ; puis la moto, son modèle et ses deux roues, son
+son, l'avatar à califourchon, l'inclinaison vers l'intérieur lue image par
+image (rouge, signe inversé : 0 bon contre 22), et la descente d'un pas de côté.
+
+---
+
 ## v558 — Le métro de Washington roule droit le long des quais
 
 **Pourquoi.** La voie du métro de Washington allait d'arrêt en arrêt en
@@ -102,6 +139,8 @@ cœurs dans chaque suite de navigateur).
 - La sélection à la ligne par couverture V8, écrite et rejouée sur les 24
   dernières livraisons : **0 %** de gain. Elle est retirée, et la raison est
   écrite dans `CLAUDE.md` pour qu'on ne la reconstruise pas.
+
+---
 
 ## v557 — Le mobilier recule du caniveau, l'hôtel de ville de Los Angeles monte
 

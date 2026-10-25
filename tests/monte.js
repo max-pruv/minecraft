@@ -9883,6 +9883,66 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         !m.err && n.cadence < 12 && c.depart && c.partRecord !== null && c.partRecord >= 0.8,
         `${m.err || ''} ${JSON.stringify(c)}`);
     }
+    // LA POLICE ET LA MOTO (v558). Max : « dès lors que tu fais une bêtise, un
+    // accident, que tu fonces dans quelqu'un… la police ; et la moto ». Une
+    // page à soi, une dalle à soi (`sonde-police.cjs`, lue telle quelle) : on
+    // fonce VRAIMENT dans une voiture garée (le choc que la physique publie),
+    // la voiture de police (le modèle fourni) apparaît derrière et suit la
+    // piste de l'enfant, la sirène sonne dans SA bande (lue sur la sortie), les
+    // gyrophares alternent, la pilule montre les étoiles ; une seconde bêtise
+    // fait venir la moto ; à l'arrêt, la police double et se gare DEVANT
+    // (derrière, la caméra de poursuite ne la verrait jamais), le policier
+    // descend, la voix dit ce qui s'est passé et quoi faire, les étoiles
+    // tombent et la voiture de police reste garée, montable. Puis la moto :
+    // deux roues, la carrure étroite, son bicylindre, et dans un virage elle se
+    // couche VERS L'INTÉRIEUR — lu image par image (inversé dans le code, le
+    // même témoin rend 0 bon pour 22 mauvais). `origin/main` n'a ni patrouille
+    // ni espèce moto : les deux passages le disent proprement.
+    {
+      const { passage: passagePolice, passageMoto } = require('./sonde-police.cjs');
+      if (!tab.isClosed()) await banc.mettreDeCote(tab);
+      const pp = await banc.jouerSeul('MontePolice', { pret: true });
+      const po = await passagePolice(pp);
+      const mo = await passageMoto(pp);
+      await pp.close();
+      if (!tab.isClosed()) await banc.ramener(tab);
+      const pj = JSON.stringify({ ...po, dits: undefined }).slice(0, 900);
+      const r = po.regle || {};
+      verifier('police : les étoiles montent par paliers, la poursuite s\'arrête au plancher, l\'oubli attend que la police ne voie plus',
+        !po.err && JSON.stringify(r.etoiles) === '[0,0,1,1,2,3,3]' && r.arretAuPlancher === 0 && r.saut === 'saut'
+          && r.oubli && r.oubli.vu === r.oubli.tot && r.oubli.pasVu < r.oubli.vu, pj);
+      verifier('police : chaque phrase est distincte, dit quoi faire, et ne porte aucun emoji',
+        !po.err && r.phrasesDistinctes === 10 && r.phrasesQuiDisentQuoiFaire === 10 && r.emoji === false, pj);
+      verifier('police : foncer dans une voiture garée est une bêtise (le choc que la physique publie)',
+        !po.err && po.choc && po.choc.points > 0 && po.choc.derniere === 'voiture', pj);
+      verifier('police : la voiture de police (le modèle fourni) apparaît derrière l\'enfant, menée, pas montable',
+        !po.err && po.apparition && po.apparition.type === 'voiture' && po.apparition.ecart > 15
+          && po.unite && po.unite.modele === 'police-car.glb' && po.unite.menee && !po.unite.montable, pj);
+      verifier('police : la sirène sonne dans sa bande, et pas avant',
+        !po.err && po.avant && po.pendant && po.pendant.bande - po.avant.bande > 8, pj);
+      verifier('police : la pilule montre les étoiles pendant la poursuite, et rien avant',
+        !po.err && po.avant && !po.avant.pilule.vis && po.pendant.pilule.vis && po.pendant.pilule.etoiles === '1', pj);
+      verifier('police : les deux gyrophares alternent',
+        !po.err && Array.isArray(po.gyrophares) && po.gyrophares.length === 2 && po.gyrophares[0] !== po.gyrophares[1], pj);
+      verifier('police : une seconde bêtise fait venir la moto',
+        !po.err && po.moto && po.moto.type === 'moto' && po.etoiles2 >= 2, pj);
+      verifier('police : à l\'arrêt, la voiture double sans toucher et se gare devant l\'enfant, le policier lui parle',
+        !po.err && po.surDalle && po.controle && po.controle.devant && po.controle.parle && po.distanceMin > 2.6
+          && po.garee && po.garee.devant > 5 && Math.abs(po.garee.cote) < 2, pj);
+      verifier('police : la voix dit l\'appel puis ce qui s\'est passé et « Bonne route »',
+        !po.err && Array.isArray(po.dits) && po.dits.length >= 2 && /Bonne route/.test(po.dits[po.dits.length - 1].texte),
+        JSON.stringify(po.dits));
+      verifier('police : après le contrôle, plus d\'étoiles, et la voiture de police reste garée, montable',
+        !po.err && po.apres && po.apres.etat.points === 0 && !po.apres.pilule.vis && po.gareeMontable >= 1, pj);
+      const mj = JSON.stringify(mo);
+      verifier('moto : on l\'enfourche, deux roues, la carrure étroite, le son d\'une moto, l\'enfant à califourchon',
+        !mo.err && mo.modele && JSON.stringify(mo.roues) === '["Wheel_F","Wheel_R"]' && mo.enSelle
+          && mo.gabarit > 0.6 && mo.gabarit < 2 && mo.moteur === 'moto' && mo.avatar && mo.avatar.cuisse < -0.5, mj);
+      verifier('moto : dans un virage elle se couche vers l\'intérieur (image par image)',
+        !mo.err && mo.virage && mo.virage.bons >= 8 && mo.virage.mauvais * 5 <= mo.virage.bons && mo.virage.lean > 0.25, mj);
+      verifier('moto : on en descend d\'un pas de côté, la carrure rendue',
+        !mo.err && mo.descendu && mo.pasDeCote >= 0.8 && mo.gabaritApres < 1, mj);
+    }
   } finally {
     await banc.fermer();
   }

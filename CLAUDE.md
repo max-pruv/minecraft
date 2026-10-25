@@ -921,6 +921,57 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La police et la moto (v558) — une poursuite suit la piste de l'enfant, et un contrôle se range là où la caméra regarde
+
+Max : « dès lors que tu fais une bêtise, un accident, que tu fonces dans
+quelqu'un… la police ; et la moto ». `src/police.js` (pur : points, étoiles,
+oubli, piste, poursuite, phrases), `src/patrouille.js` (ce qui se voit et
+s'entend), `src/moto.js` (le modèle, ses éclats). Les modèles sont ceux de Max
+(CC-BY-4.0, crédits dans `vendor/*/LICENSE.md`), convertis par
+`scripts/convertir-police.mjs`. Sept règles.
+
+- **UNE BÊTISE SE LIT SUR CE QUE LA PHYSIQUE PUBLIE, JAMAIS SUR UN GESTE.**
+  `player.choc` neuf (contre une voiture, un mur assez fort, la police elle-même),
+  `player.freinePieton` qui s'allume à vive allure (forcer un passant à
+  s'écarter), `statsCasse.n` (le mobilier, v536). Rien n'est jamais violent :
+  personne n'est touché, la police ne pousse pas, elle suit et elle parle.
+- **LA POLICE SUIT LA PISTE DE L'ENFANT, ELLE NE CHERCHE PAS UN CHEMIN.** La
+  `Piste` enregistre où la voiture de l'enfant est passée (un point tous les
+  1,5 bloc) ; une unité est MENÉE le long d'elle (`menee`, posée à la main,
+  `animals.js` ne la fait pas vivre) à `vitessePoursuite`, qui freine à la
+  distance d'arrêt et ne passe jamais sous `ECART × PLANCHER`. Là où l'enfant
+  est passé, une voiture passe : aucune recherche de chemin, aucun mur
+  traversé. Un saut (téléportation, carte) remet tout à zéro.
+- **LE CONTRÔLE SE RANGE DEVANT : DERRIÈRE, LA CAMÉRA NE VOIT RIEN.** À l'arrêt
+  la police était à sept blocs derrière une caméra de poursuite à 6,4 : elle
+  n'existait pas pour l'enfant (vu en capture). Elle double par la gauche sur
+  une courbe à deux poignées — au plus près ~3,3 blocs du centre, deux
+  demi-largeurs et un bloc (une seule poignée passait à 1,6 et frôlait la
+  portière) — et se gare huit blocs devant, si aucun bloc plein ne barre
+  l'emprise ; sinon elle reste derrière. Le refus se dit (`etat().controle.refus`).
+- **UN VÉHICULE DE SERVICE N'EST PAS DANS LA RUE.** `horsRue: true` dans la
+  fiche de FLOTTE : `choixFlotte` et le tirage des voitures neuves l'écartent.
+  Une unité en service (`enService`) ne se monte pas et ne se retire pas à
+  distance ; garée après le contrôle, elle est une voiture comme une autre.
+- **CE QUI EST UNE MOTO SE DIT DANS LA FICHE** (`selle`, `penche`, `pose`,
+  `moteur: 'moto'`, la classe `moto` de `conduite.js`), jamais dans une liste de
+  `fun.js` : on l'enfourche sans séquence de portière, on en descend d'un pas
+  de côté, l'avatar est à califourchon, et elle se couche VERS L'INTÉRIEUR
+  (`atan(lat/g)`, le signe inverse du roulis d'une voiture). Un signe se lit
+  dans la matrice, image par image : mesuré au minuteur, deux relevés
+  tombaient dans la même image et le verdict valait 11 contre 13 ; image par
+  image, 23 contre 0, et 0 contre 22 le signe inversé.
+- **SEULS LES PIVOTS S'APPELLENT `Wheel_*`.** Le jeu fait tourner tout nœud
+  dont le nom commence par `Wheel_` : un pneu nommé `Wheel_FL_Tire` sous le
+  pivot `Wheel_FL` tournait deux fois. Les enfants s'appellent `Pneu_`, `Roue_`.
+- **UNE VOIX DE TÉMOIN SE REMPLACE PAR `defineProperty`.** `window.speechSynthesis`
+  est un accesseur : l'affecter ne fait rien, et le témoin ne lisait aucune
+  phrase. Le témoin lit ce que le jeu a demandé de dire (l'appel, puis la cause
+  et « Bonne route »), la sirène dans SA bande (1 100–1 450 Hz) sur la sortie.
+
+Ce qui reste, déclaré dans `TASKS.md` : la police est locale à la tablette (un
+ami ne la voit pas) ; la moto a la boîte de collision d'une voiture en longueur.
+
 ## Passager dans l'avion d'un ami (v552) — un siège se déclare dans la fiche, et le reste suit
 
 Max : « rentrer dans une voiture, avion… en passager si un autre joueur est

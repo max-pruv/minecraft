@@ -237,6 +237,10 @@ src/marlon.js     friendly NPCs (Marlon the companion, Professeur Cornichon)
 src/vie.js        city life; src/vehicules.js  métro trains (which stop at
                   stations) and F1 cars
 src/stations.js   the name of every metro station, written on its platform
+src/police.js src/patrouille.js  the police: a bêtise at the wheel brings a
+                  police car (and a moto at two stars) along your own trail; stop,
+                  and the officer tells you what happened — never violent
+src/moto.js       the rideable police moto, which leans into turns
 
   the places
 src/paris.js src/manhattan.js src/sanfrancisco.js src/nice.js src/lille.js
@@ -255,4 +259,6 @@ src/journal.js    the device's logbook: crash detection, safety tier, cloud repo
 
 vendor/           three.js r160 + GLTFLoader (MIT — see THREE_LICENSE),
                   voiture.glb — the drivable car's 3D model (VOITURE_LICENSE)
+                  voitures/police-car.glb, moto-police.glb, humains/policier.glb —
+                  CC-BY-4.0, credits in their LICENSE.md
 ```
