@@ -134,6 +134,7 @@ const FEUILLES_MIN = 3;
 const PAR_KIND_BLOC = (kind) => (kind === 2 ? BLOCK.BIRCH : BLOCK.LOG);
 export function reconnaitreArbres(get, signature, C, yLo, yHi, H) {
   const liste = [];
+  const bord = [];
   const cellules = new Set();
   // la fenêtre de travail : le morceau, ses trois colonnes de marge, et trois
   // de plus pour les feuilles d'un fût de la marge ; en hauteur, de `yLo` au
@@ -142,7 +143,7 @@ export function reconnaitreArbres(get, signature, C, yLo, yHi, H) {
   // par arbre et coûtait quinze millisecondes par morceau de forêt.
   const M = FENETRE * 2, W = C + 2 * M;
   const y0 = Math.max(0, yLo), y1 = Math.min(H - 1, yHi + 6), HY = y1 - y0 + 1;
-  if (HY <= 0) return { liste, cellules };
+  if (HY <= 0) return { liste, cellules, bord };
   const marque = new Uint16Array(W * W * HY);
   const pile = new Int32Array(W * W * HY);
   let timbre = 0;
@@ -215,11 +216,18 @@ export function reconnaitreArbres(get, signature, C, yLo, yHi, H) {
         for (let i = 0; i < feuilles.length; i += 3) if (dedans(feuilles[i], feuilles[i + 2])) cellules.add(feuilles[i] + feuilles[i + 2] * C + feuilles[i + 1] * C * C);
         for (const [ax, ay, az] of fourche) if (dedans(ax, az)) cellules.add(ax + az * C + ay * C * C);
         if (dedans(x, z)) liste.push({ x, y, z, h, bloc: id, kind, boite, feuilles: feuilles.length / 3 });
+        else {
+          // un fût du bord (v554) : ses cases dans le morceau, s'il en a
+          let nd = 0;
+          for (let i = 0; i < feuilles.length; i += 3) if (dedans(feuilles[i], feuilles[i + 2])) nd++;
+          for (const [ax, , az] of fourche) if (dedans(ax, az)) nd++;
+          if (nd > 0) bord.push({ x, y, z, h, bloc: id, kind, boite, feuilles: feuilles.length / 3, dedans: nd });
+        }
         y += h - 1;
       }
     }
   }
-  return { liste, cellules };
+  return { liste, cellules, bord };
 }
 
 // --- la géométrie ------------------------------------------------------------------------
@@ -562,15 +570,27 @@ export function arbreLoin(buf, x, y, z, wx, wz, h, boite, essence, climat = 0) {
 // `kind` de sa signature, ou un arbre de ville), le climat, le modèle.
 // `climats` est la table de `teintesDuMorceau` (ou null).
 // `loin` : le modèle lointain (`arbreLoin`, v528) au lieu du proche.
+// (`climats` peut aussi être une fonction de l'arbre : un arbre du bord lit
+// la table de SON morceau, v554)
 export function emettreArbres(buf, arbres, ox, oz, C, climats, loin = false) {
   let n = 0;
   const modele = loin ? arbreLoin : arbreVrai;
   for (const a of arbres.liste) {
     const wx = ox + a.x, wz = oz + a.z;
-    const climat = climats ? climats[a.x + a.z * C] : 0;
+    const climat = typeof climats === 'function' ? (climats(a) || 0) : climats ? climats[a.x + a.z * C] : 0;
     const essence = essenceDe(a.kind, a.bloc, climat);
     modele(buf, a.x, a.y, a.z, wx, wz, a.h, a.boite, essence, climat);
     n++;
   }
   return n;
+}
+
+// Les huit voisins d'un morceau, dans l'ordre du tour (v554) : un arbre du
+// bord a sa base dans l'un d'eux (`FENETRE` est sous la largeur d'un morceau).
+// Rangés en cercle, les directions d'un bord du disque chargé (nord-ouest,
+// nord, nord-est) sont contiguës : `main.js` les montre en une ou deux plages.
+export const DIRECTIONS_VOISINS = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
+export function directionDuVoisin(dx, dz) {
+  for (let d = 0; d < 8; d++) if (DIRECTIONS_VOISINS[d][0] === dx && DIRECTIONS_VOISINS[d][1] === dz) return d;
+  return -1;
 }

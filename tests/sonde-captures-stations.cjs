@@ -16,11 +16,18 @@ const VUES = [
   ['paris', 'Concorde', 'escalier'],
   ['paris', 'Concorde', 'salle'],
   ['paris', 'Bastille', 'quai'],
+  ['paris', 'Hôtel de Ville', 'escalier'],
+  ['paris', 'Hôtel de Ville', 'rue'],
+  ['paris', 'Reuilly–Diderot', 'plaque'],
   ['dc', 'Archives', 'quai'],
   ['dc', 'Archives', 'face'],
   ['dc', 'Archives', 'escalier'],
   ['dc', 'Archives', 'mezzanine'],
   ['dc', 'Dupont Circle', 'quai'],
+  // les stations en virage (v548) : la voie redressée le long du quai
+  ['dc', 'Smithsonian', 'quai'],
+  ['dc', 'Smithsonian', 'face'],
+  ['dc', 'Foggy Bottom', 'quai'],
 ];
 
 (async () => {
@@ -47,10 +54,17 @@ const VUES = [
             const sg = b ? b.cote : 1;
             if (quoi === 'quai') { [x, z] = P(-10, sg * 4.8); [cx, cz] = P(8, sg * 3.6); y0 = yr + 2; }
             if (quoi === 'face') { [x, z] = P(4, sg * 4.6); [cx, cz] = P(3, -sg * 7); y0 = yr + 2; }
+            // le piédroit du côté de la bouche, à la case du nom (v555)
+            if (quoi === 'plaque') { [x, z] = P(4, -sg * 2.5); [cx, cz] = P(8.5, sg * 7); y0 = yr + 2; }
             if (quoi === 'escalier' || quoi === 'salle') {
               const pe = (m) => V.pointEsc(q, b, m, 0);
               if (quoi === 'escalier') { [x, z] = pe(1); [cx, cz] = pe(9); y0 = yr + 3; cy = yr + 9; }
               else { [x, z] = pe(-5); [cx, cz] = pe(2); y0 = yr + 2; }
+            }
+            // la trémie vue de la rue (v555) : de l'autre bout, en surplomb
+            if (quoi === 'rue') {
+              const pe = (m, t = 0) => V.pointEsc(q, b, m, t);
+              [x, z] = pe(V.LONG_ESC + 9, 3); [cx, cz] = pe(V.LONG_ESC - 4); y0 = yr + 16 + 4; cy = yr + 16;
             }
           } else {
             const D = await import('./src/washington.js');

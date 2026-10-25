@@ -415,7 +415,18 @@ const MM_ECART = 2.2;
 // metromonde.js, la barre de partage des contours et le mobilier des entrées
 // dans villesmonde.js), la branche rend 4cf5d456…, la constante de la v531,
 // au bit près — rien d'autre n'a bougé.
-const EMPREINTE_MORCEAUX_V357 = 'b44dcc329d64fb1c5e7930d3b3d361f19e0a361a656dfbde233b368430821088';
+// v555 : les bouches rendues de la ligne 1 (Hôtel de Ville au sud, Saint-Paul
+// au nord, Reuilly–Diderot à trois blocs de la case du nom). Désarmées (ni
+// libération de la station qui perce une plaque, ni dernier recours, ni filtre
+// de la case du nom, dans `bouchesLigne1` et `choisirBouches` de ville.js), la
+// branche rend b44dcc32…, la constante de la v554, au bit près.
+// v558 : les voies droites le long des quais de Washington. 9fc2d321… →
+// ed369fdb…. Désarmées (le redressement, la marche du gabarit et les deux
+// escaliers gardés retirés d'une copie de washington.js), la branche rend
+// 9fc2d321…, la constante de la v555, au bit près ; et le creusement de toute
+// l'emprise du métro, comparé colonne par colonne à `origin/main`, ne change
+// rien à moins de trois blocs du sol (10 921 colonnes changées, toutes dessous).
+const EMPREINTE_MORCEAUX_V357 = 'ed369fdb3743a2f970a00313be3299bde394dc529c9cbe686235ded95cbe8db4';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -624,6 +635,51 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const t = await trousAuxCulees(require('path').resolve(__dirname, '../src')).catch((e) => ({ erreur: String(e) }));
     verifier('au bout de chaque pont d\'autoroute, toute la chaussée porte la voiture',
       !t.erreur && t.points > 50000 && t.trous === 0, t.erreur || JSON.stringify(t));
+  }
+
+  // --- UNE VOITURE TOMBE DANS L'EAU (v560) ----------------------------------
+  // Décision de Max, qui annule la v272 : « s'il tombe dans l'eau, il tombe
+  // dans l'eau ». Le VRAI joueur sous node (`sonde-voiture-eau.cjs`), un port
+  // fabriqué, pleins gaz vers le bassin, sans crochet d'eau : la voiture
+  // plonge, l'eau la freine (elle ne roule plus au fond : seize blocs/s à
+  // travers le bassin, mesuré sans la trainée), le moteur cale sous l'eau,
+  // l'enfant en sort et remonte. Et un gué d'un bloc freine sans noyer.
+  {
+    const { rouleVersLEau } = require('./sonde-voiture-eau.cjs');
+    const src = require('path').resolve(__dirname, '../src');
+    const o = await rouleVersLEau(src, 'aucune').catch((e) => ({ erreur: String(e) }));
+    verifier('une voiture qui roule vers l\'eau y tombe, l\'eau la freine, elle coule, et l\'enfant remonte à la surface',
+      !o.erreur && o.tEau !== null && o.fin && o.fin.d > o.quai && o.fin.d < o.quai + 25 && o.tNoyee !== null && !!o.sortie && o.tSurface !== null && o.tSurface < 4,
+      o.erreur || JSON.stringify({ tEau: o.tEau, vEntree: o.vEntree, tNoyee: o.tNoyee, sortie: o.sortie, tSurface: o.tSurface, fin: o.fin }));
+    const gue = await rouleVersLEau(src, 'aucune', 4, 1).catch((e) => ({ erreur: String(e) }));
+    verifier('un gué d\'un bloc freine la voiture sans la noyer',
+      !gue.erreur && gue.tEau !== null && gue.tNoyee === null && gue.fin.d > gue.quai + 10,
+      gue.erreur || JSON.stringify({ tEau: gue.tEau, tNoyee: gue.tNoyee, fin: gue.fin }));
+  }
+
+  // --- ON NE S'ENFONCE PAS DANS UN VÉHICULE, PUR (v560) ----------------------
+  // Max : « il ne faut pas que les véhicules puissent passer les uns dans les
+  // autres ». « Pas si l'on est déjà dedans » (v245) se jugeait par famille :
+  // collé à une voiture, on traversait celle d'à côté. La règle (`sEnfonce`,
+  // conduite.js) se juge par véhicule et par enfoncement : entrer, ou aller
+  // plus loin, est refusé ; se dégager ou longer reste permis. Sur l'ancien
+  // code la fonction n'existe pas, et le verdict le dit.
+  {
+    const C = await import('../src/conduite.js');
+    if (!C.sEnfonce) verifier('on ne s\'enfonce pas dans un véhicule : la règle', false, 'sEnfonce absent (ancien code)');
+    else {
+      const R = (x, z, cap) => C.rectangleDeBoite(C.boiteVoiture(x, z, cap, 2.2, 1.13));
+      const lui = R(0, 0, Math.PI / 2);                    // une voiture le long de x
+      const cas = {
+        entrer: C.sEnfonce(R(-5, 0, Math.PI / 2), R(-4.2, 0, Math.PI / 2), lui),     // on arrive par l'arrière
+        plusLoin: C.sEnfonce(R(-4.2, 0, Math.PI / 2), R(-3.8, 0, Math.PI / 2), lui), // déjà au contact, on pousse
+        reculer: C.sEnfonce(R(-4.2, 0, Math.PI / 2), R(-4.6, 0, Math.PI / 2), lui),  // on se dégage
+        longer: C.sEnfonce(R(0.3, 2.1, Math.PI / 2), R(1.0, 2.1, Math.PI / 2), lui), // flanc contre flanc, on longe
+        aCote: C.sEnfonce(R(0, 5, Math.PI / 2), R(0.5, 5, Math.PI / 2), lui),        // loin : rien
+      };
+      verifier('on ne s\'enfonce pas dans un véhicule : entrer ou aller plus loin est refusé, reculer et longer restent permis',
+        cas.entrer && cas.plusLoin && !cas.reculer && !cas.longer && !cas.aCote, JSON.stringify(cas));
+    }
   }
 
   // --- LE MOBILIER SE CASSE, PUR (v536) --------------------------------------
@@ -1249,7 +1305,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       'Amsterdam|Westerkerk': 85, 'Prague|L\'horloge astronomique': 70,
       'Stockholm|L\'hôtel de ville': 106,
       'Jérusalem|Le dôme du Rocher': 35, 'Jérusalem|La tour de David': 30,
-      'Los Angeles|L\'hôtel de ville': 138, 'Buenos Aires|L\'Obélisque': 68,
+      // (L'hôtel de ville de Los Angeles a son bâtisseur depuis les rues à la
+      // GTA : il est dans la table du module, plus ici.)
+      'Buenos Aires|L\'Obélisque': 68,
       'Berlin|Berliner Dom': 98, 'Singapour|Marina Bay Sands': 200, 'Bangkok|Wat Arun': 82,
       'Delhi|Rashtrapati Bhavan': 55,
       // Le lot 2, les villes bâties à la main (v350).
@@ -3166,9 +3224,23 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const t0 = Date.now();
     const r = await mesurerLigne1();
     const ratees = (r.descentes || []).filter((d) => !d.arrive).map((d) => d.nom);
-    verifier('la ligne 1 de Paris : seize stations, une bouche par station sauf Nation, et de chaque bouche on descend au quai',
-      !r.absente && r.stations === 16 && r.bouches >= 15 && ratees.length === 0,
+    // Seize sur seize depuis la v555 : Hôtel de Ville, Saint-Paul et la
+    // Bastille se disputaient le seul trottoir au sud de la ligne, et Hôtel de
+    // Ville n'avait plus de bouche (15/16 sur la v554). Rouge sur l'ancien code.
+    verifier('la ligne 1 de Paris : seize stations, une bouche par station, et de chaque bouche on descend au quai',
+      !r.absente && r.stations === 16 && r.bouches === 16 && ratees.length === 0,
       r.absente ? 'aucune ligne 1 (ville.js ne la publie pas)' : `${r.bouches}/${r.stations} bouches, descentes ratées : ${ratees.join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
+    // ET CHAQUE STATION GARDE SES QUATRE PLAQUES (v555) : le couloir d'une
+    // bouche rechoisie ne perce plus le piédroit à la case du nom. Rouge sur la
+    // v554 : Reuilly–Diderot en avait trois (63 plaques sur 64).
+    {
+      const V = await import('../src/ville.js');
+      const pl = V.plaquesParis();
+      const manque = pl.filter((x) => x.plaques.length < 4).map((x) => `${x.nom} ${x.plaques.length}`);
+      verifier('chaque station de la ligne 1 porte ses quatre plaques de nom',
+        pl.length === 16 && manque.length === 0,
+        `${pl.reduce((n, x) => n + x.plaques.length, 0)} plaques ; à moins de quatre : ${manque.join(', ') || 'aucune'}`);
+    }
     verifier('rien ne barre les rames, la Seine reste pleine, et aucune bouche ne mure une rue ni un circuit',
       !r.absente && r.lus > 1000 && r.gabarit === 0 && r.poches === 0 && r.surChaussee === 0 && r.mure === 0 && r.circuits > 0,
       r.absente ? 'aucune ligne 1' : JSON.stringify({ gabarit: r.gabarit, lus: r.lus, poches: r.poches, surChaussee: r.surChaussee, mure: r.mure, circuits: r.circuits }));
@@ -3190,8 +3262,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('la ligne A de Rome : douze stations, une bouche par station, et de chaque bouche on descend au quai',
       // Lepanto n'a plus de bouche depuis les rues à la GTA : son trottoir s'est
       // éloigné de la ligne, et aucune des 22 076 places essayées jusqu'à
-      // quarante blocs ne le tient (refus « rue », mesuré) — dette déclarée
-      // dans TASKS.md. Toute autre station sans bouche rougit.
+      // quarante blocs ne le tient (refus « rue », mesuré). Remesuré en v555 au
+      // quart de bloc, pied jusqu'au bout du quai, coins et feux permis : 666
+      // trémies tiennent sur le trottoir, et TOUTES ont leur escalier sous le
+      // Tibre (jusqu'à la marche 15) — une décision de sol, déclarée dans
+      // TASKS.md. Toute autre station sans bouche rougit.
       !!L && L.stations === 12 && L.bouches >= 11 && L.sansBouche.every((n) => n === 'Lepanto') && ratees.length === 0,
       !L ? 'aucune ligne A (metromonde.js absent)' : `${L.bouches}/${L.stations} bouches (sans : ${L.sansBouche.join(', ') || 'aucune'}), descentes ratées : ${ratees.join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
     verifier('rien ne barre les rames de Rome, le Tibre reste plein, et la bouche ne touche que le trottoir',
@@ -3226,12 +3301,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const r = await mesurer(require('path').resolve(__dirname, '..'));
     const st = r.stations;
     const rates = st.filter((x) => !(x.joueur && x.joueur.arrive && x.retour && x.retour.arrive));
-    verifier('de la rue au quai et du quai à la rue, le vrai joueur passe dans les trente-cinq stations',
-      st.length === 35 && rates.length === 0,
+    // trente-six depuis la v555 : Hôtel de Ville a retrouvé sa bouche
+    verifier('de la rue au quai et du quai à la rue, le vrai joueur passe dans les trente-six stations',
+      st.length === 36 && rates.length === 0,
       `${st.length - rates.length}/${st.length} stations ; ratées : ${rates.map((x) => `${x.ville} ${x.nom}${x.arrive ? (x.joueur && x.joueur.arrive ? ' (remontée ' + JSON.stringify(x.retour.bute) + ')' : ' (descente ' + JSON.stringify(x.joueur.bute) + ')') : ' (pas de chemin)'}`).join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
     const bas = st.filter((x) => x.arrive && (x.hautMin < 3 || x.sous4 > 8 || x.sautsBas > 0 || x.sautsRetour > 2));
     verifier('et la tête passe : jamais moins de trois blocs d\'air, quatre presque partout, aucun élan qui cogne en descendant',
-      st.length === 35 && bas.length === 0 && rates.length === 0,
+      st.length === 36 && bas.length === 0 && rates.length === 0,
       `${bas.map((x) => `${x.nom} : plafond ${x.hautMin}, ${x.sous4} cases sous 4, élans cognés ${x.sautsBas}/${x.sautsRetour}`).join(' ; ') || 'partout'} (max cases sous 4 : ${Math.max(...st.filter((x) => x.arrive).map((x) => x.sous4))})`);
     verifier('le passage des rames reste libre sur les deux réseaux',
       r.lus > 10000 && r.gabarit === 0, `${r.gabarit} pleins sur ${r.lus} points`);
@@ -3306,6 +3382,71 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('le sol HD se soude : un cinquième de moins, les mêmes triangles des mêmes valeurs',
       lus > 50 && neuf < 0.8 * vieux && fautes === 0 && coins > 0,
       `${lus} morceaux, ${Mo(vieux)} → ${Mo(neuf)} Mo, ${coins} coins, ${fautes} morceau(x) en écart (${ecarts} coins), ${Date.now() - t0} ms`);
+  }
+
+  // LE MOBILIER DE BORDURE RECULE D'UN BLOC (dette de la v536). Le long des
+  // circuits, une voiture à un bloc de sa voie butait sur 18 à 36 réverbères,
+  // feux et jardinières par kilomètre (`sonde-mobilier-route.cjs`). Le réverbère
+  // et la jardinière reculent contre les façades : aucun n'a plus de chaussée
+  // à côté de lui, la rue garde autant de réverbères (on compte le long de la
+  // même rue, v271), et le feu et le banc ne bougent pas d'un bloc — le feu lit
+  // son axe dans sa position (v273), le banc est solide (v457). Rouge sur
+  // l'ancien code : les réverbères y bordent le caniveau.
+  {
+    const VM = await import('../src/villesmonde.js');
+    const B = await import('../src/blocks.js');
+    const reg = VM.reglageMobilier;
+    // La grandeur est la distance au milieu de la VOIE que roulent les
+    // voitures (le tracé de `tracesCirculation`), pas le voisinage d'une
+    // colonne de chaussée : sur une trame tournée, la case du mobilier est
+    // jugée en son centre (v270) et un voisin de colonne ne dit rien. Une
+    // voiture de 2,26 à un bloc de sa voie a son flanc à 2,13 du milieu : à
+    // moins de 3 blocs, la case la touche (débord compris). Mesuré : 886 sur
+    // six villes à l'ancienne place, 0 reculés.
+    const tous = VM.tracesCirculation(() => 33);
+    const lire = (f) => {
+      const out = { rev: 0, bord: 0, fixes: [] };
+      const segs = [];
+      for (const t of tous.filter((t) => t.cle === f.cle)) for (let i = 0; i < t.pts.length; i++) segs.push([t.pts[i], t.pts[(i + 1) % t.pts.length]]);
+      const R = Math.floor(f.rayon);
+      for (let x = Math.floor(f.ancre.x) - R; x <= f.ancre.x + R; x++) for (let z = Math.floor(f.ancre.z) - R; z <= f.ancre.z + R; z++) {
+        if (VM.solVillesMonde(x, z) !== B.CITY_BLOCK.SIDEWALK) continue;
+        VM.mobilierVillesMonde(x, z, (dy, id) => {
+          if (dy !== 1) return;
+          if (id === B.RUE.REVERBERE || id === B.RUE.JARDINIERE) {
+            if (id === B.RUE.REVERBERE) out.rev++;
+            const cx = x + 0.5, cz = z + 0.5;
+            for (const [a, b] of segs) {
+              const dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz || 1;
+              const s = Math.max(0, Math.min(1, ((cx - a.x) * dx + (cz - a.z) * dz) / l2));
+              if (Math.hypot(cx - a.x - dx * s, cz - a.z - dz * s) < 3) { out.bord++; break; }
+            }
+          } else out.fixes.push(`${x},${z},${id}`);
+        });
+      }
+      return out;
+    };
+    const villes = ['rome', 'zurich', 'tokyo', 'berlin', 'shanghai', 'losangeles', 'madrid', 'moscou'];
+    let bord = 0, rev = 0, rev0 = 0, bord0 = 0, fixesBouges = 0;
+    for (const cle of villes) {
+      const f = VM.VILLES_MONDE.find((v) => v.cle === cle);
+      if (!f) continue;
+      const a = lire(f);
+      bord += a.bord; rev += a.rev;
+      if (reg) {
+        const r0 = reg.recul; reg.recul = 0;
+        const b = lire(f); reg.recul = r0;
+        rev0 += b.rev; bord0 += b.bord;
+        const vus = new Set(b.fixes);
+        fixesBouges += a.fixes.filter((k) => !vus.has(k)).length + (b.fixes.length - a.fixes.length);
+      }
+    }
+    verifier('le réverbère et la jardinière d\'une ville engendrée reculent d\'un bloc : plus un à portée d\'une voiture qui serre le trottoir',
+      rev > 2000 && bord === 0 && (!reg || bord0 > 300),
+      `${bord} à moins de 3 blocs du milieu d'une voie, sur ${rev} réverbères (${villes.length} villes)${reg ? ` ; à l'ancienne place : ${bord0}` : ''}`);
+    verifier('et la rue garde ses réverbères, ses feux et ses bancs à leur place',
+      !!reg && rev >= 0.85 * rev0 && fixesBouges === 0,
+      reg ? `${rev} réverbères pour ${rev0} à l'ancienne place, ${fixesBouges} feux ou bancs déplacés` : 'pas de reglageMobilier (ancien code)');
   }
 
   // UNE BAIE, PAS DEUX (v457). Les villes engendrées posaient deux blocs
@@ -3629,11 +3770,54 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // proche (les cubes tus), et chaque arbre a son modèle LOINTAIN dans
       // `arbresLoin`, quelques cartes, à moins d'un quart des sommets du proche.
       // Sur l'ancien code, le loin gardait ses cubes (`solid` = celui d'avant).
-      const vLoin = loin.arbresLoin ? loin.arbresLoin.positions.length / 3 : 0;
+      // (les modèles des arbres du BORD suivent ceux du morceau dans le même
+      // tampon depuis la v554 : on ne compte que ceux du morceau)
+      const vLoin = loin.arbresLoin ? (loin.arbresBord ? loin.arbresBord.sommets : loin.arbresLoin.positions.length / 3) : 0;
       const vPres = arme.facades ? arme.facades.positions.length / 3 : 0;
       verifier('au loin, les arbres ne sont plus des cubes : leurs cubes se taisent et chacun a son modèle lointain, à moins d\'un quart des sommets du proche',
         loin.arbres === arme.arbres && sha(loin.solid) === sha(arme.solid) && !loin.facades && vLoin > loin.arbres * 12 && vLoin * 4 < vPres,
         `${loin.arbres} arbres au loin (${arme.arbres} de près) ; solid du loin = solid du proche ${sha(loin.solid) === sha(arme.solid)} ; ${vLoin} sommets au loin, ${vPres} de près`);
+      // (3 bis bis, v554) AU BORD DU DISQUE CHARGÉ, UNE COURONNE NE MANQUE PLUS
+      // DE SA PART TUE. Les feuilles d'un arbre dont la base est dans un
+      // morceau voisin se taisent ici ; c'est le voisin qui dessine l'arbre —
+      // et tant qu'il n'est pas maillé, cette part manquait (sonde : sept
+      // arbres, 147 cases au bord d'un disque de rayon douze). Le morceau
+      // porte donc aussi le modèle lointain de chaque arbre du bord, rangé par
+      // direction (`arbresBord`), et ce modèle est EXACTEMENT celui que le
+      // voisin dessine : mêmes sommets dans le monde, mêmes couleurs — un arbre
+      // ne change pas quand son voisin arrive. Et la frontière du détail (dette
+      // v499) : le `solid` d'un morceau ne dépend pas de son détail, donc un
+      // arbre n'y montre jamais ses cubes d'un côté et son relief de l'autre.
+      {
+        const wb = monde(1);
+        const cle = (p, i, o) => `${(p[i * 3] + o[0]).toFixed(3)},${p[i * 3 + 1].toFixed(3)},${(p[i * 3 + 2] + o[1]).toFixed(3)}`;
+        let groupes = 0, sommetsBord = 0, absents = 0, cases = 0, solidStable = true, temoin = null;
+        const voisins = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
+        const tamp = new Map();
+        const t = (cx, cz) => { const k = cx + ',' + cz; if (!tamp.has(k)) tamp.set(k, buildChunkTampons(wb, cx, cz, { detail: false })); return tamp.get(k); };
+        for (const [ox, oz] of [[0, 0], [1, 0], [0, 1]]) {
+          const cx = best.cx + ox, cz = best.cz + oz, tb = t(cx, cz);
+          if (!buildChunkTampons(monde(1), cx, cz, { detail: true }).solid || sha(buildChunkTampons(monde(1), cx, cz, { detail: true }).solid) !== sha(tb.solid)) solidStable = false;
+          const b = tb.arbresBord;
+          if (!b) continue;
+          for (const [d, debut, n] of b.groupes) {
+            groupes++;
+            const [dx, dz] = voisins[d], ta = t(cx + dx, cz + dz);
+            const ref = new Set();
+            const pa = ta.arbresLoin.positions, na = ta.arbresBord ? ta.arbresBord.sommets : pa.length / 3;
+            for (let i = 0; i < na; i++) ref.add(cle(pa, i, [(cx + dx) * W.CHUNK, (cz + dz) * W.CHUNK]));
+            const idx = tb.arbresLoin.indices, pb = tb.arbresLoin.positions;
+            const vus = new Set();
+            for (let k = debut; k < debut + n; k++) vus.add(idx[k]);
+            for (const i of vus) { sommetsBord++; if (!ref.has(cle(pb, i, [cx * W.CHUNK, cz * W.CHUNK]))) { absents++; if (!temoin) temoin = cle(pb, i, [cx * W.CHUNK, cz * W.CHUNK]); } }
+          }
+          cases += A.reconnaitreArbres((x, y, z) => wb.getBlock(cx * W.CHUNK + x, y, cz * W.CHUNK + z), (lx, lz) => wb.treeAt(cx * W.CHUNK + lx, cz * W.CHUNK + lz), W.CHUNK, 20, 120, W.HEIGHT).bord
+            ?.reduce((s, a) => s + a.dedans, 0) || 0;
+        }
+        verifier('au bord du disque chargé, la couronne d\'un arbre dont la base est dans un morceau voisin ne manque plus : le morceau porte son modèle lointain, celui-là même que le voisin dessine (v554)',
+          groupes > 0 && sommetsBord > 100 && absents === 0 && solidStable,
+          `${groupes} directions, ${sommetsBord} sommets d'arbres du bord, ${absents} absents du voisin${temoin ? ' (' + temoin + ')' : ''}, ${cases} cases tues ici ; solid indépendant du détail ${solidStable}`);
+      }
       // (3 ter, v541) SOUS UN ARBRE DONT LES CUBES SE TAISENT, LE SOL GARDE
       // SA FACE. Vu en capture au pied de chaque bouleau : un carré clair,
       // couleur du ciel — un TROU. Le cube du tronc se tait, mais la face du

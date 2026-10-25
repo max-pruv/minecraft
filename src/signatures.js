@@ -19,7 +19,7 @@
 // en ville, qui est précisément le gel signalé.
 
 // Les signatures des voitures, des neuf corps humains et des trois avions
-// déposés (v554 : aucune neuve, ils retombent sur celles de la flotte),
+// déposés (v563 : aucune neuve, ils retombent sur celles de la flotte),
 // telles que `signaturesDuGlb` les lit. `vehicules.js` compile chacune
 // pendant l'accueil (`chaufferLesProgrammes`).
 export const SIGNATURES_GLB = [
@@ -50,6 +50,11 @@ export const SIGNATURES_GLB = [
   'Physical+DS',              // ses feux arrière (intensité émissive)
   'Physical+map+DS',          // la lampe des phares, texturée et émissive
   'Standard+emap+DS',         // le combiné d'instruments rétroéclairé
+  'Physical+map+cc+DS+env',   // MC12 GT1 (Dave Love) : la livrée Red Bull vernie
+  'Physical+map+cc+DS',       // le bandeau du pare-brise, verni, dans la livrée
+  'Standard+map+alpha+DS',    // les étiquettes et logos détourés, le verre des feux
+  'Standard+map+nrm+alpha+DS',// les grilles ajourées des prises d'air
+  'Standard+map+nrm+DS',      // les pneus et leur bande de roulement ; la SF90 XX (Ddiaz Design) aussi : carbone, moteur, grilles, jantes, habitacle
 ];
 
 // ET CE QUE LE JEU FABRIQUE LUI-MÊME, mesuré à l'arrivée à Paris une fois les

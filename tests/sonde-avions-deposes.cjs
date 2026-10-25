@@ -1,4 +1,4 @@
-// SONDE (v554) : les avions déposés (A320, A321, F-35) dans le jeu.
+// SONDE (v563) : les avions déposés (A320, A321, F-35) dans le jeu.
 // Pour chaque variante : on la fait naître sur une dalle, on relève ce que le
 // jeu a posé (modèle, membres, roues au sol, flammes, feux), puis des captures
 // de trois quarts et de côté par une caméra à part (`layers.enableAll`, v250),

@@ -379,7 +379,27 @@ class Animal {
     this.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
     this.mesh.position.copy(this.pos);
     this.mesh.rotation.y = this.yaw + Math.PI;
+    this.roulerRoues();
 
+    // animal sounds when the player is nearby
+    this.cryTimer -= dt;
+    if (this.cryTimer <= 0) {
+      this.cryTimer = 12 + Math.random() * 20;
+      // Le cri d'une bête ne passe plus en bandeau (v504).
+    }
+  }
+
+  // Une bête MENÉE de l'extérieur (une unité de police, v562) : la position et
+  // le cap sont déjà posés, on ne fait que les montrer et faire rouler les roues.
+  poser() {
+    this.mesh.position.copy(this.pos);
+    this.mesh.rotation.y = this.yaw + Math.PI;
+    // une voiture de police à pleine poursuite fait plus de deux blocs par
+    // image sur une tablette lente : la borne du téléport suit son allure
+    this.roulerRoues(8);
+  }
+
+  roulerRoues(borne = 2) {
     // LES ROUES TOURNENT. On les fait tourner sur la distance RÉELLEMENT
     // parcourue depuis la frame précédente, pas sur la vitesse voulue : une
     // voiture conduite est posée par fun.js, pas par la boucle du bestiaire,
@@ -400,7 +420,7 @@ class Animal {
       // d'autorité — un voyage par la carte, une remise en place — et les
       // roues n'ont aucune raison de faire un tour sur elles-mêmes : on note
       // la nouvelle position sans les toucher.
-      if (avance !== 0 && Math.abs(avance) < 2) {
+      if (avance !== 0 && Math.abs(avance) < borne) {
         // Le SENS ne se devine pas : mesuré à la sonde, sur le point de
         // contact. Le pivot des modèles porte déjà un quart de tour, et la
         // carrosserie est retournée d'un demi-tour au chargement — deux
@@ -410,13 +430,6 @@ class Animal {
         const angle = avance / (this.mesh.userData.rayonRoue || 0.34);
         for (const r of roues) r.rotation.x += angle;
       }
-    }
-
-    // animal sounds when the player is nearby
-    this.cryTimer -= dt;
-    if (this.cryTimer <= 0) {
-      this.cryTimer = 12 + Math.random() * 20;
-      // Le cri d'une bête ne passe plus en bandeau (v504).
     }
   }
 
@@ -522,7 +535,9 @@ export class AnimalManager {
       // la trouvait à des milliers de blocs : retirée, l'enfant restait à pied
       // avec la carrure d'une voiture, coincé entre deux murs. La règle vit
       // sur la bête (`montee`, posé par fun.js), comme `montable` dans sa fiche.
-      if (!a.montee && a.pos.distanceTo(this.player.pos) > 70) {
+      // Une unité de police en service (v562) est menée par patrouille.js, qui
+      // la retire elle-même quand la poursuite s'achève.
+      if (!a.montee && !a.enService && a.pos.distanceTo(this.player.pos) > 70) {
         // CE QU'ON RETIRE SE REND (v238). Une bête naît toutes les secondes et
         // demie et s'en va à soixante-dix blocs : sans cette ligne, chaque
         // renouvellement laissait ses géométries au pilote graphique pour
@@ -532,6 +547,10 @@ export class AnimalManager {
         this.animals = this.animals.filter((o) => o !== a);
         continue;
       }
+      // UNE UNITÉ MENÉE (v562) : `patrouille.js` pose sa position et son cap
+      // à chaque image, le long de la piste de l'enfant ; le bestiaire ne lui
+      // applique ni gravité ni vagabondage — seulement ce qui se voit.
+      if (a.menee) { a.poser(); continue; }
       a.update(dt, this.world, this.player, this.toast);
     }
   }
@@ -573,7 +592,7 @@ export class AnimalManager {
     let best = null, bestD = portee;
     for (const a of this.animals) {
       // `horsService` : une carcasse brûlée ne se reprend pas (degats3d.js, v343)
-      if (a.dying > 0 || a.baby || !a.def.montable || a.horsService) continue;
+      if (a.dying > 0 || a.baby || !a.def.montable || a.horsService || a.enService) continue;
       const dx = a.pos.x - eye.x, dz = a.pos.z - eye.z;
       const d = Math.hypot(dx, dz);
       if (d > bestD) continue;

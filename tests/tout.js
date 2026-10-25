@@ -28,23 +28,25 @@ const { attendreLaCharge } = require('./charge.js');
 // 19 min 46 s), le rouge d'une petite suite arrive dans les cinq minutes qui
 // suivent la fumée. On remesure l'ordre quand une suite change de poids.
 const SUITES = [
-  'metro.js',        //  0 min 14 s
-  'parent.js',       //  0 min 30 s
-  'parishd.js',      //  0 min 45 s (v287)
-  'carteMonde.js',   //  0 min 34 s
-  'sauvegarde.js',   //  0 min 34 s
-  'plafond.js',      //  0 min 51 s
-  'degats.js',       //  0 min 55 s (v343)
-  'visio.js',        //  1 min 03 s
-  'maj.js',          //  1 min 34 s
-  'realisme.js',     //  1 min 37 s
-  'carte.js',        //  1 min 56 s
-  'hote.js',         //  2 min 20 s
-  'washington.js',   //  2 min 41 s
-  'reglages.js',     //  7 min 02 s
-  'manhattan.js',    //  8 min 35 s
-  'monte.js',        // 15 min 21 s
-  'reseau.js',       // 19 min 46 s
+  // remesuré au portail complet de la v541 sur `origin/main` (108 min) :
+  // les chiffres d'avant dataient de la v251 et `monte.js` en avait doublé
+  'metro.js',        //  0 min 34 s
+  'realisme.js',     //  1 min 14 s
+  'visio.js',        //  1 min 23 s
+  'parent.js',       //  1 min 35 s
+  'carteMonde.js',   //  1 min 49 s
+  'sauvegarde.js',   //  1 min 56 s
+  'degats.js',       //  2 min 18 s
+  'hote.js',         //  2 min 41 s
+  'washington.js',   //  2 min 43 s
+  'carte.js',        //  2 min 56 s
+  'reglages.js',     //  4 min 12 s
+  'plafond.js',      //  4 min 36 s
+  'parishd.js',      //  4 min 59 s
+  'manhattan.js',    //  6 min 50 s
+  'maj.js',          // 10 min 21 s
+  'reseau.js',       // 21 min 23 s
+  'monte.js',        // 36 min 42 s
 ];
 
 // QUELLE SUITE PROTÈGE QUOI.
@@ -85,9 +87,15 @@ const GARDIENS = {
   // La 911 reconstruite (v545) : ses témoins vivent dans porsche-911.mjs, que
   // degats.js lance ; la table des programmes la lit dans monte.js.
   'vendor/voitures/porsche-911-gt3-rs-hd-v2-compact.glb': ['degats.js', 'monte.js'],
+  // L'A320, l'A321 et le F-35 (v563) : monte.js, carteMonde.js et reseau.js les lisent.
   'vendor/avions/airbus-a320.glb': ['monte.js', 'carteMonde.js', 'reseau.js'],
   'vendor/avions/airbus-a321.glb': ['monte.js', 'carteMonde.js', 'reseau.js'],
   'vendor/avions/chasseur-f35.glb': ['monte.js', 'carteMonde.js', 'reseau.js'],
+  // La SF90 XX Stradale (v561) : son témoin vit dans monte.js, ses feux dans degats.js.
+  'vendor/voitures/ferrari-sf90-xx.glb': ['degats.js', 'monte.js'],
+  // La MC12 GT1 (v559) : son témoin vit dans monte.js, ses feux dans
+  // degats.js (la flotte sous node et les feux de détresse en page).
+  'vendor/voitures/maserati-mc12-gt1.glb': ['degats.js', 'monte.js'],
   'tests/porsche-911.mjs': ['degats.js'],
   'tests/porsche-911-textures.mjs': ['degats.js'],
   // les lumières de la flotte (v550), lues par degats.js sous node
@@ -96,6 +104,7 @@ const GARDIENS = {
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],
   'src/relaisnuage.js': ['reseau.js'],
+  'src/fluidite.js': ['reseau.js'],
   // Le tempo du banc (v501) : lu par `main.js`, donc gardé par ses gardiens ;
   // `reglages.js` est la suite qui le déclare et le relit sous node.
   'src/tempo.js': ['reglages.js', 'carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js'],
@@ -281,6 +290,14 @@ const GARDIENS = {
   // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/radio.js': ['monte.js', 'reglages.js', 'reseau.js'],   // le programme de la radio (v543), pur
+  // LA POLICE ET LA MOTO (v562) : la règle pure, son branchement, la moto ;
+  // leurs témoins vivent dans monte.js (sous node et dans la page)
+  'src/police.js': ['monte.js'],
+  'src/patrouille.js': ['monte.js'],
+  'src/moto.js': ['monte.js'],
+  'vendor/voitures/police-car.glb': ['monte.js', 'degats.js'],
+  'vendor/voitures/moto-police.glb': ['monte.js'],
+  'vendor/humains/policier.glb': ['monte.js'],
   'src/phares.js': ['monte.js', 'degats.js'],
   'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/traces.js': ['monte.js', 'reglages.js', 'reseau.js'],
@@ -506,6 +523,27 @@ function suitesNecessaires() {
     pourquoi: raisons.length ? raisons.join(', ') : `${changes.length} fichier(s) de contenu`,
   };
 }
+// La durée de chaque suite, lue dans le commentaire de `SUITES` — la seule
+// table des durées, pour qu'on n'en tienne pas deux.
+const DUREE_MESUREE = (() => {
+  const t = {};
+  try {
+    const src = fs.readFileSync(__filename, 'utf8');
+    for (const m of src.matchAll(/^\s*'([\w-]+\.js)',\s*\/\/\s*(\d+) min (\d+) s/gm)) t[m[1]] = +m[2] * 60 + +m[3];
+  } catch {}
+  return t;
+})();
+function trancher(liste, n) {
+  const parts = Array.from({ length: n }, () => []);
+  const poids = Array(n).fill(0);
+  for (const s of [...liste].sort((a, b) => (DUREE_MESUREE[b] || 60) - (DUREE_MESUREE[a] || 60))) {
+    const i = poids.indexOf(Math.min(...poids));
+    parts[i].push(s);
+    poids[i] += DUREE_MESUREE[s] || 60;
+  }
+  return parts;
+}
+
 const REPOS_MS = 20000;        // BORNE du repos entre deux suites — voir `reposer`
 const CHARGE_MAX = 2.0;        // cœurs occupés au-delà desquels on attend encore
 
@@ -587,12 +625,22 @@ function acquisLus() {
   return verts;
 }
 
+// LES ROUGES D'HIER PASSENT D'ABORD. Une suite qui a rougi au dernier
+// portail est la plus probable à rougir encore : la jouer en tête rend le
+// rouge en minutes au lieu de le faire attendre derrière `monte.js`. L'ordre
+// ne change aucun verdict — chaque suite monte son banc — seulement le temps
+// jusqu'au premier.
+function rougesLus() {
+  try { return JSON.parse(fs.readFileSync(MEMOIRE, 'utf8')).rouges || {}; } catch { return {}; }
+}
 function acquisEcrits(_ignore, verts) {
   const note = {};
   for (const suite of Object.keys(verts)) {
     if (verts[suite]) note[suite] = { empreinte: empreinteDe(gardiensDe(suite)) };
   }
-  try { fs.writeFileSync(MEMOIRE, JSON.stringify({ verts: note }, null, 2)); }
+  const rouges = rougesLus();
+  for (const [suite, v] of Object.entries(verts)) { if (v) delete rouges[suite]; else rouges[suite] = Date.now(); }
+  try { fs.writeFileSync(MEMOIRE, JSON.stringify({ verts: note, rouges }, null, 2)); }
   catch { /* sans mémoire, on rejouera tout : c'est le pire, pas le faux */ }
 }
 
@@ -644,7 +692,9 @@ function lancer(fichier) {
   });
 }
 
-(async () => {
+module.exports = { SUITES, GARDIENS, DUREE_MESUREE, trancher, suitesNecessaires };
+
+if (require.main === module) (async () => {
   // `--tempo=1` (v501) : le tour de nuit, minuteries du jeu à l'échelle
   // réelle même dans les suites qui déclarent un tempo (`banc.fixerTempo`).
   // Une course révélée à tempo 4 peut ne pas exister dans le vrai jeu, et
@@ -702,6 +752,29 @@ function lancer(fichier) {
       + ` — ${dejaVus.join(', ')}`);
     console.log('   (npm test -- --depuis-zero pour tout rejouer)\n');
   }
+  // `--tranche=k/n` : ce portail ne joue que sa part des suites choisies,
+  // réparties par durée MESURÉE (`SUITES`, le chiffre en commentaire) — la plus
+  // longue d'abord, chaque fois dans la tranche la moins chargée. n machines,
+  // n tranches, et le portail est vert quand les n le sont. Ce n'est pas un
+  // raccourci : chaque suite tourne, entière, sur une machine qui ne fait
+  // qu'elle. Ce que cela coûte, c'est n fois le conteneur.
+  const argTranche = process.argv.find((a) => a.startsWith('--tranche='));
+  if (argTranche) {
+    const [k, n] = argTranche.slice('--tranche='.length).split('/').map(Number);
+    if (!(n >= 1 && k >= 1 && k <= n)) { console.log(`❌ ${argTranche} : il faut k/n avec 1 ≤ k ≤ n`); process.exit(2); }
+    const parts = trancher(aJouer, n);
+    console.log(`🔪 tranche ${k}/${n} : ${parts[k - 1].join(', ') || 'rien'}`
+      + `  (≈ ${Math.round(parts[k - 1].reduce((t, s) => t + (DUREE_MESUREE[s] || 60), 0) / 60)} min)`);
+    for (let i = 0; i < n; i++) if (i !== k - 1) console.log(`   tranche ${i + 1}/${n} : ${parts[i].join(', ') || 'rien'}`);
+    console.log('');
+    aJouer = SUITES.filter((s) => parts[k - 1].includes(s));
+  }
+  const rougesAvant = rougesLus();
+  const enTete = aJouer.filter((s) => rougesAvant[s] && !verts[s]);
+  if (enTete.length) {
+    aJouer = [...enTete, ...aJouer.filter((s) => !enTete.includes(s))];
+    console.log(`🔴 en tête, parce qu'elles ont rougi au dernier portail : ${enTete.join(', ')}\n`);
+  }
   const verdicts = [];
   const durees = [];
   const departPortail = Date.now();
@@ -754,8 +827,10 @@ function lancer(fichier) {
   }
   const tout = verdicts.every(([, v]) => v) && !fumeeRouge;
   if (fumeeRouge) console.log('❌ fumee.js');
+  const laTranche = process.argv.find((a) => a.startsWith('--tranche='));
   console.log(tout
-    ? '\n✅ toutes les suites sont vertes — on peut publier'
+    ? (laTranche ? `\n✅ ${laTranche.slice(2)} verte — on publie quand TOUTES les tranches le sont`
+      : '\n✅ toutes les suites sont vertes — on peut publier')
     : '\n❌ une suite au moins a échoué — on ne publie pas');
   process.exit(tout ? 0 : 1);
 })();

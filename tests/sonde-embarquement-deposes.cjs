@@ -1,4 +1,4 @@
-// SONDE (v554) : on monte dans les avions déposés (A320, A321, F-35) par la
+// SONDE (v563) : on monte dans les avions déposés (A320, A321, F-35) par la
 // séquence entière (`embarq: 1`), comme le témoin de monte.js le fait pour
 // l'avion de ligne et le chasseur : phases, hauteur des pieds en haut des
 // marches, angle du membre qui s'ouvre, escalier rendu, CLÉS de programme

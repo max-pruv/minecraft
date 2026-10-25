@@ -1887,7 +1887,12 @@ const VRAIES_KM = [
       // 58 → 17 dans la fenêtre de ±40 blocs, mais 32,6 → 29,6 pour mille
       // colonnes de trottoir sur tout son disque, et 44,2 → 41,9 sur toutes les
       // villes à trame (mesuré) — la densité tient, la fenêtre tire au sort
-      !(c.lampes >= 40 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 15 && c.diversite >= 20));
+      // les réverbères : la bande reculée d'un bloc (villes à bordures) en
+      // laisse 43 au lieu de 52 dans la fenêtre de Rome (décompte pur, avant
+      // les monuments), mais 1 016 contre 1 117 sur tout son disque — la rue
+      // garde sa densité, le témoin de `plafond.js` la mesure. Une barre de
+      // garde se pose à la moitié de ce qu'on a mesuré (v237), pas à ras.
+      !(c.lampes >= 25 && (v === 'marrakech' || c.feux >= 8) && c.bancs >= 15 && c.diversite >= 20));
     verifier('et du mobilier : lampadaires, bancs — et la diversité se compte',
       sansVie.length === 0,
       sansVie.map(([v]) => v).join(' · ')
@@ -4859,7 +4864,7 @@ const VRAIES_KM = [
       const av = await import('./src/avions.js');
       const aero = await import('./src/aeroport.js');
       const GAB = aero.GABARITS_AVION || {};
-      // LES MODÈLES SCULPTÉS ET LES MODÈLES DÉPOSÉS (v554), nommés un par un.
+      // LES MODÈLES SCULPTÉS ET LES MODÈLES DÉPOSÉS (v563), nommés un par un.
       // `MODELES_AVION` rend le modèle déposé si son fichier est arrivé, le
       // sculpté sinon : appelé tel quel, ce témoin mesurerait l'un ou l'autre
       // selon l'heure — un tirage. On mesure donc les deux, explicitement :
@@ -4955,7 +4960,7 @@ const VRAIES_KM = [
     //    autres sans le déclarer bon avant la correction. Un témoin qui rend
     //    un seul nombre pour trois cas ne se démonte pas — celui-ci dit lequel
     //    il garde, et le delta du Concorde se juge en capture.
-    // 4. LES AVIONS DÉPOSÉS TIENNENT DANS LES GABARITS DE LEUR ESPÈCE (v554).
+    // 4. LES AVIONS DÉPOSÉS TIENNENT DANS LES GABARITS DE LEUR ESPÈCE (v563).
     //    Postes, pistes et prolongements sont dimensionnés sur `GABARITS_AVION`
     //    (v278, v530) ; un modèle d'artiste remis à la longueur de son espèce
     //    doit aussi tenir dans son envergure et sa hauteur annoncées — plus
@@ -4965,7 +4970,7 @@ const VRAIES_KM = [
       deposes.length === 3 && deposes.every(([, d]) => !d.absent && d.long <= d.reserve + 0.05 && d.long >= d.reserve - 0.1
         && d.envergure <= d.envAnnoncee + 0.15 && d.haut <= d.hautAnnonce + 0.15 && d.sous >= -0.02),
       deposes.map(([n, d]) => d.absent ? `${n} absent` : `${n} ${d.long}/${d.reserve} env ${d.envergure}/${d.envAnnoncee} haut ${d.haut}/${d.hautAnnonce} sous ${d.sous}`).join(' · ') || 'aucun avion déposé');
-    // 5. ET ILS TIENNENT LE CONTRAT DES AVIONS DU JEU (v554), sans quoi le
+    // 5. ET ILS TIENNENT LE CONTRAT DES AVIONS DU JEU (v563), sans quoi le
     //    train ne se replie pas, la porte ne s'ouvre pas et la flamme sort de
     //    nulle part. Lu sur le modèle que le jeu fabrique : trois jambes de
     //    train, le membre que la porte ouvre, une flamme par tuyère DANS la

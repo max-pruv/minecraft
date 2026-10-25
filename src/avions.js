@@ -304,7 +304,7 @@ export function matiereAdditive(couleur, opacite) {
 // qu'on redessine ne laisse pas un feu dans le vide. Nés cachés, comme la
 // flamme : `fun.js` les allume aux commandes, l'éclat clignote, et la
 // descente les éteint. Aucune lampe (v248).
-// La mesure se garde par modèle déposé (`memo`, v554) : un chasseur déposé
+// La mesure se garde par modèle déposé (`memo`, v563) : un chasseur déposé
 // porte vingt-huit mille sommets, et trois en naissent à chaque base.
 function feuxNavigation(g, memo = null) {
   let gauche = null, droite = null, queue = null;
@@ -641,7 +641,7 @@ export function accesAvion(porte) {
   return { groupe: a.finir(), pied: [xb - 0.4, 0, z], haut: [xp + 0.2, y, z] };
 }
 
-// --- LES APPAREILS DÉPOSÉS (v554) --------------------------------------------
+// --- LES APPAREILS DÉPOSÉS (v563) --------------------------------------------
 //
 // Max a déposé trois modèles : un A320, un A321 et un F-35 (archives
 // Sketchfab, licences et modifications dans vendor/avions/LICENSE.md). Ils

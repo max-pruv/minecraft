@@ -14,6 +14,7 @@
 
 const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, souffler } = require('./banc.js');
 const { servirLeNuage } = require('./nuage.js');
+const { mesurerFluidite } = require('./sonde-amis-fluides.cjs');
 
 // Deux messages de PeerJS ne comptent pas comme des fautes, et seulement ceux-là :
 //
@@ -62,6 +63,53 @@ function verifier(nom, ok, detail = '') {
   const nuageRelais = await servirLeNuage(9721);
   const AVEC_NUAGE = { portNuage: 9721 };
   try {
+    // --- L'AMI EST REJOUÉ ENTRE DEUX RELEVÉS (amis-fluides), sous node ---------
+    //
+    // La règle pure (`fluidite.js`) sur la situation exacte du nuage : un relevé
+    // toutes les 120 ms, publiés par paquets toutes les demi-secondes et parfois
+    // dans le désordre, sur une horloge d'origine quelconque, dessinés à six
+    // images par seconde. La vitesse apparente d'une image à l'autre doit rester
+    // la vraie ; une téléportation se pose d'un coup ; une tablette restée sur
+    // l'ancienne version (sans `ts`) est quand même suivie.
+    {
+      // l'ancien code n'a pas ce module : le témoin échoue proprement
+      const F = await import('../src/fluidite.js').catch(() => null);
+      const simuler = (paquet, desordre) => {
+        const s = F.creerSuivi(); const v = 30;
+        const ev = [];
+        for (let t = 0; t < 12000; t += 120) {
+          let a = paquet ? Math.ceil((t + 50) / 500) * 500 + 40 + (t * 37 % 60) : t + 30 + (t * 37 % 40);
+          if (desordre && (t / 120) % 5 === 2) a += 500;
+          ev.push({ a, t });
+        }
+        ev.sort((x, y) => x.a - y.a);
+        let k = 0, prec = null, pire = 0;
+        for (let ici = 0; ici < 12000; ici += 1000 / 6) {
+          while (k < ev.length && ev[k].a <= ici) { const t = ev[k].t; F.recevoir(s, { ts: t + 987654, x: v * t / 1000, y: 40, z: 0 }, ici); k++; }
+          const p = F.positionA(s, ici, 1 / 6);
+          if (p && prec && ici > 4000) pire = Math.max(pire, Math.abs((p.x - prec.x) * 6 / v - 1));
+          prec = p;
+        }
+        return +pire.toFixed(2);
+      };
+      const pur = !F ? { absent: 'src/fluidite.js' } : { direct: simuler(false, false), nuage: simuler(true, false), desordre: simuler(true, true) };
+      if (F) {
+        const t = F.creerSuivi();
+        F.recevoir(t, { ts: 10, x: 0, y: 0, z: 0 }, 100);
+        F.recevoir(t, { ts: 130, x: 3, y: 0, z: 0 }, 220);
+        F.recevoir(t, { ts: 250, x: 5000, y: 0, z: 0 }, 340);   // une téléportation
+        pur.tele = F.positionA(t, 2000, 0).x;
+        // sans heure d'envoi (l'ancienne version) : suivi à l'heure d'arrivée,
+        // et prolongé de 500 ms au plus à 25 blocs par seconde, puis il attend
+        const vieux = F.creerSuivi();
+        F.recevoir(vieux, { x: 0, y: 0, z: 0 }, 0); F.recevoir(vieux, { x: 3, y: 0, z: 0 }, 120);
+        pur.vieux = +F.positionA(vieux, 5000, 0).x.toFixed(2);
+      }
+      verifier('l\'ami est rejoué entre deux relevés : sa vitesse apparente reste la vraie, même par paquets du nuage',
+        !!F && pur.direct < 0.15 && pur.nuage < 0.15 && pur.desordre < 0.3 && pur.tele === 5000 && pur.vieux === 15.5,
+        JSON.stringify(pur));
+    }
+
     // --- L'INVITÉ NE FRAPPE QU'APRÈS AVOIR POSÉ SON CURSEUR (banc-lot3) -------
     //
     // La famille du nuage rougissait une fois sur trois DES DEUX CÔTÉS :
@@ -197,6 +245,27 @@ function verifier(nom, ok, detail = '') {
       !!gpsRelaye.proposee && gpsRelaye.proposee.qui === 'Nina' && gpsRelaye.proposee.nom === 'Rome'
       && /Nina va à Rome/.test(gpsRelaye.proposee.texte) && gpsRelaye.gpsAlice === null,
       JSON.stringify(gpsRelaye));
+    // L'HEURE D'ENVOI TRAVERSE L'HÔTE (amis-fluides). Un champ ajouté à `pos` a
+    // deux témoins, celui du direct et celui du relayé (v406). Nina roule :
+    // chez Alice, qui ne la reçoit que par `rpos`, chaque relevé doit porter
+    // l'heure d'envoi de NINA, et l'ami est rejoué entre deux relevés. Rouge
+    // sur l'ancien code : `rpos` ne garde que x, y, z. La fluidité relayée est
+    // dans le message (au banc, trois pages partagent quatre cœurs).
+    {
+      const fluideRelaye = await mesurerFluidite(nina, alice, 'Nina', { ms: 6000 });
+      // Nina redescend : la suite la retrouve à pied, comme elle l'avait laissée
+      await nina.evaluate(() => { const f = window.__game.fun; if (f.montureConduite && f.montureConduite()) document.getElementById('ride-btn').click(); });
+      const relaye = await alice.evaluate(() => {
+        const n = window.__game.net; let e = null;
+        for (const c of n.conns.values()) if (c.name === 'Nina') e = c;
+        let rp = null; for (const r of window.__game.remotePlayers.values()) if (r.name === 'Nina') rp = r;
+        return { direct: !!(e && e.conn), ts: e && e.pos ? e.pos.ts : null, vx: e && e.pos ? e.pos.vx : null,
+          suivis: rp && rp.suivi ? rp.suivi.recus : null };
+      });
+      verifier('par l\'hôte, la position d\'un invité garde l\'heure de son envoi, et l\'autre invité le rejoue',
+        !relaye.direct && Number.isFinite(relaye.ts) && Number.isFinite(relaye.vx) && relaye.suivis > 10,
+        JSON.stringify({ relaye, fluideRelaye }));
+    }
 
     // --- l'ami au volant est vu dans sa voiture, et l'on monte avec lui (v253)
     //
@@ -236,6 +305,30 @@ function verifier(nom, ok, detail = '') {
     const vuParAlice = await dansSaVoiture(marlonChezAlice);
     verifier('au volant, l\'ami est vu dans sa voiture, pas à pied',
       volant.auVolant && vuParAlice.assis === true, JSON.stringify({ volant, vuParAlice }));
+
+    // L'AMI AU VOLANT AVANCE EN TEMPS RÉEL (amis-fluides). Max : « tu le vois
+    // bouger de manière saccadée, toutes les secondes il a avancé ». Marlon
+    // roule à trente blocs par seconde, sa position fonction de la montre ;
+    // chez Alice on relève, image par image, où il est DESSINÉ, et la part des
+    // images où il avance à sa vraie vitesse (à 35 % près), et le pire BOND
+    // d'une image à l'autre au-delà de ce qu'il a vraiment parcouru. La part
+    // ne sépare pas assez sous la charge du portail (0,70 à 0,74 sur l'ancien
+    // code, 0,83 à 1,00 ici) ; le bond, si : 13 à 25 blocs sur l'ancien code
+    // (il court après le dernier relevé), 0,4 à 10 ici selon que la page qui conduit
+    // cale plus que le prolongement (500 ms). Barre : 8 blocs. Et la
+    // position directe porte l'heure d'envoi et la vitesse (champ sur `pos`).
+    {
+      const fluideDirect = await mesurerFluidite(hote, alice, 'Marlon', { ms: 6000 });
+      await dormir(600);   // un envoi après le retour au départ : la vitesse de l'arrêt
+      const champ = await alice.evaluate(() => {
+        const n = window.__game.net; let e = null;
+        for (const c of n.conns.values()) if (c.name === 'Marlon') e = c;
+        return { ts: e && e.pos ? e.pos.ts : null, vx: e && e.pos ? e.pos.vx : null };
+      });
+      verifier('chez l\'ami, la voiture de l\'enfant avance en temps réel, pas par bonds',
+        fluideDirect.sautMax < 8 && Number.isFinite(champ.ts) && Number.isFinite(champ.vx),
+        JSON.stringify({ champ, fluideDirect }));
+    }
 
     // LE VOLANT ET LA GLISSE VOYAGENT AVEC LA VOITURE (v397). Marlon tourne le
     // volant à fond (le joystick, l'arrêt suffit : le volant se braque même
@@ -1583,6 +1676,18 @@ function verifier(nom, ok, detail = '') {
     }
     verifier('sans courtier, le conducteur voit son passager assis dans sa voiture',
       passagerSans.volant && !!passagerSans.passagere && passagerSans.assise, JSON.stringify(passagerSans));
+    // PAR LE NUAGE AUSSI (amis-fluides). C'est le chemin des paquets : les
+    // relevés arrivent une demi-seconde à la fois, parfois dans le désordre, et
+    // l'ami s'y arrêtait puis bondissait. Sacha roule (Alba est sa passagère,
+    // et c'est la voiture qu'elle regarde depuis son siège). Mesuré : 0,21 à
+    // 0,37 des images à la vraie vitesse sur l'ancien code, 0,69 à 0,98 ici
+    // (barre 0,55). Le pire bond ne sépare pas ici : sous la charge, un paquet
+    // du nuage tarde parfois plus d'une seconde et demie (`RETARD_MAX`).
+    if (ensembleSans) {
+      const fluideNuage = await mesurerFluidite(sansCourtier, secondSans, 'Sacha', { ms: 6000 });
+      verifier('par le nuage, la voiture de l\'ami avance en temps réel, pas par paquets',
+        fluideNuage.partJuste >= 0.55, JSON.stringify(fluideNuage));
+    }
     await secondSans.close();
     await sansCourtier.close();
     await souffler();
@@ -2209,7 +2314,7 @@ function verifier(nom, ok, detail = '') {
     await souffler();
     const { p: pilote, code: codeAvion } = await banc.creerMonde('Hugo');
     const temoinAvion = await banc.rejoindre('Clara', codeAvion);
-    // LES DEUX TABLETTES ONT LEURS AVIONS DÉPOSÉS (v554) avant que Hugo ne
+    // LES DEUX TABLETTES ONT LEURS AVIONS DÉPOSÉS (v563) avant que Hugo ne
     // monte : un appareil ne change pas de modèle sous les yeux (v547), donc
     // celui que Clara dessine avant l'arrivée du fichier resterait sculpté.
     // Sur l'ancien code le module n'a pas `avionsPrets` : on n'attend rien.
@@ -2260,7 +2365,7 @@ function verifier(nom, ok, detail = '') {
     verifier('à plusieurs, l\'ami voit l\'AVION de son ami, pas un enfant à pied',
       !aBord.err && aBord.pilote && avionVu.vehicule && avionVu.pilote && /^avionligne\|/.test(avionVu.cle || ''),
       JSON.stringify({ aBord, avionVu }));
-    // ET LE MÊME APPAREIL (v554). Les avions de ligne déposés sont deux, et la
+    // ET LE MÊME APPAREIL (v563). Les avions de ligne déposés sont deux, et la
     // variante voyage dans `p.v.f` comme le modèle d'une voiture (v253) :
     // l'A321 de Hugo est un A321 chez Clara, pas l'A320 qu'elle prendrait
     // d'elle-même. Sur l'ancien code, sculpté des deux côtés, sans variante.

@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v554';
+const CACHE_VERSION = 'web-minecraft-v563';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -28,7 +28,7 @@ const isStaticAsset = (url) =>
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
-// les avions déposés (v554) : immuables, comme les corps et la flotte
+// les avions déposés (v563) : immuables, comme les corps et la flotte
 const AVIONS = ['airbus-a320', 'airbus-a321', 'chasseur-f35'].map((n) => `./vendor/avions/${n}.glb`);
 
 const ASSETS = [
@@ -93,11 +93,15 @@ const ASSETS = [
   './src/partage.js',
   './src/visio.js',
   './src/relaisnuage.js',
+  './src/fluidite.js',
   './src/effects.js',
   './src/sky.js',
   './src/siege.js',
   './src/sons.js',
   './src/radio.js',
+  './src/police.js',
+  './src/patrouille.js',
+  './src/moto.js',
   './src/sensations.js',
   './src/phares.js',
   './src/traces.js',

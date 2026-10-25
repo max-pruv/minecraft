@@ -33,6 +33,42 @@ en les MESURANT : elle ne touche à rien quand le manifeste est déjà respecté
 pour que les cinquante d'origine ne changent pas d'un pixel. Même usage privé
 et familial.
 
+**La Maserati MC12 GT1 Red Bull (octobre 2026)** — `maserati-mc12-gt1.glb`,
+fournie par Max, entre dans la flotte (une voiture de plus, rien de remplacé).
+C'est l'adaptation d'un modèle publié sous licence **Creative Commons
+Attribution 4.0** (CC-BY-4.0), qui exige le crédit ci-dessous, recopié tel quel
+du `license.txt` du paquet :
+
+> This work is based on "2005 Maserati MC12 GT1 Redbull"
+> (https://sketchfab.com/3d-models/2005-maserati-mc12-gt1-redbull-f5e55567ced04ef78b2386fcb7637410)
+> by Dave Love SketchFab (https://sketchfab.com/Tyler_Dave) licensed under
+> CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
+Modifications apportées à l'œuvre d'origine, toutes par
+`scripts/convertir-mc12.py` (le paquet glTF n'est pas versionné ; le script se
+rejoue sur lui) :
+- transformations de la racine Sketchfab cuites dans la géométrie, roues
+  posées à y = 0 (+0,032 m) ; aucun sommet déplacé par rapport aux autres,
+  aucune simplification ni subdivision (161 346 triangles) ;
+- roues découpées par la position de leurs triangles en quatre pivots
+  `Wheel_FL/FR/RL/RR` (pneu, bande de roulement, jante, disque), étriers fixes ;
+- volant (jante, moyeu, palettes, boutons) séparé dans `Interior_SteeringWheel`
+  par pièces entières ;
+- le flou de jante (`WHEEL_BLUR_RIM`, opacité nulle dans le paquet) retiré ;
+- `KHR_materials_specular` retiré (la texture de reflet des étriers avec),
+  cartes de normales à échelle nulle retirées, `KHR_texture_transform` de la
+  livrée cuit dans les UV, matériaux identiques fusionnés (sauf feux, vitrages,
+  rétroviseurs et laque, qui gardent leur nom), laque renommée `Paint_RedBull`
+  et réglée métal 0,15 / rugosité 0,3 au lieu de 0,8 / 0,15 (la livrée sortait
+  noire dans le jeu, sans le studio d'éclairage de Sketchfab) ;
+- images unies remplacées par une couleur (sans perte) ; trois images de
+  2 048² réduites à 1 024² ; les autres recopiées.
+
+SHA-256 du fichier livré : `63439db6274857499d306547f657d7d8a21aa9d4267e0c092899f931937a7b63`. Le modèle n'est affilié ni à Maserati, ni à
+Red Bull, ni à Sketchfab ; les marques et logos de la livrée sont ceux de la
+voiture de course réelle, reproduits par l'auteur du modèle. Même usage privé et
+familial.
+
 **La Revuelto adaptée (octobre 2026)** — `lamborghini-revuelto-wip.glb`,
 fournie par Max, remplace à l'affichage `lamborghini-revuelto.glb` (gardée sur
 le disque ; l'identifiant `fichier` des sauvegardes ne change pas, le champ
@@ -63,6 +99,36 @@ longueur 4,739 m contre 4,947 m réels, portières non séparées — d'où
 Le visualiseur three.js du paquet n'est pas repris. Les rendus et le rapport de
 fabrication sont dans `docs/revuelto/`. Même usage privé et familial.
 
+**La SF90 XX Stradale (octobre 2026)** — `ferrari-sf90-xx.glb`, fournie par
+Max, remplace à l'affichage `ferrari-sf90.glb` (gardée sur le disque ;
+l'identifiant `fichier` des sauvegardes ne change pas, le champ `asset` de
+FLOTTE choisit le fichier chargé). C'est l'adaptation d'un modèle publié sous
+licence **Creative Commons Attribution 4.0** (CC-BY-4.0), qui exige le crédit
+ci-dessous, recopié tel quel de son `license.txt` (copie dans `docs/sf90-xx/`) :
+
+> This work is based on "2023 Ferrari SF90 XX Stradale"
+> (https://sketchfab.com/3d-models/2023-ferrari-sf90-xx-stradale-2c80c667232544649328cf3589921bcd)
+> by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-4.0
+> (http://creativecommons.org/licenses/by/4.0/)
+
+Modifications apportées à l'œuvre d'origine, toutes par
+`scripts/ferrari-sf90-xx.py` (reproductible, empreintes du paquet dans
+`docs/sf90-xx/SHA256.json`) :
+- transformations cuites, puis posées au manifeste (mètres, +Z vers le nez,
+  roues à y = 0) ; échelle uniforme sur l'empattement réel (2,650 m) ;
+- maillages fusionnés par matériau (1 097 → 32), sommets identiques fusionnés,
+  sommets inutilisés retirés ; aucune simplification : 262 651 triangles ;
+- pièces de roue réparties en quatre pivots `Wheel_FL/FR/RL/RR`, étriers fixes ;
+  volant (`Interior_SteeringWheel`) découpé dans l'habitacle ;
+- matériaux renommés et simplifiés : couleurs de sommets, tangentes et second
+  jeu d'UV retirés, spéculaire et transmission retirés (vitrages en
+  transparence simple), cartes métal/rugosité remplacées par leur moyenne,
+  vernis sur la laque ; 29 images d'origine recopiées octet pour octet.
+
+Le modèle n'est affilié ni à Ferrari ni à Sketchfab ; marques et écussons
+restent ceux du modèle d'origine. Portières non séparées — d'où
+`portiere: false`. Même usage privé et familial.
+
 Caractéristiques communes (héritées du manifeste, le code s'y fie) :
 - unités en mètres, +Y vers le haut, **+Z vers le nez**, origine au centre
   du corps, roues posées à y = 0 — d'où la rotation π unique au chargement ;
@@ -76,3 +142,34 @@ Ces fichiers ne sont **pas** dans la liste `ASSETS` du service worker :
 ils passent par le `STATIC_CACHE` (téléchargés à la première rencontre,
 gardés à travers les mises à jour), comme les modèles du scanner de
 visages — 83 Mo re-téléchargés à chaque livraison auraient tué la cadence.
+
+## La police et la moto (octobre 2026)
+
+Deux modèles fournis par Max, publiés sous licence **Creative Commons
+Attribution 4.0** (CC-BY-4.0), qui exige le crédit ci-dessous, recopié tel quel
+de leur `license.txt` :
+
+> This work is based on "Police car"
+> (https://sketchfab.com/3d-models/police-car-9166b13b6ae341f4bfc093edb71d74f4)
+> by Mateusz Woliński (https://sketchfab.com/jeandiz) licensed under CC-BY-4.0
+> (http://creativecommons.org/licenses/by/4.0/)
+
+> This work is based on "Harley-Davidson Police"
+> (https://sketchfab.com/3d-models/harley-davidson-police-79dc00298bf449d7bcfdf6eb32bd15ac)
+> by Comrade1280 (https://sketchfab.com/comrade1280) licensed under CC-BY-4.0
+> (http://creativecommons.org/licenses/by/4.0/)
+
+Fichiers : `police-car.glb` (la voiture de police) et `moto-police.glb` (la
+moto). Modifications, toutes faites par `scripts/convertir-police.mjs`
+(reproductible, les paquets bruts restent hors du dépôt) :
+- mise au contrat de la flotte : mètres, +Z vers l'avant, roues au sol à
+  y = 0, pivots `Wheel_FL/FR/RL/RR` (la moto : `Wheel_F`, `Wheel_R`) ; la
+  voiture mise à l'échelle sur l'empattement réel (2,913 m) ;
+- carrosserie fusionnée par matériau, maillages simplifiés (meshoptimizer,
+  bords verrouillés), textures redimensionnées et recompressées ;
+- vitrage et rampe passés d'une transmission à une transparence simple ; les
+  feux de la rampe séparés en deux lentilles (`Gyrophare_G`, `Gyrophare_D`) ;
+- la moto redressée de sa béquille (environ 7°) et privée de son socle de
+  vitrine.
+Aucune forme ni texture inventée : ce sont celles des auteurs. Le jeu n'a pas
+d'écran de crédits ; s'il en a un un jour, ces modèles y entrent.
