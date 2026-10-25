@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v553 — Une nouvelle Ferrari SF90 XX Stradale
+## v555 — Une nouvelle Ferrari SF90 XX Stradale
 
 **Pourquoi.** Max a fourni un modèle Sketchfab de la SF90 XX Stradale
 (Ddiaz Design, CC-BY-4.0) à intégrer. La SF90 de la flotte était une
@@ -60,7 +60,76 @@ alpha nul, de la transmission sur les vitres (une passe de rendu de plus).
   témoin des feux de détresse de `degats.js`.
 - Revue d'écran ancienne | neuve, iPhone et iPad, jour et nuit, au volant,
   garée et dans la rue (`tests/sonde-captures-sf90.cjs`, planches dans
-  `docs/revue-ecran/v553-sf90/`).
+  `docs/revue-ecran/v555-sf90/`).
+
+---
+
+## v554 — Les arbres gardent toute leur couronne au bord du monde
+
+**Pourquoi.** Deux dettes des vrais arbres. (1) Au bord de la portée du détail
+(v499), un arbre pouvait montrer son relief d'un côté et les cubes de sa
+couronne de l'autre. (2) Depuis la v528, les feuilles d'un arbre dont la base
+est dans un morceau voisin se taisent, et c'est le voisin qui dessine l'arbre :
+tant qu'il n'est pas maillé — au bord du disque chargé, ou juste après une
+arrivée —, cette part de couronne MANQUAIT. Mesuré sous node
+(`tests/sonde-arbres-frontiere.cjs`) : sept arbres et 147 cases de feuilles
+tues au bord d'un disque de rayon douze, neuf arbres au rayon trois.
+
+**Ce que ça change.** Plus d'arbre amputé d'un quartier de couronne en vol ou à
+l'arrivée : un morceau dessine aussi, en cartes lointaines, les arbres du bord
+dont le voisin n'est pas encore là, et cède dès que le voisin arrive — le
+même arbre, au sommet près. La dette (1) était déjà caduque depuis la v528
+(un arbre n'a qu'un dessinateur, proche ou lointain) : c'est désormais prouvé.
+
+**Ce qui le prouve.** Un témoin neuf de `plafond.js` : sur la forêt témoin,
+quatorze directions de voisins, 1 344 sommets d'arbres du bord, tous présents
+dans le modèle que le voisin dessine, et le `solid` d'un morceau identique
+avec ou sans détail ; rouge sur `origin/main` (zéro direction). Prix mesuré :
++0,96 Mo pour 169 morceaux de forêt (4,8 % du `solid`), maillage dans le
+bruit (5,0 contre 4,9 ms). Revue d'écran `foret` et `foret-vol`, iPhone et
+iPad, jour et nuit. Portail : trois suites rouges, toutes de familles déjà
+déclarées, et hors d'atteinte par construction — le banc rend en logiciel,
+donc `world.arbres` vaut zéro et aucun `arbresBord` n'existe sauf dans
+`plafond.js` et `parishd.js` (vertes). Rejouées seules : `manhattan.js` 34/0
+des deux côtés ; `monte.js` 4 rouges sur la branche, 5 sur `origin/main`
+(feu, rue vide, passages de Rome) ; `reseau.js` « un hôte sans courtier »,
+déclaré rouge des deux côtés.
+
+---
+
+## v553 — Des arbres au loin, et plus de trou de ciel en vol
+
+**Pourquoi.** Deux dettes du paysage lointain. (1) La revue d'écran de la v532
+(relevé n° 19) voyait en vol, sous l'aile, une bande de ciel entre le monde
+chargé et le paysage lointain. Mesuré (`tests/sonde-trou-horizon.cjs` : une
+image au fond magenta, un rayon par pixel) : 346 pixels de ciel au bord du
+disque maillé, tous sur des cases que la grille fine OMETTAIT alors qu'aucun
+morceau n'y était maillé. La cause : l'index de triangles de la grille désigne
+des sommets, que la grille décale d'une case tous les huit blocs ; il n'était
+refait qu'à la découpe, quatre fois par seconde — entre deux, la zone omise
+glissait avec l'avion hors du disque maillé. (2) Une forêt au-delà des
+morceaux maillés était une prairie verte.
+
+**Ce que ça change.**
+- En vol, plus de bande de ciel au bord du monde chargé : l'index défile avec
+  les sommets.
+- Au loin, les forêts ont leurs arbres : une silhouette par case boisée, de
+  l'essence du climat (chênes, pins, bouleaux, parasols, feuillus des
+  tropiques), posée là où la carte et `treeAt` mettent la forêt, jamais sur un
+  morceau maillé. Un seul appel de dessin, le matériau du bâti lointain (aucun
+  programme neuf), chauffé à l'accueil avec lui.
+- Coupés en rendu logiciel comme le bâti lointain ; `?arbresloin=1` les force,
+  `?arbresloin=0` les coupe.
+
+**Ce qui le prouve.** Quatre témoins de `plafond.js` et un de `maj.js`, tous
+vérifiés rouges sur l'ancien code : la découpe défile (avancer de quarante
+blocs sans redécouper laisse zéro trou et zéro case sous un morceau maillé —
+des centaines sur l'ancien code) ; au-dessus d'une forêt réelle, plus d'un
+millier de silhouettes, aucune sur un morceau maillé ; une case à silhouette
+porte neuf fois plus d'arbres de `treeAt` qu'une case sans ; moins d'un
+mégaoctet ; et en vol au-dessus de la forêt, aucune clé de programme neuve
+depuis l'accueil. La sonde du trou rend zéro pixel de ciel au bord du disque
+(346 avant).
 
 ---
 

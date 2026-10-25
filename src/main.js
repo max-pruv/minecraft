@@ -32,11 +32,12 @@ import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, optionsMetro, HORAIRE_METRO, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
 import { materiauHD, geometrieHD } from './matierehd.js';
+import { DIRECTIONS_VOISINS } from './arbreshd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
 import { creerGuides, parlerAVoixHaute } from './guides.js';
 import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN, PORTEE_COURONNE,
-  ABAISSE_TRES_LOIN, rayonTresLoin } from './horizon.js';
+  ABAISSE_TRES_LOIN, rayonTresLoin, silhouetteArbre } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
 import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites } from './conduite.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
@@ -695,11 +696,38 @@ function chaufferLaCoucheHD(camera) {
   } finally { renderer.setRenderTarget(avant); m.geometry.dispose(); }
 }
 
+// LE BÂTI ET LES ARBRES LOINTAINS SE CHAUFFENT À L'ACCUEIL (v553). Ils
+// partagent un matériau (Lambert, couleurs de sommet, instance teinte) ; nés
+// vides (`count` 0), leur programme se compilait au premier arbre ou au
+// premier toit vu au loin — en vol, au-dessus d'une forêt. Une instance du
+// MÊME matériau, vers l'écran et vers la cible des reflets (ils sont du décor,
+// couche 4), comme la couche HD juste au-dessus.
+function chaufferLeLointain(camera) {
+  const ici = new THREE.Scene();
+  const m = new THREE.InstancedMesh(silhouetteArbre(), horizon.materiauBati, 1);
+  m.setColorAt(0, new THREE.Color(1, 1, 1));
+  ici.add(decor(m));
+  const cible = refletsVoiture(), avant = renderer.getRenderTarget();
+  try {
+    renderer.compile(ici, camera, scene);
+    if (cible) { renderer.setRenderTarget(cible); renderer.compile(ici, camera, scene); }
+  } finally { renderer.setRenderTarget(avant); m.geometry.dispose(); m.dispose(); }
+}
+
 // LE PAYSAGE LOINTAIN. Il lit `terrainHeight` — une fonction PURE — et remplit
 // exactement ce que les morceaux n'ont pas eu le temps de bâtir. Voir
 // `horizon.js` : au-dessus d'une ville, le monde ne maille que quarante-deux
 // morceaux par seconde quand voler en réclame cent soixante-cinq.
-const horizon = new Horizon(world, RAYON_HORIZON);
+// LES ARBRES LOINTAINS (v553) : une silhouette par case boisée de la grille
+// fine, posée par la question de la carte (`world.foret`). Coupés en rendu
+// logiciel comme le bâti lointain (du remplissage que SwiftShader paie au
+// processeur), et alors ni lus ni posés ; `?arbresloin=1` les force, pour les
+// témoins et la revue d'écran, `?arbresloin=0` les coupe.
+const ARBRES_LOIN = (() => {
+  const v = new URLSearchParams(location.search).get('arbresloin');
+  return v != null ? v !== '0' : !renduLogiciel();
+})();
+const horizon = new Horizon(world, RAYON_HORIZON, { arbres: ARBRES_LOIN });
 scene.add(decor(horizon.objet()));
 // La couronne lointaine du palier « Loin » (v497) : `null` partout ailleurs.
 const horizonLoin = RAYON_LOIN ? new Horizon(world, RAYON_LOIN,
@@ -1323,7 +1351,9 @@ function installerMorceau(cx, cz, tampons) {
   const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null, arbresLoin: null,
     // ce morceau touche la couche HD (ou porte des arbres, v499), et il a été
     // maillé AVEC ses façades détaillées (v296)
-    hd: !!tampons.hd || !!tampons.arbres, detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0) };
+    hd: !!tampons.hd || !!tampons.arbres, detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0),
+    // les plages d'indices des arbres du bord (v554), et la dernière plage montrée
+    arbresBord: tampons.arbresBord || null, bordSig: null, cle: [cx, cz] };
   const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
   const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
   if (solid) {
@@ -1349,7 +1379,9 @@ function installerMorceau(cx, cz, tampons) {
       const g = geometrieHD(t);
       if (!g) continue;
       if (nom === 'facades') { entry.octetsFacades = octetsDeTampons(t); detailTenu.octets += entry.octetsFacades; detailTenu.n++; }
-      const m = new THREE.Mesh(g, materiau);
+      // (les arbres du loin se dessinent par plages, v554 : un tableau d'un
+      // seul matériau — le même, donc la même clé de programme)
+      const m = new THREE.Mesh(g, nom === 'arbresLoin' && tampons.arbresBord ? [materiau] : materiau);
       m.position.set(cx * CHUNK, 0, cz * CHUNK);
       m.castShadow = ombre && (nom === 'facades' || nom === 'arbresLoin');
       m.receiveShadow = true;
@@ -1437,6 +1469,8 @@ function installerMorceau(cx, cz, tampons) {
     if (m) m.userData.morceau = true;
   }
   chunkMeshes.set(key, entry);
+  // ses voisins cessent de montrer les arbres dont il porte la base (v554)
+  relayerArbresVoisins(cx, cz);
   // un morceau plus lourd que son estimation peut faire déborder le budget :
   // on rend alors les plus loin, tout de suite (v299)
   if (entry.facades) appliquerLeBudget(pcx, pcz, []);
@@ -1468,7 +1502,10 @@ function rendreLeDetail(entry) {
   entry.detail = false; entry.octetsFacades = 0;
   if (entry.plat) entry.plat.visible = true;
   if (entry.platLumineux) entry.platLumineux.visible = true;
-  if (entry.arbresLoin) entry.arbresLoin.visible = true;
+  if (entry.arbresLoin) {
+    if (entry.arbresBord) { const [cx, cz] = entry.cle; montrerArbresBord(entry, cx, cz, false); }
+    else entry.arbresLoin.visible = true;
+  }
 }
 // LE BUDGET S'APPLIQUE DU PLUS PROCHE AU PLUS LOIN (v299, `planDetail`) : ce
 // qui dépasse se rend, les candidats les plus proches se demandent, un tenu
@@ -1503,7 +1540,41 @@ function montrerLeDetail(entry, cx, cz, pcx, pcz) {
   if (entry.platLumineux) entry.platLumineux.visible = !pres;
   // les arbres du loin (v528) se relaient avec leurs modèles proches, qui
   // vivent dans `facades` : jamais les deux à la fois
-  if (entry.arbresLoin) entry.arbresLoin.visible = !pres;
+  if (entry.arbresLoin) {
+    if (entry.arbresBord) montrerArbresBord(entry, cx, cz, pres);
+    else entry.arbresLoin.visible = !pres;
+  }
+}
+// LES ARBRES DU BORD (v554) : un arbre dont la base est dans un voisin est
+// dessiné par ce voisin ; tant que le voisin n'est pas maillé (le bord du
+// disque chargé, une arrivée), ce morceau-ci montre son modèle lointain — sa
+// couronne ne manque plus de la part dont les cubes se taisent ici. Les
+// plages contiguës se fusionnent : un morceau du bord coûte un ou deux appels
+// de dessin, un morceau de l'intérieur exactement ce qu'il coûtait.
+function montrerArbresBord(entry, cx, cz, pres) {
+  const b = entry.arbresBord, m = entry.arbresLoin;
+  const plages = [];
+  if (!pres && b.propres > 0) plages.push([0, b.propres]);
+  for (const [d, debut, n] of b.groupes) {
+    const [dx, dz] = DIRECTIONS_VOISINS[d];
+    if (chunkMeshes.has(`${cx + dx},${cz + dz}`)) continue;
+    const der = plages[plages.length - 1];
+    if (der && der[0] + der[1] === debut) der[1] += n; else plages.push([debut, n]);
+  }
+  const sig = plages.join(';');
+  if (sig === entry.bordSig) return;
+  entry.bordSig = sig;
+  m.geometry.clearGroups();
+  for (const [debut, n] of plages) m.geometry.addGroup(debut, n, 0);
+  m.visible = plages.length > 0;
+}
+// Un morceau qui arrive ou s'en va change ce que ses huit voisins montrent.
+function relayerArbresVoisins(cx, cz) {
+  const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
+  for (const [dx, dz] of DIRECTIONS_VOISINS) {
+    const e = chunkMeshes.get(`${cx + dx},${cz + dz}`);
+    if (e && e.arbresBord) montrerLeDetail(e, cx + dx, cz + dz, pcx, pcz);
+  }
 }
 
 // Faut-il fabriquer les façades détaillées de ce morceau ? (v296)
@@ -1684,6 +1755,7 @@ function updateChunks() {
       if (Math.abs(cx - pcx) > UNLOAD_RADIUS || Math.abs(cz - pcz) > UNLOAD_RADIUS) {
         disposeChunkMesh(entry);
         chunkMeshes.delete(key);
+        relayerArbresVoisins(cx, cz);
       } else {
         const ombre = Math.abs(cx - pcx) <= RAYON_OMBRE && Math.abs(cz - pcz) <= RAYON_OMBRE;
         if (entry.solid) entry.solid.castShadow = ombre;
@@ -9112,6 +9184,8 @@ requestAnimationFrame(() => {
     try { chaufferStations(renderer, camera, scene); } catch (e) { console.warn('chauffe des stations', e); }
     // les effets de saison (v530) : un essaim neuf, son matériau exact
     try { effetSaison.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe de la saison', e); }
+    // le bâti et les arbres lointains (v553) : un matériau, un programme
+    try { chaufferLeLointain(camera); } catch (e) { console.warn('chauffe du lointain', e); }
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };

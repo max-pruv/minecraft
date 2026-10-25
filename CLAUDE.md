@@ -873,7 +873,7 @@ déjà conducteur ». Quatre règles.
   est posé à la main (`update` suspendu), sinon sa physique le ramène au sol
   pendant la mesure.
 
-## La SF90 XX Stradale (v553) — un paquet Sketchfab passe par un script, et ses matériaux par la table des programmes
+## La SF90 XX Stradale (v555) — un paquet Sketchfab passe par un script, et ses matériaux par la table des programmes
 
 Max a fourni le paquet glTF de Ddiaz Design (CC-BY-4.0). Trois règles.
 
@@ -1697,6 +1697,32 @@ Max : « le mode Loin n'est pas assez loin ». Trois règles.
   troisième grille est seize blocs sous la couronne (`ABAISSE_TRES_LOIN`),
   comme la couronne deux sous la fine. `?loin=2560` rend la v504 au sommet
   près.
+
+## Le lointain défile et a ses arbres (v553) — un index de grille désigne des sommets, pas des cases du monde
+
+Deux règles.
+
+- **CE QUI DÉFILE DÉFILE EN ENTIER.** `maj` (horizon.js) décale hauteurs,
+  sommets et couleurs d'une case tous les huit blocs ; l'index de triangles,
+  lui, n'était refait qu'à la découpe (quatre par seconde), et entre deux il
+  désignait les sommets d'à côté : la zone omise glissait hors du disque
+  maillé — la bande de ciel du relevé n° 19, large de ce qu'on vole en un
+  quart de seconde. `decalerDecoupe` décale l'index avec les sommets. Trouvé
+  par une image à fond magenta et un rayon par pixel
+  (`sonde-trou-horizon.cjs`) : chaque pixel de ciel tombait sur une case non
+  maillée que l'index omettait, `glisse` ≠ 0. Tout tampon tenu en coordonnées
+  de grille (index, mais aussi tout tableau par sommet qu'on ajoute) passe par
+  le défilement, ou il ment entre deux découpes.
+- **LES ARBRES LOINTAINS SONT DU BÂTI LOINTAIN.** Une silhouette par case
+  boisée de la grille fine (`opts.arbres`), posée à la découpe par la question
+  de la carte (`world.foret`, le bruit de `treeAt` et `bosquet`) — jamais sur
+  un morceau maillé, jamais en ville ni sur l'eau. Même matériau que le bâti
+  (`materiauBati`) donc même programme, chauffé à l'accueil
+  (`chaufferLeLointain`, vers l'écran et la cible des reflets). Coupés en
+  rendu logiciel (`ARBRES_LOIN`, main.js), et alors ni lus ni posés ;
+  `?arbresloin=1` les force. Les grilles lointaines (couronne, très lointain)
+  n'en portent pas : à mille blocs un arbre fait un pixel. La fidélité se
+  mesure colonne par colonne contre `treeAt`, jamais à l'œil.
 
 ## La sûreté garde le lointain (v532) — un disjoncteur ne retire que ce qui coûte ce qu'il protège
 
@@ -14302,3 +14328,33 @@ réalistes comme GTA. » Quatre règles.
   et c'est la preuve structurelle (v291) qui dispense de rejouer les dix-sept
   gardiens de `mesher.js` — seules `plafond.js` et `parishd.js` arment les
   arbres, et toutes deux sont rejouées seules.
+
+## Les arbres du bord (v554) — ce qu'un morceau tait, il le dessine tant que personne d'autre ne le fait
+
+Deux dettes des arbres, une mesure. Deux règles.
+
+- **UNE DETTE SE REMESURE CONTRE CE QUI A CHANGÉ DEPUIS QU'ELLE EST ÉCRITE.**
+  La demi-couronne à la frontière de `RAYON_HD` (v499) supposait des cubes de
+  feuilles émis côté loin. Depuis la v528, les cubes d'un arbre reconnu ne
+  s'émettent NULLE PART, et chaque arbre n'a qu'un dessinateur, le morceau de
+  sa base, proche ou lointain d'un seul tenant : le mélange est impossible par
+  construction, et le témoin de `plafond.js` le garde (le `solid` d'un morceau
+  ne dépend pas de son détail). Ce qui restait vrai était l'autre dette (v528) :
+  tant que le morceau de la base n'est pas maillé, la part de couronne tue chez
+  le voisin MANQUE — sous node (`sonde-arbres-frontiere.cjs`), sept arbres et
+  147 cases au bord d'un disque de rayon douze, et chaque arrivée.
+- **LE MORCEAU PORTE AUSSI LE MODÈLE LOINTAIN DE SES ARBRES DU BORD, ET
+  `main.js` NE LE MONTRE QUE POUR UN VOISIN ABSENT.** `reconnaitreArbres` rend
+  `bord` (les fûts hors du morceau qui y ont des feuilles) ; le mailleur émet
+  leur modèle lointain APRÈS ceux du morceau, dans `arbresLoin`, rangé par
+  direction du voisin (`DIRECTIONS_VOISINS`, en cercle), avec le climat de SON
+  morceau ; `arbresBord` donne les plages d'indices. `montrerArbresBord`
+  dessine par groupes (un tableau d'un seul matériau : aucune clé neuve) la
+  plage du morceau quand le détail ne l'est pas, et chaque direction dont le
+  voisin n'est pas dans `chunkMeshes` ; un morceau qui arrive ou s'en va relaie
+  ses huit voisins (`relayerArbresVoisins`). Le modèle est celui que le voisin
+  dessine, sommet pour sommet (témoin) : un arbre ne change pas quand son
+  voisin arrive, et il n'est jamais dessiné deux fois. Le prix, déclaré :
+  `arbresLoin` gagne 70 % (0,96 Mo pour 169 morceaux de forêt, 4,8 % du
+  `solid`, mesuré ; le maillage reste dans le bruit, 5,0 contre 4,9 ms), et un morceau du bord du disque coûte un ou deux appels de dessin
+  au lieu d'un ; l'intérieur, rien.

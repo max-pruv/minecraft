@@ -637,7 +637,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         longueur: +(b.max.z - b.min.z).toFixed(2), sol: +b.min.y.toFixed(3), forme: proto.userData.forme, rayon: +(proto.userData.rayonRoue || 0).toFixed(3), siege };
     }, spec);
     const revuelto = await adaptee({ fichier: 'lamborghini-revuelto.glb', laque: 'Paint_Arancio' });
-    // ET LA SF90 XX STRADALE (v553), posée au manifeste par
+    // ET LA SF90 XX STRADALE (v555), posée au manifeste par
     // scripts/ferrari-sf90-xx.py : mêmes contrats, sa laque `Paint_Primary_XX`
     // (l'ancienne SF90 n'a que `Paint_Primary`), ses vingt-neuf images, 4,84 m.
     const sf90 = await adaptee({ fichier: 'ferrari-sf90.glb', laque: 'Paint_Primary_XX' });

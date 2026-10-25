@@ -1562,6 +1562,43 @@ function verifier(nom, ok, detail = '') {
     verifier('les commandes se lisent sur le ciel de midi comme sur la nuit — icônes 3:1, textes des pilules 4,5:1, fonds translucides composés',
       fautes.length === 0 && !!cont.midi && !!cont.minuit, `${fautes.join(' · ')} ${JSON.stringify(cont)}`);
 
+    // LES ARBRES LOINTAINS SE CHAUFFENT À L'ACCUEIL (v553). Une page prête
+    // (`pret`, la chauffe finie), les arbres lointains forcés (`arbresloin=1` :
+    // le banc rend en logiciel, où ils sont coupés comme le bâti lointain), et
+    // l'on vole à cent blocs au-dessus d'une forêt. Ce que l'enfant voit : des
+    // silhouettes d'arbres au loin, et aucune clé de programme neuve entre
+    // l'accueil et la forêt — la silhouette partage le matériau du bâti
+    // lointain, que `chaufferLeLointain` a compilé. Sur l'ancien code : aucun
+    // arbre au loin.
+    {
+      const cles = () => [...new Set((window.__game.renderer.info.programs || []).map((q) => q.cacheKey))];
+      const sylve = await banc.jouerSeul('Sylve', { rr: 4, params: '&arbresloin=1', pret: true });
+      await sylve.waitForTimeout(2000);   // le dernier pas de la chauffe suit la flotte d'une image
+      const clesAvant = await sylve.evaluate(cles);
+      const vol = await sylve.evaluate(async () => {
+        const g = window.__game, att = (ms) => new Promise((f) => setTimeout(f, ms));
+        const x = -1176, z = -1648;
+        g.player.pos.set(x, g.world.terrainHeight(x, z) + 100, z); g.player.vel.set(0, 0, 0);
+        g.player.flying = true; g.player.yaw = 0; g.player.pitch = -0.35;
+        const t0 = performance.now();
+        let arbres = 0;
+        while (performance.now() - t0 < 40000) {
+          await att(500);
+          arbres = g.horizon.arb ? g.horizon.arb.count : 0;
+          if (arbres > 100) break;
+        }
+        const f0 = g.renderer.info.render.frame;
+        while (g.renderer.info.render.frame < f0 + 6 && performance.now() - t0 < 60000) await att(200);
+        return { arbres, visibles: !!(g.horizon.arb && g.horizon.arb.visible), ms: Math.round(performance.now() - t0) };
+      });
+      const clesApres = await sylve.evaluate(cles);
+      await sylve.close();
+      const neuves = clesApres.filter((k) => !clesAvant.includes(k));
+      verifier('au-dessus d\'une forêt, le paysage lointain a ses arbres, et aucune clé de programme neuve depuis l\'accueil',
+        vol.arbres > 100 && vol.visibles && neuves.length === 0,
+        `${JSON.stringify(vol)} · ${neuves.length} clé(s) neuve(s) ${JSON.stringify(neuves.map((k) => k.slice(0, 60)).slice(0, 3))}`);
+    }
+
     verifier('aucune erreur JavaScript de bout en bout',
       tab.erreurs.length === 0, JSON.stringify(tab.erreurs.slice(0, 3)));
   } finally {
