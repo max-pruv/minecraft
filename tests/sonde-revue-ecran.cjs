@@ -265,18 +265,22 @@ const ETATS = [
   { nom: 'police-controle', async prep(tab) { return policeJusqua(tab, true); } },
   { nom: 'moto', async prep(tab) {
     const { dalle } = require('./sonde-police.cjs');
-    const y0 = await dalle(tab, 47000, 47000, 60);
+    // la dalle de la sonde (130) : sur 60, trois secondes de moto la faisaient
+    // sortir de la dalle, et la capture était prise sous l'eau
+    const y0 = await dalle(tab, 47000, 47000, 130);
     return tab.evaluate(async (y0) => {
       const g = window.__game, P = g.player, am = g.animalManager;
       const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
-      P.flying = false; P.yaw = 0; P.pos.set(47000.5, y0 + 1.2, 47020.5); P.vel.set(0, 0, 0);
+      P.flying = false; P.yaw = 0; P.pos.set(47000.5, y0 + 1.2, 47040.5); P.vel.set(0, 0, 0);
       await dodo(800);
       const m = am.invoquer('moto', P.pos.x, P.pos.z - 2.5); m.yaw = Math.PI;
       const t0 = performance.now();
       while (performance.now() - t0 < 20000 && !m.mesh.userData.modele) await dodo(200);
       for (let i = 0; i < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); i++) { document.getElementById('ride-btn').click(); await dodo(600); }
       P.touchMove.f = 1; await dodo(1500); P.touchMove.s = -1; await dodo(1600);
-      return { enSelle: !!(g.fun.montureConduite && g.fun.montureConduite()), modele: !!m.mesh.userData.modele };
+      return { enSelle: !!(g.fun.montureConduite && g.fun.montureConduite()), modele: !!m.mesh.userData.modele,
+        surLaDalle: Math.abs(P.pos.x - 47000) < 128 && Math.abs(P.pos.z - 47000) < 128 && P.pos.y > y0,
+        pos: [+P.pos.x.toFixed(1), +P.pos.y.toFixed(1), +P.pos.z.toFixed(1)], y0 };
     }, y0);
   } },
   { nom: 'mobilier-tombe', async prep(tab) {

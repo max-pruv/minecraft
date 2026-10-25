@@ -87,6 +87,30 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
 - **Le policier ne marche pas** (le modèle fourni n'a pas d'armature) : il
   glisse de sa portière à celle de l'enfant. Un modèle armé, ou un corps
   Rocketbox habillé en policier, serait une passe à part.
+- **Pendant la poursuite, la police est derrière la caméra** (relevé n° 29 de
+  `docs/revue-ecran.md`) : seules la pilule et la sirène la disent. Décision
+  de Max après la tablette.
+- **LE PORTAIL DE LA v558, MESURÉ.** Le portail complet a été coupé deux fois
+  par la limite de deux heures de la session, pendant `reseau.js` (la
+  dernière suite) : il dure désormais plus de deux heures sur ce banc.
+  `reseau.js` a donc été rejouée seule des deux côtés. Rouges, tous déjà
+  déclarés ou intermittents des deux côtés, aucun sur un chemin de la police
+  (elle ne naît qu'après une bêtise au volant, `patrouille.js`) :
+  - `maj.js` « le loader dit combien de fichiers » (déclaré) ; le titre de
+    sept mots de la v554, corrigé dans cette livraison.
+  - `monte.js` « au feu, la voiture freine au lieu de piler » (v481) et « au
+    frein à main, les pneus crissent » (`crisse.n` 1 pour une barre de 3,
+    rapport 14,5) ; au premier portail, avant le rebase, les deux passants
+    de Rome (déclarés), et ces deux-là verts.
+  - `reglages.js` « l'autre tablette ne le défait pas » au premier portail
+    (déclaré), vert au second.
+  - `reseau.js`, les deux témoins de la v556 (l'ami en temps réel) : au
+    portail, le direct (`vx` absent, la page à 4 images par seconde) ;
+    rejouée seule sur la branche, le nuage (`sautMax` 28,3, 4,5 images par
+    seconde), 98 verts ; rejouée seule sur `origin/main` (v557), le direct
+    (`sautMax` 21,9, 1,5 image par seconde) et « un hôte sans courtier »
+    (déclaré), 96 verts. Intermittents des deux côtés, toujours sous
+    cinq images par seconde : la session de la v556 a la piste.
 
 ## v547 — les voitures gardent leur modèle : ce qui reste, mesuré
 
