@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 550,
+    titre: 'Le taxi a ses phares',
+    puces: [
+      'Les phares du taxi sont au nez',
+      'Les feux restent sur la voiture',
+    ],
+  },
+  {
     v: 549,
     titre: 'Klaxon et feux de l\'ami',
     puces: [

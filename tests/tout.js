@@ -87,6 +87,8 @@ const GARDIENS = {
   'vendor/voitures/porsche-911-gt3-rs-hd-v2-compact.glb': ['degats.js', 'monte.js'],
   'tests/porsche-911.mjs': ['degats.js'],
   'tests/porsche-911-textures.mjs': ['degats.js'],
+  // les lumières de la flotte (v550), lues par degats.js sous node
+  'tests/sonde-feux-flotte.mjs': ['degats.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js', 'reglages.js'],
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],
@@ -187,7 +189,7 @@ const GARDIENS = {
   'src/admin.js': ['parent.js', 'reglages.js'],
   'src/identity.js': ['reglages.js', 'parent.js'],
   'src/education.js': ['reglages.js', 'parent.js', 'manhattan.js'],
-  'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js'],
+  'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js', 'degats.js'],
   'src/utilitaires.js': ['carteMonde.js', 'realisme.js', 'monte.js'], // v438 : la fourgonnette et le pickup de la rue
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js', 'degats.js'],
   'src/voiesdoubles.js': ['monte.js', 'carteMonde.js', 'reseau.js'],
@@ -276,7 +278,7 @@ const GARDIENS = {
   // comme les bruits de blocs passent par sa sortie — d'où `reseau.js`.
   'src/sons.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/radio.js': ['monte.js', 'reglages.js', 'reseau.js'],   // le programme de la radio (v543), pur
-  'src/phares.js': ['monte.js'],
+  'src/phares.js': ['monte.js', 'degats.js'],
   'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/traces.js': ['monte.js', 'reglages.js', 'reseau.js'],
   // les effets de saison en vraies formes (v505) : le témoin des cubes du ciel

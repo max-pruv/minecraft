@@ -19,7 +19,7 @@
 // Une fois par modèle (`flotte`), comme les feux de détresse.
 import * as THREE from 'three';
 import { matiereAdditive } from './avions.js';
-import { posesDetresse } from './vehicules.js';
+import { posesDetresse, surLePrototype } from './vehicules.js';
 
 const RE_PHARE = /head.?l|headlamp|phare|front.?light|light.?front|lamp.?f/i;
 const RE_PAS_PHARE = /tail|rear|brake|back|housing|fog/i;
@@ -35,6 +35,10 @@ const _inv = new THREE.Matrix4(), _rel = new THREE.Matrix4(), _v = new THREE.Vec
 export function posesPhares(m) {
   const cle = m.userData && m.userData.flotte && m.userData.roues ? m.userData.flotte : null;
   if (cle && posesParModele.has(cle)) return posesParModele.get(cle);
+  // la règle du modèle se mesure sur son prototype (v550), pas sur une voiture
+  // froissée, amputée ou en pleine animation : c'est ce qui se garde ici
+  const propre = cle ? surLePrototype(m, cle) : null;
+  if (propre) { const poses = posesPhares(propre); posesParModele.set(cle, poses); return poses; }
   m.updateMatrixWorld(true);
   _inv.copy(m.matrixWorld).invert();
   const meshes = [];

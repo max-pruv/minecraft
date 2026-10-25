@@ -877,6 +877,28 @@ standard qu'il a demandé, la 911 v2 en référence visuelle). Quatre règles.
   (gardien de `vehicules.js` et `portieres.js`), et la table des gardiens les
   déclare avec le GLB. Un test qu'aucun portail ne lance ne garde rien.
 
+## Les feux se mesurent sur le prototype (v550) — une règle par modèle ne se mesure jamais sur une voiture
+
+Deux règles.
+
+- **CE QUI SE GARDE PAR MODÈLE SE MESURE SUR LE PROTOTYPE.** `posesDetresse`
+  (feux de détresse et feux stop) et `posesPhares` mesurent, quand la voiture
+  est un clone du prototype à l'identité (`userData.protoDe`), un clone propre
+  de ce prototype (`surLePrototype`, vehicules.js). La règle de la v543 (« une
+  tôle intacte ») ne voyait qu'une façon d'être abîmée ; une voiture en
+  animation d'échelle ou privée d'une pièce détachée empoisonnait aussi le
+  modèle. C'est la règle de la portière (v366) : le plan se prend sur le
+  prototype. Ailleurs (un modèle dont le clone n'est pas à l'identité), la
+  mesure sur la voiture et la règle de la v543 restent.
+- **UN MAILLAGE FUSIONNÉ PAR MATÉRIAU EST UN BLOC OPTIQUE S'IL EN PORTE LE
+  NOM.** Le taxi rangeait son lanternon avec ses ampoules (clé « light ») :
+  un seul bloc du nez au toit, et ses feux au pied du pare-brise. Une pièce
+  d'un modèle fabriqué qui n'est pas un feu ne prend pas une clé que `RE_FEU`
+  ou `RE_PHARE` lisent ; elle a sa clé à elle et le même matériau (aucun
+  programme neuf). Toute la flotte se mesure sous node (`sonde-feux-flotte.mjs`,
+  lue par `degats.js`) : un modèle neuf dont un feu tombe hors de la tôle ou
+  de son coin la fait rougir.
+
 ## Les guides des villes (v538) — un guide est un rôle à part, et il se pose à ciel ouvert
 
 Trois règles.

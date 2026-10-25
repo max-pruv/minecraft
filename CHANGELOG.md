@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v550 — Le taxi jaune a ses phares au nez
+
+**Pourquoi.** De nuit, le taxi jaune de New York portait ses phares — et ses
+feux de détresse avant — au pied du pare-brise (z −1,01, y 1,18 pour une
+voiture qui va de −2,73 à 2,68). Son lanternon « TAXI » était rangé avec les
+ampoules des phares dans un seul maillage : le jeu, qui mesure les feux sur les
+blocs optiques nommés (v519, v533), lisait un bloc du nez au toit. Et le témoin
+« les feux de détresse se posent SUR la carrosserie » rougissait de temps en
+temps sur la Bugatti Bolide (feux avant à 0,45 de la tôle) : les poses se
+gardent par modèle, et la règle de la v543 (« une tôle intacte ») ne voyait
+qu'une des façons dont la première voiture mesurée peut être abîmée.
+
+**Ce que ça change.** Le taxi a ses phares au nez, ses clignotants aux coins.
+Les phares, les feux de détresse et les feux stop de toute la flotte se
+mesurent désormais sur le prototype du modèle, jamais sur la voiture qu'on a
+sous la main : une voiture froissée, amputée d'une pièce, ou prise en pleine
+animation d'échelle ne peut plus décaler les feux de toutes les voitures du
+même modèle.
+
+**Ce qui le prouve.** Trois témoins. `degats.js`, sous node : les 57 modèles de
+la flotte (taxis, fourgonnette et pickup fabriqués compris) ont leurs phares,
+leurs feux de détresse et leurs feux stop sur la tôle et à leur coin
+(`sonde-feux-flotte.mjs`) — rouge sur `origin/main` pour le taxi ; une Bolide
+abîmée mesurée la première ne fait pas la règle du modèle — rouge sur
+`origin/main` (écarts −0,38 et −0,5). `monte.js` : le témoin des phares de nuit
+conduit désormais le taxi, au lieu de tirer un modèle au hasard.
+
+---
+
 ## v549 — Le klaxon et les feux stop d'un ami
 
 **Pourquoi.** Deux dettes déclarées par la v543. À plusieurs, un ami

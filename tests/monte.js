@@ -9150,7 +9150,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         g.player.pilote = null; g.player.avionEtat = undefined; g.player.avionEnVol = undefined; g.player.flying = false;
         window.__setDayTime(0.75);
         await images(4);
-        const v = am.invoquer('voiture', x0 + 5, z0 - 5, false);
+        // LE MODÈLE EST CHOISI, PAS TIRÉ (v550) : le taxi jaune, le seul des
+        // cinquante-sept qui posait ses phares au pied du pare-brise — un tirage
+        // le trouvait une fois sur cinquante-sept. Les autres sont mesurés sous
+        // node, tous, par `sonde-feux-flotte.mjs` (degats.js).
+        const v = am.invoquer('voiture', x0 + 5, z0 - 5, false, { flotte: 'ny-crown-victoria' });
         const t0 = performance.now();
         while (v && !v.mesh.userData.roues && performance.now() - t0 < 15000) await dodo(100);
         if (v) { v.pos.set(g.player.pos.x - Math.sin(g.player.yaw) * 3, g.player.pos.y, g.player.pos.z - Math.cos(g.player.yaw) * 3); v.mesh.position.copy(v.pos); }
