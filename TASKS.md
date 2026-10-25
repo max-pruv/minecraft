@@ -1201,15 +1201,15 @@ v522 ne touche pas ; la distribution reste à faire.
   voiture de l'ami se refait pendant la marche » (non déclaré, même page que
   la portière, `phases: []` : la séquence n'a pas commencé).
 
-- [ ] **DES COURONNES D'ARBRES SANS TRONC FLOTTENT AU-DESSUS DES PISTES (vu en
-  v480).** Roissy (piste z 47, s 18 à 28, feuilles à y 43-44 pour une piste à
-  34) et Andrews (s 11, y 46 pour 37) : un arbre dont le tronc a été effacé par
-  le revêtement garde sa couronne. L'approche assistée les survole désormais
-  (`plein` de `guiderApproche`), mais un avion qui roule dessous les traverse
-  visuellement (son modèle est plus haut que sa boîte de 1,8). Le remède est
-  dans la génération des aérodromes (`aeroport.js`, zone d'une autre session) :
-  dégager l'air au-dessus de toute colonne de piste. Mesure : balayer
-  `sommetColonne` sur chaque piste de `pistesDuMonde()` contre `p.sol`.
+- [x] **DES COURONNES D'ARBRES SANS TRONC FLOTTENT AU-DESSUS DES PISTES (vu en
+  v480) — FAIT en v548.** Mesuré sur toutes les pistes (prolongements et Changi
+  compris) : réglé au-dessus des bandes par la v530 (`DEGAGE_CIME`), mais la
+  même tranchée effaçait le tronc des arbres de son emprise (543 feuilles
+  suspendues au bord). `treeAt` n'y plante plus rien (`videParUnTroncon`,
+  `DATE_PISTES_DEGAGEES`) ; deux témoins de `plafond.js` le gardent. Reste,
+  mesuré et non corrigé : une couronne d'un arbre planté juste HORS de
+  l'emprise est coupée net par la tranchée (son tronc est là) — pas une
+  couronne qui flotte.
 
 - [ ] **SEPT PISTES SOUS LEUR CIBLE (v448) — DÉCLARÉES, LE REMÈDE EST UNE
   DÉCISION.** Prolongées autant que leur place le permet, mesurées par sonde :

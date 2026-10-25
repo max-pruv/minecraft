@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v548 — Plus de feuilles suspendues autour des pistes
+
+**Pourquoi.** Signalé en v480 : des couronnes d'arbres sans tronc flottaient
+au-dessus des pistes de Roissy et d'Andrews, et un avion qui roulait dessous
+les traversait. Mesuré d'abord sur toutes les pistes du monde (prolongements
+et Changi compris) : sur la v529, des feuilles et du bois au-dessus de neuf
+pistes (Francfort 83 blocs, Singapour 120, Los Angeles 37) ; depuis la v530,
+qui vide plus haut la tranchée des prolongements, plus rien — mais sans un
+témoin pour le garder. Et cette même tranchée efface le tronc d'un arbre
+planté dans son emprise : la part de couronne qui déborde au-dehors restait en
+l'air, 543 feuilles au-dessus de l'herbe le long des pistes prolongées.
+
+**Ce que ça change.**
+- Plus aucun arbre ne pousse dans l'emprise d'une piste prolongée : plus de
+  feuilles suspendues sans tronc au bord des aérodromes.
+- Rien d'autre ne bouge : aucun bloc de sol, aucun rondin, aucun arbre qui a
+  encore son tronc. Là où un enfant a bâti avant la règle, les arbres d'avant
+  restent.
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` : rien de plein
+au-dessus des 151 563 colonnes de piste du monde, jusqu'à quarante blocs
+(rouge sur la v529, 261 blocs) ; aucun arbre sans tronc autour des tronçons
+(rouge sur `origin/main`, 240 arbres). Contre le même monde règle désarmée,
+543 blocs diffèrent, tous des feuilles devenues de l'air. Les deux empreintes
+du relief et celle des 490 morceaux sont identiques (`b44dcc32…`). Aucune
+feuille au-dessus d'un revêtement sur les dix-neuf disques d'aérodrome
+(sonde, 4 144 feuilles lues).
+
+---
+
 ## v547 — Les voitures de la rue gardent leur modèle
 
 **Pourquoi.** Max : « on tourne la tête une seconde, on revient, et c'est un
