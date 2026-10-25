@@ -1,4 +1,4 @@
-// UNE VOITURE NE CHANGE PAS DE MODÈLE QUAND ON SE RETOURNE (v545).
+// UNE VOITURE NE CHANGE PAS DE MODÈLE QUAND ON SE RETOURNE (v547).
 //
 // Max : « on tourne la tête une seconde, on revient, et c'est un autre
 // modèle ». La sonde reproduit le geste : dans une ville qui roule, on relève
@@ -141,7 +141,7 @@ async function mesurerAttente(page, ville, { duree = 30000, vitesse = 14 } = {})
         if (!o.userData || o.userData.flotte === undefined || !(o.userData.membres || o.userData.roues)) continue;
         if (!o.userData.__id) o.userData.__id = (window.__idVoiture = (window.__idVoiture || 0) + 1);
         const modele = !!(o.userData.roues && o.userData.roues.length);
-        // cachée en attendant son modèle (v545) : combien de temps, et si près
+        // cachée en attendant son modèle (v547) : combien de temps, et si près
         if (o.userData.attente) {
           const dA = Math.hypot(o.position.x - g.player.pos.x, o.position.z - g.player.pos.z);
           let a = A.attentes.get(o.userData.__id);

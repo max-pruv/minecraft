@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v545 — Les voitures de la rue gardent leur modèle
+## v547 — Les voitures de la rue gardent leur modèle
 
 **Pourquoi.** Max : « on tourne la tête une seconde, on revient, et c'est un
 autre modèle. » Mesuré (`tests/sonde-voitures-persistantes.cjs`) : une voiture

@@ -5817,7 +5817,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('les voitures de la rue rendent leur mémoire quand on s\'en va',
       jugerRendre(convois), JSON.stringify(convois));
 
-    // UNE VOITURE NE CHANGE PAS DE MODÈLE QUAND ON SE RETOURNE (v545).
+    // UNE VOITURE NE CHANGE PAS DE MODÈLE QUAND ON SE RETOURNE (v547).
     //
     // Max : « on tourne la tête une seconde, on revient, et c'est un autre
     // modèle ». La sonde a nommé le mécanisme : la COQUE D'ATTENTE, montrée à

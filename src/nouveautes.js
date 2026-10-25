@@ -6,7 +6,12 @@
 
 export const NOUVEAUTES = [
   {
-    v: 545,
+    v: 547,
+    titre: 'Les voitures gardent leur modèle',
+    puces: [
+      'Une voiture ne change plus de forme',
+      'Sa couleur reste la même',
+      'Pareil pour tous les amis',
     ],
   },
   {
@@ -25,15 +30,6 @@ export const NOUVEAUTES = [
       'La 911 GT3 RS refaite en détail',
       'Ses roues, son aileron, son habitacle',
       'Toujours dans ton garage',
-    ],
-  },
-  {
-    v: 544,
-    titre: 'Les voitures gardent leur modèle',
-    puces: [
-      'Une voiture ne change plus de forme',
-      'Sa couleur reste la même',
-      'Pareil pour tous les amis',
     ],
   },
   {

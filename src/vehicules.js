@@ -549,7 +549,7 @@ export function allureDe(fichier, secours = 3.4) {
 }
 
 const chargementsFlotte = new Map();
-// LES PROTOTYPES DÉJÀ LÀ (v545), lus SANS attendre une promesse : une voiture
+// LES PROTOTYPES DÉJÀ LÀ (v547), lus SANS attendre une promesse : une voiture
 // de la rue dont le modèle est chargé s'habille dans l'image même où elle naît,
 // et l'enfant ne voit jamais sa coque d'attente.
 const protosPrets = new Map();
@@ -2172,7 +2172,7 @@ class Convoi {
       return;
     }
     const dTete = Math.hypot(tete.x - joueur.x, tete.z - joueur.z);
-    // LES MODÈLES SE DEMANDENT AVANT QU'UNE VOITURE NE SE MONTRE (v545) : à la
+    // LES MODÈLES SE DEMANDENT AVANT QU'UNE VOITURE NE SE MONTRE (v547) : à la
     // marge du rendu, cent blocs avant la portée. Une voiture qui entre dans
     // le champ trouve alors son modèle prêt, et ne reste pas cachée.
     if (!this.modelesDemandes && this.modeles && dTete < portee + trainee + MARGE_RENDRE) {
@@ -2231,7 +2231,7 @@ class Convoi {
         m.rotation.order = 'YXZ';
         m.rotation.z = roulis;
       }
-      // une voiture qui attend son modèle ne se montre pas en coque (v545), et
+      // une voiture qui attend son modèle ne se montre pas en coque (v547), et
       // ses feux (détresse, stop) ne se posent que sur le modèle qu'on voit
       m.visible = !m.userData.attente;
       if (this.routier && m.visible) {
@@ -2801,7 +2801,7 @@ export function createVehicules({ scene, player }) {
     // flotte — c'est le même soin que pour la voiture garée.
     g.userData.flotte = entree.fichier;
     g.userData.nomVoiture = entree.nom;
-    // UNE VOITURE NE CHANGE PAS DE MODÈLE SOUS LES YEUX DE L'ENFANT (v545).
+    // UNE VOITURE NE CHANGE PAS DE MODÈLE SOUS LES YEUX DE L'ENFANT (v547).
     // Max : « on tourne la tête une seconde, on revient, et c'est un autre
     // modèle ». C'était la coque d'attente : montrée dès la naissance, puis
     // remplacée par le modèle de la flotte une image (fichier déjà chargé) à
@@ -2820,7 +2820,7 @@ export function createVehicules({ scene, player }) {
     // d'origine — une voiture dont la couleur fait l'identité (un taxi,
     // une Ferrari rouge) ne doit pas disparaître de la rue. La laque
     // seule est repeinte : vitres, chromes et carbone gardent leur rendu.
-    // Posée dès la naissance (v545) : elle ne dépend que de la place.
+    // Posée dès la naissance (v547) : elle ne dépend que de la place.
     const laque = entree.laque ? entree.laque === 'toujours'
       : entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0;
     g.userData.laque = laque ? teinte : null;
