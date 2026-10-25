@@ -637,6 +637,53 @@ export function normaleEntreBoites(A, B) {
   return mieux;
 }
 
+// ON N'ENTRE PAS PLUS LOIN DANS UN VÉHICULE (v560). Max : « il ne faut pas que
+// les véhicules puissent passer les uns dans les autres, et c'est encore
+// possible ». « Pas si l'on est déjà dedans » (v245) se jugeait par FAMILLE :
+// collée à une voiture de la rue — l'état que laisse un choc, ou une voiture
+// arrivée dans la nôtre —, la voiture de l'enfant ne voyait plus AUCUNE voiture
+// et traversait celle d'à côté, ou celle-là même (mesuré, sonde-traverse-
+// vehicules.cjs : 67 relevés dedans sur 134, 1,7 bloc d'enfoncement). La règle
+// se juge désormais PAR VÉHICULE et PAR ENFONCEMENT : un pas est refusé s'il
+// fait entrer dans un véhicule qu'on ne touchait pas, OU s'il s'enfonce plus
+// loin dans celui qu'on touche. S'en dégager (l'enfoncement baisse) ou le
+// longer (il ne bouge pas) reste permis : on n'est jamais coincé.
+// `avant` et `apres` sont nos rectangles (quatre sommets), `R` l'autre.
+export const ENFONCE_TOLERE = 1e-3;
+export function profondeurRectangles(P, Q) {
+  let m = Infinity;
+  for (const R of [P, Q]) {
+    for (let k = 0; k < 4; k++) {
+      let ax = -(R[(k + 1) % 4][1] - R[k][1]), az = R[(k + 1) % 4][0] - R[k][0];
+      const n = Math.hypot(ax, az) || 1; ax /= n; az /= n;
+      let p0 = Infinity, p1 = -Infinity, q0 = Infinity, q1 = -Infinity;
+      for (let j = 0; j < 4; j++) {
+        const p = P[j][0] * ax + P[j][1] * az, q = Q[j][0] * ax + Q[j][1] * az;
+        if (p < p0) p0 = p; if (p > p1) p1 = p; if (q < q0) q0 = q; if (q > q1) q1 = q;
+      }
+      const o = Math.min(p1, q1) - Math.max(p0, q0);
+      if (o <= 0) return 0;
+      if (o < m) m = o;
+    }
+  }
+  return m;
+}
+export function sEnfonce(avant, apres, R) {
+  const p1 = profondeurRectangles(apres, R);
+  if (p1 <= 0) return false;
+  return p1 > profondeurRectangles(avant, R) + ENFONCE_TOLERE;
+}
+// la même chose pour deux boîtes { x, z, ux, uz, a, b }
+export function rectangleDeBoite(B) {
+  const vx = B.uz, vz = -B.ux;
+  return [
+    [B.x + B.ux * B.a + vx * B.b, B.z + B.uz * B.a + vz * B.b],
+    [B.x + B.ux * B.a - vx * B.b, B.z + B.uz * B.a - vz * B.b],
+    [B.x - B.ux * B.a - vx * B.b, B.z - B.uz * B.a - vz * B.b],
+    [B.x - B.ux * B.a + vx * B.b, B.z - B.uz * B.a + vz * B.b],
+  ];
+}
+
 // LE CHOC CONTRE UNE VOITURE QUI ROULE. `moi` et `autre` sont des boîtes
 // (autre.v : sa vitesse le long de son axe, blocs/s), (vx, vz) la vitesse de
 // la voiture de l'enfant. La réponse se calcule dans le repère de l'AUTRE —

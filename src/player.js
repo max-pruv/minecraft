@@ -64,6 +64,11 @@ const DEGAGEMENT_MARCHE = 0.7;
 const RAYON_MUR = 4.5;     // la façade se lit sur ce rayon autour du contact (v397)
 const FACES = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const ANTI_REBOND = 0.35;        // s de jeu : un choc plus faible dans ce délai est le même accident (v534)
+// UNE VOITURE TOMBE DANS L'EAU (v560, décision de Max qui annule la v272 :
+// « s'il tombe dans l'eau, il tombe dans l'eau »). Le moteur est noyé, l'eau
+// freine la caisse (la vitesse est divisée par e toutes les 1/TRAINEE_EAU s :
+// lancée à quinze blocs/s, elle file une dizaine de blocs) et elle coule.
+export const TRAINEE_EAU = 1.6;
 const FREIN_PIETON = 22;         // le frein franc de conduite.js, devant un piéton   // ce qu'il faut avancer pour passer le bord d'une marche (v286)
 
 // LE VOL D'UN AVION — trois chiffres, et chacun a sa raison.
@@ -548,7 +553,8 @@ export class Player {
   // GLISSER LE LONG DE CE QU'ON A TOUCHÉ (v397) : le pas tangent tout de
   // suite, et s'il bute sur le coin d'une marche de l'escalier, la voiture se
   // décolle d'un cheveu le long de la normale — c'est la réaction du mur, pas
-  // un passe-muraille : seule une pose LIBRE est prise.
+  // un passe-muraille : seule une pose LIBRE est prise — libre des blocs ET
+  // des véhicules (v560).
   //
   // ET LA CAISSE SE MET DANS L'AXE DU MUR SI ELLE NE L'EST PAS : la normale
   // lue sur un escalier se trompe d'un ou deux degrés (mesuré), et une caisse
@@ -564,6 +570,10 @@ export class Player {
       for (const cap of caps) {
         const tx = x + sx + nx * d, tz = z + sz + nz * d;
         if (!this.poseVoitureLibre(tx, y, tz, cap, dedans)) continue;
+        // ET PAS DANS UNE VOITURE (v560) : le pas glissé le long d'un mur ne
+        // regardait que les blocs, et la sonde l'a vu entrer dans une voiture
+        // de la rue arrêtée contre la façade (sonde-traverse-vehicules.cjs)
+        if (this.obstacleVehicule && this.obstacleVehicule(tx, tz, cap + Math.PI, x, z)) continue;
         this.pos.x = tx; this.pos.z = tz;
         if (cap !== this.yaw) { this.derive = (this.derive || 0) - (cap - this.yaw); this.yaw = cap; }
         return true;
@@ -575,8 +585,8 @@ export class Player {
   // LE DÉPLACEMENT DE LA VOITURE, PAS À PAS (au plus PAS_VOITURE blocs).
   //   · les familles de main.js d'abord (`obstacleVehicule`, qui rend la
   //     famille touchée) : un PIÉTON, on s'arrête devant — personne n'est
-  //     jamais touché (v259) ; l'EAU, on s'arrête sur le quai (v272) ; une
-  //     VOITURE de la rue ou le MOBILIER, c'est un choc, qui rebondit ;
+  //     jamais touché (v259) ; l'EAU n'arrête plus (v560, la voiture y
+  //     tombe et coule) ; une VOITURE de la rue ou le MOBILIER, c'est un choc, qui rebondit ;
   //   · puis les blocs, sous la boîte orientée : une marche d'un bloc se
   //     franchit (v286), sinon c'est un choc — rasant on glisse le long du
   //     mur en perdant de la vitesse selon l'angle, de face on s'arrête avec
@@ -618,8 +628,9 @@ export class Player {
       reste -= pas;
       const x = this.pos.x, y = this.pos.y, z = this.pos.z;
       const fam = this.obstacleVehicule ? this.obstacleVehicule(x + dx, z + dz, this.yaw + Math.PI, x, z) : false;
-      if (fam === 'pieton' || fam === 'eau') {
-        // une glissade qui mènerait vers un piéton ou l'eau s'arrête net (v534)
+      if (fam === 'pieton') {
+        // une glissade qui mènerait vers un piéton s'arrête net (v534) ; l'eau
+        // n'arrête plus rien (v560) : la voiture y tombe
         this.glissade = null;
         this.vitesseVoiture = 0; this.derive = 0; this.vel.x = 0; this.vel.z = 0;
         break;
@@ -630,7 +641,7 @@ export class Player {
         // rend sa boîte et son allure, et le choc se calcule sur la vitesse
         // RELATIVE (`chocContreVoiture`). Le mobilier, et une voiture qu'on ne
         // sait pas lire, gardent la normale du mouvement.
-        const autre = fam === 'voiture' && this.voitureContre ? this.voitureContre(x + dx, z + dz, this.yaw + Math.PI) : null;
+        const autre = fam === 'voiture' && this.voitureContre ? this.voitureContre(x + dx, z + dz, this.yaw + Math.PI, x, z) : null;
         const moi = boiteVoiture(x + dx, z + dz, this.yaw + Math.PI, DEMI_LONG_VOITURE, this.gabarit / 2);
         const rv = autre ? chocContreVoiture(moi, autre, vx, vz, vitessePleine(this.ficheVoiture)) : null;
         if (rv) {
@@ -1259,6 +1270,7 @@ export class Player {
     const bodyBlock = this.world.getBlock(Math.floor(this.pos.x), Math.floor(this.pos.y + 0.4), Math.floor(this.pos.z));
     const headBlock = this.world.getBlock(Math.floor(this.pos.x), Math.floor(this.pos.y + EYE_HEIGHT), Math.floor(this.pos.z));
     this.inWater = bodyBlock === BLOCK.WATER || headBlock === BLOCK.WATER;
+    this._teteDansLEau = headBlock === BLOCK.WATER;
 
     // Horizontal velocity from input, rotated by yaw.
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
@@ -1292,7 +1304,7 @@ export class Player {
     // neuve, aucun choc pendant le trajet, `direction −0,028` et un cap qui
     // tourne seul). On l'efface quand on monte ET quand on descend.
     const enVoiture = this.gabarit > 1 && !this.pilote;
-    if (enVoiture !== !!this._enVoiture) { this._derapage = null; this.choc = null; this.glissade = null; this._dernierChoc = null; this.atterrissage = null; this.enLair = false; this._vol = null; this.tangage = 0; this._enVoiture = enVoiture; }
+    if (enVoiture !== !!this._enVoiture) { this._derapage = null; this.choc = null; this.glissade = null; this._dernierChoc = null; this.atterrissage = null; this.enLair = false; this._vol = null; this.tangage = 0; this.voitureDansLEau = null; this._enVoiture = enVoiture; }
     if (this.gabarit > 1) {
       // AU VOLANT (conduite-physique, v358) : le modèle de véhicule de
       // `conduite.js` — l'accélération qui s'essouffle vers la pointe, le frein
@@ -1311,7 +1323,17 @@ export class Player {
       // CE QUE PUBLIENT LES AUTRES, LU SI PRÉSENT : l'état de la voiture (les
       // dégâts) et l'embarquement en cours. Chacun marche sans l'autre.
       const ev = this.etatVoiture, emb = this.embarquement;
-      const inerte = !!(ev && (ev.enPanne || ev.enFeu)) || !!(emb && emb.phase);
+      // DANS L'EAU (v560) : la caisse dans l'eau freine (`TRAINEE_EAU`), et
+      // SOUS l'eau — la hauteur des yeux noyée — le moteur cale. On le publie
+      // (`voitureDansLEau` : depuis combien de temps de jeu, noyée ou non) :
+      // fun.js fait sortir l'enfant d'une voiture noyée, et il remonte à la
+      // nage. Un gué d'un bloc freine sans noyer : on en ressort au pas.
+      if (this.inWater) {
+        const e0 = this.voitureDansLEau;
+        this.voitureDansLEau = { s: (e0 ? e0.s : 0) + dt, noyee: !!(this._teteDansLEau || (e0 && e0.noyee)) };
+      } else this.voitureDansLEau = null;
+      const noyee = !!(this.voitureDansLEau && this.voitureDansLEau.noyee);
+      const inerte = !!(ev && (ev.enPanne || ev.enFeu)) || !!(emb && emb.phase) || noyee;
       const moteur = ev && ev.moteur != null ? Math.max(0, Math.min(1, ev.moteur)) : 1;
       // LE PLAFOND SE PUBLIE LÀ OÙ IL SE CALCULE (v268) : le bruit du moteur
       // suit le régime, la vitesse rapportée à ce que la voiture sait faire.
@@ -1359,6 +1381,7 @@ export class Player {
           }
         }
         this.vitesseVoiture = r.v; this.braquage = r.braquage; this.derive = r.derive;
+        if (this.voitureDansLEau) this.vitesseVoiture *= Math.exp(-TRAINEE_EAU * dt);
         // LE DÉRAPAGE SE RELÈVE (palier C, `?diag=1`) : du frein à main tiré
         // jusqu'au retour de la dérive sous sa borne ordinaire — l'angle le plus
         // large et la durée, en temps de JEU comme la dynamique.
@@ -1406,7 +1429,16 @@ export class Player {
     } else if (this.inWater) {
       this.vel.y -= GRAVITY * 0.25 * dt;
       this.vel.y *= Math.pow(0.02, dt); // heavy drag
-      if (k.has('Space')) this.vel.y = SWIM_SPEED;
+      // au volant, Espace est le frein à main : une voiture ne nage pas (v560)
+      if (k.has('Space') && !(this.gabarit > 1 && !this.pilote)) this.vel.y = SWIM_SPEED;
+      // SORTI D'UNE VOITURE NOYÉE, ON REMONTE (v560) : fun.js pose
+      // `remonter` (une échéance en temps réel) ; l'enfant nage vers la
+      // surface tout seul et s'y maintient, le temps de rejoindre la rive au
+      // joystick — ensuite, l'eau redevient celle de tout le monde.
+      if (this.remonter) {
+        if (performance.now() > this.remonter) this.remonter = 0;
+        else if (headBlock === BLOCK.WATER) this.vel.y = SWIM_SPEED;
+      }
       this.vel.y = Math.max(this.vel.y, -4);
     } else {
       this.vel.y -= GRAVITY * dt;

@@ -167,3 +167,17 @@ n° 19, corrigé).
 | # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
 | --- | --- | --- | --- | --- | --- | --- |
 | 28 | basse | en vol au-dessus d'une forêt (v553), iPad et iPhone | [jour](revue-ecran/lointain-arbres/ipad-foret-loin-jour.jpg), [nuit](revue-ecran/lointain-arbres/ipad-foret-loin-nuit.jpg) | Au bord du disque maillé, une **couture de teinte** : le paysage lointain est plus clair et voilé que le monde proche, parce que le brouillard commence exactement à ce bord (`fog.near` = rr × 16). Antérieur à la v553, visible sur les captures de la v532. | Faire commencer le brouillard un peu en deçà du bord, ou teinter la grille fine du sous-bois là où `foret` est haute (les témoins de couleur de `plafond.js` lisent l'herbe au sommet près : à décider avec eux). | `src/main.js`, `src/horizon.js` |
+
+## Le relevé de la v560 (la voiture tombe dans l'eau), 25 octobre 2026
+
+États `voiture-plonge` et `voiture-coulee` (ajoutés à la sonde pour cette
+livraison : un quai fabriqué, pleins gaz vers le bassin), iPhone et iPad,
+jour et nuit. Ce que la livraison promet se voit : la voiture plonge feux stop
+allumés (l'eau la freine), aucun message, l'enfant remonte en surface, la
+voiture reste au fond, le bouton de nage apparaît. La capture de nuit est
+prise après celle de jour : l'enfant y est déjà sorti.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 29 | basse | voiture dans l'eau, de jour (v560) | [v560](revue-ecran/v560-eau/iphone-voiture-plonge-jour.jpg) | Des **feuilles d'automne** flottent haut dans le ciel au-dessus du bassin, loin de tout arbre (la v531 les voulait sur leur colonne). Hors de la livraison. | Vérifier ce qui « porte » une feuille au-dessus d'un plan d'eau fabriqué au-dessus du relief | `src/saisons.js` |
+| 30 | basse | voiture dans l'eau, de jour (v560) | [v560](revue-ecran/v560-eau/iphone-voiture-plonge-jour.jpg) | Une pilule « Salle Ronde · Les marches du palais » s'affiche en haut au milieu, loin de toute ville visible — un panneau de lieu lu à distance ? Hors de la livraison. | Lire quelle règle pose cette pilule à (31 200, 31 500) | `src/main.js` (file centrale) |

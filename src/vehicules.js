@@ -18,7 +18,7 @@ import { Atelier } from './modeles.js';
 import { liberer, partagerTout } from './liberer.js';
 import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
-import { CLASSES, MARCHE } from './conduite.js';
+import { CLASSES, MARCHE, sEnfonce } from './conduite.js';
 import { flammeDeChauffe, matiereAdditive } from './avions.js';
 
 // --- les reflets --------------------------------------------------------------
@@ -3327,6 +3327,9 @@ export function createVehicules({ scene, player }) {
       }
     }
     const rectEnfant = voitures[0].rect;
+    // l'enfant ou un ami AU VOLANT : une rame ou une voiture déjà dedans
+    // s'arrête au lieu de la traverser (v560)
+    const estUnVehicule = (b) => (b.ami ? !!b.vehicule : b.cle === CLE_ENFANT && enVehicule);
     for (let ci = 0; ci < convois.length; ci++) {
       const c = convois[ci];
       if (!c.rail) continue;
@@ -3344,7 +3347,11 @@ export function createVehicules({ scene, player }) {
         voitures.push({ c, ci, i, cle: -2 - ci * 1000 - i, d, x: q.x, y: q.y, z: q.z, ux, uz,
           rect, balayage: null, veut: null, rail: true });
       }
-      if (dedans) continue;
+      // UNE RAME DÉJÀ DANS LA VOITURE DE L'ENFANT S'ARRÊTE (v560) : elle la
+      // traversait (« y rester, c'est y rester pour toujours », v245 — vrai
+      // d'un enfant à pied, pas d'une voiture, qui s'en dégage en reculant ;
+      // `sEnfonce` le lui permet). Arrêt LOCAL, comme devant lui (v304).
+      if (dedans) { if (enVehicule) c.bloque = true; continue; }
       const d0 = c.dElement(0), q0 = c.parcours.a(d0);
       if (Math.abs(q0.y - player.pos.y) > 3) continue;
       // ce que la motrice va parcourir dans cette image : la grille si elle en
@@ -3447,10 +3454,17 @@ export function createVehicules({ scene, player }) {
         if (ex * ex + ez * ez > loin) continue;
         const devantMoi = ex * a.ux + ez * a.uz;
         if (devantMoi < -a.c.demiLong) continue;               // derrière moi : pas mon affaire
-        // Déjà DANS la voiture de l'enfant (il s'est posé dessus, ou l'a
-        // rattrapée) : continuer est la seule façon d'en sortir ; y attendre
-        // sans limite, c'est rester dedans pour toujours.
-        if (b.enfant && seTouchent(a.rect, b.rect)) continue;
+        // Déjà DANS l'enfant À PIED, un ami à pied ou un piéton (il s'est posé
+        // dessus) : continuer est la seule façon d'en sortir ; y attendre sans
+        // limite, c'est rester dedans pour toujours.
+        // MAIS PAS DANS UNE VOITURE (v560). Max : « il ne faut pas que les
+        // véhicules puissent passer les uns dans les autres ». Une voiture de
+        // la rue déjà dans celle de l'enfant (ou d'un ami) la traversait de part
+        // en part ; elle s'arrête désormais contre elle, comme heurtée (v372),
+        // et l'enfant s'en dégage — reculer ou braquer fait baisser
+        // l'enfoncement, et cela lui reste permis (`sEnfonce`). Elle repart quand
+        // il est parti.
+        if (b.enfant && !estUnVehicule(b) && seTouchent(a.rect, b.rect)) continue;
         // Dans SA file, la grille garde déjà les distances (v372) : on ne
         // freine sur celle qui précède que si elle s'en écarte — arrêtée au
         // feu, retenue par l'enfant — sinon chaque virage ferait freiner toute
@@ -3668,15 +3682,24 @@ export function createVehicules({ scene, player }) {
   // joueur ne connaît que les blocs. On relit la collecte de la dernière
   // image : les voitures de la rue avancent de quelques centimètres entre
   // deux images, c'est sans conséquence pour un arrêt.
-  function obstacleDevant(x, z, cap) {
+  // ET PAR VÉHICULE, PAR ENFONCEMENT (v560) : avec la pose d'avant (x0, z0),
+  // un pas est refusé s'il fait entrer dans une voiture qu'on ne touchait pas,
+  // ou s'il s'enfonce plus loin dans celle qu'on touche (`sEnfonce`,
+  // conduite.js). Jugé sur la famille, collé à une voiture on traversait
+  // toutes les autres. Sans pose d'avant, la question d'avant : touche-t-on ?
+  const bloquantDevant = (x, z, cap, x0, z0, portee) => {
     const ux = Math.sin(cap), uz = Math.cos(cap);
     const moi = rectangle(x, z, ux, uz);
+    const avant = x0 === undefined ? null : rectangle(x0, z0, ux, uz);
     for (const b of dernieres) {
       if (b.enfant && !b.ami) continue;
-      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 9 * 9 || Math.abs(b.y - player.pos.y) > 2.5) continue;
-      if (seTouchent(moi, b.rect)) return true;
+      if ((b.x - x) ** 2 + (b.z - z) ** 2 > portee * portee || Math.abs(b.y - player.pos.y) > 2.5) continue;
+      if (avant ? sEnfonce(avant, moi, b.rect) : seTouchent(moi, b.rect)) return b;
     }
-    return false;
+    return null;
+  };
+  function obstacleDevant(x, z, cap, x0, z0) {
+    return !!bloquantDevant(x, z, cap, x0, z0, 9);
   }
 
   // LA VOITURE QU'ON TOUCHE, PAS SEULEMENT LE FAIT DE LA TOUCHER (v397,
@@ -3686,13 +3709,12 @@ export function createVehicules({ scene, player }) {
   // cotes d'une voiture) et son allure du moment le long de son axe (zéro si
   // elle attend, comme `enMarche`). Lecture seule, une copie : rien de la
   // collecte ne sort d'ici.
-  function voitureContre(x, z, cap) {
-    const ux = Math.sin(cap), uz = Math.cos(cap);
-    const moi = rectangle(x, z, ux, uz);
-    for (const b of dernieres) {
-      if (b.enfant && !b.ami) continue;
-      if ((b.x - x) ** 2 + (b.z - z) ** 2 > 8 * 8 || Math.abs(b.y - player.pos.y) > 2.5) continue;
-      if (!seTouchent(moi, b.rect)) continue;
+  // (avec la pose d'avant, v560 : la voiture contre laquelle on s'enfonce,
+  // pas la première qu'on touche — collé à l'une, le choc est contre l'autre)
+  function voitureContre(x, z, cap, x0, z0) {
+    const b = bloquantDevant(x, z, cap, x0, z0, 8);
+    if (!b) return null;
+    {
       const vx = b.uz, vz = -b.ux;
       let a = 0, l = 0;
       for (const [px, pz] of b.rect) {
@@ -3707,7 +3729,6 @@ export function createVehicules({ scene, player }) {
       }
       return { x: b.x, z: b.z, ux: b.ux, uz: b.uz, a, b: l, v, rail: !!b.rail };
     }
-    return null;
   }
 
   // ET UN PIÉTON NE TRAVERSE PAS UNE VOITURE (v259). Max, capture à la

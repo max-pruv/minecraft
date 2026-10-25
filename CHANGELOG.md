@@ -20,6 +20,65 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v560 — Dans l'eau pour de vrai, et les voitures ne se traversent plus
+
+Deux sujets, deux parties (v279).
+
+### La voiture tombe dans l'eau
+
+**Pourquoi.** Max : « il faut arrêter de mettre des messages d'erreur pour dire
+attention, une voiture ne roule pas dans l'eau… s'il tombe dans l'eau, il tombe
+dans l'eau… j'ai l'impression que le véhicule est arrêté quand il arrive dans
+l'eau ». Depuis la v272, une voiture s'arrêtait net au bord du quai avec un
+bandeau « fais demi-tour ». Et sans cet arrêt, mesuré, la voiture traversait un
+bassin à seize blocs/s en roulant sur le fond : il n'y avait pas d'eau pour
+elle.
+
+**Ce que ça change.** Plus d'arrêt, plus de message. La voiture garde son élan,
+passe par-dessus le quai, plonge ; l'eau la freine, le moteur cale sous l'eau
+et elle coule au fond. Un instant plus tard l'enfant sort de la voiture et
+remonte tout seul à la surface, le temps de nager jusqu'à la rive. La voiture
+noyée reste au fond, on ne la reprend pas. Un gué peu profond freine sans noyer.
+
+**Ce qui le prouve.** Deux témoins sous node (`plafond.js`, le vrai joueur sur
+un port fabriqué : la voiture tombe, coule, l'enfant remonte en moins de quatre
+secondes ; un gué d'un bloc se traverse), un témoin au navigateur (`monte.js` :
+plongée, sortie, surface, voiture hors service, et aucun bandeau sur l'eau —
+rouge sur l'ancien code, arrêtée sur le quai), la fumée (le message retiré ne
+peut plus revenir). Les ponts se franchissent toujours (`sonde-ponts-eau.cjs`).
+
+### Les véhicules ne passent plus les uns dans les autres
+
+**Pourquoi.** Max : « il ne faut pas que les véhicules puissent passer les uns
+dans les autres. Et aujourd'hui c'est encore possible. » La règle « pas si l'on
+est déjà dedans » (v245) se jugeait pour toutes les voitures à la fois : dès
+que la voiture de l'enfant touchait une voiture (l'état que laisse un choc), elle
+ne voyait plus AUCUNE voiture et pouvait la traverser, elle ou sa voisine. Et
+une voiture de la rue ou un train déjà dans la voiture de l'enfant continuaient
+leur route au travers.
+
+**Ce que ça change.** La règle se juge voiture par voiture : on ne peut ni
+entrer dans une voiture, ni s'enfoncer plus loin dans celle qu'on touche ;
+reculer ou longer reste toujours possible. Une voiture de la rue ou un train
+arrivé dans la voiture de l'enfant (ou d'un ami) s'arrête contre elle au lieu
+de la traverser, et repart quand elle s'est dégagée.
+
+**Ce qui le prouve.** Une sonde (`sonde-traverse-vehicules.cjs`) qui mesure
+les recouvrements par paire, des deux côtés : collée à une voiture garée, la
+voiture de l'enfant traversait celle de devant (52 relevés dedans, 2,2 blocs
+d'enfoncement, treize blocs parcourus au travers) — zéro ici, elle s'arrête et
+la pousse ; en roulant dans Paris à la recherche du contact, des voitures de la
+rue entraient dans la nôtre (0, 1, 13, 27 et 35 relevés dedans selon les
+passages) — zéro sur trois passages ici, après avoir bouché un trou que la
+sonde a trouvé (la glissade le long d'un mur ne regardait pas les voitures) ; un témoin pur (`plafond.js` :
+entrer et s'enfoncer refusés, reculer et longer permis) ; un témoin au
+navigateur (`monte.js` : collée à une voiture, la nôtre ne traverse pas celle de
+devant, et elle recule). Et la correction a montré quatre témoins de conduite
+qui roulaient sans le savoir dans la mer ou à son bord (une dalle sous l'eau,
+une dalle trop courte, une aire quittée en roue libre) : la voiture y coulait
+désormais, et la suite se jouait à pied. Leurs dalles sont au sec.
+
+---
 ## v559 — Une Maserati MC12 GT1 Red Bull dans la flotte
 
 **Pourquoi.** Max a déposé un modèle de la Maserati MC12 GT1 aux couleurs Red
@@ -778,7 +837,6 @@ qu'un enfant de sept ans n'a aucune raison de chercher.
   ou déjà déclarés (`TASKS.md`).
 - Témoins repointés : `monte.js` (en tête de la colonne), `maj.js`,
   `reseau.js`, `banc.ouvrirLaCarte`, `sonde-revue-ecran.cjs`.
-
 
 ## v539 — Rien ne traverse une voie, et le train est un train
 
@@ -3740,7 +3798,6 @@ resserrées au milieu (59 anneaux, 806 pas ; 7 villes). Sonde
 comparaison des tracés et des tabliers des deux arbres (3 villes changées,
 0 tablier).
 
-
 ## v434 — Le dérapage laisse des traces
 
 **Pourquoi.** Depuis le frein à main (v409), la voiture dérape comme dans GTA :
@@ -3821,8 +3878,6 @@ sur `origin/main`, barre 15). Sonde sous node ville par ville, avant et après :
 pas, circuits, couverture (règle v322), pire partage (18, inchangé), voiture
 en vue depuis le centre, coût du premier dépliage (inchangé pour les villes
 sans faute, 75 à 110 ms pour celles qu'on essaie, sous le pire de Rome).
-
-
 
 ## v431 — Des files serrées, et une rue qui arrive sans à-coup
 
@@ -4182,7 +4237,6 @@ rendu, installation, génération) et profile la première seconde ; le gain ne
 se voit pas en durée d'image au banc (pire image 283 à 367 ms contre 283 à
 383), parce que l'attente se cachait dans des images déjà lentes — il se
 transpose à la tablette comme un appel synchrone de moins par morceau.
-
 
 ## v419 — Paris rejoint Lyon
 
@@ -4689,7 +4743,6 @@ traversée sur `origin/main`. Portail sur la v398 : mes trois témoins de piéto
 verts ; les rouges (GPS et glissé de `carte.js`, `reglages.js`, Manhattan,
 circulation, embarquement, train, trou en vol) se retrouvent rejoués seuls sur
 `origin/main`, souvent en plus grand nombre.
-
 
 ## v401 — Le monde entier en relief
 
@@ -5216,7 +5269,6 @@ les rouges sont des dettes déclarées (façade et taxi de Manhattan, compilatio
 rejoué seul trois fois des deux côtés : 0,67 à 0,83 s ici, 0,70 à 0,91 s sur
 `origin/main` — de la charge, et ce piéton est posé en mer, où la règle neuve
 ne trouve jamais de chaussée.
-
 
 ## v384 — On descend de la voiture d'un ami par la portière
 
@@ -7080,7 +7132,6 @@ propre, aucune colonne sur un rail (0 sur 8 249 mesurées sous node). La sonde :
 proches — sept admissibles, tous sans pont. La plaine du Pô n'est pas plate
 partout : c'est le déblai qui a fait le tri.
 
-
 ## v326 — Des falaises de roche et des berges de sable
 
 **Pourquoi.** Partout où le relief saute de deux blocs ou plus, le sol continu
@@ -7327,7 +7378,6 @@ un par lieu et deux sur le tour.
 
 ---
 
-
 ## v318 — Des contrôles plus justes
 
 **Pourquoi.** Deux témoins du portail ne prouvaient rien, et `TASKS.md` le
@@ -7363,7 +7413,6 @@ neuves (`sonde-tour-monuments.cjs`, `sonde-attente-volant.cjs`) rejouent ces
 mesures.
 
 ---
-
 
 ## v317 — Des quais en pierre dans toutes les villes
 
@@ -13288,7 +13337,6 @@ empreintes IDENTIQUES à la v205 (relief 218 089 colonnes · c20adb7308ae ;
 hors villes 184 656 · c79c2f3b0135 ; 4 040 colonnes sous les enfants, zéro
 déplacée) et `carteMonde.js`.
 
-
 ## v205 — Washington roule : des ronds-points qui tournent et onze circuits mesurés
 
 **Pourquoi.** Depuis la v201, chaque grande ville a ses voitures — sauf
@@ -14772,7 +14820,6 @@ même hash hors des villes — pas un bloc n'a bougé ailleurs. Et surtout : la
 discipline du regard — Tokyo, capturée à hauteur d'yeux et du ciel, se lit
 enfin comme une ville, rues noires, zèbres blancs, skyline.
 
-
 ## v171 — la vie : des voitures qui circulent, des passants qui marchent
 
 **Pourquoi.** Max : « les villes n'ont pas de vie. Il n'y a pas de voitures
@@ -14803,7 +14850,6 @@ Rome, l'anneau naît et ses voitures se montrent ; six passants peuplent les
 rues ; et huit secondes plus tard, ils ont MARCHÉ — ce sont des passants,
 pas des statues.
 
-
 ## v170 — les devantures : les villes prennent des couleurs de vraies rues
 
 **Pourquoi.** Max : « on n'a pas suffisamment de diversité d'un point de vue
@@ -14833,7 +14879,6 @@ trois trames, trois palettes : vitrines (≥ 60), portes (≥ 40), enseignes
 (≥ 100), auvents (≥ 60), lampadaires (≥ 8), bancs (≥ 4), et la diversité de
 blocs COMPTÉE (≥ 18 sortes par quartier ; mesuré : 27 à 31). Les empreintes
 du plafond ne bougent pas : les façades ne touchent pas au terrain.
-
 
 ## v169 — la carte ne lague plus
 
@@ -14870,7 +14915,6 @@ froid sous 400 ms (mesuré 134), le rendu suivant sous 150 ms (mesuré 34), et
 le glisser qui ne téléporte jamais même le fil principal étouffé 700 ms. Les
 témoins existants de la carte, du plafond et du tour du monde repassent au
 vert — même monde, au bloc près, juste plus vite.
-
 
 ## v168 — la Giga-usine : la chaîne de production, la peinture qui opère, et le volant
 
@@ -14913,7 +14957,6 @@ robots, le tunnel et le parc garni, sondés dans le monde engendré. Les deux
 empreintes du plafond sont inchangées au hash près : l'usine n'a pas bougé
 un bloc hors de son site.
 
-
 ## v167 — les pastilles répondent au doigt, et la bibliothèque de bâtiments se trouve
 
 **Pourquoi.** Max, capture d'écran à l'appui : « je ne comprends pas à quoi
@@ -14946,7 +14989,6 @@ suivent le doigt de l'enfant : la récolte fait naître la pastille (visible et
 touchable), le toucher ouvre l'atelier sur le garde-manger ; poser une cabane
 fait naître la jauge, la toucher ouvre le Chantier avec la ligne 📍 ; et
 l'onglet Bâtiments montre bien monuments célèbres et bâtiments de ville.
-
 
 ## v166 — les cinquante grandes : le tour du monde au complet
 
@@ -14993,7 +15035,6 @@ sec. Les deux empreintes du plafond sont recalculées avec Bruxelles et
 Amsterdam dans la découpe — et la preuve d'intégrité est refaite : la même
 découpe, mesurée sur main et sur v166, rend le MÊME hash hors des villes
 (5e54e15c…) : pas un bloc n'a bougé ailleurs.
-
 
 ## v165 — la Terre se reconnaît, et le tour du monde devient un vrai tour du monde
 
