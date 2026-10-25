@@ -841,6 +841,38 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Passager dans l'avion d'un ami (v552) — un siège se déclare dans la fiche, et le reste suit
+
+Max : « rentrer dans une voiture, avion… en passager si un autre joueur est
+déjà conducteur ». Quatre règles.
+
+- **CE QUI ACCUEILLE UN PASSAGER PORTE `sieges` DANS SA FICHE, ET C'EST
+  TOUT.** Le bouton (`vehiculeAmiProche`), l'assise du passager chez les deux
+  tablettes (`asseoir`, `vehiculeDuConducteur`, main.js) et la position réseau
+  (`p.p`, sur `pos` et `rpos`) lisaient déjà `def.sieges` : ajouter les sièges
+  des trois avions a suffi pour que l'ami soit assis dans la cabine, vu en
+  direct et par l'hôte. Un siège se MESURE sur le modèle (axe et rayon du
+  fuselage, avions.js) : en cabine, jamais au poste de pilotage.
+- **LA SÉQUENCE DU PILOTE SE REJOUE SUR L'APPAREIL DISTANT.** `monterAvionChez`
+  et `descendreAvionChez` (embarquement.js) prêtent l'appareil de l'ami comme
+  une monture (`commeMonture`) à `monterAvion` / la descente par l'escalier
+  (v389, v400), et `fin` fait de l'enfant un passager une fois entré. Ils
+  suivent l'IDENTITÉ du pilote (v407) : un appareil refait reprend l'escalier,
+  un autre modèle termine. Sans porte (le Concorde), on monte d'un coup ; la
+  descente cherche alors une place autour (`sortieAvion` sans porte).
+- **EN VOL, LE PASSAGER REGARDE, IL NE DESCEND PAS.** « En l'air » se lit sur
+  le maillage que la tablette dessine (plus de 2,5 blocs au-dessus du sol de
+  sa colonne, `enLair`), jamais sur un drapeau. Un avion en l'air ne se
+  rejoint pas ; un appui pour descendre est refusé par un message qui dit quoi
+  faire (`PERMIS` de fumee.js). La caméra du passager tourne autour de
+  l'appareil selon son propre regard (`passagerEnAvion`, fun.js) ; le pilote
+  garde les commandes.
+- **UN TÉMOIN À TROIS TABLETTES LIT LES DEUX CHEMINS EN UN SCÉNARIO.** Deux
+  invitées (Nina pilote, Alice passagère) se voient par l'hôte : chez Nina,
+  l'assise d'Alice passe par `rpos` ; chez l'hôte, par `pos` (v406). Le pilote
+  est posé à la main (`update` suspendu), sinon sa physique le ramène au sol
+  pendant la mesure.
+
 ## La Revuelto adaptée (v546) — un identifiant de flotte ne change pas, son fichier oui
 
 Max a fourni une adaptation CC-BY-4.0 (BRO) de la Revuelto. Trois règles.

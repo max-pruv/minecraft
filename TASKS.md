@@ -459,24 +459,21 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   plantage depuis (journal_appareil). Retoucher « Loin » dans les Réglages
   lève la sûreté (v509) et rend `rr 16` et la HD 6 ; la v532 lui rend déjà le
   paysage lointain sans cela.
-- [ ] **Monter en passager dans TOUT véhicule d'un ami, pas seulement sa
-  voiture (demande de Max, 20 octobre 2026).** « Pouvoir rentrer dans une
-  voiture, avion… en passager sur le jeu online si un autre joueur est déjà
-  conducteur. » Ce qui existe : la voiture seule (v253, portière v377, descente
-  v384, suivi de l'identité du conducteur v407, `net.estMoi` v410).
-  `vehiculeAmiProche` (fun.js) ne propose que ce dont la fiche porte `sieges`,
-  et seule la fiche `voiture` (montures.js:448) en a : un ami aux commandes d'un
-  avion, d'une bête montée ou d'un autre véhicule ne se rejoint pas. Ce qu'il
-  faut : des `sieges` mesurés dans les fiches des trois avions (cabine, pas le
-  cockpit ; le Concorde n'a pas de porte, v389) et des montures à deux places,
-  la montée par l'escalier de l'avion de l'ami (`monterAvion` rejoué sur le
-  maillage DISTANT, comme `monterChez` pour la portière), la caméra passager en
-  vol (le pilote garde les commandes, le passager regarde librement), la
-  descente au sol seulement (en vol : refus qui dit quoi faire). Témoins à deux
-  tablettes dans `reseau.js` : la parenté du maillage et le passager qui SUIT
-  l'avion de l'ami, sur `pos` ET `rpos` (v406). Zone : `fun.js`,
-  `embarquement.js`, `montures.js`, `avions.js` — se marche dessus avec la
-  conduite.
+- [x] **Monter en passager dans l'AVION d'un ami (demande de Max, 20 octobre
+  2026) — fait en v552.** Sièges des trois avions, montée par l'escalier sur
+  l'appareil distant, caméra autour de l'appareil, descente au sol seulement,
+  témoins à trois tablettes (`pos` et `rpos`). Reste, déclaré :
+  - [ ] **les montures à deux places** (cheval, éléphant…) : `monterAvec`
+    passe par `monterChez`, qui fabrique une PORTIÈRE (portieres.js) — une
+    bête n'en a pas. Il faut un geste à elle (la monte d'un coup, ou une
+    séquence de croupe) et des `sieges` mesurés sur chaque bête ; à décider
+    avec Max lesquelles portent deux enfants.
+  - [ ] **l'ami ne voit pas la porte de son avion s'ouvrir** quand son passager
+    monte (le message `portiere` ne vaut que pour les voitures) — la dette
+    v381, du côté du passager.
+  - [ ] **la séquence de l'escalier chez l'ami** n'a pas de témoin au portail
+    (le banc saute les séquences) : `EMBARQ=1 node tests/sonde-passager-avion.cjs`
+    la rejoue.
 - [ ] **Les autres joueurs bougent par saccades, surtout en voiture et en avion
   (demande de Max, 20 octobre 2026).** « Tu le vois bouger de manière saccadée,
   toutes les secondes il a avancé… c'est pas très real time. » Ce qui est dans

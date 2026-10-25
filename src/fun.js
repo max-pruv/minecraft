@@ -355,10 +355,19 @@ export function initFun(ctx) {
     let meilleur = null;
     for (const [id, rp] of rps) {
       if (!rp.vehicule || !rp.vehicule.def || !rp.vehicule.def.sieges) continue;
+      // un avion en vol ne se rejoint pas (v552) : on monte au sol
+      if (rp.vehicule.def.pilote && enLair(rp.vehicule.mesh)) continue;
       const d = rp.vehicule.mesh.position.distanceTo(player.pos);
       if (d < RAYON_BORD && (!meilleur || d < meilleur.d)) meilleur = { id, d, nom: rp.name || 'un ami', def: rp.vehicule.def };
     }
     return meilleur;
+  }
+  // EN L'AIR, un appareil d'ami : plus de deux blocs et demi au-dessus du
+  // sol de sa colonne (v552). Lu sur le maillage que cette tablette dessine,
+  // donc sur la position que le réseau lui donne — jamais un drapeau.
+  function enLair(mesh) {
+    const p = mesh.position;
+    return p.y > world.sommetColonne(p.x, p.z) + 1 + 2.5;
   }
   function monterAvec(ami) {
     if (riding) toggleRide(null);
@@ -378,11 +387,26 @@ export function initFun(ctx) {
     // ouvre, assied, puis appelle `assis` — `passagerDe()` ne ment pas avant
     const veh = vehiculeDistant ? vehiculeDistant(ami.id) : null;
     if (!veh) { assis(); return; }
+    // L'AVION D'UN AMI (v552) : par son escalier (ou d'un coup, sans porte)
+    if (ami.def.pilote) {
+      embarquement.monterAvionChez(veh, ami.def.sieges[s], ami.id, assis, () => vehiculeDistant(ami.id));
+      return;
+    }
     // la séquence redemande la voiture de l'ami à chaque image (v407)
     embarquement.monterChez(veh, ami.def.sieges[s] || ami.def.siege, ami.id, assis, () => vehiculeDistant(ami.id));
   }
   function descendreDePassager(silencieux = false) {
     if (!passager) return;
+    // EN VOL, ON NE DESCEND PAS (v552) : le refus dit quoi faire — attendre
+    // que l'ami pose l'appareil (le pilote garde les commandes)
+    if (!silencieux) {
+      const v0 = vehiculeDistant ? vehiculeDistant(passager.de) : null;
+      if (v0 && v0.def && v0.def.pilote && enLair(v0.mesh)) {
+        refusVol++;
+        toast(`✈️ On ne saute pas d'un avion ! Attends que ${passager.nom || 'ton ami'} se pose pour descendre.`, 0xffd166, 3500);
+        return;
+      }
+    }
     const { nom, de, s } = passager;
     passager = null;           // plus passager dès le premier appui (v384)
     player.vel.set(0, 0, 0);
@@ -391,6 +415,8 @@ export function initFun(ctx) {
     // l'envers sur la voiture de l'ami, et l'ami voit sa portière s'ouvrir
     const veh = vehiculeDistant ? vehiculeDistant(de) : null;
     if (!veh) return;
+    // de l'avion d'un ami : par la porte et l'escalier, au sol (v552)
+    if (veh.def.pilote) { embarquement.descendreAvionChez(veh, de, () => vehiculeDistant(de)); return; }
     const sieges = veh.def.sieges || [];
     const siege = sieges[Math.min(s, sieges.length - 1)] || veh.def.siege;
     embarquement.descendreDeChez(veh, siege, de, () => vehiculeDistant(de));
@@ -405,10 +431,36 @@ export function initFun(ctx) {
     const sieges = veh.def.sieges || [];
     const siege = sieges[Math.min(passager.s, sieges.length - 1)] || veh.def.siege;
     veh.mesh.updateMatrixWorld(true);
+    if (veh.def.pilote) { passagerEnAvion(veh, siege); return; }
     const monde = veh.mesh.localToWorld(new THREE.Vector3(siege.x, 0, siege.z));
     player.pos.set(monde.x, veh.mesh.position.y, monde.z);
     player.vel.set(0, 0, 0);
     player.camera.position.copy(player.eyePosition());
+  }
+
+  // PASSAGER D'UN AVION (v552) : le corps suit son siège dans la cabine (le
+  // tangage et le roulis compris : le siège est lu dans la matrice de
+  // l'appareil), et la caméra TOURNE AUTOUR de l'appareil au gré du regard
+  // de l'enfant — le pilote garde les commandes, le passager regarde
+  // librement, et il voit toujours l'avion qui l'emporte. Un mur entre
+  // l'appareil et la caméra la rapproche (comme la poursuite du pilote).
+  let refusVol = 0;
+  const _centre = new THREE.Vector3(), _regard = new THREE.Vector3();
+  function passagerEnAvion(veh, siege) {
+    const g = veh.mesh;
+    const pied = g.localToWorld(new THREE.Vector3(siege.x, siege.y - 0.77, siege.z));
+    player.pos.copy(pied);
+    player.vel.set(0, 0, 0);
+    const c = veh.def.poursuite || { recul: 14, hauteur: 6 };
+    _centre.copy(g.position); _centre.y += veh.def.assise || 2.4;
+    const cp = Math.cos(player.pitch || 0);
+    _regard.set(-Math.sin(player.yaw) * cp, Math.sin(player.pitch || 0), -Math.cos(player.yaw) * cp);
+    let recul = c.recul;
+    for (let d = 3; d <= c.recul; d += 0.6) {
+      const x = _centre.x - _regard.x * d, y = _centre.y - _regard.y * d + 1.5, z = _centre.z - _regard.z * d;
+      if (world.isSolid(Math.floor(x), Math.floor(y), Math.floor(z))) { recul = Math.max(3, d - 0.6); break; }
+    }
+    player.camera.position.set(_centre.x - _regard.x * recul, _centre.y - _regard.y * recul + 1.5, _centre.z - _regard.z * recul);
   }
 
   // NEUF BLOCS, PAS CINQ — et c'est la réponse à « on ne peut pas monter dans
@@ -1502,6 +1554,7 @@ export function initFun(ctx) {
     // Chez qui l'enfant est passager (ou null) : la position réseau
     // l'emporte, et main.js l'assied sur le siège de la voiture de l'ami.
     passagerDe: () => passager,
+    refusVol: () => refusVol,
     // à bord d'une rame (ou null) : un témoin lit l'état, pas le texte d'un bouton (v252)
     bordDe: () => bord,
     monterAvec, vehiculeAmiProche,

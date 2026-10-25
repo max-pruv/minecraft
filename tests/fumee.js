@@ -308,7 +308,7 @@ function verifier(nom, ok, detail = '') {
     const PERMIS = {
       'degats3d.js': 1,   // sorti sain et sauf (le feu et la panne passent par `dire`)
       'education.js': 3,  // le quiz qui arrive (deux), le parent qui débloque
-      'fun.js': 6,        // la voiture de l'ami cassée ; le cache-cache lancé ; l'indice du trésor (deux) ; Cornichon (deux)
+      'fun.js': 7,        // la voiture de l'ami cassée ; le cache-cache lancé ; l'indice du trésor (deux) ; Cornichon (deux) ; on ne descend pas d'un avion en vol (v552, quoi faire)
       'main.js': 17,      // l'eau, le vol refusé, l'avion cassé, le ventre, la mer, l'invitation ratée, la caméra hors ligne, le code parental…
       'net.js': 2,        // le micro sans caméra ; la caméra refusée
       'partage.js': 2,    // le lien copié, ou le lien à copier

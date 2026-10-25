@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 552,
+    titre: "Passager dans l'avion d'un ami",
+    puces: [
+      "Monte dans l'avion d'un ami",
+      'Par son escalier, à sa place',
+      'Regarde partout pendant le vol',
+      'On descend une fois posé',
+    ],
+  },
+  {
     v: 551,
     titre: 'La minicarte arrive tout de suite',
     puces: [

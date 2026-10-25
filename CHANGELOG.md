@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v552 — On monte en passager dans l'avion d'un ami
+
+**Pourquoi.** Max (20 octobre) : « pouvoir rentrer dans une voiture, avion…
+en passager sur le jeu online si un autre joueur est déjà conducteur. »
+Depuis la v253, seule la fiche `voiture` portait des `sieges` : un ami aux
+commandes d'un avion ne se rejoignait pas — pas de bouton, rien.
+
+**Ce que ça change.**
+- Près de l'avion d'un ami posé au sol, « Monter avec … » apparaît. On monte
+  par son escalier (ou son échelle), comme le pilote (v389) ; le Concorde, qui
+  n'a pas de porte, se rejoint d'un coup. Six places en cabine dans l'avion de
+  ligne, quatre dans le Concorde, une place arrière sous la verrière du
+  chasseur — jamais au poste de pilotage.
+- Pendant le vol, le pilote garde les commandes ; le passager regarde
+  librement : la caméra tourne autour de l'appareil au gré de son regard.
+- On ne saute pas en vol : le bouton répond « Attends que … se pose pour
+  descendre ». Une fois l'avion posé, on ressort par la porte et l'escalier.
+- L'ami voit son passager assis dans sa cabine, que les deux tablettes se
+  parlent en direct ou par l'hôte.
+
+**Ce qui le prouve.** Trois témoins à trois tablettes dans `reseau.js`
+(Nina pilote, Alice passagère, l'hôte relaie) : la parenté du maillage chez
+Nina (position relayée, `rpos`) et chez l'hôte (position directe, `pos`) ; le
+passager qui SUIT l'appareil en vol, caméra autour de lui, et le saut refusé ;
+la descente au sol. Rouges sur `origin/main` (pas de bouton), verts ici.
+`tests/sonde-passager-avion.cjs` rejoue le passage seul en deux minutes, et
+avec `EMBARQ=1` la séquence de l'escalier.
+
 ## v551 — La minicarte est là dès la première image
 
 **Pourquoi.** Depuis la v540, la minicarte est toujours affichée — mais elle ne
