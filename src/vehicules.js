@@ -474,6 +474,13 @@ export const FLOTTE = [
   { fichier: 'lotus-evija.glb', classe: 'hypercar', nom: 'Lotus Evija' },
   { fichier: 'lucid-gravity.glb', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
   { fichier: 'maserati-mc20.glb', classe: 'sportive', nom: 'Maserati MC20' },
+  // LA MC12 GT1 RED BULL (v559), adaptation CC-BY-4.0 du modèle de Dave Love
+  // (vendor/voitures/LICENSE.md, `scripts/convertir-mc12.py`). Sa livrée EST
+  // sa laque : la rue ne la repeint jamais (`laque: 'jamais'`, comme la
+  // fourgonnette). Ses portes s'ouvrent en élytre et ne sont pas séparées dans
+  // le modèle : `portiere: false` (v366), plutôt qu'une portière classique
+  // découpée dans la tôle d'une voiture qui n'en a pas.
+  { fichier: 'maserati-mc12-gt1.glb', classe: 'hypercar', nom: 'Maserati MC12 GT1 Red Bull', laque: 'jamais', portiere: false },
   { fichier: 'mclaren-765lt.glb', classe: 'sportive', nom: 'McLaren 765LT' },
   { fichier: 'mclaren-artura.glb', classe: 'sportive', nom: 'McLaren Artura' },
   { fichier: 'mclaren-p1.glb', classe: 'hypercar', nom: 'McLaren P1' },

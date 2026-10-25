@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 559,
+    titre: 'Une Maserati MC12 de course',
+    puces: [
+      'La MC12 GT1 aux couleurs Red Bull',
+      'Son volant et ses roues qui tournent',
+      'Modèle de Dave Love, merci à lui',
+    ],
+  },
+  {
     v: 558,
     titre: 'Le métro roule droit en station',
     puces: [
@@ -43,7 +52,7 @@ export const NOUVEAUTES = [
   },
   {
     v: 554,
-    titre: 'Des arbres entiers au bord du monde',
+    titre: 'Des arbres entiers, même au loin',
     puces: [
       'Plus de couronne coupée au loin',
       'Même en arrivant quelque part',

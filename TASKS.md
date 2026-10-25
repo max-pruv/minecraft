@@ -1,5 +1,33 @@
 # Ce qui est en cours
 
+- [ ] **Rouges du portail de la v559 (la MC12 GT1) : aucun de la livraison.**
+  Portail complet : 14 suites vertes, `maj.js`, `manhattan.js` et `monte.js`
+  rouges, cinq témoins, tous déjà déclarés ici. `maj.js` (« le loader dit
+  combien de fichiers », « le loader ne s'efface… », `humains: false` à
+  7 008 ms) : la seule suite que la livraison pouvait toucher (cinq signatures
+  de plus à chauffer, 40 au lieu de 35) — rejouée SEULE sur la branche, 74
+  verts, 0 rouge, 40/40 programmes à l'effacement (6 926 ms). `manhattan.js`
+  « les passants de Manhattan au long cap » (débit 0,66, déclaré v496) ;
+  `monte.js` « un flâneur posé au milieu de la chaussée » et « au feu, la
+  voiture freine sur plusieurs relevés » (déclarés, rouges des deux côtés aux
+  portails v522 et v532). Preuve structurelle : la livraison ajoute un GLB
+  hors `ASSETS` et une entrée de `FLOTTE` ; ni les passants, ni la grille de
+  la rue, ni la règle de freinage ne lisent le modèle d'une voiture.
+  Rebasée sur la v554, portail rejoué (coupé à deux heures pendant
+  `reseau.js`) : 15 suites vertes ; `maj.js` les deux témoins du loader plus
+  le titre de la v554 à sept mots (corrigé ici, six mots) — rejouée SEULE
+  ensuite, 75 verts, 0 rouge ; `reseau.js` rejouée SEULE, 96 verts, 0 rouge ;
+  `manhattan.js` « le taxi roule avec les contrôles tactiles » (3 s de jeu en
+  240 s de montre, déclaré) ; `monte.js` « elle ralentit assez pour qu'on la
+  rejoigne » (9,0 m/s), « à Rome aussi, en biais », « la rue roule à l'allure
+  d'une ville », « au feu la voiture freine », « chaque feuille vole bas
+  au-dessus de SA colonne » (`ecartMax` 6,28) — tous déclarés plus bas.
+  Reposée sur la v557 (v558, puis v559 après le métro de Washington), portail complet : 15 suites vertes ; `maj.js`
+  les deux témoins du loader (programmes 5/40 à 7 430 ms, l'intermittence
+  déclarée, verte deux fois rejouée seule ci-dessus) ; `monte.js` « à Rome
+  aussi, en biais » et « à Londres, un passant traverse sur le passage peint »
+  (déclarés plus bas).
+
 ## Banc — le portail réparti (claude/portail-rapide, tests seuls) : rouges des portails, mesurés
 
 Trois portails complets sur la branche (le troisième coupé à 46 min de `reseau.js` par un recyclage du conteneur). Aucun rouge n'est causé par la mise à l'écart des voisines :
