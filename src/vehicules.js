@@ -408,7 +408,7 @@ const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
 // La règle ne lit que `n` : la même rue sur deux tablettes (v305).
 export function choixFlotte(n, ville) {
   if (VOITURE_FORCEE) return VOITURE_FORCEE;
-  const choix = FLOTTE.filter((e) => (ville === 'ny' ? e.ville === 'ny' : e.ville !== 'ny'));
+  const choix = FLOTTE.filter((e) => !e.horsRue && (ville === 'ny' ? e.ville === 'ny' : e.ville !== 'ny'));
   if (ville !== 'ny' && n % 6 === 0) return FLOTTE.find((e) => e.fichier === 'berline-citadine');
   if (ville !== 'ny' && n % 6 === 3) return FLOTTE.find((e) => e.fichier === (((n % 12) + 12) % 12 === 3 ? 'fourgonnette' : 'pickup'));
   return choix[((n % choix.length) + choix.length) % choix.length];
@@ -497,6 +497,15 @@ export const FLOTTE = [
   { fichier: 'rimac-nevera.glb', classe: 'hypercar', nom: 'Rimac Nevera' },
   { fichier: 'rolls-royce-spectre.glb', classe: 'berline', nom: 'Rolls-Royce Spectre' },
   { fichier: 'sls-amg-black-series.glb', classe: 'gt', nom: 'Mercedes-Benz SLS AMG Black Series' },
+  // LA VOITURE DE POLICE (v553) : la Ford Crown Victoria Police Interceptor
+  // fournie par Max (Mateusz Woliński, CC-BY-4.0, vendor/voitures/LICENSE.md),
+  // convertie au contrat par `scripts/convertir-police.mjs`. Sa livrée noir et
+  // blanc ne se repeint jamais (`laque: 'jamais'`). `horsRue` : elle ne roule
+  // pas dans la circulation — c'est la police qui l'appelle (patrouille.js) —,
+  // et l'en tenir hors du tirage garde chaque rue du monde identique à la v552
+  // (la règle ne lit que `n`, v305). Portières et volant ne sont pas des
+  // pièces séparées du modèle : `portiere: false`, `habitacle: false`.
+  { fichier: 'police-car.glb', classe: 'berline', nom: 'Voiture de police', laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
 ];
 
 // UNE ALLURE PAR CLASSE, ET LA CLASSE VIT DANS LE MANIFESTE (v260). Max :

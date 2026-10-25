@@ -54,6 +54,10 @@ export const CLASSES = {
   gt:       { vmax: 42, a0: 11.0, mu: 22 },
   sportive: { vmax: 48, a0: 12.5, mu: 24 },
   hypercar: { vmax: 55, a0: 14.0, mu: 26 },
+  // LA MOTO (v553) : une pointe de GT, l'accélération d'une hypercar (une
+  // Electra Glide pèse le quart d'une voiture), moins d'adhérence en virage
+  // qu'une sportive. Sa pointe est UNIQUE (44), `ficheDeVitesse` la retrouve.
+  moto:     { vmax: 44, a0: 14.5, mu: 21 },
 };
 
 // LE PLAFOND DU SOL EST CELUI QUE PUBLIE LE MONDE (`plafond-sol.js`, v346 :
