@@ -702,6 +702,49 @@ function verifier(nom, ok, detail = '') {
           restes.length <= 8, `${restes.length} cellule(s) hors du modèle${restes.length ? ' : ' + restes.slice(0, 8).join(' ') : ''}`);
       }
 
+      // 4 ter. LA TOUR EST LE MODÈLE DE JOHNSON MARTIN (v554). Max l'a fourni
+      //    (CC-BY-4.0) : 453 397 triangles, décimés à une erreur d'un
+      //    quarantième de bloc. Le témoin lit la géométrie que le mailleur
+      //    émet : assez de triangles pour être ce modèle et pas les poutres de
+      //    l'atelier (12 632), la hauteur du ciel de Paris, les socles dans la
+      //    boîte du repère — et le crédit qui doit l'accompagner.
+      {
+        const D = await import('../src/tour-eiffel-donnees.js').catch(() => null);
+        const faces = MH.geometrieMonument('Tour Eiffel'), b = MH.boiteHD('Tour Eiffel');
+        verifier('la tour Eiffel est le modèle fourni par Max, décimé, à l\'échelle et crédité',
+          !!D && /Johnson Martin/.test(D.CREDIT) && /CC-BY-4\.0/.test(D.CREDIT) && faces.length > 30000
+          && b.y1 > 66 && b.y1 < 70 && b.y0 >= 0 && Math.max(b.x, b.z) <= eiffel.box,
+          `${faces.length} faces, hauteur ${b.y1.toFixed(1)}, emprise ±${Math.max(b.x, b.z).toFixed(2)} pour une boîte de ${eiffel.box}`
+          + (D ? '' : ', pas de tour-eiffel-donnees.js'));
+
+        // ET SON VOXEL LE SUIT, EN TREILLIS : les quatre socles de pierre du
+        // modèle au sol, le dessous ouvert sous les jambes jusqu'au premier
+        // étage (l'enfant y passe), et au-dessus du second étage jamais plus
+        // qu'un fût de trois blocs — rempli cellule par cellule depuis le
+        // modèle, c'était une cheminée pleine. Le monde d'avant garde la tour
+        // d'avant (sans socles de pierre).
+        const vox = new Map();
+        eiffel.build((x, y, z, id) => vox.set(`${x},${y},${z}`, id));
+        const plein = (x, y, z) => (vox.get(`${x},${y},${z}`) || 0) !== BLOCK.AIR;
+        let socles = 0, dessous = 0, futMax = 0, futMin = Infinity;
+        for (let x = -8; x <= 8; x++) for (let z = -8; z <= 8; z++) {
+          if (vox.get(`${x},0,${z}`) === BLOCK.STONE) socles++;
+          for (let y = 0; y <= 7; y++) if (Math.abs(x) <= 3 && Math.abs(z) <= 3 && plein(x, y, z)) dessous++;
+        }
+        for (let y = 34; y <= 58; y++) {
+          let n = 0;
+          for (let x = -8; x <= 8; x++) for (let z = -8; z <= 8; z++) if (plein(x, y, z)) n++;
+          futMax = Math.max(futMax, n); futMin = Math.min(futMin, n);
+        }
+        const avant = W.CONF_AVANT.reperes.find((l) => l.name === 'Tour Eiffel');
+        let soclesAvant = 0;
+        avant.build((x, y, z, id) => { if (y === 0 && id === BLOCK.STONE) soclesAvant++; });
+        verifier('le voxel de la tour Eiffel suit le modèle, en treillis, et le monde d\'avant garde l\'ancien',
+          socles === 64 && dessous === 0 && futMin >= 4 && futMax <= 9 && soclesAvant === 0,
+          `${socles} blocs de socle (64), ${dessous} sous la tour, fût de ${futMin} à ${futMax} blocs par couche, `
+          + `${soclesAvant} socle(s) dans le monde d'avant`);
+      }
+
       // 5. UNE ÉDITION REND LE MONUMENT ÉDITABLE EN CUBES — et son emprise
       //    ENTIÈRE : un demi-monument lisse contre un demi-monument en cubes
       //    serait pire que pas de relief du tout.

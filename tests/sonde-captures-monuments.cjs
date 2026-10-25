@@ -9,6 +9,7 @@ const path = require('path');
 const dossier = process.argv[2] || '.';
 const tag = process.argv[3] || 'apres';
 const choix = process.argv[4] ? process.argv[4].split(',') : null;
+const vuesChoisies = process.argv[5] ? process.argv[5].split(',') : null;
 
 // d : la distance en blocs ; cap : d'où l'on regarde (radians, 0 = depuis −z) ;
 // h : la hauteur de l'œil au-dessus du sol ; pitch : le nez de la caméra.
@@ -18,6 +19,10 @@ const VUES = [
     { nom: 'pied', d: 7, cap: Math.PI * 0.75, h: 2, cible: 40, dedans: true },
     { nom: 'ciel', d: 60, cap: Math.PI * 0.25, h: 62, pitch: -0.35 },
     { nom: 'nuit', d: 34, cap: Math.PI, h: 2, pitch: 0.75, heure: 0.75 },
+    // v554 : la tour entière depuis le Champ-de-Mars, et au-delà de la couche
+    // HD — là où l'on ne voit que son voxel.
+    { nom: 'champ', d: 60, cap: Math.PI, h: 28 },
+    { nom: 'loin', d: 125, cap: Math.PI * 0.75, h: 40 },
   ]],
   ['Arc de Triomphe', [
     { nom: 'rue', d: 26, cap: 0, h: 2, pitch: 0.5 },
@@ -67,6 +72,7 @@ const VUES = [
     const page = await banc.jouerSeul('Capture', { rr: 9, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=6' });
     for (const v of VUES) {
       if (choix && !choix.includes(v.mon)) continue;
+      if (vuesChoisies && !vuesChoisies.includes(v.nom)) continue;
       try {
         const info = await page.evaluate(async (v) => {
           const g = window.__game;

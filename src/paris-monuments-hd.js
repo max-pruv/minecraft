@@ -27,6 +27,7 @@
 // Aucun objet three, aucun DOM : cette passe tourne aussi dans le worker.
 import { rectHD } from './facadeshd.js';
 import { echelleDe, etirerFaces } from './echelle-monuments.js';
+import { PARTIES as PARTIES_EIFFEL, QUANTUM as QUANTUM_EIFFEL } from './tour-eiffel-donnees.js';
 
 const STONE = ['pierre', [1, .97, .91], [.86, 0], 0];
 const TRIM = ['pierre-lisse', [1, .98, .94], [.78, 0], 0];
@@ -98,61 +99,80 @@ class Atelier {
   }
 }
 
+// LA TOUR EIFFEL EST UN VRAI MODÈLE (v554). Max a fourni « Eiffel Tower » de
+// Johnson Martin (Sketchfab, CC-BY-4.0, crédit dans `vendor/TOUR_EIFFEL_LICENSE`) :
+// quatre cent cinquante mille triangles, les socles de maçonnerie, les arches,
+// le treillis jusqu'au phare. `scripts/tour-eiffel.mjs` le décime dans le
+// repère du JEU (erreur d'un quarantième de bloc) et le met à nos deux échelles —
+// 69 blocs de haut comme depuis la v292, les socles dans le parvis — puis le
+// code dans `tour-eiffel-donnees.js`. Le procédé d'avant (les poutres de
+// l'atelier) est parti avec lui ; c'est le voxel qui a suivi le modèle, pas
+// l'inverse (`buildEiffelModele`, world.js).
+//
+// LE DÉCODAGE EST SYNCHRONE, ET IL N'A PAS DE DÉPENDANCE : ce fichier tourne
+// dans le worker et sur le fil principal, qui doivent lire la même géométrie à
+// l'import. Varints, positions en deltas au 1/256e de bloc, index en distance
+// au plus haut sommet déjà vu.
+const MATIERES_EIFFEL = [IRON, ['pierre', [.88, .83, .74], [.86, 0], 0], GLASS];
+export function decoderPartie(b64, quantum = QUANTUM_EIFFEL) {
+  const octets = typeof atob === 'function'
+    ? Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+    : Uint8Array.from(Buffer.from(b64, 'base64'));
+  let k = 0;
+  const lire = () => { let v = 0, d = 0, o; do { o = octets[k++]; v += (o & 127) * 2 ** d; d += 7; } while (o & 128); return v; };
+  const n = lire(), t = lire();
+  const pos = new Float32Array(n * 3), prec = [0, 0, 0];
+  for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) {
+    const z = lire();
+    prec[c] += (z & 1) ? -((z + 1) / 2) : z / 2;
+    pos[i * 3 + c] = prec[c] / quantum;
+  }
+  const idx = new Uint32Array(t * 3);
+  let suivant = 0;
+  for (let i = 0; i < idx.length; i++) { const v = suivant - lire(); idx[i] = v; if (v === suivant) suivant++; }
+  return { pos, idx };
+}
+// LES NORMALES SE LISSENT JUSQU'À UNE ARÊTE. Une normale par triangle donnait
+// trois sommets par triangle — 7 Mo de tampons pour la seule tour, mesuré — et
+// des poutres en facettes. Lissée sur les faces voisines à moins de
+// `ARETE_EIFFEL` l'une de l'autre, une normale est celle du SOMMET : les
+// triangles d'une même poutre le partagent (`souderTampons`), et l'angle d'un
+// caisson reste vif.
+const ARETE_EIFFEL = Math.cos(40 * Math.PI / 180);
 function eiffel(a){
-  const r=y=> y<=16?6-3*Math.pow(y/16,.8):y<=30?3-(y-16)/14:y<=52?2-(y-30)/22:.55;
-  for(const sx of [-1,1])for(const sz of [-1,1]){
-    for(let y=0;y<52;y+=2)a.beam([sx*r(y),y,sz*r(y)],[sx*r(y+2),y+2,sz*r(y+2)],y<16?.19:.11);
-    a.box(sx*6,-.05,sz*6,1.4,.65,1.4,STONE);
-  }
-  // Les ceintures et les croix de Saint-André, tous les deux blocs. Elles
-  // commencent à SIX, pas à seize : le voxel pose une ceinture pleine à y = 6
-  // et 12 et une diagonale à chaque niveau intermédiaire, et sans elles ces
-  // soixante-quatre cellules restaient en cubes bruns accrochés aux jambes
-  // (vu en capture au pied de la tour). Le dessous reste ouvert : c'est la
-  // ceinture du SOL, retirée en v292, qui fermait le passage.
-  for(let y=6;y<52;y+=2){
-    const lo=r(y),hi=r(y+2);
-    for(const s of [-1,1]){
-      a.beam([-lo,y,s*lo],[hi,y+2,s*hi],.046);a.beam([lo,y,s*lo],[-hi,y+2,s*hi],.046);
-      a.beam([s*lo,y,-lo],[s*hi,y+2,hi],.046);a.beam([s*lo,y,lo],[s*hi,y+2,-hi],.046);
-      a.beam([-lo,y,s*lo],[lo,y,s*lo],.065);a.beam([s*lo,y,-lo],[s*lo,y,lo],.065);
+  // Chaque coin porte un identifiant (`c`) : un sommet et sa normale. Le
+  // mailleur émet un coin une seule fois par morceau au lieu d'une fois par
+  // triangle — le tiers des appels, et c'était le poste le plus lourd.
+  const coins = new Map();
+  PARTIES_EIFFEL.forEach((b64, m) => {
+    const { pos, idx } = decoderPartie(b64);
+    const P = (i) => [pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]];
+    const nf = [], autour = new Map();
+    for (let t = 0; t < idx.length; t += 3) {
+      const A = P(idx[t]), B = P(idx[t + 1]), C = P(idx[t + 2]);
+      const c = cross(sub(B, A), sub(C, A));                  // pondérée par l'aire
+      nf.push(c);
+      for (let k = 0; k < 3; k++) { const v = idx[t + k]; if (!autour.has(v)) autour.set(v, []); autour.get(v).push(t / 3); }
     }
-  }
-  // Quatre jambes ajourées, jamais une grille qui ferme le passage central.
-  for(const sx of [-1,1])for(const sz of [-1,1])for(let y=0;y<16;y+=2){
-    const lo=r(y),hi=r(y+2),w=.65-y*.02,wn=.65-(y+2)*.02;
-    for(const axis of [0,2]){
-      const p=(h,rr,d)=>{const v=[sx*rr,h,sz*rr];v[axis]+=d;return v;};
-      a.beam(p(y,lo,-w),p(y+2,hi,-wn),.065);a.beam(p(y,lo,w),p(y+2,hi,wn),.065);
-      a.beam(p(y,lo,-w),p(y+2,hi,wn),.035);a.beam(p(y,lo,w),p(y+2,hi,-wn),.035);
+    for (let f = 0; f < nf.length; f++) {
+      const n0 = norm(nf[f]);
+      const n = [0, 1, 2].map((k) => {
+        let s = [0, 0, 0];
+        for (const g of autour.get(idx[f * 3 + k])) {
+          const ng = norm(nf[g]);
+          if (ng[0] * n0[0] + ng[1] * n0[1] + ng[2] * n0[2] >= ARETE_EIFFEL) s = add(s, nf[g]);
+        }
+        return norm(s);
+      });
+      const c = n.map((v, k) => {
+        const cle = `${m}|${idx[f * 3 + k]}|${v.map((x) => Math.round(x * 1e4)).join(',')}`;
+        if (!coins.has(cle)) coins.set(cle, coins.size);
+        return coins.get(cle);
+      });
+      a.faces.push({ p: [P(idx[f * 3]), P(idx[f * 3 + 1]), P(idx[f * 3 + 2])], n, c, m: MATIERES_EIFFEL[m],
+        pleine: Math.hypot(...nf[f]) > 1e-9 });
     }
-  }
-  // LES TROIS PLATEFORMES SONT DES PLANCHERS, pas quatre rails. Le voxel en
-  // pose un ANNEAU de deux rangs (`plateforme`, world.js) ; quatre barres fines
-  // n'en couvraient qu'un, et l'autre restait en cubes autour du modèle —
-  // visible en capture comme des caisses brunes accrochées à la tour.
-  // Les rayons sont ceux du VOXEL : `plateforme(P, rayon(P) + 1)` rend un anneau
-  // de Tchebychev de deux rangs, à 4, 3 et 2 blocs. Mon premier jet les avait
-  // élargis d'un bloc « pour faire plancher » : mesuré, 14,5 % du modèle
-  // tombait dans le vide au lieu de 0,8 %.
-  for(const [y,R] of [[16,4],[30,3],[52,2]]){
-    const dep=R+.55, inn=Math.max(.5,R-1.55), mil=(dep+inn)/2, larg=dep-inn;
-    for(const s of [-1,1]){
-      a.box(0,y-.35,s*mil,2*dep,.45,larg,IRON);                       // les deux bandes en x
-      a.box(s*mil,y-.35,0,larg,.45,2*inn,IRON);                       // les deux bandes en z
-      a.beam([-dep,y+1.1,s*dep],[dep,y+1.1,s*dep],.06);               // la main courante
-      a.beam([s*dep,y+1.1,-dep],[s*dep,y+1.1,dep],.06);
-      for(let d=-dep;d<=dep;d+=.6){a.beam([d,y,s*dep],[d,y+1.1,s*dep],.03);a.beam([s*dep,y,d],[s*dep,y+1.1,d],.03);}
-    }
-  }
-  // Les quatre arcs décoratifs concaves, distincts des pieds porteurs.
-  for(let i=0;i<32;i++){
-    const x=-6+i*12/32,n=x+12/32;
-    const y=t=>3+Math.sqrt(Math.max(0,36-t*t))*1.45;
-    for(const s of [-1,1]){a.beam([x,y(x),s*6],[n,y(n),s*6],.13);a.beam([s*6,y(x),x],[s*6,y(n),n],.13);}
-  }
-  a.lathe(0,0,[[52,.7],[57,.55],[64,.18],[68,.07]],IRON,12);
-  a.dome(0,68,0,.15,.3,GOLD);
+  });
 }
 function louvre(a){
   const apex=[0,5.8,0],corners=[[-5.5,0,-5.5],[-5.5,0,5.5],[5.5,0,5.5],[5.5,0,-5.5]];
@@ -469,21 +489,70 @@ function clip(poly, axis, edge, sign) {
 }
 
 export function emettreMonument(buf, nom, dx, by, dz, taille = 16) {
+  const dejaEmis = new Map(), rects = new Map();
   for (const face of geometrieMonument(nom)) {
-    const original = face.p.map((p) => [p[0] + dx + 0.5, p[1] + by, p[2] + dz + 0.5]);
+    // Une face entièrement d'un côté du morceau ne se découpe pas : la tour
+    // Eiffel en compte quarante mille, et chacune touche un seul morceau sur
+    // quatre (v554).
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (const q of face.p) {
+      const x = q[0] + dx + 0.5, z = q[2] + dz + 0.5;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (z < z0) z0 = z; if (z > z1) z1 = z;
+    }
+    if (x1 < 0 || x0 > taille || z1 < 0 || z0 > taille) continue;
+    // LE CHEMIN DES COINS : une face de la tour entièrement dans le morceau
+    // n'est ni découpée ni recopiée — ses coins sont émis une fois chacun.
+    if (face.c && x0 >= 0 && x1 <= taille && z0 >= 0 && z1 <= taille) {
+      if (!face.pleine) continue;
+      const [tile, color, mat, glow] = face.m;
+      let rect = rects.get(tile);
+      if (!rect) { rect = rectHD(tile); rects.set(tile, rect); }
+      const ids = [0, 0, 0];
+      for (let k = 0; k < 3; k++) {
+        let id = dejaEmis.get(face.c[k]);
+        if (id === undefined) {
+          const q = face.p[k], n = face.n[k];
+          const v = [q[0] + dx + 0.5, q[1] + by, q[2] + dz + 0.5];
+          const d = Math.abs(n[1]) >= Math.max(Math.abs(n[0]), Math.abs(n[2])) ? 1 : Math.abs(n[0]) >= Math.abs(n[2]) ? 0 : 2;
+          id = buf.sommet(v, n, d === 1 ? [v[0] - dx, v[2] - dz] : [d === 0 ? v[2] - dz : v[0] - dx, v[1] - by], rect, color, mat, glow);
+          dejaEmis.set(face.c[k], id);
+        }
+        ids[k] = id;
+      }
+      buf.indices.push(ids[0], ids[1], ids[2]);
+      continue;
+    }
+    // Une face qui porte ses normales (la tour Eiffel, v554) les fait voyager
+    // avec ses sommets : la découpe les interpole comme les positions.
+    const original = face.n
+      ? face.p.map((p, k) => [p[0] + dx + 0.5, p[1] + by, p[2] + dz + 0.5, ...face.n[k]])
+      : face.p.map((p) => [p[0] + dx + 0.5, p[1] + by, p[2] + dz + 0.5]);
     const normal = norm(cross(sub(original[1], original[0]), sub(original[2], original[0])));
     let p = original;
-    for (const [axis, edge, sign] of [[0, 0, 1], [0, taille, -1], [2, 0, 1], [2, taille, -1]]) {
-      p = clip(p, axis, edge, sign);
-      if (p.length < 3) break;
+    // Entièrement dans le morceau, elle est rendue telle quelle : la découpe
+    // la recopierait sommet pour sommet.
+    if (x0 < 0 || x1 > taille || z0 < 0 || z1 > taille) {
+      for (const [axis, edge, sign] of [[0, 0, 1], [0, taille, -1], [2, 0, 1], [2, taille, -1]]) {
+        p = clip(p, axis, edge, sign);
+        if (p.length < 3) break;
+      }
+      if (p.length < 3) continue;
     }
-    if (p.length < 3) continue;
     const [tile, color, mat, glow] = face.m, rect = rectHD(tile);
     // Coordonnées UV absolues : deux morceaux échantillonnent la même pierre.
     const dominant = normal.map(Math.abs).indexOf(Math.max(...normal.map(Math.abs)));
-    const ids = p.map((v) => buf.sommet(v, normal,
-      dominant === 1 ? [v[0] - dx, v[2] - dz] : [dominant === 0 ? v[2] - dz : v[0] - dx, v[1] - by],
-      rect, color, mat, glow));
+    const ids = face.n
+      ? p.map((v) => {
+        // Le sommet ne dépend que de lui-même — position, normale, et l'axe
+        // dominant de SA normale pour les UV — pour que la soudure le partage.
+        const n = norm([v[3], v[4], v[5]]), d = Math.abs(n[1]) >= Math.max(Math.abs(n[0]), Math.abs(n[2])) ? 1
+          : Math.abs(n[0]) >= Math.abs(n[2]) ? 0 : 2;
+        return buf.sommet([v[0], v[1], v[2]], n,
+          d === 1 ? [v[0] - dx, v[2] - dz] : [d === 0 ? v[2] - dz : v[0] - dx, v[1] - by], rect, color, mat, glow);
+      })
+      : p.map((v) => buf.sommet(v, normal,
+        dominant === 1 ? [v[0] - dx, v[2] - dz] : [dominant === 0 ? v[2] - dz : v[0] - dx, v[1] - by],
+        rect, color, mat, glow));
     for (let i = 1; i < ids.length - 1; i++) {
       const area = Math.hypot(...cross(sub(p[i], p[0]), sub(p[i + 1], p[0])));
       if (area > 1e-9) buf.indices.push(ids[0], ids[i], ids[i + 1]);

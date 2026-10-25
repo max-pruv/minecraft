@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 554,
+    titre: 'La vraie tour Eiffel',
+    puces: [
+      'La tour Eiffel est un vrai modèle',
+      'Ses arches, ses étages, son treillis',
+      'On passe toujours dessous',
+    ],
+  },
+  {
     v: 553,
     titre: 'Des arbres au loin',
     puces: [

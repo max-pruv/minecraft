@@ -123,6 +123,8 @@ const GARDIENS = {
   // ils ne posent aucun bloc (`plafond.js`), et l'enfant marche autour d'eux
   // (`monte.js`). `carteMonde.js` garde les rues qui les longent.
   'src/paris-monuments-hd.js': ['parishd.js', 'plafond.js', 'monte.js', 'carteMonde.js'],
+  // La géométrie de la tour Eiffel (v554), lue par le module précédent seul.
+  'src/tour-eiffel-donnees.js': ['parishd.js', 'plafond.js', 'monte.js', 'carteMonde.js'],
   'src/matierehd.js': ['parishd.js', 'monte.js'],
   // LES MONUMENTS À LA HAUTEUR DE LEUR VILLE (v335). Importé par `world.js`
   // et `paris-monuments-hd.js` : l'union de leurs gardiens. Le témoin de la

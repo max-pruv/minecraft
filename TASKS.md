@@ -1,5 +1,20 @@
 # Ce qui est en cours
 
+## La tour Eiffel du modèle de Max (v554) — ce qui reste
+
+- [ ] **Ce qu'un enfant a bâti sur l'ANCIENNE tour, dans le monde d'aujourd'hui.**
+  Un bloc posé dans l'emprise rend la tour éditable en cubes (`monumentsTouches`,
+  v292) : il voit alors le NOUVEAU voxel, et une cabane posée sur l'ancienne
+  plateforme (y 16, 30, 52) peut flotter ou entrer dans le nouveau fer (étages
+  à 11–14, 22–26, 59–62). Même prix que la v335 ; la marche serait celle du
+  relevé des toits (v301) : suivre le plancher d'avant au plancher d'après.
+  Mesurer d'abord combien de profils ont un bloc dans la boîte de la tour.
+- [ ] **La tour n'a pas de nuit à elle.** Le vrai phare et le scintillement
+  n'existent pas ; le vitrage (`GLASS`) est éteint.
+- [ ] **Les tampons de la tour : +3,5 Mo sur ses quatre morceaux** (mesuré sous
+  node, `facades`). Sous le budget HD (`hdMo`), mais à relire avec `?diag=1` à
+  Paris sur l'iPad.
+
 ## Les témoins de `monte.js` qui se placent (claude/temoins-monte, tests seuls)
 
 Mesuré : `monte.js` seule sur `origin/main` v547 (copie de travail) et sur la
