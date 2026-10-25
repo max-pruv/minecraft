@@ -463,12 +463,17 @@ export function creerEmbarquement(ctx) {
   // geste — jamais dans l'eau ni dans un bâtiment.
   function sortieAvion(g, porte, y0) {
     refusSortie = {};
-    const ac = acces(porte);
-    const pied = new THREE.Vector3(...ac.pied);
-    const m = placeAuSol(g, pied, y0, 'escalier');
-    if (m) return { escalier: true, ac, monde: m };
-    const L = porte.demiLong || 4, x = Math.abs(porte.x) + 1.6;
-    for (const loc of [new THREE.Vector3(-x, 0, porte.z + 2), new THREE.Vector3(x, 0, porte.z + 2),
+    // UN APPAREIL SANS PORTE (le Concorde, v381) n'a pas d'escalier : on
+    // cherche directement une place autour de lui (passager, v552)
+    if (porte) {
+      const ac = acces(porte);
+      const pied = new THREE.Vector3(...ac.pied);
+      const m = placeAuSol(g, pied, y0, 'escalier');
+      if (m) return { escalier: true, ac, monde: m };
+    }
+    const p0 = porte || { demiLong: 10, x: 0.8, z: -4 };
+    const L = p0.demiLong || 4, x = Math.abs(p0.x) + 1.6;
+    for (const loc of [new THREE.Vector3(-x, 0, p0.z + 2), new THREE.Vector3(x, 0, p0.z + 2),
       new THREE.Vector3(0, 0, L + 2), new THREE.Vector3(0, 0, -L - 2), new THREE.Vector3(-x - 3, 0, 0), new THREE.Vector3(x + 3, 0, 0)]) {
       const w = placeAuSol(g, loc, y0, 'autour');
       if (w) return { escalier: false, monde: w };
@@ -734,6 +739,16 @@ export function creerEmbarquement(ctx) {
       return false;
     }
     s.absent = 0;
+    if (v.mesh !== s.a.mesh && s.avion) {
+      // L'AVION DE L'AMI REFAIT (v552) : l'escalier et la porte passent sur
+      // le nouveau maillage ; un autre modèle (une autre porte) termine
+      const pn = v.mesh.userData.porte;
+      ouvrant(s.a.mesh, s.porte, 0); retirerAcces(s);
+      if (!pn || pn.type !== s.porte.type) { terminer('autre appareil'); return false; }
+      s.a = commeMonture(v); s.porte = pn;
+      v.mesh.add(s.ac.groupe);
+      s.rebranchee = (s.rebranchee || 0) + 1;
+    }
     if (v.mesh !== s.a.mesh) {
       const ancienne = s.portes ? s.portes[String(s.cote)] : null;
       if (ancienne) ouvrir(ancienne, 0);
@@ -877,6 +892,51 @@ export function creerEmbarquement(ctx) {
     player.pos.copy(a.pos);
     player.vel.set(0, 0, 0);
     signaler(1);
+    publier();
+    return true;
+  }
+
+  // ---- passager dans l'avion d'un ami (v552) ----------------------------
+  // Max : « rentrer dans une voiture, avion… en passager si un autre joueur
+  // est déjà conducteur ». La séquence de l'avion (v389, v400) rejouée sur
+  // l'appareil DISTANT, comme `monterChez` rejoue la portière (v377) : la
+  // même marche, le même escalier, la même porte — et `fin` fait de l'enfant
+  // un passager (fun.js) une fois entré, `suivre` redemande l'avion de CE
+  // pilote à chaque image (v407). Un appareil sans porte (le Concorde) : on
+  // monte d'un coup. L'ami ne voit pas la porte s'ouvrir (dette v381).
+  function monterAvionChez(veh, siege, de, fin, suivre) {
+    if (s) { terminer(); return; }
+    const g = veh && veh.mesh;
+    if (!SEQUENCE_ACTIVE || !av || !g || !veh.def || !siege || !g.userData.porte) { fin(); return; }
+    monterAvion(commeMonture(veh));
+    s.chez = { fin, veh: suivre, siege, de };
+    publier();
+  }
+  // Le pendant : on ressort par la porte et l'on descend l'escalier, AU SOL
+  // seulement (fun.js refuse en vol). Rend faux si rien n'est à animer —
+  // l'enfant est alors posé à une place mesurée autour de l'appareil.
+  function descendreAvionChez(veh, de, suivre) {
+    if (s) terminer();
+    const g = veh && veh.mesh;
+    if (!g || !veh.def) return false;
+    const porte = g.userData.porte || null;
+    const sortie = sortieAvion(g, porte, g.position.y);
+    if (!SEQUENCE_ACTIVE || !av || !sortie.escalier) {
+      if (sortie.monde) player.pos.copy(sortie.monde);
+      else player.pos.copy(versMonde(g, new THREE.Vector3(-3, 0, 0)));
+      player.vel.set(0, 0, 0);
+      dernier = { sens: 'descendre', quoi: 'avion', temps: 0, fin: 'd\'un coup', cote: 0, refus: refusSortie };
+      return false;
+    }
+    const ac = sortie.ac;
+    if (ac.groupe.parent !== g) g.add(ac.groupe);
+    const dedans = new THREE.Vector3(0, porte.y, porte.z);
+    s = { sens: 'descendre', avion: true, phase: 'ouverture', t: 0, a: commeMonture(veh),
+      d: { demiLarg: Math.abs(porte.x) + 0.3, zPorte: porte.z }, cote: -1, porte, ac,
+      haut: new THREE.Vector3(...ac.haut), dedans, piedL: versLocal(g, sortie.monde), monde: sortie.monde,
+      cam: { p: player.camera.position.clone(), q: player.camera.quaternion.clone() }, temps: 0,
+      chez: { veh: suivre, de } };
+    player.pos.copy(versMonde(g, dedans)); player.vel.set(0, 0, 0);
     publier();
     return true;
   }
@@ -1070,7 +1130,7 @@ export function creerEmbarquement(ctx) {
   }
 
   return {
-    monter, monterChez, monterRame, descendre, descendreDeChez, descendreRame, terminer: () => terminer(), annuler, update, porteDistante,
+    monter, monterChez, monterRame, descendre, descendreDeChez, descendreRame, monterAvionChez, descendreAvionChez, terminer: () => terminer(), annuler, update, porteDistante,
     brancherReseau(f) { diffuser = f; },
     enCours: () => !!s,
     // l'avatar est-il à nous cette image ? (main.js ne l'assied pas alors)

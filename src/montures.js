@@ -640,6 +640,15 @@ export const MONTURES = [
     pilote: { max: 95, poussee: 18, decrochage: 30, virage: 0.55,
       rotation: 42, approche: 45, roulage: 6, frein: 30, kmh: 900,
       toucherMax: 64, chuteMax: 7 },
+    // LES SIÈGES DES PASSAGERS (Max, 20 octobre : « rentrer dans une voiture,
+    // avion… en passager si un autre joueur est déjà conducteur »). Dans la
+    // CABINE, derrière la porte avant (z −5,9), jamais au poste de pilotage :
+    // deux de front, trois rangées. Mesurés sur le modèle (avions.js) : axe
+    // du fuselage à 1,62, rayon 0,85, donc un plancher vers 0,9 et un
+    // plafond à 2,47 ; des hanches à 1,15 mettent le crâne à 1,86.
+    sieges: [{ x: -0.3, y: 1.15, z: -4.0 }, { x: 0.3, y: 1.15, z: -4.0 },
+      { x: -0.3, y: 1.15, z: -2.6 }, { x: 0.3, y: 1.15, z: -2.6 },
+      { x: -0.3, y: 1.15, z: -1.2 }, { x: 0.3, y: 1.15, z: -1.2 }],
     moteur: 'avion' },
 
   { key: 'concorde', name: 'Concorde', cry: 'Whoooosh !', emoji: '🛩️', speed: 0.01,
@@ -652,6 +661,11 @@ export const MONTURES = [
     pilote: { max: 120, poussee: 34, decrochage: 55, virage: 0.40,
       rotation: 62, approche: 62, roulage: 6, frein: 45, kmh: 2180,
       toucherMax: 84, chuteMax: 7 },
+    // un seul rang : le fuselage fait 0,94 bloc (axe à 1,72, rayon 0,47) —
+    // des hanches à 1,4 laissent le crâne à 2,11 sous un plafond à 2,19.
+    // Pas de porte (v381) : on monte à bord d'un coup.
+    sieges: [{ x: 0, y: 1.4, z: -4.5 }, { x: 0, y: 1.4, z: -3.0 },
+      { x: 0, y: 1.4, z: -1.5 }, { x: 0, y: 1.4, z: 0 }],
     moteur: 'avion' },
 
   { key: 'chasseur', name: 'Avion de chasse', cry: 'Vriiiii !', emoji: '🚀', speed: 0.01,
@@ -663,5 +677,10 @@ export const MONTURES = [
     pilote: { max: 120, poussee: 90, decrochage: 40, virage: 1.30,
       rotation: 48, approche: 50, roulage: 7, frein: 60, kmh: 2200,
       toucherMax: 70, chuteMax: 8 },
+    // UNE PLACE ARRIÈRE, SOUS LA VERRIÈRE : un chasseur n'a pas de cabine, et
+    // la version biplace (le pilote devant, le passager derrière) est la
+    // seule façon d'y emmener un ami. La bulle va de z −3,8 à 0 ; le pilote
+    // est devant, le passager à −0,9, hanches sur l'axe (1,55).
+    sieges: [{ x: 0, y: 1.55, z: -0.9 }],
     moteur: 'avion' },
 ];
