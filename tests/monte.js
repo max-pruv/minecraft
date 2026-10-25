@@ -367,12 +367,39 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // un mur — la voiture reste à l'arrêt et l'angle ne veut rien dire
     // (leçon de `capDegage`, et de « un témoin de conduite part d'une rue
     // sans voiture à portée », v252, v259).
+    //
+    // ET LE TÉMOIN SE PLACE LUI-MÊME (v548). Joué là où le témoin d'avant le
+    // laisse — la campagne du point d'apparition —, `capDegage(tab, 16)` y
+    // rendait `null` des deux côtés : la voiture tournait contre des murs et
+    // des arbres, et la glissade d'après choc (v534) rendait parfois les deux
+    // signes (rouge au portail, vert seul, sur la branche ET sur `origin/main`
+    // v534). Un virage tenu à pleins gaz décrit un cercle d'une trentaine de
+    // blocs de rayon (mesuré : la voiture s'éloigne de 61 blocs au plus du
+    // départ en 14,5 s, 31 b/s) : on lui donne une dalle de pierre à soi de
+    // 161 × 161, posée au-dessus du relief, loin de tout, et l'on rend
+    // l'enfant (et sa voiture, qui le suit) à sa place ensuite. Le trajet est
+    // le même à chaque passage, au sec, sans mur ni arbre ni circulation.
+    const avantFlanc = await tab.evaluate(async () => {
+      const g = window.__game, { BLOCK } = await import('./src/blocks.js');
+      const sauve = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, yaw: g.player.yaw };
+      const x0 = 41000, z0 = 41000, D = 80; let y0 = 0;
+      for (let d = -D; d <= D; d += 4) for (let w = -D; w <= D; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      y0 += 4;
+      for (let d = -D; d <= D; d++) for (let w = -D; w <= D; w++) {
+        g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 3; h++) if (g.world.getBlock(x0 + d, y0 + h, z0 + w)) g.world.setBlock(x0 + d, y0 + h, z0 + w, 0);
+      }
+      g.player.yaw = 0; g.player.pitch = 0; g.player.vel.set(0, 0, 0);
+      g.player.pos.set(x0 + 0.5, y0 + 1.2, z0 + 0.5);
+      return { sauve, x0, z0, y0, D };
+    });
+    await dormir(2500);
     const capVolant = await capDegage(tab, 16);
     if (capVolant !== null) await tab.evaluate((y) => { window.__game.player.yaw = y; }, capVolant);
     await tab.keyboard.down('KeyW');
     await dormir(2500);
     await tab.keyboard.down('KeyA');
-    const flanc = await tab.evaluate(async () => {
+    const flanc = await tab.evaluate(async (dl) => {
       const g = window.__game;
       const releves = [];
       const t0 = performance.now(), f0 = g.renderer.info.render.frame;
@@ -400,14 +427,18 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const roule = releves.filter((r) => r.v > 1 && r.avant && !r.rebond);
       const abs = roule.map((r) => Math.abs(r.beta)).sort((x, y) => x - y);
       const images = g.renderer.info.render.frame - f0;
-      return { n: releves.length, enMouvement: roule.length,
+      const surLaDalle = Math.max(Math.abs(g.player.pos.x - dl.x0), Math.abs(g.player.pos.z - dl.z0)) <= dl.D;
+      return { n: releves.length, enMouvement: roule.length, surLaDalle,
+        chocs: releves.filter((r) => r.rebond).length,
         secondesDeJeu: +(images * 0.05).toFixed(1),
         betaMax: abs.length ? abs[abs.length - 1] : null,
         betaMedian: abs.length ? abs[Math.floor(abs.length / 2)] : null,
         signes: [...new Set(roule.filter((r) => Math.abs(r.beta) > 2).map((r) => Math.sign(r.beta)))],
         recul: releves.length ? +(releves.reduce((a, r) => a + r.recul, 0) / releves.length).toFixed(2) : null };
-    });
+    }, avantFlanc);
     await tab.keyboard.up('KeyA'); await tab.keyboard.up('KeyW');
+    await tab.evaluate((s) => { const g = window.__game; g.player.vel.set(0, 0, 0); g.player.pos.set(s.x, s.y, s.z); g.player.yaw = s.yaw; }, avantFlanc.sauve);
+    await dormir(1500);
     verifier('en virage, la caméra laisse la voiture glisser sur le côté du cadre — on voit son flanc',
       flanc.enMouvement >= 4 && flanc.betaMedian !== null && flanc.betaMedian >= 6
         && flanc.signes.length === 1,
@@ -3683,20 +3714,39 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const id = v.heurter(cible.x, cible.z, 0.8);
       const [ci, i] = (id || '').split(':').map(Number);
       const vitesse = () => v.etat()[ci].vitesses[i];
+      // ON LIT L'ÉTAT POSÉ SUR LA VOITURE HEURTÉE, PAS UN INSTANTANÉ DE LA SCÈNE
+      // (v548). Le feu clignote (0,7 s de période, `detresseAllumee`) et sa
+      // visibilité ne se réécrit qu'à l'image : à une image par seconde sous
+      // la charge du portail, trois ou quatre images pendant l'arrêt pouvaient
+      // toutes tomber dans la phase éteinte — `clignote: false` sur un code
+      // juste (rouge au portail de la v547, vert seul des deux côtés). Ce que
+      // `feuxDeDetresse` FAIT quand il s'allume est déterministe : il pose le
+      // groupe `detresse` sur CE maillage (`userData.detresse`), une fois.
+      // Désarmé (`feuxDeDetresse` qui ne fait rien), le groupe n'existe pas
+      // et le témoin rougit ; s'il existait déjà avant le choc (un choc d'un
+      // témoin d'avant), on exige de l'avoir vu allumé.
+      const cle = (v.etat()[ci] || {}).cle;
+      const maillage = () => (v.voitureNommee && cle ? v.voitureNommee(`${cle}#${i}`) : null);
+      const m0 = maillage();
+      const dejaPose = !!(m0 && m0.userData.detresse);
       const detresse = () => { let vu = false; g.scene.traverse((o) => { if (o.name === 'detresse' && o.visible) vu = true; }); return vu; };
-      let arretee = null, clignote = false, repart = null;
+      let arretee = null, clignote = false, pose = false, repart = null, images = 0;
+      const f0 = g.renderer.info.render.frame;
       const t0 = performance.now();
       while (performance.now() - t0 < 15000) {
         await dodo(100);
         const s = vitesse();
         if (detresse()) clignote = true;
+        const m = maillage();
+        if (m && m.userData.detresse && !dejaPose) pose = true;
         if (arretee === null && s < 0.3) arretee = Math.round(performance.now() - t0);
         if (arretee !== null && s > 1.5 && performance.now() - t0 > arretee + 500) { repart = Math.round(performance.now() - t0); break; }
       }
-      return { id, arretee, clignote, repart };
+      images = g.renderer.info.render.frame - f0;
+      return { id, arretee, clignote, pose, dejaPose, repart, images, ms: Math.round(performance.now() - t0) };
     });
     verifier('une voiture de la rue heurtée par l\'enfant s\'arrête, feux de détresse, puis repart',
-      !heurt.err && heurt.arretee !== null && heurt.arretee < 4000 && heurt.clignote && heurt.repart !== null, JSON.stringify(heurt));
+      !heurt.err && heurt.arretee !== null && heurt.arretee < 4000 && (heurt.pose || heurt.clignote) && heurt.repart !== null, JSON.stringify(heurt));
 
     // ---- LA RUE FREINE DEVANT UN PIÉTON (v372) -----------------------------
     //
