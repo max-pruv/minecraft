@@ -342,7 +342,7 @@ fichier par fichier. Voici la table, et elle est le mécanisme entier :
 | Voie | Quand | Durée |
 | --- | --- | --- |
 | **Rapide** (`fumee.js`) | Contenu pur : monuments, villes, créatures, décor | ~3 min |
-| **Complète** (17 suites) | Dès qu'un gardien est atteint, ou si git est muet | ~1 h → 59 min (v224) → 48 min (v225) → 74 min à quinze suites (v251) → **51 min** (v255, quinze suites) → **108 min** à dix-sept (remesuré sur la v540, `monte.js` 37 min) ; **≈ 54 min en deux tranches** (`--tranche`, deux machines) |
+| **Complète** (17 suites) | Dès qu'un gardien est atteint, ou si git est muet | ~1 h → 59 min (v224) → 48 min (v225) → 74 min à quinze suites (v251) → **51 min** (v255, quinze suites) → **108 min** à dix-sept (remesuré sur la v540, `monte.js` 37 min) ; deux tranches : 54 et **87 min** (la seconde porte `reseau.js` et `maj.js`, mesurée par une session fille) ; et sur un conteneur plus lent, ≈ 170 min (v547 : `plafond.js`, sans navigateur, 4 min 36 → 7 min 30 — le conteneur, pas le code) |
 
 `SUITES` range les suites par durée MESURÉE, le chiffre en commentaire : c'est
 ce qui fait qu'un rouge de `metro.js` se voit à la quatorzième seconde et non à
@@ -630,11 +630,13 @@ des non-résultats. Cinq règles.
   suites choisies par durée mesurée (la plus longue d'abord, dans la tranche la
   moins chargée) ; chaque tranche joue ses suites ENTIÈRES, rien n'est sauté, et
   le portail est vert quand toutes le sont. Mesuré en deux tranches : 54 min ici
-  (`monte.js` et six autres) et TRANCHE2 dans une session cloud créée pour cela
-  (`create_session`, la branche poussée, la consigne « `node tout.js
-  --tranche=2/2` sans rien modifier ») — contre 108 en une. Le prix : un second
-  conteneur pendant une heure, et le premier tour de la session sœur, qui lit
-  ce fichier (≈ 5 $ mesuré). `monte.js` (37 min) est le plancher de toute
+  (`monte.js` et six autres) et **87 min** pour la seconde, dans une session
+  fille (`reseau.js` seule y prend 33 min) — contre 108 en une. La répartition
+  théorique (deux moitiés de 54) ne tient pas : les durées de `SUITES` sont
+  relevées sur UN conteneur, et la tranche qui porte les suites réseau tourne
+  plus lentement que leurs chiffres. Le prix : un second conteneur pendant une
+  heure et demie, et le premier tour de la session sœur, qui lit ce fichier
+  (≈ 5 $ mesuré). `monte.js` (37 min) est le plancher de toute
   répartition : trois tranches ne descendent pas sous lui. Le levier suivant est
   de couper `monte.js` en chapitres indépendants — ses pages (`tab`, `ciel`,
   `pageGta`, `emb`…) sont mêlées dans un seul fichier que plusieurs sessions
@@ -643,6 +645,33 @@ des non-résultats. Cinq règles.
   suites rouges (`rouges`) ; au portail suivant elles jouent en tête : un rouge
   qui revient se voit en minutes au lieu d'attendre derrière `monte.js`. L'ordre
   ne change aucun verdict — chaque suite monte son propre banc.
+- **LES VOISINES SE METTENT DE CÔTÉ PENDANT QU'UNE PAGE SE CHARGE — et
+  c'est le CANVAS qu'on réduit, jamais la fenêtre.** `reseau.js` seule,
+  relevée ligne par ligne (35 min 30) : `souffler` n'y coûtait que 17 s, le
+  temps était DANS les scénarios, et les plus lourds étaient ceux où l'hôte (et
+  un ami) restaient en jeu pendant qu'une nouvelle tablette se chargeait puis
+  rejoignait — la règle de la v440 (une page en jeu, quatre cœurs) vue d'un
+  autre côté. `banc.aLEcart` (appelé par `joueur`, `creerMonde`, `rejoindre`)
+  réduit le canvas de toute page déjà ouverte à 16 × 16 pendant le chargement
+  et la rend AVANT que le témoin reprenne la main ; le jeu remesure son canvas
+  toutes les 500 ms. Mesuré, même code, même conteneur : `reseau.js` seule
+  2 130 → 2 027 s (le passager 208 → 145 s, la même circulation 119 → 78 s,
+  « à trois » 132 → 101 s), mêmes verdicts hors intermittences déclarées ;
+  `monte.js` inchangée (3 250 s ancien banc, 3 277 au portail), parce qu'elle
+  met déjà sa page de côté elle-même. `BANC_DE_COTE=0` rejoue l'ancien banc.
+  **Mon premier jet réduisait la FENÊTRE (`mettreDeCote`) et rendait neuf
+  rouges** : une fenêtre redimensionnée perd le verrou du pointeur, et une page
+  de bureau passe en pause (`pointerlockchange` → `running` faux) sans en
+  ressortir — la voiture de l'hôte immobile, zéro bloc en vingt secondes
+  (`sonde-de-cote-pause.cjs` le montre en une exécution). `mettreDeCote` reste
+  juste pour une page TACTILE (celle de `monte.js`), qui n'a pas de verrou ;
+  sur une page de bureau, il met le jeu en pause.
+- **CE QUI RESTE DANS `reseau.js` EST DU TEMPS RÉSEAU VOULU.** Le silence
+  toléré, le phare, les présentations perdues, l'hôte sans courtier (181 s, un
+  rouge intermittent qui va au bout de ses bornes) : chaque scénario attend ce
+  qu'il éprouve, et le tempo du réseau est mesuré impossible (v501). Le gain
+  suivant n'est pas une attente à raboter, c'est une machine de plus
+  (`--tranche`).
 
 ## Le tempo du banc (v501) — une cadence se divise, une fenêtre calée sur le monde non
 
