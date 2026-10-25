@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## Banc — Le portail se répartit, et les voisines se taisent pendant un chargement (après la v556)
+
+Aucune livraison du jeu : seul le banc d'essai change (`tests/`), donc aucun
+`CACHE_VERSION` n'est dû — rien de ce qu'une tablette télécharge ne bouge.
+
+**Pourquoi.** Max : « accélérer la CI… beaucoup plus rapide, beaucoup plus
+sélective, à qualité égale ». Les sessions attendaient 75 à 170 minutes leur
+portail. Mesuré sur `origin/main` (v540) : **108 minutes** — `monte.js` 37,
+`reseau.js` 21, `maj.js` 10 —, des durées inscrites dans `tout.js` qui
+dataient de la v251, et un conteneur à quatre cœurs déjà saturé (3,1 à 3,6
+cœurs dans chaque suite de navigateur).
+
+**Ce que ça change.**
+- `npm test -- --tranche=k/n` joue une tranche des suites choisies, réparties
+  par durée mesurée ; n machines rendent le portail en parallèle, chaque suite
+  entière, rien de sauté. En deux tranches : 54 et 87 minutes, au lieu de 108.
+- Une suite rouge au dernier portail passe en tête au suivant : un rouge qui
+  revient se voit en minutes.
+- Pendant qu'une tablette se charge ou rejoint une partie, les pages déjà
+  ouvertes réduisent leur image à 16 × 16 et la retrouvent avant que le témoin
+  ne reprenne la main : `reseau.js` seule, 35 min 30 → 33 min 47.
+- Les dix-sept durées de `SUITES` sont remesurées.
+
+**Ce qui le prouve.**
+- `reseau.js` rejouée seule, même code, même conteneur, horodatée ligne par
+  ligne : 2 130 → 2 027 s, 88 verts des deux côtés hors intermittences déjà
+  déclarées (« un hôte sans courtier », « seule après le départ de l'hôte »).
+  Les scénarios où l'hôte attendait en jeu gagnent 30 à 60 s chacun.
+- `monte.js` avec l'ancien banc (`BANC_DE_COTE=0`) : 3 250 s, contre 3 277 au
+  portail avec le nouveau — inchangée, mêmes familles de rouges déclarés.
+- `sonde-de-cote-pause.cjs` : réduire la FENÊTRE met une page de bureau en
+  pause (verrou du pointeur perdu) ; réduire le CANVAS la laisse en jeu. Le
+  premier jet, à la fenêtre, avait rendu neuf rouges : c'est la sonde qui l'a
+  démonté.
+- La sélection à la ligne par couverture V8, écrite et rejouée sur les 24
+  dernières livraisons : **0 %** de gain. Elle est retirée, et la raison est
+  écrite dans `CLAUDE.md` pour qu'on ne la reconstruise pas.
+
+---
+
 ## v556 — Les amis bougent en temps réel
 
 **Pourquoi.** Max : « Tu le vois bouger de manière saccadée, toutes les
