@@ -170,6 +170,70 @@ const descendre = async (p, ms) => {
     bouchesNoyees.length === 0 && D.BOUCHES_METRO.length === 20,
     bouchesNoyees.map((b) => b.nom).join(', ') || `${D.BOUCHES_METRO.length} bouches`);
 
+  // --- Les voies droites le long des quais (v548) -------------------------
+  // La trace va d'arrêt en arrêt ; dans une station posée sur un virage, la
+  // voie décalée de ±4 selon son cap convergeait vers l'axe et traversait le
+  // quai central (|tr| < 2,4, plus le gabarit de 1,4) à ses bouts. On compte
+  // les points de voie DANS le quai, ligne par ligne, sur les lignes qui
+  // partagent l'axe de la station ; les bouts des terminus (le demi-tour du
+  // tiroir, déclaré) et les quais qui se chevauchent (Metro Center et
+  // McPherson Square, seize blocs) restent dans le compte : la barre les
+  // admet. Sur l'ancien code : 2 590 points, cinq stations sans pylône, 34
+  // rebroussements ; ici 478, aucune, zéro.
+  {
+    const tronc = Object.fromEntries(D.LIGNES.map((l) => [l.nom, l.tronc || l.nom]));
+    let dedans = 0;
+    for (const q of D.QUAIS_METRO) {
+      for (const l of D.LIGNES) {
+        if (!l.arrets.includes(q.nom) || tronc[l.nom] !== tronc[q.ligne]) continue;
+        const t = D.traceLigneMetro(l.nom);
+        for (let i = 0; i < t.length; i++) {
+          const a = t[i], b = t[(i + 1) % t.length];
+          if (Math.abs(a.y - 0.4 - q.y) > 3) continue;
+          for (let s = 0; s < 1; s += 0.25) {
+            const eu = a.x + (b.x - a.x) * s - D.WASHINGTON.x - q.u, ev = a.z + (b.z - a.z) * s - D.WASHINGTON.z - q.v;
+            const le = eu * q.du + ev * q.dv, tr = -eu * q.dv + ev * q.du;
+            if (Math.abs(le) <= 12 && Math.abs(tr) < 3.8) dedans++;
+          }
+        }
+      }
+    }
+    const sansPylone = D.QUAIS_METRO.filter((q) => !(q.pylones || []).length).map((q) => q.nom);
+    let replis = 0;
+    for (const l of D.LIGNES) {
+      const t = D.traceLigneMetro(l.nom);
+      for (let i = 1; i < t.length - 1; i++) {
+        const x1 = t[i].x - t[i - 1].x, z1 = t[i].z - t[i - 1].z, x2 = t[i + 1].x - t[i].x, z2 = t[i + 1].z - t[i].z;
+        if (x1 * x2 + z1 * z2 < 0) replis++;
+      }
+    }
+    verifier('la voie reste droite le long du quai : la rame ne roule plus sur son bord',
+      dedans < 1200 && sansPylone.length === 0,
+      `${dedans} points de voie dans le quai (barre 1200), sans pylône : ${sansPylone.join(', ') || 'aucune'}`);
+    verifier('et la voie redressée ne se replie nulle part sur elle-même', replis === 0,
+      `${replis} rebroussement(s) de voie`);
+    // Le creusement près du sol ne bouge pas : à moins de trois blocs, c'est
+    // ce qu'un enfant voit et ce sous quoi il bâtit — la v548 ne change que
+    // la profondeur, sans date neuve. L'empreinte de ce qui est posé à moins
+    // de trois blocs du sol sur toute l'emprise, gardée ou non, relevée sur la
+    // v547.
+    const { createHash } = require('crypto');
+    const { World } = await import('../src/world.js');
+    const w = new World(), E = D.EMPRISE_METRO_DC, h = createHash('sha256');
+    for (const garde of [false, true]) {
+      for (let x = E.x0; x <= E.x1; x++) for (let z = E.z0; z <= E.z1; z++) {
+        const sol = Math.floor(w.terrainHeight(x, z));
+        const l = [];
+        D.creuserMetroWashington(x, z, sol, (dy, id) => { if (dy > -3) l.push(dy + ':' + id); }, garde);
+        h.update(l.sort().join(',') + ';');
+      }
+    }
+    const surface = h.digest('hex');
+    const SURFACE_METRO_V547 = '3cc2f34779378f60367c9da3939ad084e9c750aba96eb946c5b09ea553746d93';
+    verifier('et rien ne change à moins de trois blocs du sol', surface === SURFACE_METRO_V547,
+      `${surface.slice(0, 16)} pour ${SURFACE_METRO_V547.slice(0, 16)}`);
+  }
+
   // --- Le métro sous toute la boîte, pas seulement le cercle (v478) --------
   // La ville s'arrête au cercle du registre (187 blocs) ; la boîte et les
   // tiroirs des terminus vont au-delà. Sur l'ancien code, rien n'y était
