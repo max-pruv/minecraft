@@ -4532,7 +4532,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const fs = require('fs');
       const path = require('path');
       const lues = new Set();
-      for (const [dossier, env] of [['../vendor/voitures', true], ['../vendor/humains', false]]) {
+      for (const [dossier, env] of [['../vendor/voitures', true], ['../vendor/humains', false], ['../vendor/avions', false]]) {
+        if (!fs.existsSync(path.join(__dirname, dossier))) continue;
         const d = path.join(__dirname, dossier);
         for (const f of fs.readdirSync(d).filter((x) => x.endsWith('.glb'))) {
           const sigs = mod.signaturesDuGlb(mod.jsonDuGlb(fs.readFileSync(path.join(d, f))), { env });
@@ -4544,7 +4545,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         manquantes: [...lues].filter((sg) => !table.has(sg)),
         mortes: [...table].filter((sg) => !lues.has(sg)) };
     })();
-    verifier('la table des programmes à chauffer est exactement ce que les fichiers des voitures et des humains contiennent',
+    verifier('la table des programmes à chauffer est exactement ce que les fichiers des voitures, des humains et des avions contiennent',
       !signatures.err && signatures.lues >= 15
         && signatures.manquantes.length === 0 && signatures.mortes.length === 0,
       JSON.stringify(signatures));

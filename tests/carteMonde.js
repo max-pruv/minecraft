@@ -4864,9 +4864,29 @@ const VRAIES_KM = [
       const av = await import('./src/avions.js');
       const aero = await import('./src/aeroport.js');
       const GAB = aero.GABARITS_AVION || {};
-      const out = {};
+      // LES MODÈLES SCULPTÉS ET LES MODÈLES DÉPOSÉS (v563), nommés un par un.
+      // `MODELES_AVION` rend le modèle déposé si son fichier est arrivé, le
+      // sculpté sinon : appelé tel quel, ce témoin mesurerait l'un ou l'autre
+      // selon l'heure — un tirage. On mesure donc les deux, explicitement :
+      // le sculpté (le secours, et `?avions=0`) et chaque variante déposée,
+      // fichiers attendus. Sur l'ancien code il n'y a que les trois sculptés.
+      const liste = [];
       for (const [nom, faire] of Object.entries(av.MODELES_AVION || {})) {
+        const sculpte = nom === 'avionligne' ? av.avionDeLigneSculpte : nom === 'chasseur' ? av.avionDeChasseSculpte : null;
+        liste.push([nom, nom, sculpte || faire, false]);
+      }
+      if (av.AVIONS_GLB && av.chargerAvionsDeposes) {
+        await av.chargerAvionsDeposes();
+        for (const [cle, def] of Object.entries(av.AVIONS_GLB)) {
+          liste.push([cle, def.espece, () => av.MODELES_AVION[def.espece]({ variante: cle }), true]);
+        }
+      }
+      const out = {};
+      for (const [nom, espece, faire, depose] of liste) {
         const g = faire();
+        // un modèle déposé qui n'a pas pu se charger rend le sculpté : on le
+        // dit au lieu de le mesurer sous le nom d'un autre
+        if (depose && g.userData.variante !== nom) { out[nom] = { absent: true, espece, depose }; continue; }
         const bb = new THREE.Box3().setFromObject(g);
         const sommets = [];
         g.traverse((o) => {
@@ -4888,18 +4908,21 @@ const VRAIES_KM = [
         // « 0/0 » sur l'ancien code : un témoin qui ne mesure rien n'échoue pas
         // proprement, il s'effondre.
         const bout = sommets.filter((v) => Math.abs(v[0]) >= 0.85 * xm).map((v) => v[2]);
-        out[nom] = {
+        out[nom] = { espece, depose,
           long: +(bb.max.z - bb.min.z).toFixed(2),
-          reserve: GAB[nom] ? GAB[nom].long : null,
+          reserve: GAB[espece] ? GAB[espece].long : null,
           envergure: +(bb.max.x - bb.min.x).toFixed(2),
-          envAnnoncee: GAB[nom] ? (GAB[nom].envergure ?? null) : null,
+          envAnnoncee: GAB[espece] ? (GAB[espece].envergure ?? null) : null,
+          haut: +(bb.max.y - bb.min.y).toFixed(2),
+          hautAnnonce: GAB[espece] ? (GAB[espece].haut ?? null) : null,
           sous: +bb.min.y.toFixed(2),
           saumon: bout.length ? +(Math.max(...bout) - Math.min(...bout)).toFixed(2) : null,
         };
       }
       return out;
     });
-    const appareils = Object.entries(dessin);
+    const appareils = Object.entries(dessin).filter(([, d]) => !d.depose);
+    const deposes = Object.entries(dessin).filter(([, d]) => d.depose);
     // 1. IL TIENT DANS SON POSTE. `aeroport.js` réserve seize blocs à l'avion
     //    de ligne et dimensionne les postes dessus ; le modèle en mesurait
     //    21,5, et le Concorde trente et un pour vingt réservés — à cheval sur
@@ -4937,6 +4960,77 @@ const VRAIES_KM = [
     //    autres sans le déclarer bon avant la correction. Un témoin qui rend
     //    un seul nombre pour trois cas ne se démonte pas — celui-ci dit lequel
     //    il garde, et le delta du Concorde se juge en capture.
+    // 4. LES AVIONS DÉPOSÉS TIENNENT DANS LES GABARITS DE LEUR ESPÈCE (v563).
+    //    Postes, pistes et prolongements sont dimensionnés sur `GABARITS_AVION`
+    //    (v278, v530) ; un modèle d'artiste remis à la longueur de son espèce
+    //    doit aussi tenir dans son envergure et sa hauteur annoncées — plus
+    //    petit, il laisse de la marge ; plus grand, ses ailes mordraient le
+    //    voisin ou l'herbe. Et il est posé sur ses roues.
+    verifier('les avions déposés (A320, A321, F-35) tiennent dans le gabarit de leur espèce, posés sur leurs roues',
+      deposes.length === 3 && deposes.every(([, d]) => !d.absent && d.long <= d.reserve + 0.05 && d.long >= d.reserve - 0.1
+        && d.envergure <= d.envAnnoncee + 0.15 && d.haut <= d.hautAnnonce + 0.15 && d.sous >= -0.02),
+      deposes.map(([n, d]) => d.absent ? `${n} absent` : `${n} ${d.long}/${d.reserve} env ${d.envergure}/${d.envAnnoncee} haut ${d.haut}/${d.hautAnnonce} sous ${d.sous}`).join(' · ') || 'aucun avion déposé');
+    // 5. ET ILS TIENNENT LE CONTRAT DES AVIONS DU JEU (v563), sans quoi le
+    //    train ne se replie pas, la porte ne s'ouvre pas et la flamme sort de
+    //    nulle part. Lu sur le modèle que le jeu fabrique : trois jambes de
+    //    train, le membre que la porte ouvre, une flamme par tuyère DANS la
+    //    boîte du modèle, des feux de navigation. Et lu dans les FICHIERS :
+    //    les yeux de dessin animé de l'archive de l'A321 sont partis, le
+    //    chasseur a sa verrière, aucune extension que le jeu ne charge pas, et
+    //    un budget de triangles (le F-35 de l'archive en portait 81 000).
+    const contrat = await tab.evaluate(async () => {
+      const THREE = await import('three');
+      const av = await import('./src/avions.js');
+      if (!av.AVIONS_GLB) return { absent: true };
+      await av.chargerAvionsDeposes();
+      const out = {};
+      for (const [cle, def] of Object.entries(av.AVIONS_GLB)) {
+        const g = av.MODELES_AVION[def.espece]({ variante: cle });
+        const ud = g.userData, m = ud.membres || {};
+        const flammes = new Set(ud.tuyeres || []);
+        const nav = ud.feuxNav ? new Set([ud.feuxNav.rouge, ud.feuxNav.vert, ud.feuxNav.eclat]) : new Set();
+        const b = new THREE.Box3(), bb = new THREE.Box3();
+        g.updateMatrixWorld(true);
+        g.traverse((o) => {
+          for (let q = o; q; q = q.parent) if (flammes.has(q) || nav.has(q)) return;
+          if (!o.isMesh || !o.geometry) return;
+          if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+          bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); b.union(bb);
+        });
+        const dedans = (ud.tuyeres || []).every((f) => f.position.x >= b.min.x && f.position.x <= b.max.x
+          && f.position.y >= b.min.y && f.position.y <= b.max.y && f.position.z >= b.min.z - 0.3 && f.position.z <= b.max.z + 0.3);
+        out[cle] = { variante: ud.variante, train: (ud.train || []).length,
+          ouvrant: !!(ud.porte && m[ud.porte.ouvrant]), tuyeres: (ud.tuyeres || []).length, attendues: def.tuyeres.length,
+          dedans, feux: !!ud.feuxNav };
+      }
+      return out;
+    });
+    const fichiersAvions = (() => {
+      const fs = require('fs'), path = require('path');
+      const d = path.join(__dirname, '../vendor/avions');
+      if (!fs.existsSync(d)) return { absent: true };
+      const out = {};
+      for (const f of fs.readdirSync(d).filter((x) => x.endsWith('.glb'))) {
+        const buf = fs.readFileSync(path.join(d, f));
+        const json = JSON.parse(buf.slice(20, 20 + buf.readUInt32LE(12)).toString('utf8'));
+        const noms = (json.nodes || []).map((n) => n.name || '');
+        let tris = 0;
+        for (const me of json.meshes || []) for (const pr of me.primitives) {
+          tris += (pr.indices !== undefined ? json.accessors[pr.indices].count : json.accessors[pr.attributes.POSITION].count) / 3;
+        }
+        out[f] = { tris: Math.round(tris), yeux: noms.filter((n) => /eye/i.test(n)).length,
+          extensions: json.extensionsUsed || [], train: ['train_nez', 'train_gauche', 'train_droit'].filter((n) => noms.includes(n)).length,
+          verriere: noms.includes('verriere'), racine: noms.includes('Avion') };
+      }
+      return out;
+    })();
+    verifier('les avions déposés tiennent le contrat du jeu — train, porte, flammes dans la tuyère, feux, fichiers propres',
+      !contrat.absent && !fichiersAvions.absent && Object.keys(contrat).length === 3
+        && Object.entries(contrat).every(([c, r]) => r.variante === c && r.train === 3 && r.ouvrant && r.tuyeres === r.attendues && r.dedans && r.feux)
+        && Object.values(fichiersAvions).every((f) => f.racine && f.yeux === 0 && f.extensions.length === 0 && f.tris <= 40000)
+        && fichiersAvions['airbus-a321.glb'] && fichiersAvions['airbus-a321.glb'].train === 3
+        && fichiersAvions['chasseur-f35.glb'] && fichiersAvions['chasseur-f35.glb'].train === 3 && fichiersAvions['chasseur-f35.glb'].verriere,
+      JSON.stringify({ contrat, fichiersAvions }));
     const gardes = appareils.filter(([n]) => n !== 'concorde');
     verifier('une aile s\'effile — le saumon est court, pas une planche',
       gardes.length === 2

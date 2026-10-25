@@ -261,4 +261,7 @@ vendor/           three.js r160 + GLTFLoader (MIT — see THREE_LICENSE),
                   voiture.glb — the drivable car's 3D model (VOITURE_LICENSE)
                   voitures/police-car.glb, moto-police.glb, humains/policier.glb —
                   CC-BY-4.0, credits in their LICENSE.md
+                  avions/ — the A320, A321 and F-35 models (avions/LICENSE.md;
+                  the A320 is CC-BY-NC-SA: non-commercial, share-alike)
+scripts/          convertir-avions.py fits a Sketchfab plane to the game's contract
 ```

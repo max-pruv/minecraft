@@ -67,6 +67,8 @@ import { Atelier } from './modeles.js';
 // et l'on se retrouve avec un Concorde plus long que son poste. `aeroport.js`
 // ne tire aucune bibliothèque 3D, l'import est donc gratuit dans les deux sens.
 import { GABARITS_AVION } from './aeroport.js';
+import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { partagerTout } from './liberer.js';
 
 const BLANC = 0xf0f0ea;
 const BLEU = 0x1a3a8c;
@@ -302,20 +304,26 @@ export function matiereAdditive(couleur, opacite) {
 // qu'on redessine ne laisse pas un feu dans le vide. Nés cachés, comme la
 // flamme : `fun.js` les allume aux commandes, l'éclat clignote, et la
 // descente les éteint. Aucune lampe (v248).
-function feuxNavigation(g) {
-  g.updateMatrixWorld(true);
-  const v = new THREE.Vector3();
+// La mesure se garde par modèle déposé (`memo`, v563) : un chasseur déposé
+// porte vingt-huit mille sommets, et trois en naissent à chaque base.
+function feuxNavigation(g, memo = null) {
   let gauche = null, droite = null, queue = null;
-  g.traverse((o) => {
-    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
-    const pos = o.geometry.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
-      if (!gauche || v.x < gauche.x) gauche = v.clone();
-      if (!droite || v.x > droite.x) droite = v.clone();
-      if (!queue || v.z > queue.z + 1e-3 || (Math.abs(v.z - queue.z) <= 1e-3 && v.y > queue.y)) queue = v.clone();
-    }
-  });
+  if (memo && memo.gauche) ({ gauche, droite, queue } = memo);
+  else {
+    g.updateMatrixWorld(true);
+    const v = new THREE.Vector3();
+    g.traverse((o) => {
+      if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+      const pos = o.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+        if (!gauche || v.x < gauche.x) gauche = v.clone();
+        if (!droite || v.x > droite.x) droite = v.clone();
+        if (!queue || v.z > queue.z + 1e-3 || (Math.abs(v.z - queue.z) <= 1e-3 && v.y > queue.y)) queue = v.clone();
+      }
+    });
+    if (memo && gauche) Object.assign(memo, { gauche, droite, queue });
+  }
   if (!gauche) return null;
   // rentrés de leur rayon : un feu ne doit pas allonger ni élargir le modèle,
   // dont les postes de l'aéroport lisent la longueur et l'envergure (v278)
@@ -401,7 +409,7 @@ function fini(a, zPrincipal = 0, porte = null) {
 // 35,8 d'envergure, 4,0 de fuselage, 11,8 au sommet de la dérive. À seize
 // blocs de long, l'échelle est de 0,426 bloc par mètre, et tout ce qui suit en
 // découle.
-export function avionDeLigne() {
+export function avionDeLigneSculpte() {
   const a = new Atelier();
   const L = GABARITS_AVION.avionligne.long;      // 16
   const k = L / 37.6;                            // 0,426 bloc par mètre
@@ -525,7 +533,7 @@ export function concorde() {
 // 15,3 m de long, 10,9 d'envergure, 5,3 au sommet. À dix blocs, l'échelle est
 // de 0,654 bloc par mètre — c'est le plus trapu des trois, et le seul dont le
 // fuselage soit large par rapport à sa longueur (2,0 m pour 15,3).
-export function avionDeChasse() {
+export function avionDeChasseSculpte() {
   const a = new Atelier();
   const L = GABARITS_AVION.chasseur.long;        // 10
   const k = L / 15.3;                            // 0,654
@@ -631,6 +639,161 @@ export function accesAvion(porte) {
       r: [0, 0, Math.atan2(y, course)] });
   }
   return { groupe: a.finir(), pied: [xb - 0.4, 0, z], haut: [xp + 0.2, y, z] };
+}
+
+// --- LES APPAREILS DÉPOSÉS (v563) --------------------------------------------
+//
+// Max a déposé trois modèles : un A320, un A321 et un F-35 (archives
+// Sketchfab, licences et modifications dans vendor/avions/LICENSE.md). Ils
+// deviennent l'avion de ligne et le chasseur du jeu ; le Concorde reste
+// sculpté. `scripts/convertir-avions.py` les met au CONTRAT : un bloc par
+// unité, la longueur de `GABARITS_AVION` (les postes de l'aéroport et les
+// pistes sont dimensionnés sur elle, rien ne bouge au sol), le nez vers −z,
+// les roues à y = 0, et un nœud par pièce qui bouge — `train_nez`,
+// `train_gauche`, `train_droit`, pivot au sommet de la jambe, et la
+// `verriere` du chasseur, pivot à son bord avant.
+//
+// CE QUI EST FONCTION RESTE À L'ATELIER, ET LA FICHE DE CHAQUE MODÈLE LE
+// DIT. Le modèle d'artiste fait la silhouette ; le train qui se replie, la
+// porte qui s'ouvre, les flammes et les feux de navigation suivent la
+// discipline de la v261, de la v381, de la v264 et de la v533 :
+//   - `trainAtelier` : le A320 de l'archive vole train rentré ; le jeu lui
+//     fabrique ses trois jambes, aux cotes du vrai appareil (roulette à
+//     5,07 m du nez, empattement 12,64 m, voie 7,59 m, à 0,4249 bloc/m) ;
+//   - `porte` et `panneau` : une porte d'avion de ligne déposé est DESSINÉE
+//     sur la livrée ; le panneau qui pivote n'apparaît qu'ouvert (`cachee`),
+//     avec la baie sombre derrière — une plaque plate posée sur un fuselage
+//     courbe flotterait de deux dixièmes au bord ;
+//   - `tuyeres` : MESURÉES sur le modèle par le convertisseur (la nacelle,
+//     son rayon, son bout arrière), jamais écrites à l'œil ;
+//   - `trainPrincipal` : le z de l'essieu principal, autour duquel le nez se
+//     lève (le pivot du nœud, lu dans le fichier).
+// Les sièges des passagers vivent dans la fiche de l'espèce (montures.js) et
+// valent pour le modèle sculpté comme pour le modèle déposé : mesurés au
+// rayon sur les deux (axe du fuselage 1,62 et 1,55, plafond 2,51 et 2,35).
+export const AVIONS_GLB = {
+  a320: {
+    espece: 'avionligne', fichier: 'airbus-a320.glb', nom: 'A320',
+    trainAtelier: { nez: { z: -5.85, r: 0.2 }, principal: { x: 1.61, r: 0.26 }, zPrincipal: -0.48, ventre: 0.76 },
+    trainPrincipal: -0.48,
+    tuyeres: [{ x: -2.443, y: 0.696, z: -0.75, rayon: 0.278 }, { x: 2.443, y: 0.696, z: -0.75, rayon: 0.278 }],
+    // la porte avant gauche de la livrée, relevée sur la capture de côté
+    // (1,94 bloc derrière le nez) ; le flanc y est à x −0,80 à mi-hauteur
+    panneau: { x: -0.82, y: 1.62, z: -6.35 },
+    porte: { type: 'escalier', x: -0.84, y: 1.12, z: -6.05, demiLong: 8,
+      ouvrant: 'porte_avant', baie: 'porte_baie', cachee: true, axe: 'y', angle: -1.5 },
+  },
+  a321: {
+    espece: 'avionligne', fichier: 'airbus-a321.glb', nom: 'A321',
+    trainPrincipal: 0.287,
+    tuyeres: [{ x: -2.104, y: 0.913, z: 0.417, rayon: 0.312 }, { x: 2.109, y: 0.904, z: 0.311, rayon: 0.306 }],
+    panneau: { x: -0.77, y: 1.55, z: -6.5 },
+    porte: { type: 'escalier', x: -0.8, y: 1.07, z: -6.2, demiLong: 8,
+      ouvrant: 'porte_avant', baie: 'porte_baie', cachee: true, axe: 'y', angle: -1.5 },
+  },
+  f35: {
+    espece: 'chasseur', fichier: 'chasseur-f35.glb', nom: 'F-35',
+    trainPrincipal: 1.443,
+    tuyeres: [{ x: 0, y: 1.24, z: 3.986, rayon: 0.367 }],
+    // l'échelle devant la verrière, qui bascule vers l'avant : son pivot est
+    // au bord avant, et un angle négatif lève son bord arrière
+    porte: { type: 'echelle', x: -0.5, y: 1.55, z: -3.0, demiLong: 5,
+      ouvrant: 'verriere', axe: 'x', angle: -0.9 },
+  },
+};
+// L'ordre est la préférence : une espèce prend la première variante prête.
+export const VARIANTES_AVION = { avionligne: ['a320', 'a321'], chasseur: ['f35'] };
+
+// Le modèle sculpté se rejoue par `?avions=0`, pour comparer au même endroit
+// (la discipline de `?asset=0`, v545) — jamais un réglage du jeu.
+const ADRESSE_AVIONS = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+const SANS_DEPOSES = !!ADRESSE_AVIONS && ADRESSE_AVIONS.get('avions') === '0';
+
+const protosAvion = new Map();     // variante → racine du glb, prête à cloner
+const feuxMemo = new Map();        // variante → { gauche, droite, queue }
+let chargementAvions = null;
+export function avionsPrets() { return [...protosAvion.keys()]; }
+
+// UNE FOIS, APRÈS LA PREMIÈRE IMAGE (main.js, à côté des corps humains) : 2,4
+// Mo au total, dans le cache immuable du service worker. Un avion qui naît
+// avant l'arrivée de son fichier reste sculpté pour toute sa vie (v547 : une
+// monture ne change pas de modèle sous les yeux), et un fichier absent ne
+// casse rien — le modèle sculpté est le secours, comme la coque d'une voiture.
+export function chargerAvionsDeposes() {
+  if (chargementAvions || typeof document === 'undefined' || SANS_DEPOSES) return chargementAvions;
+  chargementAvions = Promise.all(Object.entries(AVIONS_GLB).map(([cle, def]) =>
+    new GLTFLoader().loadAsync('./vendor/avions/' + def.fichier).then((gltf) => {
+      const racine = gltf.scene.getObjectByName('Avion') || gltf.scene;
+      // le prototype est à toute la flotte : `liberer` ne rend jamais ce
+      // qu'un avion qui s'en va tient de lui (v495)
+      partagerTout(racine);
+      protosAvion.set(cle, racine);
+    }).catch((e) => { console.warn('avion déposé absent', def.fichier, e); })));
+  return chargementAvions;
+}
+
+// La variante qu'un appareil prend : celle qu'on demande (`voeu.variante`, ou
+// `voeu.flotte` — c'est le champ que la position d'un ami emporte, v253) si
+// son fichier est là, sinon la première prête de son espèce.
+export function varianteAvion(espece, voeu = null) {
+  if (SANS_DEPOSES) return null;
+  const liste = VARIANTES_AVION[espece] || [];
+  const voulue = voeu && (voeu.variante || voeu.flotte);
+  if (voulue && liste.includes(voulue) && protosAvion.has(voulue)) return voulue;
+  return liste.find((v) => protosAvion.has(v)) || null;
+}
+
+// QUEL AVION DE LIGNE SE GARE OÙ : l'A321, le plus long des deux, sur les
+// grandes plates-formes (`hub`), l'A320 ailleurs et à Roissy, sa maison. Une
+// règle lue sur le profil de l'aérodrome — jamais un tirage : deux tablettes
+// voient le même appareil au même poste.
+export function varianteDuPoste(espece, profil) {
+  if (espece !== 'avionligne') return null;
+  return profil === 'hub' ? 'a321' : 'a320';
+}
+
+function depuisModele(cle) {
+  const def = AVIONS_GLB[cle];
+  const a = new Atelier();
+  if (def.trainAtelier) trains(a, def.trainAtelier);
+  if (def.panneau) {
+    const p = def.panneau;
+    a.membre('porte_avant', [p.x, p.y, p.z]);
+    a.boite(0xe6e6e0, { p: [p.x - 0.03, p.y - 0.05, p.z + 0.3], e: [0.05, 0.9, 0.6] });
+    a.membre('porte_baie', [p.x, p.y, p.z]);
+    a.boite(SOMBRE, { p: [p.x - 0.01, p.y - 0.05, p.z + 0.3], e: [0.03, 0.86, 0.56] });
+    a.membre('tronc');
+  }
+  const g = a.finir();
+  const m = g.userData.membres;
+  if (m.porte_avant) { m.porte_avant.visible = false; m.porte_baie.visible = false; }
+  // le modèle d'artiste : son corps, et ses pièces qui bougent deviennent des
+  // membres — le même contrat que celui de l'atelier, lu par fun.js et
+  // embarquement.js sans qu'ils sachent d'où vient l'avion
+  const copie = protosAvion.get(cle).clone(true);
+  for (const enfant of [...copie.children]) {
+    g.add(enfant);
+    if (enfant.name && enfant.name !== 'corps') m[enfant.name] = enfant;
+  }
+  g.userData.porte = def.porte ? { ...def.porte } : null;
+  if (!feuxMemo.has(cle)) feuxMemo.set(cle, {});
+  g.userData.feuxNav = feuxNavigation(g, feuxMemo.get(cle));
+  g.userData.tuyeres = def.tuyeres.map((t) => { const f = flamme(t); g.add(f); return f; });
+  g.userData.legs = [];
+  g.userData.train = ['train_nez', 'train_gauche', 'train_droit'].map((n) => m[n]).filter(Boolean);
+  g.userData.trainPrincipal = def.trainPrincipal;
+  g.userData.variante = cle;
+  g.userData.modeleAvion = def.fichier;
+  return g;
+}
+
+export function avionDeLigne(voeu) {
+  const v = varianteAvion('avionligne', voeu);
+  return v ? depuisModele(v) : avionDeLigneSculpte();
+}
+export function avionDeChasse(voeu) {
+  const v = varianteAvion('chasseur', voeu);
+  return v ? depuisModele(v) : avionDeChasseSculpte();
 }
 
 export const MODELES_AVION = {

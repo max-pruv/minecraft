@@ -214,3 +214,19 @@ de police, et dit si la moto y est encore (`surLaDalle`).
 | # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
 | --- | --- | --- | --- | --- | --- | --- |
 | 33 | moyenne | poursuite de police (v562), iPhone et iPad | [jour](revue-ecran/v562-police-moto/ipad-police-poursuite-jour.jpg) | Pendant la poursuite, la voiture de police roule dix blocs **derrière** l'enfant, donc derrière la caméra de poursuite (6,4) : à l'écran, seule la pilule des étoiles dit qu'elle est là, et la sirène. Au contrôle, elle se gare devant et se voit (v562). | Juger sur la tablette ; si l'enfant ne comprend pas qui le suit, un repère au bord de l'écran du côté de la police, ou la caméra qui se retourne un instant quand elle arrive. Décision de Max. | `src/patrouille.js`, `src/sensations.js` |
+
+## Le relevé de la v563 (trois vrais avions : A320, A321 et F-35), 25 octobre 2026
+
+États `avion-sol`, `avion-vol`, `aeroport-roulage`, `aeroport-ciel`, iPhone
+et iPad, jour et nuit, plus les vues de modèle de
+`tests/sonde-avions-deposes.cjs` et la porte qui s'ouvre de
+`tests/sonde-embarquement-deposes.cjs` (préfixe `modele-`), dans
+`docs/revue-ecran/v563-avions/`. L'Airbus se lit au premier regard (livrée
+A320, réacteurs, train), le F-35 aussi ; l'escalier se pose contre la porte
+dessinée sur la livrée, la verrière du F-35 bascule. Rien ne change dans
+l'interface.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 34 | basse | au roulage, de jour (v563) | [roulage](revue-ecran/v563-avions/ipad-aeroport-roulage-jour.jpg) | Les feux de navigation font deux grosses boules rouge et verte au bout des ailes vues de la caméra de poursuite ; leur taille est celle de la v533, la même sur l'avion sculpté. | Réduire le rayon des lentilles de navigation, ou les estomper de jour (à mesurer avec le témoin des feux de monte.js). | `src/avions.js` |
+| 35 | basse | Orly vu du ciel (v563) | (aucune — capture locale) | Sur l'état `aeroport-ciel`, l'aire d'Orly est vide : l'aéroportiste ne fait naître les appareils qu'à portée de l'enfant, et la sonde prend la vue avant. Antérieur. | Faire attendre à la sonde un appareil au poste. | `tests/sonde-revue-ecran.cjs` |

@@ -22,6 +22,7 @@ import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR } from './world.js';
 import { aeroportPres, postesAvion } from './aeroport.js';
+import { chargerAvionsDeposes, varianteDuPoste } from './avions.js';
 import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
@@ -3842,7 +3843,8 @@ function aeroportiste(dt) {
     const dejaLa = animalManager.animals.some((b) => b.def.key === espece
       && Math.hypot(b.pos.x - x, b.pos.z - z) < 8);
     if (dejaLa) continue;
-    const ne = animalManager.invoquer(espece, x, z);
+    const variante = varianteDuPoste(espece, a.profil);
+    const ne = animalManager.invoquer(espece, x, z, false, variante ? { variante } : null);
     // LE CAP N'EST PLUS UN TIRAGE AU SORT. `animals.js` donne à toute bête un
     // yaw aléatoire ; l'espèce étant `immobile`, un avion garé pointait donc
     // dans une direction quelconque, pour toujours. Le poste publie son cap,
@@ -5309,7 +5311,9 @@ function startNetSession(code, isHost, patience) {
     // par les dégâts (`d`, v344) — même s'il n'a pas de siège dessiné.
     if (a && a.def && (a.def.siege || a.def.pilote)) {
       const u = (a.mesh && a.mesh.userData) || {};
-      p.v = { k: a.def.key, f: u.flotte || null };
+      // `f` : le modèle de flotte d'une voiture, ou la variante d'un avion
+      // déposé (v563) — l'ami le dessine avec le même modèle
+      p.v = { k: a.def.key, f: u.flotte || u.variante || null };
       // SA COULEUR ET SON ORIGINE (v305) : l'ami la voit dans la teinte que la
       // rue lui avait donnée, et retire de SA rue la voiture qu'on a prise
       if (typeof u.peinture === 'number') p.v.c = u.peinture;
@@ -9177,6 +9181,9 @@ requestAnimationFrame(() => {
   // (voir humains.js). C'était le « vingt secondes avant de pouvoir cliquer »
   // de Max sur l'iPad de quatre ans.
   chargerHumains();
+  // Les avions déposés (v563), 2,4 Mo : même moment, même raison. Un avion
+  // garé qui naîtrait avant eux reste sculpté (avions.js).
+  chargerAvionsDeposes();
   // Et l'on chauffe la sonde des reflets ici, au point d'apparition : ses six
   // faces compilent les programmes du décor vu depuis une cible cubique —
   // mesuré au banc, vingt-six programmes de plus à l'arrivée de la première
