@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v546 — Une nouvelle Lamborghini Revuelto
+
+**Pourquoi.** Max a fourni une adaptation de la Revuelto plus fidèle que le
+modèle paramétrique de la flotte (« Integrate ») : un modèle publié par BRO sous
+licence CC-BY-4.0, ses sept textures d'origine, des pivots de roues et de volant
+indépendants. Le paquet se déclare lui-même « work in progress » : jointures de
+panneaux et habitacle à reprendre, 4,739 m de long contre 4,947 m réels,
+portières non séparées.
+
+**Ce que ça change.**
+- Partout où la flotte met une Revuelto — dans la rue, au garage, sous les
+  mains de l'enfant —, c'est la nouvelle qui s'affiche. L'identifiant
+  `lamborghini-revuelto.glb` des garages et du réseau ne change pas : le champ
+  `asset` de FLOTTE choisit le fichier chargé (`asset || fichier`), le même
+  mécanisme que la 911 reconstruite, et l'URL neuve entre dans le cache
+  immuable sans retélécharger la flotte. L'ancienne reste sur le disque.
+- Pas d'animation de portière (`portiere: false`) : elle n'est pas séparée
+  dans le modèle.
+- Le crédit exigé par la licence est dans `vendor/voitures/LICENSE.md`, avec
+  la liste des modifications. Le jeu n'a pas d'écran de crédits.
+- Prix mesuré (`sonde-revuelto.cjs`, banc en rendu logiciel, ordre alterné) :
+  3,37 Mo téléchargés une fois (2,29 Mo compressés, contre 1,46 et 1,01) ;
+  31 Mo de textures tenues contre 14 ; 102 maillages contre 34 ; au volant
+  +35 à +48 appels de dessin et +45 000 triangles, et 4,7 à 5,3 images par
+  seconde contre 7,5 à 9 sur ce banc.
+
+**Ce qui le prouve.**
+- Un témoin neuf dans `monte.js` : la Revuelto se charge par son `asset`, au
+  sol, à 4,74 m, ses quatre roues, son volant et ses sept images, sans
+  portière, et l'enfant y est assis sous le pavillon, face à la route (rouge
+  sur l'ancien code : c'est l'ancien fichier qui se charge).
+- `degats.js` mesure ses feux de détresse sur la tôle avec les sept autres.
+- `monte.js` : la table des signatures lit le fichier neuf (quatre signatures
+  ajoutées) et chaque roue tourne autour de son essieu ; zéro programme né en
+  dessinant le modèle après la chauffe, au volant ou dans la rue.
+- Revue d'écran côte à côte, iPhone et iPad, jour et nuit (dans la PR).
+
 ## v545 — Une nouvelle Porsche 911
 
 **Pourquoi.** Max a fait reconstruire la 911 GT3 RS (992) et en a approuvé le

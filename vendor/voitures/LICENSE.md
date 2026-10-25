@@ -33,6 +33,36 @@ en les MESURANT : elle ne touche à rien quand le manifeste est déjà respecté
 pour que les cinquante d'origine ne changent pas d'un pixel. Même usage privé
 et familial.
 
+**La Revuelto adaptée (octobre 2026)** — `lamborghini-revuelto-wip.glb`,
+fournie par Max, remplace à l'affichage `lamborghini-revuelto.glb` (gardée sur
+le disque ; l'identifiant `fichier` des sauvegardes ne change pas, le champ
+`asset` de FLOTTE choisit le fichier chargé). Ce n'est PAS un modèle
+paramétrique : c'est l'adaptation d'un modèle publié sous licence
+**Creative Commons Attribution 4.0** (CC-BY-4.0), qui exige le crédit
+ci-dessous, recopié tel quel de son `ATTRIBUTION.txt` :
+
+> This work is based on "Black Lamborghini_revuelto"
+> (https://sketchfab.com/3d-models/black-lamborghini-revuelto-1a00d7d7fea6492bb960ec595cf79464)
+> by BRO (https://sketchfab.com/musawork786) licensed under CC-BY-4.0
+> (http://creativecommons.org/licenses/by/4.0/)
+
+Modifications apportées à l'œuvre d'origine (paquet de Max, puis ce dépôt) :
+- normalisation uniforme de l'échelle sur l'empattement (2,779 m) ;
+- transformations « cuites » dans la géométrie, aucune simplification ni
+  subdivision ;
+- pivots de roue (`Wheel_FL/FR/RL/RR`) et de volant (`Interior_SteeringWheel`)
+  indépendants, étriers fixes ;
+- réglage des matériaux, textures d'origine restaurées (sept images) ;
+- dans ce dépôt : aucune modification du fichier ; le jeu le pose au manifeste
+  à l'exécution (`normaliserVoiture`, rotation π) et repeint sa laque comme
+  celle de la flotte.
+
+Travail en cours de l'aveu même du paquet (jointures de panneaux, habitacle,
+longueur 4,739 m contre 4,947 m réels, portières non séparées — d'où
+`portiere: false`). Le modèle n'est affilié ni à Lamborghini ni à Sketchfab.
+Le visualiseur three.js du paquet n'est pas repris. Les rendus et le rapport de
+fabrication sont dans `docs/revuelto/`. Même usage privé et familial.
+
 Caractéristiques communes (héritées du manifeste, le code s'y fie) :
 - unités en mètres, +Y vers le haut, **+Z vers le nez**, origine au centre
   du corps, roues posées à y = 0 — d'où la rotation π unique au chargement ;

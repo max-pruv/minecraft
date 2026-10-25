@@ -1,5 +1,22 @@
 # Ce qui est en cours
 
+## v546 — LA REVUELTO ADAPTÉE : ce qui reste, mesuré
+
+- [ ] **Le taxi jaune de New York porte ses phares au pare-brise.**
+  `posesPhares` (phares.js) rend z −1,01, y 1,18 pour `ny-crown-victoria`, une
+  voiture de −2,73 à 2,68 : sans bloc optique nommé, la hauteur de repli est
+  `bas + 0,4 × h`, et le lanternon « TAXI » du toit grandit `h` — la pose tombe
+  au-dessus du capot. Sans lanternon (`construireTaxi({ taxi: false })`) : z
+  −2,76, y 0,74, au nez. Mesuré sous node, IDENTIQUE sur `origin/main` v540 et
+  sur la branche. Le témoin « de nuit au volant, la voiture a ses phares »
+  (`monte.js`) tire un modèle au hasard et rougit quand il tire ce taxi. Remède
+  probable : nommer les optiques du taxi (`RE_PHARE`), ou borner la hauteur de
+  repli à la caisse sous le lanternon.
+- [ ] **Si la Revuelto rame sur la tablette** : 102 maillages (contre 34) font
+  ≈ 36 appels de dessin de plus au volant ; fusionner par matériau au
+  chargement (≈ 36 maillages), ou réduire ses textures à 512 px (31 → ≈ 8 Mo).
+  Proposé à Max, pas fait.
+
 - [ ] **Les rues à la GTA (v544), ce qui reste, déclaré.** (1) Les convois des
   villes bâties à la main roulent à `DECALAGE_AVENUE` (1,3 bloc) de l'axe
   (v372) quand le milieu de la voie GTA est à 2,13 : recentrer touche les tours

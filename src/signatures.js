@@ -45,6 +45,10 @@ export const SIGNATURES_GLB = [
   'Standard+map+nrm+vc+skin',
   'Standard+nrm+flat',
   'Standard',
+  'Standard+map+DS',          // Revuelto adaptée (BRO) : carbone, moteur, logos, disques
+  'Physical+DS',              // ses feux arrière (intensité émissive)
+  'Physical+map+DS',          // la lampe des phares, texturée et émissive
+  'Standard+emap+DS',         // le combiné d'instruments rétroéclairé
 ];
 
 // ET CE QUE LE JEU FABRIQUE LUI-MÊME, mesuré à l'arrivée à Paris une fois les

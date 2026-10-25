@@ -1,0 +1,14 @@
+{
+  "Lamborghini_Revuelto_WIP.glb": "7d14656adc4a5dfd60bb669a2a0b8a8ae4fba70b91a03df1e9718a6b7669fc8f",
+  "ATTRIBUTION.txt": "be6edaed4d6d377f098353cdf5eb976a33213f4e645bf64657e5c804a9a93384",
+  "THREE-LICENSE.txt": "9abf328478da50386ee32972727a04918c3a2973d15d3758fd8c181d374a4dd4",
+  "build-report.json": "50d37fab346a7dd1e8a0fdea2d433698c1fc9210b67f6315c0b01829cacee0e1",
+  "vendor/three.module.min.js": "48ad607d911c8f54e9ec4afcf7984063ff6156bd8bb82f5b92d81f6d44bb9b53",
+  "vendor/GLTFLoader.js": "9ab58686108d736dd008ef859a849c428a77a51f3677078e286356aa2211d6ae",
+  "vendor/BufferGeometryUtils.js": "b5dc0dc95574ae1c71e1e04548d8eefe2703132fd45b1e52a15c7b6a6faa98e1",
+  "previews/front.png": "63744c4468dad0b0992c30355b29e5d09811c803d54ab84f5eb93d3c7428c147",
+  "previews/rear.png": "c3fbd6d1ec34328bc0e8556f5fe22fb9f13b057441e283d1910e65898c200155",
+  "previews/cabin.png": "cdd5d569055b9ef63bdfe45c7eca41a72c2f75db46bf6b3ecf35965865ecbbf5",
+  "index.html": "fb13075a7bcb6e1b057211e69e298739611bdb7b58a4057697d5ff1ef92a9b5c",
+  "README.md": "b5e2c0a67d6ccfc6e7043a0fa4427620fb9519518dfede06c366fd3fbde948e1"
+}

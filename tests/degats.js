@@ -1085,7 +1085,9 @@ function verifier(nom, ok, detail = '') {
       const g = window.__game, THREE = await import('three'), V = await import('./src/vehicules.js');
       if (!V.feuxDeDetresse || !V.posesDetresse) return { err: 'feuxDeDetresse non publié (ancien code)' };
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
-      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'porsche-911-gt3-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb'];
+      // la Revuelto adaptée (v546) : un modèle d'une autre facture, chargé
+      // par son `asset` — ses feux se mesurent comme ceux des autres
+      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'porsche-911-gt3-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb', 'lamborghini-revuelto.glb'];
       const rc = new THREE.Raycaster(); rc.layers.enableAll();
       const avantCles = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
       const res = [];

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 546,
+    titre: 'Une nouvelle Lamborghini Revuelto',
+    puces: [
+      'Une Revuelto orange plus détaillée',
+      'Avec son volant et ses compteurs',
+      'Modèle de BRO, merci à lui',
+    ],
+  },
+  {
     v: 545,
     titre: 'Une nouvelle Porsche 911',
     puces: [

@@ -464,7 +464,11 @@ export const FLOTTE = [
   { fichier: 'lamborghini-aventador-svj.glb', classe: 'sportive', nom: 'Lamborghini Aventador SVJ' },
   { fichier: 'lamborghini-countach-lpi-800-4.glb', classe: 'sportive', nom: 'Lamborghini Countach LPI 800-4' },
   { fichier: 'lamborghini-huracan-sto.glb', classe: 'sportive', nom: 'Lamborghini Huracan STO' },
-  { fichier: 'lamborghini-revuelto.glb', classe: 'sportive', nom: 'Lamborghini Revuelto' },
+  // L'identifiant des sauvegardes reste stable ; l'URL neuve renouvelle le
+  // modèle dans STATIC_CACHE sans retélécharger toute la flotte. Adaptation
+  // CC-BY-4.0 du modèle de BRO (vendor/voitures/LICENSE.md) : portières non
+  // séparées, donc `portiere: false` (v366) plutôt qu'un découpage au hasard.
+  { fichier: 'lamborghini-revuelto.glb', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', portiere: false },
   { fichier: 'lamborghini-sian-fkp-37.glb', classe: 'hypercar', nom: 'Lamborghini Sian FKP 37' },
   { fichier: 'lexus-lfa.glb', classe: 'gt', nom: 'Lexus LFA' },
   { fichier: 'lotus-evija.glb', classe: 'hypercar', nom: 'Lotus Evija' },

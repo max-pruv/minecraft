@@ -821,6 +821,28 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## La Revuelto adaptée (v546) — un identifiant de flotte ne change pas, son fichier oui
+
+Max a fourni une adaptation CC-BY-4.0 (BRO) de la Revuelto. Trois règles.
+
+- **`fichier` EST UN IDENTIFIANT, `asset` EST UNE URL.** Les garages, le
+  réseau (`p.v`) et `chargementsFlotte` rangent une voiture par `fichier` ;
+  remplacer le modèle sous le même nom laisserait l'ancien dans
+  `STATIC_CACHE` pour toujours (il ne se revalide pas). Le champ `asset` de
+  FLOTTE choisit le fichier chargé (`asset || fichier`), l'URL neuve se
+  télécharge à la première rencontre, et l'ancien fichier reste sur le disque
+  (retour arrière d'une ligne). Même mécanisme, même nom et même endroit que
+  la 911 reconstruite (v545), lu par `fichierCharge`.
+- **UN MODÈLE SOUS LICENCE PORTE SON CRÉDIT DANS `vendor/voitures/LICENSE.md`**,
+  le texte exact de son `ATTRIBUTION.txt` et la liste des modifications. Le jeu
+  n'a pas d'écran de crédits : si un jour il en a un, ces modèles y entrent.
+- **UN MODÈLE D'UNE AUTRE FACTURE SE MESURE CONTRE CELUI QU'IL REMPLACE**,
+  même page, ordre alterné (`sonde-revuelto.cjs`), et se juge en jeu côte à
+  côte (`sonde-captures-revuelto.cjs`), jamais sur les rendus de studio du
+  paquet. Ce qui se transpose à la tablette : octets, mémoire de textures,
+  maillages (appels de dessin), programmes nés (zéro) ; la cadence du banc est
+  celle de SwiftShader. Portières non séparées → `portiere: false` (v366).
+
 ## La 911 reconstruite (v545) — un fichier neuf a une URL neuve, et « léger » se dit en quoi
 
 Max a fait reconstruire la 911 GT3 RS et en a approuvé le rendu ; il a choisi

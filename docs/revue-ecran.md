@@ -141,3 +141,15 @@ droite, hors du quart du joystick, aux deux tailles.
 | 22 | moyenne | au volant (v543), iPhone et iPad | [v543](revue-ecran/v543-volant/iphone-volant-arret-jour.jpg) | L'icône du **klaxon** est un haut-parleur : un enfant peut la lire comme « le son », pas comme l'avertisseur. Le mot est dans `aria-label`, pas à l'écran. | Un cornet d'avertisseur dessiné (`ICONES.klaxon`), jugé sur une capture à 430 × 932. | `src/commandes.js` |
 | 23 | moyenne | au volant de nuit (v533, revu en v543) | [v543](revue-ecran/v543-volant/iphone-volant-roule-nuit.jpg) | Vus de la caméra de poursuite, les **cônes des phares** dessinent deux triangles clairs qui flottent au-dessus du capot, et les deux lentilles se lisent comme des ronds blancs posés sur le toit. | Raccourcir ou estomper le cône près de la voiture, ou ne pas le dessiner quand la caméra est derrière. | `src/phares.js` |
 | 24 | basse | voiture de la rue percutée, de nuit (v543) | [v543](revue-ecran/v543-volant/iphone-voiture-rue-percutee-nuit.jpg) | Sur la carrosserie blanche de la fourgonnette, les **feux de détresse** additifs virent au rose saumon : ils sont sur la tôle, mais on les lit mal comme des clignotants orange. | Une teinte plus saturée (moins de rouge additif sur fond clair), jugée sur la même capture. | `src/vehicules.js` (`feuxDeDetresse`) |
+
+## Le relevé de la v546 (la Revuelto adaptée), 24 octobre 2026
+
+Planches « ancienne | neuve » dans `docs/revue-ecran/v546-revuelto/` :
+`volant`, `troisquarts` et `rue` (une Revuelto de la circulation, cadrée de
+côté), iPhone et iPad, jour et nuit, rejouables par
+`tests/sonde-captures-revuelto.cjs`. Rien ne bouge dans l'interface : la
+livraison ne change que le modèle.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 27 | basse | Revuelto adaptée (v546), au volant et de trois quarts | [v546](revue-ecran/v546-revuelto/planche-iphone-troisquarts-jour.jpg) | Le modèle est un **travail en cours** de l'aveu du paquet : jointures de panneaux et habitacle à reprendre, 4,74 m de long contre 4,95 m réels, portières non séparées. À hauteur d'enfant et à cinq blocs, rien de cela ne se lit ; la voiture est nettement plus fidèle que l'ancienne. Ses phares sont éteints la nuit, comme toute la flotte garée (n° 8). | Juger sur la tablette ; la reprise des panneaux appartient au paquet de Max, pas au jeu. | `vendor/voitures/lamborghini-revuelto-wip.glb` |
