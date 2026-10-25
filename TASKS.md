@@ -580,7 +580,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   passage sur deux. `degats.js` « percuter une voiture de la rue » : rouge sur
   `origin/main`, déjà déclaré. `reglages.js` « un choix fait sur une
   tablette » : même rouge des deux côtés, déjà déclaré.
-- [ ] **Rouges du portail de la v554 (les voies droites du métro de
+- [ ] **Rouges du portail de la v558 (les voies droites du métro de
   Washington) : aucun de la livraison.** Quinze suites vertes (dont
   `washington.js`, `plafond.js`, `metro.js`). `monte.js` : la rue de Rome et
   de Kyoto (flâneur, passant au feu, passage peint), la rue vide, « Atterrissage
@@ -591,7 +591,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   PREUVE STRUCTURELLE : la livraison ne change que la géométrie du métro dans
   l'emprise de Washington ; aucune de ces suites n'y joue ses témoins.
 - [x] **Les stations en virage (v529) : la voie croise les bouts du quai.**
-  Fait en v554 : la trace suit l'axe du quai autour de chaque arrêt, puis une
+  Fait en v558 : la trace suit l'axe du quai autour de chaque arrêt, puis une
   courbe d'Hermite au rayon ≥ 4,5 (2 590 points de voie dans les quais → 478,
   cinq stations sans pylône → zéro, 34 rebroussements → zéro). CE QUI RESTE :
   (1) les demi-tours des terminus (Eastern Market, Pentagon, Union Station,
@@ -602,7 +602,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   chevauchent, la voie n'y est droite que sur quelques blocs (~240 points) —
   une affaire de PLAN ; (3) au bout du quai de la Bastille à Paris, même
   défaut en plus petit (`ville.js`, zone d'une autre session).
-- [ ] **Quelques cases à trois blocs d'air restent (v529, remesuré en v554)** :
+- [ ] **Quelques cases à trois blocs d'air restent (v529, remesuré en v558)** :
   celles « au-dessus des portillons » étaient la sonde qui montait SUR le
   portillon (corrigé : un portillon n'est pas un sol, le passage voisin a
   quatre blocs). Restent une ou deux cases par station de Washington, toutes

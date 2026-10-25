@@ -421,12 +421,12 @@ const MM_ECART = 2.2;
 // de la case du nom, dans `bouchesLigne1` et `choisirBouches` de ville.js), la
 // branche rend b44dcc32…, la constante de la v554, au bit près.
 // v558 : les voies droites le long des quais de Washington. 9fc2d321… →
-// TOTAL. Désarmées (le redressement, la marche du gabarit et les deux
+// ed369fdb…. Désarmées (le redressement, la marche du gabarit et les deux
 // escaliers gardés retirés d'une copie de washington.js), la branche rend
 // 9fc2d321…, la constante de la v555, au bit près ; et le creusement de toute
 // l'emprise du métro, comparé colonne par colonne à `origin/main`, ne change
 // rien à moins de trois blocs du sol (10 921 colonnes changées, toutes dessous).
-const EMPREINTE_MORCEAUX_V357 = 'TOTAL';
+const EMPREINTE_MORCEAUX_V357 = 'ed369fdb3743a2f970a00313be3299bde394dc529c9cbe686235ded95cbe8db4';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };

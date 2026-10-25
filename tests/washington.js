@@ -170,7 +170,7 @@ const descendre = async (p, ms) => {
     bouchesNoyees.length === 0 && D.BOUCHES_METRO.length === 20,
     bouchesNoyees.map((b) => b.nom).join(', ') || `${D.BOUCHES_METRO.length} bouches`);
 
-  // --- Les voies droites le long des quais (v548) -------------------------
+  // --- Les voies droites le long des quais (v558) -------------------------
   // La trace va d'arrêt en arrêt ; dans une station posée sur un virage, la
   // voie décalée de ±4 selon son cap convergeait vers l'axe et traversait le
   // quai central (|tr| < 2,4, plus le gabarit de 1,4) à ses bouts. On compte
@@ -213,7 +213,7 @@ const descendre = async (p, ms) => {
     verifier('et la voie redressée ne se replie nulle part sur elle-même', replis === 0,
       `${replis} rebroussement(s) de voie`);
     // Le creusement près du sol ne bouge pas : à moins de trois blocs, c'est
-    // ce qu'un enfant voit et ce sous quoi il bâtit — la v548 ne change que
+    // ce qu'un enfant voit et ce sous quoi il bâtit — la v558 ne change que
     // la profondeur, sans date neuve. L'empreinte de ce qui est posé à moins
     // de trois blocs du sol sur toute l'emprise, gardée ou non, relevée sur la
     // v547.

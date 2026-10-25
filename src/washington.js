@@ -1208,7 +1208,7 @@ const PENTE = 0.28;            // la pente maximale de la voie, en blocs par blo
 const TIROIR = 9;              // le prolongement au-delà du terminus
 const PONT_Y = WATER_LEVEL_DC + 4;   // le tablier du pont de la Jaune
 
-// LA VOIE EST DROITE LE LONG DU QUAI (v548). La trace va d'arrêt en arrêt en
+// LA VOIE EST DROITE LE LONG DU QUAI (v558). La trace va d'arrêt en arrêt en
 // ligne droite : dans une station posée sur un virage (Smithsonian, un quart
 // de tour), chaque voie, décalée de ±4 selon SON cap, convergeait vers l'axe
 // et croisait le quai central à ses bouts — le gabarit, creusé en dernier,
@@ -1368,7 +1368,7 @@ function calculerBranche(ligne) {
   for (let k = 1; k <= n; k++) {
     branche.push({ u: a.u + (b.u - a.u) * k / n, v: a.v + (b.v - a.v) * k / n, arret: null });
   }
-  // la branche quitte le quai commun dans l'axe du quai (v548) : le cap de
+  // la branche quitte le quai commun dans l'axe du quai (v558) : le cap de
   // la station est celui du tronc, pris autour de l'arrêt AVANT redressement
   // (le même que `QUAIS`)
   const tout = [a, ...branche];
@@ -1394,7 +1394,7 @@ for (const [nom, pts] of TRACES) {
     if (!pts[i].arret) continue;
     const s = pts[i].arret;
     const av = pts[Math.max(0, i - 1)], ap = pts[Math.min(pts.length - 1, i + 1)];
-    // le cap pris AVANT le redressement (v548), au bit près : la voie est
+    // le cap pris AVANT le redressement (v558), au bit près : la voie est
     // droite dans cet axe, et les bouches qui en dépendent ne bougent pas
     const fixe = AXES_AVANT.get(nom)?.get(s.nom);
     const du = fixe ? fixe[0] : ap.u - av.u, dv = fixe ? fixe[1] : ap.v - av.v;
@@ -1443,7 +1443,7 @@ const voieProche = (u, v, test) => {
   }
   return false;
 };
-// LA VOIE REDRESSÉE NE TOUCHE PAS LA SURFACE (v548). Les tunnels ne bougent
+// LA VOIE REDRESSÉE NE TOUCHE PAS LA SURFACE (v558). Les tunnels ne bougent
 // qu'en profondeur ; ce qui change près du sol, c'est le bout du quai où l'on
 // pose l'escalier (`fin`, `k0`), qui se choisit contre les voies. Mesuré sur
 // les 79 560 colonnes de l'emprise : deux stations changent un bloc à moins
@@ -1525,7 +1525,7 @@ export const BOUCHES_METRO = QUAIS_METRO.map((q) => {
       if (n < mieux) { mieux = n; fin = e; k0 = k; }
     }
   }
-  // l'escalier qui touche presque le lit du fleuve garde sa place (v548)
+  // l'escalier qui touche presque le lit du fleuve garde sa place (v558)
   const garde = ESCALIER_GARDE[q.nom];
   if (garde) { fin = garde[0]; k0 = garde[1]; }
   q.fin = fin; q.k0 = k0;
@@ -1955,7 +1955,7 @@ function creuserMetro(u, v, h, poser, ancien = false) {
       t = t < 0 ? 0 : t > 1 ? 1 : t;
       if (Math.hypot(u - (s.u0 + t * du), v - (s.v0 + t * dv)) > 1.4) continue;
       // sur une marche de la voie, la rame passe d'une cote à l'autre : on
-      // dégage les deux (v548 — le redressement a déplacé des marches dans
+      // dégage les deux (v558 — le redressement a déplacé des marches dans
       // les courbes, où l'arrondi du creusement et celui de la rame divergent)
       const yr = Math.round(s.y0 + (s.y1 - s.y0) * t);
       // — et jamais à moins de quatre blocs du sol : la surface ne bouge pas

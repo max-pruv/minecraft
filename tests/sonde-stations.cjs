@@ -42,7 +42,7 @@ async function mesurer(racine, { joueur = true, seul = null, garderPts = false }
   const cam = { position: { copy() {} }, rotation: { set() {} } };
   const bloc = (x, y, z) => w.getBlock(Math.floor(x), Math.floor(y), Math.floor(z));
   const plein = (x, y, z) => B.isSolid(bloc(x, y, z));
-  // UN PORTILLON N'EST PAS UN SOL (v548) : on passe ENTRE deux portillons,
+  // UN PORTILLON N'EST PAS UN SOL (v558) : on passe ENTRE deux portillons,
   // pas par-dessus. Le chemin à la grille montait sur un portillon, sous
   // trois blocs d'air, quand le passage voisin en a quatre — et la sonde
   // comptait cette case « sous 4 » dans chaque station de Washington.
