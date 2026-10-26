@@ -509,6 +509,29 @@ export const FLOTTE = [
   { fichier: 'rimac-nevera.glb', classe: 'hypercar', nom: 'Rimac Nevera' },
   { fichier: 'rolls-royce-spectre.glb', classe: 'berline', nom: 'Rolls-Royce Spectre' },
   { fichier: 'sls-amg-black-series.glb', classe: 'gt', nom: 'Mercedes-Benz SLS AMG Black Series' },
+  // LES DIX-HUIT DE MAX (v566) : des paquets Sketchfab mis au contrat par
+  // `scripts/convertir-flotte.mjs` (crédits dans vendor/voitures/LICENSE.md).
+  // Aucun n'a de volant séparé ni de portière découpée : `habitacle: false`,
+  // `portiere: false`, comme la Chiron Stealth. La Model Y est la voiture que
+  // fabrique la Giga-usine (`usine: true`, lu par la chaîne et le garagiste) ;
+  // les livrées de course et le taxi ne se repeignent pas (`laque: 'jamais'`).
+  { fichier: 'tesla-model-y.glb', classe: 'suv', nom: 'Tesla Model Y', usine: true, habitacle: false, portiere: false },
+  { fichier: 'tesla-cybertruck.glb', classe: 'pickup', nom: 'Tesla Cybertruck', habitacle: false, portiere: false },
+  { fichier: 'aston-martin-victor.glb', classe: 'hypercar', nom: 'Aston Martin Victor', habitacle: false, portiere: false },
+  { fichier: 'aston-martin-db11.glb', classe: 'gt', nom: 'Aston Martin DB11', habitacle: false, portiere: false },
+  { fichier: 'alpine-a110-gt4.glb', classe: 'sportive', nom: 'Alpine A110 GT4', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'bentley-mulliner-batur.glb', classe: 'gt', nom: 'Bentley Mulliner Batur', habitacle: false, portiere: false },
+  { fichier: 'rolls-royce-ghost.glb', classe: 'berline', nom: 'Rolls-Royce Ghost', habitacle: false, portiere: false },
+  { fichier: 'gmc-hummer-ev.glb', classe: 'suv', nom: 'GMC Hummer EV', habitacle: false, portiere: false },
+  { fichier: 'chevrolet-camaro-ss-1967.glb', classe: 'gt', nom: 'Chevrolet Camaro SS 1967', habitacle: false, portiere: false },
+  { fichier: 'cadillac-escalade-esv.glb', classe: 'suv', nom: 'Cadillac Escalade ESV', habitacle: false, portiere: false },
+  { fichier: 'renault-fuego.glb', classe: 'citadine', nom: 'Renault Fuego', habitacle: false, portiere: false },
+  { fichier: 'porsche-cayenne-turbo-gt.glb', classe: 'suv', nom: 'Porsche Cayenne Turbo GT', habitacle: false, portiere: false },
+  { fichier: 'abt-audi-rs6-r.glb', classe: 'gt', nom: 'ABT Audi RS6-R', habitacle: false, portiere: false },
+  { fichier: 'porsche-992-gt3-r.glb', classe: 'sportive', nom: 'Porsche 911 GT3 R (992)', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'bugatti-divo.glb', classe: 'hypercar', nom: 'Bugatti Divo', habitacle: false, portiere: false },
+  { fichier: 'ford-f150-raptor-r.glb', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false, portiere: false },
+  { fichier: 'ford-mondeo-taxi.glb', classe: 'berline', nom: 'Ford Mondeo · taxi', laque: 'jamais', habitacle: false, portiere: false },
   // LA VOITURE DE POLICE (v553) : la Ford Crown Victoria Police Interceptor
   // fournie par Max (Mateusz Woliński, CC-BY-4.0, vendor/voitures/LICENSE.md),
   // convertie au contrat par `scripts/convertir-police.mjs`. Sa livrée noir et
@@ -518,6 +541,10 @@ export const FLOTTE = [
   // (la règle ne lit que `n`, v305). Portières et volant ne sont pas des
   // pièces séparées du modèle : `portiere: false`, `habitacle: false`.
   { fichier: 'police-car.glb', classe: 'berline', nom: 'Voiture de police', laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  // LE SUV DE POLICE (v566), même règle : hors de la rue, appelé par la
+  // patrouille en alternance avec la Crown Victoria, sa rampe séparée en
+  // `Gyrophare_G` / `Gyrophare_D` par la conversion.
+  { fichier: 'police-suv.glb', classe: 'suv', nom: 'SUV de police', laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
 ];
 
 // UNE ALLURE PAR CLASSE, ET LA CLASSE VIT DANS LE MANIFESTE (v260). Max :
@@ -2834,12 +2861,61 @@ export function createVehicules({ scene, player }) {
       nb: opts.nb ?? 8, ecart: opts.ecart ?? 16, vitesse: opts.vitesse ?? 4.5,
       nom: 'voiture de la chaîne', emoji: '🚗', assise: 1.15,
       arrets, pause: opts.pause ?? 5,
-      modele: () => construireVoitureRoute(),
+      modele: () => voitureDeLUsine(),
       relooke: fen ? (m, d, i) => {
         const peinte = d > fen.sortie && d < fen.retour;
-        m.userData.carrosserie.color.set(peinte ? teintes[i % teintes.length] : 0x9a9a9a);
+        const t = peinte ? teintes[i % teintes.length] : 0x9a9a9a;
+        m.userData.carrosserie.color.set(t);
+        for (const l of m.userData.laquesUsine || []) l.color.set(t);
       } : null,
     });
+  }
+
+  // LA VOITURE QUE FABRIQUE L'USINE (v566). Max : « la Tesla doit être dans
+  // la Tesla Factory, c'est la voiture qui va être fabriquée là-bas ». La
+  // chaîne habille ses voitures du modèle que la flotte marque `usine` (la
+  // Model Y), comme une voiture de la rue s'habille du sien — cachée jusqu'à
+  // son modèle, jamais une coque qui change sous les yeux (v547) ; la coque
+  // ne se montre que si le fichier manque. Chaque voiture a ses propres
+  // matériaux de laque (`laquesUsine`), que le tunnel de peinture colore.
+  function voitureDeLUsine() {
+    const g = construireVoitureRoute();
+    const entree = FLOTTE.find((e) => e.usine);
+    if (!entree) return g;
+    g.userData.flotte = entree.fichier;
+    g.userData.nomVoiture = entree.nom;
+    const habiller = (proto) => {
+      g.userData.attente = false;
+      for (const nom of ['caisse', 'verriere', 'tronc']) {
+        const membre = g.userData.membres[nom];
+        if (membre) { g.remove(membre); liberer(membre); }
+      }
+      const modele = proto.clone(true);
+      const laques = [];
+      modele.traverse((o) => {
+        if (!o.isMesh || !o.material || !EST_LAQUE.test(o.material.name || '')) return;
+        o.material = o.material.clone(); o.material.userData.partagee = false;
+        laques.push(o.material);
+      });
+      g.userData.laquesUsine = laques;
+      g.add(modele);
+      const roues = [];
+      modele.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
+      g.userData.roues = roues;
+      g.userData.rayonRoue = proto.userData.rayonRoue || 0.34;
+    };
+    const pret = protosPrets.get(entree.fichier);
+    if (pret) { habiller(pret); return g; }
+    const chargement = chargerVoitureFlotte(entree);
+    if (chargement) {
+      g.userData.attente = true;
+      chargement.then((proto) => {
+        if (!proto) { g.userData.attente = false; return; }
+        if (!g.userData.membres || g.userData.rendue) return;
+        habiller(proto);
+      });
+    }
+    return g;
   }
 
   // UNE VOITURE DE VILLE. La coque sculptée est posée tout de suite — il faut

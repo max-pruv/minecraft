@@ -173,3 +173,44 @@ moto). Modifications, toutes faites par `scripts/convertir-police.mjs`
   vitrine.
 Aucune forme ni texture inventée : ce sont celles des auteurs. Le jeu n'a pas
 d'écran de crédits ; s'il en a un un jour, ces modèles y entrent.
+
+## Dix-huit modèles Sketchfab déposés par Max (octobre 2026, v566)
+
+Dix-huit paquets glTF fournis par Max, mis au contrat de la flotte par
+`scripts/convertir-flotte.mjs` (les paquets bruts ne sont pas versionnés ; le
+script se rejoue dessus). Chaque paquet est publié sous une licence Creative
+Commons qui **exige le crédit de son auteur** : le texte ci-dessous est recopié
+tel quel de son `license.txt`. Plusieurs licences sont **non commerciales**
+(NC) — ce jeu est privé et familial, sans revenu — et certaines **à partage
+dans les mêmes conditions** (SA) : les fichiers convertis restent sous la même
+licence que leur original.
+
+Modifications apportées à chaque œuvre, toutes par le script : transformations
+cuites dans la géométrie ; repère du jeu (mètres, +Y en haut, +Z vers le nez) et
+mise à l'échelle sur l'empattement réel ; roues détectées par leur géométrie et
+regroupées sous quatre pivots `Wheel_FL/FR/RL/RR` ; fusion par matériau ;
+simplification par meshoptimizer (environ 90 000 triangles par voiture) ; textures
+redimensionnées (1 024 px pour la carrosserie, 512 px ailleurs) et recompressées ;
+cartes de normales, de rugosité et d'émission retirées ; la laque renommée
+`Paint_Primary` et vernie ; pièces invisibles retirées (moteurs, câbles) selon
+la fiche de chaque modèle ; sur le SUV de police, la rampe séparée en deux
+lentilles `Gyrophare_G` / `Gyrophare_D`.
+
+- `tesla-model-y.glb` — This work is based on "2025 Tesla Model Y" (https://sketchfab.com/3d-models/2025-tesla-model-y-619601e7800d418da5922c4fa7833f74) by BloxBloger (https://sketchfab.com/BloxBloger) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+- `tesla-cybertruck.glb` — This work is based on "Tesla Cybertruck" (https://sketchfab.com/3d-models/tesla-cybertruck-f12e67159f75486bb21213e573520612) by Lexyc16 (https://sketchfab.com/Lexyc16) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- `aston-martin-victor.glb` — This work is based on "2020 Aston Martin Victor" (https://sketchfab.com/3d-models/2020-aston-martin-victor-c46e1668332d4de092eef421fd234662) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+- `aston-martin-db11.glb` — This work is based on "Aston Martin DB11 - Description" (https://sketchfab.com/3d-models/aston-martin-db11-description-81ca13960be6456aa9c26bb4bb124e4a) by Outlaw Games™ (https://sketchfab.com/Outlaw_Games) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+- `alpine-a110-gt4.glb` — This work is based on "A110 GT4 | www.vecarz.com" (https://sketchfab.com/3d-models/a110-gt4-wwwvecarzcom-7dc988bfd038404c849566364a79b03c) by vecarz (https://sketchfab.com/heynic) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- `bentley-mulliner-batur.glb` — This work is based on "2023 Bentley Mulliner Batur" (https://sketchfab.com/3d-models/2023-bentley-mulliner-batur-fe97c93398a648cb96ef3acacea22a21) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+- `rolls-royce-ghost.glb` — This work is based on "Rolls-Royce Ghost" (https://sketchfab.com/3d-models/rolls-royce-ghost-4a590f4afa094fa8b407a14db77a63a8) by Black Snow (https://sketchfab.com/BlackSnow02) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- `gmc-hummer-ev.glb` — This work is based on "2024 GMC Hummer EV SUV" (https://sketchfab.com/3d-models/2024-gmc-hummer-ev-suv-7cd584fc9ba54acd9002d4286a08e419) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+- `chevrolet-camaro-ss-1967.glb` — This work is based on "1967 Chevrolet Camaro SS 350 Coupe" (https://sketchfab.com/3d-models/1967-chevrolet-camaro-ss-350-coupe-37ecedd9b5284cbfae74956eea2ad3fd) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+- `cadillac-escalade-esv.glb` — This work is based on "2015 Cadillac Escalade ESV" (https://sketchfab.com/3d-models/2015-cadillac-escalade-esv-57204780d10648c59ceb3021e6f66116) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+- `renault-fuego.glb` — This work is based on "Renault FUEGO" (https://sketchfab.com/3d-models/renault-fuego-37a0f282de1046a680dbde3664cebacd) by boitaloran (https://sketchfab.com/boitaloran) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- `porsche-cayenne-turbo-gt.glb` — This work is based on "2022 Porsche Cayenne Turbo GT" (https://sketchfab.com/3d-models/2022-porsche-cayenne-turbo-gt-74fbea5a4dfc4197839fdd2bf654369a) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+- `abt-audi-rs6-r.glb` — This work is based on "2020 ABT Sportline Audi RS6-R" (https://sketchfab.com/3d-models/2020-abt-sportline-audi-rs6-r-8efe6fd313234bef9b63c64293114dbf) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+- `porsche-992-gt3-r.glb` — This work is based on "2024 Porsche 992 GT3 R" (https://sketchfab.com/3d-models/2024-porsche-992-gt3-r-b76c9b2ae2d548c3869426eac4ab8a19) by Dave Love SketchFab (https://sketchfab.com/Tyler_Dave) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- `bugatti-divo.glb` — This work is based on "Bugati Divo" (https://sketchfab.com/3d-models/bugati-divo-dca375fefc65461d8a383172b235d0a9) by Jonrss (https://sketchfab.com/huy14320000006) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- `ford-f150-raptor-r.glb` — This work is based on "2024 Ford F-150 Raptor R" (https://sketchfab.com/3d-models/2024-ford-f-150-raptor-r-9fbd01c5acfb45e7a7bbdf4c8e2c4aa8) by VTX (https://sketchfab.com/VTX_car) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+- `ford-mondeo-taxi.glb` — This work is based on "Ford Mondeo TAXI" (https://sketchfab.com/3d-models/ford-mondeo-taxi-8bc1c46fe0334d03a5eb927b6a129dc8) by TSB3DMODELS (https://sketchfab.com/TSB3DMODELS) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+- `police-suv.glb` — This work is based on "Police car SUV" (https://sketchfab.com/3d-models/police-car-suv-3c00056ec42b4552804fe5f4e5af768f) by k26_k29 (https://sketchfab.com/John_Benoveth) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

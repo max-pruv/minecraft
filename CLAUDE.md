@@ -921,6 +921,48 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les dix-huit voitures déposées (v566) — un paquet se mesure, il ne se lit pas
+
+Max a déposé dix-huit paquets Sketchfab de facture différente.
+`scripts/convertir-flotte.mjs` les met tous au contrat avec une fiche par
+voiture (`VOITURES`). Cinq règles.
+
+- **LES ROUES SE TROUVENT PAR LEUR GÉOMÉTRIE, JAMAIS PAR LEUR NOM.** Les
+  noms des paquets sont muets (« Material_2125767099 », « wire_087224198 ») :
+  chaque maillage est découpé en pièces connexes, et une pièce de roue est un
+  disque vertical, bas, sur un côté. Le pneu de référence est la plus grande
+  du quadrant ; on accroche ce qui tient dans son disque, les étriers restent
+  fixes. Seuls les pivots s'appellent `Wheel_*` (v562).
+- **LE NEZ SE RELÈVE SUR UNE VUE, ET LA VUE SE RECHARGE SANS CACHE.** Le
+  signe `avant` de chaque fiche a été relevé sur les vues de contrôle
+  (quatre angles, puis la roue avant gauche de près, roues tournées de 60°) ;
+  deux paquets sur dix-huit étaient à l'envers. Et une vue rechargée depuis
+  un serveur local sans `?t=` montrait l'ANCIEN fichier : trois fiches ont
+  semblé fausses, corrigées, et rien n'avait changé à l'écran.
+- **UN PAQUET « À PLAT » SE SOUDE AVANT DE SE SIMPLIFIER.** Beaucoup de
+  paquets donnent à chaque triangle ses propres sommets : meshoptimizer n'y
+  voit que des bords et ne simplifie rien (le Hummer restait à 210 000
+  triangles pour un budget de 100 000). On soude sur la position et les UV
+  (normales retirées), on simplifie, puis on refait des normales à arêtes
+  vives (30°). Le budget se mesure après coup, et l'on resserre s'il n'est
+  pas tenu.
+- **UN MATÉRIAU DÉPOSÉ TOMBE DANS LES SIGNATURES DÉJÀ CHAUFFÉES (v246).** Les
+  paquets sont presque tous en double face : la laque devient vernie
+  (`Physical+cc`, les deux variantes de face existent), une transparence
+  texturée passe en double face, un masque en simple face. On compte les
+  signatures des fichiers produits (`signaturesDuGlb`) : aucune neuve.
+- **UN BLOC OPTIQUE NOMMÉ PEUT TOMBER HORS DE SON COIN.** La rampe lumineuse
+  du Hummer est sur le capot, à 69 % de la hauteur : la sonde de la flotte
+  (`sonde-feux-flotte.mjs`, lue par `degats.js`) l'a refusée. La fiche porte
+  `sansFeuxNommes` : les matériaux sont débaptisés et le jeu pose les feux
+  par la boîte et le rayon (v519). Un paquet neuf se passe à cette sonde
+  avant d'entrer.
+
+La Model Y porte `usine: true` dans FLOTTE : la chaîne (`voitureDeLUsine`,
+vehicules.js) et le garagiste de main.js la lisent, jamais un nom recopié.
+Les voitures de police sont toute fiche `police` de FLOTTE ; la patrouille
+les alterne, la Crown Victoria d'abord, et n'attend qu'elle pour apparaître.
+
 ## Les avions déposés (v563) — un modèle d'artiste se met au contrat, le contrat ne bouge pas
 
 Max a déposé un A320, un A321 et un F-35 (Sketchfab). Ils deviennent l'avion

@@ -20,6 +20,44 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v566 — Dix-huit nouvelles voitures
+
+**Pourquoi.** Max a déposé dix-huit modèles 3D de voitures (paquets glTF
+Sketchfab) : Tesla Model Y et Cybertruck, Aston Martin Victor et DB11, Alpine
+A110 GT4, Bentley Mulliner Batur, Rolls-Royce Ghost, GMC Hummer EV, Chevrolet
+Camaro SS 1967, Cadillac Escalade ESV, Renault Fuego, Porsche Cayenne Turbo GT
+et 911 GT3 R, ABT Audi RS6-R, Bugatti Divo, Ford F-150 Raptor R, un taxi Ford
+Mondeo et un SUV de police. « La Tesla doit être dans la Tesla Factory : c'est
+la voiture qui va être fabriquée là-bas. Et les voitures de police sont
+attachées à la police. » Les paquets ne suivaient pas le contrat de la flotte
+(échelles de 0,02 à 47 unités, noms muets, roues anonymes, jusqu'à 2,2 millions
+de triangles).
+
+**Ce que ça change.**
+- Dix-sept voitures de plus roulent dans les rues et se conduisent (le SUV de
+  police reste hors de la rue, comme la Crown Victoria). La flotte passe de 59
+  à 77 modèles.
+- La chaîne de la Giga-usine fabrique des Tesla Model Y : grises avant le
+  tunnel de peinture, colorées après ; les trois voitures neuves du parc sont
+  des Model Y, prêtes à conduire.
+- La patrouille fait venir, en alternance, la Crown Victoria puis le SUV de
+  police, ses gyrophares rouge et bleu sur sa rampe.
+- Le Ford Mondeo garde sa livrée de taxi, l'Alpine A110 GT4 et la 911 GT3 R
+  leurs livrées de course : la rue ne les repeint pas.
+- Les crédits exigés par les licences des auteurs sont dans
+  `vendor/voitures/LICENSE.md`.
+
+**Ce qui le prouve.** Les feux de détresse, phares et feux stop des 77 modèles
+sont sur la tôle et à leur coin (sonde de la flotte, sous node) ; la table des
+programmes à chauffer couvre exactement ce que les fichiers contiennent (aucune
+signature neuve) ; dimensions mesurées à la conversion (Model Y 4,75 × 2,11 ×
+1,64 m pour 4,79 réels) ; vues de contrôle des dix-huit sous quatre angles et
+roues tournées de 60° (rien de la carrosserie ne tourne) ; dans le jeu, la
+chaîne et le parc de l'usine montrent des Model Y. Le portail complet a tourné
+avant la fusion.
+
+---
+
 ## v565 — De grands aéroports, et des feux d'avion discrets
 
 **Pourquoi.** Max : « agrandir les aéroports pour qu'il y ait beaucoup plus

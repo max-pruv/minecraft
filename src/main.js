@@ -3725,6 +3725,7 @@ function emojiBurst(emojis, n = 18) {
 // quand un enfant approche — et une voiture emmenée au loin « rentre à
 // l'usine », c'est-à-dire qu'une neuve l'attend à sa place au retour.
 const PLACES_GARAGE = [[30, 7], [44, 7], [58, 7]];
+const VOITURE_USINE = FLOTTE.find((f) => f.usine) || null;
 // une voiture de 2,26 de large au milieu de sa voie : 1,3 bloc à droite de
 // l'axe laisse 0,17 bloc entre deux voitures qui se croisent (v372)
 const DECALAGE_AVENUE = 1.3;
@@ -3892,7 +3893,9 @@ function garagiste(dt) {
     const x = pu.x + du, z = pu.z + dv;
     const dejaLa = animalManager.animals.some((a) => a.def.key === 'voiture'
       && Math.hypot(a.pos.x - x, a.pos.z - z) < 6);
-    if (!dejaLa) animalManager.invoquer('voiture', x, z);
+    // les voitures neuves du parc sont celles que la chaîne fabrique (v566) :
+    // le modèle que la flotte marque `usine`, la Model Y
+    if (!dejaLa) animalManager.invoquer('voiture', x, z, false, VOITURE_USINE ? { flotte: VOITURE_USINE.fichier } : undefined);
   }
   // ET UNE MOTO (v562) entre la deuxième et la troisième voiture : Max,
   // « j'ajoute aussi le concept de moto » — elle attend au parc comme les
