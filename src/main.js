@@ -21,8 +21,8 @@ import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } 
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
 import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR } from './world.js';
-import { aeroportPres, postesAvion } from './aeroport.js';
-import { chargerAvionsDeposes, varianteDuPoste } from './avions.js';
+import { aeroportPres, postesAerodrome } from './aeroport.js';
+import { chargerAvionsDeposes } from './avions.js';
 import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
 import { cadence, chronoReel } from './cadence.js';
 import { axeDuFeu, axeDuCap, etatFeu } from './feux.js';
@@ -3833,17 +3833,32 @@ function aeroportiste(dt) {
   // se dessine qu'à soixante-deux blocs, comme tout personnage. En faire naître
   // à cent trente ne montre rien à personne. Le garagiste travaille à
   // quatre-vingts pour exactement ce motif.
-  const a = aeroportPres(player.pos.x, player.pos.z, 90);
+  //
+  // ET DEPUIS LA v565, L'AIRE EST LONGUE — trois cent soixante-neuf postes
+  // sur vingt aérodromes, jusqu'à deux cents blocs du centre sur les aires
+  // prolongées. On ne garnit donc plus les postes D'UN aérodrome, mais ceux
+  // qui sont à portée de l'enfant (`PRES_POSTE`, sous les `RETRAIT_GARE`
+  // blocs où un avion garé s'efface — animals.js : il ne naît pas pour
+  // disparaître à l'image suivante, et il se voit du ciel) ; l'aérodrome se
+  // cherche jusqu'au bout de ses aires.
+  const a = aeroportPres(player.pos.x, player.pos.z, PORTEE_AERODROME);
   if (!a) return;
-  for (const { espece, du, dv, cap } of postesAvion(a.profil, a.r)) {
+  let postes = postesMemo.get(a.cle);
+  if (!postes) postesMemo.set(a.cle, (postes = postesAerodrome(a)));
+  for (const { espece, variante, du, dv, cap } of postes) {
     const x = a.x + du, z = a.z + dv;
+    // en trois dimensions, comme le retrait des bêtes : vu d'en haut, un poste
+    // à soixante blocs de côté est à plus de soixante-dix de l'enfant
+    if (Math.hypot(x - player.pos.x, z - player.pos.z, player.pos.y - a.sol - 1) > PRES_POSTE) continue;
     // HUIT BLOCS, PAS QUATORZE. Sur une base, trois chasseurs se garent à
     // quatorze blocs l'un de l'autre : à ce rayon-là, le voisin comptait pour
     // « déjà là » et deux postes sur trois restaient vides.
     const dejaLa = animalManager.animals.some((b) => b.def.key === espece
       && Math.hypot(b.pos.x - x, b.pos.z - z) < 8);
     if (dejaLa) continue;
-    const variante = varianteDuPoste(espece, a.profil);
+    // LE MODÈLE EST CELUI DU POSTE (v565) : la rangée publie sa suite, A320,
+    // A321, Concorde, F-35 — deux tablettes voient le même appareil au même
+    // poste.
     const ne = animalManager.invoquer(espece, x, z, false, variante ? { variante } : null);
     // LE CAP N'EST PLUS UN TIRAGE AU SORT. `animals.js` donne à toute bête un
     // yaw aléatoire ; l'espèce étant `immobile`, un avion garé pointait donc
@@ -3851,8 +3866,11 @@ function aeroportiste(dt) {
     // l'appareil s'y aligne — et il est le long de l'aérogare, comme au large
     // d'un vrai aéroport.
     if (ne && cap !== undefined) ne.yaw = cap;
+    if (ne) ne.gare = true;
   }
 }
+const PORTEE_AERODROME = 320, PRES_POSTE = 128;
+const postesMemo = new Map();
 
 // Les panneaux de la chaîne (v463) : en entrant à pied dans un poste, l'enfant
 // lit ce qu'on y fait. Une fois par entrée — rester sur place ne répète rien.
@@ -5161,7 +5179,7 @@ function synchroniserVehiculeDistant(rp, v) {
   const mesh = fabrique(v.f ? { flotte: v.f, peinture: typeof v.c === 'number' ? v.c : null } : undefined);
   mesh.position.copy(rp.pos);
   scene.add(mesh);
-  // les sièges propres à l'appareil (le jet d'affaires, v565), comme chez soi
+  // les sièges propres à l'appareil (le jet d'affaires, v566), comme chez soi
   rp.vehicule = { cle, mesh, def: mesh.userData.sieges ? { ...def, sieges: mesh.userData.sieges } : def };
 }
 // L'avatar d'un ami revient dans la scène, debout, à sa taille : c'est ce

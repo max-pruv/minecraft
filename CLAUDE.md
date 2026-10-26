@@ -924,7 +924,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
 ## Les avions déposés (v563) — un modèle d'artiste se met au contrat, le contrat ne bouge pas
 
 Max a déposé un A320, un A321 et un F-35 (Sketchfab), puis un jet d'affaires
-(v565). Ils deviennent l'avion de ligne et le chasseur ; le Concorde reste
+(v566). Ils deviennent l'avion de ligne et le chasseur ; le Concorde reste
 sculpté. Six règles.
 
 - **LE MODÈLE SE CONVERTIT HORS LIGNE, PAR UN SCRIPT QUI SE REJOUE.**
@@ -946,8 +946,8 @@ sculpté. Six règles.
   même contrat que l'atelier (`membres`, `train`, `porte`, `tuyeres`,
   `feuxNav`) : fun.js et embarquement.js ne savent pas d'où vient l'avion.
 - **LA VARIANTE EST UNE RÈGLE, JAMAIS UN TIRAGE, ET ELLE VOYAGE.**
-  `varianteDuPoste` (le profil `hub` prend l'A321, `ville` le jet privé,
-  Roissy l'A320) ; `p.v.f` porte la
+  le rang du poste dans la rangée (`RANGEE_CIVILE`, aeroport.js, v565 ; le
+  jet y entre en v566) ; `p.v.f` porte la
   variante comme le modèle d'une voiture (v253). Un avion né avant l'arrivée
   de son fichier reste sculpté pour sa vie (v547) ; `?avions=0` rejoue les
   sculptés.
@@ -957,7 +957,7 @@ sculpté. Six règles.
   l'autre selon l'heure — un tirage. Il mesure le sculpté et chaque variante,
   fichiers attendus ; le sculpté garde l'égalité d'envergure (v278), un
   déposé doit tenir DANS le gabarit de son espèce.
-- **UN DÉPOSÉ PEUT ÊTRE PLUS COURT QUE SON GABARIT, ET IL LE DÉCLARE (v565).**
+- **UN DÉPOSÉ PEUT ÊTRE PLUS COURT QUE SON GABARIT, ET IL LE DÉCLARE (v566).**
   Le jet d'affaires est une variante de l'avion de ligne à 13 blocs, pas 16 :
   la proportion d'un G650 à côté d'un A320. Sa fiche porte `long` (le témoin
   des dimensions le mesure contre elle) et ses `sieges`, qui remplacent ceux
@@ -11948,6 +11948,54 @@ tous sur le hangar posé dans l'axe de la rangée. Quatre règles.
   doublets ne tenaient plus dans son disque ; les axes extérieurs restent,
   rapprochés de sept blocs (64 → 57) pour que chaque aile garée reste à douze
   blocs du bord (le témoin de la v280), prolongements re-mesurés. La seconde piste des hubs passe de z 15 à 25.
+
+### De grands aéroports (v565) — une aire se mesure comme une piste, et un avion garé se voit du ciel
+
+Max : « agrandir les aéroports pour qu'il y ait beaucoup plus d'avions garés…
+et tous les modèles ». Cinq règles.
+
+- **UNE AIRE PROLONGÉE EST UN OUVRAGE MESURÉ, COMME UNE PISTE PROLONGÉE.**
+  `bandesAire` (aeroport.js) publie la bande de chaque rangée — du dos des
+  appareils au bas-côté de la piste, des deux côtés de la piste la plus au
+  large — et `AIRES` sa longueur de chaque côté au-delà du disque : un
+  RÉSULTAT de `sonde-aires-aeroports.mjs` (relief dans les bornes de
+  l'ouvrage, douze blocs de toute ville, route, rail, gare, repère et autre
+  aérodrome, quarante de ce que les enfants ont bâti, le bout de la piste).
+  `plafond.js` exige l'égalité : on n'allonge pas une aire à la main. Les
+  tronçons (`tronconsDAire`) sont marqués `piste` : tous les lecteurs de
+  repères les écartent déjà, et `videParUnTroncon` n'y plante rien.
+- **LA RANGÉE REMPLIT LA BANDE, ET LE MODÈLE EST CELUI DU POSTE.**
+  `postesAvion` (le disque) et `postesAerodrome` (avec les aires) rendent
+  une rangée par bande, chaque appareil à sa longueur plus un passage, dans
+  l'ordre de `modelesDeRangee` — A320, A321, Concorde, F-35 sur un aéroport
+  civil, F-35 sur une base. Une règle sur le rang, jamais un tirage : deux
+  tablettes voient le même appareil au même poste. Les aires commencent là
+  où toute la bande est sortie du disque (`bordInterieur`) : dedans, le
+  bâtisseur ; dehors, l'aire.
+- **LES MONDES FIGÉS GARDENT L'AIRE D'AVANT.** `buildAerodrome(…, aires)` :
+  `LANDMARKS_V317` passe `false` (trois appareils, la dalle et les
+  nivellements d'avant), le monde d'aujourd'hui la grande aire. Un bloc posé
+  avant se juge sur le monde où il a été posé (v306). `reglageAires.actif`
+  rend tout le reste désarmé, pour l'empreinte des 490 morceaux.
+- **UN AVION GARÉ SE GARNIT AUTOUR DE L'ENFANT, EN TROIS DIMENSIONS, ET NE
+  S'EFFACE QU'À `RETRAIT_GARE`.** L'aéroportiste (main.js) pose les postes à
+  moins de `PRES_POSTE` (128) blocs, distance comptée comme le retrait des
+  bêtes, en 3D — sinon, vu d'avion, un poste à soixante blocs de côté naît et
+  s'efface à chaque tour. Un appareil garé porte `gare` ; `animals.js` ne le
+  retire qu'au-delà de 140 blocs, et le prendre (`fun.js`) lève le drapeau.
+  Mesuré au-dessus d'Orly : treize appareils, neuf appels de dessin chacun en
+  moyenne (`sonde-appels-aeroport.cjs`).
+- **UN FEU DE BORD EST UNE LENTILLE, ET SON HALO SUIT LA NUIT.** Lentille de
+  `FEU_LENTILLE` (0,07) et deux halos (`FEU_HALOS`) dans un groupe posé au
+  bout de l'aile ; `nav.regler(nuitDehors())` (fun.js) règle les opacités —
+  des uniformes, la même matière additive (v533), aucun programme neuf. La
+  moitié du halo qui passe dans l'aile est cachée par la profondeur. Le
+  témoin lit le RAYON de ce qui brille à pleine force et l'opacité du halo
+  de jour contre de nuit.
+
+Ce qui reste, déclaré dans `TASKS.md` : un appareil qui roule traverse les
+appareils garés (un avion n'est pas un obstacle, v534) ; Roissy, bâti à la
+main, garde ses trois postes dans le disque.
 
 ### Ce qu'un ouvrage vide, on n'y plante rien (v548)
 

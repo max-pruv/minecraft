@@ -6,12 +6,22 @@
 
 export const NOUVEAUTES = [
   {
-    v: 565,
+    v: 566,
     titre: 'Un jet privé',
     puces: [
       'Un jet noir et rouge',
-      'Garé à Orly, Rome, Barcelone…',
+      'Garé dans les rangées d\'avions',
       'Un escalier, quatre sièges',
+    ],
+  },
+  {
+    v: 565,
+    titre: 'De grands aéroports',
+    puces: [
+      'Des rangées d\'avions le long des pistes',
+      'A320, A321, Concorde et F-35',
+      'On les voit du ciel',
+      'Des feux d\'avion plus discrets',
     ],
   },
   {

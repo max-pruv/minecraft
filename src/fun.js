@@ -309,6 +309,7 @@ export function initFun(ctx) {
     debarquer();
     riding = a;
     a.montee = true;   // le gestionnaire d'animaux ne la retire jamais (animals.js)
+    a.gare = false;    // quitté au poste, un appareil emmené ne se voit plus de loin (v565)
     player.gaz = null; player.vitesseVoiture = 0;   // la manette des gaz part de zéro, le joystick reste l'accélérateur tant qu'elle n'a pas servi
     // La fiche décide : une voiture ne décolle pas, un cheval non plus une
     // fois qu'on le dira. Voir `volInterdit` dans player.js.
@@ -1313,6 +1314,8 @@ export function initFun(ctx) {
       if (nav) {
         nav.rouge.visible = true; nav.vert.visible = true;
         nav.eclat.visible = (performance.now() % 1000) < 180;
+        // à peine visibles de jour, un point vif dans son halo la nuit (v565)
+        if (nav.regler) nav.regler(nuitDehors());
       }
       const tuyeres = a.mesh.userData.tuyeres;
       if (tuyeres && tuyeres.length) {

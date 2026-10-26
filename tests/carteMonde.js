@@ -4773,13 +4773,16 @@ const VRAIES_KM = [
     // rien : l'appareil doit être en vol. Sur l'ancien code, cinquante-trois
     // s'écrasaient ou butaient sur le hangar posé dans l'axe de la rangée
     // (x = 33), les autres décollaient sur l'aire en ligne droite par chance.
+    // ET DEPUIS LA v565, LES TROIS CENT SOIXANTE-NEUF : la rangée d'un bord du
+    // disque à l'autre, des deux côtés de la piste, et les aires prolongées
+    // (`postesAerodrome`) — un poste qu'on ajoute est un poste d'où l'on part.
     {
       let r = null, err = null;
       try { r = await require('./sonde-decollage-postes.cjs').mesurer(require('path').join(__dirname, '..', 'src')); }
       catch (e) { err = String(e && e.message || e); }
       const rates = (r || []).filter((l) => !l.decolle);
-      verifier('✈️ depuis chacun des soixante postes : l\'appareil roule jusqu\'à la piste et décolle sans rien heurter',
-        !err && r && r.length >= 57 && rates.length === 0,
+      verifier('✈️ depuis chacun des postes, aires prolongées comprises : l\'appareil roule jusqu\'à la piste et décolle sans rien heurter',
+        !err && r && r.length >= 300 && rates.length === 0,
         `${err || ''} ${r ? `${r.length - rates.length}/${r.length} en vol` : ''} · ${rates.slice(0, 5).map((l) => `${l.cle} ${l.espece} → ${JSON.stringify(l.bute)} à ${l.ou.lx},${l.ou.lz}`).join(' · ')}`
         + (r ? ` · roulage au plus ${Math.max(...r.map((l) => l.roulage || 0))} s de jeu` : ''));
     }
@@ -5010,7 +5013,9 @@ const VRAIES_KM = [
           // sa boîte (le crâne, 0,71 au-dessus des hanches, sous le toit)
           sieges: def.sieges ? ((ud.sieges || []).length === def.sieges.length
             && ud.sieges.every((q) => q.x > b.min.x && q.x < b.max.x && q.z > b.min.z && q.z < b.max.z && q.y + 0.71 < b.max.y)) : true,
-          poste: av.varianteDuPoste ? av.varianteDuPoste(def.espece, 'ville') : null };
+          // le jet (v566) a sa place dans la rangée des aérodromes civils (v565)
+          poste: await import('./src/aeroport.js').then((A) => !!(A.modelesDeRangee
+            && A.modelesDeRangee('ville').some((q) => q.variante === cle))).catch(() => false) };
       }
       return out;
     });
@@ -5033,10 +5038,10 @@ const VRAIES_KM = [
       }
       return out;
     })();
-    verifier('les avions déposés tiennent le contrat du jeu — train, porte, flammes dans la tuyère, feux, sièges, fichiers propres, le jet aux aéroports de ville',
+    verifier('les avions déposés tiennent le contrat du jeu — train, porte, flammes dans la tuyère, feux, sièges, fichiers propres, le jet dans la rangée des aéroports civils',
       !contrat.absent && !fichiersAvions.absent && Object.keys(contrat).length === 4
         && Object.entries(contrat).every(([c, r]) => r.variante === c && r.train === 3 && r.ouvrant && r.tuyeres === r.attendues && r.dedans && r.feux && r.sieges)
-        && contrat.jet && contrat.jet.poste === 'jet'
+        && contrat.jet && contrat.jet.poste === true
         && Object.values(fichiersAvions).every((f) => f.racine && f.yeux === 0 && f.extensions.length === 0 && f.tris <= 40000)
         && fichiersAvions['airbus-a321.glb'] && fichiersAvions['airbus-a321.glb'].train === 3
         && fichiersAvions['chasseur-f35.glb'] && fichiersAvions['chasseur-f35.glb'].train === 3 && fichiersAvions['chasseur-f35.glb'].verriere,

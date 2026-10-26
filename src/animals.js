@@ -255,6 +255,7 @@ const SPECIES = [
 // Un peu plus de monde à l'écran depuis qu'il y a huit espèces de plus : sans
 // cela, on pouvait marcher longtemps sans croiser une seule bête à monter.
 const MAX_ANIMALS = 20;
+export const RETRAIT_GARE = 140;
 
 class Animal {
   constructor(def, x, y, z, baby, voeu) {
@@ -276,7 +277,7 @@ class Animal {
     // d'une voiture qu'on ressort d'un garage ; les autres espèces l'ignorent.
     this.mesh = BUILDERS[def.key](voeu);
     this.mesh.scale.setScalar(this.scale);
-    // UN APPAREIL PEUT PORTER SES PROPRES SIÈGES (v565) : le jet d'affaires a
+    // UN APPAREIL PEUT PORTER SES PROPRES SIÈGES (v566) : le jet d'affaires a
     // une cabine plus étroite que celle de son espèce. Tout ce qui assied un
     // passager lit `def.sieges` : on donne à CETTE bête une fiche à elle.
     if (this.mesh.userData && this.mesh.userData.sieges) this.def = { ...def, sieges: this.mesh.userData.sieges };
@@ -541,7 +542,10 @@ export class AnimalManager {
       // sur la bête (`montee`, posé par fun.js), comme `montable` dans sa fiche.
       // Une unité de police en service (v562) est menée par patrouille.js, qui
       // la retire elle-même quand la poursuite s'achève.
-      if (!a.montee && !a.enService && a.pos.distanceTo(this.player.pos) > 70) {
+      // UN AVION GARÉ SE VOIT DU CIEL (v565) : l'aéroportiste le pose jusqu'à
+      // `PRES_POSTE` blocs (main.js), et il ne s'efface qu'au-delà de
+      // `RETRAIT_GARE` — sinon, vu d'avion, le parking serait toujours vide.
+      if (!a.montee && !a.enService && a.pos.distanceTo(this.player.pos) > (a.gare ? RETRAIT_GARE : 70)) {
         // CE QU'ON RETIRE SE REND (v238). Une bête naît toutes les secondes et
         // demie et s'en va à soixante-dix blocs : sans cette ligne, chaque
         // renouvellement laissait ses géométries au pilote graphique pour
