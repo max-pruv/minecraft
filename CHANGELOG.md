@@ -20,6 +20,50 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v565 — De grands aéroports, et des feux d'avion discrets
+
+**Pourquoi.** Max : « agrandir les aéroports pour qu'il y ait beaucoup plus
+d'avions garés… et que les lumières rouges et vertes des avions soient mieux
+intégrées, elles ressortent beaucoup ». Mesuré avant : soixante postes sur
+vingt aérodromes — trois appareils au centre de l'aire, un seul modèle d'avion
+de ligne par aérodrome — et, vu du ciel, AUCUN avion : l'aéroportiste ne
+garnissait les postes qu'à moins de quatre-vingt-dix blocs du centre, et un
+appareil s'effaçait à soixante-dix. Les feux de navigation étaient des sphères
+de 0,3 bloc de rayon à pleine opacité, aussi vives à midi qu'à minuit.
+
+**Ce que ça change.**
+- Une rangée d'avions garés le long de la piste, d'un bord à l'autre de la
+  plate-forme et des DEUX côtés — et au-delà, des aires de stationnement
+  prolongées qui longent les pistes prolongées : 369 postes au lieu de 60.
+- Tous les modèles : A320, A321, Concorde et F-35 se suivent sur chaque
+  aéroport civil ; les bases militaires alignent leurs F-35.
+- Les avions garés se voient du ciel (jusqu'à cent vingt-huit blocs) et
+  restent à leur poste quand on s'éloigne (jusqu'à cent quarante).
+- Les feux de bord sont de petites lentilles au bout des ailes : à peine
+  visibles de jour, un point vif dans un halo la nuit ; rouge franc, vert
+  qui tire sur le bleu, l'éclat blanc de la queue moins éblouissant.
+- ✈️ depuis n'importe lequel des 369 postes : l'appareil roule jusqu'à la
+  piste et décolle.
+
+**Ce qui le prouve.** Six témoins. `plafond.js` : la table `AIRES` est
+exactement ce que mesure `sonde-aires-aeroports.mjs` (relief dans les bornes
+de l'ouvrage, à douze blocs de toute ville, route, voie ferrée, gare, repère
+et autre aérodrome, à quarante de ce que les enfants ont bâti) ; sous chaque
+appareil d'une aire l'asphalte, et rien au-dessus de 66 307 colonnes d'aire,
+aucun arbre sans tronc (190 lus). `carteMonde.js` : les 369 postes décollent
+par ✈️ (`sonde-decollage-postes.cjs`), et les postes du disque restent à ciel
+ouvert. `monte.js` : au-dessus d'Orly, une rangée d'appareils des quatre
+modèles, chacun sur un poste publié (trois, d'un seul modèle de ligne, sur
+l'ancien code) ; et les feux sont des lentilles de moins d'un dixième de bloc
+dont le halo ne rayonne que la nuit (0,3 bloc à pleine opacité sur l'ancien
+code). Les deux empreintes du relief ne bougent pas (rien n'est écrit dans
+`terrainHeight`), et l'empreinte des 490 morceaux, aires désarmées
+(`reglageAires`), rend sa constante au bit près. Coût mesuré au-dessus
+d'Orly : treize appareils garés, neuf appels de dessin chacun en moyenne
+(`sonde-appels-aeroport.cjs`).
+
+---
+
 ## v564 — La vraie tour Eiffel
 
 **Pourquoi.** Max a fourni un modèle 3D de la tour Eiffel (« Eiffel Tower » de

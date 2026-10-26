@@ -9467,6 +9467,20 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           const b = boiteConcorde;
           const eclats = new Set();
           for (let i = 0; i < 160 && eclats.size < 2; i++) { eclats.add(nav.eclat.visible); await dodo(50); }
+          // UN FEU EST UN POINT, PAS UNE BOULE (v565) : le rayon de ce qui
+          // brille à pleine force (la lentille, ou sur l'ancien code la sphère
+          // elle-même), et l'éclat de ses halos de jour contre de nuit
+          const lentille = (f) => (f.userData && f.userData.lentille) || f;
+          const rayon = (f) => { const ge = lentille(f).geometry; return ge && ge.parameters ? ge.parameters.radius : null; };
+          const halo = (f) => ((f.userData && f.userData.halos) || []).reduce((m, h) => Math.max(m, h.material.opacity), 0);
+          let jourNuit = null;
+          if (nav.regler) {
+            nav.regler(0); const jour = { lentille: lentille(nav.rouge).material.opacity, halo: halo(nav.rouge) };
+            nav.regler(1); const nuit = { lentille: lentille(nav.rouge).material.opacity, halo: halo(nav.rouge) };
+            jourNuit = { jour, nuit };
+          }
+          res.feux = { rayons: [rayon(nav.rouge), rayon(nav.vert), rayon(nav.eclat)],
+            opacite: lentille(nav.rouge).material.opacity, jourNuit };
           res.nav = { rouge: +nav.rouge.position.x.toFixed(2), vert: +nav.vert.position.x.toFixed(2),
             gauche: +b.min.x.toFixed(2), droite: +b.max.x.toFixed(2), queue: +nav.eclat.position.z.toFixed(2), arriere: +b.max.z.toFixed(2),
             allumes: nav.rouge.visible && nav.vert.visible, eclats: [...eclats] };
@@ -9547,6 +9561,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
             && n.queue > n.arriere - 0.35 && n.allumes && n.eclats.length === 2
             && Array.isArray(n.descendu) && n.descendu.every((x) => !x),
           JSON.stringify(n));
+        // Max : « les lumières rouges et vertes ne sont pas très jolies, elles
+        // ressortent beaucoup » (v565). Des sphères de 0,3 bloc de rayon à
+        // pleine opacité, jour et nuit, sur l'ancien code ; une lentille de
+        // moins d'un dixième de bloc, et un halo qui ne s'allume que la nuit.
+        const f = r.feux || {}, jn = f.jourNuit;
+        verifier('les feux de navigation sont des points intégrés au bout des ailes : une petite lentille, un halo qui ne rayonne que la nuit',
+          Array.isArray(f.rayons) && f.rayons.every((x) => x !== null && x <= 0.1)
+            && !!jn && jn.jour.lentille < jn.nuit.lentille && jn.jour.halo < 0.5 * jn.nuit.halo && jn.nuit.halo > 0,
+          JSON.stringify(f));
         const p = r.phares || {}, nu = p.nuit || {};
         const auNez = (nu.lueurs || []).length === 2 && nu.lueurs.every(([x, y, z]) => z < nu.avant + (nu.arriere - nu.avant) * 0.2 && y > nu.bas && y < nu.haut && Math.abs(x) < nu.large)
           && nu.lueurs[0][0] < 0 && nu.lueurs[1][0] > 0;
@@ -9902,6 +9925,51 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           && (espece !== 'chasseur' || (ps.remise && ps.remise.vu && ps.remise.t === 'Remise des gaz'
             && ps.relance && ps.relance.vu && ps.relance.t.startsWith('Atterrissage vers '))),
         `${r.err || ''} ${JSON.stringify(ps)} · ${r.s} s`);
+    }
+
+    // L'AÉROPORT EST GRAND, ET TOUS LES MODÈLES Y SONT GARÉS (v565). Max :
+    // « agrandir les aéroports pour qu'il y ait beaucoup plus d'avions garés…
+    // et qu'il y ait tous les modèles d'avions possibles ». Au-dessus d'Orly,
+    // à quarante blocs, l'enfant laisse l'aéroportiste garnir les postes à sa
+    // portée : sur l'ancien code, trois appareils au centre de l'aire (et un
+    // seul modèle d'avion de ligne) ; ici une rangée des deux côtés de la
+    // piste, A320, A321, Concorde et F-35, chacun sur un poste publié.
+    {
+      if (!tab.isClosed()) await banc.mettreDeCote(tab);
+      const pg = await banc.jouerSeul('MonteParking', { rr: 2 });
+      const r = await pg.evaluate(async () => {
+        const g = window.__game, am = g.animalManager, P = g.player;
+        const att = (ms) => new Promise((f) => setTimeout(f, ms));
+        const A = await import('./src/aeroport.js');
+        const a = A.AEROPORTS.find((q) => q.cle === 'orly');
+        // les modèles déposés d'abord : un avion né avant eux reste sculpté (v547)
+        try { await (await import('./src/avions.js')).chargerAvionsDeposes(); } catch { /* ancien code */ }
+        for (const b of [...am.animals]) am.scene.remove(b.mesh);
+        am.animals.length = 0;
+        if (!P.flying) P.toggleFly();
+        P.pos.set(a.x + 0.5, a.sol + 40, a.z + 0.5); P.vel.set(0, 0, 0);
+        const AVIONS = new Set(['avionligne', 'concorde', 'chasseur']);
+        const lire = () => am.animals.filter((b) => AVIONS.has(b.def.key));
+        const t0 = performance.now();
+        let n = 0, stable = 0;
+        while (performance.now() - t0 < 40000) {
+          await att(1000);
+          P.pos.set(a.x + 0.5, a.sol + 40, a.z + 0.5); P.vel.set(0, 0, 0);
+          const m = lire().length;
+          stable = m === n && m > 0 ? stable + 1 : 0; n = m;
+          if (stable >= 4) break;
+        }
+        const avions = lire();
+        const postes = A.postesAerodrome ? A.postesAerodrome(a) : A.postesAvion(a.profil, a.r);
+        const surUnPoste = avions.filter((b) => postes.some((q) => Math.hypot(b.pos.x - (a.x + q.du + 0.5), b.pos.z - (a.z + q.dv + 0.5)) < 1.2)).length;
+        const modeles = [...new Set(avions.map((b) => b.mesh.userData.variante || b.def.key))].sort();
+        return { n: avions.length, modeles, surUnPoste, postes: postes.length, s: Math.round((performance.now() - t0) / 1000) };
+      });
+      await pg.close();
+      if (!tab.isClosed()) await banc.ramener(tab);
+      verifier('au-dessus d\'Orly, une rangée d\'avions garés de chaque côté de la piste, et tous les modèles : A320, A321, Concorde, F-35',
+        r.n >= 8 && r.surUnPoste === r.n && ['a320', 'a321', 'concorde', 'f35'].every((k) => r.modeles.includes(k)),
+        JSON.stringify(r));
     }
 
     // ✈️ AU POSTE : ON ROULE JUSQU'À LA PISTE, PUIS ON DÉCOLLE (v530). Max :

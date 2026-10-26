@@ -20,7 +20,7 @@ async function mesurer(src) {
   const cam = { position: { copy() {} }, rotation: { set() {} } };
   const out = [];
   for (const a of A.AEROPORTS) {
-    for (const q of A.postesAvion(a.profil, a.r)) {
+    for (const q of (A.postesAerodrome ? A.postesAerodrome(a) : A.postesAvion(a.profil, a.r))) {
       const fiche = MONTURES.find((m) => m.key === q.espece);
       const p = new Player(cam, w);
       p.pilote = fiche.pilote; p.prendreGabarit(fiche.gabarit);

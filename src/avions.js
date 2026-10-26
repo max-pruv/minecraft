@@ -295,6 +295,10 @@ export function matiereAdditive(couleur, opacite) {
   });
 }
 
+// la lentille (rayon, en blocs) et ses deux halos (rayon, opacité de nuit)
+export const FEU_LENTILLE = 0.07;
+export const FEU_HALOS = [[0.14, 0.28], [0.3, 0.05]];
+
 // LES FEUX DE NAVIGATION (v533). Revue d'écran, ligne 8 : en vol de nuit,
 // l'avion n'avait aucun feu. Rouge en bout d'aile GAUCHE (−x, le nez en −z),
 // vert en bout d'aile droite, un éclat blanc à la queue. On ne les écrit pas
@@ -325,24 +329,56 @@ function feuxNavigation(g, memo = null) {
     if (memo && gauche) Object.assign(memo, { gauche, droite, queue });
   }
   if (!gauche) return null;
-  // rentrés de leur rayon : un feu ne doit pas allonger ni élargir le modèle,
-  // dont les postes de l'aéroport lisent la longueur et l'envergure (v278)
-  const feu = (p, couleur, r, dx, dz) => {
-    const geo = new THREE.SphereGeometry(r, 10, 8);
-    const m = new THREE.Mesh(geo, matiereAdditive(couleur, 0.95));
-    m.position.set(p.x + dx * r, p.y, p.z + dz * r);
-    m.frustumCulled = false;
-    m.visible = false;
-    g.add(m);
-    return m;
+  // UN FEU DE BORD EST UN POINT, PAS UNE BOULE (v565). Max : « les lumières
+  // rouges et vertes ne sont pas très jolies, elles ressortent beaucoup ».
+  // C'étaient des sphères de six dixièmes de bloc à pleine opacité, aussi
+  // vives à midi qu'à minuit — trois bulles collées au bout des ailes. Un
+  // vrai feu de navigation est une lentille de la taille d'une paume, logée
+  // dans le saumon d'aile ; de jour on la devine à peine, de nuit c'est un
+  // point vif dans un halo. Une petite lentille, et deux halos dont l'opacité
+  // suit la nuit (`regler`, appelée par fun.js) : la moitié du halo qui passe
+  // dans l'aile est cachée par la profondeur, ce qui reste rayonne vers
+  // l'extérieur. Même matière additive (v533) : la couleur et l'opacité sont
+  // des uniformes, aucun programme neuf. Les couleurs sont celles de
+  // l'aviation — un rouge franc, un vert qui tire sur le bleu.
+  // Le feu est un GROUPE posé au bout de l'aile (rentré du rayon de sa
+  // lentille : un feu ne doit ni allonger ni élargir le modèle, dont les
+  // postes de l'aéroport lisent la longueur et l'envergure, v278).
+  const feu = (p, couleur, dx, dz) => {
+    const groupe = new THREE.Group();
+    groupe.position.set(p.x + dx * FEU_LENTILLE, p.y, p.z + dz * FEU_LENTILLE);
+    const lentille = new THREE.Mesh(new THREE.SphereGeometry(FEU_LENTILLE, 10, 8), matiereAdditive(couleur, 0.9));
+    lentille.frustumCulled = false;
+    groupe.add(lentille);
+    const halos = FEU_HALOS.map(([r]) => {
+      const h = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), matiereAdditive(couleur, 0));
+      h.frustumCulled = false;
+      groupe.add(h);
+      return h;
+    });
+    groupe.userData.lentille = lentille;
+    groupe.userData.halos = halos;
+    groupe.visible = false;
+    g.add(groupe);
+    return groupe;
   };
-  return {
-    rouge: feu(gauche, 0xff1000, 0.3, 1, 0),
-    vert: feu(droite, 0x00ff30, 0.3, -1, 0),
-    eclat: feu(queue, 0xffffff, 0.3, 0, -1),
+  const nav = {
+    rouge: feu(gauche, 0xff1e0e, 1, 0),
+    vert: feu(droite, 0x12ff80, -1, 0),
+    eclat: feu(queue, 0xffffff, 0, -1),
   };
+  // `nuit` va de 0 (plein jour) à 1 (nuit noire), lu sur `nuitDehors`
+  nav.regler = (nuit) => {
+    for (const f of [nav.rouge, nav.vert, nav.eclat]) {
+      f.userData.lentille.material.opacity = 0.5 + 0.45 * nuit;
+      // le blanc de l'éclat sature deux fois plus vite que le rouge ou le vert
+      const k = f === nav.eclat ? 0.5 : 1;
+      f.userData.halos.forEach((h, i) => { h.material.opacity = k * FEU_HALOS[i][1] * (0.15 + 0.85 * nuit); });
+    }
+  };
+  nav.regler(0);
+  return nav;
 }
-
 function flamme(t) {
   const groupe = new THREE.Group();
   groupe.position.set(t.x, t.y, t.z);
@@ -741,15 +777,6 @@ export function varianteAvion(espece, voeu = null) {
   const voulue = voeu && (voeu.variante || voeu.flotte);
   if (voulue && liste.includes(voulue) && protosAvion.has(voulue)) return voulue;
   return liste.find((v) => protosAvion.has(v)) || null;
-}
-
-// QUEL AVION DE LIGNE SE GARE OÙ : l'A321, le plus long des deux, sur les
-// grandes plates-formes (`hub`), l'A320 ailleurs et à Roissy, sa maison. Une
-// règle lue sur le profil de l'aérodrome — jamais un tirage : deux tablettes
-// voient le même appareil au même poste.
-export function varianteDuPoste(espece, profil) {
-  if (espece !== 'avionligne') return null;
-  return profil === 'hub' ? 'a321' : 'a320';
 }
 
 function depuisModele(cle) {

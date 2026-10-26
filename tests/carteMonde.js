@@ -4773,13 +4773,16 @@ const VRAIES_KM = [
     // rien : l'appareil doit être en vol. Sur l'ancien code, cinquante-trois
     // s'écrasaient ou butaient sur le hangar posé dans l'axe de la rangée
     // (x = 33), les autres décollaient sur l'aire en ligne droite par chance.
+    // ET DEPUIS LA v565, LES TROIS CENT SOIXANTE-NEUF : la rangée d'un bord du
+    // disque à l'autre, des deux côtés de la piste, et les aires prolongées
+    // (`postesAerodrome`) — un poste qu'on ajoute est un poste d'où l'on part.
     {
       let r = null, err = null;
       try { r = await require('./sonde-decollage-postes.cjs').mesurer(require('path').join(__dirname, '..', 'src')); }
       catch (e) { err = String(e && e.message || e); }
       const rates = (r || []).filter((l) => !l.decolle);
-      verifier('✈️ depuis chacun des soixante postes : l\'appareil roule jusqu\'à la piste et décolle sans rien heurter',
-        !err && r && r.length >= 57 && rates.length === 0,
+      verifier('✈️ depuis chacun des postes, aires prolongées comprises : l\'appareil roule jusqu\'à la piste et décolle sans rien heurter',
+        !err && r && r.length >= 300 && rates.length === 0,
         `${err || ''} ${r ? `${r.length - rates.length}/${r.length} en vol` : ''} · ${rates.slice(0, 5).map((l) => `${l.cle} ${l.espece} → ${JSON.stringify(l.bute)} à ${l.ou.lx},${l.ou.lz}`).join(' · ')}`
         + (r ? ` · roulage au plus ${Math.max(...r.map((l) => l.roulage || 0))} s de jeu` : ''));
     }

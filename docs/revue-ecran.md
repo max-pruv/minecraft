@@ -230,3 +230,19 @@ l'interface.
 | --- | --- | --- | --- | --- | --- | --- |
 | 34 | basse | au roulage, de jour (v563) | [roulage](revue-ecran/v563-avions/ipad-aeroport-roulage-jour.jpg) | Les feux de navigation font deux grosses boules rouge et verte au bout des ailes vues de la caméra de poursuite ; leur taille est celle de la v533, la même sur l'avion sculpté. | Réduire le rayon des lentilles de navigation, ou les estomper de jour (à mesurer avec le témoin des feux de monte.js). | `src/avions.js` |
 | 35 | basse | Orly vu du ciel (v563) | (aucune — capture locale) | Sur l'état `aeroport-ciel`, l'aire d'Orly est vide : l'aéroportiste ne fait naître les appareils qu'à portée de l'enfant, et la sonde prend la vue avant. Antérieur. | Faire attendre à la sonde un appareil au poste. | `tests/sonde-revue-ecran.cjs` |
+
+## Le relevé de la v565 (de grands aéroports, des feux discrets), 25 octobre 2026
+
+États `avion-sol`, `avion-vol`, `aeroport-roulage`, `aeroport-ciel`, iPhone
+et iPad, jour et nuit, dans `docs/revue-ecran/v565-aeroports/`, et quatre
+vues d'avant la livraison (préfixe `avant-`). Les lignes 34 et 35 sont
+corrigées : les feux de bord sont des lentilles qu'on devine de jour et qui
+rayonnent la nuit ([avant](revue-ecran/v565-aeroports/avant-ipad-avion-vol-jour.jpg),
+[après](revue-ecran/v565-aeroports/ipad-avion-vol-jour.jpg)) ; vu du ciel, Orly
+porte deux rangées d'appareils des quatre modèles
+([avant](revue-ecran/v565-aeroports/avant-ipad-aeroport-ciel-jour.jpg),
+[après](revue-ecran/v565-aeroports/ipad-aeroport-ciel-jour.jpg)).
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 36 | basse | au roulage (v565) | [roulage](revue-ecran/v565-aeroports/iphone-aeroport-roulage-jour.jpg) | La rangée étant pleine, l'appareil qui part de son poste vers la piste fait passer un bout d'aile dans son voisin garé : un avion n'est pas un obstacle (v534). | Une boîte d'envergure pour les appareils garés, jugée chez le joueur comme une famille d'obstacle (v252). | `src/main.js`, `src/player.js` |

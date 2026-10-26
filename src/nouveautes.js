@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 565,
+    titre: 'De grands aéroports',
+    puces: [
+      'Des rangées d\'avions le long des pistes',
+      'A320, A321, Concorde et F-35',
+      'On les voit du ciel',
+      'Des feux d\'avion plus discrets',
+    ],
+  },
+  {
     v: 564,
     titre: 'La vraie tour Eiffel',
     puces: [
