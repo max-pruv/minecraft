@@ -455,7 +455,8 @@ const ETATS = [
       return { x: a.x + p.du, z: a.z + p.dv - 3, sol: a.sol };
     });
     await poserEt(tab, { x: q.x, z: q.z, y: q.sol + 1.05, yaw: Math.PI });
-    const r = await monterEnAvion(tab);
+    // Orly est un aéroport de ville : son poste porte le jet privé (v565)
+    const r = await monterEnAvion(tab, 'avionligne', { variante: 'jet' });
     await tab.evaluate(() => {
       const P = window.__game.player;
       P.yaw = -Math.PI / 2; P.pitch = -0.1;
@@ -570,18 +571,18 @@ async function monterEnVoiture(tab) {
   });
 }
 
-async function monterEnAvion(tab, espece = 'avionligne') {
-  return tab.evaluate(async (espece) => {
+async function monterEnAvion(tab, espece = 'avionligne', voeu = null) {
+  return tab.evaluate(async ({ espece, voeu }) => {
     const g = window.__game;
     const tenir = (n) => new Promise((f) => setTimeout(f, n * 1000));
     for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
     g.animalManager.animals.length = 0;
     const d = { x: -Math.sin(g.player.yaw), z: -Math.cos(g.player.yaw) };
-    g.animalManager.invoquer(espece, Math.round(g.player.pos.x + d.x * 3), Math.round(g.player.pos.z + d.z * 3));
+    g.animalManager.invoquer(espece, Math.round(g.player.pos.x + d.x * 3), Math.round(g.player.pos.z + d.z * 3), false, voeu);
     for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await tenir(0.6); }
     await tenir(1.5);
     return { pilote: !!g.player.pilote };
-  }, espece);
+  }, { espece, voeu });
 }
 
 // ——— la boucle ————————————————————————————————————————————————————————————————

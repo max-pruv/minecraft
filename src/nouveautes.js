@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 566,
+    titre: 'Un jet privé',
+    puces: [
+      'Un jet noir et rouge',
+      'Garé dans les rangées d\'avions',
+      'Un escalier, quatre sièges',
+    ],
+  },
+  {
     v: 565,
     titre: 'De grands aéroports',
     puces: [

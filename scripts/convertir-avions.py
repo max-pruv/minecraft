@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-# Convertit les trois avions déposés par Max (octobre 2026, archives Sketchfab
-# « airbus_a320 », « airbus_a321-232 », « lockheed_martin_f35_lightning_ii »)
+# Convertit les avions déposés par Max (octobre 2026, archives Sketchfab
+# « airbus_a320 », « airbus_a321-232 », « lockheed_martin_f35_lightning_ii »,
+# puis « luxury_private_jet_3d_model__business_aircraft », v565)
 # en glb au CONTRAT DES AVIONS DU JEU (voir src/avions.js, `AVIONS_GLB`) :
 #
 #   - un bloc par unité, la longueur TOTALE de l'appareil égale à `long` de
@@ -26,6 +27,10 @@
 #   npx @gltf-transform/cli@4.1.1 simplify vendor/avions/chasseur-f35.glb \
 #       vendor/avions/chasseur-f35.glb --ratio 0.35 --error 0.0008
 # 81 000 → 38 000 triangles, 2,9 → 1,65 Mo, indiscernable en capture.
+# Et pour le jet d'affaires (v565), de même :
+#   npx @gltf-transform/cli@4.1.1 simplify vendor/avions/jet-prive.glb \
+#       vendor/avions/jet-prive.glb --ratio 0.8 --error 0.0008
+# 45 000 → 36 000 triangles, 1,2 → 0,99 Mo.
 # Le dossier contient les trois dossiers d'origine (scene.gltf, *.bin,
 # textures/). Le script imprime ses mesures en JSON : elles sont recopiées
 # dans `AVIONS_GLB`, jamais devinées.
@@ -112,6 +117,42 @@ MODELES = {
         # la tuyère orientable : sa matière le dit (l'intérieur, la couronne)
         'tuyeres': [{'boite': [-0.2, 0.3, -2.3, 0.2, 0.7, -1.6], 'sortie': 0.9,
                      'materiau': ['TVC_inside', 'screen', 'Brownish_engine_color']}],
+    },
+    # Le jet d'affaires (archive « luxury_private_jet_3d_model__business_
+    # aircraft », pranavy94, CC-BY-4.0), une variante de l'avion de ligne
+    # (v565). Son nœud « red aeroplane » porte une rotation de présentation
+    # quelconque (l'appareil est de travers dans la scène : axes principaux
+    # à 25° des axes du monde) ; ses maillages, eux, sont alignés dans leur
+    # propre repère — envergure en y, longueur en z, nez vers −z, haut vers
+    # −x (la dérive en T monte à x −2,19). On part donc de ce nœud avec une
+    # matrice écrite (`depart`) qui ramène ce repère à la convention de
+    # l'archive (nez +z, haut +y) : (x, y, z) ← (−y, −x, −z), déterminant +1.
+    'jet': {
+        'dossier': 'luxury_private_jet_3d_model__business_aircraft',
+        'sortie': 'jet-prive.glb',
+        # PLUS COURT QUE SON GABARIT, ET C'EST VOULU : un déposé doit tenir
+        # DANS le gabarit de son espèce (16 blocs). Un jet d'affaires de la
+        # classe du G650 fait 30 m pour les 37,6 m d'un A320 ; à l'échelle de
+        # l'A320 (0,426 bloc/m) il ferait 12,9 blocs — on en prend 13.
+        'long': 13.0,
+        'depart': {'noeud': 'red_aeroplane', 'matrice': [[0, -1, 0, 0], [-1, 0, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]},
+        # pas de train dans l'archive : le sol se pose sous le ventre (−0,975
+        # dans l'archive, la dérive culmine à 2,19) avec la garde d'un vrai
+        # jet d'affaires, environ un mètre — 0,64 unité sur 19,4 de long
+        'hauteurReelle': 2.194 + 0.975 + 0.64,
+        'retirer_materiau': [],
+        'retirer_noeud': [],
+        # le « verre » de l'archive est un gris clair opaque à 0,8 : sur le
+        # fuselage blanc, les hublots disparaissaient. Un vitrage de cockpit
+        # est sombre (même teinte que la baie d'une porte).
+        'couleurs': {'glass': [0.05, 0.07, 0.09, 1]},
+        'pieces': {},
+        # les deux réacteurs arrière, sur mâts au-dessus de l'aile, par leur
+        # matière (le reste de Material.002 est le nez)
+        'tuyeres': [
+            {'boite': [1.0, 0.2, -5.0, 2.1, 1.5, -1.2], 'sortie': 0.62, 'materiau': ['Material.002']},
+            {'boite': [-2.1, 0.2, -5.0, -1.0, 1.5, -1.2], 'sortie': 0.62, 'materiau': ['Material.002']},
+        ],
     },
 }
 
@@ -220,8 +261,15 @@ def convertir(racine, cle, conf, dossier_sortie):
         for c in n.get('children', []):
             marcher(c, m, coupe, lignee)
 
-    for r in g['scenes'][g.get('scene', 0)]['nodes']:
-        marcher(r, np.eye(4), False)
+    if conf.get('depart'):
+        dep = conf['depart']
+        i0 = next(i for i, n in enumerate(g['nodes']) if nom_net(n.get('name')) == dep['noeud'])
+        M0 = np.array(dep['matrice'], dtype=np.float64)
+        for c in g['nodes'][i0].get('children', []):
+            marcher(c, M0, False, (dep['noeud'],))
+    else:
+        for r in g['scenes'][g.get('scene', 0)]['nodes']:
+            marcher(r, np.eye(4), False)
 
     # 2. Chaque triangle à sa pièce, par son centre
     import re
@@ -340,6 +388,8 @@ def convertir(racine, cle, conf, dossier_sortie):
         f = sortie['pbrMetallicRoughness']['baseColorFactor']
         if 'baseColorTexture' in sortie['pbrMetallicRoughness'] and f[0] == f[1] == f[2] and f[0] >= 0.5:
             sortie['pbrMetallicRoughness']['baseColorFactor'] = [1, 1, 1, f[3]]
+        if src.get('name') in conf.get('couleurs', {}):
+            sortie['pbrMetallicRoughness']['baseColorFactor'] = conf['couleurs'][src['name']]
         if src.get('doubleSided'):
             sortie['doubleSided'] = True
         materiaux_sortie.append(sortie)

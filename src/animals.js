@@ -277,6 +277,10 @@ class Animal {
     // d'une voiture qu'on ressort d'un garage ; les autres espèces l'ignorent.
     this.mesh = BUILDERS[def.key](voeu);
     this.mesh.scale.setScalar(this.scale);
+    // UN APPAREIL PEUT PORTER SES PROPRES SIÈGES (v566) : le jet d'affaires a
+    // une cabine plus étroite que celle de son espèce. Tout ce qui assied un
+    // passager lit `def.sieges` : on donne à CETTE bête une fiche à elle.
+    if (this.mesh.userData && this.mesh.userData.sieges) this.def = { ...def, sieges: this.mesh.userData.sieges };
   }
 
   // POUSSÉE PAR LA VOITURE DE L'ENFANT (v534) : une voiture garée ou invoquée

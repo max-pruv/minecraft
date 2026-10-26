@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v566 — Un jet privé
+
+**Pourquoi.** Max a déposé un modèle 3D de jet d'affaires (« Luxury Private Jet
+3D Model Business Aircraft » de pranavy94, Sketchfab, CC-BY-4.0) : « add this
+aircraft ». Le jeu n'avait que des avions de ligne, un Concorde et un chasseur.
+
+**Ce que ça change.**
+- Un jet d'affaires noir, réacteurs arrière cerclés de rouge, rejoint la flotte.
+  C'est une variante de l'avion de ligne, à sa vraie proportion : 13 blocs de
+  long, quand l'A320 en fait 16.
+- Il prend sa place dans les rangées d'avions garés de tous les aéroports
+  civils (v565), entre l'A320 et l'A321.
+- Il a son train (fabriqué par le jeu : l'archive n'en a pas), ses flammes,
+  ses feux de navigation, une porte juste derrière le cockpit et son escalier,
+  et une cabine à quatre sièges où un ami s'assoit en passager.
+- Un ami voit le même jet : la variante voyage avec la position.
+- Le crédit de l'auteur est dans `vendor/avions/LICENSE.md`.
+
+**Ce qui le prouve.** Les témoins des avions déposés de `carteMonde.js` comptent
+désormais quatre modèles : le jet tient dans le gabarit de l'avion de ligne
+(plus court, comme il le déclare), est posé sur ses roues, et tient le contrat
+(train, porte, flammes dans la tuyère, feux, fichier sans extension, sous
+40 000 triangles). La table des programmes à chauffer (`monte.js`) couvre son
+fichier sans signature neuve. Sondes isolées rejouées : la séquence
+d'embarquement entière (monter par l'escalier, seuil à 0,78, descendre, zéro
+clé de programme neuve) et les captures de côté et de trois quarts.
+
+---
+
 ## v565 — De grands aéroports, et des feux d'avion discrets
 
 **Pourquoi.** Max : « agrandir les aéroports pour qu'il y ait beaucoup plus

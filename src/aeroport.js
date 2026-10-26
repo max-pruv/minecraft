@@ -1552,10 +1552,13 @@ const POSTES_ROISSY = [
 // au-delà, sur les aires prolongées — c'est un aéroport. Les modèles se
 // suivent dans cet ordre, A320 et A321 en majorité comme sur un vrai tarmac,
 // le Concorde et le F-35 entre eux ; une base ne gare que des chasseurs.
+// Le jet d'affaires (v566) est un avion de ligne : il prend un poste de seize
+// blocs comme eux, la rangée garde donc ses cotes.
 // Une règle lue sur le rang du poste, jamais un tirage : deux tablettes
 // voient le même appareil au même poste.
 const RANGEE_CIVILE = [
   { espece: 'avionligne', variante: 'a320' },
+  { espece: 'avionligne', variante: 'jet' },
   { espece: 'avionligne', variante: 'a321' },
   { espece: 'concorde', variante: null },
   { espece: 'avionligne', variante: 'a320' },
