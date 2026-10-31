@@ -306,7 +306,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   closed ») au témoin de l'eau (ligne 6822), au bout de soixante minutes : la
   branche, elle, est allée jusqu'au bout. Une fois vue, à surveiller.
 
-## v573 — Rouges du portail qui ne sont pas de cette livraison (double mesure)
+## v574 — Rouges du portail qui ne sont pas de cette livraison (double mesure)
 
 - `carteMonde.js` : « chaque appareil tient dans le poste », « l'envergure
   annoncée est celle du modèle rendu », « les avions déposés tiennent dans le
@@ -315,7 +315,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   appareils dépassent de 0,15 à 0,36 bloc, uniformément : très probablement
   les halos des feux de bord de la v565 (`FEU_HALOS`, au bout des ailes et à
   la queue), qui entrent dans la boîte que le témoin mesure. `avions.js` n'est
-  pas touché par la v573. À trancher : mesurer la boîte sans les halos, ou
+  pas touché par la v574. À trancher : mesurer la boîte sans les halos, ou
   les déclarer dans le gabarit.
 - `reseau.js`, fluidité des amis (« avance en temps réel, pas par bonds »,
   « par le nuage… pas par paquets », « par l'hôte, la position d'un invité
@@ -350,20 +350,20 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   120 : le témoin dépendait du rebond. `sonde-police.cjs` ajoute des bêtises
   jusqu'à deux étoiles (trois au plus) et publie `betises2`.
 
-- ~~La police est locale à la tablette~~ **FAIT en v573** : les étoiles dans
+- ~~La police est locale à la tablette~~ **FAIT en v574** : les étoiles dans
   `p.v.w`, l'escorte menée par chaque tablette (`patrouille.amis`), deux
   témoins à trois tablettes (`reseau.js`, `sonde-police-reseau.cjs`). Reste :
   l'ami ne voit pas le CONTRÔLE (l'escorte s'arrête derrière le conducteur
   arrêté, sans policier ni phrase) — le contrôle voyagerait par un état de
   plus dans `p.v` (`k` : la clé de la phrase), à mesurer comme le reste.
-- ~~La moto a la boîte d'une voiture en longueur~~ **FAIT en v573**
+- ~~La moto a la boîte d'une voiture en longueur~~ **FAIT en v574**
   (`longueur: 2.4` dans sa fiche, `player.demiLong`) ; mesuré, de face elle
   s'arrête à 1,2 bloc d'un mur au lieu de 2,2. Reste : la RUE (`vehicules.js`,
   `cederLePassage`) et la tablette d'un ami jugent encore une moto à la
   longueur d'une voiture (`DEMI_LONG_VOITURE`) — elles s'arrêtent un bloc
   plus tôt devant elle, ce qui est sûr.
 - ~~Le contrôle reste derrière quand un bloc barre le chemin devant~~ **FAIT
-  en v573** : il double par la droite si la gauche est barrée
+  en v574** : il double par la droite si la gauche est barrée
   (`etat().controle.cote`) ; seulement les deux barrées, il reste derrière.
 - **Le policier ne marche pas** (le modèle fourni n'a pas d'armature) : il
   glisse de sa portière à celle de l'enfant. Un modèle armé, ou un corps

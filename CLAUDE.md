@@ -1090,7 +1090,7 @@ s'entend), `src/moto.js` (le modèle, ses éclats). Les modèles sont ceux de Ma
   phrase. Le témoin lit ce que le jeu a demandé de dire (l'appel, puis la cause
   et « Bonne route »), la sirène dans SA bande (1 100–1 450 Hz) sur la sortie.
 
-**La police d'un ami (v573).** Trois règles.
+**La police d'un ami (v574).** Trois règles.
 
 - **CE QUI VOYAGE, CE SONT LES ÉTOILES, PAS LA PISTE.** `p.v.w` (la position,
   comme les feux stop v549 : `v` est recopié entier sur `pos` et `rpos`), six
