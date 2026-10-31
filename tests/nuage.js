@@ -71,6 +71,28 @@ function servirLeNuage(port) {
         }
         return json(res, [...t.magasin.entries()].map(([k2, v]) => t.ligne(k2, v)));
       }
+      // L'écriture SOUS CONDITION (v571) : `prefs->>clé=eq.v` ou `is.null`,
+      // comme le vrai PostgREST — vérifié contre la base de production sur une
+      // ligne qui n'existe pas. Rend les lignes écrites (`select=name`).
+      if (req.method === 'PATCH' && table === 'player_prefs') {
+        const k = egal(url, 'name');
+        const corps = await lire(req);
+        let cles = k !== null && prefs.has(k) ? [k] : [];
+        for (const [param, v] of url.searchParams) {
+          const m = /^prefs->>(\w+)$/.exec(param);
+          if (!m) continue;
+          cles = cles.filter((k2) => {
+            const val = (prefs.get(k2) || {})[m[1]];
+            const txt = val === undefined || val === null ? null
+              : (typeof val === 'object' ? JSON.stringify(val) : String(val));
+            if (v === 'is.null') return txt === null;
+            if (v.startsWith('eq.')) return txt === v.slice(3);
+            return false;
+          });
+        }
+        for (const k2 of cles) prefs.set(k2, corps.prefs);
+        return json(res, cles.map((k2) => ({ name: k2 })));
+      }
       if (req.method === 'POST') {
         for (const r of await lire(req)) {
           t.magasin.set(t.cle(r), table === 'player_prefs' ? r.prefs

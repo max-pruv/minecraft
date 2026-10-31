@@ -825,10 +825,26 @@
        porte son mot, et rien n'entre dans le quart du joystick (v272). */
     body.en-avion #gaz-base { right: 16px; width: 56px; height: 220px; border-radius: 28px; }
     body.en-avion #cmd-vol { right: 80px; width: 64px; height: 220px; border-radius: 32px; }
-    body.en-avion #gaz-val { right: 80px; width: 64px; bottom: calc(100px + var(--safe-bottom)); }
+    body.en-avion #gaz-val { right: 80px; width: 64px; bottom: calc(98px + var(--safe-bottom)); }
+    body.en-avion #gaz-val b { font-size: 15px; line-height: 1.05; }
+    body.en-avion #gaz-val small { font-size: 9px; line-height: 1.1; }
     body.en-avion #train-btn, body.en-avion #fly-btn { right: 84px; width: 56px; height: 56px; }
-    body.en-avion #train-btn { bottom: calc(136px + var(--safe-bottom)); }
-    body.en-avion #fly-btn { bottom: calc(198px + var(--safe-bottom)); }
+    body.en-avion #train-btn { bottom: calc(140px + var(--safe-bottom)); }
+    body.en-avion #fly-btn { bottom: calc(202px + var(--safe-bottom)); }
+    /* L'ALTIMÈTRE (Max : « j'aimerais qu'on voie l'altitude quand on pilote
+       un avion »). Dans la colonne de bord, juste au-dessus de la vitesse —
+       les deux nombres qu'un pilote regarde ensemble —, et pas un pixel dans
+       le quart du joystick (v272). Pour lui faire place, la vitesse se serre
+       d'un cran et 🛞, ✈️ montent de quatre pixels : ✈️ touche alors
+       « Descendre » sans le chevaucher, et rien ne dépasse le haut de la
+       manette (v265). main.js l'écrit seulement quand le nombre change. */
+    #alt-val {
+      display: none; position: fixed; right: 80px; width: 64px; bottom: calc(125px + var(--safe-bottom));
+      text-align: center; color: #fff; z-index: 7; pointer-events: none; white-space: nowrap;
+      font-size: 12px; font-weight: 800; line-height: 1.1;
+      text-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
+    }
+    body.en-avion #alt-val { display: block; }
     /* LE CADRAN DE CAP (v263) : aux commandes seulement, en haut au milieu —
        le cap en degrés, la ville devant et sa distance, et un repère qui
        glisse sur la règle quand on tourne. Sous le compteur du temps de
@@ -2321,7 +2337,7 @@
        seule sa peau change. */
     body.hud-simple.en-avion #construire-btn { display: none !important; }
     body.hud-simple.en-avion #fly-btn, body.hud-simple.en-avion #train-btn { right: 84px; width: 56px; height: 56px; }
-    body.hud-simple.en-avion #fly-btn { bottom: calc(198px + var(--safe-bottom)); }
+    body.hud-simple.en-avion #fly-btn { bottom: calc(202px + var(--safe-bottom)); }
     body.hud-simple #train-btn.sorti { background: rgba(14, 146, 104, 0.55); border-color: #fff; }
     body.hud-simple.en-avion .fun-target button#ride-btn {
       width: 56px; height: 56px; padding: 0; border-radius: 50%; background: var(--hud-voile);
@@ -2717,6 +2733,7 @@
     <div id="gaz-base"><div id="gaz-fill"></div><svg id="gaz-chevrons" viewBox="0 0 24 60" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 14 12 7l7 7M5 32l7-7 7 7M5 50l7-7 7 7"/></svg><div id="gaz-knob"></div><span id="gaz-mot">Gaz</span></div>
     <div id="cmd-vol"></div>
     <div id="gaz-val"></div>
+    <div id="alt-val" role="status"></div>
     <button class="tbtn" id="train-btn" title="Train d'atterrissage" aria-label="Train d'atterrissage"><span class="ic"></span><span class="lb" id="train-lb">TRAIN</span></button>
   </div>
 

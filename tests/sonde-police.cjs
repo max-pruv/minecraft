@@ -129,17 +129,17 @@ async function passage(page) {
     const vus = new Set();
     for (let i = 0; i < 12 && unite; i++) { vus.add(unite.mesh.children.filter((o) => /^Eclat_/.test(o.name) && o.visible).map((o) => o.name).join('+')); await dodo(90); }
     out.gyrophares = [...vus];
-    // deux étoiles : la moto. LE BARÈME NE LES DONNE PAS EN DEUX BÊTISES
-    // (v568) : une voiture (45) et un piéton (55) font 100, sous le seuil de
-    // 120 — ce témoin ne passait que si la poursuite en ajoutait une troisième
-    // par hasard (la voiture garée reprise en tournant sur la dalle). Depuis
-    // que la voiture poussée tourne sur elle-même (v567), elle n'est plus sur
-    // le chemin, et le témoin rougissait sans que la police ait changé. On
-    // ajoute des bêtises jusqu'à la deuxième étoile (trois au plus) : ce qu'il
-    // garde, c'est qu'à deux étoiles la moto vient.
+    // deux étoiles : la moto. LE TÉMOIN POSE SES DEUX ÉTOILES LUI-MÊME : le
+    // choc contre la voiture garée vaut 45 points, ou 90 quand elle rebondit
+    // et publie un second choc (v534) ; un piéton en vaut 55, et la seconde
+    // étoile est à 120 (`SEUILS`). Un seul choc, et 45 + 55 = 100 laissait la
+    // moto au garage — rouge au portail de claude/temoins-intermittents
+    // (`choc.points 45`, `etoiles2 1`), vert quand le choc avait rebondi. On
+    // ajoute des bêtises jusqu'à deux étoiles, trois au plus, et l'on publie
+    // combien il en a fallu.
     out.pointsAvant = pat.etat().points;
     out.betises2 = 0;
-    for (let i = 0; i < 3 && pat.etoiles() < 2; i++) { pat.betise('pieton'); out.betises2++; }
+    while (pat.etoiles() < 2 && out.betises2 < 3) { pat.betise('pieton'); out.betises2++; }
     const t1 = performance.now();
     while (performance.now() - t1 < 15000 && !pat.etat().unites.some((u) => u.type === 'moto')) await dodo(300);
     out.moto = pat.etat().unites.find((u) => u.type === 'moto') || null;
@@ -274,4 +274,31 @@ if (require.main === module) (async () => {
     console.log(JSON.stringify(await passageMoto(page), null, 1));
   } finally { await banc.fermer(); process.exit(0); }
 })();
-module.exports = { passage, passageMoto, dalle };
+// LE CONTRÔLE PASSE À DROITE QUAND LA GAUCHE EST BARRÉE (police-réseau). Sur
+// une dalle à soi, l'enfant immobile, une voiture de police dix blocs
+// derrière : le chemin libre passe à gauche ; un mur posé à gauche, il passe à
+// droite ; un mur des deux côtés, il reste derrière et nomme le bloc.
+async function passageCote(page) {
+  const x0 = 51000, z0 = 51000;
+  const y0 = await dalle(page, x0, z0, 30);
+  return page.evaluate(async ([x0, z0, y0]) => {
+    const g = window.__game, P = g.player, pat = window.__patrouille;
+    if (!pat || !pat.essaiDevant) return { err: 'pas d\'essaiDevant (patrouille)' };
+    const { BLOCK } = await import('./src/blocks.js');
+    pat.remiseAZero();
+    P.flying = false; P.yaw = 0; P.vel.set(0, 0, 0);
+    P.pos.set(x0 + 0.5, y0 + 1, z0 + 0.5);
+    const ay = P.yaw + Math.PI, fx = Math.sin(ay), fz = Math.cos(ay), gx = Math.cos(ay), gz = -Math.sin(ay);
+    const derriere = { x: P.pos.x - fx * 10, z: P.pos.z - fz * 10 };
+    const mur = (cote) => {
+      for (let f = -3; f <= 4; f++) for (let k = 3; k <= 6; k++) for (let h = 1; h <= 2; h++)
+        g.world.setBlock(Math.floor(P.pos.x + fx * f + gx * k * cote), y0 + h, Math.floor(P.pos.z + fz * f + gz * k * cote), BLOCK.STONE);
+    };
+    const out = { libre: pat.essaiDevant(derriere.x, derriere.z) };
+    mur(1); out.gaucheBarree = pat.essaiDevant(derriere.x, derriere.z);
+    mur(-1); out.deuxBarres = pat.essaiDevant(derriere.x, derriere.z);
+    return out;
+  }, [x0, z0, y0]);
+}
+
+module.exports = { passage, passageMoto, passageCote, dalle };

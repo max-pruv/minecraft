@@ -6,6 +6,60 @@
 
 export const NOUVEAUTES = [
   {
+    v: 574,
+    titre: 'La police des amis',
+    puces: [
+      'On voit la police qui suit un ami',
+      'Elle double aussi par la droite',
+      'La moto a sa vraie taille',
+    ],
+  },
+  {
+    v: 573,
+    titre: 'Altitude et décollage à la main',
+    puces: [
+      'Aux commandes, l\'altitude au-dessus du sol',
+      'Pleins gaz, l\'avion prend son élan',
+      'Joystick vers le haut, il décolle',
+      'Trop lent, il reste au sol',
+    ],
+  },
+  {
+    v: 572,
+    titre: 'Des ombres de fenêtres',
+    puces: [
+      'Le soleil passe par les carreaux',
+      'Les balcons en fer aussi',
+      'Fini les ombres en pavé',
+    ],
+  },
+  {
+    v: 571,
+    titre: 'Ta langue reste choisie',
+    puces: [
+      'Deux tablettes allumées ne se contredisent plus',
+      'La langue choisie ne revient plus en arrière',
+    ],
+  },
+  {
+    v: 570,
+    titre: 'Les passants regagnent le trottoir',
+    puces: [
+      'Un passant bloqué revient vers le trottoir',
+      'Il ne flâne plus au milieu des voitures',
+    ],
+  },
+  {
+    v: 569,
+    titre: 'Les vrais phares de chaque voiture',
+    puces: [
+      'La nuit, chaque voiture allume ses propres phares',
+      'La barre de la 911, celle du Cybertruck',
+      'Plus de ronds blancs collés dessus',
+      'Un phare cassé s\'éteint',
+    ],
+  },
+  {
     v: 568,
     titre: 'Un jet privé',
     puces: [

@@ -59,6 +59,18 @@ function verifier(nom, ok, detail = '') {
     const ko = flotte.filter((x) => !(x.phOk && x.detOk && x.stopOk));
     verifier(`les phares, les feux de détresse et les feux stop des ${flotte.length} modèles de la flotte (taxis et utilitaires fabriqués compris) sont sur la tôle, à leur coin`,
       flotte.length >= 57 && ko.length === 0, JSON.stringify(ko.slice(0, 3)));
+    // LES PHARES ÉPOUSENT L'OPTIQUE DU MODÈLE (v569). Max : « la vraie 911 a
+    // une barre lumineuse, et le jeu vient créer des phares ronds par-dessus ».
+    // De nuit, aucune lueur n'est un disque plaqué : chacune est une copie des
+    // triangles de l'optique du modèle, sur SA tôle et au nez ; la 911 allume
+    // sa signature (`Lights_DRL`, des centaines de triangles), et tout modèle
+    // dont l'optique se nomme ou émet a la sienne.
+    const koLueur = flotte.filter((x) => !x.lueurOk);
+    const p911 = flotte.find((x) => /911-gt3-rs/.test(x.f)) || {};
+    const avecLueur = flotte.filter((x) => x.lueurs > 0).length;
+    verifier(`de nuit, les phares des ${flotte.length} modèles s'allument dans la forme de leur propre optique — aucun disque plaqué, chaque lueur sur la tôle et au nez — et la 911 allume sa signature`,
+      koLueur.length === 0 && p911.rang === 1 && p911.triangles > 100 && avecLueur >= 70,
+      JSON.stringify({ ko: koLueur.slice(0, 3).map((x) => ({ f: x.f, disques: x.disques, tole: x.surToleLueur, horsNez: x.horsNez })), p911: { rang: p911.rang, tri: p911.triangles }, avecLueur }));
   } catch (e) {
     verifier('911 : les témoins du modèle reconstruit se chargent sous node', false, String(e && e.message || e).slice(0, 200));
   }
@@ -566,6 +578,18 @@ function verifier(nom, ok, detail = '') {
       pieces.phares.length > 0 && pieces.phares.every((p) => p.casse && p.em === 0)
         && pieces.vitres.some((v) => v.etoilee) && pieces.emB > 0,
       JSON.stringify(pieces));
+    // UN PHARE CASSÉ ÉTEINT SA LUEUR (v569) : la lueur est une copie de
+    // l'optique ; quand l'optique s'éteint, elle s'éteint avec. L'autre voiture
+    // du même modèle garde la sienne.
+    const lueurCassee = await tab.evaluate(async () => {
+      const { a, b } = window.__essai, P = await import('./src/phares.js');
+      const lire = (m) => { const g = P.allumerPhares(m, 1); const r = g ? g.userData.lueurs.map((l) => l.visible) : null; P.eteindrePhares(m); return r; };
+      return { a: lire(a.mesh), b: lire(b.mesh) };
+    });
+    verifier('un phare cassé éteint sa lueur de nuit ; l\'autre voiture du même modèle garde la sienne',
+      Array.isArray(lueurCassee.a) && lueurCassee.a.length > 0 && lueurCassee.a.every((v) => !v)
+        && Array.isArray(lueurCassee.b) && lueurCassee.b.length > 0 && lueurCassee.b.every((v) => v),
+      JSON.stringify(lueurCassee));
 
     // 2. LA FUMÉE, LA PANNE : la voiture ne repart plus.
     const panne = await tab.evaluate(async () => {
@@ -1209,13 +1233,36 @@ function verifier(nom, ok, detail = '') {
     verifier('à plusieurs, l\'ami voit la voiture abîmée : la même santé, la tôle enfoncée chez lui aussi',
       volant.auVolant && abimee.sante < 1 && abimee.froissees > 0, JSON.stringify({ volant, abimee }));
     // le feu : Marlon garde trois secondes et demie au volant avant d'être
-    // déposé — c'est dans cette fenêtre qu'Alice doit voir les flammes
+    // déposé — c'est dans cette fenêtre qu'Alice doit voir les flammes.
+    // UN TÉMOIN QUI MESURE UNE FENÊTRE L'OBSERVE PENDANT TOUTE LA FENÊTRE : lu
+    // une seule fois au bout de l'attente, il trouvait parfois Marlon déjà
+    // déposé (`vehicule: false`), la page d'Alice rendant ses images au rythme
+    // du banc — et le témoin de l'épave, qui lisait le lieu APRÈS le dépôt,
+    // rougissait avec lui (`lieu: null`, une cause, deux rouges, v291). Un
+    // relevé dans la page d'Alice garde ce qu'elle a vu de la voiture de
+    // Marlon tant qu'elle existait, et le lieu de l'arrêt se relève avant le feu.
+    const lieu = await hote.evaluate(() => { const a = window.__game.fun.montureConduite(); return a ? { x: a.pos.x, z: a.pos.z } : null; });
+    await alice.evaluate(() => {
+      const g = window.__game, d = g.fun.degats, vu = window.__feuVu = { enFeu: false, flammes: 0, releves: 0 };
+      const t0 = performance.now();
+      const pas = () => {
+        for (const rp of g.remotePlayers.values()) {
+          if (rp.name !== 'Marlon' || !rp.vehicule) continue;
+          const e = d ? d.etat(rp.vehicule.mesh) : null;
+          vu.releves++;
+          if (e && e.enFeu) { vu.enFeu = true; vu.flammes = Math.max(vu.flammes, d.particulesVisibles().flammes); }
+        }
+        if (performance.now() - t0 < 20000) requestAnimationFrame(pas);
+      };
+      requestAnimationFrame(pas);
+    });
     await hote.evaluate(() => {
       const g = window.__game, a = g.fun.montureConduite(), d = g.fun.degats;
       if (d && a) while (!d.etat(a.mesh).enFeu) d.choc(a.mesh, { force: 0.8, lx: 1.1, lz: 0 });
     });
-    await jusqua(async () => { const v = await vuParAlice(); return v.enFeu && v.flammes > 0; }, 4000);
-    const enFeu = await vuParAlice();
+    const tFeu = Date.now();
+    await jusqua(async () => alice.evaluate(() => window.__feuVu.enFeu && window.__feuVu.flammes > 0), 12000);
+    const enFeu = { ...(await alice.evaluate(() => window.__feuVu)), ms: Date.now() - tFeu, maintenant: await vuParAlice() };
     verifier('et elle la voit prendre feu : des flammes sur la voiture de l\'ami', enFeu.enFeu && enFeu.flammes > 0,
       JSON.stringify(enFeu));
 
@@ -1223,7 +1270,6 @@ function verifier(nom, ok, detail = '') {
     // voiture en feu : sa position n'emporte plus de voiture. Chez Alice,
     // l'épave doit rester LÀ OÙ ELLE S'EST ARRÊTÉE, et brûler encore — sur
     // l'ancien code elle s'évanouissait avec le champ `p.v`.
-    const lieu = await hote.evaluate(() => { const a = window.__game.fun.montureConduite(); return a ? { x: a.pos.x, z: a.pos.z } : null; });
     await jusqua(async () => hote.evaluate(() => !window.__game.fun.montureConduite()), 12000);
     const depose = await hote.evaluate(() => !window.__game.fun.montureConduite());
     // le temps que la position sans voiture arrive chez Alice
@@ -1339,12 +1385,24 @@ function verifier(nom, ok, detail = '') {
 
     // 9 bis. ET CHEZ ALICE, ELLE S'ARRÊTE FEUX DE DÉTRESSE ALLUMÉS (v519) :
     // le choc reçu marque la voiture de ce nom, que le convoi lit comme le sien.
-    const detAlice = coup.err ? { err: coup.err } : await alice.evaluate((r) => {
-      // le convoi a lu le choc reçu (`detresseRecue`, compté par vehicules.js) :
-      // un relevé par minuteur ne tient pas, une page de fond les ralentit
+    // LE FROISSAGE PEUT ARRIVER PAR LA POSITION AVANT `rue_choc` (v374) :
+    // l'histoire (`rc`) voyage dans `pos`, huit fois par seconde, et le témoin
+    // d'au-dessus rend la main dès que la tôle est froissée chez Alice. Lu dans
+    // la foulée, `rue_choc` n'était parfois pas encore là — `recues 0, heurte 0`
+    // rejouée seule, `recues 1` au portail : un tirage d'ordre d'arrivée, pas
+    // un défaut (sonde-detresse-ami.cjs : le message est reçu, la voiture
+    // nommée, `heurteRecu` posé puis lu à l'image suivante, 2 sur 2). On attend
+    // donc le FAIT — le convoi d'Alice a lu un choc reçu —, borné à quinze
+    // secondes, la durée dans le message ; l'ancien code (avant la v519) ne le
+    // compte jamais et reste rouge.
+    const lireDet = (r) => alice.evaluate((r) => {
+      // le convoi a lu le choc reçu (`detresseRecue`, compté par vehicules.js)
       const c = window.__convB, m = c.elements[r];
       return { recues: m ? m.userData.detresseRecue || 0 : null, heurte: c.heurte ? +(c.heurte[r] || 0).toFixed(2) : null };
-    }, coup.rang);
+    }, r);
+    const tDet = Date.now();
+    if (!coup.err) await jusqua(async () => ((await lireDet(coup.rang)).recues || 0) > 0, 15000);
+    const detAlice = coup.err ? { err: coup.err } : { ...(await lireDet(coup.rang)), ms: Date.now() - tDet };
     verifier('chez Alice aussi, la voiture de la rue que Marlon percute s\'arrête feux de détresse allumés',
       !detAlice.err && detAlice.recues > 0, JSON.stringify(detAlice));
 

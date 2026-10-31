@@ -491,7 +491,10 @@ export const MONTURES = [
     sieges: [{ x: 0.03, y: 0.88, z: 0.78 }],
     pose: { cuisses: -1.05, genoux: 1.15, bras: -1.25, coudes: -0.3 },
     selle: true, penche: true,
-    vole: false, gabarit: 1.2, moteur: 'moto' },
+    //   · `longueur` 2,4 : mesurée sur le modèle converti (z −1,31 à +1,12) —
+    //     la boîte orientée et le choc de face la lisent (player.js) : une
+    //     moto ne bute pas sur un mur à la distance d'une voiture ;
+    vole: false, gabarit: 1.2, longueur: 2.4, moteur: 'moto' },
 
   // --- LES AVIONS : le mode `pilote`, le troisième --------------------------
   //

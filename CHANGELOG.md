@@ -20,6 +20,203 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v574 — La police des amis
+
+**Pourquoi.** La police de la v562 était locale à la tablette : quand Marlon
+faisait une bêtise au volant, Alice voyait sa voiture filer, mais pas la
+voiture de police qui le suivait. La moto, elle, avait la boîte de collision
+d'une voiture en longueur : de face, elle s'arrêtait à 2,2 blocs d'un mur,
+comme le capot d'une voiture. Et quand un bloc barrait la gauche, la police
+restait derrière l'enfant au contrôle, donc derrière la caméra.
+
+**Ce que ça change.**
+- À plusieurs, chacun voit la police qui suit un ami recherché : une voiture
+  de police derrière lui, gyrophares allumés et sirène. Elle se gare quand il
+  est pardonné. Ce qui voyage, ce sont ses étoiles (six octets dans sa
+  position) ; chaque tablette mène sa propre voiture de police sur la route
+  qu'elle voit l'ami prendre.
+- La moto a sa longueur à elle (2,4 blocs, mesurée sur son modèle) : elle
+  s'approche d'un mur, d'une voiture garée ou d'un poteau à sa vraie taille.
+- Au contrôle, quand la gauche est barrée, la police double par la droite et
+  se gare devant l'enfant ; seulement si les deux côtés sont barrés, elle
+  reste derrière.
+
+**Ce qui le prouve.** Quatre témoins neufs, tous rouges sur `origin/main` :
+deux à trois tablettes dans `reseau.js`, un par chemin de la position (Marlon
+vu par Alice en direct, Nina vue par Alice à travers l'hôte) — sur
+l'ancien code, la voiture de l'ami arrive mais aucune étoile, aucune escorte ;
+ici l'escorte s'arrête à 10 à 13 blocs derrière lui et se gare au pardon. Un
+dans `plafond.js` (le vrai joueur sous node face à un mur : moto 1,2, voiture
+2,2 ; `origin/main` 2,2 et 2,2). Un dans `monte.js` (gauche libre, gauche
+barrée, les deux barrées). Coût mesuré : +6 octets par position (+50 o/s),
+contre 587 o/s pour envoyer la piste elle-même. Au premier portail, les deux
+témoins réseau sont tombés alors qu'ils étaient verts seuls : le conducteur
+perdait ses étoiles par l'oubli avant qu'elles n'aient voyagé, et l'écart
+était lu pendant un rattrapage. Le témoin garde désormais la situation et
+attend que l'écart se pose ; rejoués seuls sur la branche rebasée, verts tous
+les deux. Les rouges qui restent sont mesurés à l'identique sur
+`origin/main` et déclarés dans `TASKS.md`. La revue d'écran n'a pas été faite :
+ses états ne mettent pas en scène plusieurs tablettes.
+
+---
+
+## v573 — L'altitude aux commandes, et le décollage à la main
+
+**Pourquoi.** Max : « J'aimerais qu'on voie l'altitude quand on pilote un
+avion. Et aussi, j'aimerais être capable de faire un décollage manuel en allant
+simplement suffisamment vite […] et bien entendu en mettant le joystick vers le
+haut. Aujourd'hui, il faut absolument avoir le décollage automatique. » Mesuré
+avant d'écrire : au sol, la manette ne demandait que l'allure de roulage — six
+blocs par seconde à fond, pour une vitesse de rotation de 42 — si bien qu'aucun
+geste ne faisait décoller l'appareil sans ✈️. Et la colonne de bord n'avait que
+la vitesse.
+
+**Ce que ça change.**
+- *L'altimètre.* Aux commandes, sous ✈️ et 🛞, juste au-dessus de la vitesse :
+  « ↑ 0 m » sur la piste, « ↑ 45 m » en l'air. C'est la hauteur au-dessus de ce
+  qu'on survole (la surface de l'eau en mer, pas son fond), en mètres — un bloc
+  vaut un mètre à la verticale, un étage trois blocs. Au mètre près en bas, de
+  cinq en cinq au-dessus de vingt.
+- *Le décollage à la main.* Manette poussée tout en haut, au sol : l'avion fait
+  sa course au décollage. Une fois la vitesse de rotation atteinte, joystick
+  vers le haut : il quitte la piste, train sorti jusqu'à huit blocs, et c'est le
+  joystick qui tient la hauteur. Joystick vers le haut trop tôt : il reste au
+  sol. Sous la manette à fond, le roulage d'avant ne change pas, et ✈️ marche
+  exactement comme avant. Posé pleins gaz, la manette revient au ralenti à
+  l'arrêt.
+
+**Ce qui le prouve.** Trois témoins dans `monte.js` (la sonde
+`sonde-decollage-manuel.cjs`, lancée seule ou par la suite), sur une dalle à
+l'écart, sans toucher ✈️ : au sol tant que la vitesse est sous la rotation ;
+envol au-delà, au-dessus de huit blocs ; l'altimètre lu dans son TEXTE, à 0 sur
+la dalle et à la vraie hauteur en l'air. Rouge sur `origin/main` (vitesse
+maximale 6, vingt secondes au sol, aucun altimètre), vert ici (envol à 43,8,
+quatorze blocs en 2,2 s). La sonde des décollages depuis les postes (✈️) rend
+toujours tous ses postes en vol.
+
+---
+
+## v572 — Des ombres de fenêtres
+
+**Pourquoi.** Depuis la couche HD de Paris (v287), l'ombre d'une façade était
+fausse partout où sa tuile est ajourée : la croisée d'une fenêtre, le
+garde-corps d'un balcon, la ferronnerie. La passe d'ombre de three lit la
+texture aux UV bruts ; or les façades portent des UV en unités du monde, que
+seul le shader de la couleur replie dans leur tuile. L'ombre échantillonnait
+donc tout l'atlas, ou son bord : une croisée jetait un aplat traversé d'une
+bande fantôme, comme un pavé plein. Dette déclarée dans `TASKS.md` depuis la
+v499, vue en préparant les arbres. Cela ne se voit que sur un appareil qui a
+des ombres (« Graphismes avancés », l'ordinateur).
+
+**Ce que ça change.**
+- Sous une fenêtre ou un balcon au soleil, l'ombre a les carreaux, le meneau,
+  les barreaux : le soleil passe là où la vitre et le vide sont à l'écran.
+- Rien ne change ailleurs : les arbres (UV absolues depuis la v499) rendent la
+  même ombre, et les tampons de la couche ne bougent pas d'un octet.
+
+**Ce qui le prouve.** Deux témoins neufs dans `parishd.js`, sur une page à
+ombres forcées, tous deux vérifiés rouges :
+- l'ombre d'un panneau de croisées au matériau des vrais maillages de façades
+  (`sonde-ombre-facades-hd.cjs`, lue telle quelle) : carreaux 151,8 · bois
+  157,7 · soleil 183,4 sur l'ancien code (l'aplat), 183,4 · 158,1 ici ; un
+  panneau plein ombre tout (140), sinon la mesure ne prouverait rien ;
+- le programme d'ombre de la couche (`paris-hd-ombre`) est compilé pendant la
+  préparation : aucun ne naît en jeu en arrivant à Paris (chauffe désarmée :
+  0 avant, 1 en jeu).
+Le coût de la passe d'ombre est mesuré en ordre alterné (`?ombrehd=0` rend
+l'ancienne ombre) ; l'empreinte des 490 morceaux est intacte par construction
+(aucun tampon touché).
+
+---
+
+## v571 — Une langue choisie ne revient plus en arrière
+
+**Pourquoi.** Avec deux tablettes allumées sur le même prénom, un enfant qui
+changeait de langue la voyait parfois revenir à l'ancienne quelques secondes,
+puis repartir. Le témoin de `reglages.js` était rouge 2 fois sur 2 seul et 1
+fois sur 2 sur `origin/main`. La v374 avait fait relire chaque tablette avant
+d'écrire ; `sonde-reglages-deux.cjs` a montré ce qui restait : une tablette
+chargée lit le document, puis ne l'écrit que six secondes plus tard. Un choix
+posé par l'autre tablette entre les deux était effacé par une écriture fondée
+sur une lecture périmée.
+
+**Ce que ça change.**
+- Le serveur n'accepte une écriture des réglages que si la date du dernier
+  choix (`majProfil`) n'a pas changé depuis la lecture. Sinon la tablette
+  relit, adopte le choix neuf, et réessaie (trois fois au plus).
+- Un serveur qui ne sait pas écrire sous condition, ou un document absent :
+  l'ancienne écriture, on n'arrête jamais d'écrire.
+
+**Ce qui le prouve.** Le témoin provoque la course au lieu de l'attendre : il
+retient la première écriture de la seconde tablette (donc postérieure à sa
+lecture), fait cliquer « English » sur la première, puis relâche l'écriture
+une fois le choix arrivé au serveur. Ancien code : 2 retours à l'ancienne
+langue, rouge ; neuf : l'écriture conditionnelle est refusée, la tablette
+relit et adopte, 0 retour. `reglages.js` 50 verts seule. Le Supabase de poche
+écrit sous condition comme le vrai PostgREST, dont la syntaxe a été vérifiée
+en production sur une ligne inexistante (rien n'a été écrit).
+
+---
+
+## v570 — Les passants empêchés trouvent le trottoir
+
+**Pourquoi.** Cinq témoins du portail rougissaient une fois sur deux ou trois,
+sur un code inchangé : la voiture de la rue heurtée (`id: null`), ses feux de
+détresse chez un ami, les feux de recul, le passage peint de Kyoto, le flâneur
+posé sur la chaussée. Un rouge qui va et vient cache les vrais défauts ; et
+l'un des cinq en était un : un passant qui ne pouvait pas atteindre le
+trottoir dans les six secondes adoptait la chaussée comme coin de promenade, et
+y restait.
+
+**Ce que ça change.**
+- Un passant empêché de rejoindre le trottoir (une voiture arrêtée devant lui,
+  un obstacle) garde le trottoir pour but et finit par y aller, au lieu de
+  flâner au milieu de la rue.
+- Pour le banc : quatre témoins attendent désormais le fait qu'ils annoncent
+  (la voiture recule, le message est arrivé, la cible est celle que le jeu lit),
+  et les fenêtres courtes s'observent image par image.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (le passant empêché garde
+le bord pour poste), rouge sur l'ancien code (poste sur la chaussée 3/3, sonde
+`sonde-flaneur-sortie.cjs`, mode « mur »), vert sur le neuf (3/3). Quatre
+sondes neuves mesurent chaque cause : 7 blocs d'écart entre la collecte et le
+maillage à 800 ms par image (27 ciblages ratés sur 30) ; `rue_choc` reçu 2/2 ;
+deux traversées « hors peinture » de Kyoto faites au feu ; la moto qui ne venait qu'une fois sur deux (45 + 55 points sous la seconde étoile, à 120, quand la voiture garée ne rebondissait pas) ; à Rome, zéro
+traversée sans feu même en 60 s de jeu (déclaré dans `TASKS.md`).
+## v569 — Les phares suivent le dessin de chaque voiture
+
+**Pourquoi.** Max : « les phares des voitures, comme la 911, c'est
+absolument ridicule. La vraie 911 a une barre lumineuse, et le jeu vient créer
+des phares ronds par-dessus. On a forcé des trucs qui ne marchent pas. » La
+nuit, le jeu posait deux disques blancs de 0,17 bloc au nez de toute voiture,
+quelle qu'elle soit. Mesuré sur les 77 modèles : cinquante portaient déjà leur
+optique allumée (`Light_Front_Emissive`, la signature DRL de la 911, la barre
+du Cybertruck), et dix-neuf autres une optique nommée (`Headlight`,
+`Phare_avt`, `front_white_light`) : le rond se plaquait par-dessus.
+
+**Ce que ça change.**
+- De nuit au volant, c'est l'optique de la voiture qui s'allume, dans sa
+  forme : la barre de la 911, la fente d'une Lamborghini, les phares ronds de
+  la Camaro et de la Fuego, la barre du Cybertruck et de la Model Y.
+- Le verre du phare, quand le modèle en a un (la glace ronde de la 911), luit
+  doucement autour.
+- Un phare cassé dans un choc s'éteint avec sa lueur.
+- Les cinq voitures dont l'optique ne se reconnaît pas (une livrée peinte d'un
+  seul tenant : police, taxi Mondeo ; Alpine, Divo) ne reçoivent plus de rond :
+  seul le pinceau sur la route dit que les phares sont allumés.
+
+**Ce qui le prouve.** Deux témoins neufs, rouges sur l'ancien code. Sous node
+(`sonde-feux-flotte.mjs`, lue par `degats.js`), les 77 modèles : aucune lueur
+n'est un disque, chaque triangle de lueur est sur la tôle (rayon le long de
+sa normale) et au nez, la 911 allume sa signature, 72 modèles ont la leur
+(77 sur 77 KO sur l'ancien code). Dans le jeu (`degats.js`), un phare cassé
+éteint sa lueur et l'autre voiture du même modèle garde la sienne. Le témoin
+de `monte.js` (deux lueurs au nez, aucun programme compilé à l'allumage) passe
+tel quel. Captures de nuit avant/après de neuf modèles
+(`sonde-captures-phares.cjs`) et revue d'écran de nuit.
+
+---
+
 ## v568 — Un jet privé
 
 **Pourquoi.** Max a déposé un modèle 3D de jet d'affaires (« Luxury Private Jet

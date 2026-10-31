@@ -671,6 +671,7 @@ world.sansSolContinu = new URLSearchParams(location.search).get('solcontinu') ==
 // Le matériau HD se fabrique à la demande (son environnement préfiltré coûte
 // une PMREM) : la première fois qu'un morceau de Paris arrive avec du détail.
 let hd = null;
+const OMBRE_HD = new URLSearchParams(location.search).get('ombrehd') !== '0';
 function materiauDeParis() {
   if (!hd) hd = materiauHD(renderer);
   return hd.materiau;
@@ -684,14 +685,19 @@ function materiauDeParis() {
 // dessiné (couche 4), avec son propre espace de couleur —, comme les feux
 // (v306). Un quad qui porte les attributs de la couche suffit : `compile` ne
 // dessine rien, il ne regarde que le matériau et les lumières de la scène.
-function chaufferLaCoucheHD(camera) {
-  if (!world.arbres && RAYON_HD <= 0) return;
+function quadDeLaCoucheHD() {
   const t = { positions: new Float32Array([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0]), normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
     uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), colors: new Float32Array(12).fill(1), tiles: new Float32Array([0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]),
     matiere: new Float32Array([1, 0, 1, 0, 1, 0, 1, 0]), lueur: new Float32Array(4), indices: new Uint16Array([0, 1, 2, 0, 2, 3]) };
-  const ici = new THREE.Scene();
   const m = new THREE.Mesh(geometrieHD(t), materiauDeParis());
-  ici.add(decor(m));
+  if (OMBRE_HD) m.customDepthMaterial = hd.profondeur;
+  return decor(m);
+}
+function chaufferLaCoucheHD(camera) {
+  if (!world.arbres && RAYON_HD <= 0) return;
+  const ici = new THREE.Scene();
+  const m = quadDeLaCoucheHD();
+  ici.add(m);
   const cible = refletsVoiture(), avant = renderer.getRenderTarget();
   try {
     renderer.compile(ici, camera, scene);
@@ -1391,6 +1397,8 @@ function installerMorceau(cx, cz, tampons) {
       m.position.set(cx * CHUNK, 0, cz * CHUNK);
       m.castShadow = ombre && (nom === 'facades' || nom === 'arbresLoin');
       m.receiveShadow = true;
+      // l'ombre replie ses UV comme la couleur (v572) ; `?ombrehd=0` rend l'ancienne
+      if (OMBRE_HD) m.customDepthMaterial = hd.profondeur;
       entry[nom] = m;
       scene.add(decor(m));
     }
@@ -1957,7 +1965,7 @@ function updateChunks() {
   // (instanciés par lots : rien à coucher seul, dette déclarée).
   const mobilierDevant = (x, z, cap, casser = null) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
-    const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const demiLong = player.demiLong || 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
     const y0 = Math.floor(player.pos.y + 0.1);
     const vu = world.mobilierVu, lues = vu ? new Set() : null;
     let bloque = false;
@@ -2025,7 +2033,7 @@ function updateChunks() {
   // les deux s'attendent pour toujours (mesuré : douze secondes sur place).
   const pietonsDans = (x, z, cap) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
-    const demiLong = 2.2 + 0.3, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const demiLong = (player.demiLong || 2.2) + 0.3, demiLarg = Math.max(0.3, player.gabarit / 2);
     const dedans = [];
     for (const n of npcs) {
       const dx = n.pos.x - x, dz = n.pos.z - z;
@@ -2062,14 +2070,17 @@ function updateChunks() {
   // laquelle ce pas s'enfonce — on la touchait déjà ou non (`sEnfonce`).
   // Collé à une voiture garée, on traversait celle d'à côté.
   const gareeContre = (x, z, cap, x0, z0) => {
-    const moiB = boiteVoiture(x, z, cap, 2.2, Math.max(0.3, player.gabarit / 2));
+    // la longueur de ce qu'on conduit, et celle de ce qui est garé : une moto
+    // fait 2,4 blocs (sa fiche, police-réseau)
+    const dl = player.demiLong || 2.2;
+    const moiB = boiteVoiture(x, z, cap, dl, Math.max(0.3, player.gabarit / 2));
     const moi = rectangleDeBoite(moiB);
-    const avant = x0 === undefined ? null : rectangleDeBoite(boiteVoiture(x0, z0, cap, 2.2, Math.max(0.3, player.gabarit / 2)));
+    const avant = x0 === undefined ? null : rectangleDeBoite(boiteVoiture(x0, z0, cap, dl, Math.max(0.3, player.gabarit / 2)));
     for (const a of animalManager.animals) {
       const g = a.def.gabarit;
       if (!(g > 1) || a.def.pilote || a.montee || a.dying > 0 || Math.abs(a.pos.y - player.pos.y) > 2.5) continue;
       if ((a.pos.x - x) ** 2 + (a.pos.z - z) ** 2 > 8 * 8) continue;
-      const B = boiteVoiture(a.pos.x, a.pos.z, a.yaw, 2.2, g / 2);
+      const B = boiteVoiture(a.pos.x, a.pos.z, a.yaw, (a.def.longueur || 4.4) / 2, g / 2);
       if (avant ? sEnfonce(avant, moi, rectangleDeBoite(B)) : normaleEntreBoites(moiB, B)) return { a, B };
     }
     return null;
@@ -3125,6 +3136,8 @@ const gazBase = document.getElementById('gaz-base');
 const gazFill = document.getElementById('gaz-fill');
 const gazKnob = document.getElementById('gaz-knob');
 const gazVal = document.getElementById('gaz-val');
+const altVal = document.getElementById('alt-val');
+let derniereAlt = null;
 const trainBtn = document.getElementById('train-btn');
 const flyLb = document.getElementById('fly-lb');
 const trainLb = document.getElementById('train-lb');
@@ -3228,7 +3241,7 @@ function majBoutonsVehicule() {
   // qu'on ne voit pas finit par dire n'importe quoi sans que personne ne le
   // remarque.
   if (!enAvion) {
-    dernierKmh = null;
+    dernierKmh = null; derniereAlt = null;
     return;
   }
   const v = Math.abs(player.vitesseAvion || 0);
@@ -3259,6 +3272,22 @@ function majBoutonsVehicule() {
     // ce qu'un enfant retient bien mieux qu'un grand nombre de plus.
     const unite = kmh > MACH_KMH ? `Mach ${(kmh / MACH_KMH).toFixed(1).replace('.', ',')}` : 'km/h';
     gazVal.innerHTML = `<b>${kmh}</b><small>${unite}</small>`;
+  }
+  // L'ALTIMÈTRE : la HAUTEUR au-dessus de ce qu'on survole (`hauteurAuSol`,
+  // player.js — la surface de l'eau en mer, pas son fond), en MÈTRES, et un
+  // bloc vaut un mètre. Ce n'est pas l'entorse du compteur de vitesse (v267) :
+  // à l'horizontale un bloc ne vaut un mètre nulle part, mais à la VERTICALE
+  // il le vaut partout — un étage fait trois blocs (v301), trois mètres. Les
+  // toits que l'enfant survole sont donc à leur vraie hauteur, et ce que dit
+  // l'altimètre se vérifie en regardant dehors. Au mètre près en bas (on voit
+  // les roues quitter la piste), de cinq en cinq au-dessus de vingt — un
+  // nombre qui change à chaque image ne se lit pas.
+  const hBlocs = player.hauteurAuSol ? player.hauteurAuSol() : 0;
+  const alt = hBlocs < 20 ? Math.round(hBlocs) : Math.round(hBlocs / 5) * 5;
+  if (alt !== derniereAlt) {
+    derniereAlt = alt;
+    altVal.textContent = `↑ ${alt} m`;
+    altVal.setAttribute('aria-label', `Altitude ${alt} mètres`);
   }
   trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
   // CHAQUE BOUTON DIT CE QU'IL FAIT. Un pictogramme de roue ne se devine
@@ -4512,17 +4541,32 @@ function pushPrefsToCloud() {
   prefsPushTimer = setTimeout(() => envoyerPrefs(), 1200);
 }
 
+// ET L'ÉCRITURE NE VAUT QUE SI RIEN N'A BOUGÉ DEPUIS LA LECTURE (v571). Une
+// tablette qui rame peut mettre des secondes entre les deux (six, mesurées) ;
+// si l'autre tablette de la maison y pose un choix neuf, l'écriture périmée
+// le défaisait. Le serveur n'écrit donc que si la date du dernier choix vaut
+// encore ce qu'on a lu (`prefsPushSi`) ; sinon on relit, on adopte, on
+// réessaie. Un document absent ou illisible, ou un serveur qui ne sait pas
+// écrire sous condition : l'ancien chemin, on n'arrête jamais d'écrire.
 async function envoyerPrefs() {
   if (!playerProfile.name) return;
-  try {
-    const distant = await cloud.prefsPull(playerProfile.name);
-    if (distant) {
-      // Une autre tablette de la maison a peut-être un choix plus récent que le
-      // nôtre : adopterProfilDistant tranche sur la date et ne fait rien sinon.
-      adopterProfilDistant(distant);
+  const nom = playerProfile.name;
+  for (let essai = 0; essai < 3; essai++) {
+    let distant = null;
+    try { distant = await cloud.prefsPull(nom); } catch { /* hors ligne */ }
+    if (nom !== playerProfile.name) return;   // on a changé d'enfant entre-temps
+    if (!distant) { cloud.prefsPush(nom, prefsPayload()).catch(() => {}); return; }
+    // Une autre tablette de la maison a peut-être un choix plus récent que le
+    // nôtre : adopterProfilDistant tranche sur la date et ne fait rien sinon.
+    adopterProfilDistant(distant);
+    try {
+      if (await cloud.prefsPushSi(nom, prefsPayload(), distant.majProfil)) return;
+    } catch {
+      cloud.prefsPush(nom, prefsPayload()).catch(() => {});
+      return;
     }
-  } catch { /* hors ligne : on écrit quand même ce qu'on a */ }
-  cloud.prefsPush(playerProfile.name, prefsPayload()).catch(() => {});
+    // Quelqu'un a choisi entre notre lecture et notre écriture : on relit.
+  }
 }
 
 // Un battement régulier : sans lui, « en ligne » voudrait dire « a ouvert un
@@ -5157,6 +5201,7 @@ function syncRemotePlayers(list) {
       feuxArriere(rp.vehicule.mesh, { frein: !!(sf & 1), recul: !!(sf & 2) });
     }
     rp.passager = p.p || null;
+    rp.etoiles = (p.v && +p.v.w) || 0;   // ses étoiles de police (police-réseau)
     proposerGPSAmi(p.id, rp, p.g || null);   // sa destination, proposée (v388)
   }
   for (const [id, rp] of remotePlayers) {
@@ -5371,6 +5416,11 @@ function startNetSession(code, isHost, patience) {
       // sinon ; ce que `fun.js` allume sur NOTRE voiture, tel quel.
       const sf = (a.feuxFrein > 0 ? 1 : 0) | (a.feuxRecul ? 2 : 0);
       if (sf) p.v.s = sf;
+      // SES ÉTOILES DE POLICE (police-réseau) : l'ami mène sa propre voiture
+      // de police derrière lui, d'après la piste qu'il dessine (patrouille.js).
+      // Six octets, absents sans étoile ; une ancienne tablette les ignore.
+      const w = patrouille ? patrouille.etoiles() : 0;
+      if (w > 0) p.v.w = w;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
@@ -9109,7 +9159,17 @@ function frame(now) {
   // qu'on sait ce que `dt` vaut.
   edu.update(dtEcran(), running);
   fun.update(dt);
-  if (running && patrouille) patrouille.update();   // la police (v562)
+  if (running && patrouille) {
+    // les amis recherchés, là où on les dessine : leur escorte suit cette piste
+    const amisPolice = [];
+    for (const [id, rp] of remotePlayers) {
+      const d = rp.vehicule && rp.vehicule.def;
+      amisPolice.push({ id, x: rp.pos.x, y: rp.pos.y, z: rp.pos.z, w: rp.etoiles || 0,
+        volant: !!(d && (d.moteur === 'voiture' || d.moteur === 'moto')) && !rp.passager });
+    }
+    patrouille.amis(amisPolice);
+    patrouille.update();   // la police (v562)
+  }
   majEtatPolice();
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
@@ -9274,6 +9334,11 @@ requestAnimationFrame(() => {
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
     // la couche HD et ses arbres (v541) : un matériau, deux programmes
     try { chaufferLaCoucheHD(camera); } catch (e) { console.warn('chauffe de la couche HD', e); }
+    // et son ombre (v572) : un matériau de profondeur à elle, que `compile` ne
+    // voit pas — un vrai rendu d'ombre, seulement sur un appareil qui en a
+    if (renderer.shadowMap.enabled && OMBRE_HD && (world.arbres || RAYON_HD > 0)) {
+      try { const q = quadDeLaCoucheHD(); compilerAvecOmbres(q); q.geometry.dispose(); } catch (e) { console.warn('chauffe de l’ombre HD', e); }
+    }
     // la fumée et les flammes des dégâts (v343) : deux matériaux neufs
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
     // les traces de pneus (v434) : un matériau neuf, son essaim exact
@@ -9334,7 +9399,7 @@ requestAnimationFrame(() => {
   // profondeur : instanciée, à squelette, faces, découpe), et l'on se contente
   // de compiler la couleur pour les autres.
   const formesDOmbre = new Set();
-  const formeDOmbre = (o, m) => [o.isInstancedMesh ? (o.instanceColor ? 'Ic' : 'I') : '', o.isSkinnedMesh ? 'S' : '',
+  const formeDOmbre = (o, m) => [o.isInstancedMesh ? (o.instanceColor ? 'Ic' : 'I') : '', o.isSkinnedMesh ? 'S' : '', o.customDepthMaterial ? o.customDepthMaterial.uuid : '',
     m.side, m.shadowSide, m.alphaTest > 0, !!m.map, !!m.alphaMap, !!m.displacementMap, !!m.alphaHash].join('|');
   const compilerAvecOmbres = (objet) => {
     let neuve = false;
@@ -9446,6 +9511,7 @@ requestAnimationFrame(() => {
           const copie = o.isInstancedMesh ? new THREE.InstancedMesh(o.geometry, m, 1) : new THREE.Mesh(o.geometry, m);
           if (o.isInstancedMesh && o.instanceColor) copie.setColorAt(0, new THREE.Color(1, 1, 1));
           copie.layers.mask = o.layers.mask;
+          if (o.customDepthMaterial) copie.customDepthMaterial = o.customDepthMaterial;
           compilerAvecOmbres(copie);
         });
       }

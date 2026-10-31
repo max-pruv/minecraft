@@ -289,47 +289,48 @@ async function jusqua(cond, limiteMs = 25000, pas = 500) {
     // ancienne. C'est ainsi qu'un choix fait sur une tablette se défaisait tout
     // seul quelques secondes plus tard, sans que personne n'y touche.
     //
-    // ON PROVOQUE LA COURSE, ON NE L'ATTEND PAS (v233, v374). Rouge aux deux
-    // portails de la v363 et vert seul : la sonde `sonde-reglages-deux.cjs` a
-    // montré que le choix PART bien, puis que l'autre tablette le réécrit
-    // avec son ancienne langue — son battement de présence (toutes les vingt
-    // secondes) écrivait sans relire, et une date plus ANCIENNE. La relecture
-    // de quinze secondes réparait ensuite : tout dépendait de laquelle des
-    // deux boucles de l'autre tablette passait la première. On relève donc
-    // les écritures de l'autre tablette ; une écriture qui n'a pas été
-    // précédée d'une lecture est le battement, et l'on clique juste avant le
-    // suivant. Si aucune écriture ne vient sans lecture (le jeu corrigé), on
-    // clique au bout de la fenêtre : il n'y a plus de course à provoquer.
-    // Soixante secondes, parce que la seconde tablette se RECHARGE vingt-cinq
-    // secondes après s'être ouverte (la relance de synchronisation, v189) et
-    // que son battement repart de zéro : le premier qu'on peut repérer tombe
-    // vers quarante-cinq secondes (sonde-reglages-deux.cjs).
+    // ON PROVOQUE LA COURSE, ON NE L'ATTEND PAS (v233, v374, v571).
+    //
+    // La v374 avait trouvé le battement qui écrivait sans relire. Il relit
+    // depuis — et le rouge est revenu (2/2 seul sur la branche de la v532,
+    // 1/2 sur `origin/main`) : sonde-reglages-deux.cjs montre une tablette
+    // chargée qui LIT puis n'ÉCRIT que six secondes plus tard. Tout choix
+    // posé par l'autre tablette dans cet intervalle était défait par une
+    // écriture fondée sur une lecture périmée. Le portail rendait ce délai
+    // par hasard ; on le fabrique : la première écriture de l'autre tablette
+    // (donc postérieure à SA lecture) est RETENUE, Marlon clique, son choix
+    // arrive au serveur, PUIS on la relâche. L'ancien code l'écrit par-dessus
+    // (« fr », date plus ancienne) ; le neuf écrit sous condition, se voit
+    // refusé, relit et adopte. Le piège ne s'arme qu'après trente secondes :
+    // la seconde tablette se RECHARGE vingt-cinq secondes après s'être
+    // ouverte (v189), et une écriture retenue pendant une relance se perd.
     const autreIpad = await joueur('Marlon');
-    // `envoyerPrefs` lit PUIS écrit : une écriture sans lecture depuis la
-    // précédente est le battement qui ne relit pas
-    const ecrituresSeules = [];
-    let luDepuis = true;
-    await autreIpad.route('**/rest/v1/player_prefs**', (route) => {
-      const r = route.request();
-      if (r.method() === 'GET' && /name=eq\.Marlon(&|$)/.test(r.url())) luDepuis = true;
-      if (r.method() === 'POST' && (r.postData() || '').includes('"name":"Marlon"')) {
-        if (!luDepuis) ecrituresSeules.push(Date.now());
-        luDepuis = false;
-      }
-      route.continue();
-    });
     const tGuet = Date.now();
-    // Trois battements de vingt secondes, sous tempo comme eux.
-    while (Date.now() - tGuet < enTempo(60000) && !ecrituresSeules.length) await dormir(250);
-    let attente = `aucune écriture sans lecture en ${enTempo(60)} s`;
-    if (ecrituresSeules.length) {
-      // le battement suivant tombe vingt secondes après ; on clique six
-      // secondes avant, le temps que le choix soit écrit
-      const prochain = ecrituresSeules[ecrituresSeules.length - 1] + enTempo(20000);
-      attente = `battement vu, clic ${((prochain - enTempo(6000) - Date.now()) / 1000).toFixed(1)} s plus tard`;
-      while (Date.now() < prochain - enTempo(6000)) await dormir(100);
-    }
+    let retenue = null;      // { relacher } quand l'écriture est tenue
+    let relacher = null;
+    const relachee = new Promise((ok) => { relacher = ok; });
+    await autreIpad.route('**/rest/v1/player_prefs**', async (route) => {
+      const r = route.request();
+      const ecrit = (r.method() === 'POST' || r.method() === 'PATCH')
+        && (/name=eq\.Marlon(&|$)/.test(r.url()) || (r.postData() || '').includes('"name":"Marlon"'));
+      if (ecrit && !retenue && Date.now() - tGuet > enTempo(30000)) {
+        retenue = { t: Date.now(), methode: r.method() };
+        await relachee;
+      }
+      route.continue().catch(() => {});
+    });
+    while (Date.now() - tGuet < enTempo(75000) && !retenue) await dormir(100);
+    let attente = retenue
+      ? `écriture ${retenue.methode} de l'autre tablette retenue à ${((retenue.t - tGuet) / 1000).toFixed(1)} s`
+      : `aucune écriture de l'autre tablette en ${enTempo(75)} s`;
     await marlon.evaluate(() => document.querySelector('.pb-toggle[data-lang="en"]').click());
+    if (retenue) {
+      // on relâche une fois le choix de Marlon AU SERVEUR, quinze secondes au plus
+      const tC = Date.now();
+      while (Date.now() - tC < 15000 && (nuage.reglages('Marlon') || {}).lang !== 'en') await dormir(100);
+      attente += `, relâchée ${((Date.now() - tC) / 1000).toFixed(1)} s après le clic`;
+    }
+    relacher();
     // ON OBSERVE TOUTE LA FENÊTRE (v270) : une fois « en » arrivé au serveur,
     // il ne doit plus jamais en repartir — c'est ce que l'enfant appelle « le
     // jeu a gardé mon choix ».

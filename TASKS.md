@@ -1,5 +1,82 @@
 # Ce qui est en cours
 
+## L'altimètre et le décollage à la main (v573) — rouges de portail, aucun de la livraison
+
+- [ ] **Portail complet de la v573 (158 min) : mes trois témoins verts
+  (`monte.js`, `sonde-decollage-manuel.cjs`), 370/370 postes décollent par
+  ✈️.** Rouges : `carteMonde.js` (gabarits d'avion, déclarés juste dessous,
+  rejoués seuls IDENTIQUES sur `origin/main` v568) ; `reglages.js` (le choix
+  qui part au serveur), `maj.js` (les deux loaders), `monte.js` (Rome en
+  biais) : déclarés. **`reseau.js`, trois témoins de voiture d'ami** :
+  rejouée seule, les deux de fluidité sont verts des deux côtés ; « sa voiture
+  qui glisse laisse ses traces de pneus » rend 2 poses sur 4 au portail ET
+  rejouée seule sur la branche, 4 sur `origin/main` rejouée seule (un passage
+  chacun). Preuve STRUCTURELLE qu'il n'est pas de la livraison (v291) : Marlon
+  y conduit une VOITURE et Alice est à pied — le code neuf de `player.js` vit
+  dans la branche `if (this.pilote)`, celui de `main.js` après le
+  `if (!enAvion) return`, le CSS sous `body.en-avion`. Les quatorze blocs de
+  glisse sont posés par un `setInterval` en temps réel sur une page qui rend
+  une à trois images par seconde : à rejouer jusqu'à voir la distribution
+  (v269), zone réseau.
+- [ ] **Question pour Max (décollage manuel).** La course au décollage part
+  quand la manette passe 90 % (`GAZ_ELAN`) ; sous ce seuil, le roulage d'avant.
+  Au clavier seul (sans toucher la manette à la souris), pas de décollage
+  manuel : `forward` reste l'allure de roulage. Faut-il une touche de gaz ?
+
+## Rouge de portail constaté par la v572 — mesuré identique sur `origin/main`
+
+- [ ] **`carteMonde.js` : les avions dépassent leur gabarit de quelques
+  centièmes.** Trois témoins rouges, rejoués SEULS sur la branche ET sur
+  `origin/main` (v568), mêmes chiffres au centième : longueurs avionligne
+  16,15/16 · concorde 20,13/20 · chasseur 10,22/10 ; envergures 15,69/15,3 ·
+  8,76/8,4 · 7,58/7,2 ; déposés a320 16,23/16, a321 16,23/16, f35 10,23/10
+  et 7,4/7,2 d'envergure. Le surplus est le même (≈ 0,15 à 0,4 bloc) pour
+  sculptés et déposés : un ajout commun à tous les modèles (les feux de bord
+  de la v565, lentille et halos au bout de l'aile et à la queue ?) entre dans
+  la boîte mesurée. À vérifier en mesurant sans le groupe des feux avant de
+  toucher au gabarit. Hors de la zone de la v572 (avions.js, aeroport.js).
+
+## Les réglages à deux tablettes (v571) — ce qui reste, déclaré
+
+- [ ] **Rouges du portail de la v571 : aucun de la livraison.** Le diff ne
+  touche que l'écriture des réglages (`envoyerPrefs`, `prefsPushSi`) et le
+  nuage de poche ; `reglages.js` 75 verts rejouée seule sur la branche rebasée.
+  Au portail elle avait lâché sur « ouvrir un monde en ligne (40 s) », déjà
+  déclaré intermittent plus bas. **`carteMonde.js`, trois témoins de gabarit
+  d'avion, rouges À L'IDENTIQUE sur `origin/main` v570 rejouée seule** (double
+  mesure) : longueurs 16,15/16 · 20,13/20 · 10,22/10, envergures 15,69/15,3 ·
+  8,76/8,4 · 7,58/7,2, et A320/A321/F-35 à 16,23/16. Les modèles rendus
+  dépassent les fiches de `GABARITS_AVION` de 1 à 2 % : soit les fiches suivent
+  les modèles (et `postesAvion` se remesure), soit le convertisseur remet à la
+  longueur. Zone avions, une autre session. `carte.js` (flèche du GPS),
+  `maj.js` (les deux loaders) et `monte.js` (flâneur, feu, Moscou, moto) :
+  déjà déclarés.
+
+## Les phares suivent le dessin du modèle (v569) — ce qui reste, déclaré
+
+- [ ] Cinq modèles n'ont pas d'optique reconnaissable (police-car, police-suv,
+  ford-mondeo-taxi : livrée peinte d'un seul tenant ; alpine-a110-gt4,
+  bugatti-divo : matériaux muets). De nuit, ils n'ont plus de rond plaqué,
+  seulement le pinceau sur la route. Remède possible : découper l'optique dans
+  le convertisseur (`convertir-flotte.mjs`), un matériau `Headlight` à part.
+- [ ] Les feux stop, de recul et de détresse restent des lentilles génériques
+  (`feuxArriere`, `posesDetresse`) : même principe à appliquer à l'arrière
+  (copier l'optique arrière en rouge au freinage), mais il touche la rue
+  (`montrer`) — une livraison à elle.
+- [ ] **Rouges du portail de la v569 : aucun de la livraison.** `degats.js`
+  verte (les deux témoins neufs compris), `maj.js` « le loader dit combien de
+  fichiers » et « le loader ne s'efface… » (déclarés, v559), `monte.js` cinq
+  rouges déclarés : la caméra en virage, le passant de Londres sur le passage
+  peint, les poissons lancés sur la côte, Moscou ×2. Le témoin des phares de
+  `monte.js` est vert tel quel. Preuve structurelle : la livraison ne change
+  que ce qu'`allumerPhares` fabrique, de nuit, pour la voiture que l'enfant
+  conduit ; aucun de ces témoins n'en dépend.
+- [ ] Sur un modèle dont l'optique est une fine signature (la 911 : barre de
+  pare-chocs et quatre points), la lueur est fidèle mais discrète ; le verre du
+  phare luit à 0,3 (`OPACITE_VERRE`). À juger sur l'iPad de nuit.
+
+- **Intermittent, témoin de la v567, pas des phares.** « percuter une voiture de la rue l'abîme AUSSI » (`degats.js`) a rougi une fois sur trois sur la branche rebasée (`ecartTrouve 14.3`, `cibleTouchee: false` : l'élan trouvé ne suffit pas, la voiture n'atteint pas la cible), vert 2/3 sur la branche et 1/1 sur `origin/main` (v568). Rejoué seul. Si cela revient : relever la distribution de `ecartTrouve` des deux côtés (v269).
+
 ## De grands aéroports (v565) — ce qui reste, déclaré
 
 - [ ] **Un appareil qui roule traverse les appareils garés.** Un avion n'est
@@ -37,7 +114,21 @@
   `maj.js` (le loader, deux), `reglages.js` (le choix qui part au serveur),
   `monte.js` (la rue roule — médiane 0, le bouchon —, le freinage au feu, la rue
   vide, Moscou deux fois). Aucun ne lit l'eau ni le contact entre véhicules.
-- [ ] **`degats.js` « chez Alice aussi, la voiture de la rue que Marlon percute
+- [x] **FERMÉ (claude/temoins-intermittents) : un ordre d'arrivée, pas un défaut.**
+  `sonde-detresse-ami.cjs`, deux pages neuves, 2/2 : le `rue_choc` est reçu,
+  la voiture nommée (`trouvee`), `heurteRecu` posé (5,4) puis lu par le convoi
+  à l'image suivante (`recues 1`). Mais l'histoire voyage AUSSI par la
+  position (`rc`, v374, ~8 fois par seconde), et le témoin du froissage rend
+  la main dès que la tôle est froissée ; lu dans la foulée, `rue_choc` n'était
+  parfois pas encore là. Le témoin attend le fait (`recues > 0`), borné à 15 s,
+  la durée dans le message (rejoué seul : vert, `ms 4`). Et le même passage a
+  rendu deux rouges NEUFS, une cause : « elle la voit prendre feu »
+  (`vehicule: false`) et « l'épave EN FEU là où elle s'est arrêtée »
+  (`lieu: null`) — la fenêtre de 3,5 s réelles lue UNE fois au bout de
+  l'attente, Marlon déjà déposé, et le lieu relevé APRÈS le dépôt. Un relevé
+  par image dans la page d'Alice observe la fenêtre entière ; le lieu se lit
+  avant le feu.
+  Ancienne entrée : **`degats.js` « chez Alice aussi, la voiture de la rue que Marlon percute
   s'arrête feux de détresse allumés » : rouge identique des deux côtés,
   rejouée SEULE** (branche v560 et `origin/main` v547, arbre séparé) : 56 verts,
   ce seul rouge, `{"recues":0,"heurte":0}` — aucun `rue_choc` reçu chez Alice.
@@ -45,20 +136,33 @@
   (v363) d'une voiture dont le modèle se garde désormais (v547) ?
   Pas dans la zone de cette livraison.
   Et il est VERT au portail de la v560 (`recues 1`) : c'est un tirage.
-- [ ] **`monte.js` « une voiture de la rue heurtée par l'enfant s'arrête, feux de
+- [x] **FERMÉ (claude/temoins-intermittents), la piste était juste, mesurée.**
+  `sonde-heurter-image.cjs`, Paris, même voiture : écart entre la collecte de
+  `cederLePassage` (ce que `heurter` lit) et le maillage (`etat().places`)
+  0,45 bloc en médiane sans charge (0 appel sur 30 sans voiture à 4,5 blocs),
+  2,55 à 300 ms par image (6/30), 7,0 à 800 ms (27/30). Le témoin prend sa
+  cible dans `diagCeder()` (la collecte), sa vitesse dans `etat()`, dans la
+  même tâche. Ancienne entrée : **`monte.js` « une voiture de la rue heurtée par l'enfant s'arrête, feux de
   détresse, puis repart »** : `id: null` au portail de la v560 (`heurter` n'a
   trouvé aucune voiture de la collecte à 4,5 blocs du point que `etat()`
   venait de rendre) ; rejoué seul dans une sonde, 3/3 verts (arrêt 0,7 à
   1,8 s, détresse, repart à 6 s). La livraison ne touche ni `heurter` ni la
   collecte. Piste : `etat()` et `dernieres` ne sont pas de la même image.
-- [ ] **`monte.js` « les feux stop s'allument au freinage, les feux de recul en
+- [x] **FERMÉ (claude/temoins-intermittents)** : le témoin attend que la voiture
+  recule (−2 b/s, borné à douze secondes), puis 0,4 s, et publie `msRecul`.
+  Ancienne entrée : **`monte.js` « les feux stop s'allument au freinage, les feux de recul en
   marche arrière… »** : vert au premier portail de la v560 (`v3 −2,1`, stops
   éteints), rouge au second sur le MÊME code de jeu (`v3 −1,3`, stops encore
   allumés) : le recul se lit deux secondes de montre après le frein, et à
   cadence basse la voiture n'a pas fini de freiner — le rouge s'éteint en
   0,25 s de jeu après la décélération. Un tirage de cadence ; le remède est
   dans le témoin (attendre `v < −2`, borné), pas dans `fun.js`.
-- [ ] **`monte.js` « hors de Paris aussi, un passant traverse sur le passage
+- [x] **FERMÉ (claude/temoins-intermittents)** : `sonde-passages-temoin.cjs`
+  (la fonction du témoin, LUE dans monte.js), trois passes à Kyoto : 5/5,
+  2/2, 4/6 — les deux manquantes ont traversé AU FEU (`tr: 0`, 0/18 peint),
+  une décision juste du témoin du feu. Le verdict juge les traversées
+  décidées à un passage sans feu (`tr: null`), la règle de Rome.
+  Ancienne entrée : **`monte.js` « hors de Paris aussi, un passant traverse sur le passage
   peint d'un carrefour sans feu »** (Kyoto, 4 traversées, 3 sur le passage) :
   même famille que « à Rome aussi, en biais » ci-dessus ; la livraison ne
   touche pas les piétons.
@@ -153,13 +257,34 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   dépassés restent à leur place, et un saut de cinquante blocs arrive là où
   personne n'a été posé devant. Rapatrier devant soi au saut est une décision
   de jeu (v218 contre v241), pas un réglage de témoin.
-- [ ] **« un flâneur posé au milieu de la chaussée en sort »** : un essai sur
+  **QUESTION POUR MAX (claude/temoins-intermittents)** : après un saut de
+  cinquante blocs dans une ville, faut-il reposer quelques passants DEVANT
+  l'enfant (la répartition de la v218 : deux sur trois dans son regard) au
+  risque de les voir apparaître, ou garder la règle de la v241 (personne ne se
+  déplace sous ses yeux, quitte à une rue vide quelques secondes) ? Le témoin
+  reste rouge tant que ce n'est pas tranché.
+- [x] **FERMÉ (claude/temoins-intermittents), une vraie panne du jeu.**
+  `sonde-flaneur-sortie.cjs` : Rome 9/9 et 6/6 à 700 ms par image, Paris
+  8/9 (le neuvième TRAVERSE, poste « t » : le témoin l'accepte désormais).
+  `poste c` après une sortie n'a qu'une voie : l'échéance de six secondes
+  (`sortirDeLaChaussee`) prenait le poste là où le passant s'était arrêté.
+  Empêché (un mur de crochet, mode `mur`) : ancien `vie.js` poste « c » 3/3,
+  neuf « t » 3/3 — le poste est le bord visé. Témoin neuf dans `monte.js`.
+  Ancienne entrée : **« un flâneur posé au milieu de la chaussée en sort »** : un essai sur
   trois finit SUR la chaussée avec son POSTE sur la chaussée
   (`arrivee c, poste c, sorties 7`), branche ; vert sur `origin/main` ce
   passage, rouge des deux côtés aux portails d'avant. Le témoin voit ce qu'il
   annonce (le poste est choisi sur l'asphalte, la règle de la v385 le laisse
   y retourner) : laissé rouge, à démonter dans `posteAutour`.
 - [ ] **« à Rome aussi, en biais, un passant traverse sur le passage peint »**
+  **Remesuré (claude/temoins-intermittents, `sonde-passages-temoin.cjs`,
+  page neuve)** : 25 s de jeu, 1 puis 1 traversée sans feu sur deux passes ;
+  la fenêtre portée à 60 s de jeu (six minutes de montre) : 0 et 0 — les
+  seules traversées sont AU FEU (`tr` 0 ou 1). Ce n'est donc ni la cadence ni
+  la durée : les passants posés au bord d'un passage en biais n'y décident
+  presque jamais de traverser. À démonter dans le jeu (`passagePieton`, la
+  direction « en travers de SA rue » d'un passage en biais), allongement
+  essayé et retiré.
   : `traversees 0` sur 6 poses, des DEUX côtés (rejouée seule). Déclaré depuis
   la v481 ; non repris ici.
 - [ ] **« la rue roule à l'allure d'une ville »** (médiane 0) et, avec elle,
@@ -181,21 +306,65 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   closed ») au témoin de l'eau (ligne 6822), au bout de soixante minutes : la
   branche, elle, est allée jusqu'au bout. Une fois vue, à surveiller.
 
+## v574 — Rouges du portail qui ne sont pas de cette livraison (double mesure)
+
+- `carteMonde.js` : « chaque appareil tient dans le poste », « l'envergure
+  annoncée est celle du modèle rendu », « les avions déposés tiennent dans le
+  gabarit » — rouges À L'IDENTIQUE sur `origin/main` v568 rejouée seule
+  (avionligne 16,15/16, envergure 15,69/15,3, chasseur 10,22/10…). Tous les
+  appareils dépassent de 0,15 à 0,36 bloc, uniformément : très probablement
+  les halos des feux de bord de la v565 (`FEU_HALOS`, au bout des ailes et à
+  la queue), qui entrent dans la boîte que le témoin mesure. `avions.js` n'est
+  pas touché par la v574. À trancher : mesurer la boîte sans les halos, ou
+  les déclarer dans le gabarit.
+- `reseau.js`, fluidité des amis (« avance en temps réel, pas par bonds »,
+  « par le nuage… pas par paquets », « par l'hôte, la position d'un invité
+  garde l'heure de son envoi ») : rouges des DEUX côtés, rejouée seule —
+  branche : direct et nuage ; `origin/main` : direct et relayé. Même
+  signature : la page de l'observateur ne rend que deux images par seconde
+  pendant soixante secondes (`rendu.ms` ≈ 60 000), et la mesure se fait sur
+  deux à dix-huit images. Intermittence de banc, à reprendre par la
+  distribution (v269), pas par un passage.
+- `reseau.js`, « seule après le départ de l'hôte, et le compteur le dit »
+  et son suivant : rouges des deux côtés (compteur 2, avatars [Marlon]).
+- `maj.js` : « le loader dit combien de fichiers » et « le loader ne s'efface
+  qu'une fois… » (déclarés plus bas) ; le badge du journal était rouge au
+  portail parce que le journal portait le numéro provisoire avant le rebase.
+- `monte.js` : Rome en biais, le feu « piler », Moscou ×2 — déclarés plus bas.
+- `monte.js`, police « à l'arrêt, la voiture double… le policier lui parle »
+  et ses deux suivants (la voix, après le contrôle) : le contrôle commence
+  (`depasse`) puis s'annule sans parler, l'enfant n'étant PAS reparti (vitesse
+  sous 2 b/s, tracé). `sonde-police.cjs` jouée seule trois fois : branche 1
+  rouge sur 3, `origin/main` v568 2 rouges sur 3 — né avec la voiture projetée
+  de la v567 (la voiture garée percutée ne reste plus devant). Cause à
+  démonter : ce qui appelle `finirControle(true)` pendant le dépassement (la
+  sonde peut l'envelopper). La moto (« une seconde bêtise ») est réglée par
+  claude/temoins-intermittents (v570, plus haut).
+
 ## v562 — LA POLICE ET LA MOTO : ce qui reste, déclaré
 
-- **La police est locale à la tablette.** Les étoiles, les unités, le contrôle
-  ne voyagent pas sur le réseau : un ami voit la voiture de l'enfant, pas la
-  police qui le suit. Piste : les étoiles dans la position (`p.v`, comme les
-  feux stop v549), et chaque tablette mène ses unités d'après la piste qu'elle
-  reçoit. À mesurer avant d'écrire : ce que coûte une piste sur le réseau.
-- **La moto a la boîte de collision d'une voiture en longueur** (la boîte est
-  carrée de `gabarit`, 1,2 de large ; c'est le choc de face qui lit la
-  longueur de la voiture). Une moto qui touche un mur de face rebondit à la
-  distance d'une voiture. Visible ? À juger sur la tablette.
-- **Le contrôle reste derrière quand un bloc barre le chemin devant**
-  (`etat().controle.refus` nomme le bloc) : derrière une caméra de poursuite,
-  l'enfant entend la phrase sans voir le policier. Piste : se ranger à droite
-  si la gauche est barrée.
+- [x] **FERMÉ (claude/temoins-intermittents) : « police : une seconde bêtise
+  fait venir la moto »**, rouge au portail de la branche (`choc.points 45`,
+  `etoiles2 1`). Un choc contre la voiture garée vaut 45 points (90 quand elle
+  rebondit et publie un second choc), un piéton 55, la seconde étoile est à
+  120 : le témoin dépendait du rebond. `sonde-police.cjs` ajoute des bêtises
+  jusqu'à deux étoiles (trois au plus) et publie `betises2`.
+
+- ~~La police est locale à la tablette~~ **FAIT en v574** : les étoiles dans
+  `p.v.w`, l'escorte menée par chaque tablette (`patrouille.amis`), deux
+  témoins à trois tablettes (`reseau.js`, `sonde-police-reseau.cjs`). Reste :
+  l'ami ne voit pas le CONTRÔLE (l'escorte s'arrête derrière le conducteur
+  arrêté, sans policier ni phrase) — le contrôle voyagerait par un état de
+  plus dans `p.v` (`k` : la clé de la phrase), à mesurer comme le reste.
+- ~~La moto a la boîte d'une voiture en longueur~~ **FAIT en v574**
+  (`longueur: 2.4` dans sa fiche, `player.demiLong`) ; mesuré, de face elle
+  s'arrête à 1,2 bloc d'un mur au lieu de 2,2. Reste : la RUE (`vehicules.js`,
+  `cederLePassage`) et la tablette d'un ami jugent encore une moto à la
+  longueur d'une voiture (`DEMI_LONG_VOITURE`) — elles s'arrêtent un bloc
+  plus tôt devant elle, ce qui est sûr.
+- ~~Le contrôle reste derrière quand un bloc barre le chemin devant~~ **FAIT
+  en v574** : il double par la droite si la gauche est barrée
+  (`etat().controle.cote`) ; seulement les deux barrées, il reste derrière.
 - **Le policier ne marche pas** (le modèle fourni n'a pas d'armature) : il
   glisse de sa portière à celle de l'enfant. Un modèle armé, ou un corps
   Rocketbox habillé en policier, serait une passe à part.
@@ -640,8 +809,11 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   ce que la v532 change n'est lu que sous une sûreté RANGÉE avec une étendue
   choisie, et aucune page de `maj.js` ni de `monte.js` n'en range (le banc met
   `rr=` dans toute adresse). Ses deux témoins (`parent.js`) sont verts.
-- [ ] **`reglages.js` « un choix fait sur une tablette part au serveur… ne le
-  défait pas un instant » — rouge au portail de la v532 ET seule sur la
+- [x] **`reglages.js` « un choix fait sur une tablette part au serveur… ne le
+  défait pas un instant » — fait en v571** : une tablette chargée écrivait six
+  secondes après sa lecture, par-dessus le choix de l'autre ; l'écriture se fait
+  désormais sous condition (`prefsPushSi`), et le témoin retient l'écriture
+  périmée pour provoquer la course (ancien code 2 retours, neuf 0). Rouge au portail de la v532 ET seule sur la
   branche (2/2), rouge 1 fois sur 2 sur `origin/main` v531 rejouée seule dans un
   arbre détaché (même symptôme : « retours à l'ancienne langue » 1 à 3, serveur
   resté à "fr").** Intermittence de la synchronisation des préférences, déjà
@@ -1311,8 +1483,11 @@ v522 ne touche pas ; la distribution reste à faire.
   (le remaillage suit l'enfant, `entry.hd`), non mesuré en capture ; le
   remède serait de faire taire les feuilles d'un morceau sans détail quand le
   fût est dans un morceau détaillé — une lecture de plus par morceau.
-- [ ] **L'OMBRE DES FAÇADES HD DE PARIS EST JETÉE PAR LEURS UV MONDE (depuis
-  la v287).** La passe d'ombre de three échantillonne `map` aux UV bruts ;
+- [x] **L'OMBRE DES FAÇADES HD DE PARIS EST JETÉE PAR LEURS UV MONDE (depuis
+  la v287).** — FAIT en v572 : `profondeurHD` (matierehd.js) replie les UV
+  dans la passe d'ombre, chauffé à l'accueil ; deux témoins dans `parishd.js`.
+  Reste mesurable sur l'ordinateur de Max (« Graphismes avancés ») : le coût
+  de la passe, `?ombrehd=0` contre défaut. La passe d'ombre de three échantillonne `map` aux UV bruts ;
   les façades portent des UV en unités du monde repliées par le shader de la
   couche, hors de l'atlas pour la passe d'ombre : alpha nul, ombre absente là
   où `alphaTest` coupe. Vu en préparant les arbres (v499), dont les cartes

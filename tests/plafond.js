@@ -872,6 +872,19 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
   }
+  // --- LA BOÎTE DE LA MOTO (police-réseau) ---------------------------------
+  // La v562 donnait à la moto la boîte d'une voiture EN LONGUEUR : son nez
+  // butait sur un mur à 2,2 blocs de son centre, comme le capot d'une voiture.
+  // Le VRAI joueur sous node (`sonde-moto-boite.cjs`) roule au pas vers un
+  // mur : la moto s'arrête à sa demi-longueur (la fiche dit 2,4), la voiture
+  // à la sienne. Mesuré sur `origin/main` : moto 2,2, voiture 2,2.
+  {
+    let t = null, err = '';
+    try { t = await require('./sonde-moto-boite.cjs').mesurer(require('path').resolve(__dirname, '..')); } catch (e) { err = String(e && e.message || e); }
+    verifier('moto : sa boîte a sa longueur à elle — de face, elle s\'arrête à sa demi-longueur d\'un mur, pas à celle d\'une voiture',
+      !!t && t.fiche.longueur > 1 && t.fiche.longueur < 3 && Math.abs(t.moto - t.fiche.longueur / 2) < 0.3 && t.voiture > 2,
+      t ? JSON.stringify(t) : `sonde : ${err}`);
+  }
   // --- L'ÉLAN APRÈS UN CHOC (v534) ------------------------------------------
   // Max : « quand on fonce dans une voiture avec une autre voiture, la voiture
   // s'arrête immédiatement alors qu'elle aurait été propulsée sur quelques

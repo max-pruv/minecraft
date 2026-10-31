@@ -2310,15 +2310,51 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         while (performance.now() - t0 < 15000 && cat(h.pos.x, h.pos.z) === 'c') await new Promise((f) => setTimeout(f, 250));
         // et l'on regarde encore deux secondes : sortir pour y revenir ne compte pas
         await new Promise((f) => setTimeout(f, 2000));
+        // (sorti puis promu sur le trottoir, il peut TRAVERSER à un passage,
+        // v371 : sur la chaussée au relevé, en traversée, ce n'est pas rester
+        // sur la rue — vu à Paris par sonde-flaneur-sortie.cjs, poste « t »)
         essais.push({ secondes: +((performance.now() - t0) / 1000).toFixed(1), arrivee: cat(h.pos.x, h.pos.z),
-          poste: cat(h.poste.x, h.poste.y), d: +Math.hypot(h.pos.x - ou.x, h.pos.z - ou.z).toFixed(2), sorties: h.sorties || 0 });
+          poste: cat(h.poste.x, h.poste.y), d: +Math.hypot(h.pos.x - ou.x, h.pos.z - ou.z).toFixed(2), sorties: h.sorties || 0,
+          traverse: !!h.traversee });
       }
+      // EMPÊCHÉ D'ATTEINDRE LE BORD, IL LE GARDE POUR POSTE. La sortie expire au
+      // bout de six secondes réelles ; le poste se prenait alors là où il
+      // s'était arrêté, SUR la chaussée (`poste c, sorties 7`, portail de la
+      // v560). On le provoque : un mur de crochet tout autour de lui (le
+      // crochet d'obstacle des voitures, v259), le temps de l'échéance.
+      const empeche = await (async () => {
+        const h = gens[3] || gens[0];
+        let ou = null;
+        for (let r = 2; r < 16 && !ou; r++) for (let k = 0; k < 24 && !ou; k++) {
+          const a = k / 24 * Math.PI * 2;
+          const x = Math.floor(h.pos.x + Math.cos(a) * r) + 0.5, z = Math.floor(h.pos.z + Math.sin(a) * r) + 0.5;
+          if (cat(x, z) === 'c' && Math.abs(w.sommetColonne(Math.floor(x), Math.floor(z)) + 1 - h.pos.y) < 1.2) ou = { x, z };
+        }
+        if (!ou) return { err: 'pas de chaussée' };
+        const crochet = w.obstaclePieton;
+        h.traversee = null; h.ecart = null; h.sortie = null; h.sorties = 0;
+        h.surTrottoir = false; h.etat = 'pause'; h.minuteur = 6;
+        h.poste.set(ou.x, ou.z); h.placeAt(ou.x, ou.z, 40);
+        w.obstaclePieton = (x, z) => Math.hypot(x - ou.x, z - ou.z) > 0.4;
+        g.player.pos.set(ou.x + 4, h.pos.y, ou.z + 4); g.player.vel.set(0, 0, 0);
+        const t0 = performance.now();
+        // la première sortie est finie (expirée) : une seconde a commencé, ou aucune
+        while (performance.now() - t0 < 20000 && !(h.sorties >= 2 || (h.sorties >= 1 && !h.sortie))) await new Promise((f) => setTimeout(f, 250));
+        const r = { secondes: +((performance.now() - t0) / 1000).toFixed(1), sorties: h.sorties || 0, enCours: !!h.sortie,
+          ici: cat(h.pos.x, h.pos.z), poste: cat(h.poste.x, h.poste.y) };
+        w.obstaclePieton = crochet;
+        return r;
+      })();
       g.player.pos.copy(sauve);
-      return { ville: s2.nom, essais };
+      return { ville: s2.nom, essais, empeche };
     });
     verifier('un flâneur posé au milieu de la chaussée en sort et flâne au bord',
-      !sortieRue.err && sortieRue.essais.length > 0 && sortieRue.essais.every((e) => !e.err && e.arrivee !== 'c' && e.poste !== 'c'),
+      !sortieRue.err && sortieRue.essais.length > 0 && sortieRue.essais.every((e) => !e.err && (e.arrivee !== 'c' || e.traverse) && e.poste !== 'c'),
       JSON.stringify(sortieRue));
+    const emp = sortieRue.empeche || {};
+    verifier('et s\'il ne peut pas atteindre le bord, il garde le bord pour poste au lieu de flâner sur la chaussée',
+      !sortieRue.err && !emp.err && emp.sorties >= 1 && emp.ici === 'c' && emp.poste !== 'c',
+      JSON.stringify(emp));
 
     // ---- ET IL MARCHE VRAIMENT (v278, gardé en v279) ------------------------
     //
@@ -2842,9 +2878,18 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return { ville: cle, poses: poses.length, feux: feux.length, traversees, surPassage, detail, secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
     }, { cle, biais });
     const auPassage = await auPassageDans('kyoto', false);
+    // UNE TRAVERSÉE AU FEU N'EST PAS UNE TRAVERSÉE SANS FEU (la règle de Rome,
+    // juste en dessous). Rejoué trois fois (sonde-passages-temoin.cjs) : 5/5,
+    // 2/2, puis 4/6 — les deux qui manquaient avaient marché jusqu'à un
+    // carrefour à feux et traversé au vert (`tr: 0`, 0/18 peint), une décision
+    // juste qui relève du témoin du feu. On juge les traversées décidées à un
+    // passage SANS feu (`tr: null`) ; l'ancien code (avant la v386) n'en
+    // décide aucune hors de Paris, et reste rouge.
+    const sansFeu = (auPassage.detail || []).filter((d) => d.tr === null);
+    const peintes = sansFeu.filter((d) => { const [o, n] = d.peint.split('/').map(Number); return n && o * 2 >= n; }).length;
     verifier('hors de Paris aussi, un passant traverse sur le passage peint d\'un carrefour sans feu',
-      !auPassage.err && auPassage.poses >= 4 && auPassage.traversees >= 2 && auPassage.surPassage >= 0.8 * auPassage.traversees,
-      JSON.stringify(auPassage));
+      !auPassage.err && auPassage.poses >= 4 && sansFeu.length >= 2 && peintes >= 0.8 * sansFeu.length,
+      JSON.stringify({ ...auPassage, sansFeu: sansFeu.length, peintes }));
 
     // ---- ET SUR LES PASSAGES EN BIAIS (v421) --------------------------------
     //
@@ -3851,13 +3896,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const heurt = await tab.evaluate(async () => {
       const g = window.__game, v = g.vehicules, dodo = (ms) => new Promise((f) => setTimeout(f, ms));
       if (!v.heurter) return { err: 'pas de heurter' };
+      // LA CIBLE SE PREND DANS LA COLLECTE QUE `heurter` LIT, PAS SUR LE
+      // MAILLAGE. `heurter` cherche dans ce que `cederLePassage` a vu (avant
+      // `update`) ; `etat().places` donne le maillage (après). Mesuré
+      // (sonde-heurter-image.cjs) : à 800 ms par image, 7 blocs d'écart en
+      // médiane et 27 appels sur 30 sans voiture à 4,5 blocs — l'`id: null` du
+      // portail de la v560. Lu dans la même tâche (aucune image ne passe), le
+      // nom de la collecte et la vitesse de l'état désignent la même voiture.
       let cible = null;
       for (let k = 0; k < 100 && !cible; k++) {
         await dodo(150);
+        const vits = new Map();
         v.etat().forEach((c, ci) => {
-          if (cible || !c.routier || c.nom !== 'voiture') return;
-          for (const p of c.places) if ((c.vitesses[p[3]] || 0) > 4 && !cible) cible = { ci, i: p[3], x: p[0], z: p[1] };
+          if (!c.routier || c.nom !== 'voiture') return;
+          for (const p of c.places) vits.set(`${c.cle}#${p[3]}`, { ci, i: p[3], s: c.vitesses[p[3]] || 0 });
         });
+        for (const a of v.diagCeder ? v.diagCeder() : []) {
+          const q = a.nom && vits.get(a.nom);
+          if (q && q.s > 4) { cible = { ...q, x: a.x, z: a.z }; break; }
+        }
       }
       if (!cible) return { err: 'aucune voiture en marche en vue' };
       const id = v.heurter(cible.x, cible.z, 0.8);
@@ -7243,6 +7300,26 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !colle.err && colle.pireB <= 0.25 && colle.avance <= 1.1 + colle.bAvance + 0.3 && colle.recule >= 1,
       JSON.stringify(colle));
 
+    // ON DÉCOLLE À LA MAIN, ET L'ALTIMÈTRE LE DIT (Max : « j'aimerais être
+    // capable de faire un décollage manuel en allant simplement suffisamment
+    // vite […] en mettant le joystick vers le haut », et « qu'on voie
+    // l'altitude quand on pilote un avion »). Le passage vit dans la sonde,
+    // que l'on peut lancer seule (v400). Rouge sur `origin/main` (v568) : la
+    // manette au sol ne demandait que l'allure de roulage, vMax 6 pour une
+    // rotation à 42, l'appareil roule vingt secondes sans quitter le sol, et
+    // il n'y a pas d'altimètre. Vert ici : rotation à 43,8, treize blocs en
+    // 2,2 s de jeu, « ↑ 0 m » sur la dalle et « ↑ 14 m » en l'air.
+    {
+      const { passage, juger } = require('./sonde-decollage-manuel.cjs');
+      let r;
+      try { r = await passage(tab); } catch (e) { r = { err: e.message }; }
+      const j = juger(r);
+      const msg = JSON.stringify(r);
+      verifier('joystick vers le haut AVANT la vitesse de rotation, l\'avion reste au sol', j.resteAuSol, msg);
+      verifier('pleins gaz sans ✈️, puis joystick vers le haut une fois la vitesse atteinte : l\'avion décolle à la main', j.decolle, msg);
+      verifier('l\'altimètre de bord affiche la hauteur : « 0 m » sur la piste, la vraie hauteur en l\'air', j.altimetre, msg);
+    }
+
     // EN AVION : GAZ RÉDUITS, MANCHE EN AVANT, TRAIN SORTI PAR SON BOUTON — ON
     // SE POSE SOI-MÊME, SANS ✈️. Et sans le train, c'est sur le ventre.
     const manuel = await (async () => {
@@ -8215,8 +8292,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       out.feux = { gaz: feux(), v1: +P.vitesseVoiture.toFixed(1) };
       P.touchMove.f = -1; await tenir(0.4);
       out.feux.frein = feux(); out.feux.v2 = +P.vitesseVoiture.toFixed(1);
-      await tenir(2);
-      out.feux.recul = feux(); out.feux.v3 = +P.vitesseVoiture.toFixed(1);
+      // LE RECUL SE LIT QUAND LA VOITURE RECULE, PAS DEUX SECONDES DE MONTRE
+      // APRÈS LE FREIN (v270 : on attend un fait, borné). À cadence basse elle
+      // n'avait pas fini de décélérer (`v3 −1,3`, les stops encore allumés,
+      // rouge du second portail de la v560 sur un code inchangé ; `v3 −2,1`
+      // au premier). On attend qu'elle recule franchement (−2 b/s), puis un
+      // quart de seconde de plus : les stops s'éteignent 0,25 s de jeu après
+      // la fin de la décélération. La durée entre dans le message.
+      const tRecul = performance.now();
+      for (let k = 0; k < 60 && P.vitesseVoiture > -2; k++) await tenir(0.2);
+      await tenir(0.4);
+      out.feux.recul = feux(); out.feux.v3 = +P.vitesseVoiture.toFixed(1); out.feux.msRecul = Math.round(performance.now() - tRecul);
       P.touchMove.f = 0;
       for (let k = 0; k < 20 && Math.abs(P.vitesseVoiture) > 0.2; k++) await tenir(0.2);
       await tenir(0.6);
@@ -10218,11 +10304,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // même témoin rend 0 bon pour 22 mauvais). `origin/main` n'a ni patrouille
     // ni espèce moto : les deux passages le disent proprement.
     {
-      const { passage: passagePolice, passageMoto } = require('./sonde-police.cjs');
+      const { passage: passagePolice, passageMoto, passageCote } = require('./sonde-police.cjs');
       if (!tab.isClosed()) await banc.mettreDeCote(tab);
       const pp = await banc.jouerSeul('MontePolice', { pret: true });
       const po = await passagePolice(pp);
       const mo = await passageMoto(pp);
+      const co = await passageCote(pp);
       await pp.close();
       if (!tab.isClosed()) await banc.ramener(tab);
       const pj = JSON.stringify({ ...po, dits: undefined }).slice(0, 900);
@@ -10255,6 +10342,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         JSON.stringify(po.dits));
       verifier('police : après le contrôle, plus d\'étoiles, et la voiture de police reste garée, montable',
         !po.err && po.apres && po.apres.etat.points === 0 && !po.apres.pilule.vis && po.gareeMontable >= 1, pj);
+      // la gauche barrée, la police double par la droite (police-réseau) —
+      // `origin/main` n'a pas d'`essaiDevant` : le passage le dit proprement
+      verifier('police : la gauche barrée, la police double par la droite ; les deux barrées, elle reste derrière et nomme le bloc',
+        !co.err && co.libre.cote === 'gauche' && co.gaucheBarree.cote === 'droite'
+          && co.deuxBarres.cote === null && !!co.deuxBarres.refus, JSON.stringify(co));
       const mj = JSON.stringify(mo);
       verifier('moto : on l\'enfourche, deux roues, la carrure étroite, le son d\'une moto, l\'enfant à califourchon',
         !mo.err && mo.modele && JSON.stringify(mo.roues) === '["Wheel_F","Wheel_R"]' && mo.enSelle
