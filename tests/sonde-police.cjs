@@ -150,6 +150,7 @@ async function passage(page) {
     P.touchMove.f = 0; P.touchMove.s = 0;
     const t2 = performance.now();
     let ctrl = null, distMin = Infinity;
+    const interrompus = [];
     while (performance.now() - t2 < 45000) {
       await dodo(300);
       const e = pat.etat();
@@ -157,9 +158,18 @@ async function passage(page) {
       if (e.controle && !ctrl) ctrl = { ms: Math.round(performance.now() - t2), ...e.controle, ou: { dx: +(P.pos.x - x0).toFixed(1), dz: +(P.pos.z - z0).toFixed(1), dy: +(P.pos.y - y0).toFixed(2), yaw: +P.yaw.toFixed(2) } };
       if (e.controle && window.__traceCtrl) { const ay = P.yaw + Math.PI; for (const u of e.unites) window.__traceCtrl.push([e.controle.etape, u.type, +((u.x - P.pos.x) * Math.sin(ay) + (u.z - P.pos.z) * Math.cos(ay)).toFixed(1), +((u.x - P.pos.x) * Math.cos(ay) - (u.z - P.pos.z) * Math.sin(ay)).toFixed(1)]); }
       if (e.controle && e.controle.etape === 'parle' && ctrl) ctrl.parle = true;
-      if (ctrl && !e.controle) break;
+      if (ctrl && !e.controle) {
+        // un contrôle qui finit sans avoir parlé a été INTERROMPU : l'enfant a
+        // bougé de plus de trois blocs/s (une glissade, une voiture garée
+        // reprise de biais) et la poursuite a repris — c'est la règle. On
+        // attend le contrôle suivant au lieu de conclure sur celui-là.
+        if (ctrl.parle) break;
+        interrompus.push({ ms: ctrl.ms, etape: ctrl.etape, v: +Math.hypot(P.vel.x, P.vel.z).toFixed(1) });
+        ctrl = null;
+      }
     }
     out.controle = ctrl;
+    out.interrompus = interrompus;
     out.distanceMin = +distMin.toFixed(2);
     if (window.__traceCtrl) out.trace = window.__traceCtrl;
     out.dits = dits;
