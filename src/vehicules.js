@@ -435,7 +435,7 @@ export const FLOTTE = [
   {fichier:'pickup', classe: 'pickup', nom:'Pickup de chantier', habitacle: false, laque: 'toujours', fabrique:()=>construirePickup({chargement: true})},
   {fichier:'ny-crown-victoria', classe: 'berline',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
   {fichier:'ny-town-sedan', classe: 'berline',ville:'ny',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
-  // LES ANCIENS PLACEHOLDERS RETIRÉS (v572). Max : « supprime les anciennes
+  // LES ANCIENS PLACEHOLDERS RETIRÉS (v573). Max : « supprime les anciennes
   // voitures qui ne sont pas très jolies… toutes les voitures qui se
   // ressemblent ». Les quarante-sept modèles paramétriques `luxurycarfleet`
   // (août 2026, des placeholders homogènes, vendor/voitures/LICENSE.md) sont

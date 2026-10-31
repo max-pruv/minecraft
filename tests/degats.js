@@ -55,7 +55,7 @@ function verifier(nom, ok, detail = '') {
     const p = await F.empoisonner();
     verifier('une voiture abîmée (échelle en pleine animation, un feu détaché) mesurée la première ne fait pas la règle du modèle : la DB11 neuve qui suit a ses feux sur sa tôle',
       p.detOk && p.stopOk && p.phOk && p.otees > 0, JSON.stringify(p));
-    // CE QUE LA RUE REPEINT, UN MATÉRIAU LE PORTE (v572). La rue tirait une
+    // CE QUE LA RUE REPEINT, UN MATÉRIAU LE PORTE (v573). La rue tirait une
     // teinte pour la Revuelto (laque `Paint_Arancio`) et la Divo (matériaux
     // sans nom) : `userData.peinture` l'annonçait, l'ami la recevait, et
     // aucun maillage ne la portait. Tout modèle déposé qui ne se déclare pas
@@ -86,7 +86,7 @@ function verifier(nom, ok, detail = '') {
     const koLueur = flotte.filter((x) => !x.lueurOk);
     const p911 = flotte.find((x) => /911-gt3-rs/.test(x.f)) || {};
     const avecLueur = flotte.filter((x) => x.lueurs > 0).length;
-    // 25 modèles sur 30 ont une optique qui se nomme ou émet (mesuré, v572 :
+    // 25 modèles sur 30 ont une optique qui se nomme ou émet (mesuré, v573 :
     // la flotte sans ses placeholders ; la barre valait 70 sur 77).
     verifier(`de nuit, les phares des ${flotte.length} modèles s'allument dans la forme de leur propre optique — aucun disque plaqué, chaque lueur sur la tôle et au nez — et la 911 allume sa signature`,
       koLueur.length === 0 && p911.rang === 1 && p911.triangles > 100 && avecLueur >= 25,
@@ -321,7 +321,7 @@ function verifier(nom, ok, detail = '') {
       for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
       g.animalManager.animals.length = 0;
       // une sportive dont les phares sont émissifs et nommés (la F40, v343 ;
-      // la Revuelto adaptée depuis la v572)
+      // la Revuelto adaptée depuis la v573)
       const flotte = 'lamborghini-revuelto.glb';
       const a = g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte });
       const b = g.animalManager.invoquer('voiture', x0 - 12, z0 + 6, false, { flotte });

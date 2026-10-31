@@ -38,7 +38,7 @@ function ecart(corps, p, n) {
 // PREMIÈRE, puis une Bolide neuve : ses feux doivent être sur SA tôle. Aucune
 // géométrie n'y est froissée, donc la règle de la v543 (une tôle intacte) la
 // croit saine — sur l'ancien code, ses poses se gardaient pour tout le modèle.
-// La Bolide est partie en v572 : la DB11 la remplace, ses feux avant se
+// La Bolide est partie en v573 : la DB11 la remplace, ses feux avant se
 // reconnaissent à leur matériau (« Day_Lights », « Low_Beams »), ses nœuds
 // étant anonymes.
 export async function empoisonner(fichier = 'aston-martin-db11.glb') {

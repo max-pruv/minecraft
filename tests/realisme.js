@@ -441,7 +441,7 @@ async function appuyer(p, sel, texte) {
     const flotteTex = await p.evaluate(async () => {
       const { chargerVoitureFlotte, FLOTTE, repeindre } = await import('/src/vehicules.js');
       const { liberer } = await import('/src/liberer.js');
-      // Depuis la v572, les huit modèles d'origine sont partis : on prend les
+      // Depuis la v573, les huit modèles d'origine sont partis : on prend les
       // cinq modèles déposés qui partagent des images entre fichiers (relevé
       // sur leurs octets : 97 images utilisées, 91 distinctes).
       const fichiers = ['aston-martin-victor.glb', 'ford-f150-raptor-r.glb', 'porsche-cayenne-turbo-gt.glb',

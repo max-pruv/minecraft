@@ -3362,7 +3362,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Max : « les voitures devraient aller plus vite et surtout une vitesse en
     // fonction du modèle (sportive faster than sedan basic) ». Toute voiture
     // conduite roulait à ×3,4, quel que soit le modèle. On invoque une
-    // citadine et une Bugatti Divo (la Jesko, v358, est partie en v572) sur un terrain plat, loin des villes,
+    // citadine et une Bugatti Divo (la Jesko, v358, est partie en v573) sur un terrain plat, loin des villes,
     // on monte, on appuie, et l'on lit la VITESSE que l'enfant obtient
     // (`player.vel`, avant collision) : la Divo au moins 1,8 fois plus vite,
     // et la citadine elle-même plus vite qu'avant (×3,4 = 10,9). Sur l'ancien
@@ -4850,7 +4850,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // posait chaque pivot dans le repère du modèle, où x est la LONGUEUR de
     // cette voiture ; `rotation.x += angle` la faisait donc basculer autour
     // de l'axe avant-arrière. On charge tous les modèles chargés (25 depuis la
-    // v572, la barre en demande 20) et l'on
+    // v573, la barre en demande 20) et l'on
     // mesure, pour chaque pivot de roue : son axe x, exprimé dans le repère
     // de la voiture, est la voie (latéral) ; et un angle positif fait avancer
     // le haut du pneu vers le nez — sur l'ancien code, la Lucid et la Chiron
@@ -7761,7 +7761,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // une longueur de voiture plus grande que sa largeur — c'est ce qui dit
     // qu'elle n'est pas en travers.
     //
-    // ET DEUX MODÈLES DU MANIFESTE SERVENT DE TÉMOIN DE CONTRÔLE (depuis la v572,
+    // ET DEUX MODÈLES DU MANIFESTE SERVENT DE TÉMOIN DE CONTRÔLE (depuis la v573,
     // la MC12 et la Model Y : les cinquante d'origine sont partis) : ils passent
     // par le chemin « manifeste », qui ne doit toucher à rien. S'ils bougent,
     // c'est que j'ai cassé la flotte en voulant l'élargir.
@@ -9279,7 +9279,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('« descendre vite » pose l\'enfant à côté sans animation', !embFeu.err && !embFeu.volant && !embFeu.ph && (Math.abs(embFeu.x) > 1.3 || Math.abs(embFeu.z) > 2.6) && embFeu.libre,
       JSON.stringify(embFeu));
-    // (Depuis la v572 ces deux témoins prennent la 911 : la Lucid Gravity est
+    // (Depuis la v573 ces deux témoins prennent la 911 : la Lucid Gravity est
     // en double face, sans laque `Paint_Primary`, et son revers se voit déjà.)
     // 9. UNE VOITURE DÉJÀ FROISSÉE NE PREND PAS DE PORTIÈRE (v366). Les
     // dégâts (v343) clonent la géométrie de la pièce touchée ; l'équiper

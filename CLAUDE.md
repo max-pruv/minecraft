@@ -950,7 +950,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## La flotte sans ses placeholders (v572) — un modèle retiré part du dépôt, et un témoin nomme un modèle pour ce qu'il porte
+## La flotte sans ses placeholders (v573) — un modèle retiré part du dépôt, et un témoin nomme un modèle pour ce qu'il porte
 
 Max : « supprime les anciennes voitures… toutes les voitures qui se
 ressemblent ». Les quarante-sept `luxurycarfleet` (des placeholders

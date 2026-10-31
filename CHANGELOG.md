@@ -39,6 +39,10 @@ encore les deux tiers de la rue à côté des modèles détaillés déposés dep
   existait déjà), et la voiture d'un ami resté sur l'ancienne version aussi.
 - Les identifiants de la SF90, de la Revuelto et de la 911 ne changent pas :
   leurs garages et le réseau les retrouvent.
+- La Revuelto et la Divo gardent leur couleur dans la rue : leur laque ne
+  porte pas un nom que la rue sait repeindre (`Paint_Arancio`, des matériaux
+  sans nom), et la rue leur annonçait une teinte que personne ne portait — un
+  ami recevait une couleur que la voiture n'avait pas.
 
 **Ce qui le prouve.** Aucune signature de programme ne naît ni ne meurt (la
 table relue sur les fichiers restants, sous node). Les phares, feux de
@@ -48,7 +52,11 @@ zéro hors tôle), et la voiture abîmée mesurée la première est désormais l
 modèle retiré sont repointés : portières et passager sur la Lucid Gravity,
 allure d'hypercar sur la Divo, dégâts sur la DB11, modèles « du manifeste »
 sur la MC12 et la Model Y, images partagées sur cinq modèles déposés qui en
-partagent vraiment (97 images, 91 distinctes).
+partagent vraiment (97 images, 91 distinctes). Un témoin de `degats.js` lit les
+matériaux de chaque modèle déposé : tout modèle que la rue peut repeindre porte
+une laque que la règle reconnaît, ou se déclare `laque: 'jamais'` — c'est le
+portail (`reseau.js`, « la voiture qu'on prend garde sa couleur ») qui a vu la
+Revuelto.
 
 ## v572 — Des ombres de fenêtres
 
