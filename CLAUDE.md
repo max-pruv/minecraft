@@ -965,8 +965,9 @@ les alterne, la Crown Victoria d'abord, et n'attend qu'elle pour apparaître.
 
 ## Les avions déposés (v563) — un modèle d'artiste se met au contrat, le contrat ne bouge pas
 
-Max a déposé un A320, un A321 et un F-35 (Sketchfab). Ils deviennent l'avion
-de ligne et le chasseur ; le Concorde reste sculpté. Cinq règles.
+Max a déposé un A320, un A321 et un F-35 (Sketchfab), puis un jet d'affaires
+(v568). Ils deviennent l'avion de ligne et le chasseur ; le Concorde reste
+sculpté. Six règles.
 
 - **LE MODÈLE SE CONVERTIT HORS LIGNE, PAR UN SCRIPT QUI SE REJOUE.**
   `scripts/convertir-avions.py` cuit les transformations, retourne le nez vers
@@ -987,7 +988,8 @@ de ligne et le chasseur ; le Concorde reste sculpté. Cinq règles.
   même contrat que l'atelier (`membres`, `train`, `porte`, `tuyeres`,
   `feuxNav`) : fun.js et embarquement.js ne savent pas d'où vient l'avion.
 - **LA VARIANTE EST UNE RÈGLE, JAMAIS UN TIRAGE, ET ELLE VOYAGE.**
-  `varianteDuPoste` (le profil `hub` prend l'A321) ; `p.v.f` porte la
+  le rang du poste dans la rangée (`RANGEE_CIVILE`, aeroport.js, v565 ; le
+  jet y entre en v568) ; `p.v.f` porte la
   variante comme le modèle d'une voiture (v253). Un avion né avant l'arrivée
   de son fichier reste sculpté pour sa vie (v547) ; `?avions=0` rejoue les
   sculptés.
@@ -997,6 +999,14 @@ de ligne et le chasseur ; le Concorde reste sculpté. Cinq règles.
   l'autre selon l'heure — un tirage. Il mesure le sculpté et chaque variante,
   fichiers attendus ; le sculpté garde l'égalité d'envergure (v278), un
   déposé doit tenir DANS le gabarit de son espèce.
+- **UN DÉPOSÉ PEUT ÊTRE PLUS COURT QUE SON GABARIT, ET IL LE DÉCLARE (v568).**
+  Le jet d'affaires est une variante de l'avion de ligne à 13 blocs, pas 16 :
+  la proportion d'un G650 à côté d'un A320. Sa fiche porte `long` (le témoin
+  des dimensions le mesure contre elle) et ses `sieges`, qui remplacent ceux
+  de l'espèce pour CET appareil : la bête prend une fiche à elle
+  (animals.js), et la copie d'un ami aussi (main.js). Une archive dont le
+  nœud porte une rotation de présentation se convertit depuis ce nœud
+  (`depart` du convertisseur), jamais en devinant des axes sur la scène.
 - **UN SIÈGE SE MESURE SUR LE MODÈLE QUI L'ENTOURE.** Le siège du chasseur
   (z −0,9) tombait derrière la verrière du F-35 : il est à −2,7, sous elle.
   Les sièges de l'avion de ligne valent pour l'A320, l'A321 et le sculpté

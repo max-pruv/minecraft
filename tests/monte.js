@@ -9978,8 +9978,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       });
       await pg.close();
       if (!tab.isClosed()) await banc.ramener(tab);
-      verifier('au-dessus d\'Orly, une rangée d\'avions garés de chaque côté de la piste, et tous les modèles : A320, A321, Concorde, F-35',
-        r.n >= 8 && r.surUnPoste === r.n && ['a320', 'a321', 'concorde', 'f35'].every((k) => r.modeles.includes(k)),
+      verifier('au-dessus d\'Orly, une rangée d\'avions garés de chaque côté de la piste, et tous les modèles : A320, A321, jet privé, Concorde, F-35',
+        r.n >= 8 && r.surUnPoste === r.n && ['a320', 'a321', 'jet', 'concorde', 'f35'].every((k) => r.modeles.includes(k)),
         JSON.stringify(r));
     }
 

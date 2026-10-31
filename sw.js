@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v567';
+const CACHE_VERSION = 'web-minecraft-v568';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -29,7 +29,7 @@ const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemis
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
 // les avions déposés (v563) : immuables, comme les corps et la flotte
-const AVIONS = ['airbus-a320', 'airbus-a321', 'chasseur-f35'].map((n) => `./vendor/avions/${n}.glb`);
+const AVIONS = ['airbus-a320', 'airbus-a321', 'chasseur-f35', 'jet-prive'].map((n) => `./vendor/avions/${n}.glb`);
 
 const ASSETS = [
   './',
