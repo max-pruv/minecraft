@@ -1,6 +1,6 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
-import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde } from './voiesdoubles.js';
+import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde, decalerSelonLaSection, DECALAGE_GTA } from './voiesdoubles.js';
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
@@ -3874,12 +3874,18 @@ function demarrerCirculation(tr) {
   // plus une seule limitation pour tout le circuit. Manhattan garde la sienne.
   const allure = tr.ville === 'ny' ? null : decalage ? (x, z) => allureDuTroncon(tr.cle, x, z)
     : (tr.voie || 'rue') === 'rue' ? allureVilleMonde : null;
-  const prep = (vehicules.circulationParTranches || vehicules.circulation)(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
+  // LE MILIEU DE LA VOIE À LA GTA (v569) : sur une collectrice ou un
+  // boulevard que le tracé suit, la voie de droite est à `DECALAGE_GTA` (2,13)
+  // de l'axe ; ailleurs l'ancien décalage. Un décalage par sommet, la cote
+  // relue sous la voie (voiesdoubles.js, `decalerSelonLaSection`).
+  const sec = decalage ? decalerSelonLaSection(tr.cle, tr.pts, (x, z) => world.coteRoulable(x, z), decalage) : null;
+  const prep = (vehicules.circulationParTranches || vehicules.circulation)(sec ? sec.pts : tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
     limite: allure ? (x, z) => ALLURE_VOIE[allure(x, z) || tr.voie || 'rue'] : undefined,
-    // les avenues des villes bâties à la main : la voie de droite (v372)
-    decalage,
-    // la seconde voie des boulevards (v423) ; le bus prend la première place
-    voies: decalage ? (x, z) => secondeVoieParis(x, z, decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
+    // les avenues des villes bâties à la main : la voie de droite (v372, v569)
+    decalage: sec ? sec.e : decalage,
+    // la seconde voie des boulevards (v423) ; le bus prend la première place —
+    // la file y roule à `DECALAGE_GTA`, la jumelle une voie plus loin
+    voies: decalage ? (x, z) => secondeVoieParis(x, z, Array.isArray(sec && sec.e) ? DECALAGE_GTA : decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
   circulationEnCours = { tr, prep: prep.avancer ? prep : { avancer: () => prep } };
 }
 // avance la préparation en cours sur `budget` ms ; vrai si elle a fini

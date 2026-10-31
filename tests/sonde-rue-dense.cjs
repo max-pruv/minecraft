@@ -35,6 +35,8 @@ const src = (f) => pathToFileURL(path.join(RACINE, 'src', f)).href;
 globalThis.__dbg = !!process.env.DBG;
 // le relevé que rendent `raccords` et `bus` à qui requiert ce fichier (plafond.js)
 let RESULTAT = null;
+// la règle d'avant la v569 (un seul décalage, 1,3) rejouée sur le même code
+let VOIE_AVANT = false;
 
 async function monter() {
   const { World } = await import(src('world.js'));
@@ -55,8 +57,10 @@ function poser(M, tr) {
   const decalage = tr.voie === 'avenue' && tr.ville !== 'ny' ? 1.3 : 0;
   const allure = VD.allureDuTroncon && (decalage ? (x, z) => VD.allureDuTroncon(tr.cle, x, z) : VD.allureVilleMonde);
   const C = require('node:module');
-  return veh.circulation(tr.pts, V.graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue', decalage,
-    voies: decalage ? (x, z) => VD.secondeVoieParis(x, z, decalage) : VD.secondeVoieVilleMonde, bus: tr.rang === 0 });
+  const sec = decalage && VD.decalerSelonLaSection && !process.env.VOIE_AVANT && !VOIE_AVANT ? VD.decalerSelonLaSection(tr.cle, tr.pts, (x, z) => M.w.coteRoulable(x, z), decalage) : null;
+  const ePar = sec && Array.isArray(sec.e);
+  return veh.circulation(sec ? sec.pts : tr.pts, V.graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue', decalage: sec ? sec.e : decalage,
+    voies: decalage ? (x, z) => VD.secondeVoieParis(x, z, ePar ? VD.DECALAGE_GTA : decalage) : VD.secondeVoieVilleMonde, bus: tr.rang === 0 });
 }
 
 function rect(x, z, cap, dl = 2.5, dw = 1.13) {
@@ -333,13 +337,38 @@ async function principal(mode) {
     console.log('TABLE', JSON.stringify(table));
     RESULTAT = { ...bilan, ecarts, pires: lignes.filter((l) => l.jeu > 0).map((l) => [l.route + '|' + l.cle, l.long, l.jeu]) };
     console.log('BILAN', JSON.stringify(RESULTAT));
+  } else if (mode === 'face') {
+    // LA VOIE À LA GTA (v569) : les voitures de deux convois DIFFÉRENTS de
+    // Paris qui se touchent de face (sens contraires, la même rue), par la
+    // grille seule sur 200 s — avec le décalage par section et avec l'ancien
+    const compter = () => {
+      const traces = M.P.circuitsParis((x, z) => M.w.coteRoulable(x, z)).map((t) => ({ ...t, voie: 'avenue' }));
+      const convs = traces.flatMap((tr) => { const c = poser(M, tr); return [c, c.jumelle].filter(Boolean); });
+      convs.forEach((c) => c.horaire());
+      const fam = { face: 0, meme: 0, travers: 0 };
+      for (let h = 0; h < 200; h += 0.2) {
+        const tout = convs.flatMap((c, k) => poses(c, h).map((q) => ({ ...q, k, c })));
+        for (let a = 0; a < tout.length; a++) for (let b = a + 1; b < tout.length; b++) {
+          const A = tout[a], B = tout[b];
+          if (A.k === B.k || A.c.jumeauDe === B.c || B.c.jumeauDe === A.c || (A.x - B.x) ** 2 + (A.z - B.z) ** 2 > 49) continue;
+          if (!touche(rect(A.x, A.z, A.cap, 2.2), rect(B.x, B.z, B.cap, 2.2))) continue;
+          const cs = Math.cos(A.cap - B.cap); fam[Math.abs(cs) > 0.7 ? (cs > 0 ? 'meme' : 'face') : 'travers']++;
+        }
+      }
+      return fam;
+    };
+    VOIE_AVANT = true; const avant = compter();
+    VOIE_AVANT = false; const neuf = compter();
+    RESULTAT = { avant, neuf };
+    console.log(JSON.stringify(RESULTAT));
   } else if (mode === 'ville') {
     // node tests/sonde-rue-dense.cjs ville madrid [secondes] : les voitures de
     // TOUS les convois de la ville posées par la grille, et les paires de deux
     // convois différents qui se touchent, rangées par paire de convois
     const cle = process.argv[3] || 'madrid', duree = +(process.argv[5] || 300);
     const VM = await import(src('villesmonde.js'));
-    const traces = VM.tracesCirculation((x, z) => M.w.terrainHeight(x, z)).filter((t) => t.cle === cle);
+    const traces = cle === 'paris' ? M.P.circuitsParis((x, z) => M.w.coteRoulable(x, z)).map((t) => ({ ...t, voie: 'avenue' }))
+      : VM.tracesCirculation((x, z) => M.w.terrainHeight(x, z)).filter((t) => t.cle === cle);
     const lignes = traces.map((tr) => { const c = poser(M, tr); if (tr.rang === 0) M.veh.bus(tr.pts, Math.abs(Math.round(tr.x + tr.z)), c); return { tr, c }; });
     const convs = lignes.flatMap(({ c }) => [c, c.jumelle].filter(Boolean));
     convs.forEach((c) => c.horaire());
@@ -362,6 +391,7 @@ async function principal(mode) {
     }
     console.log(JSON.stringify({ convois: convs.map((c, k) => k + ':' + (c.jumeauDe ? 'J' : '') + c.cle.split('|').slice(1, 3).join('|') + ' nb' + c.nb), contacts: n }));
     console.log(JSON.stringify(Object.entries(parPaire).sort((a, b) => b[1].n - a[1].n).slice(0, 12)));
+    const fam = {}; for (const [k, e] of Object.entries(parPaire)) { const f = k.split(" ").pop(); fam[f] = (fam[f] || 0) + e.n; } console.log("FAMILLES", JSON.stringify(fam));
   } else {
     const { w, P, VD, V } = M;
     const traces = P.circuitsParis((x, z) => w.coteRoulable(x, z));

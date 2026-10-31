@@ -1023,6 +1023,49 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       !!r && r.circuits > 40 && r.egaux === r.circuits && r.avecJumelle > 5 && r.enQuatreEtapesOuPlus === r.circuits,
       r ? JSON.stringify(r) : `sonde : ${err}`);
   }
+  // --- LE MILIEU DE LA VOIE À LA GTA (v569) ------------------------------
+  // Les convois des villes bâties à la main roulaient à 1,3 bloc de l'axe,
+  // quand les rues à la GTA (v544) mettent le milieu de la voie de droite
+  // d'une collectrice à 2,13 : deux voitures qui se croisaient passaient à
+  // 0,34 bloc l'une de l'autre, et la grille les faisait se toucher de face
+  // (161 relevés sur 200 s à Paris, `sonde-rue-dense.cjs face`, la règle
+  // d'avant rejouée sur le même code). Deux témoins : la grille, et la part
+  // des collectrices et boulevards suivis où la voie est au milieu — sans
+  // jamais sortir de l'ancien décalage ailleurs (une rue locale, une place, un
+  // tour de monument).
+  {
+    let r = null, err = '';
+    try { r = await require('./sonde-rue-dense.cjs').mesurer('face'); } catch (e) { err = String(e && e.message || e); }
+    verifier('rue : deux convois de Paris qui se croisent dans une rue ne se touchent plus de face (la voie au milieu de sa moitié)',
+      !!r && r.avant.face > 60 && r.neuf.face * 4 <= r.avant.face,
+      r ? JSON.stringify(r) : `sonde : ${err}`);
+    const VD = await import('../src/voiesdoubles.js').catch(() => null);
+    if (!VD || !VD.decalerSelonLaSection) {
+      verifier('rue : sur une collectrice ou un boulevard suivi, la voiture roule au milieu de sa voie (2,13), ailleurs à l\'ancien décalage', false, 'decalerSelonLaSection absent (ancien code)');
+    } else {
+      const { World } = await import('../src/world.js');
+      const w = new World(); const solDe = (x, z) => w.coteRoulable(x, z);
+      const villes = [['paris', 'circuitsParis', './paris.js'], ['londres', 'circuitsLondres', './londres.js'], ['nice', 'circuitsNice', './nice.js'],
+        ['lille', 'circuitsLille', './lille.js'], ['sf', 'circuitsSF', './sanfrancisco.js']];
+      const par = {};
+      let horsBorne = 0;
+      for (const [v, f, fic] of villes) {
+        const m = await import('../src/' + fic.slice(2));
+        let gta = 0, n = 0;
+        for (const c of m[f](solDe)) {
+          const r = VD.decalerSelonLaSection(c.cle, c.pts, solDe);
+          if (!Array.isArray(r.e)) continue;
+          for (const e of r.e) { n++; if (e >= VD.DECALAGE_GTA - 1e-9) gta++; if (e < VD.DECALAGE_BASE - 1e-9 || e > VD.DECALAGE_GTA + 1e-9) horsBorne++; }
+        }
+        par[v] = n ? +(gta / n).toFixed(2) : 0;
+      }
+      // mesuré : Paris 0,74, Londres 0,34, Nice 0,62, Lille 0,46, San Francisco
+      // 0,69 des sommets au milieu de la voie ; la barre à la moitié (v237)
+      verifier('rue : sur une collectrice ou un boulevard suivi, la voiture roule au milieu de sa voie (2,13), ailleurs à l\'ancien décalage',
+        horsBorne === 0 && par.paris >= 0.4 && par.sf >= 0.35 && Object.values(par).every((x) => x > 0.15),
+        JSON.stringify({ part: par, horsBorne, gta: VD.DECALAGE_GTA, base: VD.DECALAGE_BASE }));
+    }
+  }
   // --- LA PENTE ET LA BOSSE (palier 3 de la conduite) ---------------------
   // Mesuré sur `origin/main` (`tests/sonde-pente.cjs`, six côtes, six
   // descentes et six plats de la campagne, une sportive à plein gaz) : 26,4
