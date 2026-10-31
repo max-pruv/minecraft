@@ -950,6 +950,53 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un avion garé est un obstacle (v577) — une forme qui n'est pas un rectangle se mesure en silhouette, et l'enfoncement se compte en cases
+
+Deux dettes, une seule chose : la voiture traversait un avion au poste (v534),
+et ✈️ faisait passer l'aile dans le voisin garé (v565). Quatre règles.
+
+- **UNE BOÎTE NE DÉCRIT PAS UN AVION.** « Longueur × envergure » arrêterait
+  une voiture à sept blocs du fuselage ; « longueur × fuselage » laisse passer
+  l'aile, qui est ce qui heurte. `emprise-avion.js` mesure la SILHOUETTE vue du
+  dessus (chaque triangle visible projeté au sol, cases d'un demi-bloc), une
+  fois par modèle, sur un modèle NEUF (`empriseDe`, la règle des feux, v550) :
+  l'appareil de la scène porte un temps son escalier et sa porte ouverte.
+- **L'ENFONCEMENT SE COMPTE EN POINTS** (`sEnfonce`, v560, pour une forme
+  quelconque). Ce qui bouge porte des points — la boîte d'une voiture au
+  demi-bloc, la silhouette de son propre avion — et un pas est refusé s'il en
+  met plus dans l'avion que la pose d'avant. Reculer et se dégager restent
+  permis. Pour la voiture, c'est la famille `avion` de `obstacleVehicule`,
+  qui rebondit sur la normale du mouvement comme le mobilier : une voiture ne
+  pousse pas un avion. Pour l'avion qui roule, c'est `player.obstacleAvion`,
+  lu DANS LA BRANCHE DU PILOTE — elle a son propre déplacement et sort avant le
+  code commun (mon premier jet y posait le crochet : jamais lu, le témoin l'a
+  dit), au sol seulement, avancer comme virer sur place.
+- **AVANT D'ARRÊTER UN TRAJET ASSISTÉ, ON MESURE OÙ IL PASSE.** Bloquer net
+  aurait arrêté 61 départs ✈️ sur 369 contre l'empennage du voisin, d'un
+  demi-bloc. C'est le GUIDAGE qui frôlait : il repartait à quinze blocs par
+  seconde à 34° du cap, en plein virage. `guiderRoulage` vire à
+  `VIRE_ROULAGE` (deux blocs par seconde, le rayon le plus court) jusqu'à
+  `CAP_ROULAGE` (17°) : zéro contact, au moins un demi-bloc d'air partout, pour
+  quatre dixièmes de seconde de roulage de plus. La sonde
+  (`sonde-avions-gares.cjs`) rend la marge (`MARGE=`) : un modèle neuf dans la
+  rangée se rejoue par elle.
+- **UN TÉMOIN DE FORME SE LIT PAR LA MÊME MESURE QUE LE JEU, ET ROUGIT SUR
+  L'ANCIEN CODE PAR LE TRAJET.** Les témoins de `monte.js` comptent les points
+  de la voiture et du chasseur dans la silhouette de l'A320 garé ; l'ancien
+  code (le module de mesure seul ajouté) traverse l'avion sur 45 et 41 blocs.
+- **UNE RÈGLE D'ENFONCEMENT SUPPOSE QU'ON VIENT DU DEHORS.** Un appareil
+  invoqué sur un poste déjà garni NAÎT dans un jumeau ; chaque virage l'y
+  enfonce d'un point et il restait cloué au poste (le témoin du roulage d'Orly,
+  196 refus en une minute — sous node la sonde partait d'une pose identique, à
+  zéro refus, et ne pouvait pas le voir). En roulant on ne dépasse jamais le
+  premier contact : au-delà d'un quart des points dedans (`JUMEAU`), on ignore
+  cet avion jusqu'à en être sorti. « On n'est jamais coincé » se vérifie aussi
+  en partant de dedans.
+
+Ce qui reste, déclaré dans `TASKS.md` : à pied on passe encore sous l'aile et
+dans le fuselage d'un avion garé ; un avion garé n'est pas un obstacle pour
+les voitures de la rue ni pour un ami.
+
 ## Les dix-huit voitures déposées (v566) — un paquet se mesure, il ne se lit pas
 
 Max a déposé dix-huit paquets Sketchfab de facture différente.

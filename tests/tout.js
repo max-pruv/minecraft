@@ -256,6 +256,7 @@ const GARDIENS = {
   // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
   'src/cap.js': ['monte.js', 'carte.js'],
   'src/approche.js': ['monte.js', 'carteMonde.js'],
+  'src/emprise-avion.js': ['monte.js', 'carteMonde.js'],
   'src/gps.js': ['carte.js'],
   // LES COMMANDES SIMPLIFIÉES : le menu unique, Construire, et les boutons ronds.
   'src/commandes.js': ['maj.js', 'monte.js', 'manhattan.js', 'reglages.js', 'carte.js', 'fumee.js'],

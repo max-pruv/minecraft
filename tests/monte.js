@@ -7300,6 +7300,111 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !colle.err && colle.pireB <= 0.25 && colle.avance <= 1.1 + colle.bAvance + 0.3 && colle.recule >= 1,
       JSON.stringify(colle));
 
+    // UN AVION GARÉ EST UN OBSTACLE (v577), POUR UNE VOITURE COMME POUR UN
+    // AVION QUI ROULE. Deux dettes, une seule chose : la voiture de l'enfant
+    // traversait un avion au poste (`gareeContre` écartait les fiches
+    // `pilote`, v534), et un appareil qui roule traversait les appareils
+    // garés (v565). On provoque les deux (v233) sur une dalle loin de tout :
+    // un A320 garé, une voiture lancée pleins gaz dans son aile, puis un
+    // chasseur qui roule dans la même aile. On mesure l'enfoncement par la
+    // silhouette au sol (`emprise-avion.js`, les points de ce qui bouge dans
+    // les cases de l'avion garé) : zéro, l'avion garé n'a pas bougé d'un
+    // cheveu (une voiture ne pousse pas un avion), et l'on se dégage en
+    // reculant. Sur l'ancien code, la voiture et le chasseur passent au
+    // travers de l'aile et du fuselage.
+    const gareObstacle = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const E = await import('./src/emprise-avion.js');
+      const A = await import('./src/avions.js');
+      if (A.chargerAvionsDeposes) await A.chargerAvionsDeposes();
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      const descendre = async () => { g.player.keys.clear(); for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dodo(400); } };
+      await descendre();
+      const vider = () => { for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh); g.animalManager.animals.length = 0; };
+      vider();
+      g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false; g.player.remonter = 0;
+      const X0 = 31360, Z0 = 31460;
+      let Y0 = 0;
+      for (let d = -10; d <= 50; d += 4) for (let w = -16; w <= 16; w += 4) Y0 = Math.max(Y0, g.world.terrainHeight(X0 + d, Z0 + w));
+      Y0 += 2;
+      const pose = [];
+      const mettre = (x, y, z, id) => { g.world.setBlock(x, y, z, id); pose.push([x, y, z]); };
+      for (let d = -10; d <= 50; d++) for (let w = -16; w <= 16; w++) {
+        mettre(X0 + d, Y0, Z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 7; h++) if (g.world.getBlock(X0 + d, Y0 + h, Z0 + w) !== 0) mettre(X0 + d, Y0 + h, Z0 + w, 0);
+      }
+      const rendre = async () => { await descendre(); vider(); for (const [x, y, z] of pose) g.world.setBlock(x, y, z, 0); };
+      g.player.pos.set(X0, Y0 + 1.01, Z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await dodo(1000);
+      // l'A320 garé, nez vers −z (yaw −π, donc rotation 0 : son repère est celui du monde)
+      const garer = () => {
+        const av = g.animalManager.invoquer('avionligne', X0 + 22, Z0 + 0.5, false, { variante: 'a320' });
+        if (av) { av.yaw = -Math.PI; av.gare = true; av.mesh.position.copy(av.pos); av.mesh.rotation.y = 0; }
+        return av;
+      };
+      let gare = garer();
+      if (!gare) { await rendre(); return { err: 'avion garé refusé' }; }
+      const e = E.mesurerEmprise(gare.mesh);
+      // une file de l'aile : la case à 5 blocs de l'axe, côté où l'on arrive
+      let lz = null;
+      for (let k = 0; k < e.nz && lz === null; k++) if (e.cases[k * e.nx + Math.floor((-5 - e.ox) / e.pas)]) lz = e.oz + (k + 0.5) * e.pas;
+      if (lz === null) { await rendre(); return { err: 'pas d\'aile trouvée' }; }
+      const garePos0 = { x: gare.pos.x, z: gare.pos.z };
+      const dansGare = (pts) => E.pointsDans(e, gare.pos.x, gare.pos.z, gare.yaw + Math.PI, pts);
+      const foncer = async (points, xLimite) => {
+        let pire = 0, xPrec = g.player.pos.x, immobile = 0;
+        g.player.keys.add('KeyW');
+        const t0 = performance.now();
+        while (performance.now() - t0 < 15000 && immobile < 8 && g.player.pos.x < xLimite) {
+          await dodo(150);
+          pire = Math.max(pire, dansGare(points()));
+          immobile = Math.abs(g.player.pos.x - xPrec) < 0.02 ? immobile + 1 : 0; xPrec = g.player.pos.x;
+        }
+        g.player.keys.delete('KeyW');
+        const arret = g.player.pos.x;
+        g.player.keys.add('KeyS');
+        const t1 = performance.now();
+        while (performance.now() - t1 < 10000 && g.player.pos.x > arret - 1.5) await dodo(150);
+        g.player.keys.delete('KeyS');
+        return { pire, avance: +(arret - X0).toFixed(1), recule: +(arret - g.player.pos.x).toFixed(1), ms: Math.round(performance.now() - t0) };
+      };
+      // 1. LA VOITURE, pleins gaz dans l'aile
+      g.player.pos.set(X0, Y0 + 1.01, Z0 + 0.5 + lz);
+      g.animalManager.invoquer('voiture', X0, Z0 + 0.5 + lz, false, { flotte: 'berline-citadine' });
+      await dodo(700);
+      for (let k = 0; k < 8 && !auVolant(); k++) { document.getElementById('ride-btn').click(); await dodo(500); }
+      if (!auVolant()) { await rendre(); return { err: 'pas au volant' }; }
+      g.player.yaw = -Math.PI / 2; g.player.vitesseVoiture = 0; g.player.vel.set(0, 0, 0);
+      const voiture = await foncer(() => E.pointsDeBoite({ x: g.player.pos.x, z: g.player.pos.z, ux: Math.sin(g.player.yaw + Math.PI), uz: Math.cos(g.player.yaw + Math.PI), a: 2.2, b: g.player.gabarit / 2 }), X0 + 45);
+      voiture.bouge = +Math.hypot(gare.pos.x - garePos0.x, gare.pos.z - garePos0.z).toFixed(2);
+      // 2. LE CHASSEUR, qui roule dans la même aile
+      await descendre(); vider();
+      gare = garer();
+      g.player.pos.set(X0, Y0 + 1.01, Z0 + 0.5 + lz); g.player.vel.set(0, 0, 0);
+      await dodo(500);
+      const ch = g.animalManager.invoquer('chasseur', X0, Z0 + 0.5 + lz, false, { variante: 'f35' });
+      await dodo(500);
+      for (let k = 0; k < 8 && !g.player.pilote; k++) { document.getElementById('ride-btn').click(); await dodo(500); }
+      if (!g.player.pilote || !ch) { await rendre(); return { err: 'pas aux commandes', voiture }; }
+      g.player.yaw = -Math.PI / 2; g.player.vitesseAvion = 0; g.player.avionEtat = 'sol'; g.player.avionEnVol = false; g.player.vel.set(0, 0, 0);
+      await dodo(300);
+      const eCh = E.mesurerEmprise(ch.mesh);
+      const avion = await foncer(() => E.pointsDAvion(eCh, g.player.pos.x, g.player.pos.z, g.player.yaw), X0 + 45);
+      avion.bouge = +Math.hypot(gare.pos.x - garePos0.x, gare.pos.z - garePos0.z).toFixed(2);
+      avion.modele = ch.mesh.userData.variante || 'sculpté';
+      await rendre();
+      return { lz: +lz.toFixed(1), voiture, avion };
+    });
+    verifier('une voiture lancée dans l\'aile d\'un avion garé s\'y arrête sans y entrer, ne le pousse pas, et peut reculer',
+      !gareObstacle.err && gareObstacle.voiture.pire === 0 && gareObstacle.voiture.avance < 16 && gareObstacle.voiture.bouge < 0.01 && gareObstacle.voiture.recule >= 1,
+      JSON.stringify(gareObstacle));
+    verifier('un avion qui roule dans l\'aile d\'un avion garé s\'y arrête sans y entrer, et peut reculer',
+      !gareObstacle.err && gareObstacle.avion && gareObstacle.avion.pire === 0 && gareObstacle.avion.avance < 16 && gareObstacle.avion.bouge < 0.01 && gareObstacle.avion.recule >= 0.5,
+      JSON.stringify(gareObstacle));
+
     // ON DÉCOLLE À LA MAIN, ET L'ALTIMÈTRE LE DIT (Max : « j'aimerais être
     // capable de faire un décollage manuel en allant simplement suffisamment
     // vite […] en mettant le joystick vers le haut », et « qu'on voie

@@ -4787,6 +4787,29 @@ const VRAIES_KM = [
         + (r ? ` · roulage au plus ${Math.max(...r.map((l) => l.roulage || 0))} s de jeu` : ''));
     }
 
+    // ET EN SORTANT DE SON POSTE, L'AILE NE PASSE PAS DANS LE VOISIN (v577).
+    //
+    // La rangée est pleine depuis la v565 (quatre blocs de passage entre le
+    // nez de l'un et la queue de l'autre) : ✈️ vire vers la piste, l'aile
+    // EXTÉRIEURE balaie vers l'avant et entrait d'un demi-bloc dans
+    // l'empennage du voisin — vu en capture `aeroport-roulage`, mesuré sur 61
+    // départs sur 369. On rejoue chaque départ avec le vrai joueur, la
+    // silhouette au sol de chaque modèle mesurée dans la page
+    // (`emprise-avion.js`, sculptés et déposés), et l'on compte les cases du
+    // partant qui entrent dans un appareil garé : zéro, et tous en vol.
+    {
+      let r = null, err = null;
+      try {
+        const S = require('./sonde-avions-gares.cjs');
+        const T = await S.mesurerEmprises(tab);
+        r = await S.rejouer(require('path').join(__dirname, '..', 'src'), T);
+        r.modeles = Object.keys(T).join('/');
+      } catch (e) { err = String(e && e.message || e); }
+      verifier('✈️ depuis chacun des postes : l\'aile ne passe pas dans l\'appareil garé voisin, et tous décollent',
+        !err && r && r.departs >= 300 && r.traverses === 0 && r.decolles === r.departs,
+        `${err || ''} ${r ? `${r.traverses} départs dans un voisin sur ${r.departs}, ${r.decolles} en vol · modèles ${r.modeles} · ${r.fautes.slice(0, 5).join(' · ')}` : ''}`);
+    }
+
     // ET L'OUVRAGE RESTE DANS SES BORNES MESURÉES (v280).
     //
     // La plate-forme va jusqu'à `r − 10` alors que `terrainHeight` ne vaut
