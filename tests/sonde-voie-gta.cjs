@@ -1,7 +1,7 @@
-// LA VOIE À LA GTA (v569) — sous node : où roule la carrosserie des convois des
+// LA VOIE À LA GTA (v575) — sous node : où roule la carrosserie des convois des
 // villes bâties à la main, selon le décalage à droite de l'axe.
 //   node tests/sonde-voie-gta.cjs [décalages, ex. 1.3,2.13,-1] [racine]
-// (−1 : le décalage par section du jeu, `decalerSelonLaSection`, v569)
+// (−1 : le décalage par section du jeu, `decalerSelonLaSection`, v575)
 // Pour chaque circuit (comme main.js les pose : sansEpis∘decalerADroite), tous
 // les demi-blocs, cinq points en travers de la carrosserie : la colonne sous
 // chacun (chaussée, trottoir, autre) et un bloc plein à hauteur de caisse.

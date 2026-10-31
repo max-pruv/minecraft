@@ -41,7 +41,7 @@ export const RACCORDS_COURTS = {
   'I-95|boston': 0, 'Tōmei|tokyo': 1.5, 'A8|marseille': 0.5, 'US-101|losangeles': 8.5,
   // les villes bâties à la main (v450) : leur entrée finit sur une avenue
   // nommée que des circuits roulent — Lille dès la rue de Paris. Remesurée
-  // avec la voie au milieu de sa moitié (v569) : A6 Paris et A1 Lille d'un
+  // avec la voie au milieu de sa moitié (v575) : A6 Paris et A1 Lille d'un
   // demi-bloc.
   'A1|paris': 262.5, 'A6|paris': 201.5, 'A1|lille': 12, 'A8|nice': 17.5,
 };

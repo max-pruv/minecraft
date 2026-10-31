@@ -35,7 +35,7 @@ const src = (f) => pathToFileURL(path.join(RACINE, 'src', f)).href;
 globalThis.__dbg = !!process.env.DBG;
 // le relevé que rendent `raccords` et `bus` à qui requiert ce fichier (plafond.js)
 let RESULTAT = null;
-// la règle d'avant la v569 (un seul décalage, 1,3) rejouée sur le même code
+// la règle d'avant la v575 (un seul décalage, 1,3) rejouée sur le même code
 let VOIE_AVANT = false;
 
 async function monter() {
@@ -338,7 +338,7 @@ async function principal(mode) {
     RESULTAT = { ...bilan, ecarts, pires: lignes.filter((l) => l.jeu > 0).map((l) => [l.route + '|' + l.cle, l.long, l.jeu]) };
     console.log('BILAN', JSON.stringify(RESULTAT));
   } else if (mode === 'face') {
-    // LA VOIE À LA GTA (v569) : les voitures de deux convois DIFFÉRENTS de
+    // LA VOIE À LA GTA (v575) : les voitures de deux convois DIFFÉRENTS de
     // Paris qui se touchent de face (sens contraires, la même rue), par la
     // grille seule sur 200 s — avec le décalage par section et avec l'ancien
     const compter = () => {
