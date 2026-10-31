@@ -117,6 +117,17 @@ const GARDIENS = {
   'vendor/voitures/ford-f150-raptor-r.glb': ['degats.js', 'monte.js'],
   'vendor/voitures/ford-mondeo-taxi.glb': ['degats.js', 'monte.js'],
   'vendor/voitures/police-suv.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-nypd-crown-vic.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-nypd-charger.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-lapd.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-noir-blanc.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-sheriff-etoile.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-sheriff-noir.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-sheriff-blanc.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-met-londres.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-battenburg-bmw.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-battenburg-break.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/police-polizei-bmw.glb': ['degats.js', 'monte.js'],
   'tests/porsche-911.mjs': ['degats.js'],
   'tests/porsche-911-textures.mjs': ['degats.js'],
   // les lumières de la flotte (v550), lues par degats.js sous node
@@ -321,6 +332,7 @@ const GARDIENS = {
   // leurs témoins vivent dans monte.js (sous node et dans la page)
   'src/police.js': ['monte.js'],
   'src/patrouille.js': ['monte.js', 'reseau.js'],   // l'escorte d'un ami (police-réseau)
+  'src/policeville.js': ['monte.js', 'plafond.js'],
   'src/moto.js': ['monte.js'],
   'vendor/voitures/police-car.glb': ['monte.js', 'degats.js'],
   'vendor/voitures/moto-police.glb': ['monte.js'],

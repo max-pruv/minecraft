@@ -184,6 +184,14 @@
   venait de rendre) ; rejoué seul dans une sonde, 3/3 verts (arrêt 0,7 à
   1,8 s, détresse, repart à 6 s). La livraison ne touche ni `heurter` ni la
   collecte. Piste : `etat()` et `dernieres` ne sont pas de la même image.
+- [ ] **`carteMonde.js`, les dimensions des avions** (« chaque appareil tient
+  dans le poste », « l'envergure annoncée est celle du modèle rendu », « les
+  avions déposés tiennent dans le gabarit ») : rouges à l'identique sur
+  `origin/main` v569 rejouée seule (avionligne 16,15/16, concorde 20,13/20,
+  chasseur 10,22/10 ; envergures 15,69/15,3 · 8,76/8,4 · 7,58/7,2 ; a320 et
+  a321 16,23/16) et sur la branche de la v577, qui ne touche aucun avion.
+  Mesuré le 31 octobre 2026. Un dépassement de 1 à 2 % : soit la barre du
+  témoin, soit l'échelle du script de conversion (v563) — à démonter.
 - [x] **FERMÉ (claude/temoins-intermittents)** : le témoin attend que la voiture
   recule (−2 b/s, borné à douze secondes), puis 0,4 s, et publie `msRecul`.
   Ancienne entrée : **`monte.js` « les feux stop s'allument au freinage, les feux de recul en

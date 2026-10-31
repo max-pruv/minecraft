@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 577,
+    titre: 'Chaque ville a sa police',
+    puces: [
+      'La NYPD à New York',
+      'La Polizei en Allemagne',
+      'La police anglaise à Londres',
+      'Les shérifs aux États-Unis',
+    ],
+  },
+  {
     v: 576,
     titre: 'Des bouleaux bien plantés',
     puces: [

@@ -540,11 +540,29 @@ export const FLOTTE = [
   // et l'en tenir hors du tirage garde chaque rue du monde identique à la v552
   // (la règle ne lit que `n`, v305). Portières et volant ne sont pas des
   // pièces séparées du modèle : `portiere: false`, `habitacle: false`.
-  { fichier: 'police-car.glb', classe: 'berline', nom: 'Voiture de police', laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-car.glb', classe: 'berline', nom: 'Voiture de police', laque: 'jamais', horsRue: true, police: true, polices: ['monde', 'usa'], portiere: false, habitacle: false },
   // LE SUV DE POLICE (v566), même règle : hors de la rue, appelé par la
   // patrouille en alternance avec la Crown Victoria, sa rampe séparée en
   // `Gyrophare_G` / `Gyrophare_D` par la conversion.
-  { fichier: 'police-suv.glb', classe: 'suv', nom: 'SUV de police', laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-suv.glb', classe: 'suv', nom: 'SUV de police', laque: 'jamais', horsRue: true, police: true, polices: ['monde'], portiere: false, habitacle: false },
+  // LES POLICES DES VILLES (v577) : le « Police Car Pack » fourni par Max
+  // (jsa201077, CC-BY-4.0, vendor/voitures/LICENSE.md), découpé voiture par
+  // voiture par `scripts/convertir-flotte.mjs`. `polices` dit quelles familles
+  // de villes chaque voiture sert (policeville.js) : la NYPD à New York, la
+  // Polizei en Allemagne, la Met à Londres, la Battenburg dans le reste du
+  // Royaume-Uni, la noir et blanc et les shérifs aux États-Unis. Même règle que
+  // la Crown Victoria : hors de la rue, appelées par la patrouille.
+  { fichier: 'police-nypd-crown-vic.glb', classe: 'berline', nom: 'NYPD · Crown Victoria', polices: ['nypd'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-nypd-charger.glb', classe: 'berline', nom: 'NYPD · Charger', polices: ['nypd'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-lapd.glb', classe: 'berline', nom: 'Police de Los Angeles', polices: ['ouest'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-noir-blanc.glb', classe: 'berline', nom: 'Police américaine · noir et blanc', polices: ['ouest', 'usa'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-sheriff-etoile.glb', classe: 'berline', nom: 'Shérif · étoile', polices: ['ouest'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-sheriff-noir.glb', classe: 'berline', nom: 'Shérif · noir et blanc', polices: ['ouest', 'usa'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-sheriff-blanc.glb', classe: 'berline', nom: 'Shérif · blanc', polices: ['usa'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-met-londres.glb', classe: 'berline', nom: 'Metropolitan Police', polices: ['londres'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-battenburg-bmw.glb', classe: 'berline', nom: 'Police britannique · Battenburg', polices: ['gb'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-battenburg-break.glb', classe: 'berline', nom: 'Police britannique · break', polices: ['gb', 'londres'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-polizei-bmw.glb', classe: 'berline', nom: 'Polizei', polices: ['allemagne'], laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
 ];
 
 // UNE ALLURE PAR CLASSE, ET LA CLASSE VIT DANS LE MANIFESTE (v260). Max :

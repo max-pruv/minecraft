@@ -39,6 +39,8 @@ import { matiereAdditive } from './avions.js';
 import { FLOTTE, chargerVoitureFlotte } from './vehicules.js';
 import { chargerMoto, motoPrete } from './moto.js';
 import { sireneJouer } from './sons.js';
+import { lieuxDuMonde } from './mondes.js';
+import { familleEn, voituresDeFamille } from './policeville.js';
 import {
   BETISES, FORCE_VOITURE, FORCE_MUR, VITESSE_PIETON, etoiles, ajouterBetise, oublier,
   VU_POLICE, Piste, ECART, PLANCHER, VMAX_POLICE, vitessePoursuite, abscisseApparition, pretAuControle,
@@ -50,8 +52,17 @@ export const FICHIER_POLICE = 'police-car.glb';
 // — la Crown Victoria, puis le SUV. Elles viennent en alternance, la Crown
 // Victoria d'abord ; une voiture dont le modèle n'est pas encore arrivé laisse
 // sa place à l'autre.
+// DEPUIS LA v577, CHAQUE VILLE A SA POLICE (policeville.js) : la famille se
+// lit là où la voiture apparaît, et seule la police de cette famille se
+// télécharge et vient. Hors de toute ville (la dalle des témoins comprise),
+// `monde` : la Crown Victoria et le SUV, comme avant.
 const ENTREES_POLICE = FLOTTE.filter((e) => e.police);
 export const FICHIERS_POLICE = ENTREES_POLICE.map((e) => e.fichier);
+let lieuxPolice = null;
+export function famillePoliceEn(x, z) {
+  if (!lieuxPolice) { try { lieuxPolice = lieuxDuMonde(); } catch (e) { lieuxPolice = []; } }
+  return familleEn(x, z, lieuxPolice);
+}
 // la moto suit la voiture de quelques longueurs, et vient à deux étoiles
 const ECART_MOTO = ECART + 8;
 const VMAX_MOTO = 42;
@@ -167,10 +178,7 @@ export function creerPatrouille(ctx) {
       // on ne télécharge rien tant qu'il n'y a pas eu de bêtise : la police
       // ne coûte rien à l'enfant sage (le scanner de visages, v220)
       chargeLance = true;
-      for (const e of ENTREES_POLICE) {
-        const p = chargerVoitureFlotte(e);
-        if (p) p.then((proto) => { if (proto) prets.add(e.fichier); policePrete = prets.has(FICHIER_POLICE); });
-      }
+      chargerFamille(famillePoliceEn(player.pos.x, player.pos.z));
       chargerMoto();
       chargerAgent();
     }
@@ -221,29 +229,55 @@ export function creerPatrouille(ctx) {
     if (!unites.length) sireneJouer(false);
   }
 
-  // la prochaine voiture de police, en alternance parmi celles qui sont prêtes
+  // la prochaine voiture de police, en alternance parmi celles de la famille
+  // du lieu qui sont prêtes. Une famille se télécharge à la première bêtise
+  // faite chez elle (on ne télécharge rien pour l'enfant sage, v220).
   const prets = new Set();
+  const lances = new Set();
   let rangPolice = 0;
-  function prochaineVoiture() {
-    for (let k = 0; k < FICHIERS_POLICE.length; k++) {
-      const f = FICHIERS_POLICE[(rangPolice + k) % FICHIERS_POLICE.length];
+  function chargerFamille(famille) {
+    for (const f of voituresDeFamille(famille, FLOTTE)) {
+      if (lances.has(f)) continue;
+      lances.add(f);
+      const e = ENTREES_POLICE.find((x) => x.fichier === f);
+      const p = e && chargerVoitureFlotte(e);
+      if (p) p.then((proto) => { if (proto) prets.add(f); });
+    }
+  }
+  function prochaineVoiture(famille) {
+    const l = voituresDeFamille(famille, FLOTTE);
+    // la tête de la famille d'abord (la Crown Victoria ailleurs, v566) : on
+    // l'attend, puis les autres viennent en alternance quand elles sont là
+    if (!prets.has(l[0])) return null;
+    for (let k = 0; k < l.length; k++) {
+      const f = l[(rangPolice + k) % l.length];
       if (prets.has(f)) { rangPolice += k + 1; return f; }
     }
-    return FICHIER_POLICE;
+    return null;
   }
 
   function apparaitre(type, ami = null) {
     // on attend le VRAI modèle : une coque d'attente au hasard ne dit pas
     // « police » (la rue n'en montre jamais une non plus, v547)
-    if (!(type === 'moto' ? motoPrete() : policePrete)) return null;
+    if (type === 'moto' && !motoPrete()) return null;
     const pi = ami == null ? piste : escortes.get(ami).piste;
     const retard = type === 'moto' ? 48 + 14 : 48;
     const s = abscisseApparition(pi, retard);
     if (s == null) return null;
     const p = pi.positionA(s);
+    let flotte = null;
+    if (type !== 'moto') {
+      // la police de la ville où l'on est ; tant que la sienne n'est pas
+      // arrivée, elle attend (une voiture d'une autre ville n'a rien à faire là)
+      const famille = famillePoliceEn(p.x, p.z);
+      chargerFamille(famille);
+      flotte = prochaineVoiture(famille);
+      policePrete = !!flotte;
+      if (!flotte) return null;
+    }
     const a = type === 'moto'
       ? animaux.invoquer('moto', p.x, p.z)
-      : animaux.invoquer('voiture', p.x, p.z, false, { flotte: prochaineVoiture() });
+      : animaux.invoquer('voiture', p.x, p.z, false, { flotte });
     if (!a) return null;
     a.pos.set(p.x, p.y, p.z);
     if (p.cap != null) a.yaw = p.cap;

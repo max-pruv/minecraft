@@ -950,6 +950,33 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Chaque ville a sa police (v577) — une famille par ville, la voiture dit lesquelles elle sert
+
+Max a déposé un paquet de dix-huit voitures de police dans une seule scène.
+Trois règles.
+
+- **UNE SCÈNE À PLUSIEURS VOITURES SE DÉCOUPE PAR UNE BOÎTE AU SOL, TRIANGLE
+  PAR TRIANGLE.** Deux maillages du paquet portent les roues de deux voitures
+  à la fois : on garde un triangle si le centre tombe dans la `boite` de la
+  fiche (`convertir-flotte.mjs`). Les boîtes se relèvent sur les bornes des
+  maillages, colonne par colonne, et le résultat se regarde sur une planche de
+  rendus avant d'écrire une fiche. Un paquet qui déclare ses carrosseries en
+  mélange (`BLEND`) montre son habitacle à travers la tôle : `opaque`.
+- **UNE PIÈCE RONDE AU MILIEU DE LA LONGUEUR N'EST PAS UNE ROUE, ET UNE
+  ANTENNE FAUSSE LA HAUTEUR.** La détection des roues exige désormais une
+  pièce vers un bout (à plus d'un cinquième de la longueur du milieu) — la
+  portière arrondie de la LAPD passait pour un pneu. Et les antennes (fines,
+  au-dessus de 80 % de la hauteur, `sansAntennes`) faisaient placer les feux
+  de détresse sur le capot : `sonde-feux-flotte.mjs` l'a dit.
+- **LA POLICE D'UNE VILLE SE LIT LÀ OÙ ELLE APPARAÎT.** `policeville.js`
+  (pur) donne une famille à chaque ville (la plus proche, à moins de son rayon
+  plus `MARGE_VILLE`) ; une voiture déclare dans sa fiche de FLOTTE les familles
+  qu'elle sert (`polices`), jamais une liste de fichiers ailleurs. La patrouille
+  ne télécharge que la famille du lieu, attend la TÊTE de la famille (la Crown
+  Victoria ailleurs, comme en v566), puis alterne. Une ville sans famille et la
+  campagne prennent `monde`. Une livrée qui appartient à un tiers (GCPD) reste
+  hors du jeu (invariant 4).
+
 ## Les dix-huit voitures déposées (v566) — un paquet se mesure, il ne se lit pas
 
 Max a déposé dix-huit paquets Sketchfab de facture différente.
