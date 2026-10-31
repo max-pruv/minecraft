@@ -958,6 +958,18 @@ voiture (`VOITURES`). Cinq règles.
   par la boîte et le rayon (v519). Un paquet neuf se passe à cette sonde
   avant d'entrer.
 
+**Un paquet qui porte plusieurs voitures (v570)** — le « Generic passenger
+car pack », dix voitures dans une scène, posées en cercle et tournées — se
+découpe par une fiche à `noeud` : la carrosserie nommée et ce dont le centre
+tient dans sa boîte, quatre nœuds de roue EXIGÉS (moins, une voisine manquée ;
+plus, une voisine attrapée), remise dans l'axe par l'analyse en composantes
+principales des centres de ses roues. Le nez se relève ensuite sur vues comme
+pour les autres : quatre sur dix étaient à l'envers. Et une carte
+métal/rugosité qu'on retire se remplace par sa MOYENNE (`cartesMR`) : sans
+elle GLTFLoader laisse métal 1 et rugosité 1, une carrosserie noire. Une
+couleur cuite dans la texture de carrosserie est une livrée (`laque:
+'jamais'`) : la teinte tirée la multiplierait.
+
 La Model Y porte `usine: true` dans FLOTTE : la chaîne (`voitureDeLUsine`,
 vehicules.js) et le garagiste de main.js la lisent, jamais un nom recopié.
 Les voitures de police sont toute fiche `police` de FLOTTE ; la patrouille

@@ -214,3 +214,32 @@ lentilles `Gyrophare_G` / `Gyrophare_D`.
 - `ford-f150-raptor-r.glb` — This work is based on "2024 Ford F-150 Raptor R" (https://sketchfab.com/3d-models/2024-ford-f-150-raptor-r-9fbd01c5acfb45e7a7bbdf4c8e2c4aa8) by VTX (https://sketchfab.com/VTX_car) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
 - `ford-mondeo-taxi.glb` — This work is based on "Ford Mondeo TAXI" (https://sketchfab.com/3d-models/ford-mondeo-taxi-8bc1c46fe0334d03a5eb927b6a129dc8) by TSB3DMODELS (https://sketchfab.com/TSB3DMODELS) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
 - `police-suv.glb` — This work is based on "Police car SUV" (https://sketchfab.com/3d-models/police-car-suv-3c00056ec42b4552804fe5f4e5af768f) by k26_k29 (https://sketchfab.com/John_Benoveth) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
+## Dix voitures de tous les jours (octobre 2026, v570)
+
+Un paquet glTF fourni par Max, publié sous licence **Creative Commons
+Attribution 4.0** (CC-BY-4.0), qui exige le crédit ci-dessous, recopié tel quel
+de son `license.txt` :
+
+> This work is based on "Generic passenger car pack"
+> (https://sketchfab.com/3d-models/generic-passenger-car-pack-20f9af9b8a404d5cb022ac6fe87f21f5)
+> by Comrade1280 (https://sketchfab.com/comrade1280) licensed under CC-BY-4.0
+> (http://creativecommons.org/licenses/by/4.0/)
+
+Fichiers : `generique-citadine.glb`, `generique-coupe.glb`,
+`generique-compacte.glb`, `generique-monospace.glb`,
+`generique-tout-terrain.glb`, `generique-pickup.glb`, `generique-berline.glb`,
+`generique-supercar.glb`, `generique-suv.glb`, `generique-break.glb`.
+Modifications, toutes faites par `scripts/convertir-flotte.mjs` (le paquet brut
+n'est pas versionné ; le script se rejoue dessus) :
+- chaque voiture isolée de la scène commune (sa carrosserie et ce qui tient
+  dans sa boîte), remise dans l'axe par ses roues, le socle de présentation
+  retiré ;
+- repère du jeu (mètres, +Y en haut, +Z vers le nez), mise à l'échelle sur un
+  empattement plausible, roues regroupées sous quatre pivots
+  `Wheel_FL/FR/RL/RR` et posées à y = 0 ; aucune simplification ;
+- textures redimensionnées (1 024 px pour la carrosserie, 512 px ailleurs) et
+  recompressées ; cartes métal/rugosité remplacées par leur moyenne ; la
+  carrosserie nommée `Livree_*` (sa couleur est dans la texture, elle ne se
+  repeint pas).
+Aucune forme ni texture inventée : ce sont celles de l'auteur.
