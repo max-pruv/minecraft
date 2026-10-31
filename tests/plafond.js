@@ -3954,13 +3954,61 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         }
         return n;
       };
-      const bArme = bouleau ? buildChunkTampons(monde(1), bouleau.cx, bouleau.cz, { detail: false }) : null;
-      const bSans = bouleau ? buildChunkTampons(monde(0), bouleau.cx, bouleau.cz, { detail: false }) : null;
+      // Ce témoin garde la face sous un cube d'arbre tu que la surface ne
+      // recouvre pas : depuis la v569, la surface couvre le pied du bouleau
+      // (ci-dessous), donc il se joue sur l'ancienne règle du sol continu.
+      const SC = await import('../src/solcontinu.js');
+      const avantBouleau = (f) => { const r = SC.reglageSolContinu; if (r) r.bouleau = false; try { return f(); } finally { if (r) r.bouleau = true; } };
+      const bArme = bouleau ? avantBouleau(() => buildChunkTampons(monde(1), bouleau.cx, bouleau.cz, { detail: false })) : null;
+      const bSans = bouleau ? avantBouleau(() => buildChunkTampons(monde(0), bouleau.cx, bouleau.cz, { detail: false })) : null;
       const sousArbre = (t) => t.facesSousArbre || 0;
       verifier('sous un bouleau dont le tronc se tait, le sol garde sa face : plus de trou où l\'on voit le ciel à travers la terre (v541)',
         !!bouleau && solSous(bArme, bouleau) - solSous(bSans, bouleau) === 4 && sousArbre(bArme) >= 1 && sousArbre(bArme) <= bArme.arbres * 3
           && faces(bArme.solid) + tues(bArme) - sousArbre(bArme) === faces(bSans.solid),
         bouleau ? `bouleau (${bouleau.cx * W.CHUNK + bouleau.lx}, ${bouleau.cz * W.CHUNK + bouleau.lz}) fût ${bouleau.t.trunk} : sommets du dessus du sol dans la colonne du tronc (les coins des faces voisines compris) ${solSous(bArme, bouleau)} armé, ${solSous(bSans, bouleau)} désarmé — une face de plus ; ${sousArbre(bArme)} face(s) sous un arbre, conservation ${faces(bArme.solid) + tues(bArme) - sousArbre(bArme)} = ${faces(bSans.solid)}` : 'aucun bouleau près de la forêt');
+      // (3 quater, v569) LA SURFACE CONTINUE PASSE AU PIED DU BOULEAU COMME
+      // AU PIED DU CHÊNE. Le tronc du bouleau est `BIRCH`, que `DESSUS_NATUREL`
+      // n'admettait pas : la colonne du tronc n'était pas naturelle, et les
+      // huit colonnes autour gardaient leur cube de sommet — un carré d'herbe
+      // en voxel au pied de chaque bouleau. On lit ce que lisent la bande, le
+      // contact et le franchissement (la fiche, `colonneCouverte`,
+      // `blocSousLaSurface`, `solContinu`) sur tous les bouleaux de la forêt,
+      // armé contre désarmé ; et le tronc reste un obstacle (il est au-dessus
+      // de la bande).
+      if (bouleau && SC.reglageSolContinu) {
+        const lire = (arme, essence = (t) => t.kind === 2) => {
+          SC.reglageSolContinu.bouleau = arme;
+          try {
+            const w = monde(1); let n = 0, nat = 0, nonCouvertes = 0, tues = 0, contact = 0, troncSolide = 0;
+            for (let dx = -6; dx <= 6; dx++) for (let dz = -6; dz <= 6; dz++) {
+              const cx = bouleau.cx + dx, cz = bouleau.cz + dz;
+              for (let lx = 0; lx < W.CHUNK; lx++) for (let lz = 0; lz < W.CHUNK; lz++) {
+                const x = cx * W.CHUNK + lx, z = cz * W.CHUNK + lz, t = w.treeAt(x, z);
+                if (!t || !essence(t)) continue;
+                n++;
+                if (SC.ficheColonne(w, x, z).nat) nat++;
+                for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
+                  if (!SC.colonneCouverte(w, x + a, z + b)) nonCouvertes++;
+                  else if (w.blocSousLaSurface(x + a, w.terrainHeight(x + a, z + b), z + b)) tues++;
+                }
+                if (SC.solContinu(w, x + 0.5, z + 0.5) !== null) contact++;
+                const tr = w.getBlock(x, t.h + 1, z);
+                if ((tr === BLOCK.BIRCH || tr === BLOCK.LOG) && !w.blocSousLaSurface(x, t.h + 1, z)) troncSolide++;
+              }
+            }
+            return { n, nat, nonCouvertes, tues, contact, troncSolide };
+          } finally { SC.reglageSolContinu.bouleau = true; }
+        };
+        // Ce qui reste en voxel autour d'un bouleau armé est ce qui reste autour
+        // d'un chêne : une falaise, un bord (la règle du sol continu, v297). On
+        // le compare au taux des chênes de la même forêt, pas à zéro.
+        const A1 = lire(true), A0 = lire(false), C1 = lire(true, (t) => t.kind !== 2);
+        const tx = (r) => r.nonCouvertes / (9 * r.n);
+        verifier('au pied d\'un bouleau, la surface continue passe comme au pied d\'un chêne : plus de carré d\'herbe en voxel autour du tronc, et le tronc reste un obstacle (v569)',
+          A1.n >= 10 && C1.n >= 10 && A1.nat === A1.n && tx(A1) <= tx(C1) + 0.05 && A1.tues === 9 * A1.n - A1.nonCouvertes
+            && A1.troncSolide === A1.n && A0.nat === 0 && A0.nonCouvertes === 9 * A0.n,
+          `${A1.n} bouleaux : armé, troncs naturels ${A1.nat}, colonnes autour non couvertes ${A1.nonCouvertes} (${(100 * tx(A1)).toFixed(1)} %, ${(100 * tx(C1)).toFixed(1)} % autour de ${C1.n} chênes), cubes de sommet tus ${A1.tues}, contact sur la surface ${A1.contact}, troncs solides ${A1.troncSolide} ; désarmé, troncs naturels ${A0.nat}, non couvertes ${A0.nonCouvertes} sur ${9 * A0.n}`);
+      } else verifier('au pied d\'un bouleau, la surface continue passe comme au pied d\'un chêne (v569)', false, bouleau ? 'pas de reglageSolContinu (ancien code)' : 'aucun bouleau près de la forêt');
       // (4) une cabane de rondins sans feuilles n'est pas un arbre
       const wc = monde(1);
       const h0 = wc.terrainHeight(best.cx * W.CHUNK + 8, best.cz * W.CHUNK + 8);

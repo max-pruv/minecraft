@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 572,
+    titre: 'Des bouleaux bien plantés',
+    puces: [
+      'Plus de carré en cubes à leur pied',
+      'Le sol de la forêt est lisse',
+    ],
+  },
+  {
     v: 575,
     titre: 'La tour Eiffel la nuit',
     puces: [

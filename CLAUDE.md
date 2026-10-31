@@ -15124,3 +15124,19 @@ Deux dettes des arbres, une mesure. Deux règles.
   `arbresLoin` gagne 70 % (0,96 Mo pour 169 morceaux de forêt, 4,8 % du
   `solid`, mesuré ; le maillage reste dans le bruit, 5,0 contre 4,9 ms), et un morceau du bord du disque coûte un ou deux appels de dessin
   au lieu d'un ; l'intérieur, rien.
+
+## Le bouleau sur la surface (v569) — un bloc d'arbre neuf se déclare au sol continu
+
+Une règle. `DESSUS_NATUREL` (solcontinu.js) dit ce qui peut vivre AU-DESSUS
+d'une colonne naturelle sans la rendre artificielle ; il nommait `LOG` et
+`LEAVES`, pas `BIRCH`, et chaque bouleau gardait autour de son tronc un carré
+de 3 × 3 colonnes en voxel (612 sur 612 autour des 68 bouleaux de la forêt
+témoin, mesuré). Le remède passe par `dessusNaturel`, que lisent la fiche,
+donc la bande, le contact et le franchissement (v297) : un bloc admis là l'est
+pour tous, et le tronc, au-dessus de la bande, reste un obstacle. **Toute
+essence neuve dont le tronc n'est pas `LOG` s'y déclare** (`TRONCS` d'arbreshd.js
+et `trunkBlock` de world.js en sont les deux autres listes). Ce qui reste en
+voxel autour d'un tronc se juge contre le taux des chênes (des falaises, 2,3 %),
+jamais contre zéro. `reglageSolContinu.bouleau` à faux rejoue l'ancienne règle
+pour l'empreinte des 490 morceaux et pour le témoin de la v541, dont le trou
+est désormais recouvert par la surface.
