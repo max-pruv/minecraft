@@ -4890,11 +4890,27 @@ const VRAIES_KM = [
         // un modèle déposé qui n'a pas pu se charger rend le sculpté : on le
         // dit au lieu de le mesurer sous le nom d'un autre
         if (depose && g.userData.variante !== nom) { out[nom] = { absent: true, espece, depose }; continue; }
-        const bb = new THREE.Box3().setFromObject(g);
+        // LA BOÎTE EST CELLE DE LA CARLINGUE (v568). Les flammes et les feux
+        // de bord n'en font pas partie : depuis la v565 un feu porte deux
+        // halos de lumière, le plus large de 0,3 bloc, et `setFromObject` les
+        // comptait — quinze à vingt centièmes de longueur et quarante
+        // d'envergure sur TOUS les appareils, sculptés compris, pour un halo
+        // qui ne heurte rien et que la v565 voulait justement sans effet sur
+        // les postes. Même exclusion que le témoin du contrat, plus bas.
+        const horsCorps = new Set(g.userData.tuyeres || []);
+        if (g.userData.feuxNav) for (const f of [g.userData.feuxNav.rouge, g.userData.feuxNav.vert, g.userData.feuxNav.eclat]) horsCorps.add(f);
+        const dansLeCorps = (o) => { for (let q = o; q; q = q.parent) if (horsCorps.has(q)) return false; return true; };
+        const bb = new THREE.Box3(), bbo = new THREE.Box3();
+        g.updateMatrixWorld(true);
+        g.traverse((o) => {
+          if (!o.isMesh || !o.geometry || !dansLeCorps(o)) return;
+          if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+          bbo.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); bb.union(bbo);
+        });
         const sommets = [];
         g.traverse((o) => {
           const pos = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
-          if (!pos) return;
+          if (!pos || !dansLeCorps(o)) return;
           for (let i = 0; i < pos.count; i++) sommets.push([pos.getX(i), pos.getY(i), pos.getZ(i)]);
         });
         // L'EFFILEMENT DE L'AILE. On ne cherche pas l'aile par son nom — le
