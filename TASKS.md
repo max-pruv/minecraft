@@ -1,5 +1,18 @@
 # Ce qui est en cours
 
+## Rouge de portail constaté par la v571 — mesuré identique sur `origin/main`
+
+- [ ] **`carteMonde.js` : les avions dépassent leur gabarit de quelques
+  centièmes.** Trois témoins rouges, rejoués SEULS sur la branche ET sur
+  `origin/main` (v568), mêmes chiffres au centième : longueurs avionligne
+  16,15/16 · concorde 20,13/20 · chasseur 10,22/10 ; envergures 15,69/15,3 ·
+  8,76/8,4 · 7,58/7,2 ; déposés a320 16,23/16, a321 16,23/16, f35 10,23/10
+  et 7,4/7,2 d'envergure. Le surplus est le même (≈ 0,15 à 0,4 bloc) pour
+  sculptés et déposés : un ajout commun à tous les modèles (les feux de bord
+  de la v565, lentille et halos au bout de l'aile et à la queue ?) entre dans
+  la boîte mesurée. À vérifier en mesurant sans le groupe des feux avant de
+  toucher au gabarit. Hors de la zone de la v571 (avions.js, aeroport.js).
+
 ## Les réglages à deux tablettes (v571) — ce qui reste, déclaré
 
 - [ ] **Rouges du portail de la v571 : aucun de la livraison.** Le diff ne
