@@ -7293,6 +7293,26 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !colle.err && colle.pireB <= 0.25 && colle.avance <= 1.1 + colle.bAvance + 0.3 && colle.recule >= 1,
       JSON.stringify(colle));
 
+    // ON DÉCOLLE À LA MAIN, ET L'ALTIMÈTRE LE DIT (Max : « j'aimerais être
+    // capable de faire un décollage manuel en allant simplement suffisamment
+    // vite […] en mettant le joystick vers le haut », et « qu'on voie
+    // l'altitude quand on pilote un avion »). Le passage vit dans la sonde,
+    // que l'on peut lancer seule (v400). Rouge sur `origin/main` (v568) : la
+    // manette au sol ne demandait que l'allure de roulage, vMax 6 pour une
+    // rotation à 42, l'appareil roule vingt secondes sans quitter le sol, et
+    // il n'y a pas d'altimètre. Vert ici : rotation à 43,8, treize blocs en
+    // 2,2 s de jeu, « ↑ 0 m » sur la dalle et « ↑ 14 m » en l'air.
+    {
+      const { passage, juger } = require('./sonde-decollage-manuel.cjs');
+      let r;
+      try { r = await passage(tab); } catch (e) { r = { err: e.message }; }
+      const j = juger(r);
+      const msg = JSON.stringify(r);
+      verifier('joystick vers le haut AVANT la vitesse de rotation, l\'avion reste au sol', j.resteAuSol, msg);
+      verifier('pleins gaz sans ✈️, puis joystick vers le haut une fois la vitesse atteinte : l\'avion décolle à la main', j.decolle, msg);
+      verifier('l\'altimètre de bord affiche la hauteur : « 0 m » sur la piste, la vraie hauteur en l\'air', j.altimetre, msg);
+    }
+
     // EN AVION : GAZ RÉDUITS, MANCHE EN AVANT, TRAIN SORTI PAR SON BOUTON — ON
     // SE POSE SOI-MÊME, SANS ✈️. Et sans le train, c'est sur le ventre.
     const manuel = await (async () => {

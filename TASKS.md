@@ -1,5 +1,28 @@
 # Ce qui est en cours
 
+## L'altimètre et le décollage à la main (v573) — rouges de portail, aucun de la livraison
+
+- [ ] **Portail complet de la v573 (158 min) : mes trois témoins verts
+  (`monte.js`, `sonde-decollage-manuel.cjs`), 370/370 postes décollent par
+  ✈️.** Rouges : `carteMonde.js` (gabarits d'avion, déclarés juste dessous,
+  rejoués seuls IDENTIQUES sur `origin/main` v568) ; `reglages.js` (le choix
+  qui part au serveur), `maj.js` (les deux loaders), `monte.js` (Rome en
+  biais) : déclarés. **`reseau.js`, trois témoins de voiture d'ami** :
+  rejouée seule, les deux de fluidité sont verts des deux côtés ; « sa voiture
+  qui glisse laisse ses traces de pneus » rend 2 poses sur 4 au portail ET
+  rejouée seule sur la branche, 4 sur `origin/main` rejouée seule (un passage
+  chacun). Preuve STRUCTURELLE qu'il n'est pas de la livraison (v291) : Marlon
+  y conduit une VOITURE et Alice est à pied — le code neuf de `player.js` vit
+  dans la branche `if (this.pilote)`, celui de `main.js` après le
+  `if (!enAvion) return`, le CSS sous `body.en-avion`. Les quatorze blocs de
+  glisse sont posés par un `setInterval` en temps réel sur une page qui rend
+  une à trois images par seconde : à rejouer jusqu'à voir la distribution
+  (v269), zone réseau.
+- [ ] **Question pour Max (décollage manuel).** La course au décollage part
+  quand la manette passe 90 % (`GAZ_ELAN`) ; sous ce seuil, le roulage d'avant.
+  Au clavier seul (sans toucher la manette à la souris), pas de décollage
+  manuel : `forward` reste l'allure de roulage. Faut-il une touche de gaz ?
+
 ## Rouge de portail constaté par la v572 — mesuré identique sur `origin/main`
 
 - [ ] **`carteMonde.js` : les avions dépassent leur gabarit de quelques

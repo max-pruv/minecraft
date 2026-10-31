@@ -10445,6 +10445,36 @@ longueur), PAR LE BOUTON, un relevé tous les dixièmes de seconde — et une
 sonde de captures (`sonde-captures-avion.cjs`) rend une vue de côté par une
 caméra à part, `layers.enableAll()` comme le veut la v250.
 
+## Le décollage à la main, et l'altimètre (v573) — un geste assisté a son symétrique manuel
+
+Max : « voir l'altitude quand on pilote », et « décoller à la main en allant
+suffisamment vite, joystick vers le haut ». Trois règles.
+
+- **AVANT D'AJOUTER UN GESTE, ON LIT CE QUI LE REND IMPOSSIBLE.** Au sol, la
+  manette ne demandait que `gaz × roulage` (six blocs/s) : aucune vitesse de
+  rotation (42 à 62) n'était atteignable sans ✈️, et c'est le témoin sur
+  `origin/main` qui l'a chiffré (vMax 6). Au-delà de `GAZ_ELAN` (0,9) la
+  manette fait la course au décollage, à la poussée de la fiche ; en dessous,
+  le roulage d'avant au bit près. Posé pleins gaz, la manette revient au
+  ralenti à l'arrêt, sinon l'élan relancerait l'appareil sur la piste.
+- **LE SIGNE DU JOYSTICK SE LIT DANS LE CODE.** `forward` positif (l'avant du
+  pavé, l'écran vers le haut, la touche Z) fait monter en vol
+  (`forward × max × PART_MONTEE`) et rouler en avant au sol ; tiré vers soi, il
+  descend en vol et repousse au sol (v269). Le décollage manuel est donc
+  `forward > MANCHE_DECOLLAGE` à la vitesse de rotation : on passe en `vol`
+  sans montée imposée, train sorti jusqu'à `RENTRER_TRAIN_A` (comme le
+  décollage assisté, v261) tant que l'enfant n'a pas touché 🛞. ✈️ ne change
+  pas, et `sonde-decollage-postes.cjs` le garde (370 sur 370).
+- **L'ALTIMÈTRE DIT UNE HAUTEUR, EN MÈTRES VRAIS.** `hauteurAuSol` (player.js)
+  lit le dessus de la colonne survolée, et au-dessus de la mer la SURFACE de
+  l'eau (`sommetColonne` rend le fond, v267). À la verticale un bloc vaut un
+  mètre (un étage, trois blocs, v301) : ce n'est pas l'entorse du compteur de
+  vitesse (v267), qui existe parce qu'à l'horizontale un bloc ne vaut un mètre
+  nulle part. `#alt-val` vit dans la colonne de bord, au-dessus de la vitesse
+  (🛞 et ✈️ montent de quatre pixels), et ne s'écrit que quand le nombre
+  change (v263) : au mètre sous vingt, de cinq en cinq au-dessus. Le témoin lit
+  le TEXTE affiché.
+
 ## Chaque voiture roule à l'allure de sa classe (v260)
 
 > **⚠️ Le plafond calculé ci-dessous (28 blocs/s) est remplacé par un plafond
