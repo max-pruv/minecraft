@@ -214,3 +214,29 @@ lentilles `Gyrophare_G` / `Gyrophare_D`.
 - `ford-f150-raptor-r.glb` — This work is based on "2024 Ford F-150 Raptor R" (https://sketchfab.com/3d-models/2024-ford-f-150-raptor-r-9fbd01c5acfb45e7a7bbdf4c8e2c4aa8) by VTX (https://sketchfab.com/VTX_car) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
 - `ford-mondeo-taxi.glb` — This work is based on "Ford Mondeo TAXI" (https://sketchfab.com/3d-models/ford-mondeo-taxi-8bc1c46fe0334d03a5eb927b6a129dc8) by TSB3DMODELS (https://sketchfab.com/TSB3DMODELS) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
 - `police-suv.glb` — This work is based on "Police car SUV" (https://sketchfab.com/3d-models/police-car-suv-3c00056ec42b4552804fe5f4e5af768f) by k26_k29 (https://sketchfab.com/John_Benoveth) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
+## Le « Police Car Pack » (octobre 2026, v576)
+
+Onze voitures de police, fournies par Max dans un seul paquet glTF où dix-huit
+voitures sont posées côte à côte. Crédit exigé, recopié tel quel du
+`license.txt` du paquet :
+
+> This work is based on "Police Car Pack"
+> (https://sketchfab.com/3d-models/police-car-pack-65d0c00e73464a91a67bdbb0f01fc55b)
+> by jsa201077 (https://sketchfab.com/unityjsa7) licensed under CC-BY-4.0
+> (http://creativecommons.org/licenses/by/4.0/)
+
+Fichiers : `police-nypd-crown-vic.glb`, `police-nypd-charger.glb`,
+`police-lapd.glb`, `police-noir-blanc.glb`, `police-sheriff-etoile.glb`,
+`police-sheriff-noir.glb`, `police-sheriff-blanc.glb`,
+`police-met-londres.glb`, `police-battenburg-bmw.glb`,
+`police-battenburg-break.glb`, `police-polizei-bmw.glb`.
+
+Modifications, toutes par `scripts/convertir-flotte.mjs` : chaque voiture
+découpée de la scène commune par une boîte au sol ; carrosseries rendues
+opaques (le paquet les déclarait transparentes) ; antennes retirées sur le
+break ; repère du jeu, mise à l'échelle sur l'empattement réel, roues sous
+quatre pivots, fusion par matériau, textures recompressées ; la rampe séparée
+en `Gyrophare_G` / `Gyrophare_D` (avec sa texture d'origine). Les sept autres
+voitures du paquet ne sont pas livrées (dont une livrée « GCPD », propriété
+d'un tiers).

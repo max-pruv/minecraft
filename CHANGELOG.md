@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v576 — Chaque ville a sa police
+
+**Pourquoi.** Max a déposé un paquet de voitures de police (« Police Car Pack »,
+dix-huit voitures dans une seule scène) : « certaines sont américaines,
+allemandes, etc. — c'est utile pour rendre les villes un peu différentes et
+créer des expériences qui ont du sens ». Jusqu'ici, la même Crown Victoria
+américaine venait faire un contrôle à Paris, à Berlin comme à New York.
+
+**Ce que ça change.** Onze voitures entrent dans la flotte de police, et la
+police qui vient est celle de la ville où l'on fait sa bêtise :
+
+- New York : la NYPD (Crown Victoria et Charger) ;
+- Los Angeles, San Francisco et l'Ouest américain : la noir et blanc de Los
+  Angeles et les shérifs ;
+- le reste des États-Unis : la Crown Victoria, la noir et blanc, les shérifs ;
+- Londres : la Metropolitan Police (argent, bande orange) et le break ;
+- le reste du Royaume-Uni : le damier Battenburg (la Heddlu galloise à Cardiff) ;
+- l'Allemagne : la Polizei bleu et argent ;
+- ailleurs, et loin de toute ville : la Crown Victoria et le SUV, comme avant.
+
+Les sept autres voitures du paquet ne sont pas livrées : une livrée « GCPD »
+(Gotham, une propriété DC), une épave sans vitres, deux voitures sans livrée,
+un doublon de la NYPD, une inscription en miroir.
+
+**Ce qui le prouve.** Un témoin pur (`plafond.js`) : la bonne famille à New
+York, Berlin, Londres, Manchester, Los Angeles, Paris et sur la dalle des
+témoins, toute ville nommée existe au registre, toute famille a une voiture,
+aucune voiture de police ne roule dans la rue. Les phares, les feux de détresse
+et les feux stop des onze modèles sont sur leur tôle (`degats.js`, la flotte
+entière). Aucune signature de programme neuve (`monte.js`). Le témoin de la
+police (`monte.js`) garde la Crown Victoria sur la dalle, loin de toute ville.
+
+---
+
 ## v575 — La tour Eiffel la nuit
 
 **Pourquoi.** La tour du modèle de Max (v564) laissait trois choses derrière

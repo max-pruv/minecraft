@@ -827,6 +827,29 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       ({ Player } = await import('../src/player.js'));
       ({ BLOCK: BLK } = await import('../src/blocks.js'));
     } catch (e) { Player = null; }
+    // CHAQUE VILLE A SA POLICE (v576). La règle est pure (policeville.js) et
+    // lit les fiches de FLOTTE : la NYPD à New York, la Polizei à Berlin, la
+    // Met à Londres, la Battenburg à Manchester ; Paris et la dalle des
+    // témoins (loin de tout) gardent la Crown Victoria d'avant, en tête. Toute
+    // ville nommée existe au registre, et toute famille a au moins une voiture.
+    try {
+      const PV = await import('../src/policeville.js');
+      const { FLOTTE } = await import('../src/vehicules.js');
+      const { lieuxDuMonde } = await import('../src/mondes.js');
+      const L = lieuxDuMonde();
+      const pres = (cle) => { const l = L.find((x) => x.cle === cle); return PV.voituresDeFamille(PV.familleEn(l.x + 40, l.z - 30, L), FLOTTE); };
+      const r = { ny: pres('ny'), berlin: pres('berlin'), londres: pres('londres'), manchester: pres('manchester'),
+        la: pres('losangeles'), paris: pres('paris'), dalle: PV.voituresDeFamille(PV.familleEn(47000, 47000, L), FLOTTE) };
+      const inconnues = Object.values(PV.FAMILLES_POLICE).flat().filter((c) => !L.some((x) => x.cle === c));
+      const vides = Object.keys(PV.FAMILLES_POLICE).filter((f) => !FLOTTE.some((e) => e.police && (e.polices || []).includes(f)));
+      const horsRue = FLOTTE.filter((e) => e.police && !e.horsRue).map((e) => e.fichier);
+      verifier('chaque ville a sa police : NYPD à New York, Polizei à Berlin, la Met à Londres, la Battenburg à Manchester, la Crown Victoria ailleurs',
+        r.ny.every((f) => /nypd/.test(f)) && r.ny.length === 2 && r.berlin.join() === 'police-polizei-bmw.glb'
+          && r.londres[0] === 'police-met-londres.glb' && r.manchester.every((f) => /battenburg/.test(f))
+          && r.la.includes('police-lapd.glb') && r.paris[0] === 'police-car.glb' && r.dalle[0] === 'police-car.glb'
+          && !inconnues.length && !vides.length && !horsRue.length,
+        JSON.stringify({ ...r, inconnues, vides, horsRue }));
+    } catch (e) { verifier('chaque ville a sa police', false, String(e && e.message || e).slice(0, 200)); }
     if (!Player) verifier('conduite : la voiture glisse le long d\'une façade oblique', false, 'player.js ne se charge pas sous node');
     else {
       const cam = { position: { copy() {} }, rotation: { set() {} } };

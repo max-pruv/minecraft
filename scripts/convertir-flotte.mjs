@@ -75,7 +75,39 @@ export const VOITURES = {
   'bugatti-divo': { paquet: 'bugati_divo', empattement: 2.711, avant: 1, laque: null, budget: 90000 },
   'ford-f150-raptor-r': { paquet: '2024_ford_f-150_raptor_r', empattement: 3.696, avant: 1, laque: /^RaptorPaaint$/, budget: 100000 },
   'ford-mondeo-taxi': { paquet: 'ford_mondeo_taxi', empattement: 2.850, avant: 1, livree: /./, budget: 20000 },
+  // LE PAQUET DE VOITURES DE POLICE (v576, « Police Car Pack », jsa201077,
+  // CC-BY-4.0) : dix-huit voitures posées côte à côte dans UNE scène. Chaque
+  // fiche découpe la sienne par une BOÎTE au sol (x0, x1, z0, z1, repère cuit
+  // du paquet, y en haut) — un triangle appartient à la voiture dont la boîte
+  // contient son centre : deux maillages du paquet (les roues de la Met et de
+  // la Battenburg, une rampe) couvrent deux voitures à la fois. Le paquet
+  // déclare ses carrosseries en mélange (`BLEND`) : rendues ainsi, l'habitacle
+  // se voit à travers la tôle (vu en capture) — `opaque` les rend pleines, le
+  // vitrage seul reste transparent. La rampe garde la texture du paquet
+  // (`gyroTexture`) : ses lentilles rouges et bleues y sont déjà peintes.
+  // Écartées : la GCPD (Gotham, une propriété DC — invariant 4), une épave
+  // sans vitres, deux voitures sans livrée, un doublon de la NYPD, une
+  // inscription en miroir.
+  ...Object.fromEntries([
+    ['police-nypd-crown-vic', 2.913, [180, 192.3, -97, -69]],
+    ['police-nypd-charger', 3.052, [215.5, 228, -97, -70.5]],
+    ['police-polizei-bmw', 2.725, [228, 238.5, -97, -71]],
+    ['police-sheriff-noir', 2.913, [180, 192.3, -69, -45.2]],
+    ['police-sheriff-etoile', 2.913, [192.3, 204.2, -69, -45.5]],
+    ['police-noir-blanc', 2.913, [215.5, 228, -70.5, -47.5]],
+    ['police-met-londres', 2.888, [180, 192.3, -45.2, -26]],
+    ['police-battenburg-bmw', 2.760, [192.3, 204.2, -45.5, -26]],
+    ['police-sheriff-blanc', 2.913, [204.2, 215, -46.5, -26]],
+    ['police-battenburg-break', 2.830, [215.5, 228, -47.5, -26]],
+    ['police-lapd', 2.913, [238.5, 250, -49, -26]],
+  ].map(([cle, empattement, boite]) => [cle, {
+    paquet: 'police_car_pack', boite, empattement, avant: 1, opaque: true,
+    livree: /^(?!.*(?:glass|window|tire)).*$/i, gyrophares: /^(?!.*(?:glass|window|tire)).*$/i, gyroTexture: true, budget: 20000,
+  }])),
 };
+// deux rampes sont dans le matériau du vitrage (la tôle n y a que les antennes)
+Object.assign(VOITURES['police-sheriff-blanc'], { gyrophares: /Glass2/, gyroDe: 0.86 });
+Object.assign(VOITURES['police-battenburg-break'], { gyrophares: /Chassis/, sansAntennes: true });
 
 // --- chargement : buffers en ligne, images en souches ---------------------
 async function charger(dir) {
@@ -313,6 +345,36 @@ async function convertir(cle, fiche, dossier) {
   const gltf = await charger(path.join(dossier, fiche.paquet));
   let pieces = maillagesCuits(gltf.scene).filter((p) => p.g.index.count > 0);
   if (fiche.retirer) pieces = pieces.filter((p) => !fiche.retirer.test(p.mat) && !fiche.retirer.test(p.nom));
+  if (fiche.boite) {
+    const [x0, x1, z0, z1] = fiche.boite;
+    pieces = pieces.map((p) => {
+      const pos = p.g.attributes.position, ix = p.g.index.array;
+      const g = sousGeometrie(p.g, (t) => {
+        let x = 0, z = 0;
+        for (let k = 0; k < 3; k++) { x += pos.getX(ix[t * 3 + k]); z += pos.getZ(ix[t * 3 + k]); }
+        x /= 3; z /= 3;
+        return x >= x0 && x < x1 && z >= z0 && z < z1;
+      });
+      return { ...p, g };
+    }).filter((p) => p.g.index.count > 0);
+  }
+  // LES ANTENNES : une pièce fine et haute (le break britannique en porte
+  // quatre) gonfle la hauteur que lisent les feux et la rampe — on la retire
+  if (fiche.sansAntennes) {
+    const tout = new THREE.Box3(); for (const p of pieces) { p.g.computeBoundingBox(); tout.union(p.g.boundingBox); }
+    const ht = tout.max.y - tout.min.y;
+    pieces = pieces.map((p) => {
+      const { tri, boites } = composantes(p.g);
+      // fine (moins d'un dixième de la hauteur de large) et au-dessus du toit
+      const fine = boites.map((bx) => { const t = bx.getSize(new THREE.Vector3()); return Math.max(t.x, t.z) < 0.1 * ht && bx.max.y > tout.min.y + 0.8 * ht; });
+      return { ...p, g: sousGeometrie(p.g, (t) => !fine[tri[t]]) };
+    }).filter((p) => p.g.index.count > 0);
+  }
+  if (fiche.opaque) for (const p of pieces) {
+    if (/glass|window/i.test(p.mat)) continue;
+    const m = p.m.clone(); m.transparent = false; m.opacity = 1; m.alphaTest = 0; m.name = p.m.name;
+    p.m = m;
+  }
 
   // 1. LE REPÈRE : y en haut, la longueur sur l'horizontale la plus longue
   let b = new THREE.Box3(); for (const p of pieces) { p.g.computeBoundingBox(); b.union(p.g.boundingBox); }
@@ -336,7 +398,10 @@ async function convertir(cle, fiche, dossier) {
       const disque = s.y > 0.06 * L && s.y < 0.32 * L && s.z / s.y > 0.7 && s.z / s.y < 1.4 && s.x < 0.9 * s.y;
       const bas = c.y < b.min.y + 0.42 * H;
       const cote = Math.abs(c.x - (b.min.x + b.max.x) / 2) > 0.15 * W;
-      if (disque && bas && cote) cand.push({ p, i, c, s });
+      // une roue est vers un bout : une pièce ronde au milieu de la longueur
+      // est de la carrosserie (la portière arrondie de la LAPD, v576)
+      const bout = Math.abs(c.z - (b.min.z + b.max.z) / 2) > 0.2 * L;
+      if (disque && bas && cote && bout) cand.push({ p, i, c, s });
     });
   }
   const midZ = (b.min.z + b.max.z) / 2;
@@ -344,6 +409,7 @@ async function convertir(cle, fiche, dossier) {
   for (const q of ['FL', 'FR', 'RL', 'RR']) {
     const av = q[0] === 'F', g = q[1] === 'L';
     const dans = cand.filter((k) => (k.c.z > midZ) === av && (k.c.x > 0) === g);
+    if (process.env.DEBUG_ROUES) console.error(q, dans.map((k) => [k.p.mat, k.c.toArray().map((v) => +v.toFixed(2)), k.s.toArray().map((v) => +v.toFixed(2))]));
     if (!dans.length) throw new Error(`${cle}: aucune roue ${q}`);
     // le pneu : la plus grande pièce, et parmi les plus grandes la plus basse
     const ref = dans.reduce((a, k) => (k.s.y > a.s.y * 1.02 || (k.s.y > a.s.y * 0.98 && k.c.y < a.c.y) ? k : a));
@@ -444,12 +510,13 @@ async function convertir(cle, fiche, dossier) {
       // pièces que patrouille.js mesure et allume, comme sur la Crown Victoria
       // (convertir-police.mjs). Le reste du matériau reste à la carrosserie.
       g.computeBoundingBox();
-      const haut = bf0.max.y * 0.94, pos = g.attributes.position, ix = g.index.array;
-      const cote = (t) => { let y = 0, x = 0; for (let k = 0; k < 3; k++) { y += pos.getY(ix[t * 3 + k]); x += pos.getX(ix[t * 3 + k]); } return y / 3 < haut ? 0 : (x > 0 ? 1 : -1); };
+      const haut = bf0.max.y * (fiche.gyroDe ?? 0.94), plafond = bf0.max.y * (fiche.gyroA ?? 2), pos = g.attributes.position, ix = g.index.array;
+      const cote = (t) => { let y = 0, x = 0, yM = -1e9; for (let k = 0; k < 3; k++) { const yk = pos.getY(ix[t * 3 + k]); y += yk; yM = Math.max(yM, yk); x += pos.getX(ix[t * 3 + k]); } return y / 3 < haut || yM > plafond ? 0 : (x > 0 ? 1 : -1); };
       const lentille = (couleur, nomM) => new THREE.MeshStandardMaterial({ name: nomM, color: couleur, roughness: 0.25, metalness: 0 });
       racineScene.add(Object.assign(new THREE.Mesh(sousGeometrie(g, (t) => cote(t) === 0), matDe(m)), { name: 'Body_' + (nb++) }));
-      racineScene.add(Object.assign(new THREE.Mesh(sousGeometrie(g, (t) => cote(t) === 1), lentille(0xb01818, 'Gyrophare_Rouge')), { name: 'Gyrophare_G' }));
-      racineScene.add(Object.assign(new THREE.Mesh(sousGeometrie(g, (t) => cote(t) === -1), lentille(0x1c3cc0, 'Gyrophare_Bleu')), { name: 'Gyrophare_D' }));
+      const gG = sousGeometrie(g, (t) => cote(t) === 1), gD = sousGeometrie(g, (t) => cote(t) === -1);
+      if (gG.index.count) racineScene.add(Object.assign(new THREE.Mesh(gG, fiche.gyroTexture ? matDe(m) : lentille(0xb01818, 'Gyrophare_Rouge')), { name: 'Gyrophare_G' }));
+      if (gD.index.count) racineScene.add(Object.assign(new THREE.Mesh(gD, fiche.gyroTexture ? matDe(m) : lentille(0x1c3cc0, 'Gyrophare_Bleu')), { name: 'Gyrophare_D' }));
       continue;
     }
     if (ou === 'corps') { mesh.name = 'Body_' + (nb++); racineScene.add(mesh); }
