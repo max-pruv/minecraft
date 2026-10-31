@@ -1114,6 +1114,15 @@ s'entend), `src/moto.js` (le modèle, ses éclats). Les modèles sont ceux de Ma
   crochets d'obstacle de main.js lisent. Sans `longueur`, une voiture, au bit
   près.
 
+**UN TÉMOIN QUI MESURE UN TRANSPORT GARDE SA SITUATION, ET ATTEND QU'ELLE SE
+POSE.** Verts seuls, les deux témoins de l'escorte sont tombés au portail :
+sans police à portée chez le conducteur, ses étoiles s'oubliaient en huit
+secondes avant d'avoir voyagé (zéro reçue par l'hôte), et une page
+d'observateur qui cale rendait l'ami d'un bond (écart 10 → 82) lu à heure
+fixe. Le conducteur refait une bêtise dès que ses étoiles baissent (on mesure
+le transport, pas l'oubli, que `monte.js` garde), et l'on attend trois écarts
+posés, trente secondes au plus, la durée dans le message.
+
 Et le contrôle double par la DROITE quand la gauche est barrée
 (`cheminDevant` essaie les deux côtés ; `etat().controle.cote`).
 

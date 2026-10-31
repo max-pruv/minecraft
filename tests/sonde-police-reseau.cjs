@@ -32,6 +32,15 @@ async function rouler(page, v, d, ms) {
     const yaw0 = g.player.yaw; g.player.yaw = -Math.PI / 2;
     const x0 = g.player.pos.x, t0 = performance.now();
     const it = setInterval(() => { g.player.pos.x = x0 + Math.min(d, v * (performance.now() - t0) / 1000); }, 10);
+    // LE CONDUCTEUR GARDE SES ÉTOILES PENDANT LA MESURE. Sans voiture de
+    // police à portée chez lui, elles s'oublient huit secondes après la
+    // bêtise (police.js) : au portail, la page chargée les perdait avant
+    // qu'elles n'aient voyagé (zéro reçue par l'hôte). On mesure le transport
+    // et l'escorte, pas l'oubli : une nouvelle bêtise dès qu'elles baissent.
+    window.__garderEtoiles = setInterval(() => {
+      const p = window.__patrouille;
+      if (p && p.etoiles() < 1) { p.betise('voiture'); p.betise('voiture'); window.__reprovoque = (window.__reprovoque || 0) + 1; }
+    }, 200);
     const t1 = performance.now();
     while (performance.now() - t1 < ms) await dodo(200);
     clearInterval(it);
@@ -95,12 +104,25 @@ async function escorte1(conducteur, observateur, nom, { v, d, ms }) {
   }, avant);
   await observateur.evaluate((id) => { window.__escorteAmi = id; }, id);
   const roule = await rouler(conducteur, v, d, ms);
-  const pendant = await observateur.evaluate(() => {
-    const r = window.__escorteVue; const e = r.ecarts.slice(-10);
-    return { ...r, ecarts: undefined, ecartFin: e.length ? e[e.length - 1] : null, ecartsFin: e };
-  });
+  // ON ATTEND QUE L'ÉCART SE POSE, borné : une page d'observateur qui cale
+  // rend l'ami d'un bond (82 blocs au portail) et l'escorte le rattrape à son
+  // allure. Lu à heure fixe, le témoin mesurait le rattrapage. Le temps pris
+  // entre dans le message.
+  const tPose = Date.now(); let pendant = null;
+  while (true) {
+    pendant = await observateur.evaluate(() => {
+      const r = window.__escorteVue; const e = r.ecarts.slice(-10);
+      return { ...r, ecarts: undefined, ecartFin: e.length ? e[e.length - 1] : null, ecartsFin: e };
+    });
+    const f = pendant.ecartsFin;
+    const pose = f.length >= 3 && f.slice(-3).every((x) => x > 4 && x < 30);
+    if (pose || Date.now() - tPose > 30000) break;
+    await dormir(500);
+  }
+  pendant.msPose = Date.now() - tPose;
+  pendant.reprovoque = await conducteur.evaluate(() => window.__reprovoque || 0);
   // pardonné chez lui : plus d'étoiles, l'escorte se gare chez l'autre
-  await conducteur.evaluate(() => window.__patrouille.remiseAZero());
+  await conducteur.evaluate(() => { clearInterval(window.__garderEtoiles); window.__reprovoque = 0; window.__patrouille.remiseAZero(); });
   await dormir(600);
   // et l'on rend la place telle qu'on l'a trouvée (un témoin d'une suite)
   await conducteur.evaluate(async () => {

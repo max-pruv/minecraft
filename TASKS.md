@@ -306,6 +306,43 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   closed ») au témoin de l'eau (ligne 6822), au bout de soixante minutes : la
   branche, elle, est allée jusqu'au bout. Une fois vue, à surveiller.
 
+## v573 — Rouges du portail qui ne sont pas de cette livraison (double mesure)
+
+- `carteMonde.js` : « chaque appareil tient dans le poste », « l'envergure
+  annoncée est celle du modèle rendu », « les avions déposés tiennent dans le
+  gabarit » — rouges À L'IDENTIQUE sur `origin/main` v568 rejouée seule
+  (avionligne 16,15/16, envergure 15,69/15,3, chasseur 10,22/10…). Tous les
+  appareils dépassent de 0,15 à 0,36 bloc, uniformément : très probablement
+  les halos des feux de bord de la v565 (`FEU_HALOS`, au bout des ailes et à
+  la queue), qui entrent dans la boîte que le témoin mesure. `avions.js` n'est
+  pas touché par la v569. À trancher : mesurer la boîte sans les halos, ou
+  les déclarer dans le gabarit.
+- `reseau.js`, fluidité des amis (« avance en temps réel, pas par bonds »,
+  « par le nuage… pas par paquets », « par l'hôte, la position d'un invité
+  garde l'heure de son envoi ») : rouges des DEUX côtés, rejouée seule —
+  branche : direct et nuage ; `origin/main` : direct et relayé. Même
+  signature : la page de l'observateur ne rend que deux images par seconde
+  pendant soixante secondes (`rendu.ms` ≈ 60 000), et la mesure se fait sur
+  deux à dix-huit images. Intermittence de banc, à reprendre par la
+  distribution (v269), pas par un passage.
+- `reseau.js`, « seule après le départ de l'hôte, et le compteur le dit »
+  et son suivant : rouges des deux côtés (compteur 2, avatars [Marlon]).
+- `maj.js` : « le loader dit combien de fichiers » et « le loader ne s'efface
+  qu'une fois… » (déclarés plus bas) ; le badge du journal était rouge au
+  portail parce que le journal portait le numéro provisoire avant le rebase.
+- `monte.js` : Rome en biais, le feu « piler », Moscou ×2 — déclarés plus bas.
+- `monte.js`, police « à l'arrêt, la voiture double… le policier lui parle »
+  et ses deux suivants (la voix, après le contrôle) : le contrôle commence
+  (`depasse`) puis s'annule sans parler, l'enfant n'étant PAS reparti (vitesse
+  sous 2 b/s, tracé). `sonde-police.cjs` jouée seule trois fois : branche 1
+  rouge sur 3, `origin/main` v568 2 rouges sur 3 — né avec la voiture projetée
+  de la v567 (la voiture garée percutée ne reste plus devant). Cause à
+  démonter : ce qui appelle `finirControle(true)` pendant le dépassement (la
+  sonde peut l'envelopper). Et « une seconde bêtise fait venir la moto »
+  était rouge à CHAQUE passage sur `origin/main` (une étoile : voiture 45 +
+  piéton 55 = 100 < 120) ; le témoin ajoute désormais des bêtises jusqu'à
+  deux étoiles (v573).
+
 ## v562 — LA POLICE ET LA MOTO : ce qui reste, déclaré
 
 - [x] **FERMÉ (claude/temoins-intermittents) : « police : une seconde bêtise
