@@ -1,5 +1,20 @@
 # Ce qui est en cours
 
+## Les phares suivent le dessin du modèle (v569) — ce qui reste, déclaré
+
+- [ ] Cinq modèles n'ont pas d'optique reconnaissable (police-car, police-suv,
+  ford-mondeo-taxi : livrée peinte d'un seul tenant ; alpine-a110-gt4,
+  bugatti-divo : matériaux muets). De nuit, ils n'ont plus de rond plaqué,
+  seulement le pinceau sur la route. Remède possible : découper l'optique dans
+  le convertisseur (`convertir-flotte.mjs`), un matériau `Headlight` à part.
+- [ ] Les feux stop, de recul et de détresse restent des lentilles génériques
+  (`feuxArriere`, `posesDetresse`) : même principe à appliquer à l'arrière
+  (copier l'optique arrière en rouge au freinage), mais il touche la rue
+  (`montrer`) — une livraison à elle.
+- [ ] Sur un modèle dont l'optique est une fine signature (la 911 : barre de
+  pare-chocs et quatre points), la lueur est fidèle mais discrète ; le verre du
+  phare luit à 0,3 (`OPACITE_VERRE`). À juger sur l'iPad de nuit.
+
 ## De grands aéroports (v565) — ce qui reste, déclaré
 
 - [ ] **Un appareil qui roule traverse les appareils garés.** Un avion n'est

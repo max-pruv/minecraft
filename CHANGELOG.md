@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v569 — Les phares suivent le dessin de chaque voiture
+
+**Pourquoi.** Max : « les phares des voitures, comme la 911, c'est
+absolument ridicule. La vraie 911 a une barre lumineuse, et le jeu vient créer
+des phares ronds par-dessus. On a forcé des trucs qui ne marchent pas. » La
+nuit, le jeu posait deux disques blancs de 0,17 bloc au nez de toute voiture,
+quelle qu'elle soit. Mesuré sur les 77 modèles : cinquante portaient déjà leur
+optique allumée (`Light_Front_Emissive`, la signature DRL de la 911, la barre
+du Cybertruck), et dix-neuf autres une optique nommée (`Headlight`,
+`Phare_avt`, `front_white_light`) : le rond se plaquait par-dessus.
+
+**Ce que ça change.**
+- De nuit au volant, c'est l'optique de la voiture qui s'allume, dans sa
+  forme : la barre de la 911, la fente d'une Lamborghini, les phares ronds de
+  la Camaro et de la Fuego, la barre du Cybertruck et de la Model Y.
+- Le verre du phare, quand le modèle en a un (la glace ronde de la 911), luit
+  doucement autour.
+- Un phare cassé dans un choc s'éteint avec sa lueur.
+- Les cinq voitures dont l'optique ne se reconnaît pas (une livrée peinte d'un
+  seul tenant : police, taxi Mondeo ; Alpine, Divo) ne reçoivent plus de rond :
+  seul le pinceau sur la route dit que les phares sont allumés.
+
+**Ce qui le prouve.** Deux témoins neufs, rouges sur l'ancien code. Sous node
+(`sonde-feux-flotte.mjs`, lue par `degats.js`), les 77 modèles : aucune lueur
+n'est un disque, chaque triangle de lueur est sur la tôle (rayon le long de
+sa normale) et au nez, la 911 allume sa signature, 72 modèles ont la leur
+(77 sur 77 KO sur l'ancien code). Dans le jeu (`degats.js`), un phare cassé
+éteint sa lueur et l'autre voiture du même modèle garde la sienne. Le témoin
+de `monte.js` (deux lueurs au nez, aucun programme compilé à l'allumage) passe
+tel quel. Captures de nuit avant/après de neuf modèles
+(`sonde-captures-phares.cjs`) et revue d'écran de nuit.
 ## v568 — Un jet privé
 
 **Pourquoi.** Max a déposé un modèle 3D de jet d'affaires (« Luxury Private Jet
