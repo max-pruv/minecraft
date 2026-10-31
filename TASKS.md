@@ -1,5 +1,30 @@
 # Ce qui est en cours
 
+## Les phares suivent le dessin du modèle (v569) — ce qui reste, déclaré
+
+- [ ] Cinq modèles n'ont pas d'optique reconnaissable (police-car, police-suv,
+  ford-mondeo-taxi : livrée peinte d'un seul tenant ; alpine-a110-gt4,
+  bugatti-divo : matériaux muets). De nuit, ils n'ont plus de rond plaqué,
+  seulement le pinceau sur la route. Remède possible : découper l'optique dans
+  le convertisseur (`convertir-flotte.mjs`), un matériau `Headlight` à part.
+- [ ] Les feux stop, de recul et de détresse restent des lentilles génériques
+  (`feuxArriere`, `posesDetresse`) : même principe à appliquer à l'arrière
+  (copier l'optique arrière en rouge au freinage), mais il touche la rue
+  (`montrer`) — une livraison à elle.
+- [ ] **Rouges du portail de la v569 : aucun de la livraison.** `degats.js`
+  verte (les deux témoins neufs compris), `maj.js` « le loader dit combien de
+  fichiers » et « le loader ne s'efface… » (déclarés, v559), `monte.js` cinq
+  rouges déclarés : la caméra en virage, le passant de Londres sur le passage
+  peint, les poissons lancés sur la côte, Moscou ×2. Le témoin des phares de
+  `monte.js` est vert tel quel. Preuve structurelle : la livraison ne change
+  que ce qu'`allumerPhares` fabrique, de nuit, pour la voiture que l'enfant
+  conduit ; aucun de ces témoins n'en dépend.
+- [ ] Sur un modèle dont l'optique est une fine signature (la 911 : barre de
+  pare-chocs et quatre points), la lueur est fidèle mais discrète ; le verre du
+  phare luit à 0,3 (`OPACITE_VERRE`). À juger sur l'iPad de nuit.
+
+- **Intermittent, témoin de la v567, pas des phares.** « percuter une voiture de la rue l'abîme AUSSI » (`degats.js`) a rougi une fois sur trois sur la branche rebasée (`ecartTrouve 14.3`, `cibleTouchee: false` : l'élan trouvé ne suffit pas, la voiture n'atteint pas la cible), vert 2/3 sur la branche et 1/1 sur `origin/main` (v568). Rejoué seul. Si cela revient : relever la distribution de `ecartTrouve` des deux côtés (v269).
+
 ## De grands aéroports (v565) — ce qui reste, déclaré
 
 - [ ] **Un appareil qui roule traverse les appareils garés.** Un avion n'est

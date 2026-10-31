@@ -59,6 +59,18 @@ function verifier(nom, ok, detail = '') {
     const ko = flotte.filter((x) => !(x.phOk && x.detOk && x.stopOk));
     verifier(`les phares, les feux de détresse et les feux stop des ${flotte.length} modèles de la flotte (taxis et utilitaires fabriqués compris) sont sur la tôle, à leur coin`,
       flotte.length >= 57 && ko.length === 0, JSON.stringify(ko.slice(0, 3)));
+    // LES PHARES ÉPOUSENT L'OPTIQUE DU MODÈLE (v569). Max : « la vraie 911 a
+    // une barre lumineuse, et le jeu vient créer des phares ronds par-dessus ».
+    // De nuit, aucune lueur n'est un disque plaqué : chacune est une copie des
+    // triangles de l'optique du modèle, sur SA tôle et au nez ; la 911 allume
+    // sa signature (`Lights_DRL`, des centaines de triangles), et tout modèle
+    // dont l'optique se nomme ou émet a la sienne.
+    const koLueur = flotte.filter((x) => !x.lueurOk);
+    const p911 = flotte.find((x) => /911-gt3-rs/.test(x.f)) || {};
+    const avecLueur = flotte.filter((x) => x.lueurs > 0).length;
+    verifier(`de nuit, les phares des ${flotte.length} modèles s'allument dans la forme de leur propre optique — aucun disque plaqué, chaque lueur sur la tôle et au nez — et la 911 allume sa signature`,
+      koLueur.length === 0 && p911.rang === 1 && p911.triangles > 100 && avecLueur >= 70,
+      JSON.stringify({ ko: koLueur.slice(0, 3).map((x) => ({ f: x.f, disques: x.disques, tole: x.surToleLueur, horsNez: x.horsNez })), p911: { rang: p911.rang, tri: p911.triangles }, avecLueur }));
   } catch (e) {
     verifier('911 : les témoins du modèle reconstruit se chargent sous node', false, String(e && e.message || e).slice(0, 200));
   }
@@ -566,6 +578,18 @@ function verifier(nom, ok, detail = '') {
       pieces.phares.length > 0 && pieces.phares.every((p) => p.casse && p.em === 0)
         && pieces.vitres.some((v) => v.etoilee) && pieces.emB > 0,
       JSON.stringify(pieces));
+    // UN PHARE CASSÉ ÉTEINT SA LUEUR (v569) : la lueur est une copie de
+    // l'optique ; quand l'optique s'éteint, elle s'éteint avec. L'autre voiture
+    // du même modèle garde la sienne.
+    const lueurCassee = await tab.evaluate(async () => {
+      const { a, b } = window.__essai, P = await import('./src/phares.js');
+      const lire = (m) => { const g = P.allumerPhares(m, 1); const r = g ? g.userData.lueurs.map((l) => l.visible) : null; P.eteindrePhares(m); return r; };
+      return { a: lire(a.mesh), b: lire(b.mesh) };
+    });
+    verifier('un phare cassé éteint sa lueur de nuit ; l\'autre voiture du même modèle garde la sienne',
+      Array.isArray(lueurCassee.a) && lueurCassee.a.length > 0 && lueurCassee.a.every((v) => !v)
+        && Array.isArray(lueurCassee.b) && lueurCassee.b.length > 0 && lueurCassee.b.every((v) => v),
+      JSON.stringify(lueurCassee));
 
     // 2. LA FUMÉE, LA PANNE : la voiture ne repart plus.
     const panne = await tab.evaluate(async () => {

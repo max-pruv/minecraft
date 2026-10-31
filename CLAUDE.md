@@ -1296,6 +1296,37 @@ standard qu'il a demandé, la 911 v2 en référence visuelle). Quatre règles.
   (gardien de `vehicules.js` et `portieres.js`), et la table des gardiens les
   déclare avec le GLB. Un test qu'aucun portail ne lance ne garde rien.
 
+## Les phares suivent le dessin du modèle (v569) — une lueur copie l'optique, elle ne plaque pas une forme
+
+Max : « la vraie 911 a une barre lumineuse, et le jeu vient créer des phares
+ronds par-dessus ». Mesuré avant une ligne : 50 modèles sur 77 portaient déjà
+leur optique allumée, 19 autres une optique nommée. Quatre règles.
+
+- **CE QUI S'ALLUME EST L'OPTIQUE DU MODÈLE, COPIÉE.** `optiquesPhares`
+  (phares.js) choisit à l'avant ce qui émet déjà (rang 1), puis ce qui est
+  nommé comme un feu avant (rang 2), puis le verre nommé d'une optique (rang
+  3, seul ou en lueur douce à côté) ; elle copie leurs triangles à fleur
+  (`DECALE`, le long de leur normale), par côté, une fois par modèle sur le
+  prototype (v550), géométrie partagée. `matiereAdditive` et des positions
+  seules : aucun programme neuf, aucun matériau de la voiture cloné ni
+  touché. Un modèle dont l'optique ne se reconnaît pas (livrée peinte d'un
+  seul tenant) n'a pas de lueur : on ne dessine pas une forme qu'on ne
+  connaît pas, le pinceau sur la route suffit.
+- **UNE LUEUR SOUS UN VERRE SE DESSINE AVANT LE VERRE** (`renderOrder` −1) :
+  dessinée après, la glace (transparente, profondeur écrite ou non) la cache.
+- **UNE LUEUR S'ÉTEINT AVEC SON OPTIQUE.** Pièce détachée, phare cassé ou
+  calciné (`degats3d` lui donne un matériau assombri) : on compare au
+  matériau du PROTOTYPE relevé à la mesure, jamais à celui de la voiture au
+  moment de l'allumage — elle a pu être cassée avant.
+- **ON JUGE UNE LUEUR PAR LA TÔLE ET PAR LA FORME, SOUS NODE.**
+  `sonde-feux-flotte.mjs` (lue par `degats.js`) : aucun disque, chaque
+  triangle de lueur retrouvé sur la carrosserie par un rayon le long de sa
+  normale, rien hors du nez. Un modèle neuf passe par elle ; une capture de
+  nuit (`sonde-captures-phares.cjs`) montre si le dessin se lit.
+
+Ce qui reste, déclaré dans `TASKS.md` : les feux stop, de recul et de
+détresse sont encore des lentilles génériques posées par `posesDetresse`.
+
 ## Les feux se mesurent sur le prototype (v550) — une règle par modèle ne se mesure jamais sur une voiture
 
 Deux règles.

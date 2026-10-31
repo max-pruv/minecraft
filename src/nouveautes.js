@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 569,
+    titre: 'Les vrais phares de chaque voiture',
+    puces: [
+      'La nuit, chaque voiture allume ses propres phares',
+      'La barre de la 911, celle du Cybertruck',
+      'Plus de ronds blancs collés dessus',
+      'Un phare cassé s\'éteint',
+    ],
+  },
+  {
     v: 568,
     titre: 'Un jet privé',
     puces: [
