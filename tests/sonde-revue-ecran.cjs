@@ -398,6 +398,44 @@ const ETATS = [
     await dormir(2000);
     return { ...r, ...choc };
   } },
+  { nom: 'voiture-projetee', async prep(tab) {
+    // LA VRAIE PHYSIQUE (v567) : dans Paris, au volant, on se pose douze blocs
+    // derrière une voiture de la rue, dans son axe, et l'on fonce dedans à 25
+    // blocs/s. Elle sort de la rue, projetée ; la capture la montre devant
+    // nous, la file derrière elle arrêtée.
+    const p = await tab.evaluate(async () => {
+      const { adresseParis } = await import('./src/paris.js');
+      const [x, z] = adresseParis(-0.8, -0.9); return { x, z };
+    });
+    await poserEt(tab, { x: p.x, z: p.z, yaw: Math.PI / 2 });
+    const r = await monterEnVoiture(tab);
+    await dormir(4000);
+    const choc = await tab.evaluate(async () => {
+      const g = window.__game, P = g.player, v = g.vehicules;
+      const tenir = (n) => new Promise((f) => setTimeout(f, n * 1000));
+      let cible = null, dm = Infinity;
+      v.etat().forEach((c) => {
+        if (!c.routier || c.nom !== 'voiture') return;
+        for (const q of c.places) {
+          const d = Math.hypot(q[0] - P.pos.x, q[1] - P.pos.z);
+          if (d < dm && d > 8) { dm = d; cible = q; }
+        }
+      });
+      if (!cible) return { err: 'aucune voiture de la rue en vue' };
+      const a = g.fun.montureConduite();
+      const cap = cible[2], fx = Math.sin(cap), fz = Math.cos(cap);
+      a.pos.set(cible[0] - fx * 12, a.pos.y, cible[1] - fz * 12); a.mesh.position.copy(a.pos);
+      P.pos.copy(a.pos); P.yaw = cap + Math.PI; P.pitch = -0.08; P.vitesseVoiture = 25;
+      P.vel.set(fx * 25, 0, fz * 25); P.touchMove.f = 1;
+      const n0 = g.fun.projetees();
+      const t0 = performance.now();
+      while (performance.now() - t0 < 6000 && g.fun.projetees() === n0) await tenir(0.05);
+      P.touchMove.f = 0;
+      await tenir(0.6);
+      return { a: +dm.toFixed(1), projetees: g.fun.projetees() - n0, ms: Math.round(performance.now() - t0) };
+    });
+    return { ...r, ...choc };
+  } },
   { nom: 'vol-libre', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
     await tab.evaluate(() => {
