@@ -11,6 +11,14 @@
   (`feuxArriere`, `posesDetresse`) : même principe à appliquer à l'arrière
   (copier l'optique arrière en rouge au freinage), mais il touche la rue
   (`montrer`) — une livraison à elle.
+- [ ] **Rouges du portail de la v569 : aucun de la livraison.** `degats.js`
+  verte (les deux témoins neufs compris), `maj.js` « le loader dit combien de
+  fichiers » et « le loader ne s'efface… » (déclarés, v559), `monte.js` cinq
+  rouges déclarés : la caméra en virage, le passant de Londres sur le passage
+  peint, les poissons lancés sur la côte, Moscou ×2. Le témoin des phares de
+  `monte.js` est vert tel quel. Preuve structurelle : la livraison ne change
+  que ce qu'`allumerPhares` fabrique, de nuit, pour la voiture que l'enfant
+  conduit ; aucun de ces témoins n'en dépend.
 - [ ] Sur un modèle dont l'optique est une fine signature (la 911 : barre de
   pare-chocs et quatre points), la lueur est fidèle mais discrète ; le verre du
   phare luit à 0,3 (`OPACITE_VERRE`). À juger sur l'iPad de nuit.
