@@ -43,7 +43,7 @@ le bord pour poste), rouge sur l'ancien code (poste sur la chaussée 3/3, sonde
 `sonde-flaneur-sortie.cjs`, mode « mur »), vert sur le neuf (3/3). Quatre
 sondes neuves mesurent chaque cause : 7 blocs d'écart entre la collecte et le
 maillage à 800 ms par image (27 ciblages ratés sur 30) ; `rue_choc` reçu 2/2 ;
-deux traversées « hors peinture » de Kyoto faites au feu ; à Rome, zéro
+deux traversées « hors peinture » de Kyoto faites au feu ; la moto qui ne venait qu'une fois sur deux (45 + 55 points sous la seconde étoile, à 120, quand la voiture garée ne rebondissait pas) ; à Rome, zéro
 traversée sans feu même en 60 s de jeu (déclaré dans `TASKS.md`).
 ## v569 — Les phares suivent le dessin de chaque voiture
 
