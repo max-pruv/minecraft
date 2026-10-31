@@ -14,7 +14,7 @@ const TOUTES = [
   { nom: 'foret-sol', x: -1560, z: -2488, h: 1.6, pitch: 0.12, yaw: 0.8 },
   { nom: 'foret-pres', x: -1560, z: -2488, h: 1.6, pitch: 0.35, yaw: -0.6 },
   { nom: 'foret-vol', x: -1560, z: -2470, h: 22, pitch: -0.55, yaw: 0.2 },
-  // (v569) le pied d'un bouleau, de près et en plongée : la surface continue
+  // (v572) le pied d'un bouleau, de près et en plongée : la surface continue
   // y passe-t-elle, ou garde-t-il son carré d'herbe en voxel ?
   { nom: 'bouleau-pied', x: -1560, z: -2488, h: 1.6, pitch: -0.45, yaw: Math.PI / 2, bouleau: true },
   { nom: 'foret-ciel', x: -1560, z: -2440, h: 60, pitch: -0.9, yaw: 0.0 },

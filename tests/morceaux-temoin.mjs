@@ -66,7 +66,7 @@ export async function empreinteMorceaux(src) {
   // sommets du fer), désarmé, la branche rend la constante d'avant.
   const Pm = await import(src + '/paris-monuments-hd.js');
   if (Pm.reglageNuitEiffel) Pm.reglageNuitEiffel.lueur = false;
-  // LE SOL CONTINU SOUS LES BOULEAUX (v569) : un contenu neuf — le tronc de
+  // LE SOL CONTINU SOUS LES BOULEAUX (v576) : un contenu neuf — le tronc de
   // bouleau devient un dessus naturel, comme le chêne. Désarmé, la branche
   // rend la constante d'avant (l'ancien code n'a pas l'interrupteur).
   const Sc = await import(src + '/solcontinu.js');

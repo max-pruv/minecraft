@@ -15125,7 +15125,7 @@ Deux dettes des arbres, une mesure. Deux règles.
   `solid`, mesuré ; le maillage reste dans le bruit, 5,0 contre 4,9 ms), et un morceau du bord du disque coûte un ou deux appels de dessin
   au lieu d'un ; l'intérieur, rien.
 
-## Le bouleau sur la surface (v569) — un bloc d'arbre neuf se déclare au sol continu
+## Le bouleau sur la surface (v572) — un bloc d'arbre neuf se déclare au sol continu
 
 Une règle. `DESSUS_NATUREL` (solcontinu.js) dit ce qui peut vivre AU-DESSUS
 d'une colonne naturelle sans la rendre artificielle ; il nommait `LOG` et
