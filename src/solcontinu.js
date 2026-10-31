@@ -64,7 +64,7 @@ export const SOL_NATUREL = new Set([BLOCK.GRASS, BLOCK.DIRT, BLOCK.SAND, BLOCK.S
 // décor posé SUR le sol, pas un bloc qui en fait partie. Sans cela chaque
 // fleur des prés laissait une colonne voxel au milieu du champ lissé.
 //
-// LE BOULEAU AUSSI (v572). Son tronc est `BIRCH`, pas `LOG` (`world.js`,
+// LE BOULEAU AUSSI (v576). Son tronc est `BIRCH`, pas `LOG` (`world.js`,
 // `trunkBlock`) : la colonne du tronc n'était pas naturelle, ses quatre
 // cellules ne se dessinaient pas, et les huit colonnes autour gardaient leur
 // cube de sommet — un carré d'herbe en voxel (3 × 3) au pied de chaque

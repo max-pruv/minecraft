@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v572 — La forêt sans carrés au pied des bouleaux
+## v576 — La forêt sans carrés au pied des bouleaux
 
 **Pourquoi.** Au pied de chaque bouleau, un carré d'herbe de trois colonnes
 sur trois restait en cubes, au ras du sol lisse de la forêt : le reste du

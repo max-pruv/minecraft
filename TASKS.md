@@ -1,8 +1,8 @@
 # Ce qui est en cours
 
-## Le bouleau sur la surface (v572) — ce qui reste, déclaré
+## Le bouleau sur la surface (v576) — ce qui reste, déclaré
 
-- [ ] **Rouges du portail de la v572 : aucun de la livraison.** Le diff ne
+- [ ] **Rouges du portail de la v576 : aucun de la livraison.** Le diff ne
   touche que `dessusNaturel` (sol continu, colonnes autour d'un tronc de
   bouleau, désarmable par `reglageSolContinu.bouleau`) : il ne peut atteindre
   ni le réseau, ni les avions, ni le service worker. `carteMonde.js` (trois
@@ -600,7 +600,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
 ## v541 — DE VRAIES FEUILLES : ce qui reste, mesuré
 
 - ~~**Un carré d'herbe en voxel (3 × 3 colonnes) au pied de chaque BOULEAU**~~
-  **Remboursé en v572** : `BIRCH` est un dessus naturel (interrupteur
+  **Remboursé en v576** : `BIRCH` est un dessus naturel (interrupteur
   `reglageSolContinu.bouleau`), 612 → 18 colonnes non couvertes sur 68
   bouleaux (2,9 %, contre 2,3 % autour des chênes : des falaises), témoin
   dans `plafond.js`, empreinte des 490 morceaux prouvée désarmée. Le texte

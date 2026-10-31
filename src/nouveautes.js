@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 572,
+    v: 576,
     titre: 'Des bouleaux bien plantés',
     puces: [
       'Plus de carré en cubes à leur pied',
