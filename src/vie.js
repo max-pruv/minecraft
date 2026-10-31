@@ -240,7 +240,12 @@ export class Habitant extends BaseNPC {
       s.t += reel;
       if (Math.hypot(dx, dz) < 0.35 || s.t > 6) {
         this.sortie = null;
-        this.poste.set(this.pos.x, this.pos.z);
+        // LE POSTE EST LE BORD VISÉ, PAS L'ENDROIT OÙ L'ON S'EST ARRÊTÉ : quand
+        // la sortie expire (une voiture arrêtée devant lui, un obstacle), il
+        // prenait son poste SUR la chaussée et y flânait, ressortant sans fin
+        // (`poste c, sorties 7` au portail de la v560). Arrivé, c'est le même
+        // point ; empêché, il garde le bord pour but.
+        this.poste.set(s.x, s.z);
         this.etat = 'pause'; this.minuteur = 0.5; this.sonde = 0;
         return null;
       }
