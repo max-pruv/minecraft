@@ -1,5 +1,20 @@
 # Ce qui est en cours
 
+## Le bouleau sur la surface (v572) — ce qui reste, déclaré
+
+- [ ] **Rouges du portail de la v572 : aucun de la livraison.** Le diff ne
+  touche que `dessusNaturel` (sol continu, colonnes autour d'un tronc de
+  bouleau, désarmable par `reglageSolContinu.bouleau`) : il ne peut atteindre
+  ni le réseau, ni les avions, ni le service worker. `carteMonde.js` (trois
+  gabarits d'avion, identiques sur `origin/main` v571), `maj.js` (les deux
+  loaders), `manhattan.js` (le taxi tactile) et `monte.js` (passage peint à
+  Rome) : déjà déclarés. **`reseau.js` : intermittente des deux côtés** — au
+  premier portail de la branche, la famille « à trois » rouge ; rejouée seule
+  sur `origin/main` v571, huit AUTRES rouges (fluidité, portières passager,
+  feux stop de l'ami, partie seule après le départ de l'hôte) et le trio vert ;
+  au second portail, deux rouges (GPS relayé, fluidité directe). Une
+  distribution qui change à chaque passage, pas une régression.
+
 ## Les réglages à deux tablettes (v571) — ce qui reste, déclaré
 
 - [ ] **Rouges du portail de la v571 : aucun de la livraison.** Le diff ne
