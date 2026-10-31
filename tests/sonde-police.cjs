@@ -89,7 +89,7 @@ async function passage(page) {
     P.flying = false; P.yaw = 0; P.pitch = 0; P.vel.set(0, 0, 0);
     P.pos.set(x0 + 0.5, y0 + 1.2, z0 + 40.5);
     await dodo(1500);
-    const a = am.invoquer('voiture', P.pos.x, P.pos.z - 3, false, { flotte: 'amg-gt-black-series.glb' });
+    const a = am.invoquer('voiture', P.pos.x, P.pos.z - 3, false, { flotte: 'lucid-gravity.glb' });
     a.yaw = Math.PI; await dodo(400);
     for (let i = 0; i < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); i++) { document.getElementById('ride-btn').click(); await dodo(600); }
     out.auVolant = !!(g.fun.montureConduite && g.fun.montureConduite());
@@ -103,7 +103,7 @@ async function passage(page) {
     for (let i = 0; i < 40 && Math.abs(P.vitesseVoiture || 0) > 0.3; i++) await dodo(100);
     P.yaw = 0; a.yaw = Math.PI;
     // LA VRAIE BÊTISE : une voiture garée sur la route, et l'on fonce dedans
-    const garee = am.invoquer('voiture', P.pos.x, P.pos.z - 30, false, { flotte: 'amg-gt-black-series.glb' });
+    const garee = am.invoquer('voiture', P.pos.x, P.pos.z - 30, false, { flotte: 'lucid-gravity.glb' });
     garee.yaw = 0;
     P.touchMove.f = 1; P.touchMove.s = 0;
     const tc = performance.now();

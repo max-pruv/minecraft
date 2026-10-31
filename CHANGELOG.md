@@ -20,6 +20,36 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v573 — Seulement les plus belles voitures
+
+**Pourquoi.** Max : « supprime les anciennes voitures qui ne sont pas très
+jolies et qui ont été créées initialement, garde uniquement les nouvelles…
+toutes les voitures qui se ressemblent ». Les quarante-sept modèles
+`luxurycarfleet` d'août 2026 sont des placeholders paramétriques générés par
+code, homogènes par construction (leur manifeste le dit), et ils étaient
+encore les deux tiers de la rue à côté des modèles détaillés déposés depuis.
+
+**Ce que ça change.**
+- Quarante-sept modèles quittent la flotte et le dépôt (≈ 80 Mo). Restent les
+  dix-huit de la v566, la Lucid Gravity, la Chiron Stealth, la MC12 GT1, la
+  SF90 XX, la Revuelto adaptée et la 911 reconstruite, plus la berline
+  citadine, les utilitaires, les taxis de New York et la police : 30 modèles.
+- Les rues ne tirent plus que ces modèles-là ; une voiture rangée au garage
+  sous un modèle retiré ressort avec un modèle tiré de la flotte (le repli
+  existait déjà), et la voiture d'un ami resté sur l'ancienne version aussi.
+- Les identifiants de la SF90, de la Revuelto et de la 911 ne changent pas :
+  leurs garages et le réseau les retrouvent.
+
+**Ce qui le prouve.** Aucune signature de programme ne naît ni ne meurt (la
+table relue sur les fichiers restants, sous node). Les phares, feux de
+détresse et feux stop des 30 modèles sont sur leur tôle (`sonde-feux-flotte`,
+zéro hors tôle), et la voiture abîmée mesurée la première est désormais la DB11
+(deux feux avant détachés par leur matériau). Les témoins qui nommaient un
+modèle retiré sont repointés : portières et passager sur la Lucid Gravity,
+allure d'hypercar sur la Divo, dégâts sur la DB11, modèles « du manifeste »
+sur la MC12 et la Model Y, images partagées sur cinq modèles déposés qui en
+partagent vraiment (97 images, 91 distinctes).
+
 ## v572 — Des ombres de fenêtres
 
 **Pourquoi.** Depuis la couche HD de Paris (v287), l'ombre d'une façade était

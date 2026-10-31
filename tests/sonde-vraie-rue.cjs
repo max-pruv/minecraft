@@ -19,7 +19,7 @@ const { Banc } = require('./banc.js');
       const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
       for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh); g.animalManager.animals.length = 0;
       P.flying = false; P.yaw = -Math.PI / 2; P.pos.set(x0, y0 + 1.2, z0 - 20.5); P.vel.set(0, 0, 0);
-      g.animalManager.invoquer('voiture', x0 + 3, z0 - 20.5, false, { flotte: 'koenigsegg-jesko.glb' });
+      g.animalManager.invoquer('voiture', x0 + 3, z0 - 20.5, false, { flotte: 'bugatti-divo.glb' });
       await dormir(600);
       for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
       if (!auVolant()) return { err: 'pas au volant' };
