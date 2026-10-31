@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v576 — La forêt sans carrés au pied des bouleaux
+
+**Pourquoi.** Au pied de chaque bouleau, un carré d'herbe de trois colonnes
+sur trois restait en cubes, au ras du sol lisse de la forêt : le reste du
+trou bouché en v541. Le tronc du bouleau est un autre bloc que celui du
+chêne, et la règle du sol continu ne l'admettait pas au-dessus d'une colonne
+naturelle — mesuré sur 68 bouleaux de la forêt témoin, les 612 colonnes
+autour du tronc restaient en voxel.
+
+**Ce que ça change.**
+- La surface continue passe au pied du bouleau comme au pied du chêne : plus
+  de carré en cubes, le sol est lisse jusqu'au tronc.
+- Le tronc reste un obstacle, le relief ne bouge pas d'un bloc.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js`, rouge sur l'ancien
+code : 68 bouleaux, tous les troncs naturels, 2,9 % de colonnes non couvertes
+autour d'eux (des falaises, contre 2,3 % autour de 417 chênes), 100 % avant.
+Les deux empreintes du relief sont intactes ; l'empreinte des 490 morceaux
+change et, l'interrupteur `reglageSolContinu.bouleau` à faux, elle
+rend la constante d'avant (ed369fdb…) au bit près. Le témoin du trou sous un
+tronc tu (v541) se joue sur l'ancienne règle, puisque la surface couvre
+désormais ce trou-là.
+
 ## v575 — La tour Eiffel la nuit
 
 **Pourquoi.** La tour du modèle de Max (v564) laissait trois choses derrière

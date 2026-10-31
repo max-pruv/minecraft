@@ -1,5 +1,28 @@
 # Ce qui est en cours
 
+## Le bouleau sur la surface (v576) — ce qui reste, déclaré
+
+- [ ] **Rouges du portail de la v576 : aucun de la livraison.** Le diff ne
+  touche que `dessusNaturel` (sol continu, colonnes autour d'un tronc de
+  bouleau, désarmable par `reglageSolContinu.bouleau`) : il ne peut atteindre
+  ni le réseau, ni les avions, ni le service worker. `carteMonde.js` (trois
+  gabarits d'avion, identiques sur `origin/main` v571), `maj.js` (les deux
+  loaders), `manhattan.js` (le taxi tactile) et `monte.js` (passage peint à
+  Rome) : déjà déclarés. **`reseau.js` : intermittente des deux côtés** — au
+  premier portail de la branche, la famille « à trois » rouge ; rejouée seule
+  sur `origin/main` v571, huit AUTRES rouges (fluidité, portières passager,
+  feux stop de l'ami, partie seule après le départ de l'hôte) et le trio vert ;
+  au second portail, deux rouges (GPS relayé, fluidité directe). Une
+  distribution qui change à chaque passage, pas une régression.
+  **`monte.js` rejouée seule trois fois** : « et ses roues tournent avec le
+  sol qui défile » rouge UNE fois sur la branche (0,4 m en une demi-seconde,
+  roue tournée juste, un taxi tiré au sort), vert sur `origin/main` (Camaro,
+  3,1 m) et vert au second passage de la branche rebasée (Daytona, 3,3 m) :
+  intermittent, le modèle tiré change d'un passage à l'autre — à démonter par
+  une sonde qui force `ford-mondeo-taxi.glb`. « un passant lancé sur la
+  voiture » et « Atterrissage vers <ville> », rouges au troisième passage et
+  verts aux deux autres, sont déclarés intermittents plus bas.
+
 ## L'altimètre et le décollage à la main (v573) — rouges de portail, aucun de la livraison
 
 - [ ] **Portail complet de la v573 (158 min) : mes trois témoins verts
@@ -584,7 +607,12 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
 
 ## v541 — DE VRAIES FEUILLES : ce qui reste, mesuré
 
-- **Un carré d'herbe en voxel (3 × 3 colonnes) au pied de chaque BOULEAU**,
+- ~~**Un carré d'herbe en voxel (3 × 3 colonnes) au pied de chaque BOULEAU**~~
+  **Remboursé en v576** : `BIRCH` est un dessus naturel (interrupteur
+  `reglageSolContinu.bouleau`), 612 → 18 colonnes non couvertes sur 68
+  bouleaux (2,9 %, contre 2,3 % autour des chênes : des falaises), témoin
+  dans `plafond.js`, empreinte des 490 morceaux prouvée désarmée. Le texte
+  d'origine :
   au ras de la surface continue, même texture, à peine visible — ce qui reste
   après la correction du TROU (v541, voir CLAUDE.md). Cause : `DESSUS_NATUREL`
   (solcontinu.js) admet `LOG` et `LEAVES` au-dessus d'une colonne d'herbe, pas
