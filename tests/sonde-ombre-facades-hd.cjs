@@ -1,7 +1,7 @@
 // L'OMBRE DES FAÇADES HD (v567) : une croisée au matériau de la couche HD jette-
 // t-elle une ombre ajourée — le bois ombre, la vitre (vide dans la tuile)
 // laisse passer le soleil — ou une ombre pleine, ou pas d'ombre du tout ?
-//   node tests/sonde-ombre-facades-hd.cjs [rapport.json] [capture.png]
+//   node tests/sonde-ombre-facades-hd.cjs [rapport.json] [préfixe des captures] [&ombrehd=0]
 //
 // Page à ombres forcées (`ombres=1`, v247), à Paris (`hd=2`) : le matériau HD
 // et ce que le jeu pose sur ses maillages de façades se lisent sur un vrai
@@ -99,8 +99,7 @@ async function mesurer(page) {
       r.render(scene, cam);
       const lc = carreaux.map((p) => lire(...sol(p))), lb = bois.map((p) => lire(...sol(p)));
       const loin = lire(centre[0] + 13, Y, centre[2]);
-      if (!window.__imagesOmbre) window.__imagesOmbre = [];
-      window.__imagesOmbre.push(r.domElement.toDataURL('image/png'));
+      if (window.__imagesOmbre) window.__imagesOmbre.push(r.domElement.toDataURL('image/png'));
       return { carreaux: lc, bois: lb, soleil: loin };
     };
     // la caméra suit le joueur à chaque image : on rend nous-mêmes, joueur figé
@@ -120,7 +119,7 @@ async function mesurer(page) {
     return { attente, ombres: r.shadowMap.enabled, profondeur: !!facade.customDepthMaterial,
       hd: { carreaux: moy(hd.carreaux), bois: moy(hd.bois), soleil: hd.soleil, detail: hd },
       plein: { carreaux: moy(temoin.carreaux), bois: moy(temoin.bois), soleil: temoin.soleil },
-      programmes: r.info.programs.length, soleilDir: [dSol.x, dSol.y, dSol.z].map((x) => +x.toFixed(2)).join(' '), lampes: scene.children.filter((o) => o.isDirectionalLight).map((o) => `${o.castShadow}/${o.intensity.toFixed(2)}/${o.position.y.toFixed(0)}`).join(' ') };
+      programmes: r.info.programs.length, soleilDir: [dSol.x, dSol.y, dSol.z].map((x) => +x.toFixed(2)).join(' ') };
   });
 }
 module.exports = { mesurer };
@@ -131,10 +130,12 @@ if (require.main === module) {
     await banc.ouvrir();
     try {
       await souffler();
-      const page = await banc.jouerSeul('Ombre', { rr: 4, ombres: 1, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&hd=2' });
+      const page = await banc.jouerSeul('Ombre', { rr: 4, ombres: 1, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&hd=2' + (process.argv[4] || '') });
+      // les captures (dalle sous le panneau HD, puis sous le panneau plein)
+      await page.evaluate(() => { window.__imagesOmbre = []; });
       const res = await mesurer(page);
       const imgs = await page.evaluate(() => window.__imagesOmbre || []);
-      imgs.forEach((u, i) => require('fs').writeFileSync(`/tmp/ombre-${i}.png`, Buffer.from(u.split(',')[1], 'base64')));
+      imgs.forEach((u, i) => require('fs').writeFileSync(`${process.argv[3] || '/tmp/ombre'}-${i}.png`, Buffer.from(u.split(',')[1], 'base64')));
       console.log(JSON.stringify(res, null, 1));
       if (process.argv[2]) require('fs').writeFileSync(process.argv[2], JSON.stringify(res, null, 1));
     } finally { await banc.fermer(); process.exit(0); }
