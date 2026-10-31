@@ -14,6 +14,29 @@
   la boîte du modèle. Le témoin devrait mesurer le modèle sans ses feux, ou les
   feux rester dans le gabarit.
 
+- [ ] **Portail de la v570, en deux tranches : aucun rouge de la livraison.**
+  Tranche 1 : `parent`, `degats`, `washington`, `parishd` vertes. `reglages.js`
+  morte deux fois au banc (lignes 821 puis 799, une page restée ouverte, 3,8
+  cœurs) : rejouée SEULE, verte 2/2 sur la branche (75) et 1/1 sur
+  `origin/main` (75). `visio.js` « la radio parle plus bas pendant l'appel »
+  (`avant 0.0000`) : verte rejouée seule (26). Tranche 2 : `metro`,
+  `realisme`, `sauvegarde`, `hote`, `plafond` vertes ; `carte.js` (fond de
+  carte 508 ms à froid, déclaré) et `manhattan.js` (morte au clic sur
+  « Jouer ») vertes rejouées seules (123 et 34) ; `maj.js` les deux témoins du
+  loader (déclarés, v559) ; `carteMonde.js` les dimensions des avions
+  (ci-dessus). `monte.js` (62 min, 13 rouges) rejouée SEULE sur `origin/main`
+  v569 par une session sœur (71 min, 280 ✅ / 15 ❌) : « une voiture tombe dans
+  l'eau » (arrivée d 13,1 y 28, la voiture ne plonge pas), « collée à une
+  voiture… elle peut reculer » (recule 0,7) et « police : une seconde bêtise
+  fait venir la moto » sont rouges LÀ AUSSI — non déclarés jusqu'ici, ils sont
+  en production. Moscou ×2 et « les voitures de la rue rendent leur mémoire »
+  rouges des deux côtés ; le reste (caméra en virage, flâneur, passage peint de
+  Kyoto, deux voisines, au feu piler, rue vide, « Atterrissage vers <ville> »)
+  déjà déclaré comme intermittent. Les deux témoins d'eau et de collision
+  invoquent une `berline-citadine` imposée : la livraison n'y entre pas.
+  `reseau.js` « chez l'ami, la voiture avance en temps réel » rendu à 2 images
+  par seconde : voir la mesure d'`origin/main` ci-dessous.
+
 ## Les phares suivent le dessin du modèle (v569) — ce qui reste, déclaré
 
 - [ ] Cinq modèles n'ont pas d'optique reconnaissable (police-car, police-suv,
