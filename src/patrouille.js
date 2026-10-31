@@ -23,9 +23,15 @@
 //     v504, rien ne s'écrit en jeu. L'état — combien d'étoiles — est une
 //     pilule de la file du centre, comme l'atterrissage (v516).
 //
-// LE MONDE EST LOCAL À LA TABLETTE. Un ami voit les voitures de police comme
-// des voitures garées ou conduites (elles n'ont pas de `p.v` à elles) : la
-// poursuite ne voyage pas — dette déclarée dans TASKS.md.
+// LA POURSUITE D'UN AMI SE MÈNE ICI, D'APRÈS SA PISTE (police-réseau). Ce qui
+// voyage, ce sont ses ÉTOILES (`p.v.w`, six octets dans la position, comme les
+// feux stop v549) — pas sa piste : un point tous les un bloc et demi coûterait
+// cent fois plus (mesuré : 587 o/s à 40 b/s contre 50, et 4,4 Ko à chaque
+// arrivée). Chaque tablette RECONSTRUIT la piste de l'ami avec les positions
+// qu'elle dessine déjà (`amis`), et y mène sa propre voiture de police
+// (`escorte`) : sirène et gyrophares, ni bêtise, ni contrôle, ni oubli — c'est
+// la tablette du conducteur qui décide, et ses étoiles tombées à zéro garent
+// l'escorte ici. Une tablette restée sur l'ancienne version ignore `w`.
 import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { partagerTout, liberer } from './liberer.js';
@@ -102,6 +108,13 @@ export function gyrophares(g, allumes, t) {
   return e.length;
 }
 
+// combien d'éclats de gyrophare sont allumés (pour les témoins)
+function eclatsAllumes(g) {
+  let n = 0;
+  g.traverse((o) => { if ((o.name === 'Eclat_G' || o.name === 'Eclat_D') && o.visible) n++; });
+  return n;
+}
+
 // --- le policier --------------------------------------------------------------
 let chargementAgent = null, protoAgent = null;
 function chargerAgent() {
@@ -123,7 +136,10 @@ export function creerPatrouille(ctx) {
   const { scene, world, player, animaux, montureConduite, dire, langue, casses } = ctx;
   let etat = { points: 0, derniere: null };
   const piste = new Piste();
-  const unites = [];             // { a, type, s, v, cible, vmax, appel }
+  const unites = [];             // { a, type, s, v, cible, vmax, appel, ami? }
+  // une unité d'ICI (la poursuite de l'enfant) ou l'escorte d'un ami
+  const locales = () => unites.filter((u) => u.ami == null);
+  const escortes = new Map();    // id d'ami → { piste, v, finPrec }
   let controle = null;           // { agent, etape, t, cible, fin, cle }
   let vuChoc = player.choc && player.choc.t;
   let freinait = false, dernierPieton = -1e9, dernierMobilier = -1e9, cassesVues = casses ? casses() : 0;
@@ -144,6 +160,9 @@ export function creerPatrouille(ctx) {
 
   function betise(quoi) {
     etat = ajouterBetise(etat, quoi, horloge);
+    charger();
+  }
+  function charger() {
     if (!chargeLance) {
       // on ne télécharge rien tant qu'il n'y a pas eu de bêtise : la police
       // ne coûte rien à l'enfant sage (le scanner de visages, v220)
@@ -198,8 +217,8 @@ export function creerPatrouille(ctx) {
   // voiture garée (montable, à portée de la main de l'enfant) — le bestiaire la
   // reprendra à soixante-dix blocs comme toute autre.
   function toutesSeGarent() {
-    for (const u of [...unites]) retirerUnite(u);
-    sireneJouer(false);
+    for (const u of locales()) retirerUnite(u);
+    if (!unites.length) sireneJouer(false);
   }
 
   // la prochaine voiture de police, en alternance parmi celles qui sont prêtes
@@ -213,14 +232,15 @@ export function creerPatrouille(ctx) {
     return FICHIER_POLICE;
   }
 
-  function apparaitre(type) {
+  function apparaitre(type, ami = null) {
     // on attend le VRAI modèle : une coque d'attente au hasard ne dit pas
     // « police » (la rue n'en montre jamais une non plus, v547)
     if (!(type === 'moto' ? motoPrete() : policePrete)) return null;
+    const pi = ami == null ? piste : escortes.get(ami).piste;
     const retard = type === 'moto' ? 48 + 14 : 48;
-    const s = abscisseApparition(piste, retard);
+    const s = abscisseApparition(pi, retard);
     if (s == null) return null;
-    const p = piste.positionA(s);
+    const p = pi.positionA(s);
     const a = type === 'moto'
       ? animaux.invoquer('moto', p.x, p.z)
       : animaux.invoquer('voiture', p.x, p.z, false, { flotte: prochaineVoiture() });
@@ -229,7 +249,8 @@ export function creerPatrouille(ctx) {
     if (p.cap != null) a.yaw = p.cap;
     a.menee = true; a.enService = true;
     a.mesh.userData.police = true;
-    const u = { a, type, s, v: Math.min(VMAX_POLICE, vitesseEnfant() + 6),
+    const v0 = ami == null ? vitesseEnfant() : escortes.get(ami).v;
+    const u = { a, type, s, v: Math.min(VMAX_POLICE, v0 + 6), ami,
       cible: type === 'moto' ? ECART_MOTO : ECART, vmax: type === 'moto' ? VMAX_MOTO : VMAX_POLICE };
     unites.push(u);
     a.poser();
@@ -244,10 +265,12 @@ export function creerPatrouille(ctx) {
   }
 
   function avancer(u, dt) {
-    const ecart = piste.fin - u.s;
-    u.v = vitessePoursuite(u.v, ecart, vitesseEnfant(), dt, { cible: u.cible, vmax: u.vmax });
-    u.s = Math.min(piste.fin - u.cible * PLANCHER, Math.max(piste.debut, u.s + u.v * dt));
-    const p = piste.positionA(u.s);
+    const e = u.ami == null ? null : escortes.get(u.ami);
+    const pi = e ? e.piste : piste;
+    const ecart = pi.fin - u.s;
+    u.v = vitessePoursuite(u.v, ecart, e ? e.v : vitesseEnfant(), dt, { cible: u.cible, vmax: u.vmax });
+    u.s = Math.min(pi.fin - u.cible * PLANCHER, Math.max(pi.debut, u.s + u.v * dt));
+    const p = pi.positionA(u.s);
     if (!p) return;
     u.a.pos.set(p.x, p.y, p.z);
     if (p.cap != null && u.v > 0.2) {
@@ -270,12 +293,19 @@ export function creerPatrouille(ctx) {
   // 2,26, plus un bloc). Une seule poignée passait à 1,6 et frôlait sa portière.
   const VOIE_DEPASSE = 4.3, DEVANT = 8, VITESSE_DEPASSE = 7;
   let refusDevant = null;          // le dernier bloc qui a barré le chemin (diagnostic)
+  // À GAUCHE D'ABORD, À DROITE SI LA GAUCHE EST BARRÉE (police-réseau) : la
+  // v562 restait derrière l'enfant dès qu'un bloc barrait la gauche — derrière
+  // la caméra, l'enfant entendait le policier sans le voir. `refusDevant`
+  // nomme le bloc du DERNIER côté essayé ; `cote` dit par où elle est passée.
   function cheminDevant(u) {
+    return cheminDuCote(u, 1) || cheminDuCote(u, -1);
+  }
+  function cheminDuCote(u, cote) {
     const ay = player.yaw + Math.PI;                         // le cap de la voiture de l'enfant
     const fx = Math.sin(ay), fz = Math.cos(ay), gx = Math.cos(ay), gz = -Math.sin(ay);
     const C = (f, g) => ({ x: player.pos.x + fx * f + gx * g, z: player.pos.z + fz * f + gz * g });
     const P0 = { x: u.a.pos.x, z: u.a.pos.z };
-    const P1 = C(-2, VOIE_DEPASSE), P2 = C(2, VOIE_DEPASSE), P3 = C(DEVANT, 0.4);
+    const P1 = C(-2, VOIE_DEPASSE * cote), P2 = C(2, VOIE_DEPASSE * cote), P3 = C(DEVANT, 0.4 * cote);
     const pts = [];
     for (let i = 0; i <= 24; i++) {
       const t = i / 24, m = 1 - t;
@@ -302,7 +332,7 @@ export function creerPatrouille(ctx) {
     }
     let L = 0; pts[0].s = 0;
     for (let i = 1; i < pts.length; i++) { L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z); pts[i].s = L; }
-    return { pts, L, cap: ay };
+    return { pts, L, cap: ay, cote };
   }
   function descendreAgent(c) {
     const agent = protoAgent.clone(true);
@@ -335,7 +365,7 @@ export function creerPatrouille(ctx) {
     if (!parti) { etat = { points: 0, derniere: null }; toutesSeGarent(); appelDit = false; }
     // reparti avant la fin : la voiture garée devant lui y reste (garée) ; une
     // autre reprendra la poursuite par derrière, sur la piste
-    else for (const u of [...unites]) if (u.horsPiste) retirerUnite(u);
+    else for (const u of locales()) if (u.horsPiste) retirerUnite(u);
   }
   function majControle(dt) {
     const c = controle;
@@ -427,20 +457,26 @@ export function creerPatrouille(ctx) {
     }
 
     const n = etoiles(etat.points);
-    if (n >= 1 && !unites.some((u) => u.type === 'voiture') && !controle) apparaitre('voiture');
-    if (n >= 2 && unites.some((u) => u.type === 'voiture') && !unites.some((u) => u.type === 'moto') && !controle) apparaitre('moto');
+    const ici = locales();
+    if (n >= 1 && !ici.some((u) => u.type === 'voiture') && !controle) apparaitre('voiture');
+    if (n >= 2 && ici.some((u) => u.type === 'voiture') && !ici.some((u) => u.type === 'moto') && !controle) apparaitre('moto');
+    // les escortes : une voiture derrière chaque ami recherché
+    for (const [id, e] of escortes) {
+      if (e.w >= 1 && !e.loin && !unites.some((u) => u.ami === id)) apparaitre('voiture', id);
+    }
 
     const vEnf = vitesseEnfant();
     arretDepuis = vEnf < 1.2 ? arretDepuis + dt : 0;
     for (const u of unites) {
       equiper(u);
-      if (!controle && !u.horsPiste) avancer(u, dt);
+      // une escorte suit son ami quoi qu'il se passe ici
+      if (u.ami != null || (!controle && !u.horsPiste)) avancer(u, dt);
       else if (u !== controle.u) u.v = 0;
       gyrophares(u.a.mesh, true, horloge);
     }
 
     // le contrôle : l'enfant s'est arrêté, la voiture est juste derrière
-    const voiture = unites.find((u) => u.type === 'voiture');
+    const voiture = unites.find((u) => u.type === 'voiture' && u.ami == null);
     if (!controle && voiture && n >= 1) {
       const ecart = piste.fin - voiture.s;
       if (pretAuControle(ecart, vEnf, arretDepuis)) commencerControle(voiture);
@@ -448,14 +484,16 @@ export function creerPatrouille(ctx) {
     if (controle) majControle(dt);
 
     // vue de la police, l'oubli, la sirène
-    let dMin = Infinity, plus = null;
+    let dMin = Infinity, plus = null, dIci = Infinity;
     for (const u of unites) {
       const d = Math.hypot(u.a.pos.x - player.pos.x, u.a.pos.z - player.pos.z);
       if (d < dMin) { dMin = d; plus = u; }
+      if (u.ami == null) dIci = Math.min(dIci, d);
     }
-    const vu = dMin < VU_POLICE;
+    // l'escorte d'un ami ne voit pas l'enfant : elle ne retient pas SES points
+    const vu = dIci < VU_POLICE;
     etat = oublier(etat, horloge, dt, vu || !!controle);
-    if (etat.points <= 0 && unites.length && !controle) { toutesSeGarent(); appelDit = false; }
+    if (etat.points <= 0 && ici.length && !controle) { toutesSeGarent(); appelDit = false; }
     if (plus && !controle) {
       // à gauche ou à droite de là où l'enfant regarde : comme le klaxon de la rue
       const rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
@@ -463,7 +501,7 @@ export function creerPatrouille(ctx) {
       sireneJouer(true, { distance: dMin, pan });
       // « Police ! Arrête-toi sur le côté » — une fois par poursuite, quand
       // elle arrive à portée de voix : c'est ce qui dit à l'enfant QUOI FAIRE
-      if (!appelDit && dMin < 30 && dire) {
+      if (!appelDit && plus.ami == null && dMin < 30 && dire) {
         appelDit = true;
         const { texte, langue: l } = phrasePolice('appel', langue ? langue() : 'fr', alterne);
         dire(texte, l);
@@ -482,8 +520,58 @@ export function creerPatrouille(ctx) {
     pilotee = a.mesh;
   }
 
+  // LES AMIS (police-réseau), à chaque image : `[{ id, x, y, z, w, volant }]`,
+  // la position où la tablette DESSINE l'ami (rejouée, lisse : `rp.pos`) et
+  // ses étoiles reçues. Sa piste se refait ici ; un saut (la carte), des
+  // étoiles à zéro, un ami à pied ou parti : l'escorte se gare là où elle est.
+  let vuAmis = 0;
+  const ESCORTE_PRES = 140, ESCORTE_LOIN = 180;   // elle naît sous 140 blocs, se gare au-delà de 180
+  function amis(liste) {
+    const maintenant = performance.now() / 1000;
+    const dt = Math.min(0.25, Math.max(0, maintenant - (vuAmis || maintenant)));
+    vuAmis = maintenant;
+    const presents = new Set();
+    for (const a of liste || []) {
+      if (!a || a.id == null || !a.volant) continue;
+      const w = Math.max(0, Math.floor(+a.w || 0));
+      let e = escortes.get(a.id);
+      if (!e) { if (w < 1) continue; e = { piste: new Piste(), v: 0, finPrec: null, w }; escortes.set(a.id, e); }
+      presents.add(a.id);
+      e.w = w;
+      if (w >= 1) charger();
+      // UNE IMAGE LENTE N'EST PAS UN SAUT : la piste d'ici coupe au-delà de
+      // trente blocs d'une image à l'autre (la carte), mais une tablette qui
+      // rend une image toutes les deux secondes voit un ami à 20 b/s faire
+      // quarante blocs (mesuré : deux coupures sur un trajet relayé, aucune
+      // escorte). On comble la ligne droite ; seul un vrai saut (plus de
+      // soixante blocs à plus de 300 b/s, la règle de fluidite.js) coupe.
+      const der = e.piste.pts.length ? e.piste.pts[e.piste.pts.length - 1] : null;
+      const l = der ? Math.hypot(a.x - der.x, a.z - der.z) : 0;
+      let coupe = false;
+      if (der && l > 25 && !(l > 60 && l / Math.max(dt, 1e-3) > 300)) {
+        const n = Math.ceil(l / 20);
+        for (let k = 1; k < n; k++) e.piste.ajouter(der.x + (a.x - der.x) * k / n, der.y + (a.y - der.y) * k / n, der.z + (a.z - der.z) * k / n);
+      }
+      if (e.piste.ajouter(a.x, a.y, a.z) === 'saut') coupe = true;
+      if (coupe) { e.finPrec = null; e.v = 0; garerEscorte(a.id); }
+      if (e.finPrec != null && dt > 0) e.v += (Math.max(0, (e.piste.fin - e.finPrec) / dt) - e.v) * Math.min(1, dt * 3);
+      e.finPrec = e.piste.fin;
+      // un ami à l'autre bout du monde n'a pas d'escorte ICI : on ne la verrait
+      // pas, et elle coûterait une voiture et ses dessins pour rien
+      const d = Math.hypot(a.x - player.pos.x, a.z - player.pos.z);
+      e.loin = d > (unites.some((u) => u.ami === a.id) ? ESCORTE_LOIN : ESCORTE_PRES);
+      if (w < 1 || e.loin) garerEscorte(a.id);
+    }
+    for (const id of [...escortes.keys()]) if (!presents.has(id)) { garerEscorte(id); escortes.delete(id); }
+  }
+  function garerEscorte(id) {
+    for (const u of unites.filter((x) => x.ami === id)) retirerUnite(u);
+    if (!unites.length) sireneJouer(false);
+  }
+
   return {
     update() { update(); auVolantDePolice(horloge); },
+    amis,
     // ce que la circulation doit éviter : les unités, comme des amis (v305)
     obstacles() {
       return unites.map((u) => ({ x: u.a.pos.x, y: u.a.pos.y, z: u.a.pos.z, cap: u.a.yaw, gabarit: u.type === 'moto' ? 1.2 : 2.2 }));
@@ -492,16 +580,27 @@ export function creerPatrouille(ctx) {
     // pour la pilule de la file du centre, et pour les témoins
     etat: () => ({
       points: etat.points, etoiles: etoiles(etat.points), derniere: etat.derniere && etat.derniere.quoi,
-      unites: unites.map((u) => ({ type: u.type, x: u.a.pos.x, z: u.a.pos.z, v: u.v, ecart: piste.fin - u.s })),
+      unites: locales().map((u) => ({ type: u.type, x: u.a.pos.x, z: u.a.pos.z, v: u.v, ecart: piste.fin - u.s })),
+      // les escortes des amis recherchés (police-réseau)
+      escortes: unites.filter((u) => u.ami != null).map((u) => ({ ami: u.ami, type: u.type, x: u.a.pos.x, z: u.a.pos.z, v: u.v,
+        ecart: escortes.has(u.ami) ? escortes.get(u.ami).piste.fin - u.s : null, gyro: eclatsAllumes(u.a.mesh) })),
+      amis: [...escortes].map(([id, e]) => ({ id, w: e.w, piste: +(e.piste.fin - e.piste.debut).toFixed(1), coupures: e.piste.coupures, v: +e.v.toFixed(1), loin: !!e.loin })),
       controle: controle ? { etape: controle.etape, texte: controle.texte || null, cle: controle.cle,
-        devant: !!controle.chemin, refus: controle.chemin ? null : refusDevant,
+        devant: !!controle.chemin, cote: controle.chemin ? (controle.chemin.cote > 0 ? 'gauche' : 'droite') : null,
+        refus: controle.chemin ? null : refusDevant,
         x: controle.agent ? controle.agent.position.x : null, z: controle.agent ? controle.agent.position.z : null } : null,
       piste: piste.fin - piste.debut,
     }),
     // pour le banc : une bêtise qu'on provoque (v233), et le grand ménage
     betise,
+    // par où une voiture de police arrêtée en (x, z) doublerait l'enfant
+    // (police-réseau) : 'gauche', 'droite', ou null avec le bloc qui barre
+    essaiDevant(x, z) {
+      const c = cheminDevant({ a: { pos: { x, z } } });
+      return c ? { cote: c.cote > 0 ? 'gauche' : 'droite' } : { cote: null, refus: refusDevant };
+    },
     estUnite,
-    remiseAZero() { if (controle) finirControle(true); toutesSeGarent(); etat = { points: 0, derniere: null }; appelDit = false; },
+    remiseAZero() { if (controle) finirControle(true); toutesSeGarent(); for (const id of [...escortes.keys()]) garerEscorte(id); escortes.clear(); etat = { points: 0, derniere: null }; appelDit = false; },
     BETISES,
   };
 }

@@ -315,7 +315,7 @@ export function initFun(ctx) {
     // fois qu'on le dira. Voir `volInterdit` dans player.js.
     player.interdireVol(a.def.vole === false);
     // Et sa CARRURE : une voiture ne passe pas là où un piéton passe.
-    if (player.prendreGabarit) player.prendreGabarit(a.def.gabarit || 0);
+    if (player.prendreGabarit) player.prendreGabarit(a.def.gabarit || 0, a.def.longueur || 0);
     a.state = 'idle';
     // LE BRUIT DE FOND ET LA RADIO (v268). La FICHE décide : `moteur` nomme
     // la recette, `radio` allume une station. Rien n'est écrit ici sur ce

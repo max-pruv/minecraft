@@ -15,6 +15,7 @@
 const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, souffler } = require('./banc.js');
 const { servirLeNuage } = require('./nuage.js');
 const { mesurerFluidite } = require('./sonde-amis-fluides.cjs');
+const { escorte: escorteAmi, juger: jugerEscorte } = require('./sonde-police-reseau.cjs');
 
 // Deux messages de PeerJS ne comptent pas comme des fautes, et seulement ceux-là :
 //
@@ -265,6 +266,23 @@ function verifier(nom, ok, detail = '') {
       verifier('par l\'hôte, la position d\'un invité garde l\'heure de son envoi, et l\'autre invité le rejoue',
         !relaye.direct && Number.isFinite(relaye.ts) && Number.isFinite(relaye.vx) && relaye.suivis > 10,
         JSON.stringify({ relaye, fluideRelaye }));
+    }
+
+    // LA POLICE D'UN AMI SE VOIT CHEZ L'AUTRE (police-réseau). La v562 la
+    // laissait locale : un ami voyait la voiture de l'enfant, pas la police qui
+    // le suit. Les ÉTOILES voyagent dans la position (`p.v.w`) et chaque
+    // tablette mène sa propre voiture de police sur la piste qu'elle dessine.
+    // Un champ de position a deux témoins (v406) : Marlon (l'hôte) vu par
+    // Alice en direct (`pos`), Nina vue par Alice à travers l'hôte (`rpos`),
+    // l'hôte réduit à son canvas pendant ce second (il ne fait que relayer).
+    // Rouges sur `origin/main` : pas d'étoiles reçues, pas d'escorte.
+    {
+      const policeDirect = await escorteAmi(hote, alice, 'Marlon');
+      verifier('la police d\'un ami se voit chez l\'autre : ses étoiles arrivent par la position directe, et une voiture de police le suit à son écart, gyrophares allumés',
+        jugerEscorte(policeDirect) && policeDirect.direct, JSON.stringify(policeDirect));
+      const policeRelaye = await escorteAmi(nina, alice, 'Nina', { aCote: [hote] });
+      verifier('et à travers l\'hôte : la police d\'un invité se voit chez l\'autre invité (rpos), et se gare quand il est pardonné',
+        jugerEscorte(policeRelaye) && !policeRelaye.direct, JSON.stringify(policeRelaye));
     }
 
     // --- l'ami au volant est vu dans sa voiture, et l'on monte avec lui (v253)

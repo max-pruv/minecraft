@@ -7,6 +7,14 @@
 export const NOUVEAUTES = [
   {
     v: 573,
+    titre: 'La police des amis',
+    puces: [
+      'On voit la police qui suit un ami',
+      'Elle double aussi par la droite',
+      'La moto a sa vraie taille',
+    ],
+  },
+  {
     titre: 'Altitude et décollage à la main',
     puces: [
       'Aux commandes, l\'altitude au-dessus du sol',
