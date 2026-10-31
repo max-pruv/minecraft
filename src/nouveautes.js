@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 571,
+    titre: 'Ta langue reste choisie',
+    puces: [
+      'Deux tablettes allumées ne se contredisent plus',
+      'La langue choisie ne revient plus en arrière',
+    ],
+  },
+  {
     v: 570,
     titre: 'Les passants regagnent le trottoir',
     puces: [

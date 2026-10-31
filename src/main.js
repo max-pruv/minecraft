@@ -4512,17 +4512,32 @@ function pushPrefsToCloud() {
   prefsPushTimer = setTimeout(() => envoyerPrefs(), 1200);
 }
 
+// ET L'ÉCRITURE NE VAUT QUE SI RIEN N'A BOUGÉ DEPUIS LA LECTURE (v571). Une
+// tablette qui rame peut mettre des secondes entre les deux (six, mesurées) ;
+// si l'autre tablette de la maison y pose un choix neuf, l'écriture périmée
+// le défaisait. Le serveur n'écrit donc que si la date du dernier choix vaut
+// encore ce qu'on a lu (`prefsPushSi`) ; sinon on relit, on adopte, on
+// réessaie. Un document absent ou illisible, ou un serveur qui ne sait pas
+// écrire sous condition : l'ancien chemin, on n'arrête jamais d'écrire.
 async function envoyerPrefs() {
   if (!playerProfile.name) return;
-  try {
-    const distant = await cloud.prefsPull(playerProfile.name);
-    if (distant) {
-      // Une autre tablette de la maison a peut-être un choix plus récent que le
-      // nôtre : adopterProfilDistant tranche sur la date et ne fait rien sinon.
-      adopterProfilDistant(distant);
+  const nom = playerProfile.name;
+  for (let essai = 0; essai < 3; essai++) {
+    let distant = null;
+    try { distant = await cloud.prefsPull(nom); } catch { /* hors ligne */ }
+    if (nom !== playerProfile.name) return;   // on a changé d'enfant entre-temps
+    if (!distant) { cloud.prefsPush(nom, prefsPayload()).catch(() => {}); return; }
+    // Une autre tablette de la maison a peut-être un choix plus récent que le
+    // nôtre : adopterProfilDistant tranche sur la date et ne fait rien sinon.
+    adopterProfilDistant(distant);
+    try {
+      if (await cloud.prefsPushSi(nom, prefsPayload(), distant.majProfil)) return;
+    } catch {
+      cloud.prefsPush(nom, prefsPayload()).catch(() => {});
+      return;
     }
-  } catch { /* hors ligne : on écrit quand même ce qu'on a */ }
-  cloud.prefsPush(playerProfile.name, prefsPayload()).catch(() => {});
+    // Quelqu'un a choisi entre notre lecture et notre écriture : on relit.
+  }
 }
 
 // Un battement régulier : sans lui, « en ligne » voudrait dire « a ouvert un

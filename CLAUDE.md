@@ -5465,6 +5465,25 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Un document à deux auteurs s'écrit sous condition (v571)
+
+La v374 faisait relire chaque tablette avant d'écrire ses réglages ; ce
+n'était qu'une demi-garde. Deux règles.
+
+- **RELIRE AVANT D'ÉCRIRE NE FERME PAS LA FENÊTRE, ÇA LA DÉPLACE.** Une
+  tablette chargée met des secondes entre sa lecture et son écriture (six,
+  mesurées par `sonde-reglages-deux.cjs`) : tout choix posé ailleurs entre
+  les deux était effacé. C'est le serveur qui tranche (`prefsPushSi`,
+  cloud.js) : un PATCH filtré par `prefs->>majProfil` égal à ce qu'on a lu ;
+  zéro ligne écrite → on relit, on adopte, on réessaie. Tout document que
+  deux tablettes écrivent en entier se protège ainsi, par la date de ce qui
+  compte, jamais par un délai.
+- **UN TÉMOIN DE COURSE RETIENT LA REQUÊTE PÉRIMÉE.** Attendre qu'un banc
+  chargé retarde une écriture au bon moment est un tirage (1 rouge sur 2) :
+  `reglages.js` tient la première écriture de l'autre tablette dans
+  `page.route`, fait cliquer, relâche quand le choix est au serveur. Le
+  Supabase de poche (`nuage.js`) écrit sous condition comme le vrai.
+
 ## Un service worker vraiment coincé (v488) — un blocage qu'on provoque se fabrique dans le code, pas dans le réseau
 
 Une règle. Les deux témoins de la v220 bloquaient le RÉSEAU (une requête qui

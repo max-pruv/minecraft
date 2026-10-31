@@ -20,6 +20,35 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v571 — Une langue choisie ne revient plus en arrière
+
+**Pourquoi.** Avec deux tablettes allumées sur le même prénom, un enfant qui
+changeait de langue la voyait parfois revenir à l'ancienne quelques secondes,
+puis repartir. Le témoin de `reglages.js` était rouge 2 fois sur 2 seul et 1
+fois sur 2 sur `origin/main`. La v374 avait fait relire chaque tablette avant
+d'écrire ; `sonde-reglages-deux.cjs` a montré ce qui restait : une tablette
+chargée lit le document, puis ne l'écrit que six secondes plus tard. Un choix
+posé par l'autre tablette entre les deux était effacé par une écriture fondée
+sur une lecture périmée.
+
+**Ce que ça change.**
+- Le serveur n'accepte une écriture des réglages que si la date du dernier
+  choix (`majProfil`) n'a pas changé depuis la lecture. Sinon la tablette
+  relit, adopte le choix neuf, et réessaie (trois fois au plus).
+- Un serveur qui ne sait pas écrire sous condition, ou un document absent :
+  l'ancienne écriture, on n'arrête jamais d'écrire.
+
+**Ce qui le prouve.** Le témoin provoque la course au lieu de l'attendre : il
+retient la première écriture de la seconde tablette (donc postérieure à sa
+lecture), fait cliquer « English » sur la première, puis relâche l'écriture
+une fois le choix arrivé au serveur. Ancien code : 2 retours à l'ancienne
+langue, rouge ; neuf : l'écriture conditionnelle est refusée, la tablette
+relit et adopte, 0 retour. `reglages.js` 50 verts seule. Le Supabase de poche
+écrit sous condition comme le vrai PostgREST, dont la syntaxe a été vérifiée
+en production sur une ligne inexistante (rien n'a été écrit).
+
+---
+
 ## v570 — Les passants empêchés trouvent le trottoir
 
 **Pourquoi.** Cinq témoins du portail rougissaient une fois sur deux ou trois,
