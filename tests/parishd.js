@@ -1507,6 +1507,8 @@ function verifier(nom, ok, detail = '') {
     verifier('aucune erreur JavaScript sans HD', bas.erreurs.length === 0, JSON.stringify(bas.erreurs.slice(0, 3)));
     verifier('le réverbère parisien coûte deux maillages : la fonte fusionnée, la lanterne',
       res0.reverbere === 2, `${res0.reverbere} maillage(s)`);
+    // la page reste en jeu sinon, et coûte presque tout le banc à la suivante (v427)
+    await bas.close();
 
     // ── L'OMBRE DES FAÇADES EST AJOURÉE (v571) ──────────────────────────────
     //
