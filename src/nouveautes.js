@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 573,
+    titre: 'Altitude et décollage à la main',
+    puces: [
+      'Aux commandes, l\'altitude au-dessus du sol',
+      'Pleins gaz, l\'avion prend son élan',
+      'Joystick vers le haut, il décolle',
+      'Trop lent, il reste au sol',
+    ],
+  },
+  {
     v: 572,
     titre: 'Des ombres de fenêtres',
     puces: [

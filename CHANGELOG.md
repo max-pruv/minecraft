@@ -20,6 +20,42 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v573 — L'altitude aux commandes, et le décollage à la main
+
+**Pourquoi.** Max : « J'aimerais qu'on voie l'altitude quand on pilote un
+avion. Et aussi, j'aimerais être capable de faire un décollage manuel en allant
+simplement suffisamment vite […] et bien entendu en mettant le joystick vers le
+haut. Aujourd'hui, il faut absolument avoir le décollage automatique. » Mesuré
+avant d'écrire : au sol, la manette ne demandait que l'allure de roulage — six
+blocs par seconde à fond, pour une vitesse de rotation de 42 — si bien qu'aucun
+geste ne faisait décoller l'appareil sans ✈️. Et la colonne de bord n'avait que
+la vitesse.
+
+**Ce que ça change.**
+- *L'altimètre.* Aux commandes, sous ✈️ et 🛞, juste au-dessus de la vitesse :
+  « ↑ 0 m » sur la piste, « ↑ 45 m » en l'air. C'est la hauteur au-dessus de ce
+  qu'on survole (la surface de l'eau en mer, pas son fond), en mètres — un bloc
+  vaut un mètre à la verticale, un étage trois blocs. Au mètre près en bas, de
+  cinq en cinq au-dessus de vingt.
+- *Le décollage à la main.* Manette poussée tout en haut, au sol : l'avion fait
+  sa course au décollage. Une fois la vitesse de rotation atteinte, joystick
+  vers le haut : il quitte la piste, train sorti jusqu'à huit blocs, et c'est le
+  joystick qui tient la hauteur. Joystick vers le haut trop tôt : il reste au
+  sol. Sous la manette à fond, le roulage d'avant ne change pas, et ✈️ marche
+  exactement comme avant. Posé pleins gaz, la manette revient au ralenti à
+  l'arrêt.
+
+**Ce qui le prouve.** Trois témoins dans `monte.js` (la sonde
+`sonde-decollage-manuel.cjs`, lancée seule ou par la suite), sur une dalle à
+l'écart, sans toucher ✈️ : au sol tant que la vitesse est sous la rotation ;
+envol au-delà, au-dessus de huit blocs ; l'altimètre lu dans son TEXTE, à 0 sur
+la dalle et à la vraie hauteur en l'air. Rouge sur `origin/main` (vitesse
+maximale 6, vingt secondes au sol, aucun altimètre), vert ici (envol à 43,8,
+quatorze blocs en 2,2 s). La sonde des décollages depuis les postes (✈️) rend
+toujours tous ses postes en vol.
+
+---
+
 ## v572 — Des ombres de fenêtres
 
 **Pourquoi.** Depuis la couche HD de Paris (v287), l'ombre d'une façade était

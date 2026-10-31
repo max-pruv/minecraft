@@ -3133,6 +3133,8 @@ const gazBase = document.getElementById('gaz-base');
 const gazFill = document.getElementById('gaz-fill');
 const gazKnob = document.getElementById('gaz-knob');
 const gazVal = document.getElementById('gaz-val');
+const altVal = document.getElementById('alt-val');
+let derniereAlt = null;
 const trainBtn = document.getElementById('train-btn');
 const flyLb = document.getElementById('fly-lb');
 const trainLb = document.getElementById('train-lb');
@@ -3236,7 +3238,7 @@ function majBoutonsVehicule() {
   // qu'on ne voit pas finit par dire n'importe quoi sans que personne ne le
   // remarque.
   if (!enAvion) {
-    dernierKmh = null;
+    dernierKmh = null; derniereAlt = null;
     return;
   }
   const v = Math.abs(player.vitesseAvion || 0);
@@ -3267,6 +3269,22 @@ function majBoutonsVehicule() {
     // ce qu'un enfant retient bien mieux qu'un grand nombre de plus.
     const unite = kmh > MACH_KMH ? `Mach ${(kmh / MACH_KMH).toFixed(1).replace('.', ',')}` : 'km/h';
     gazVal.innerHTML = `<b>${kmh}</b><small>${unite}</small>`;
+  }
+  // L'ALTIMÈTRE : la HAUTEUR au-dessus de ce qu'on survole (`hauteurAuSol`,
+  // player.js — la surface de l'eau en mer, pas son fond), en MÈTRES, et un
+  // bloc vaut un mètre. Ce n'est pas l'entorse du compteur de vitesse (v267) :
+  // à l'horizontale un bloc ne vaut un mètre nulle part, mais à la VERTICALE
+  // il le vaut partout — un étage fait trois blocs (v301), trois mètres. Les
+  // toits que l'enfant survole sont donc à leur vraie hauteur, et ce que dit
+  // l'altimètre se vérifie en regardant dehors. Au mètre près en bas (on voit
+  // les roues quitter la piste), de cinq en cinq au-dessus de vingt — un
+  // nombre qui change à chaque image ne se lit pas.
+  const hBlocs = player.hauteurAuSol ? player.hauteurAuSol() : 0;
+  const alt = hBlocs < 20 ? Math.round(hBlocs) : Math.round(hBlocs / 5) * 5;
+  if (alt !== derniereAlt) {
+    derniereAlt = alt;
+    altVal.textContent = `↑ ${alt} m`;
+    altVal.setAttribute('aria-label', `Altitude ${alt} mètres`);
   }
   trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
   // CHAQUE BOUTON DIT CE QU'IL FAIT. Un pictogramme de roue ne se devine

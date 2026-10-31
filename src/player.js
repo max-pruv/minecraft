@@ -139,6 +139,25 @@ const ROULIS_MAX = 0.52;          // ~30°
 // la marche arrière de l'AVION se règle encore ici.
 const RECUL = 0.35;               // la marche arrière, part de l'allure
 
+// LE DÉCOLLAGE À LA MAIN. Max : « j'aimerais être capable de faire un
+// décollage manuel en allant simplement suffisamment vite […] et en mettant le
+// joystick vers le haut. Aujourd'hui, il faut absolument avoir le décollage
+// automatique. » Mesuré avant d'écrire : au sol, la manette ne demandait que
+// l'allure de ROULAGE (`gaz × roulage`, six blocs par seconde à fond) — un
+// appareil ne pouvait donc jamais atteindre sa vitesse de rotation (42 pour
+// l'avion de ligne) sans ✈️, quel que soit le geste. C'est le symétrique de
+// l'atterrissage manuel (v262) :
+//   GAZ_ELAN          la manette poussée au-delà, c'est la course au décollage
+//                     — la pointe de la fiche, à la poussée de la fiche ; en
+//                     dessous, le roulage d'avant, au bit près
+//   MANCHE_DECOLLAGE  le joystick vers le HAUT (le même signe qui fait monter
+//                     en vol : `forward` positif, l'avant du pavé, la touche Z)
+//                     une fois la vitesse de rotation atteinte : l'appareil
+//                     quitte le sol et l'on vole. Avant cette vitesse, il
+//                     reste au sol — on ne décolle pas trop lent.
+const GAZ_ELAN = 0.9;
+const MANCHE_DECOLLAGE = 0.5;
+
 export class Player {
   constructor(camera, world) {
     this.camera = camera;
@@ -279,6 +298,20 @@ export class Player {
   // de la colonne — au-dessus de la mer, c'est le fond — et l'on regarde ce
   // qu'il y a juste au-dessus : de l'eau, ou de l'air. Bornée en altitude :
   // à cent blocs on ne va pas chercher le fond de l'océan à chaque image.
+  // LA HAUTEUR AU-DESSUS DE CE QU'ON SURVOLE, pour l'altimètre de bord. Une
+  // hauteur dit plus à un enfant qu'une cote absolue : « 0 » sur la piste,
+  // « 40 » au-dessus des toits. Elle se lit sur ce qui porterait l'appareil :
+  // le dessus de la colonne (`sommetColonne + 1`, là où l'on pose les pieds,
+  // sol continu compris) — et au-dessus de la mer la SURFACE de l'eau, pas le
+  // fond que `sommetColonne` rend (v267).
+  hauteurAuSol() {
+    const fx = Math.floor(this.pos.x), fz = Math.floor(this.pos.z);
+    const sol = this.world.sommetColonne(fx, fz);
+    let surface = sol + 1;
+    if (surface <= WATER_LEVEL && this.world.getBlock(fx, sol + 1, fz) === BLOCK.WATER) surface = WATER_LEVEL + 1;
+    return Math.max(0, this.pos.y - surface);
+  }
+
   eauSousLAppareil() {
     if (this.pos.y > GARDE_EAU) return false;
     const fx = Math.floor(this.pos.x), fz = Math.floor(this.pos.z);
@@ -1026,6 +1059,16 @@ export class Player {
           else { this.roulage.t = 0; this.roulage.x = this.pos.x; this.roulage.z = this.pos.z; }
         }
       }
+      // LE DÉCOLLAGE À LA MAIN (voir GAZ_ELAN) : vitesse de rotation atteinte
+      // en roulant, joystick vers le haut — on vole. Rien d'automatique ne
+      // suit : ni montée imposée, ni palier, c'est le joystick qui tient la
+      // hauteur, comme en vol. Le train reste sorti jusqu'à RENTRER_TRAIN_A
+      // blocs au-dessus de la piste, comme au décollage assisté.
+      if (this.avionEtat === 'sol' && !roule && forward > MANCHE_DECOLLAGE
+        && (this.vitesseAvion || 0) >= (p.rotation || p.decrochage * 1.4)) {
+        this.avionEtat = 'vol'; this.avionEnVol = true;
+        this.altitudeDecollage = this.pos.y; this.decollageManuel = true;
+      }
       const etat = this.avionEtat;
       const auSol = etat === 'sol' || etat === 'freinage' || (etat === 'decollage' && !this.rotationFaite);
       // LA VITESSE EST AUTOMATIQUE, et c'est elle qui garde le caractère de
@@ -1063,10 +1106,14 @@ export class Player {
           cible = this.vitesseAvion > 0.5 ? 0 : forward * (p.roulage || 6) * RECUL;
         } else if (roule) {
           cible = roule.vitesse;
+        } else if (this.gaz != null && this.gaz >= GAZ_ELAN) {
+          // LA COURSE AU DÉCOLLAGE, à la main : pleins gaz, la pointe de la
+          // fiche à la poussée de la fiche — l'élan qu'il faut pour la rotation.
+          cible = this.gaz * p.max;
         } else {
           cible = (this.gaz != null ? this.gaz : Math.max(0, forward)) * (p.roulage || 6);
         }
-        accel = Math.max(p.frein || 0, p.poussee);
+        accel = cible > (p.roulage || 6) + 0.01 ? p.poussee : Math.max(p.frein || 0, p.poussee);
       } else if (etat === 'decollage') {
         cible = p.max; if (this.gaz != null) this.gaz = 1;
       } else if (etat === 'vol') {
@@ -1214,7 +1261,10 @@ export class Player {
       // défaut, sorti pour se poser soi-même.
       const trainDehors = auSol || (etat === 'atterrissage' && (!guide || guide.train))
         || (etat === 'decollage' && this.pos.y - this.altitudeDecollage < RENTRER_TRAIN_A)
-        || (etat === 'vol' && this.trainVoulu === true);
+        || (etat === 'vol' && this.trainVoulu === true)
+        || (etat === 'vol' && this.decollageManuel && this.trainVoulu === undefined
+          && this.pos.y - this.altitudeDecollage < RENTRER_TRAIN_A);
+      if (this.decollageManuel && (etat !== 'vol' || this.pos.y - this.altitudeDecollage >= RENTRER_TRAIN_A)) this.decollageManuel = false;
       this.trainSorti = Math.max(0, Math.min(1,
         this.trainSorti + (trainDehors ? 1 : -1) * dt / TRAIN_SECONDES));
       // Le ciel a le même toit que pour tout le monde — voir `sousLeToit`.
@@ -1267,6 +1317,10 @@ export class Player {
         if (this.surAvion) this.surAvion(this.ventre ? 'ventre' : 'touche');
       } else if (etat === 'freinage' && this.vitesseAvion < 0.5) {
         this.avionEtat = 'sol'; this.vitesseAvion = 0; this.ventre = false; this.trainVoulu = undefined;
+        // POSÉ PLEINS GAZ, LA MANETTE REVIENT AU RALENTI : sans cela, la
+        // course au décollage (GAZ_ELAN) relancerait l'appareil sur la piste
+        // à l'instant où il s'arrête.
+        if (this.gaz != null && this.gaz >= GAZ_ELAN) this.gaz = 0;
         if (this.surAvion) this.surAvion('arret');
       }
       this.syncCamera();
