@@ -1,6 +1,6 @@
 # Les avions déposés (vendor/avions/*.glb)
 
-Trois modèles fournis par Max (octobre 2026), adaptés au contrat des avions du
+Quatre modèles fournis par Max (octobre 2026), adaptés au contrat des avions du
 jeu par `scripts/convertir-avions.py` (voir son en-tête) : transformations
 cuites, nez retourné vers −z, mise à l'échelle des postes de l'aéroport
 (`GABARITS_AVION`, aeroport.js), primitives fusionnées par matériau, train et
@@ -52,5 +52,21 @@ translucide de la verrière rendue opaque sur les jambes de train ; extension
 simplification bornée de 81 000 à 38 000 triangles (`gltf-transform simplify`,
 `--ratio 0.35 --error 0.0008`).
 
-Le jeu n'a pas d'écran de crédits : si un jour il en a un, ces trois modèles
+## `jet-prive.glb` — CC-BY-4.0 (v565)
+
+> This work is based on "Luxury Private Jet 3D Model  Business Aircraft"
+> (https://sketchfab.com/3d-models/luxury-private-jet-3d-model-business-aircraft-7fdfa52cb61a4ad09f0b218045400e9d)
+> by pranavy94 (https://sketchfab.com/pranavy94) licensed under CC-BY-4.0
+> (http://creativecommons.org/licenses/by/4.0/)
+
+Modifications : rotation de présentation de l'archive retirée (l'appareil était
+de travers dans la scène) ; échelle ramenée à 13 blocs de long, la proportion
+d'un jet d'affaires à côté de l'A320 ; vitrage gris clair opaque rendu sombre ;
+extensions `KHR_materials_clearcoat` et `KHR_materials_specular` retirées ;
+simplification bornée de 45 000 à 36 000 triangles (`gltf-transform simplify`,
+`--ratio 0.8 --error 0.0008`). L'archive n'a pas de train : le jeu en fabrique
+un (`AVIONS_GLB.jet.trainAtelier`, avions.js), qui ne fait pas partie du
+fichier.
+
+Le jeu n'a pas d'écran de crédits : si un jour il en a un, ces quatre modèles
 y entrent, comme ceux de `vendor/voitures/LICENSE.md`.

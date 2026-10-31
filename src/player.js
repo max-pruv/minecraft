@@ -647,8 +647,14 @@ export class Player {
         if (rv) {
           this.contact = { famille: 'voiture', nx: rv.nx, nz: rv.nz, autre: { x: autre.x, z: autre.z } };
           this.publierChoc(rv.force, -rv.nx, -rv.nz);
-          // une voiture garée ou invoquée part avec ce que le choc lui donne
-          if (rv.pousse && autre.pousser) autre.pousser(rv.pousse.vx, rv.pousse.vz);
+          // une voiture garée ou invoquée part avec ce que le choc lui donne ;
+          // une voiture de la rue percutée assez fort aussi, sortie de sa rue
+          // (v567). Ce qui rend le maillage touché, les dégâts le froissent.
+          if (rv.pousse && autre.pousser) {
+            const cible = autre.pousser(rv.pousse.vx, rv.pousse.vz, rv.vrille || 0);
+            if (cible && this.choc) this.choc.cible = cible;
+            if (rv.arrachee) this.arrachees = (this.arrachees || 0) + 1;
+          }
           const gl = rv.glisse || (vx * rv.nx + vz * rv.nz >= 0);
           if (gl) this.vitesseApresChoc(rv.vx, rv.vz, rv.glisse);
           else this.apresChoc(vx, vz, rv.vx, rv.vz, rv.impact, -rv.nx, -rv.nz);

@@ -15,9 +15,9 @@ const DOSSIER = process.argv[2] || '.';
     await p.evaluate(async () => {
       const m = await import('/src/avions.js');
       const t0 = performance.now();
-      while (m.avionsPrets().length < 3 && performance.now() - t0 < 60000) await new Promise((r) => setTimeout(r, 200));
+      while (m.avionsPrets().length < 4 && performance.now() - t0 < 60000) await new Promise((r) => setTimeout(r, 200));
     });
-    for (const [key, variante] of [['avionligne', 'a320'], ['avionligne', 'a321'], ['chasseur', 'f35']]) {
+    for (const [key, variante] of [['avionligne', 'a320'], ['avionligne', 'a321'], ['avionligne', 'jet'], ['chasseur', 'f35']]) {
       const r = await p.evaluate(async ({ key, variante }) => {
         const THREE = await import('three');
         const g = window.__game, am = g.animalManager;

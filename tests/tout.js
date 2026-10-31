@@ -91,6 +91,7 @@ const GARDIENS = {
   'vendor/avions/airbus-a320.glb': ['monte.js', 'carteMonde.js', 'reseau.js'],
   'vendor/avions/airbus-a321.glb': ['monte.js', 'carteMonde.js', 'reseau.js'],
   'vendor/avions/chasseur-f35.glb': ['monte.js', 'carteMonde.js', 'reseau.js'],
+  'vendor/avions/jet-prive.glb': ['monte.js', 'carteMonde.js', 'reseau.js'],
   // La SF90 XX Stradale (v561) : son témoin vit dans monte.js, ses feux dans degats.js.
   'vendor/voitures/ferrari-sf90-xx.glb': ['degats.js', 'monte.js'],
   // La MC12 GT1 (v559) : son témoin vit dans monte.js, ses feux dans

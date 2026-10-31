@@ -3409,7 +3409,7 @@ export function createVehicules({ scene, player }) {
         const ux = Math.sin(a.cap), uz = Math.cos(a.cap), dm = (a.gabarit || 0.6) / 2;
         voitures.push({
           c: null, i: -1, cle: CLE_AMI - k++, x: a.x, y: a.y, z: a.z, ux, uz, enfant: true, ami: true,
-          vehicule: a.gabarit > 1,
+          vehicule: a.gabarit > 1, libre: !!a.libre,
           rect: a.gabarit > 1 ? rectangle(a.x, a.z, ux, uz)
             : [[a.x - dm, a.z - dm], [a.x + dm, a.z - dm], [a.x + dm, a.z + dm], [a.x - dm, a.z + dm]],
           balayage: null, veut: null,
@@ -3783,6 +3783,12 @@ export function createVehicules({ scene, player }) {
     const avant = x0 === undefined ? null : rectangle(x0, z0, ux, uz);
     for (const b of dernieres) {
       if (b.enfant && !b.ami) continue;
+      // une voiture sortie de la rue dans cette image (v567) n'est plus à sa
+      // place : c'est la voiture libre qui la remplace, et main.js la voit
+      if (b.c && b.c.pris.has(b.i)) continue;
+      // une voiture libre (projetée, v567) n'est un obstacle QUE pour la rue :
+      // pour la nôtre, main.js la juge et la pousse (`gareeContre`)
+      if (b.libre) continue;
       if ((b.x - x) ** 2 + (b.z - z) ** 2 > portee * portee || Math.abs(b.y - player.pos.y) > 2.5) continue;
       if (avant ? sEnfonce(avant, moi, b.rect) : seTouchent(moi, b.rect)) return b;
     }
@@ -3817,7 +3823,11 @@ export function createVehicules({ scene, player }) {
         const allure = c.rapport ? c.rapport[b.i] : (c.retard && c.retard[b.i] > 0 ? 1.5 : 1);
         v = (c.vitesseActuelle ?? c.vitesse ?? 0) * allure;
       }
-      return { x: b.x, z: b.z, ux: b.ux, uz: b.uz, a, b: l, v, rail: !!b.rail };
+      // une voiture de la rue (ni rame, ni ami, ni bus) peut être ARRACHÉE à
+      // son convoi par un choc franc (v567) : son nom de place va avec elle
+      const detachable = !!(c && !b.ami && !b.rail && c.routier && c.nom === 'voiture');
+      return { x: b.x, z: b.z, ux: b.ux, uz: b.uz, a, b: l, v, rail: !!b.rail,
+        id: detachable ? `${b.ci}:${b.i}` : null, detachable };
     }
   }
 
@@ -3954,7 +3964,9 @@ export function createVehicules({ scene, player }) {
       const d = (b.x - x) ** 2 + (b.z - z) ** 2;
       if (d < dMin) { dMin = d; meilleur = b; }
     }
-    if (!meilleur) return null;
+    // la plus proche est sortie de la rue par ce choc (v567) : c'est elle
+    // qu'on a percutée, pas sa voisine, qui ne doit pas s'arrêter pour rien
+    if (!meilleur || meilleur.c.pris.has(meilleur.i)) return null;
     meilleur.c.heurte[meilleur.i] = 3 + 3 * Math.max(0, Math.min(1, force));
     return `${meilleur.ci}:${meilleur.i}`;
   }
@@ -4101,6 +4113,25 @@ export function createVehicules({ scene, player }) {
     return true;
   }
 
+  // UNE PLACE ARRACHÉE SE REND QUAND LA VOITURE LIBRE S'EN VA (v567). La
+  // voiture percutée sort de la rue (`emprunter`) et vit comme une voiture
+  // garée ; quand le bestiaire la retire, loin de l'enfant, sa place revient à
+  // la rue — sinon chaque choc creusait la circulation pour toute la session.
+  // Pas sous les yeux de l'enfant : une place à moins de `RENDRE_LOIN` blocs
+  // attend, le convoi refabriquerait sinon une voiture au milieu de la vue.
+  const RENDRE_LOIN = VU_VOITURE + 15;
+  function rendre(origine) {
+    const k = String(origine || '').lastIndexOf('#');
+    if (k < 0) return true;
+    const cle = origine.slice(0, k), i = Number(origine.slice(k + 1));
+    const c = convois.find((x) => x.cle === cle);
+    if (!c || !c.pris.has(i)) return true;
+    const p = c.place(i);
+    if (p && Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < RENDRE_LOIN) return false;
+    c.pris.delete(i);
+    return true;
+  }
+
   // Où en est la place qu'on occupe. Renvoie null si le convoi a disparu —
   // c'est ce qui fait redescendre proprement plutôt que de rester accroché
   // à un fantôme.
@@ -4112,7 +4143,7 @@ export function createVehicules({ scene, player }) {
   }
 
   return {
-    metro, course, chaine, circulation, circulationParTranches, bus, update, placeProche, diagPlace, place, emprunter, retirer, obstacleDevant, voitureContre, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
+    metro, course, chaine, circulation, circulationParTranches, bus, update, placeProche, diagPlace, place, emprunter, retirer, rendre, obstacleDevant, voitureContre, voitureA, dansRectangle, enMarche, voitureRueProche, voitureNommee,
     adopterHorloge, horloge: () => horloge,
     // la fabrication par tranches (v431) : combien de voitures fabriquées et
     // différées depuis le lancement — ce qu'un témoin compte à l'arrivée

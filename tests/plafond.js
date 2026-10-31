@@ -895,9 +895,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const arret = (v, f) => (v * v) / (2 * f);
     const L = (k) => (t && t[k]) || null;
     const vitesses = [15, 30, 50];
-    const face = [], biais = [], pousse = [], force = [], rebonds = [], pietons = [];
+    const face = [], biais = [], pousse = [], force = [], rebonds = [], pietons = [], projetees = [];
     if (t) {
-      for (const cas of ['mur', 'rue', 'enFace', 'mobilier']) for (const v of vitesses) {
+      // la voiture de la rue n'est plus un mur (v567) : elle est projetée
+      for (const cas of ['mur', 'mobilier']) for (const v of vitesses) {
         const r = L(`${cas}@${v}`), d = arret(E * r.lache.vImpact, F);
         face.push(`${cas}@${v} lâché ${r.lache.chemin} · tenu ${r.tenu.chemin} (règle ${d.toFixed(2)})`);
         if (!(r.lache.chemin >= 0.5 * d && r.tenu.chemin >= 0.5 * d && r.lache.chemin <= 2 * d + 1)) face.ok = false;
@@ -909,6 +910,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         const g = L(`garee@${v}`), vI = g.lache.vImpact;
         pousse.push(`${v}: poussée ${g.lache.poussee} b (règle ${arret((1 + EV) / 2 * vI, FP).toFixed(1)}), nous ${g.lache.dx} b`);
         if (!(g.lache.poussee >= 0.5 * arret((1 + EV) / 2 * vI, FP) && g.lache.dx > 0.5 * arret((1 - EV) / 2 * vI, F))) pousse.ok = false;
+        // UNE VOITURE DE LA RUE PERCUTÉE EST PROJETÉE (v567) : arrêtée, elle se
+        // pousse comme une voiture garée et la nôtre continue ; qui traverse
+        // ou arrive en face, elle part aussi — plus jamais un mur
+        const ru = L(`rue@${v}`), vR = ru.lache.vImpact;
+        projetees.push(`arrêtée@${v} ${ru.lache.arrachee ? 'arrachée' : 'MUR'}, poussée ${ru.lache.poussee} b (règle ${arret((1 + EV) / 2 * vR, FP).toFixed(1)}), nous ${ru.lache.dx} b`);
+        if (!(ru.lache.arrachee && ru.lache.poussee >= 0.5 * arret((1 + EV) / 2 * vR, FP) && ru.lache.dx > 0.5 * arret((1 - EV) / 2 * vR, F))) projetees.ok = false;
+        for (const cas of ['traverse', 'enFace']) {
+          const q = L(`${cas}@${v}`);
+          projetees.push(`${cas}@${v} ${q.lache.arrachee ? 'arrachée' : 'MUR'}, poussée ${q.lache.poussee} b`);
+          if (!(q.lache.arrachee && q.lache.poussee > 2)) projetees.ok = false;
+        }
       }
       for (const [k, r] of Object.entries(t)) {
         const cos = k.startsWith('mur30') ? 0.5 : 1;
@@ -919,8 +931,21 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         if (r.lache.pietonTouche || r.tenu.pietonTouche) pietons.push(k);
       }
     }
-    verifier('conduite : de face, la voiture rebondit — un mur, une voiture de la rue arrêtée ou qui arrive en face, un réverbère — à toutes les vitesses, court, et le joystick tenu ne mange plus le rebond',
+    verifier('conduite : de face, la voiture rebondit — un mur, un réverbère — à toutes les vitesses, court, et le joystick tenu ne mange plus le rebond',
       !!t && face.ok !== false, t ? face.join(' · ') : `sonde : ${err}`);
+    verifier('conduite : une voiture de la rue percutée franchement est projetée — arrêtée, qui traverse ou qui arrive en face — et la nôtre continue au lieu de rebondir comme sur un mur',
+      !!t && projetees.ok !== false, t ? projetees.join(' · ') : `sonde : ${err}`);
+    // la caresse ne vide pas la rue : sous ARRACHE, la règle d'avant (pure)
+    {
+      const A = C.ARRACHE || 0;
+      const moi = C.boiteVoiture ? C.boiteVoiture(0, 0, Math.PI / 2, 2.2, 1.13) : null;
+      const autre = C.boiteVoiture ? { ...C.boiteVoiture(4.3, 0, Math.PI / 2, 2.2, 1.13), v: 0, detachable: true } : null;
+      const doux = moi && C.chocContreVoiture(moi, autre, A - 2, 0);
+      const franc = moi && C.chocContreVoiture(moi, autre, A + 2, 0);
+      verifier('conduite : une caresse de pare-chocs (sous ARRACHE) ne sort pas une voiture de la rue ; un choc franc, si',
+        A > 3 && !!doux && !doux.arrachee && !doux.pousse && !!franc && franc.arrachee && !!franc.pousse,
+        JSON.stringify({ ARRACHE: A, doux: doux && { arrachee: doux.arrachee, vx: +doux.vx.toFixed(2) }, franc: franc && { arrachee: franc.arrachee, vx: +franc.vx.toFixed(2), pousse: franc.pousse } }));
+    }
     verifier('conduite : un mur pris à 30° renvoie la voiture le long de lui, elle glisse au lieu de se planter',
       !!t && biais.ok !== false, t ? biais.join(' · ') : `sonde : ${err}`);
     verifier('conduite : une voiture garée est propulsée par le choc, et la nôtre continue sur sa lancée',

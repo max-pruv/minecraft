@@ -826,7 +826,11 @@ function verifier(nom, ok, detail = '') {
       // blocs par seconde ne coûte que quelques millièmes, et arrondie au
       // centième la santé rendait 0,99 ou 1 selon l'élan (15 blocs ou 15,5) —
       // un tirage que le portail a pris pour une panne, des deux côtés.
-      return { ecartTrouve, ecart, vChoc: +vChoc.toFixed(1), cibleTouchee: m === cible.m, sante: e ? Math.round(e.sante * 10000) / 10000 : null,
+      // UN CHOC FRANC LA SORT DE LA RUE (v567) : la voiture touchée est alors
+      // la voiture projetée, qui porte le nom de sa place (`origine`)
+      const nomCible = `${conv.cle}#${cible.i}`;
+      const projetee = !!m && m !== cible.m && m.userData.origine === nomCible;
+      return { ecartTrouve, ecart, vChoc: +vChoc.toFixed(1), cibleTouchee: m === cible.m || projetee, projetee, sante: e ? Math.round(e.sante * 10000) / 10000 : null,
         clones: propres.length, communs: propres.filter((pc) => pc.mesh.geometry === pc.geoOrig).length, partagees,
         notreSante: nous ? Math.round(nous.sante * 10000) / 10000 : 1 };
     });
@@ -867,7 +871,16 @@ function verifier(nom, ok, detail = '') {
       let rendues = 0;
       for (const gm of propres) gm.addEventListener('dispose', () => { rendues++; });
       const i = R.conv.elements.indexOf(R.m);
-      const retiree = g.vehicules.retirer(`${R.conv.cle}#${i}`);
+      let retiree;
+      if (i >= 0) retiree = g.vehicules.retirer(`${R.conv.cle}#${i}`);
+      else {
+        // projetée hors de la rue (v567) : c'est le bestiaire qui la retire,
+        // comme il retire toute voiture garée loin de l'enfant
+        const { liberer } = await import('./src/liberer.js');
+        const a = g.animalManager.animals.find((b) => b.mesh === R.m);
+        if (a) { g.animalManager.scene.remove(a.mesh); liberer(a.mesh); g.animalManager.animals = g.animalManager.animals.filter((b) => b !== a); }
+        retiree = !!a;
+      }
       await tenir(0.6);
       return { enFeu: e.enFeu, eteint: e.eteint, sante: Math.round(e.sante * 100) / 100, fumee, releves, retiree,
         prises: propres.length, rendues, suivies: d.rue().length };

@@ -334,6 +334,9 @@ export function initFun(ctx) {
   const embarquement = creerEmbarquement({
     player, world, toggleRide,
     montureConduite: () => riding,
+    // une voiture de la rue percutée assez fort en sort, projetée (v567)
+    projeterDeLaRue,
+    projetees: () => projetees.length,
     existe: (a) => !!a && !(a.dying > 0) && animalManager.animals.includes(a),
   });
   // monter dans une monture : la séquence pour une voiture, l'ancien geste
@@ -540,6 +543,52 @@ export function initFun(ctx) {
     // voiture de la rue est vide, personne n'en est sorti (v366)
     monterDans(auto);
     return true;
+  }
+
+  // UNE VOITURE DE LA RUE PERCUTÉE EST PROJETÉE (v567). Max : « quand on
+  // fonce dans un véhicule, il est projeté et il ne s'arrête pas comme si on
+  // était face à un mur en briques ». La physique (conduite.js, `ARRACHE`) a
+  // jugé le choc assez franc ; on fait ici ce que `conduireLaVoiture` fait
+  // quand l'enfant la prend — elle sort du convoi, avec son modèle, sa laque
+  // et ses coups — sauf qu'elle reste VIDE : une voiture libre, garée là où
+  // elle s'arrête, qui part avec la vitesse que le choc lui donne et tourne
+  // sur elle-même. Rend son maillage (les dégâts le froissent), ou null.
+  // Sa place se rend à la rue quand le bestiaire la retire (`rendrePlaces`).
+  const projetees = [];
+  function projeterDeLaRue(id, vx, vz, w = 0) {
+    const v = getVehicules && getVehicules();
+    if (!v || !v.emprunter || !id) return null;
+    const ici = v.place && v.place(id);
+    const abimee = ici ? degats.rueEn(ici.x, ici.z, ici.y) : null;
+    const pris = v.emprunter(id);
+    if (!pris) return null;
+    const auto = animalManager.invoquer('voiture', pris.x, pris.z, false, { flotte: pris.flotte, peinture: pris.peinture });
+    if (!auto) return null;
+    degats.heriter(abimee, auto.mesh);
+    auto.pos.set(pris.x, pris.y, pris.z);
+    auto.yaw = pris.cap || 0;
+    auto.mesh.position.copy(auto.pos);
+    auto.mesh.rotation.y = auto.yaw + Math.PI;
+    // son nom de rue : les dégâts le disent aux amis, et si l'enfant la prend
+    // ensuite, sa position le porte et ils la retirent de leur rue (v305)
+    auto.mesh.userData.origine = pris.origine || null;
+    auto.projetee = true;
+    projetees.push({ auto, origine: pris.origine || null });
+    auto.pousser(vx, vz, w);
+    return auto.mesh;
+  }
+  // La place d'une voiture projetée revient à la rue quand la voiture n'est
+  // plus là (retirée au loin) ET que l'enfant ne la voit pas. Une voiture
+  // projetée que l'enfant prend reste sienne tant qu'il la garde.
+  function rendrePlaces() {
+    if (!projetees.length) return;
+    const v = getVehicules && getVehicules();
+    if (!v || !v.rendre) return;
+    for (let k = projetees.length - 1; k >= 0; k--) {
+      const { auto, origine } = projetees[k];
+      if (animalManager.animals.includes(auto)) continue;
+      if (v.rendre(origine)) projetees.splice(k, 1);
+    }
   }
 
   function embarquer() {
@@ -1513,6 +1562,7 @@ export function initFun(ctx) {
       loadSigns(ctxKey);
     }
     updateRide(dt);
+    rendrePlaces();
     degats.update(dt, player.camera, animalManager.animals);   // fumée, feu, carcasses (v343)
     // CE QU'ON QUITTE SE REPOSE (v401) : la voiture garée reprend son
     // assiette et ses roues droites, et le champ de la caméra revient.
@@ -1564,6 +1614,9 @@ export function initFun(ctx) {
     // La monture que l'enfant est en train de conduire (ou null) : main.js
     // y assied son avatar quand la fiche déclare un `siege` (v249).
     montureConduite: () => riding,
+    // une voiture de la rue percutée assez fort en sort, projetée (v567)
+    projeterDeLaRue,
+    projetees: () => projetees.length,
     // les dégâts de la voiture (v343) : main.js les chauffe et les envoie aux
     // amis, les témoins les lisent
     degats,

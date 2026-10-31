@@ -398,6 +398,44 @@ const ETATS = [
     await dormir(2000);
     return { ...r, ...choc };
   } },
+  { nom: 'voiture-projetee', async prep(tab) {
+    // LA VRAIE PHYSIQUE (v567) : dans Paris, au volant, on se pose douze blocs
+    // derrière une voiture de la rue, dans son axe, et l'on fonce dedans à 25
+    // blocs/s. Elle sort de la rue, projetée ; la capture la montre devant
+    // nous, la file derrière elle arrêtée.
+    const p = await tab.evaluate(async () => {
+      const { adresseParis } = await import('./src/paris.js');
+      const [x, z] = adresseParis(-0.8, -0.9); return { x, z };
+    });
+    await poserEt(tab, { x: p.x, z: p.z, yaw: Math.PI / 2 });
+    const r = await monterEnVoiture(tab);
+    await dormir(4000);
+    const choc = await tab.evaluate(async () => {
+      const g = window.__game, P = g.player, v = g.vehicules;
+      const tenir = (n) => new Promise((f) => setTimeout(f, n * 1000));
+      let cible = null, dm = Infinity;
+      v.etat().forEach((c) => {
+        if (!c.routier || c.nom !== 'voiture') return;
+        for (const q of c.places) {
+          const d = Math.hypot(q[0] - P.pos.x, q[1] - P.pos.z);
+          if (d < dm && d > 8) { dm = d; cible = q; }
+        }
+      });
+      if (!cible) return { err: 'aucune voiture de la rue en vue' };
+      const a = g.fun.montureConduite();
+      const cap = cible[2], fx = Math.sin(cap), fz = Math.cos(cap);
+      a.pos.set(cible[0] - fx * 12, a.pos.y, cible[1] - fz * 12); a.mesh.position.copy(a.pos);
+      P.pos.copy(a.pos); P.yaw = cap + Math.PI; P.pitch = -0.08; P.vitesseVoiture = 25;
+      P.vel.set(fx * 25, 0, fz * 25); P.touchMove.f = 1;
+      const n0 = g.fun.projetees();
+      const t0 = performance.now();
+      while (performance.now() - t0 < 6000 && g.fun.projetees() === n0) await tenir(0.05);
+      P.touchMove.f = 0;
+      await tenir(0.6);
+      return { a: +dm.toFixed(1), projetees: g.fun.projetees() - n0, ms: Math.round(performance.now() - t0) };
+    });
+    return { ...r, ...choc };
+  } },
   { nom: 'vol-libre', async prep(tab, ctx) {
     await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
     await tab.evaluate(() => {
@@ -455,7 +493,8 @@ const ETATS = [
       return { x: a.x + p.du, z: a.z + p.dv - 3, sol: a.sol };
     });
     await poserEt(tab, { x: q.x, z: q.z, y: q.sol + 1.05, yaw: Math.PI });
-    const r = await monterEnAvion(tab);
+    // Orly est un aéroport de ville : son poste porte le jet privé (v565)
+    const r = await monterEnAvion(tab, 'avionligne', { variante: 'jet' });
     await tab.evaluate(() => {
       const P = window.__game.player;
       P.yaw = -Math.PI / 2; P.pitch = -0.1;
@@ -570,18 +609,18 @@ async function monterEnVoiture(tab) {
   });
 }
 
-async function monterEnAvion(tab, espece = 'avionligne') {
-  return tab.evaluate(async (espece) => {
+async function monterEnAvion(tab, espece = 'avionligne', voeu = null) {
+  return tab.evaluate(async ({ espece, voeu }) => {
     const g = window.__game;
     const tenir = (n) => new Promise((f) => setTimeout(f, n * 1000));
     for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
     g.animalManager.animals.length = 0;
     const d = { x: -Math.sin(g.player.yaw), z: -Math.cos(g.player.yaw) };
-    g.animalManager.invoquer(espece, Math.round(g.player.pos.x + d.x * 3), Math.round(g.player.pos.z + d.z * 3));
+    g.animalManager.invoquer(espece, Math.round(g.player.pos.x + d.x * 3), Math.round(g.player.pos.z + d.z * 3), false, voeu);
     for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await tenir(0.6); }
     await tenir(1.5);
     return { pilote: !!g.player.pilote };
-  }, espece);
+  }, { espece, voeu });
 }
 
 // ——— la boucle ————————————————————————————————————————————————————————————————

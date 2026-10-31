@@ -8,7 +8,7 @@ import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { WATER_LEVEL } from './world.js';
 import { MONTURES, MODELES_MONTURE } from './montures.js';
 import { chronoReel } from './cadence.js';
-import { FROTTEMENT_POUSSEE } from './conduite.js';
+import { FROTTEMENT_POUSSEE, VRILLE_TAU } from './conduite.js';
 
 const GRAVITY = 22;
 
@@ -277,6 +277,10 @@ class Animal {
     // d'une voiture qu'on ressort d'un garage ; les autres espèces l'ignorent.
     this.mesh = BUILDERS[def.key](voeu);
     this.mesh.scale.setScalar(this.scale);
+    // UN APPAREIL PEUT PORTER SES PROPRES SIÈGES (v568) : le jet d'affaires a
+    // une cabine plus étroite que celle de son espèce. Tout ce qui assied un
+    // passager lit `def.sieges` : on donne à CETTE bête une fiche à elle.
+    if (this.mesh.userData && this.mesh.userData.sieges) this.def = { ...def, sieges: this.mesh.userData.sieges };
   }
 
   // POUSSÉE PAR LA VOITURE DE L'ENFANT (v534) : une voiture garée ou invoquée
@@ -286,8 +290,13 @@ class Animal {
   // dans l'image du choc, les pas suivants de la voiture de l'enfant la
   // touchent encore (elle n'a pas bougé) et la relançaient à chaque pas —
   // mesuré, 63 blocs pour 18 annoncés par la règle.
-  pousser(vx, vz) {
+  // Et elle TOURNE sur elle-même (v567) : `w` est la vitesse de lacet que
+  // l'impulsion lui donne (`vrilleDuChoc`), qui s'éteint comme la nôtre.
+  // Rend le maillage : c'est lui que les dégâts froissent.
+  pousser(vx, vz, w = 0) {
     this.elan = { vx, vz };
+    if (w) this.vrille = w;
+    return this.mesh;
   }
 
   // A hit from the player: flash red, flee away, and eventually poof. Le
@@ -350,6 +359,11 @@ class Animal {
       this.vel.x += this.elan.vx; this.vel.z += this.elan.vz;
       if (n < 0.05) this.elan = null;
       else { this.elan.vx *= n / sp; this.elan.vz *= n / sp; }
+    }
+    if (this.vrille) {
+      this.yaw += this.vrille * dt;
+      this.vrille *= Math.exp(-dt / VRILLE_TAU);
+      if (Math.abs(this.vrille) < 0.02) this.vrille = 0;
     }
     this.vel.y -= GRAVITY * dt;
     this.vel.y = Math.max(this.vel.y, -30);

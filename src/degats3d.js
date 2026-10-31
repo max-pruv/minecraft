@@ -486,6 +486,9 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
     if (!a || !a.def || !a.def.moteur || a.def.pilote) return null;
     const rec = fiche(a.mesh);
     rec.animal = a;
+    // une voiture projetée hors de la rue (v567) que l'enfant prend ensuite
+    // redevient une voiture comme une autre : elle peut caler, prendre feu
+    rec.rue = false;
     const maintenant = performance.now();
     const v = player.vitesseVoiture || 0;
     // 1. LE CHOC : celui de la physique s'il existe, sinon le repli
@@ -494,7 +497,7 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
       if (c && c.t !== rec.dernierChocT) {
         rec.dernierChocT = c.t;
         const l = D.versRepere(a.pos.x, a.pos.z, a.mesh.rotation.y, c.x, c.z);
-        if (choc(a.mesh, { force: c.force, lx: l.lx, lz: l.lz })) { chemins.publies++; percuterRue(c.x, c.z, a.pos.y, c.force); }
+        if (choc(a.mesh, { force: c.force, lx: l.lx, lz: l.lz })) { chemins.publies++; percuterRue(c.x, c.z, a.pos.y, c.force, c.cible || null); }
       }
     } else if (maintenant > rec.calme && maintenant - (player.arretDouxT || 0) > 400) {
       const force = D.detecterChoc(rec.vPrev, v, dt, player.vitesseVoitureMax || 0);
@@ -540,14 +543,19 @@ export function creerDegats({ scene, world, player, retirer = () => {}, lumiere 
   // rotation de son maillage, comme pour une monture) ; on clone la géométrie
   // de SES pièces touchées, jamais celle du prototype que toute la rue
   // partage (règle 1). Elle garde ses enfoncements tant qu'elle existe.
-  function percuterRue(wx, wz, wy, force) {
-    const m = voitureRue ? voitureRue(wx, wz, wy) : null;
+  // `cible` (v567) : la voiture que le choc vient de PROJETER hors de la rue
+  // (ou une voiture garée poussée) — la physique la nomme, on ne la cherche
+  // pas dans la rue, où sa place est désormais vide (et sa voisine, à trois
+  // blocs, se serait froissée à sa place). Son nom de rue (`origine`) va
+  // aux amis : chez eux elle s'arrête, feux de détresse, et se froisse.
+  function percuterRue(wx, wz, wy, force, cible = null) {
+    const m = cible && cible.parent ? cible : (voitureRue ? voitureRue(wx, wz, wy) : null);
     if (!m) return null;
     const l = D.versRepere(m.position.x, m.position.z, m.rotation.y, wx, wz);
     const r = choc(m, { force, lx: l.lx, lz: l.lz }, true);
     // l'histoire de ce choc, pour les amis (v363) : le dernier impact noté
     // est exactement celui que `subirChoc` vient d'arrondir
-    const nom = r && nommer ? nommer(m) : null;
+    const nom = !r ? null : (m === cible ? (m.userData.origine || null) : (nommer ? nommer(m) : null));
     if (nom) {
       const k = suivies.get(m).etat.chocs.at(-1);
       noter(nom, [k.f, k.x, k.z]);

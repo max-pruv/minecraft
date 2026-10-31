@@ -965,8 +965,9 @@ les alterne, la Crown Victoria d'abord, et n'attend qu'elle pour apparaître.
 
 ## Les avions déposés (v563) — un modèle d'artiste se met au contrat, le contrat ne bouge pas
 
-Max a déposé un A320, un A321 et un F-35 (Sketchfab). Ils deviennent l'avion
-de ligne et le chasseur ; le Concorde reste sculpté. Cinq règles.
+Max a déposé un A320, un A321 et un F-35 (Sketchfab), puis un jet d'affaires
+(v568). Ils deviennent l'avion de ligne et le chasseur ; le Concorde reste
+sculpté. Six règles.
 
 - **LE MODÈLE SE CONVERTIT HORS LIGNE, PAR UN SCRIPT QUI SE REJOUE.**
   `scripts/convertir-avions.py` cuit les transformations, retourne le nez vers
@@ -987,7 +988,8 @@ de ligne et le chasseur ; le Concorde reste sculpté. Cinq règles.
   même contrat que l'atelier (`membres`, `train`, `porte`, `tuyeres`,
   `feuxNav`) : fun.js et embarquement.js ne savent pas d'où vient l'avion.
 - **LA VARIANTE EST UNE RÈGLE, JAMAIS UN TIRAGE, ET ELLE VOYAGE.**
-  `varianteDuPoste` (le profil `hub` prend l'A321) ; `p.v.f` porte la
+  le rang du poste dans la rangée (`RANGEE_CIVILE`, aeroport.js, v565 ; le
+  jet y entre en v568) ; `p.v.f` porte la
   variante comme le modèle d'une voiture (v253). Un avion né avant l'arrivée
   de son fichier reste sculpté pour sa vie (v547) ; `?avions=0` rejoue les
   sculptés.
@@ -997,6 +999,14 @@ de ligne et le chasseur ; le Concorde reste sculpté. Cinq règles.
   l'autre selon l'heure — un tirage. Il mesure le sculpté et chaque variante,
   fichiers attendus ; le sculpté garde l'égalité d'envergure (v278), un
   déposé doit tenir DANS le gabarit de son espèce.
+- **UN DÉPOSÉ PEUT ÊTRE PLUS COURT QUE SON GABARIT, ET IL LE DÉCLARE (v568).**
+  Le jet d'affaires est une variante de l'avion de ligne à 13 blocs, pas 16 :
+  la proportion d'un G650 à côté d'un A320. Sa fiche porte `long` (le témoin
+  des dimensions le mesure contre elle) et ses `sieges`, qui remplacent ceux
+  de l'espèce pour CET appareil : la bête prend une fiche à elle
+  (animals.js), et la copie d'un ami aussi (main.js). Une archive dont le
+  nœud porte une rotation de présentation se convertit depuis ce nœud
+  (`depart` du convertisseur), jamais en devinant des axes sur la scène.
 - **UN SIÈGE SE MESURE SUR LE MODÈLE QUI L'ENTOURE.** Le siège du chasseur
   (z −0,9) tombait derrière la verrière du F-35 : il est à −2,7, sous elle.
   Les sièges de l'avion de ligne valent pour l'A320, l'A321 et le sculpté
@@ -1514,6 +1524,41 @@ mètres ». Cinq règles, toutes mesurées par `sonde-elan-chocs.cjs`.
   vitesse de sortie, la force reste celle de la vitesse RELATIVE. Sans cela un
   taxi de Manhattan pris de face rejetait l'enfant de sept blocs (et
   `origin/main`, joystick lâché, de trente-neuf à cinquante et un).
+## Une voiture de la rue percutée est projetée (v567) — l'horloge partagée cède au choc franc
+
+Max : « quand on fonce dans un véhicule, il est projeté et il ne s'arrête pas
+comme si on était face à un mur en briques ». **Cette décision lève la règle de
+la v534 « une voiture de la rue ne se pousse jamais » pour le choc FRANC.**
+Quatre règles.
+
+- **AU-DELÀ D'`ARRACHE`, LA VOITURE QUITTE SA RUE, PAS SA PLACE.** Le choc se
+  juge dans `chocContreVoiture` (conduite.js, pur) : une voiture de la rue
+  `detachable` (ni rame, ni ami, ni bus) prise à plus de six blocs/s d'impact
+  normal se pousse comme une voiture garée (`chocPoussable`, deux masses
+  égales) et la physique appelle son `pousser`. fun.js (`projeterDeLaRue`)
+  fait alors ce que fait `conduireLaVoiture` — `emprunter`, modèle, laque,
+  coups — sans monter dedans : une voiture libre (`projetee`) qui part avec
+  l'élan et la vrille du choc (le point de sa caisse le plus proche de notre
+  centre : par le coin elle tourne, centrée elle file droit). La place reste
+  prise (v305) ; sous le seuil, la règle d'avant (une caresse ne vide pas la
+  rue).
+- **UNE PLACE ARRACHÉE SE REND QUAND LA VOITURE S'EN VA, HORS DE LA VUE.**
+  `rendrePlaces` (fun.js) rend la place (`vehicules.rendre`) quand le bestiaire
+  a retiré la voiture libre et que la place est à plus de `VU_VOITURE + 15`
+  blocs : sinon chaque choc creusait la rue pour la session, ou le convoi
+  refabriquait une voiture sous les yeux de l'enfant (v547).
+- **CE QUI A ÉTÉ ARRACHÉ DANS L'IMAGE N'EST PLUS DANS LA COLLECTE.** Les pas
+  suivants du même `deplacerVoiture` relisent `dernieres` : `bloquantDevant`
+  saute une place prise, et `heurter` (v372) ne stoppe pas la voisine pour
+  rien. Les dégâts froissent la voiture que la physique NOMME (`choc.cible`),
+  jamais « la plus proche » — la voisine se serait froissée. Le nom de rue
+  (`origine`) part aux amis : chez eux elle s'arrête, feux de détresse, et se
+  froisse ; elle n'y est pas projetée (local, déclaré).
+- **UNE VOITURE LIBRE EST UN OBSTACLE POUR LA RUE, PAS POUR LA NÔTRE.** Elle
+  entre dans la liste des amis de la rue (`libre: true`) : la file s'arrête
+  derrière elle et klaxonne. `bloquantDevant` la saute : c'est `gareeContre`
+  (main.js) qui la juge et la pousse, sinon elle redevenait un mur.
+
 ## Des rues à la GTA (v544) — une voie, c'est la voiture et un bloc de chaque côté
 
 Max veut rouler dans les villes comme dans GTA. Mesuré avant une ligne : la
