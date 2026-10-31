@@ -38,7 +38,7 @@ autour du tronc restaient en voxel.
 code : 68 bouleaux, tous les troncs naturels, 2,9 % de colonnes non couvertes
 autour d'eux (des falaises, contre 2,3 % autour de 417 chênes), 100 % avant.
 Les deux empreintes du relief sont intactes ; l'empreinte des 490 morceaux
-change (d62421b0…) et, l'interrupteur `reglageSolContinu.bouleau` à faux,
+change et, l'interrupteur `reglageSolContinu.bouleau` à faux, elle
 rend la constante d'avant (ed369fdb…) au bit près. Le témoin du trou sous un
 tronc tu (v541) se joue sur l'ancienne règle, puisque la surface couvre
 désormais ce trou-là.
