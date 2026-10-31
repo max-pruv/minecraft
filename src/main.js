@@ -1965,7 +1965,7 @@ function updateChunks() {
   // (instanciés par lots : rien à coucher seul, dette déclarée).
   const mobilierDevant = (x, z, cap, casser = null) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
-    const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const demiLong = player.demiLong || 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
     const y0 = Math.floor(player.pos.y + 0.1);
     const vu = world.mobilierVu, lues = vu ? new Set() : null;
     let bloque = false;
@@ -2033,7 +2033,7 @@ function updateChunks() {
   // les deux s'attendent pour toujours (mesuré : douze secondes sur place).
   const pietonsDans = (x, z, cap) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
-    const demiLong = 2.2 + 0.3, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const demiLong = (player.demiLong || 2.2) + 0.3, demiLarg = Math.max(0.3, player.gabarit / 2);
     const dedans = [];
     for (const n of npcs) {
       const dx = n.pos.x - x, dz = n.pos.z - z;
@@ -2070,14 +2070,17 @@ function updateChunks() {
   // laquelle ce pas s'enfonce — on la touchait déjà ou non (`sEnfonce`).
   // Collé à une voiture garée, on traversait celle d'à côté.
   const gareeContre = (x, z, cap, x0, z0) => {
-    const moiB = boiteVoiture(x, z, cap, 2.2, Math.max(0.3, player.gabarit / 2));
+    // la longueur de ce qu'on conduit, et celle de ce qui est garé : une moto
+    // fait 2,4 blocs (sa fiche, police-réseau)
+    const dl = player.demiLong || 2.2;
+    const moiB = boiteVoiture(x, z, cap, dl, Math.max(0.3, player.gabarit / 2));
     const moi = rectangleDeBoite(moiB);
-    const avant = x0 === undefined ? null : rectangleDeBoite(boiteVoiture(x0, z0, cap, 2.2, Math.max(0.3, player.gabarit / 2)));
+    const avant = x0 === undefined ? null : rectangleDeBoite(boiteVoiture(x0, z0, cap, dl, Math.max(0.3, player.gabarit / 2)));
     for (const a of animalManager.animals) {
       const g = a.def.gabarit;
       if (!(g > 1) || a.def.pilote || a.montee || a.dying > 0 || Math.abs(a.pos.y - player.pos.y) > 2.5) continue;
       if ((a.pos.x - x) ** 2 + (a.pos.z - z) ** 2 > 8 * 8) continue;
-      const B = boiteVoiture(a.pos.x, a.pos.z, a.yaw, 2.2, g / 2);
+      const B = boiteVoiture(a.pos.x, a.pos.z, a.yaw, (a.def.longueur || 4.4) / 2, g / 2);
       if (avant ? sEnfonce(avant, moi, rectangleDeBoite(B)) : normaleEntreBoites(moiB, B)) return { a, B };
     }
     return null;
@@ -5198,6 +5201,7 @@ function syncRemotePlayers(list) {
       feuxArriere(rp.vehicule.mesh, { frein: !!(sf & 1), recul: !!(sf & 2) });
     }
     rp.passager = p.p || null;
+    rp.etoiles = (p.v && +p.v.w) || 0;   // ses étoiles de police (police-réseau)
     proposerGPSAmi(p.id, rp, p.g || null);   // sa destination, proposée (v388)
   }
   for (const [id, rp] of remotePlayers) {
@@ -5412,6 +5416,11 @@ function startNetSession(code, isHost, patience) {
       // sinon ; ce que `fun.js` allume sur NOTRE voiture, tel quel.
       const sf = (a.feuxFrein > 0 ? 1 : 0) | (a.feuxRecul ? 2 : 0);
       if (sf) p.v.s = sf;
+      // SES ÉTOILES DE POLICE (police-réseau) : l'ami mène sa propre voiture
+      // de police derrière lui, d'après la piste qu'il dessine (patrouille.js).
+      // Six octets, absents sans étoile ; une ancienne tablette les ignore.
+      const w = patrouille ? patrouille.etoiles() : 0;
+      if (w > 0) p.v.w = w;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
@@ -9150,7 +9159,17 @@ function frame(now) {
   // qu'on sait ce que `dt` vaut.
   edu.update(dtEcran(), running);
   fun.update(dt);
-  if (running && patrouille) patrouille.update();   // la police (v562)
+  if (running && patrouille) {
+    // les amis recherchés, là où on les dessine : leur escorte suit cette piste
+    const amisPolice = [];
+    for (const [id, rp] of remotePlayers) {
+      const d = rp.vehicule && rp.vehicule.def;
+      amisPolice.push({ id, x: rp.pos.x, y: rp.pos.y, z: rp.pos.z, w: rp.etoiles || 0,
+        volant: !!(d && (d.moteur === 'voiture' || d.moteur === 'moto')) && !rp.passager });
+    }
+    patrouille.amis(amisPolice);
+    patrouille.update();   // la police (v562)
+  }
   majEtatPolice();
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)

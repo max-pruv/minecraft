@@ -20,6 +20,46 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v574 — La police des amis
+
+**Pourquoi.** La police de la v562 était locale à la tablette : quand Marlon
+faisait une bêtise au volant, Alice voyait sa voiture filer, mais pas la
+voiture de police qui le suivait. La moto, elle, avait la boîte de collision
+d'une voiture en longueur : de face, elle s'arrêtait à 2,2 blocs d'un mur,
+comme le capot d'une voiture. Et quand un bloc barrait la gauche, la police
+restait derrière l'enfant au contrôle, donc derrière la caméra.
+
+**Ce que ça change.**
+- À plusieurs, chacun voit la police qui suit un ami recherché : une voiture
+  de police derrière lui, gyrophares allumés et sirène. Elle se gare quand il
+  est pardonné. Ce qui voyage, ce sont ses étoiles (six octets dans sa
+  position) ; chaque tablette mène sa propre voiture de police sur la route
+  qu'elle voit l'ami prendre.
+- La moto a sa longueur à elle (2,4 blocs, mesurée sur son modèle) : elle
+  s'approche d'un mur, d'une voiture garée ou d'un poteau à sa vraie taille.
+- Au contrôle, quand la gauche est barrée, la police double par la droite et
+  se gare devant l'enfant ; seulement si les deux côtés sont barrés, elle
+  reste derrière.
+
+**Ce qui le prouve.** Quatre témoins neufs, tous rouges sur `origin/main` :
+deux à trois tablettes dans `reseau.js`, un par chemin de la position (Marlon
+vu par Alice en direct, Nina vue par Alice à travers l'hôte) — sur
+l'ancien code, la voiture de l'ami arrive mais aucune étoile, aucune escorte ;
+ici l'escorte s'arrête à 10 à 13 blocs derrière lui et se gare au pardon. Un
+dans `plafond.js` (le vrai joueur sous node face à un mur : moto 1,2, voiture
+2,2 ; `origin/main` 2,2 et 2,2). Un dans `monte.js` (gauche libre, gauche
+barrée, les deux barrées). Coût mesuré : +6 octets par position (+50 o/s),
+contre 587 o/s pour envoyer la piste elle-même. Au premier portail, les deux
+témoins réseau sont tombés alors qu'ils étaient verts seuls : le conducteur
+perdait ses étoiles par l'oubli avant qu'elles n'aient voyagé, et l'écart
+était lu pendant un rattrapage. Le témoin garde désormais la situation et
+attend que l'écart se pose ; rejoués seuls sur la branche rebasée, verts tous
+les deux. Les rouges qui restent sont mesurés à l'identique sur
+`origin/main` et déclarés dans `TASKS.md`. La revue d'écran n'a pas été faite :
+ses états ne mettent pas en scène plusieurs tablettes.
+
+---
+
 ## v573 — L'altitude aux commandes, et le décollage à la main
 
 **Pourquoi.** Max : « J'aimerais qu'on voie l'altitude quand on pilote un

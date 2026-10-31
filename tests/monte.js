@@ -10297,11 +10297,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // même témoin rend 0 bon pour 22 mauvais). `origin/main` n'a ni patrouille
     // ni espèce moto : les deux passages le disent proprement.
     {
-      const { passage: passagePolice, passageMoto } = require('./sonde-police.cjs');
+      const { passage: passagePolice, passageMoto, passageCote } = require('./sonde-police.cjs');
       if (!tab.isClosed()) await banc.mettreDeCote(tab);
       const pp = await banc.jouerSeul('MontePolice', { pret: true });
       const po = await passagePolice(pp);
       const mo = await passageMoto(pp);
+      const co = await passageCote(pp);
       await pp.close();
       if (!tab.isClosed()) await banc.ramener(tab);
       const pj = JSON.stringify({ ...po, dits: undefined }).slice(0, 900);
@@ -10332,6 +10333,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         JSON.stringify(po.dits));
       verifier('police : après le contrôle, plus d\'étoiles, et la voiture de police reste garée, montable',
         !po.err && po.apres && po.apres.etat.points === 0 && !po.apres.pilule.vis && po.gareeMontable >= 1, pj);
+      // la gauche barrée, la police double par la droite (police-réseau) —
+      // `origin/main` n'a pas d'`essaiDevant` : le passage le dit proprement
+      verifier('police : la gauche barrée, la police double par la droite ; les deux barrées, elle reste derrière et nomme le bloc',
+        !co.err && co.libre.cote === 'gauche' && co.gaucheBarree.cote === 'droite'
+          && co.deuxBarres.cote === null && !!co.deuxBarres.refus, JSON.stringify(co));
       const mj = JSON.stringify(mo);
       verifier('moto : on l\'enfourche, deux roues, la carrure étroite, le son d\'une moto, l\'enfant à califourchon',
         !mo.err && mo.modele && JSON.stringify(mo.roues) === '["Wheel_F","Wheel_R"]' && mo.enSelle

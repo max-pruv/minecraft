@@ -306,6 +306,41 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   closed ») au témoin de l'eau (ligne 6822), au bout de soixante minutes : la
   branche, elle, est allée jusqu'au bout. Une fois vue, à surveiller.
 
+## v574 — Rouges du portail qui ne sont pas de cette livraison (double mesure)
+
+- `carteMonde.js` : « chaque appareil tient dans le poste », « l'envergure
+  annoncée est celle du modèle rendu », « les avions déposés tiennent dans le
+  gabarit » — rouges À L'IDENTIQUE sur `origin/main` v568 rejouée seule
+  (avionligne 16,15/16, envergure 15,69/15,3, chasseur 10,22/10…). Tous les
+  appareils dépassent de 0,15 à 0,36 bloc, uniformément : très probablement
+  les halos des feux de bord de la v565 (`FEU_HALOS`, au bout des ailes et à
+  la queue), qui entrent dans la boîte que le témoin mesure. `avions.js` n'est
+  pas touché par la v574. À trancher : mesurer la boîte sans les halos, ou
+  les déclarer dans le gabarit.
+- `reseau.js`, fluidité des amis (« avance en temps réel, pas par bonds »,
+  « par le nuage… pas par paquets », « par l'hôte, la position d'un invité
+  garde l'heure de son envoi ») : rouges des DEUX côtés, rejouée seule —
+  branche : direct et nuage ; `origin/main` : direct et relayé. Même
+  signature : la page de l'observateur ne rend que deux images par seconde
+  pendant soixante secondes (`rendu.ms` ≈ 60 000), et la mesure se fait sur
+  deux à dix-huit images. Intermittence de banc, à reprendre par la
+  distribution (v269), pas par un passage.
+- `reseau.js`, « seule après le départ de l'hôte, et le compteur le dit »
+  et son suivant : rouges des deux côtés (compteur 2, avatars [Marlon]).
+- `maj.js` : « le loader dit combien de fichiers » et « le loader ne s'efface
+  qu'une fois… » (déclarés plus bas) ; le badge du journal était rouge au
+  portail parce que le journal portait le numéro provisoire avant le rebase.
+- `monte.js` : Rome en biais, le feu « piler », Moscou ×2 — déclarés plus bas.
+- `monte.js`, police « à l'arrêt, la voiture double… le policier lui parle »
+  et ses deux suivants (la voix, après le contrôle) : le contrôle commence
+  (`depasse`) puis s'annule sans parler, l'enfant n'étant PAS reparti (vitesse
+  sous 2 b/s, tracé). `sonde-police.cjs` jouée seule trois fois : branche 1
+  rouge sur 3, `origin/main` v568 2 rouges sur 3 — né avec la voiture projetée
+  de la v567 (la voiture garée percutée ne reste plus devant). Cause à
+  démonter : ce qui appelle `finirControle(true)` pendant le dépassement (la
+  sonde peut l'envelopper). La moto (« une seconde bêtise ») est réglée par
+  claude/temoins-intermittents (v570, plus haut).
+
 ## v562 — LA POLICE ET LA MOTO : ce qui reste, déclaré
 
 - [x] **FERMÉ (claude/temoins-intermittents) : « police : une seconde bêtise
@@ -315,19 +350,21 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   120 : le témoin dépendait du rebond. `sonde-police.cjs` ajoute des bêtises
   jusqu'à deux étoiles (trois au plus) et publie `betises2`.
 
-- **La police est locale à la tablette.** Les étoiles, les unités, le contrôle
-  ne voyagent pas sur le réseau : un ami voit la voiture de l'enfant, pas la
-  police qui le suit. Piste : les étoiles dans la position (`p.v`, comme les
-  feux stop v549), et chaque tablette mène ses unités d'après la piste qu'elle
-  reçoit. À mesurer avant d'écrire : ce que coûte une piste sur le réseau.
-- **La moto a la boîte de collision d'une voiture en longueur** (la boîte est
-  carrée de `gabarit`, 1,2 de large ; c'est le choc de face qui lit la
-  longueur de la voiture). Une moto qui touche un mur de face rebondit à la
-  distance d'une voiture. Visible ? À juger sur la tablette.
-- **Le contrôle reste derrière quand un bloc barre le chemin devant**
-  (`etat().controle.refus` nomme le bloc) : derrière une caméra de poursuite,
-  l'enfant entend la phrase sans voir le policier. Piste : se ranger à droite
-  si la gauche est barrée.
+- ~~La police est locale à la tablette~~ **FAIT en v574** : les étoiles dans
+  `p.v.w`, l'escorte menée par chaque tablette (`patrouille.amis`), deux
+  témoins à trois tablettes (`reseau.js`, `sonde-police-reseau.cjs`). Reste :
+  l'ami ne voit pas le CONTRÔLE (l'escorte s'arrête derrière le conducteur
+  arrêté, sans policier ni phrase) — le contrôle voyagerait par un état de
+  plus dans `p.v` (`k` : la clé de la phrase), à mesurer comme le reste.
+- ~~La moto a la boîte d'une voiture en longueur~~ **FAIT en v574**
+  (`longueur: 2.4` dans sa fiche, `player.demiLong`) ; mesuré, de face elle
+  s'arrête à 1,2 bloc d'un mur au lieu de 2,2. Reste : la RUE (`vehicules.js`,
+  `cederLePassage`) et la tablette d'un ami jugent encore une moto à la
+  longueur d'une voiture (`DEMI_LONG_VOITURE`) — elles s'arrêtent un bloc
+  plus tôt devant elle, ce qui est sûr.
+- ~~Le contrôle reste derrière quand un bloc barre le chemin devant~~ **FAIT
+  en v574** : il double par la droite si la gauche est barrée
+  (`etat().controle.cote`) ; seulement les deux barrées, il reste derrière.
 - **Le policier ne marche pas** (le modèle fourni n'a pas d'armature) : il
   glisse de sa portière à celle de l'enfant. Un modèle armé, ou un corps
   Rocketbox habillé en policier, serait une passe à part.
