@@ -54,9 +54,7 @@ témoins réseau sont tombés alors qu'ils étaient verts seuls : le conducteur
 perdait ses étoiles par l'oubli avant qu'elles n'aient voyagé, et l'écart
 était lu pendant un rattrapage. Le témoin garde désormais la situation et
 attend que l'écart se pose ; rejoués seuls sur la branche rebasée, verts tous
-les deux. Le témoin de la moto ne passait que par hasard depuis la v567 (une
-voiture garée qu'on recognait en tournant) : il ajoute ses bêtises jusqu'à
-deux étoiles. Les rouges qui restent sont mesurés à l'identique sur
+les deux. Les rouges qui restent sont mesurés à l'identique sur
 `origin/main` et déclarés dans `TASKS.md`. La revue d'écran n'a pas été faite :
 ses états ne mettent pas en scène plusieurs tablettes.
 

@@ -315,7 +315,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   appareils dépassent de 0,15 à 0,36 bloc, uniformément : très probablement
   les halos des feux de bord de la v565 (`FEU_HALOS`, au bout des ailes et à
   la queue), qui entrent dans la boîte que le témoin mesure. `avions.js` n'est
-  pas touché par la v569. À trancher : mesurer la boîte sans les halos, ou
+  pas touché par la v573. À trancher : mesurer la boîte sans les halos, ou
   les déclarer dans le gabarit.
 - `reseau.js`, fluidité des amis (« avance en temps réel, pas par bonds »,
   « par le nuage… pas par paquets », « par l'hôte, la position d'un invité
@@ -338,10 +338,8 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   rouge sur 3, `origin/main` v568 2 rouges sur 3 — né avec la voiture projetée
   de la v567 (la voiture garée percutée ne reste plus devant). Cause à
   démonter : ce qui appelle `finirControle(true)` pendant le dépassement (la
-  sonde peut l'envelopper). Et « une seconde bêtise fait venir la moto »
-  était rouge à CHAQUE passage sur `origin/main` (une étoile : voiture 45 +
-  piéton 55 = 100 < 120) ; le témoin ajoute désormais des bêtises jusqu'à
-  deux étoiles (v573).
+  sonde peut l'envelopper). La moto (« une seconde bêtise ») est réglée par
+  claude/temoins-intermittents (v570, plus haut).
 
 ## v562 — LA POLICE ET LA MOTO : ce qui reste, déclaré
 
