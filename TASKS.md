@@ -23,6 +23,8 @@
   pare-chocs et quatre points), la lueur est fidèle mais discrète ; le verre du
   phare luit à 0,3 (`OPACITE_VERRE`). À juger sur l'iPad de nuit.
 
+- **Intermittent, témoin de la v567, pas des phares.** « percuter une voiture de la rue l'abîme AUSSI » (`degats.js`) a rougi une fois sur trois sur la branche rebasée (`ecartTrouve 14.3`, `cibleTouchee: false` : l'élan trouvé ne suffit pas, la voiture n'atteint pas la cible), vert 2/3 sur la branche et 1/1 sur `origin/main` (v568). Rejoué seul. Si cela revient : relever la distribution de `ecartTrouve` des deux côtés (v269).
+
 ## De grands aéroports (v565) — ce qui reste, déclaré
 
 - [ ] **Un appareil qui roule traverse les appareils garés.** Un avion n'est
