@@ -14,6 +14,9 @@ const TOUTES = [
   { nom: 'foret-sol', x: -1560, z: -2488, h: 1.6, pitch: 0.12, yaw: 0.8 },
   { nom: 'foret-pres', x: -1560, z: -2488, h: 1.6, pitch: 0.35, yaw: -0.6 },
   { nom: 'foret-vol', x: -1560, z: -2470, h: 22, pitch: -0.55, yaw: 0.2 },
+  // (v569) le pied d'un bouleau, de près et en plongée : la surface continue
+  // y passe-t-elle, ou garde-t-il son carré d'herbe en voxel ?
+  { nom: 'bouleau-pied', x: -1560, z: -2488, h: 1.6, pitch: -0.45, yaw: Math.PI / 2, bouleau: true },
   { nom: 'foret-ciel', x: -1560, z: -2440, h: 60, pitch: -0.9, yaw: 0.0 },
   // (v528) en vol, le regard vers l'horizon : la forêt AU LOIN, au-delà du
   // détail — là où Max voyait encore des cubes
@@ -56,7 +59,12 @@ const VUES = filtre ? TOUTES.filter((v) => filtre.split(',').some((f) => v.nom.s
           // caméra ne soit pas dans un fût
           // au sol : une clairière — aucun arbre à moins de quatre blocs, pour que
           // la caméra ne soit ni dans un fût ni dans une couronne
-          if (v.h < 3) {
+          if (v.bouleau) {
+            cherche: for (let r = 0; r < 60; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+              const t = w.treeAt(x + dx, z + dz);
+              if (t && t.kind === 2) { x += dx + 3; z += dz; break cherche; }
+            }
+          } else if (v.h < 3) {
             const libre = (ax, az) => { for (let dx = -4; dx <= 4; dx++) for (let dz = -4; dz <= 4; dz++) if (w.treeAt(ax + dx, az + dz)) return false; return w.terrainHeight(ax, az) > 31; };
             cherche: for (let r = 0; r < 24; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
               if (libre(x + dx, z + dz)) { x += dx; z += dz; break cherche; }

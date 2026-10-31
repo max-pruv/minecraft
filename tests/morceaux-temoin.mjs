@@ -62,11 +62,17 @@ export async function empreinteMorceaux(src) {
   // d'avant (l'ancien code n'a pas l'interrupteur).
   const Ae = await import(src + '/aeroport.js');
   if (Ae.reglageAires) Ae.reglageAires.actif = false;
+  // LE SOL CONTINU SOUS LES BOULEAUX (v569) : un contenu neuf — le tronc de
+  // bouleau devient un dessus naturel, comme le chêne. Désarmé, la branche
+  // rend la constante d'avant (l'ancien code n'a pas l'interrupteur).
+  const Sc = await import(src + '/solcontinu.js');
+  if (Sc.reglageSolContinu) Sc.reglageSolContinu.bouleau = false;
   try { return await empreinteDesMorceaux({ World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu }); } finally {
     if (VMm.reglageMobilier) VMm.reglageMobilier.recul = recul;
     if (T.rivesCreusees) T.rivesCreusees(true);
     if (Wm.COTE_AU_CENTRE) Wm.COTE_AU_CENTRE.actif = true;
     if (Ae.reglageAires) Ae.reglageAires.actif = true;
+    if (Sc.reglageSolContinu) Sc.reglageSolContinu.bouleau = true;
   }
 }
 
