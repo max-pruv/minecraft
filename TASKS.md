@@ -1,5 +1,21 @@
 # Ce qui est en cours
 
+## Les réglages à deux tablettes (v571) — ce qui reste, déclaré
+
+- [ ] **Rouges du portail de la v571 : aucun de la livraison.** Le diff ne
+  touche que l'écriture des réglages (`envoyerPrefs`, `prefsPushSi`) et le
+  nuage de poche ; `reglages.js` 75 verts rejouée seule sur la branche rebasée.
+  Au portail elle avait lâché sur « ouvrir un monde en ligne (40 s) », déjà
+  déclaré intermittent plus bas. **`carteMonde.js`, trois témoins de gabarit
+  d'avion, rouges À L'IDENTIQUE sur `origin/main` v570 rejouée seule** (double
+  mesure) : longueurs 16,15/16 · 20,13/20 · 10,22/10, envergures 15,69/15,3 ·
+  8,76/8,4 · 7,58/7,2, et A320/A321/F-35 à 16,23/16. Les modèles rendus
+  dépassent les fiches de `GABARITS_AVION` de 1 à 2 % : soit les fiches suivent
+  les modèles (et `postesAvion` se remesure), soit le convertisseur remet à la
+  longueur. Zone avions, une autre session. `carte.js` (flèche du GPS),
+  `maj.js` (les deux loaders) et `monte.js` (flâneur, feu, Moscou, moto) :
+  déjà déclarés.
+
 ## Les phares suivent le dessin du modèle (v569) — ce qui reste, déclaré
 
 - [ ] Cinq modèles n'ont pas d'optique reconnaissable (police-car, police-suv,
@@ -720,8 +736,11 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   ce que la v532 change n'est lu que sous une sûreté RANGÉE avec une étendue
   choisie, et aucune page de `maj.js` ni de `monte.js` n'en range (le banc met
   `rr=` dans toute adresse). Ses deux témoins (`parent.js`) sont verts.
-- [ ] **`reglages.js` « un choix fait sur une tablette part au serveur… ne le
-  défait pas un instant » — rouge au portail de la v532 ET seule sur la
+- [x] **`reglages.js` « un choix fait sur une tablette part au serveur… ne le
+  défait pas un instant » — fait en v571** : une tablette chargée écrivait six
+  secondes après sa lecture, par-dessus le choix de l'autre ; l'écriture se fait
+  désormais sous condition (`prefsPushSi`), et le témoin retient l'écriture
+  périmée pour provoquer la course (ancien code 2 retours, neuf 0). Rouge au portail de la v532 ET seule sur la
   branche (2/2), rouge 1 fois sur 2 sur `origin/main` v531 rejouée seule dans un
   arbre détaché (même symptôme : « retours à l'ancienne langue » 1 à 3, serveur
   resté à "fr").** Intermittence de la synchronisation des préférences, déjà

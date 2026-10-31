@@ -167,6 +167,37 @@ export class CloudSave {
     });
   }
 
+  // Écrire SEULEMENT si le document n'a pas changé de choix depuis qu'on l'a
+  // lu (v571).
+  //
+  // Deux tablettes de la maison écrivent le même document, et chacune le relit
+  // avant d'écrire (v374). Ce n'était qu'à moitié une garde : entre la lecture
+  // et l'écriture, une tablette qui rame peut laisser passer plusieurs
+  // secondes (mesuré : six, sonde-reglages-deux.cjs) — et si l'autre tablette
+  // y pose un choix neuf, l'écriture périmée l'efface. L'enfant voyait sa
+  // langue revenir en arrière, puis repartir au battement suivant.
+  //
+  // Le serveur tranche donc lui-même : on n'écrit que là où la date du dernier
+  // choix (`majProfil`) vaut encore ce qu'on a lu. Rend vrai si la ligne est
+  // écrite, faux si quelqu'un a choisi entre-temps — à l'appelant de relire.
+  // Une erreur (ancien serveur, réseau) se lève : l'appelant reprend l'ancien
+  // chemin, on n'arrête jamais d'écrire.
+  async prefsPushSi(name, prefs, lu) {
+    if (!this.configured || !name) return true;
+    const cond = lu === undefined || lu === null ? 'is.null' : `eq.${encodeURIComponent(String(lu))}`;
+    const res = await fetch(
+      `${this.url}/rest/v1/player_prefs?name=eq.${encodeURIComponent(name)}&prefs->>majProfil=${cond}&select=name`,
+      {
+        method: 'PATCH',
+        headers: this.headers({ Prefer: 'return=representation' }),
+        body: JSON.stringify({ prefs, updated_at: new Date().toISOString() }),
+      },
+    );
+    if (!res.ok) throw new Error(`prefs patch ${res.status}`);
+    const lignes = await res.json();
+    return Array.isArray(lignes) && lignes.length > 0;
+  }
+
   // Qui est là, en ce moment, sur tous les appareils de la maison.
   //
   // La présence était déjà écrite — chaque tablette pose `live` dans ses
