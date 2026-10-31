@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 567,
+    titre: 'Une voiture percutée est projetée',
+    puces: [
+      'Fonce dans une voiture : elle est projetée',
+      'Ta voiture continue sur sa lancée',
+      'Prise par le coin, elle tourne',
+      'Les voitures derrière elle klaxonnent',
+    ],
+  },
+  {
     v: 566,
     titre: 'Dix-huit nouvelles voitures',
     puces: [

@@ -53,16 +53,16 @@ async function mesurer(racine) {
     }
     const xg = MUR + 6;            // la voiture garée / de la rue / le réverbère
     if (cas === 'garee') obstacle = { x: xg, z: 0, cap: cap0, v: 0, poussable: true, vx: 0, vz: 0, chemin: 0 };
-    if (cas === 'rue') obstacle = { x: xg, z: 0, cap: cap0, v: 0, poussable: false };
+    if (cas === 'rue') obstacle = { x: xg, z: 0, cap: cap0, v: 0, poussable: false, rue: true };
     if (cas === 'traverse') {
       // elle roule vers +z à 10 blocs/s et passe sur notre route quand on y arrive
       const tc = Math.max(0, (xg - 1.13 - 2.2 - (MUR - 12)) / v);
-      obstacle = { x: xg, z: -10 * tc, cap: 0, v: 10, poussable: false, roule: true };
+      obstacle = { x: xg, z: -10 * tc, cap: 0, v: 10, poussable: false, roule: true, rue: true };
     }
     if (cas === 'enFace') {
       // elle arrive de face à 10 blocs/s sur notre voie, et s'arrête quand on
       // la percute (`heurter`, vehicules.js, v372)
-      obstacle = { x: xg + 10, z: 0, cap: -cap0, v: 10, poussable: false, roule: true, axe: -1, stoppe: true };
+      obstacle = { x: xg + 10, z: 0, cap: -cap0, v: 10, poussable: false, roule: true, axe: -1, stoppe: true, rue: true };
     }
     if (cas === 'mobilier') obstacle = { x: xg, z: 0, mobilier: true };
     const monde = {
@@ -93,7 +93,17 @@ async function mesurer(racine) {
         const B = laBoite();
         if (!touche(boite(x, z, cap), B)) return null;
         const r = { ...B, v: obstacle.v };
-        if (obstacle.poussable) r.libre = true, r.vx = obstacle.vx, r.vz = obstacle.vz, r.pousser = (vx, vz) => { obstacle.vx = vx; obstacle.vz = vz; };
+        if (obstacle.poussable) r.libre = true, r.vx = obstacle.vx, r.vz = obstacle.vz, r.pousser = (vx, vz, w) => { obstacle.vx = vx; obstacle.vz = vz; obstacle.w = w || 0; };
+        // UNE VOITURE DE LA RUE S'ARRACHE À SA RUE (v567) : main.js la déclare
+        // `detachable` ; si la physique l'arrache, elle devient une voiture
+        // libre (fun.js, `projeterDeLaRue`) — ici, la même voiture qui se pousse
+        else if (obstacle.rue) {
+          r.detachable = true;
+          r.pousser = (vx, vz, w) => {
+            obstacle.poussable = true; obstacle.roule = false; obstacle.arrachee = true;
+            obstacle.vx = vx; obstacle.vz = vz; obstacle.w = w || 0; obstacle.chemin = 0;
+          };
+        }
         return r;
       };
     }
@@ -122,7 +132,7 @@ async function mesurer(racine) {
         contact = { x: p.pos.x, z: p.pos.z, k, v: vAvantImage };
         if (cas === 'murPieton') pieton = boite(p.pos.x - 2.2 - 0.3 - 1.5, p.pos.z, 0, 0.3, 0.3);
         if (lache) p.touchMove.f = 0;
-        if (obstacle && obstacle.stoppe) { obstacle.roule = false; obstacle.v = 0; }
+        if (obstacle && obstacle.stoppe && !obstacle.arrachee) { obstacle.roule = false; obstacle.v = 0; }
       }
       const d = Math.hypot(p.pos.x - last.x, p.pos.z - last.z);
       last = { x: p.pos.x, z: p.pos.z };
@@ -139,6 +149,8 @@ async function mesurer(racine) {
       contact: !!contact, dx: contact ? +(p.pos.x - contact.x).toFixed(2) : null, vImpact: contact ? +contact.v.toFixed(2) : null, images, chemin: +chemin.toFixed(2), loin: +avance.toFixed(2), vApres,
       chocs: forces.length, forces, ecart: kChocs.length > 1 ? +((kChocs[1] - kChocs[0]) * DT).toFixed(2) : null,
       poussee: obstacle && obstacle.poussable ? +obstacle.chemin.toFixed(2) : undefined,
+      arrachee: obstacle && obstacle.rue ? !!obstacle.arrachee : undefined,
+      vrille: obstacle && obstacle.w ? +obstacle.w.toFixed(2) : undefined,
       pietonTouche: pieton ? pietonTouche : undefined,
     };
   }
@@ -151,7 +163,7 @@ module.exports = { mesurer };
 if (require.main === module) {
   mesurer(path.resolve(process.argv[2] || path.join(__dirname, '..'))).then((t) => {
     for (const [k, r] of Object.entries(t)) {
-      const f = (x) => `${x.vImpact} b/s → ${x.images ?? '∞'} img · ${x.chemin} b · v ${x.vApres} · ${x.chocs} choc(s) ${x.forces.join('/')}${x.ecart != null ? ` (+${x.ecart} s)` : ''}` + (x.poussee !== undefined ? ` · poussée ${x.poussee} b` : '') + (x.pietonTouche !== undefined ? ` · piéton ${x.pietonTouche ? 'TOUCHÉ' : 'sauf'}` : '');
+      const f = (x) => `${x.vImpact} b/s → ${x.images ?? '∞'} img · ${x.chemin} b · v ${x.vApres} · ${x.chocs} choc(s) ${x.forces.join('/')}${x.ecart != null ? ` (+${x.ecart} s)` : ''}` + (x.poussee !== undefined ? ` · poussée ${x.poussee} b` : '') + (x.arrachee ? ' · ARRACHÉE' : '') + (x.pietonTouche !== undefined ? ` · piéton ${x.pietonTouche ? 'TOUCHÉ' : 'sauf'}` : '');
       console.log(k.padEnd(13), 'lâché', f(r.lache).padEnd(58), '| tenu', f(r.tenu));
     }
   });

@@ -8841,6 +8841,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
           c = { force: ch ? ch.force : 0, v: +(P.vitesseVoiture || 0).toFixed(1), long: +(ex * fx + ez * fz).toFixed(2), lat: +Math.abs(ex * fz - ez * fx).toFixed(2), contact: P.contact ? P.contact.famille : null };
         } });
         P.voitureContre = vrai; P.touchMove.f = 0;
+        // projetée hors de la rue par le choc (v567) ? Elle est devenue une
+        // voiture libre : on la note, et on la retire — elle n'est pas le
+        // sujet des témoins suivants
+        const projetees = g.animalManager.animals.filter((a) => a.projetee);
+        for (const a of projetees) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals = g.animalManager.animals.filter((b) => b !== a); }
+        if (c) c.projetee = projetees.length > 0;
         // UNE VOITURE QU'ON NE MESURE PLUS S'ARRÊTE TOUT DE SUITE (v560) : le
         // flanc frôlé la laisse filer en diagonale (l'axe de la voiture garée
         // est à 45°), et à z0 − 72 elle quittait la dalle pour la mer — elle y
@@ -8951,8 +8957,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // « franc » (v424) : la force suit la vitesse jusqu'à la pointe de la
     // classe — dix-huit blocs/s dans la Jesko (pointe 55) publient 0,39, plus
     // 0,9 ; le flanc frôlé, lui, reste sous 0,1.
-    verifier('et percutée par l\'arrière, le crochet rend sa boîte : un choc franc sur notre nez, et l\'on rebondit',
-      !cd.err && va.lu && va.c && va.c.contact === 'voiture' && va.c.force > 0.3 && va.c.v < 0 && va.c.long > 1.8,
+    // ET ELLE N'EST PLUS UN MUR (v567) : percutée franchement, elle sort de
+    // la rue, projetée, et la nôtre continue sur sa lancée — l'ancien code
+    // nous renvoyait en arrière (v < 0) comme contre un mur de briques. Le
+    // flanc frôlé, lui (4 blocs/s d'impact normal, sous ARRACHE), la laisse
+    // dans sa rue.
+    verifier('et percutée par l\'arrière, le crochet rend sa boîte : un choc franc sur notre nez, elle est projetée hors de la rue et l\'on continue',
+      !cd.err && va.lu && va.c && va.c.contact === 'voiture' && va.c.force > 0.3 && va.c.v > 0 && va.c.long > 1.8 && va.c.projetee && vf.c && !vf.c.projetee,
       JSON.stringify(va));
     verifier('une voiture en panne ne repart plus — le joystick ne fait plus rien',
       !cd.err && cd.panne && cd.panne.v < 0.01 && cd.panne.x < 0.05 && cd.panne.tourne < 0.001,

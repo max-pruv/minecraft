@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v567 — Une voiture percutée est projetée
+
+**Pourquoi.** Max : « quand on fonce dans un véhicule, il est projeté et il ne
+s'arrête pas comme si on était face à un mur en briques de vingt mètres
+d'épaisseur ». La v534 avait donné l'élan contre une voiture garée ; une voiture
+de la RUE, elle, restait un mur : sa place est une fonction de l'horloge que les
+tablettes partagent (v305), elle ne bougeait pas d'un bloc et la nôtre
+rebondissait en arrière. Mesuré sous node avec le vrai joueur : à 34 blocs/s
+dans une voiture de la rue arrêtée, la nôtre repartait de 2,5 blocs EN ARRIÈRE.
+
+**Ce que ça change.**
+- Une voiture de la rue percutée franchement (plus de 22 km/h d'impact) sort de
+  la circulation : elle est projetée, glisse, tourne sur elle-même si on la
+  prend par le coin, et s'arrête là où elle s'arrête, froissée.
+- La nôtre continue sur sa lancée, comme contre une voiture garée : à 34
+  blocs/s, elle avance encore de 12 blocs et l'autre est poussée de 13.
+- La file derrière la voiture projetée s'arrête et klaxonne au lieu de la
+  traverser ; on peut la repousser, ou monter dedans et la conduire.
+- Quand on s'éloigne, la voiture projetée s'en va et sa place revient à la rue,
+  hors de la vue.
+- Une caresse de pare-chocs ne vide pas la rue : sous 22 km/h, la règle d'avant.
+- Chez un ami, la voiture percutée s'arrête feux de détresse et se froisse
+  (le choc voyage) ; elle n'y est pas projetée — déclaré.
+
+**Ce qui le prouve.** Sous node (`sonde-elan-chocs.cjs`, le vrai joueur) :
+arrêtée, qui traverse ou qui arrive en face, à 15, 30 et 50 blocs/s, la voiture
+de la rue est arrachée et poussée (6 à 29 blocs), la nôtre continue (rouge sur
+l'ancien code : « MUR », rebond en arrière) ; une caresse sous le seuil la
+laisse dans sa rue (témoin pur). En page : percutée par l'arrière par le vrai
+crochet, elle est projetée et l'on continue (`monte.js`, rouge sur l'ancien code
+où l'on rebondissait) ; percutée sur la dalle des dégâts, c'est la voiture
+projetée qui est froissée, sa tôle à elle (`degats.js`).
+
+---
+
 ## v566 — Dix-huit nouvelles voitures
 
 **Pourquoi.** Max a déposé dix-huit modèles 3D de voitures (paquets glTF

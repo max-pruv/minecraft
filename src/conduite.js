@@ -706,6 +706,17 @@ export const CONTACT_DOUX = 3;       // blocs/s relatifs d'impact, 11 km/h
 // sinon le choc retombait sur la normale du mouvement — vu au banc, un flanc
 // frôlé rendu en choc de face.
 export const MARGE_CONTACT = 0.15;
+// UNE VOITURE DE LA RUE PERCUTÉE ASSEZ FORT SORT DE LA RUE (v567). Max :
+// « quand on fonce dans un véhicule, il est projeté, il ne s'arrête pas comme
+// si on était face à un mur en briques de vingt mètres d'épaisseur ». La v534
+// avait donné l'élan contre ce qui se pousse ; une voiture de la rue, elle,
+// restait un mur (sa place est une fonction de l'horloge partagée, v305). Au-
+// delà de `ARRACHE` blocs/s d'impact normal, elle QUITTE son convoi (la place
+// reste prise, comme quand l'enfant la prend, v305) et devient une voiture
+// libre : le choc est alors celui de deux masses égales (`chocPoussable`) — la
+// nôtre garde (1 − e)/2 de sa vitesse, l'autre est propulsée. En dessous,
+// une caresse de pare-chocs ne vide pas la rue : la règle d'avant.
+export const ARRACHE = 6;            // blocs/s d'impact normal relatif, 22 km/h
 export function chocContreVoiture(moi, autre, vx, vz, vPleine = CHOC_PLEIN) {
   const n = normaleEntreBoites(moi, autre)
     || normaleEntreBoites({ ...moi, a: moi.a + MARGE_CONTACT, b: moi.b + MARGE_CONTACT }, autre);
@@ -716,10 +727,25 @@ export function chocContreVoiture(moi, autre, vx, vz, vPleine = CHOC_PLEIN) {
   const az = autre.vz != null ? autre.vz : (autre.v || 0) * autre.uz;
   // une voiture garée ou invoquée se POUSSE (v534) ; une voiture de la rue
   // non — sa place est une fonction de l'horloge partagée (v305)
-  if (autre.libre) {
+  const approche = -((vx - ax) * n.nx + (vz - az) * n.nz);
+  if (autre.libre || (autre.detachable && approche >= ARRACHE)) {
     const p = chocPoussable(vx, vz, ax, az, n.nx, n.nz, vPleine);
     const force = p.impact < CONTACT_DOUX ? 0 : p.force;
-    return { vx: p.vx, vz: p.vz, force, impact: p.impact, glisse: p.glisse, nx: n.nx, nz: n.nz, pousse: p.autre };
+    // ET ELLE TOURNE SUR ELLE-MÊME (v567) : l'impulsion qu'elle reçoit passe
+    // par le coin qui nous fait face, pas par son centre — la règle de notre
+    // propre vrille (`vrilleDuChoc`), vue de son côté
+    // (le point de SA caisse le plus proche de notre centre : un choc par le
+    // coin la fait tourner, un choc centré la pousse droit)
+    let vrille = 0;
+    if (autre.ux != null && autre.a > 0 && autre.b > 0) {
+      const ux = autre.ux, uz = autre.uz, wx = uz, wz = -ux;
+      const rx = moi.x - autre.x, rz = moi.z - autre.z;
+      const cu = Math.max(-autre.a, Math.min(autre.a, rx * ux + rz * uz));
+      const cv = Math.max(-autre.b, Math.min(autre.b, rx * wx + rz * wz));
+      vrille = vrilleDuChoc(ux * cu + wx * cv, uz * cu + wz * cv, p.autre.vx - ax, p.autre.vz - az, autre.a, autre.b);
+    }
+    return { vx: p.vx, vz: p.vz, force, impact: p.impact, glisse: p.glisse, nx: n.nx, nz: n.nz, pousse: p.autre,
+      vrille, arrachee: !autre.libre };
   }
   const r = reponseChoc(vx - ax, vz - az, n.nx, n.nz, vPleine);
   // CE QU'ELLE AVANÇAIT VERS NOUS NE NOUS EMPORTE PAS (v534). Une voiture de

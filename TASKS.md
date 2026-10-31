@@ -609,11 +609,14 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
   `gareeContre` (main.js) écarte les fiches `pilote`, parce qu'une boîte de
   voiture (2,2 × gabarit/2) autour du fuselage serait fausse — il faut la boîte
-  du modèle (`userData.envergure`, v278). (2) Une voiture de la rue percutée ne
-  bouge pas d'un bloc : sa place est une fonction de l'horloge partagée (v305) ;
-  un recul LOCAL, purement visuel, qui se résorbe, serait possible mais
-  dessinerait deux rues différentes sur deux tablettes pendant une seconde —
-  décision de Max. (3) Une voiture garée poussée ne voyage pas par le réseau :
+  du modèle (`userData.envergure`, v278). (2) ~~Une voiture de la rue percutée ne
+  bouge pas d'un bloc~~ — FAIT en v567 sur décision de Max (« il est projeté ») :
+  au-delà d'`ARRACHE` elle sort de la rue, projetée. Reste, déclaré : la
+  projection est LOCALE (chez l'ami, la même voiture s'arrête feux de détresse
+  et se froisse, sans bouger) ; une voiture projetée ne heurte pas les autres
+  voitures de la rue en glissant (la file s'arrête devant elle, mais une
+  voiture qui arrive de côté pendant la glissade la traverse) ; le bus et les
+  rames restent des murs. (3) Une voiture garée poussée ne voyage pas par le réseau :
   les bêtes sont locales (v257), l'ami la voit à sa place. (4) Joystick tenu,
   la voiture revient dans le mur après la glissade et publie un second choc
   (+0,6 à 1,7 s, force 0,15 à 0,47) : c'est un nouvel accident, voulu — à

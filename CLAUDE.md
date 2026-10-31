@@ -1514,6 +1514,41 @@ mètres ». Cinq règles, toutes mesurées par `sonde-elan-chocs.cjs`.
   vitesse de sortie, la force reste celle de la vitesse RELATIVE. Sans cela un
   taxi de Manhattan pris de face rejetait l'enfant de sept blocs (et
   `origin/main`, joystick lâché, de trente-neuf à cinquante et un).
+## Une voiture de la rue percutée est projetée (v567) — l'horloge partagée cède au choc franc
+
+Max : « quand on fonce dans un véhicule, il est projeté et il ne s'arrête pas
+comme si on était face à un mur en briques ». **Cette décision lève la règle de
+la v534 « une voiture de la rue ne se pousse jamais » pour le choc FRANC.**
+Quatre règles.
+
+- **AU-DELÀ D'`ARRACHE`, LA VOITURE QUITTE SA RUE, PAS SA PLACE.** Le choc se
+  juge dans `chocContreVoiture` (conduite.js, pur) : une voiture de la rue
+  `detachable` (ni rame, ni ami, ni bus) prise à plus de six blocs/s d'impact
+  normal se pousse comme une voiture garée (`chocPoussable`, deux masses
+  égales) et la physique appelle son `pousser`. fun.js (`projeterDeLaRue`)
+  fait alors ce que fait `conduireLaVoiture` — `emprunter`, modèle, laque,
+  coups — sans monter dedans : une voiture libre (`projetee`) qui part avec
+  l'élan et la vrille du choc (le point de sa caisse le plus proche de notre
+  centre : par le coin elle tourne, centrée elle file droit). La place reste
+  prise (v305) ; sous le seuil, la règle d'avant (une caresse ne vide pas la
+  rue).
+- **UNE PLACE ARRACHÉE SE REND QUAND LA VOITURE S'EN VA, HORS DE LA VUE.**
+  `rendrePlaces` (fun.js) rend la place (`vehicules.rendre`) quand le bestiaire
+  a retiré la voiture libre et que la place est à plus de `VU_VOITURE + 15`
+  blocs : sinon chaque choc creusait la rue pour la session, ou le convoi
+  refabriquait une voiture sous les yeux de l'enfant (v547).
+- **CE QUI A ÉTÉ ARRACHÉ DANS L'IMAGE N'EST PLUS DANS LA COLLECTE.** Les pas
+  suivants du même `deplacerVoiture` relisent `dernieres` : `bloquantDevant`
+  saute une place prise, et `heurter` (v372) ne stoppe pas la voisine pour
+  rien. Les dégâts froissent la voiture que la physique NOMME (`choc.cible`),
+  jamais « la plus proche » — la voisine se serait froissée. Le nom de rue
+  (`origine`) part aux amis : chez eux elle s'arrête, feux de détresse, et se
+  froisse ; elle n'y est pas projetée (local, déclaré).
+- **UNE VOITURE LIBRE EST UN OBSTACLE POUR LA RUE, PAS POUR LA NÔTRE.** Elle
+  entre dans la liste des amis de la rue (`libre: true`) : la file s'arrête
+  derrière elle et klaxonne. `bloquantDevant` la saute : c'est `gareeContre`
+  (main.js) qui la juge et la pousse, sinon elle redevenait un mur.
+
 ## Des rues à la GTA (v544) — une voie, c'est la voiture et un bloc de chaque côté
 
 Max veut rouler dans les villes comme dans GTA. Mesuré avant une ligne : la

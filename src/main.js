@@ -1147,6 +1147,8 @@ let npcs = [];
 let siege = null;
 let vie = null;
 let vehicules = null;
+// la rue → une voiture libre, projetée (v567) ; posé une fois fun.js né
+let projeterRue = null;
 // La circulation qui attend son heure, et les passants des villes — déclarés
 // ICI, avant le code d'amorçage qui les assigne : déclarés plus bas, c'était
 // la zone morte temporelle, et le jeu ne démarrait plus du tout.
@@ -1910,6 +1912,13 @@ function updateChunks() {
     }
     // et la police en service (v562) : la rue lui cède comme à un ami
     if (patrouille) for (const o of patrouille.obstacles()) out.push(o);
+    // et la voiture projetée hors de la rue par un choc (v567) : elle est
+    // désormais sur la chaussée, la file derrière elle s'arrête et klaxonne au
+    // lieu de la traverser
+    for (const a of animalManager.animals) {
+      if (!a.projetee || a.montee || a.dying > 0) continue;
+      out.push({ x: a.pos.x, y: a.pos.y, z: a.pos.z, cap: a.yaw, gabarit: 2.2, libre: true });
+    }
     return out;
   });
   // et la rue freine devant les piétons (v372) : à cinquante à l'heure, qu'un
@@ -2087,11 +2096,17 @@ function updateChunks() {
   // glisse, un choc par l'arrière pousse peu.
   player.voitureContre = (x, z, cap, x0, z0) => {
     const r = vehicules.voitureContre(x, z, cap, x0, z0);
-    if (r) return r;
+    if (r) {
+      // un choc franc la sort de la rue, projetée (v567, `ARRACHE`) : c'est
+      // fun.js qui en fait une voiture libre — la physique ne fait que
+      // l'appeler, et seulement si le choc l'a arrachée
+      if (r.detachable) r.pousser = (ix, iz, w) => (projeterRue ? projeterRue(r.id, ix, iz, w) : null);
+      return r;
+    }
     const g = gareeContre(x, z, cap, x0, z0);
     if (!g) return null;
     const e = g.a.elan;
-    return { ...g.B, v: 0, vx: e ? e.vx : 0, vz: e ? e.vz : 0, libre: true, pousser: (ix, iz) => g.a.pousser(ix, iz) };
+    return { ...g.B, v: 0, vx: e ? e.vx : 0, vz: e ? e.vz : 0, libre: true, pousser: (ix, iz, w) => { const m = g.a.pousser(ix, iz, w); return g.a.projetee ? m : null; } };
   };
   // UNE VOITURE ARRIVE SUR CE POINT ? (v259) Ce qu'un piéton regarde pour
   // s'écarter : une voiture de la rue en marche, ou celle de l'enfant quand
@@ -8769,6 +8784,7 @@ const fun = initFun({
     tirer: () => profileSync.photosTirer().catch(() => []),
   },
 });
+projeterRue = fun.projeterDeLaRue;
 // LES VOITURES DE LA RUE S'ABÎMENT AUSSI (v356) : les dégâts demandent à la
 // circulation laquelle l'enfant vient de percuter (les convois n'existent
 // qu'une fois le monde bâti : on les demande au moment du choc).
