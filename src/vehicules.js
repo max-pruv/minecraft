@@ -399,7 +399,7 @@ export function chargerVraieVoiture() {
 // cinquante d'origine, « Pearl white body », « clear-coated bodywork » chez
 // ceux déposés ensuite. Pas `Paint_Secondary` ni les accents : on repeint la
 // carrosserie, pas la livrée.
-const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
+export const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
 
 // LE MODÈLE DE LA VOITURE n D'UNE VILLE — fonction PURE, sans rien bâtir.
 // New York ne tire que ses taxis et berlines ; ailleurs, une voiture sur six
@@ -457,7 +457,7 @@ export const FLOTTE = [
   // modèle dans STATIC_CACHE sans retélécharger toute la flotte. Adaptation
   // CC-BY-4.0 du modèle de BRO (vendor/voitures/LICENSE.md) : portières non
   // séparées, donc `portiere: false` (v366) plutôt qu'un découpage au hasard.
-  { fichier: 'lamborghini-revuelto.glb', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', portiere: false },
+  { fichier: 'lamborghini-revuelto.glb', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', laque: 'jamais', portiere: false },
   { fichier: 'lucid-gravity.glb', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
   // LA MC12 GT1 RED BULL (v559), adaptation CC-BY-4.0 du modèle de Dave Love
   // (vendor/voitures/LICENSE.md, `scripts/convertir-mc12.py`). Sa livrée EST
@@ -491,7 +491,7 @@ export const FLOTTE = [
   { fichier: 'porsche-cayenne-turbo-gt.glb', classe: 'suv', nom: 'Porsche Cayenne Turbo GT', habitacle: false, portiere: false },
   { fichier: 'abt-audi-rs6-r.glb', classe: 'gt', nom: 'ABT Audi RS6-R', habitacle: false, portiere: false },
   { fichier: 'porsche-992-gt3-r.glb', classe: 'sportive', nom: 'Porsche 911 GT3 R (992)', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'bugatti-divo.glb', classe: 'hypercar', nom: 'Bugatti Divo', habitacle: false, portiere: false },
+  { fichier: 'bugatti-divo.glb', classe: 'hypercar', nom: 'Bugatti Divo', laque: 'jamais', habitacle: false, portiere: false },
   { fichier: 'ford-f150-raptor-r.glb', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false, portiere: false },
   { fichier: 'ford-mondeo-taxi.glb', classe: 'berline', nom: 'Ford Mondeo · taxi', laque: 'jamais', habitacle: false, portiere: false },
   // LA VOITURE DE POLICE (v553) : la Ford Crown Victoria Police Interceptor

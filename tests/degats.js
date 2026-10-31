@@ -55,6 +55,24 @@ function verifier(nom, ok, detail = '') {
     const p = await F.empoisonner();
     verifier('une voiture abîmée (échelle en pleine animation, un feu détaché) mesurée la première ne fait pas la règle du modèle : la DB11 neuve qui suit a ses feux sur sa tôle',
       p.detOk && p.stopOk && p.phOk && p.otees > 0, JSON.stringify(p));
+    // CE QUE LA RUE REPEINT, UN MATÉRIAU LE PORTE (v572). La rue tirait une
+    // teinte pour la Revuelto (laque `Paint_Arancio`) et la Divo (matériaux
+    // sans nom) : `userData.peinture` l'annonçait, l'ami la recevait, et
+    // aucun maillage ne la portait. Tout modèle déposé qui ne se déclare pas
+    // `laque: 'jamais'` porte un matériau que `EST_LAQUE` reconnaît.
+    {
+      const V = await import('../src/vehicules.js');
+      const fs = require('fs'), pth = require('path');
+      const sansLaque = [];
+      for (const e of V.FLOTTE) {
+        if (e.fabrique || e.laque === 'jamais') continue;
+        const b = fs.readFileSync(pth.resolve(__dirname, '../vendor/voitures', e.asset || e.fichier));
+        const j = JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString());
+        if (!(j.materials || []).some((m) => V.EST_LAQUE.test(m.name || ''))) sansLaque.push(e.asset || e.fichier);
+      }
+      verifier('tout modèle que la rue peut repeindre porte une laque que la règle reconnaît — sinon il se déclare « laque: jamais »',
+        sansLaque.length === 0, JSON.stringify(sansLaque));
+    }
     const flotte = await F.mesurerFlotte();
     const ko = flotte.filter((x) => !(x.phOk && x.detOk && x.stopOk));
     verifier(`les phares, les feux de détresse et les feux stop des ${flotte.length} modèles de la flotte (taxis et utilitaires fabriqués compris) sont sur la tôle, à leur coin`,
