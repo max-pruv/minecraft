@@ -2343,7 +2343,8 @@ export function sansEpis(pts) {
 // UN TRACÉ FERMÉ DÉCALÉ À DROITE DE SA MARCHE (v372). La droite d'une
 // direction (fx, fz) est (−fz, fx) (v271, mesurée). À chaque sommet on suit la
 // bissectrice, allongée de 1/cos(θ/2) pour garder la distance aux deux côtés,
-// et bornée à deux fois le décalage dans un coin très fermé.
+// et bornée à deux fois le décalage dans un coin très fermé. `e` est un
+// nombre, ou un décalage par sommet (la section de la rue, v569).
 export function decalerADroite(pts, e) {
   const n = pts.length, out = [];
   for (let i = 0; i < n; i++) {
@@ -2359,7 +2360,8 @@ export function decalerADroite(pts, e) {
     if (ln < 1e-6) { nx = -uz; nz = ux; } else { nx /= ln; nz /= ln; }
     const cos = nx * -uz + nz * ux;
     const k = Math.min(2, 1 / Math.max(0.5, cos));
-    out.push({ ...b, x: b.x + nx * e * k, z: b.z + nz * e * k });
+    const ei = typeof e === 'number' ? e : e[i];
+    out.push({ ...b, x: b.x + nx * ei * k, z: b.z + nz * ei * k });
   }
   return out;
 }

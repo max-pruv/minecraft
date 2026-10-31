@@ -266,7 +266,7 @@ function coteEn(solDe, x, z) {
 // monde ne bouge : seule la hauteur du convoi.
 export const VOIE_CIRCUIT = 1.3;
 const DEMI_VOITURE = 1.13;
-function coteSousLaVoie(solDe, x, z, fx, fz, voie) {
+export function coteSousLaVoie(solDe, x, z, fx, fz, voie) {
   const m = coteEn(solDe, Math.round(x), Math.round(z));
   if (!voie) return m;
   // Une MARCHE au plus : au-delà, ce que l'emprise touche est un mur ou une
