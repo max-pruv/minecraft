@@ -62,7 +62,21 @@
   `maj.js` (le loader, deux), `reglages.js` (le choix qui part au serveur),
   `monte.js` (la rue roule — médiane 0, le bouchon —, le freinage au feu, la rue
   vide, Moscou deux fois). Aucun ne lit l'eau ni le contact entre véhicules.
-- [ ] **`degats.js` « chez Alice aussi, la voiture de la rue que Marlon percute
+- [x] **FERMÉ (claude/temoins-intermittents) : un ordre d'arrivée, pas un défaut.**
+  `sonde-detresse-ami.cjs`, deux pages neuves, 2/2 : le `rue_choc` est reçu,
+  la voiture nommée (`trouvee`), `heurteRecu` posé (5,4) puis lu par le convoi
+  à l'image suivante (`recues 1`). Mais l'histoire voyage AUSSI par la
+  position (`rc`, v374, ~8 fois par seconde), et le témoin du froissage rend
+  la main dès que la tôle est froissée ; lu dans la foulée, `rue_choc` n'était
+  parfois pas encore là. Le témoin attend le fait (`recues > 0`), borné à 15 s,
+  la durée dans le message (rejoué seul : vert, `ms 4`). Et le même passage a
+  rendu deux rouges NEUFS, une cause : « elle la voit prendre feu »
+  (`vehicule: false`) et « l'épave EN FEU là où elle s'est arrêtée »
+  (`lieu: null`) — la fenêtre de 3,5 s réelles lue UNE fois au bout de
+  l'attente, Marlon déjà déposé, et le lieu relevé APRÈS le dépôt. Un relevé
+  par image dans la page d'Alice observe la fenêtre entière ; le lieu se lit
+  avant le feu.
+  Ancienne entrée : **`degats.js` « chez Alice aussi, la voiture de la rue que Marlon percute
   s'arrête feux de détresse allumés » : rouge identique des deux côtés,
   rejouée SEULE** (branche v560 et `origin/main` v547, arbre séparé) : 56 verts,
   ce seul rouge, `{"recues":0,"heurte":0}` — aucun `rue_choc` reçu chez Alice.
@@ -70,20 +84,33 @@
   (v363) d'une voiture dont le modèle se garde désormais (v547) ?
   Pas dans la zone de cette livraison.
   Et il est VERT au portail de la v560 (`recues 1`) : c'est un tirage.
-- [ ] **`monte.js` « une voiture de la rue heurtée par l'enfant s'arrête, feux de
+- [x] **FERMÉ (claude/temoins-intermittents), la piste était juste, mesurée.**
+  `sonde-heurter-image.cjs`, Paris, même voiture : écart entre la collecte de
+  `cederLePassage` (ce que `heurter` lit) et le maillage (`etat().places`)
+  0,45 bloc en médiane sans charge (0 appel sur 30 sans voiture à 4,5 blocs),
+  2,55 à 300 ms par image (6/30), 7,0 à 800 ms (27/30). Le témoin prend sa
+  cible dans `diagCeder()` (la collecte), sa vitesse dans `etat()`, dans la
+  même tâche. Ancienne entrée : **`monte.js` « une voiture de la rue heurtée par l'enfant s'arrête, feux de
   détresse, puis repart »** : `id: null` au portail de la v560 (`heurter` n'a
   trouvé aucune voiture de la collecte à 4,5 blocs du point que `etat()`
   venait de rendre) ; rejoué seul dans une sonde, 3/3 verts (arrêt 0,7 à
   1,8 s, détresse, repart à 6 s). La livraison ne touche ni `heurter` ni la
   collecte. Piste : `etat()` et `dernieres` ne sont pas de la même image.
-- [ ] **`monte.js` « les feux stop s'allument au freinage, les feux de recul en
+- [x] **FERMÉ (claude/temoins-intermittents)** : le témoin attend que la voiture
+  recule (−2 b/s, borné à douze secondes), puis 0,4 s, et publie `msRecul`.
+  Ancienne entrée : **`monte.js` « les feux stop s'allument au freinage, les feux de recul en
   marche arrière… »** : vert au premier portail de la v560 (`v3 −2,1`, stops
   éteints), rouge au second sur le MÊME code de jeu (`v3 −1,3`, stops encore
   allumés) : le recul se lit deux secondes de montre après le frein, et à
   cadence basse la voiture n'a pas fini de freiner — le rouge s'éteint en
   0,25 s de jeu après la décélération. Un tirage de cadence ; le remède est
   dans le témoin (attendre `v < −2`, borné), pas dans `fun.js`.
-- [ ] **`monte.js` « hors de Paris aussi, un passant traverse sur le passage
+- [x] **FERMÉ (claude/temoins-intermittents)** : `sonde-passages-temoin.cjs`
+  (la fonction du témoin, LUE dans monte.js), trois passes à Kyoto : 5/5,
+  2/2, 4/6 — les deux manquantes ont traversé AU FEU (`tr: 0`, 0/18 peint),
+  une décision juste du témoin du feu. Le verdict juge les traversées
+  décidées à un passage sans feu (`tr: null`), la règle de Rome.
+  Ancienne entrée : **`monte.js` « hors de Paris aussi, un passant traverse sur le passage
   peint d'un carrefour sans feu »** (Kyoto, 4 traversées, 3 sur le passage) :
   même famille que « à Rome aussi, en biais » ci-dessus ; la livraison ne
   touche pas les piétons.
@@ -178,13 +205,34 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   dépassés restent à leur place, et un saut de cinquante blocs arrive là où
   personne n'a été posé devant. Rapatrier devant soi au saut est une décision
   de jeu (v218 contre v241), pas un réglage de témoin.
-- [ ] **« un flâneur posé au milieu de la chaussée en sort »** : un essai sur
+  **QUESTION POUR MAX (claude/temoins-intermittents)** : après un saut de
+  cinquante blocs dans une ville, faut-il reposer quelques passants DEVANT
+  l'enfant (la répartition de la v218 : deux sur trois dans son regard) au
+  risque de les voir apparaître, ou garder la règle de la v241 (personne ne se
+  déplace sous ses yeux, quitte à une rue vide quelques secondes) ? Le témoin
+  reste rouge tant que ce n'est pas tranché.
+- [x] **FERMÉ (claude/temoins-intermittents), une vraie panne du jeu.**
+  `sonde-flaneur-sortie.cjs` : Rome 9/9 et 6/6 à 700 ms par image, Paris
+  8/9 (le neuvième TRAVERSE, poste « t » : le témoin l'accepte désormais).
+  `poste c` après une sortie n'a qu'une voie : l'échéance de six secondes
+  (`sortirDeLaChaussee`) prenait le poste là où le passant s'était arrêté.
+  Empêché (un mur de crochet, mode `mur`) : ancien `vie.js` poste « c » 3/3,
+  neuf « t » 3/3 — le poste est le bord visé. Témoin neuf dans `monte.js`.
+  Ancienne entrée : **« un flâneur posé au milieu de la chaussée en sort »** : un essai sur
   trois finit SUR la chaussée avec son POSTE sur la chaussée
   (`arrivee c, poste c, sorties 7`), branche ; vert sur `origin/main` ce
   passage, rouge des deux côtés aux portails d'avant. Le témoin voit ce qu'il
   annonce (le poste est choisi sur l'asphalte, la règle de la v385 le laisse
   y retourner) : laissé rouge, à démonter dans `posteAutour`.
 - [ ] **« à Rome aussi, en biais, un passant traverse sur le passage peint »**
+  **Remesuré (claude/temoins-intermittents, `sonde-passages-temoin.cjs`,
+  page neuve)** : 25 s de jeu, 1 puis 1 traversée sans feu sur deux passes ;
+  la fenêtre portée à 60 s de jeu (six minutes de montre) : 0 et 0 — les
+  seules traversées sont AU FEU (`tr` 0 ou 1). Ce n'est donc ni la cadence ni
+  la durée : les passants posés au bord d'un passage en biais n'y décident
+  presque jamais de traverser. À démonter dans le jeu (`passagePieton`, la
+  direction « en travers de SA rue » d'un passage en biais), allongement
+  essayé et retiré.
   : `traversees 0` sur 6 poses, des DEUX côtés (rejouée seule). Déclaré depuis
   la v481 ; non repris ici.
 - [ ] **« la rue roule à l'allure d'une ville »** (médiane 0) et, avec elle,

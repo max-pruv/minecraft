@@ -595,6 +595,35 @@ Et un témoin de conduite qui a besoin de place se pose sa dalle (le virage à
 pleins gaz décrit un cercle d'une trentaine de blocs) : la campagne du point
 d'apparition a des murs et des arbres.
 
+## Cinq intermittents démontés (claude/temoins-intermittents) — la sonde d'abord, et un défaut du jeu dedans
+
+Chacun démonté par une sonde qui sépare les cas (v223), jamais par un rejeu.
+Quatre règles.
+
+- **CE QUE `heurter` LIT ET CE QUE LE MAILLAGE MONTRE NE SONT PAS DE LA MÊME
+  IMAGE.** `cederLePassage` collecte AVANT `update`, `montrer` pose le
+  maillage APRÈS : à 800 ms par image, 7 blocs d'écart pour la même voiture
+  (`sonde-heurter-image.cjs`). Un témoin qui vise une fonction de la collecte
+  (`heurter`, `voitureContre`) prend sa cible dans la collecte
+  (`diagCeder()`), dans la même tâche.
+- **UN ÉVÉNEMENT QUI VOYAGE PAR DEUX CHEMINS ARRIVE DANS LES DEUX ORDRES.**
+  L'histoire des chocs de la rue part par `rue_choc` ET par la position (`rc`,
+  v374) : le froissage peut précéder le message qui allume les feux de
+  détresse. Un verdict sur le second ne se lit pas dans la foulée du premier ;
+  on attend son fait, borné.
+- **UNE FENÊTRE EN TEMPS RÉEL S'OBSERVE PAR IMAGE DANS LA PAGE QUI LA VOIT.**
+  Le feu de la voiture d'un ami dure 3,5 s réelles avant le dépôt ; lu une fois
+  au bout d'une attente, il était déjà fini. Un relevé `requestAnimationFrame`
+  dans la page garde ce qu'elle a vu ; ce qui doit se lire avant la fin
+  (le lieu de l'arrêt) se lit avant.
+- **UNE ÉCHÉANCE NE PREND PAS POUR BUT L'ENDROIT OÙ L'ON A ÉCHOUÉ.** La sortie
+  de chaussée d'un flâneur (v385) expirait au bout de six secondes et prenait
+  le poste LÀ OÙ il s'était arrêté, sur l'asphalte : il y flânait, ressortant
+  sans fin. Le poste est le bord visé (`vie.js`) ; un témoin le provoque par un
+  mur de crochet et lit le poste après l'échéance. Et une traversée AU FEU
+  n'est pas une traversée sans feu : le témoin des passages peints juge les
+  seules traversées décidées sans feu (`tr: null`), comme celui de Rome.
+
 ## Le portail ne va pas plus vite sur une machine : il se répartit (banc, après la v540)
 
 Max : « que la CI soit beaucoup plus rapide, beaucoup plus sélective ». Tout a
