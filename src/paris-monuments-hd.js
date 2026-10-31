@@ -113,7 +113,21 @@ class Atelier {
 // dans le worker et sur le fil principal, qui doivent lire la même géométrie à
 // l'import. Varints, positions en deltas au 1/256e de bloc, index en distance
 // au plus haut sommet déjà vu.
-const MATIERES_EIFFEL = [IRON, ['pierre', [.88, .83, .74], [.86, 0], 0], GLASS];
+// LA TOUR S'ALLUME LA NUIT (v575). La vraie tour est éclairée en or par des
+// projecteurs à sodium logés dans la structure : ce n'est pas une lampe qui
+// éclaire la ville, c'est le fer qui luit. La couche HD a déjà sa lueur par
+// sommet, pilotée par la nuit (`nuitHD`, matierehd.js) : le fer d'Eiffel en
+// reçoit une, la salle vitrée du sommet aussi — aucune lampe (v248), aucun
+// programme neuf, et le jour ne change pas d'un pixel (la lueur vaut zéro
+// quand `nuitHD` vaut zéro). `reglageNuitEiffel.lueur` à faux rend les
+// matières d'avant, pour l'empreinte des 490 morceaux.
+export const reglageNuitEiffel = { lueur: true };
+export const LUEUR_FER_EIFFEL = .07, LUEUR_VITRAGE_EIFFEL = .5;
+const IRON_EIFFEL = ['pierre-lisse', IRON[1], IRON[2], LUEUR_FER_EIFFEL];
+const GLASS_EIFFEL = ['verre', GLASS[1], GLASS[2], LUEUR_VITRAGE_EIFFEL];
+const PIERRE_EIFFEL = ['pierre', [.88, .83, .74], [.86, 0], 0];
+const matieresEiffel = () => reglageNuitEiffel.lueur
+  ? [IRON_EIFFEL, PIERRE_EIFFEL, GLASS_EIFFEL] : [IRON, PIERRE_EIFFEL, GLASS];
 export function decoderPartie(b64, quantum = QUANTUM_EIFFEL) {
   const octets = typeof atob === 'function'
     ? Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
@@ -144,6 +158,7 @@ function eiffel(a){
   // mailleur émet un coin une seule fois par morceau au lieu d'une fois par
   // triangle — le tiers des appels, et c'était le poste le plus lourd.
   const coins = new Map();
+  const MATIERES = matieresEiffel();
   PARTIES_EIFFEL.forEach((b64, m) => {
     const { pos, idx } = decoderPartie(b64);
     const P = (i) => [pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]];
@@ -169,7 +184,7 @@ function eiffel(a){
         if (!coins.has(cle)) coins.set(cle, coins.size);
         return coins.get(cle);
       });
-      a.faces.push({ p: [P(idx[f * 3]), P(idx[f * 3 + 1]), P(idx[f * 3 + 2])], n, c, m: MATIERES_EIFFEL[m],
+      a.faces.push({ p: [P(idx[f * 3]), P(idx[f * 3 + 1]), P(idx[f * 3 + 2])], n, c, m: MATIERES[m],
         pleine: Math.hypot(...nf[f]) > 1e-9 });
     }
   });
@@ -358,16 +373,21 @@ const cache = new Map();
 // voxel, si bien que le modèle suit toujours ses cotes (v292). Les huit
 // modèles sont tous dans le disque de Paris : la clé est « Paris|Nom ».
 const cacheAuteur = new Map();
+// (la clé porte le réglage de la lueur de la tour : l'empreinte désarmée ne
+// doit pas lire une géométrie gardée sous l'autre réglage)
+const cleCache = (nom) => nom === 'Tour Eiffel' && !reglageNuitEiffel.lueur ? nom + '|sans-lueur' : nom;
 function facesAuteur(nom) {
-  if (!cacheAuteur.has(nom)) { const a = new Atelier(); MONUMENTS_HD[nom]?.(a); cacheAuteur.set(nom, a.faces); }
-  return cacheAuteur.get(nom);
+  const k = cleCache(nom);
+  if (!cacheAuteur.has(k)) { const a = new Atelier(); MONUMENTS_HD[nom]?.(a); cacheAuteur.set(k, a.faces); }
+  return cacheAuteur.get(k);
 }
 export function geometrieMonument(nom) {
-  if (!cache.has(nom)) {
+  const k = cleCache(nom);
+  if (!cache.has(k)) {
     const e = echelleDe('Paris', nom);
-    cache.set(nom, e ? etirerFaces(facesAuteur(nom), e.paliers) : facesAuteur(nom));
+    cache.set(k, e ? etirerFaces(facesAuteur(nom), e.paliers) : facesAuteur(nom));
   }
-  return cache.get(nom);
+  return cache.get(k);
 }
 
 // L'EMPRISE MESURÉE DU MODÈLE, en écart au centre du repère. C'est ce qu'un

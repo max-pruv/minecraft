@@ -770,6 +770,47 @@ function verifier(nom, ok, detail = '') {
       verifier('un journal installé d\'un bloc refait l\'index des monuments touchés',
         w2.monumentsTouches.has('Tour Eiffel')
         && (buildChunkTampons(w2, ecx, ecz).monumentsDetailles || []).length === 0);
+
+      // 7. CE QU'UN ENFANT A BÂTI SUR L'ANCIENNE TOUR NE FLOTTE PAS (v575). Un
+      //    bloc daté d'avant le modèle (DATE_TOUR_EIFFEL) dans l'emprise : le
+      //    monde d'aujourd'hui pose la tour d'AVANT, au bloc près — sa première
+      //    plateforme (l'anneau à 3–4 du centre, 16 blocs au-dessus du pied)
+      //    porte la cabane — et l'enfant la voit en cubes. Daté d'après : la
+      //    tour neuve, où cette case est du vide. Sur l'ancien code, la tour
+      //    neuve dans les deux cas : rouge.
+      {
+        const sol = new World().terrainHeight(eiffel.x, eiffel.z);
+        const cle = `${eiffel.x + 3},${sol + 17},${eiffel.z}`;
+        const date = W.DATE_TOUR_EIFFEL || Date.UTC(2026, 9, 25, 21, 49, 1);
+        const lire = (t) => {
+          const wa = new World(); wa.hd = 1;
+          wa.installerEdits([[cle, BLOCK.PLANK]], [[cle, t]], 'local');
+          return {
+            plateforme: wa.getBlock(eiffel.x - 3, sol + 16, eiffel.z), coin: wa.getBlock(eiffel.x + 4, sol + 16, eiffel.z - 4),
+            cabane: wa.getBlock(eiffel.x + 3, sol + 17, eiffel.z),
+            enCubes: wa.monumentsTouches.has('Tour Eiffel') && (buildChunkTampons(wa, ecx, ecz).monumentsDetailles || []).length === 0,
+          };
+        };
+        const avantM = lire(date - 3600e3), apresM = lire(date + 3600e3);
+        const plein = (id) => id !== BLOCK.AIR && id !== undefined;
+        verifier('ce qu\'un enfant a posé sur l\'ancienne tour Eiffel garde l\'ancienne tour sous lui : rien ne flotte, rien ne bouge',
+          plein(avantM.plateforme) && plein(avantM.coin) && avantM.cabane === BLOCK.PLANK && avantM.enCubes
+          && !plein(apresM.plateforme) && apresM.cabane === BLOCK.PLANK,
+          `avant la date ${JSON.stringify(avantM)} · après ${JSON.stringify(apresM)}`);
+      }
+
+      // 8. LA TOUR LUIT LA NUIT (v575) : le fer et la salle vitrée portent une
+      //    lueur par sommet, que `nuitHD` allume. Sur l'ancien code, seule la
+      //    salle vitrée en avait une (0,12) : le fer était éteint.
+      {
+        const wl = new World(); wl.hd = 1;
+        const t = buildChunkTampons(wl, ecx, ecz);
+        let fer = 0, total = 0;
+        const lu = t.facades && t.facades.lueur;
+        if (lu) for (const v of lu) { total++; if (v >= 0.05) fer++; }
+        verifier('la nuit, le fer de la tour Eiffel luit d\'or : une lueur sur ses sommets, pilotée par la nuit, sans lampe',
+          total > 0 && fer > total * 0.3, `${fer} sommets lumineux sur ${total}`);
+      }
     }
   }
 
@@ -1474,6 +1515,88 @@ function verifier(nom, ok, detail = '') {
       verifier('et la couche HD s\'est chauffée à l\'accueil : sa clé est là avant d\'entrer, aucune clé de programme neuve en arrivant dans la forêt au palier bas',
         clesAvant.some((k) => /paris-hd/.test(k)) && neuves.length === 0,
         `${neuves.length} neuve(s) ${JSON.stringify(neuves.map((k) => k.slice(0, 60)).slice(0, 3))} ; ${clesAvant.length} clés à l'accueil, couche ${clesAvant.some((k) => /paris-hd/.test(k)) ? 'chauffée' : 'ABSENTE'}`);
+    }
+
+    // LA NUIT DE LA TOUR EIFFEL (v575) : le phare tourne, le scintillement
+    // crépite au début de l'heure, et rien ne naît dans les programmes. On se
+    // pose au Champ-de-Mars à minuit, tour en vue ; on lit ce que la page
+    // DESSINE (des maillages `eiffel-*` visibles, l'angle du phare entre deux
+    // relevés), puis l'heure du scintillement, puis les clés de programme
+    // de jour contre celles de minuit, au même endroit. Sur l'ancien code, rien de tout cela n'existe.
+    {
+      const clesN = () => [...new Set((window.__game.renderer.info.programs || []).map((q) => q.cacheKey))];
+      const eiffelle = await banc.jouerSeul('Eiffelle', { rr: 4, params: '&hd=2', pret: true });
+      const clesAccueilN = await eiffelle.evaluate(clesN);
+      // On se pose de JOUR d'abord : le décor de Paris autour de la tour
+      // compile ce qu'il compile en arrivant, et ce n'est pas la nuit de la
+      // tour. Les clés se lisent ensuite au même endroit, avant et après minuit.
+      const pose = await eiffelle.evaluate(async () => {
+        const g = window.__game, n = window.__nuitEiffel;
+        if (!n) return { absent: true };
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const { REPERES } = await import('./src/world.js');
+        const lm = REPERES.find((l) => l.name === 'Tour Eiffel');
+        const y = g.world.terrainHeight(lm.x, lm.z);
+        g.player.pos.set(lm.x + 0.5, y + 2, lm.z + 40.5); g.player.vel.set(0, 0, 0);
+        g.player.yaw = 0; g.player.pitch = 0.5;
+        window.__setDayTime(0.42);
+        const cx = Math.floor(lm.x / 16), cz = Math.floor(lm.z / 16), t0 = performance.now();
+        while (performance.now() - t0 < 60000 && !g.chunkMeshes.get(`${cx},${cz}`)) await dodo(500);
+        // une image rendue en plus, au moins, avec la tour dedans
+        const f0 = g.renderer.info.render.frame;
+        while (performance.now() - t0 < 90000 && g.renderer.info.render.frame < f0 + 4) await dodo(200);
+        return { attente: Math.round(performance.now() - t0), jour: n.groupe.visible };
+      });
+      // Le banc rend une image par seconde dans Paris en relief : on attend
+      // les FAITS (le phare a tourné, la tour a crépité), bornés, jamais une
+      // durée fixe (v270) — et la durée entre dans le message.
+      const nuit = pose.absent ? pose : await eiffelle.evaluate(async () => {
+        const n = window.__nuitEiffel;
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const attendre = async (ok, ms) => { const t0 = performance.now(); while (performance.now() - t0 < ms && !ok()) await dodo(100); return Math.round(performance.now() - t0); };
+        const vus = () => n.groupe.visible ? n.groupe.children.filter((m) => m.visible).length : 0;
+        // minuit, hors du scintillement (la minute 30 de l'heure)
+        window.__setDayTime(0.75 + 0.5 / 24);
+        const tAllume = await attendre(() => n.etat.allumee, 30000);
+        const a0 = n.etat.angle;
+        const tTourne = await attendre(() => Math.abs(n.etat.angle - a0) > 0.1, 30000);
+        const calme = { allumee: n.etat.allumee, scintille: n.etat.scintille, vus: vus() };
+        // le début d'une heure du jeu : la tour crépite, et ses groupes changent
+        window.__setDayTime(0.75 + 0.05 / 24);
+        const tCrepite = await attendre(() => n.etat.scintille, 30000);
+        const motifs = new Set();
+        const tMotifs = await attendre(() => { motifs.add(n.groupe.children.map((m) => (m.visible ? 1 : 0)).join('')); return motifs.size >= 4; }, 45000);
+        // le jour : tout s'éteint
+        window.__setDayTime(0.25);
+        const tEteint = await attendre(() => !n.groupe.visible, 30000);
+        return { calme, tourne: Math.abs(n.etat.angle - a0), crepite: n.etat.scintille || motifs.size > 1, motifs: motifs.size,
+          ampoules: n.nbAmpoules, jour: n.groupe.visible, ms: { tAllume, tTourne, tCrepite, tMotifs, tEteint } };
+      });
+      // Ce qu'on lit : la clé du programme de CHAQUE maillage de la nuit de la
+      // tour, telle que le moteur l'a compilée, contre les clés de l'accueil —
+      // le décor de Paris, lui, continue d'arriver (des voitures neuves, des
+      // clés `physical`) et n'est pas la nuit de la tour.
+      const progs = await eiffelle.evaluate(() => {
+        const g = window.__game, n = window.__nuitEiffel;
+        if (!n) return null;
+        const cles = new Set();
+        n.groupe.traverse((o) => {
+          if (!o.isMesh) return;
+          const p = g.renderer.properties.get(o.material);
+          if (p && p.currentProgram) cles.add(p.currentProgram.cacheKey);
+        });
+        return [...cles];
+      });
+      const errs = eiffelle.erreurs.slice(0, 3);
+      await eiffelle.close();
+      const neuvesN = (progs || []).filter((k) => !clesAccueilN.includes(k));
+      verifier('à minuit la tour Eiffel s\'allume : son phare tourne, et elle crépite au début de chaque heure, puis s\'éteint le jour',
+        !nuit.absent && pose.jour === false && nuit.calme.allumee && !nuit.calme.scintille && nuit.calme.vus >= 1 && nuit.tourne > 0.1
+        && nuit.crepite && nuit.motifs >= 4 && nuit.ampoules > 500 && nuit.jour === false && errs.length === 0,
+        `${JSON.stringify(pose)} ${JSON.stringify(nuit)} ${JSON.stringify(errs)}`);
+      verifier('et la nuit de la tour ne fait naître aucun programme : phare et ampoules ont la matière des feux, chauffée à l\'accueil',
+        !!progs && progs.length >= 1 && neuvesN.length === 0,
+        `${progs ? progs.length : 0} programme(s) dessinant la tour, ${neuvesN.length} né(s) après l'accueil ${JSON.stringify(neuvesN.map((k) => k.slice(0, 80)))}`);
     }
 
     const bas = await banc.jouerSeul('Firmin', { rr: 4, params: '&hd=0' });

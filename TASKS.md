@@ -92,20 +92,33 @@
   moyenne au banc (`sonde-appels-aeroport.cjs`, ombres allumées) ; à relire
   sur l'iPad avec `?diag=1` au-dessus d'un aéroport.
 
-## La tour Eiffel du modèle de Max (v564) — ce qui reste
+## La tour Eiffel (v564, v575) — ce qui reste
 
-- [ ] **Ce qu'un enfant a bâti sur l'ANCIENNE tour, dans le monde d'aujourd'hui.**
-  Un bloc posé dans l'emprise rend la tour éditable en cubes (`monumentsTouches`,
-  v292) : il voit alors le NOUVEAU voxel, et une cabane posée sur l'ancienne
-  plateforme (y 16, 30, 52) peut flotter ou entrer dans le nouveau fer (étages
-  à 11–14, 22–26, 59–62). Même prix que la v335 ; la marche serait celle du
-  relevé des toits (v301) : suivre le plancher d'avant au plancher d'après.
-  Mesurer d'abord combien de profils ont un bloc dans la boîte de la tour.
-- [ ] **La tour n'a pas de nuit à elle.** Le vrai phare et le scintillement
-  n'existent pas ; le vitrage (`GLASS`) est éteint.
-- [ ] **Les tampons de la tour : +3,5 Mo sur ses quatre morceaux** (mesuré sous
-  node, `facades`). Sous le budget HD (`hdMo`), mais à relire avec `?diag=1` à
-  Paris sur l'iPad.
+- [x] **Ce qu'un enfant a bâti sur l'ANCIENNE tour** : la tour d'avant reste
+  sous tout bloc daté d'avant la v564 dans son emprise (v575). Mesuré : zéro
+  relevé du journal de bord à moins de 14 blocs de la tour en 35 jours.
+- [x] **La nuit de la tour** : lueur dorée du fer, phare, scintillement (v575).
+- [ ] **Le format de sommet de la couche HD.** La tour : 5,25 Mo de façades
+  sur ses quatre morceaux (72 900 sommets, 72 octets chacun ; `tiles`
+  16 octets, constant par matière). Le gain est dans le format de toute la
+  couche (un rectangle de tuile par matière plutôt que par sommet), une
+  décision d'architecture. À relire avec `?diag=1` à Paris sur l'iPad.
+- [ ] **Le phare sur la tablette.** Deux lames additives de 150 blocs : leur
+  remplissage se paie au pixel, et le banc rend en logiciel. À juger sur
+  l'iPad, de nuit, depuis le Trocadéro.
+- [ ] **Rouges du portail de la v575 : aucun de la livraison, tous déjà
+  déclarés.** Tranche 2 : `plafond.js`, `manhattan.js`, `reseau.js`,
+  `hote.js`, `sauvegarde.js`, `realisme.js`, `metro.js` vertes ; rouges
+  `carteMonde.js` (les trois gabarits d'avion, double mesure ci-dessus,
+  v571), `carte.js` (la flèche du GPS) et `maj.js` (les deux loaders).
+  Tranche 1 : `washington.js` (les témoins du métro, intermittence déclarée)
+  et `monte.js` (la moto, déclarée v571). Rejouées seules sur la branche rebasée sur
+  la v572 : `parishd.js` (onze verts, l'ombre ajourée comprise), `plafond.js`
+  et `carte.js` vertes ; sur `origin/main` v572, `carteMonde.js` et `maj.js`
+  rouges à l'identique. Preuve structurelle : la nuit de la
+  tour ne fait qu'un `hypot` et rend la main loin de Paris ou de jour, et la
+  garde ne touche que le repère de la tour.
+
 ## v560 — l'eau, les véhicules qui ne se traversent plus : ce qui reste, mesuré
 
 - **Portail de la v560, rebasé sur la v553** (en trois reprises, la limite de

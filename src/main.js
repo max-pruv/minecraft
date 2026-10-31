@@ -20,7 +20,8 @@ import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
-import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR } from './world.js';
+import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR, REPERES } from './world.js';
+import { creerNuitEiffel } from './nuit-eiffel.js';
 import { aeroportPres, postesAerodrome } from './aeroport.js';
 import { chargerAvionsDeposes } from './avions.js';
 import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
@@ -1142,6 +1143,10 @@ for (let i = 0; i < 4; i++) {
 }
 // Le nom de chaque station de métro, écrit sur son quai (v529, stations.js).
 const nomsDeStations = creerNomsDeStations(scene);
+// la nuit de la tour Eiffel : son phare et son scintillement (v575)
+const nuitEiffel = creerNuitEiffel(scene, REPERES.find((lm) => lm.name === 'Tour Eiffel'), world,
+  { pres: Math.max(0, RAYON_HD - 1) * CHUNK });
+window.__nuitEiffel = nuitEiffel;
 const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS, lamps: lampesRue});
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
@@ -9230,6 +9235,7 @@ function frame(now) {
 
   animerLesCasses();
   eclairerLaRue();
+  nuitEiffel.maj(nuitDehors, dayTime / DAY_LENGTH, camera.position);
   reglerLesFeux();
   nomsDeStations.update(player.pos);
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);

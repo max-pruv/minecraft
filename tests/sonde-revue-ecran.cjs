@@ -166,6 +166,27 @@ const ETATS = [
     const s = await poserEt(tab, { x: p.x, z: p.z, yaw: Math.PI / 2, pitch: 0.02 });
     return { monde: s + ' s' };
   } },
+  // La tour Eiffel depuis le Champ-de-Mars (v575) : de nuit, le fer doré, le
+  // phare et le scintillement (minuit, 0,75, tombe au début d'une heure du jeu).
+  { nom: 'tour-eiffel', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const { REPERES } = await import('./src/world.js');
+      const lm = REPERES.find((l) => l.name === 'Tour Eiffel');
+      return { x: lm.x, z: lm.z };
+    });
+    const s = await poserEt(tab, { x: p.x + 0.5, z: p.z + 70.5, yaw: 0, pitch: 0.42 });
+    return { monde: s + ' s', ...(await tab.evaluate(() => (window.__nuitEiffel ? { ...window.__nuitEiffel.etat } : {}))) };
+  } },
+  // Et au pied, où le modèle en relief (la lueur du fer) prend le relais du squelette.
+  { nom: 'tour-eiffel-pied', async prep(tab) {
+    const p = await tab.evaluate(async () => {
+      const { REPERES } = await import('./src/world.js');
+      const lm = REPERES.find((l) => l.name === 'Tour Eiffel');
+      return { x: lm.x, z: lm.z };
+    });
+    const s = await poserEt(tab, { x: p.x + 0.5, z: p.z + 12.5, yaw: 0, pitch: 0.95 });
+    return { monde: s + ' s', ...(await tab.evaluate(() => (window.__nuitEiffel ? { ...window.__nuitEiffel.etat } : {}))) };
+  } },
   // Les villes à bordures : une rue de Rome le long d'un circuit, depuis la
   // voie (le mobilier contre les façades), l'hôtel de ville de Los Angeles vu
   // de la rue, et la place de Shanghai vue du ciel (l'anneau qui la traverse).
