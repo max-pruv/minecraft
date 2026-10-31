@@ -499,7 +499,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
 ## v541 — DE VRAIES FEUILLES : ce qui reste, mesuré
 
 - ~~**Un carré d'herbe en voxel (3 × 3 colonnes) au pied de chaque BOULEAU**~~
-  **Remboursé en v569** : `BIRCH` est un dessus naturel (interrupteur
+  **Remboursé en v572** : `BIRCH` est un dessus naturel (interrupteur
   `reglageSolContinu.bouleau`), 612 → 18 colonnes non couvertes sur 68
   bouleaux (2,9 %, contre 2,3 % autour des chênes : des falaises), témoin
   dans `plafond.js`, empreinte des 490 morceaux prouvée désarmée. Le texte
