@@ -1090,8 +1090,37 @@ s'entend), `src/moto.js` (le modèle, ses éclats). Les modèles sont ceux de Ma
   phrase. Le témoin lit ce que le jeu a demandé de dire (l'appel, puis la cause
   et « Bonne route »), la sirène dans SA bande (1 100–1 450 Hz) sur la sortie.
 
-Ce qui reste, déclaré dans `TASKS.md` : la police est locale à la tablette (un
-ami ne la voit pas) ; la moto a la boîte de collision d'une voiture en longueur.
+**La police d'un ami (v573).** Trois règles.
+
+- **CE QUI VOYAGE, CE SONT LES ÉTOILES, PAS LA PISTE.** `p.v.w` (la position,
+  comme les feux stop v549 : `v` est recopié entier sur `pos` et `rpos`), six
+  octets — envoyer la piste coûterait 587 o/s à 40 b/s et 4,4 Ko à chaque
+  arrivée (mesuré). Chaque tablette RECONSTRUIT la piste de l'ami avec la
+  position qu'elle dessine (`rp.pos`, rejouée) et y mène SA voiture de police
+  (`patrouille.amis`, l'escorte) : gyrophares, sirène, ni bêtise, ni contrôle,
+  ni oubli — c'est la tablette du conducteur qui décide. Née sous 140 blocs,
+  garée au-delà de 180. Un témoin à trois tablettes par chemin (`reseau.js`).
+- **UNE IMAGE LENTE N'EST PAS UN SAUT.** La piste locale coupe au-delà de
+  trente blocs d'une image à l'autre ; une tablette qui rend une image toutes
+  les deux secondes voit un ami à 20 b/s en faire quarante (mesuré : deux
+  coupures sur un trajet relayé, aucune escorte). L'escorte comble la ligne
+  droite ; seul un vrai saut (plus de soixante blocs à plus de 300 b/s, la
+  règle de `fluidite.js`) coupe. Et un témoin de conduite à plusieurs se borne
+  en DISTANCE : une page lente du banc a rendu 540 blocs pour « dix
+  secondes » de `rouler`.
+- **UNE LONGUEUR DE VÉHICULE SE DÉCLARE DANS SA FICHE.** `longueur` (la moto,
+  2,4, mesurée sur le modèle) : `prendreGabarit(largeur, longueur)` pose
+  `player.demiLong`, que la boîte orientée, le point d'impact, le suivi et les
+  crochets d'obstacle de main.js lisent. Sans `longueur`, une voiture, au bit
+  près.
+
+Et le contrôle double par la DROITE quand la gauche est barrée
+(`cheminDevant` essaie les deux côtés ; `etat().controle.cote`).
+
+Ce qui reste, déclaré dans `TASKS.md` : le policier ne marche pas, la police
+est derrière la caméra pendant la poursuite (décision de Max), l'ami ne voit
+pas le contrôle (l'escorte s'arrête derrière, sans policier), et la rue voit
+une moto d'ami à la longueur d'une voiture.
 
 ## La voiture tombe dans l'eau, et un véhicule ne s'enfonce plus dans un autre (v560)
 

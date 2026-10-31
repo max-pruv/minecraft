@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 573,
+    v: 574,
     titre: 'La police des amis',
     puces: [
       'On voit la police qui suit un ami',
@@ -15,6 +15,7 @@ export const NOUVEAUTES = [
     ],
   },
   {
+    v: 573,
     titre: 'Altitude et décollage à la main',
     puces: [
       'Aux commandes, l\'altitude au-dessus du sol',

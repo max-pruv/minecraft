@@ -315,19 +315,21 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   120 : le témoin dépendait du rebond. `sonde-police.cjs` ajoute des bêtises
   jusqu'à deux étoiles (trois au plus) et publie `betises2`.
 
-- **La police est locale à la tablette.** Les étoiles, les unités, le contrôle
-  ne voyagent pas sur le réseau : un ami voit la voiture de l'enfant, pas la
-  police qui le suit. Piste : les étoiles dans la position (`p.v`, comme les
-  feux stop v549), et chaque tablette mène ses unités d'après la piste qu'elle
-  reçoit. À mesurer avant d'écrire : ce que coûte une piste sur le réseau.
-- **La moto a la boîte de collision d'une voiture en longueur** (la boîte est
-  carrée de `gabarit`, 1,2 de large ; c'est le choc de face qui lit la
-  longueur de la voiture). Une moto qui touche un mur de face rebondit à la
-  distance d'une voiture. Visible ? À juger sur la tablette.
-- **Le contrôle reste derrière quand un bloc barre le chemin devant**
-  (`etat().controle.refus` nomme le bloc) : derrière une caméra de poursuite,
-  l'enfant entend la phrase sans voir le policier. Piste : se ranger à droite
-  si la gauche est barrée.
+- ~~La police est locale à la tablette~~ **FAIT en v573** : les étoiles dans
+  `p.v.w`, l'escorte menée par chaque tablette (`patrouille.amis`), deux
+  témoins à trois tablettes (`reseau.js`, `sonde-police-reseau.cjs`). Reste :
+  l'ami ne voit pas le CONTRÔLE (l'escorte s'arrête derrière le conducteur
+  arrêté, sans policier ni phrase) — le contrôle voyagerait par un état de
+  plus dans `p.v` (`k` : la clé de la phrase), à mesurer comme le reste.
+- ~~La moto a la boîte d'une voiture en longueur~~ **FAIT en v573**
+  (`longueur: 2.4` dans sa fiche, `player.demiLong`) ; mesuré, de face elle
+  s'arrête à 1,2 bloc d'un mur au lieu de 2,2. Reste : la RUE (`vehicules.js`,
+  `cederLePassage`) et la tablette d'un ami jugent encore une moto à la
+  longueur d'une voiture (`DEMI_LONG_VOITURE`) — elles s'arrêtent un bloc
+  plus tôt devant elle, ce qui est sûr.
+- ~~Le contrôle reste derrière quand un bloc barre le chemin devant~~ **FAIT
+  en v573** : il double par la droite si la gauche est barrée
+  (`etat().controle.cote`) ; seulement les deux barrées, il reste derrière.
 - **Le policier ne marche pas** (le modèle fourni n'a pas d'armature) : il
   glisse de sa portière à celle de l'enfant. Un modèle armé, ou un corps
   Rocketbox habillé en policier, serait une passe à part.
