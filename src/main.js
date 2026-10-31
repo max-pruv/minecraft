@@ -43,6 +43,7 @@ import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN
   ABAISSE_TRES_LOIN, rayonTresLoin, silhouetteArbre } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
 import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites, sEnfonce, rectangleDeBoite } from './conduite.js';
+import { empriseDe, cleDEmprise, pointsDeBoite, pointsDAvion, sEnfonceDansAvion } from './emprise-avion.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
   PARAMS_FORCANTS } from './palier.js';
@@ -2090,6 +2091,43 @@ function updateChunks() {
     }
     return null;
   };
+  // UN AVION AU SOL EST UN OBSTACLE (v577) — pour la voiture de l'enfant
+  // comme pour l'avion qu'il fait rouler. `gareeContre` écarte les fiches
+  // `pilote` à dessein : une boîte de voiture autour d'un fuselage serait
+  // fausse (v534). La forme juste est la SILHOUETTE vue du dessus, mesurée
+  // une fois par modèle sur l'appareil (`emprise-avion.js`) — l'aile qui
+  // dépasse de sept blocs, le vide entre l'aile et l'empennage. Ce qui bouge
+  // porte des points (la boîte de la voiture, ou la silhouette de son propre
+  // avion) et un pas est refusé s'il en met PLUS dans l'avion que la pose
+  // d'avant (`sEnfonce`, v560, pour une forme qui n'est pas un rectangle).
+  // Une voiture ne pousse pas un avion : c'est une famille à elle, qui
+  // rebondit sur la normale du mouvement, comme le mobilier.
+  const empriseDAvion = (a) => empriseDe(a.def.key, cleDEmprise(a.mesh, a.def.key));
+  const avionContre = (avant, apres, x, z, y) => {
+    for (const a of animalManager.animals) {
+      if (!a.def.pilote || a.montee || a.dying > 0 || Math.abs(a.pos.y - y) > 4) continue;
+      const d2 = (a.pos.x - x) ** 2 + (a.pos.z - z) ** 2;
+      if (d2 > 26 * 26) continue;
+      const e = empriseDAvion(a);
+      if (!e || d2 > (e.rayon + 8) ** 2) continue;
+      if (sEnfonceDansAvion(e, a.pos.x, a.pos.z, a.yaw + Math.PI, avant(), apres())) return a;
+    }
+    return null;
+  };
+  const avionDevant = (x, z, cap, x0, z0) => {
+    const b = Math.max(0.3, player.gabarit / 2);
+    return avionContre(() => pointsDeBoite(boiteVoiture(x0, z0, cap, 2.2, b)), () => pointsDeBoite(boiteVoiture(x, z, cap, 2.2, b)), x, z, player.pos.y);
+  };
+  // l'avion que l'enfant fait rouler : SA silhouette, posée au cap du joueur
+  // (le maillage d'une monture tourne de `yaw + π`, et celui d'un appareil
+  // monté vaut `player.yaw + 2π`, fun.js)
+  player.obstacleAvion = (x, z, yaw, x0, z0, yaw0) => {
+    const moi = animalManager.animals.find((a) => a.montee && a.def.pilote);
+    if (!moi) return null;
+    const e = empriseDAvion(moi);
+    if (!e) return null;
+    return avionContre(() => pointsDAvion(e, x0, z0, yaw0), () => pointsDAvion(e, x, z, yaw), x, z, player.pos.y);
+  };
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
     // « pas si l'on est déjà dedans » se juge PAR VÉHICULE et PAR ENFONCEMENT
     // (v560) : on peut se dégager d'une voiture qu'on touche, pas s'y enfoncer,
@@ -2101,6 +2139,7 @@ function updateChunks() {
     const sp = Math.abs(player.vitesseVoiture || 0);
     const sens = sp >= VITESSE_CASSE && pas > 1e-6 && pas < 1.5 ? { dx: (x - x0) / pas, dz: (z - z0) / pas } : null;
     if (gareeContre(x, z, cap, x0, z0)) return 'voiture';
+    if (avionDevant(x, z, cap, x0, z0)) return 'avion';
     if (mobilierDevant(x, z, cap, sens) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
     // `arretDouxT` (v343) : s'arrêter devant un piéton n'est PAS un choc —
     // les dégâts ne comptent jamais un piéton touché.

@@ -1003,6 +1003,7 @@ export class Player {
 
   update(dt) {
     this.horlogeJeu = (this.horlogeJeu || 0) + dt;
+    const yawDebut = this.yaw;   // le cap d'avant cette image (`obstacleAvion`, v577)
     const k = this.keys;
     const forward = (k.has('KeyW') ? 1 : 0) - (k.has('KeyS') ? 1 : 0) + this.touchMove.f;
     const strafe = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0) + this.touchMove.s;
@@ -1276,6 +1277,22 @@ export class Player {
       // Le ciel a le même toit que pour tout le monde — voir `sousLeToit`.
       this.sousLeToit(dt);
       const vol = this.vel.clone().multiplyScalar(dt);
+      // UN AVION GARÉ EST UN OBSTACLE POUR UN AVION QUI ROULE (v577). La boîte
+      // de collision d'un appareil est la largeur de son FUSELAGE (une boîte
+      // ne tourne pas, v223) : ses ailes passaient dans l'appareil garé d'à
+      // côté. `obstacleAvion` (main.js) juge la SILHOUETTE au sol des deux
+      // appareils (`emprise-avion.js`) et refuse un pas qui fait entrer
+      // davantage de l'une dans l'autre — avancer comme virer sur place.
+      // Reculer et se dégager restent permis : on n'est jamais coincé. Au sol
+      // seulement : en l'air, on passe au-dessus.
+      if (this.obstacleAvion && !this.avionEnVol && (vol.x !== 0 || vol.z !== 0 || this.yaw !== yawDebut)) {
+        const x0 = this.pos.x, z0 = this.pos.z;
+        if (this.obstacleAvion(x0 + vol.x, z0 + vol.z, this.yaw, x0, z0, yawDebut)) {
+          vol.x = 0; vol.z = 0; this.vel.x = 0; this.vel.z = 0; this.vitesseAvion = 0;
+          if (this.yaw !== yawDebut && this.obstacleAvion(x0, z0, this.yaw, x0, z0, yawDebut)) this.yaw = yawDebut;
+          this.contact = { famille: 'avion' };
+        }
+      }
       const pas = Math.max(1, Math.ceil(vol.length() / MAX_STEP));
       const vx0 = this.vel.x, vz0 = this.vel.z;
       const etaitAuSolAvion = this.onGround;

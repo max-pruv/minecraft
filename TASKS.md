@@ -1,5 +1,29 @@
 # Ce qui est en cours
 
+## Un avion garé est un obstacle (v577) — rouges de portail, aucun de la livraison
+
+- [ ] **Portail complet de la v577 (deux passages : le premier arrêté à 2 h
+  pendant `monte.js`, le second en reprise sur les six suites restantes).**
+  Mes témoins verts (voiture et chasseur dans l'aile d'un avion garé, roulage
+  d'Orly). Rouges, tous déclarés ou mesurés identiques sur `origin/main` v575 :
+  - `reseau.js` premier passage : le trio « à trois, chacun voit les deux
+    autres » et ses dépendants (compteur, prénoms, GPS d'un invité, heure de
+    l'envoi relayée, police d'un invité par `rpos`, « pas par bonds »), et les
+    trois témoins du passager dans l'avion d'un ami (`vuAvion: null`, l'ami
+    n'est jamais vu chez la troisième tablette). Rejouée SEULE sur
+    `origin/main` v575 par une session sœur : les MÊMES douze rouges, même
+    valeurs (`[["Alice"],["Marlon"],[]]`, `vuAvion: null`), banc à 3,6 cœurs,
+    puis le banc lâche sur `null.peer` (reseau.js:616). Second passage sur la
+    branche : un seul rouge, « pas par bonds » (déjà déclaré). Intermittence
+    de la partie à trois, pas la livraison.
+  - `degats.js` « le journal de bord garde le coût réel des dégâts »
+    (`dernierMs: 0`) : rouge au premier passage seulement ; vert au second sur
+    la branche, vert sur `origin/main` rejouée seule. Intermittent.
+  - `maj.js` (les deux loaders), `visio.js` (la radio pendant l'appel),
+    `manhattan.js` (le taxi, premier passage seulement), `monte.js` (passage
+    peint de Londres, deux voisines d'un convoi, la rue à l'allure d'une
+    ville, la file qui se rend après une téléportation, « Atterrissage vers
+    Saint-Dizier ») : déclarés.
 ## Le bouleau sur la surface (v576) — ce qui reste, déclaré
 
 - [ ] **Rouges du portail de la v576 : aucun de la livraison.** Le diff ne
@@ -102,12 +126,18 @@
 
 ## De grands aéroports (v565) — ce qui reste, déclaré
 
-- [ ] **Un appareil qui roule traverse les appareils garés.** Un avion n'est
-  pas un obstacle (`gareeContre`, v534 : « une monture à gabarit, pas un
-  avion ») ; la rangée étant désormais pleine, ✈️ depuis un poste fait passer
-  le bout d'aile dans le voisin pendant le virage vers la piste (vu en capture
-  `aeroport-roulage`). Piste : une boîte d'envergure pour les seuls appareils
-  garés, jugée chez le joueur comme une famille d'obstacle (v252).
+- [x] **Un appareil qui roule traverse les appareils garés — FAIT en v576.**
+  Un avion au sol est un obstacle pour l'avion qui roule (`player.obstacleAvion`,
+  la silhouette au sol de `emprise-avion.js`), et ✈️ vire au plus serré pour
+  sortir de la rangée (`VIRE_ROULAGE`, `CAP_ROULAGE`) : zéro contact sur 370
+  départs, au moins un demi-bloc d'air (`sonde-avions-gares.cjs`).
+- [ ] **Ce qui reste des avions garés comme obstacles (v576).** (1) À pied, on
+  passe encore dans le fuselage d'un avion garé (`pietonBloque` ne lit que les
+  voitures ; sous l'aile, c'est juste). (2) Un avion garé n'est un obstacle ni
+  pour les voitures de la rue (elles ne passent pas sur l'aire) ni pour la
+  copie d'un ami (les bêtes sont locales, v257). (3) La silhouette compte toute
+  la hauteur : une voiture ne passe pas sous une aile haute — mesurer la
+  hauteur de l'aile d'un A320 avant de couper par la hauteur.
 - [ ] **Roissy garde ses trois postes dans le disque.** Son disque est bâti à
   la main (halls, satellites, mâts) : la rangée pleine se mesure contre son
   bâtisseur avant d'y entrer. Ses aires prolongées, elles, ont quatorze postes.
@@ -815,7 +845,9 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   sous le milieu et sous le nez de la caisse, pas sous chaque roue : une
   voiture à cheval sur le bord de la route prend la plus mauvaise des deux.
 
-- [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) Un avion
+- [ ] **Les chocs de la v534 (l'élan), ce qui reste, déclaré.** (1) FAIT en
+  v576 (famille `avion` de `obstacleVehicule`, par la silhouette au sol ; la
+  voiture rebondit, l'avion ne bouge pas). Texte d'origine : un avion
   au poste n'est TOUJOURS PAS un obstacle pour la voiture de l'enfant :
   `gareeContre` (main.js) écarte les fiches `pilote`, parce qu'une boîte de
   voiture (2,2 × gabarit/2) autour du fuselage serait fausse — il faut la boîte

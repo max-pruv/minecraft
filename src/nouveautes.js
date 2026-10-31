@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 577,
+    titre: 'Un avion garé est un obstacle',
+    puces: [
+      'Ta voiture s\'arrête contre un avion',
+      'Ton avion ne traverse plus les autres',
+      'Recule pour te dégager',
+    ],
+  },
+  {
     v: 576,
     titre: 'Des bouleaux bien plantés',
     puces: [

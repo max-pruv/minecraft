@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v577 — Un avion garé est un obstacle
+
+**Pourquoi.** Deux défauts déclarés qui étaient la même chose vue de deux côtés.
+Depuis que les aéroports sont pleins (v565), ✈️ depuis un poste faisait passer
+le bout d'aile dans l'empennage de l'avion garé devant (vu en capture
+`aeroport-roulage`) : mesuré sur 61 départs sur 369. Et la voiture de l'enfant
+traversait un avion au poste de part en part (v534) : la boîte d'une voiture
+autour d'un fuselage aurait été fausse, et rien d'autre n'existait.
+
+**Ce que ça change.**
+- Une voiture lancée dans l'aile d'un avion garé s'y arrête, sans y entrer, et
+  repart en marche arrière. L'avion ne bouge pas : une voiture ne pousse pas un
+  avion.
+- Un avion qu'on fait rouler s'arrête contre l'aile d'un autre, au lieu de la
+  traverser. On recule pour se dégager.
+- ✈️ depuis un poste vire plus court pour sortir de la rangée : l'aile ne touche
+  plus le voisin. Le départ prend quatre dixièmes de seconde de plus.
+- Un avion qui apparaît par-dessus un avion garé (invoqué sur un poste déjà
+  pris) n'y reste plus coincé : il ignore cet avion jusqu'à en être sorti.
+
+**Ce qui le prouve.**
+- `carteMonde.js` : les 370 départs ✈️ rejoués avec le vrai joueur, la
+  silhouette au sol de chaque modèle mesurée dans la page (sculptés, A320,
+  A321, F-35, jet) : aucune aile dans un voisin, tous en vol. Sur l'ancien
+  guidage, 61 départs touchaient.
+- `monte.js` : une voiture pleins gaz dans l'aile d'un A320 garé, puis un F-35
+  qui roule dans la même aile. Aucun point de la voiture ou du chasseur dans
+  l'avion garé, qui n'a pas bougé, et l'on recule. Sur l'ancien code, la
+  voiture traverse l'avion sur 45 blocs, le chasseur sur 41.
+- La sonde `sonde-avions-gares.cjs` (isolée) refait la mesure et dit la marge.
+  Avec le nouveau virage, il reste au moins un demi-bloc d'air partout, et au
+  moins un bloc pour 366 départs sur 370.
+- Le témoin du roulage d'Orly (`monte.js`) a trouvé le jumeau : le Concorde
+  invoqué sur un poste déjà garni restait au poste, 196 refus en une minute.
+  Avec la règle du jumeau, il roule jusqu'à la piste et décolle.
+
+---
 ## v576 — La forêt sans carrés au pied des bouleaux
 
 **Pourquoi.** Au pied de chaque bouleau, un carré d'herbe de trois colonnes
