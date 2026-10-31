@@ -184,6 +184,13 @@
   venait de rendre) ; rejoué seul dans une sonde, 3/3 verts (arrêt 0,7 à
   1,8 s, détresse, repart à 6 s). La livraison ne touche ni `heurter` ni la
   collecte. Piste : `etat()` et `dernieres` ne sont pas de la même image.
+- [ ] **`degats.js` « le journal de bord garde le coût réel des dégâts »** :
+  rouge au portail de la v576 (`dernierMs: 0`), vert rejoué seul sur la
+  branche ET sur `origin/main` v575 (`dernierMs: 0,1` des deux côtés,
+  31 octobre 2026). Le dernier enfoncement coûte un dixième de milliseconde ;
+  sous la charge du portail, l'horloge l'arrondit à zéro, et la barre
+  `dernierMs > 0` tombe. La grandeur à exiger est « un enfoncement a été
+  mesuré » (le compte), pas une durée strictement positive.
 - [ ] **`carteMonde.js`, les dimensions des avions** (« chaque appareil tient
   dans le poste », « l'envergure annoncée est celle du modèle rendu », « les
   avions déposés tiennent dans le gabarit ») : rouges à l'identique sur
