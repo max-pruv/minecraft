@@ -4849,7 +4849,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // roues sortaient des passages de roue, de biais. `normaliserVoiture`
     // posait chaque pivot dans le repère du modèle, où x est la LONGUEUR de
     // cette voiture ; `rotation.x += angle` la faisait donc basculer autour
-    // de l'axe avant-arrière. On charge les cinquante-deux modèles et l'on
+    // de l'axe avant-arrière. On charge tous les modèles chargés (25 depuis la
+    // v572, la barre en demande 20) et l'on
     // mesure, pour chaque pivot de roue : son axe x, exprimé dans le repère
     // de la voiture, est la voie (latéral) ; et un angle positif fait avancer
     // le haut du pneu vers le nez — sur l'ancien code, la Lucid et la Chiron
@@ -4894,7 +4895,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return out;
     });
     verifier('chaque roue de la flotte tourne autour de son essieu, le haut du pneu vers le nez',
-      roues.modeles >= 40 && roues.roues >= roues.modeles * 4 && roues.essieuxFaux.length === 0 && roues.sensFaux.length === 0 && roues.sansRoue.length === 0,
+      roues.modeles >= 20 && roues.roues >= roues.modeles * 4 && roues.essieuxFaux.length === 0 && roues.sensFaux.length === 0 && roues.sansRoue.length === 0,
       `${roues.modeles} modèles · ${roues.roues} roues · essieux faux : ${JSON.stringify(roues.essieuxFaux.slice(0, 4))} · sens faux : ${JSON.stringify(roues.sensFaux.slice(0, 4))} · sans roue : ${JSON.stringify(roues.sansRoue)}`);
 
     // ---- LE MAILLAGE HORS DU FIL PRINCIPAL (v251) ---------------------------
@@ -9278,6 +9279,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('« descendre vite » pose l\'enfant à côté sans animation', !embFeu.err && !embFeu.volant && !embFeu.ph && (Math.abs(embFeu.x) > 1.3 || Math.abs(embFeu.z) > 2.6) && embFeu.libre,
       JSON.stringify(embFeu));
+    // (Depuis la v572 ces deux témoins prennent la 911 : la Lucid Gravity est
+    // en double face, sans laque `Paint_Primary`, et son revers se voit déjà.)
     // 9. UNE VOITURE DÉJÀ FROISSÉE NE PREND PAS DE PORTIÈRE (v366). Les
     // dégâts (v343) clonent la géométrie de la pièce touchée ; l'équiper
     // remplacerait ce froissé par « la caisse sans les portières ». On simule
@@ -9287,7 +9290,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       let P;
       try { P = await import('./src/portieres.js'); } catch { return { err: 'pas de portières' }; }
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 12, g.player.pos.z + 12, false, { flotte: 'lucid-gravity.glb' });
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 12, g.player.pos.z + 12, false, { flotte: 'porsche-911-gt3-rs.glb' });
       for (let i = 0; i < 50 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
       let m = null;
       if (b.mesh.userData.modele) b.mesh.userData.modele.traverse((o) => { if (!m && o.isMesh && /paint_primary/i.test((o.material && o.material.name) || '')) m = o; });
@@ -9295,7 +9298,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const froissee = m.geometry.clone();
       m.geometry = froissee;
       const r = P.equiperPortieres(b.mesh);
-      const res = { equipee: !!r, gardee: m.geometry === froissee, refus: P.refus.get('lucid-gravity.glb#instance') || null };
+      const res = { equipee: !!r, gardee: m.geometry === froissee, refus: P.refus.get('porsche-911-gt3-rs.glb#instance') || null };
       g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
       return res;
     });
@@ -9315,7 +9318,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       let P, V;
       try { P = await import('./src/portieres.js'); V = await import('./src/vehicules.js'); } catch { return { err: 'pas de portières' }; }
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x - 12, g.player.pos.z + 12, false, { flotte: 'lucid-gravity.glb' });
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x - 12, g.player.pos.z + 12, false, { flotte: 'porsche-911-gt3-rs.glb' });
       for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
       if (!b.mesh.userData.modele) return { err: 'modèle absent' };
       const eq = P.equiperPortieres(b.mesh);
@@ -9385,7 +9388,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       let P;
       try { P = await import('./src/portieres.js'); } catch { return { err: 'pas de portières' }; }
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 14, g.player.pos.z - 12, false, { flotte: 'lucid-gravity.glb' });
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 14, g.player.pos.z - 12, false, { flotte: 'porsche-911-gt3-rs.glb' });
       for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
       const eq = b.mesh.userData.modele ? P.equiperPortieres(b.mesh) : null;
       if (!eq) return { err: 'pas équipée' };
