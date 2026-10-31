@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+## Dix voitures de tous les jours (v570) — ce qui reste, déclaré
+
+- [ ] Le tirage de la rue est uniforme sur toute la flotte (87 modèles) : les
+  dix voitures ordinaires y font environ 12 %. Les pondérer plus haut dans
+  `choixFlotte` est une décision de Max (proposée, pas faite).
+- [ ] **Rouge du portail, pas de la livraison : les dimensions des avions**
+  (`carteMonde.js`, trois témoins). Rejouée SEULE sur `origin/main` (v569,
+  493f1d3) : les trois mêmes rouges, mêmes valeurs au centième (avion de ligne
+  16,15/16 et envergure 15,69/15,3, Concorde 20,13/20, chasseur 10,22/10 ; A320
+  16,23/16…). Tout dépasse de 0,13 à 0,23 bloc, nez, queue et bouts d'aile :
+  piste à vérifier, les halos des feux de bord (`FEU_HALOS`, v565) comptés dans
+  la boîte du modèle. Le témoin devrait mesurer le modèle sans ses feux, ou les
+  feux rester dans le gabarit.
+
 ## Les phares suivent le dessin du modèle (v569) — ce qui reste, déclaré
 
 - [ ] Cinq modèles n'ont pas d'optique reconnaissable (police-car, police-suv,
