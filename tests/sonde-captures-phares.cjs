@@ -21,7 +21,7 @@ const eteint = args.includes('--eteint');
 const bras = (args.find((a) => a.startsWith('--bras=')) || '--bras=neuf').slice(7);
 const vue = (args.find((a) => a.startsWith('--vue=')) || '--vue=iphone').slice(6);
 const VUES = { iphone: { width: 430, height: 932 }, ipad: { width: 820, height: 1180 } };
-const MODELES = (args.find((a) => a.startsWith('--modeles=')) || '--modeles=porsche-911-gt3-rs.glb,tesla-cybertruck.glb,tesla-model-y.glb,chevrolet-camaro-ss-1967.glb,renault-fuego.glb,lamborghini-aventador-svj.glb,lucid-gravity.glb,ny-crown-victoria,police-car.glb').slice(10).split(',');
+const MODELES = (args.find((a) => a.startsWith('--modeles=')) || '--modeles=porsche-911-gt3-rs.glb,tesla-cybertruck.glb,tesla-model-y.glb,chevrolet-camaro-ss-1967.glb,renault-fuego.glb,lucid-gravity.glb,ny-crown-victoria,police-car.glb').slice(10).split(',');
 
 (async () => {
   const banc = new Banc({ portJeu: 8452, portPairs: 9452 });

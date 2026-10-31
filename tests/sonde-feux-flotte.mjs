@@ -38,7 +38,10 @@ function ecart(corps, p, n) {
 // PREMIÈRE, puis une Bolide neuve : ses feux doivent être sur SA tôle. Aucune
 // géométrie n'y est froissée, donc la règle de la v543 (une tôle intacte) la
 // croit saine — sur l'ancien code, ses poses se gardaient pour tout le modèle.
-export async function empoisonner(fichier = 'bugatti-bolide.glb') {
+// La Bolide est partie en v573 : la DB11 la remplace, ses feux avant se
+// reconnaissent à leur matériau (« Day_Lights », « Low_Beams »), ses nœuds
+// étant anonymes.
+export async function empoisonner(fichier = 'aston-martin-db11.glb') {
   sansNavigateur();
   const V = await import('../src/vehicules.js');
   const P = await import('../src/phares.js');
@@ -47,7 +50,8 @@ export async function empoisonner(fichier = 'bugatti-bolide.glb') {
   const neuve = () => { const m = new THREE.Group(), mo = proto.clone(true); m.add(mo); const r = []; mo.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) r.push(o); }); m.userData.flotte = f.fichier; m.userData.roues = r; m.updateMatrixWorld(true); return m; };
   const a = neuve(); a.scale.set(1.2, 0.8, 1.2);
   const scene = new THREE.Scene(), ote = [];
-  a.traverse((o) => { if (o.isMesh && /front/i.test(o.name || '')) ote.push(o); });
+  const avant = (o) => /front|day_light|low_beam/i.test(o.name || '') || [].concat(o.material || []).some((m) => /front|day_light|low_beam/i.test(m.name || ''));
+  a.traverse((o) => { if (o.isMesh && avant(o)) ote.push(o); });
   for (const o of ote) scene.attach(o);
   V.posesDetresse(a); P.posesPhares(a);
   const r = (await mesurerFlotte({ modeles: [fichier] }))[0];

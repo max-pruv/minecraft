@@ -102,7 +102,7 @@ async function policeJusqua(tab, controle) {
     pat.remiseAZero();
     P.flying = false; P.yaw = 0; P.pos.set(47000.5, y0 + 1.2, 47040.5); P.vel.set(0, 0, 0);
     await dodo(800);
-    const a = am.invoquer('voiture', P.pos.x, P.pos.z - 3, false, { flotte: 'amg-gt-black-series.glb' });
+    const a = am.invoquer('voiture', P.pos.x, P.pos.z - 3, false, { flotte: 'lucid-gravity.glb' });
     a.yaw = Math.PI; await dodo(400);
     for (let i = 0; i < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); i++) { document.getElementById('ride-btn').click(); await dodo(600); }
     P.touchMove.f = 0.8; P.touchMove.s = -1;

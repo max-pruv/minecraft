@@ -3362,9 +3362,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Max : « les voitures devraient aller plus vite et surtout une vitesse en
     // fonction du modèle (sportive faster than sedan basic) ». Toute voiture
     // conduite roulait à ×3,4, quel que soit le modèle. On invoque une
-    // citadine et une Koenigsegg Jesko sur un terrain plat, loin des villes,
+    // citadine et une Bugatti Divo (la Jesko, v358, est partie en v573) sur un terrain plat, loin des villes,
     // on monte, on appuie, et l'on lit la VITESSE que l'enfant obtient
-    // (`player.vel`, avant collision) : la Jesko au moins 1,8 fois plus vite,
+    // (`player.vel`, avant collision) : la Divo au moins 1,8 fois plus vite,
     // et la citadine elle-même plus vite qu'avant (×3,4 = 10,9). Sur l'ancien
     // code, les deux rendent 10,9. Le terrain plat se cherche à la lecture de
     // `terrainHeight`, pure, sur trente blocs de ligne droite.
@@ -3396,7 +3396,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const champ = { x0, z0, y0 };
       await dormir(1500);
       const out = {};
-      for (const flotte of ['berline-citadine', 'koenigsegg-jesko.glb']) {
+      for (const flotte of ['berline-citadine', 'bugatti-divo.glb']) {
         retirerVoitures();
         g.player.flying = false; g.player.yaw = -Math.PI / 2; g.player.pitch = 0;           // avant = +x
         g.player.pos.set(champ.x0, champ.y0 + 1.5, champ.z0 + 0.5); g.player.vel.set(0, 0, 0);
@@ -3455,7 +3455,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0);
       return out;
     });
-    const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['koenigsegg-jesko.glb'] || {};
+    const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['bugatti-divo.glb'] || {};
     verifier('une hypercar va plus vite qu\'une citadine, et la citadine plus vite qu\'avant',
       // DEPUIS LA v358 L'ACCÉLÉRATION S'ESSOUFFLE VERS LA POINTE : après une
       // seconde et demie de jeu aucune des deux n'est à sa pointe (14,4 et 23,4
@@ -4849,7 +4849,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // roues sortaient des passages de roue, de biais. `normaliserVoiture`
     // posait chaque pivot dans le repère du modèle, où x est la LONGUEUR de
     // cette voiture ; `rotation.x += angle` la faisait donc basculer autour
-    // de l'axe avant-arrière. On charge les cinquante-deux modèles et l'on
+    // de l'axe avant-arrière. On charge tous les modèles chargés (25 depuis la
+    // v573, la barre en demande 20) et l'on
     // mesure, pour chaque pivot de roue : son axe x, exprimé dans le repère
     // de la voiture, est la voie (latéral) ; et un angle positif fait avancer
     // le haut du pneu vers le nez — sur l'ancien code, la Lucid et la Chiron
@@ -4894,7 +4895,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return out;
     });
     verifier('chaque roue de la flotte tourne autour de son essieu, le haut du pneu vers le nez',
-      roues.modeles >= 40 && roues.roues >= roues.modeles * 4 && roues.essieuxFaux.length === 0 && roues.sensFaux.length === 0 && roues.sansRoue.length === 0,
+      roues.modeles >= 20 && roues.roues >= roues.modeles * 4 && roues.essieuxFaux.length === 0 && roues.sensFaux.length === 0 && roues.sansRoue.length === 0,
       `${roues.modeles} modèles · ${roues.roues} roues · essieux faux : ${JSON.stringify(roues.essieuxFaux.slice(0, 4))} · sens faux : ${JSON.stringify(roues.sensFaux.slice(0, 4))} · sans roue : ${JSON.stringify(roues.sansRoue)}`);
 
     // ---- LE MAILLAGE HORS DU FIL PRINCIPAL (v251) ---------------------------
@@ -7760,7 +7761,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // une longueur de voiture plus grande que sa largeur — c'est ce qui dit
     // qu'elle n'est pas en travers.
     //
-    // ET DEUX MODÈLES D'ORIGINE SERVENT DE TÉMOIN DE CONTRÔLE : ils passent
+    // ET DEUX MODÈLES DU MANIFESTE SERVENT DE TÉMOIN DE CONTRÔLE (depuis la v573,
+    // la MC12 et la Model Y : les cinquante d'origine sont partis) : ils passent
     // par le chemin « manifeste », qui ne doit toucher à rien. S'ils bougent,
     // c'est que j'ai cassé la flotte en voulant l'élargir.
     const flotte = await tab.evaluate(async () => {
@@ -7768,7 +7770,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const THREE = await import('three');
       const out = [];
       for (const fichier of ['lucid-gravity.glb', 'bugatti-chiron-stealth.glb',
-        'bugatti-chiron.glb', 'audi-r8-v10-performance.glb']) {
+        'maserati-mc12-gt1.glb', 'tesla-model-y.glb']) {
         const entree = v.FLOTTE.find((e) => e.fichier === fichier);
         if (!entree) { out.push({ fichier, err: 'absente de la flotte' }); continue; }
         const porteur = await v.chargerVoitureFlotte(entree);
@@ -8748,7 +8750,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       vider();
       P.flying = false; P.yaw = -Math.PI / 2; P.pitch = 0;
       P.pos.set(x0, y0 + 1.2, z0 + 0.5); P.vel.set(0, 0, 0);
-      g.animalManager.invoquer('voiture', x0 + 3, z0 + 0.5, false, { flotte: 'koenigsegg-jesko.glb' });
+      g.animalManager.invoquer('voiture', x0 + 3, z0 + 0.5, false, { flotte: 'bugatti-divo.glb' });
       await dormir(600);
       for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
       if (!auVolant()) { for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0); return { err: 'pas au volant' }; }
@@ -8995,7 +8997,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && cd.rasant.x > 150 && cd.rasant.v > 12 && Math.abs(cd.rasant.capDeg) < 3,
       JSON.stringify(cd.rasant));
     // la force suit la vitesse jusqu'à la pointe de la classe (v424) : posée à
-    // 22 sans gaz, la Jesko frappe le mur à une dizaine de blocs/s, 0,22 (0,52
+    // 22 sans gaz, l'hypercar frappe le mur à une dizaine de blocs/s, 0,22 (0,52
     // à l'ancienne échelle) — un choc publié, d'une taille sensée
     verifier('un mur pris de face : la voiture s\'arrête, avec un petit rebond, et le choc dit où',
       !cd.err && cd.face && cd.face.face && cd.face.face.choc && cd.face.face.choc.force > 0.15
@@ -9021,7 +9023,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !cd.err && vf.lu && vf.c && vf.c.contact === 'voiture' && vf.c.force > 0.05 && vf.c.force < 0.4 && vf.c.v > 9 && vf.c.lat > 0.9 && Math.abs(vf.c.long) < 1.8,
       JSON.stringify(vf));
     // « franc » (v424) : la force suit la vitesse jusqu'à la pointe de la
-    // classe — dix-huit blocs/s dans la Jesko (pointe 55) publient 0,39, plus
+    // classe — dix-huit blocs/s dans l'hypercar (pointe 55) publient 0,39, plus
     // 0,9 ; le flanc frôlé, lui, reste sous 0,1.
     // ET ELLE N'EST PLUS UN MUR (v567) : percutée franchement, elle sort de
     // la rue, projetée, et la nôtre continue sur sa lancée — l'ancien code
@@ -9092,7 +9094,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       await new Promise((r) => setTimeout(r, 4000));
       g.player.pos.y = g.world.sommetColonne(x, z) + 1;
       for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
-      const a = g.animalManager.invoquer('voiture', x, z - 4, false, { flotte: 'amg-gt-black-series.glb' });
+      const a = g.animalManager.invoquer('voiture', x, z - 4, false, { flotte: 'lucid-gravity.glb' });
       a.yaw = Math.PI / 2; a.mesh.rotation.y = a.yaw + Math.PI;
       for (let i = 0; i < 80 && !(a.mesh.userData.roues || []).length; i++) await new Promise((r) => setTimeout(r, 100));
       // et le monde a rendu quelques images autour d'elle (sur ce banc, une
@@ -9107,7 +9109,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const etatEmb = () => emb.evaluate(async () => {
       const THREE = await import('three');
       const g = window.__game;
-      const a = g.animalManager.animals.find((x) => x.def.key === 'voiture' && x.mesh.userData.flotte === 'amg-gt-black-series.glb');
+      const a = g.animalManager.animals.find((x) => x.def.key === 'voiture' && x.mesh.userData.flotte === 'lucid-gravity.glb');
       if (!a) return { err: 'pas de voiture' };
       const eq = a.mesh.userData.portieres;
       let arriere = null;
@@ -9185,7 +9187,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         await new Promise((r) => setTimeout(r, 3000));
         await emb.evaluate(() => {
           const g = window.__game;
-          const a = g.animalManager.animals.find((x) => x.def.key === 'voiture' && x.mesh.userData.flotte === 'amg-gt-black-series.glb');
+          const a = g.animalManager.animals.find((x) => x.def.key === 'voiture' && x.mesh.userData.flotte === 'lucid-gravity.glb');
           g.player.yaw = Math.atan2(-(a.pos.x - g.player.pos.x), -(a.pos.z - g.player.pos.z));
         });
         await emb.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -9214,11 +9216,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const embPartage = await emb.evaluate(async () => {
       const g = window.__game;
       const V = await import('./src/vehicules.js');
-      const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === 'amg-gt-black-series.glb'));
+      const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === 'lucid-gravity.glb'));
       const geos = new Set(); proto.traverse((o) => { if (o.isMesh) geos.add(o.geometry); });
       const a = g.animalManager.animals.find((x) => x.mesh.userData.portieres);
       if (!a) return { err: 'aucune voiture n\'a de portière' };
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 9, g.player.pos.z + 9, false, { flotte: 'amg-gt-black-series.glb' });
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 9, g.player.pos.z + 9, false, { flotte: 'lucid-gravity.glb' });
       for (let i = 0; i < 50 && !(b.mesh.userData.roues || []).length; i++) await new Promise((r) => setTimeout(r, 100));
       const compte = (m) => { let n = 0, protoN = 0, idx = 0; m.traverse((o) => { if (!o.isMesh || (o.parent && o.parent.userData.estPortiere)) return; if (o.userData && o.userData.arms) return; n++; if (geos.has(o.geometry)) protoN++; }); return { n, protoN }; };
       const ia = compte(a.mesh), ib = compte(b.mesh);
@@ -9277,6 +9279,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('« descendre vite » pose l\'enfant à côté sans animation', !embFeu.err && !embFeu.volant && !embFeu.ph && (Math.abs(embFeu.x) > 1.3 || Math.abs(embFeu.z) > 2.6) && embFeu.libre,
       JSON.stringify(embFeu));
+    // (Depuis la v573 ces deux témoins prennent la 911 : la Lucid Gravity est
+    // en double face, sans laque `Paint_Primary`, et son revers se voit déjà.)
     // 9. UNE VOITURE DÉJÀ FROISSÉE NE PREND PAS DE PORTIÈRE (v366). Les
     // dégâts (v343) clonent la géométrie de la pièce touchée ; l'équiper
     // remplacerait ce froissé par « la caisse sans les portières ». On simule
@@ -9286,7 +9290,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       let P;
       try { P = await import('./src/portieres.js'); } catch { return { err: 'pas de portières' }; }
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 12, g.player.pos.z + 12, false, { flotte: 'amg-gt-black-series.glb' });
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 12, g.player.pos.z + 12, false, { flotte: 'porsche-911-gt3-rs.glb' });
       for (let i = 0; i < 50 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
       let m = null;
       if (b.mesh.userData.modele) b.mesh.userData.modele.traverse((o) => { if (!m && o.isMesh && /paint_primary/i.test((o.material && o.material.name) || '')) m = o; });
@@ -9294,7 +9298,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const froissee = m.geometry.clone();
       m.geometry = froissee;
       const r = P.equiperPortieres(b.mesh);
-      const res = { equipee: !!r, gardee: m.geometry === froissee, refus: P.refus.get('amg-gt-black-series.glb#instance') || null };
+      const res = { equipee: !!r, gardee: m.geometry === froissee, refus: P.refus.get('porsche-911-gt3-rs.glb#instance') || null };
       g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
       return res;
     });
@@ -9314,7 +9318,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       let P, V;
       try { P = await import('./src/portieres.js'); V = await import('./src/vehicules.js'); } catch { return { err: 'pas de portières' }; }
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x - 12, g.player.pos.z + 12, false, { flotte: 'lucid-gravity.glb' });
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x - 12, g.player.pos.z + 12, false, { flotte: 'porsche-911-gt3-rs.glb' });
       for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
       if (!b.mesh.userData.modele) return { err: 'modèle absent' };
       const eq = P.equiperPortieres(b.mesh);
@@ -9384,7 +9388,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       let P;
       try { P = await import('./src/portieres.js'); } catch { return { err: 'pas de portières' }; }
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 14, g.player.pos.z - 12, false, { flotte: 'amg-gt-black-series.glb' });
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 14, g.player.pos.z - 12, false, { flotte: 'porsche-911-gt3-rs.glb' });
       for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
       const eq = b.mesh.userData.modele ? P.equiperPortieres(b.mesh) : null;
       if (!eq) return { err: 'pas équipée' };

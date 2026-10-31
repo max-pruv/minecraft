@@ -441,8 +441,11 @@ async function appuyer(p, sel, texte) {
     const flotteTex = await p.evaluate(async () => {
       const { chargerVoitureFlotte, FLOTTE, repeindre } = await import('/src/vehicules.js');
       const { liberer } = await import('/src/liberer.js');
-      const fichiers = ['acura-nsx-type-s.glb', 'ferrari-f40.glb', 'mclaren-p1.glb', 'ford-gt.glb',
-        'bugatti-chiron.glb', 'porsche-918-spyder.glb', 'rolls-royce-spectre.glb', 'bmw-i8.glb'];
+      // Depuis la v573, les huit modèles d'origine sont partis : on prend les
+      // cinq modèles déposés qui partagent des images entre fichiers (relevé
+      // sur leurs octets : 97 images utilisées, 91 distinctes).
+      const fichiers = ['aston-martin-victor.glb', 'ford-f150-raptor-r.glb', 'porsche-cayenne-turbo-gt.glb',
+        'bentley-mulliner-batur.glb', 'abt-audi-rs6-r.glb'];
       const sources = new Set(), cartes = new Set();
       let modeles = 0;
       const protos = [];
@@ -471,8 +474,8 @@ async function appuyer(p, sel, texte) {
       return { modeles, images: sources.size, textures: cartes.size, nonPartagees, rendues };
     });
     verifier(
-      "la flotte partage ses cinq images au lieu d'en décoder une copie par modèle",
-      flotteTex.modeles === 8 && flotteTex.images <= 5 && flotteTex.nonPartagees === 0 && flotteTex.rendues === 0,
+      "la flotte décode une seule fois une image que plusieurs modèles portent",
+      flotteTex.modeles === 5 && flotteTex.images > 0 && flotteTex.images <= 91 && flotteTex.nonPartagees === 0 && flotteTex.rendues === 0,
       flotteTex,
     );
     verifier(

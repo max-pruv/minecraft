@@ -399,7 +399,7 @@ export function chargerVraieVoiture() {
 // cinquante d'origine, « Pearl white body », « clear-coated bodywork » chez
 // ceux déposés ensuite. Pas `Paint_Secondary` ni les accents : on repeint la
 // carrosserie, pas la livrée.
-const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
+export const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
 
 // LE MODÈLE DE LA VOITURE n D'UNE VILLE — fonction PURE, sans rien bâtir.
 // New York ne tire que ses taxis et berlines ; ailleurs, une voiture sur six
@@ -435,50 +435,30 @@ export const FLOTTE = [
   {fichier:'pickup', classe: 'pickup', nom:'Pickup de chantier', habitacle: false, laque: 'toujours', fabrique:()=>construirePickup({chargement: true})},
   {fichier:'ny-crown-victoria', classe: 'berline',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
   {fichier:'ny-town-sedan', classe: 'berline',ville:'ny',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
-  { fichier: 'acura-nsx-type-s.glb', classe: 'gt', nom: 'Acura NSX Type S' },
-  { fichier: 'amg-gt-black-series.glb', classe: 'sportive', nom: 'Mercedes-AMG GT Black Series' },
-  { fichier: 'aston-martin-dbs-superleggera.glb', classe: 'gt', nom: 'Aston Martin DBS Superleggera' },
-  { fichier: 'aston-martin-one-77.glb', classe: 'sportive', nom: 'Aston Martin One-77' },
-  { fichier: 'aston-martin-valkyrie.glb', classe: 'hypercar', nom: 'Aston Martin Valkyrie' },
-  { fichier: 'audi-r8-v10-performance.glb', classe: 'gt', nom: 'Audi R8 V10 Performance' },
-  { fichier: 'bentley-continental-gt-speed.glb', classe: 'gt', nom: 'Bentley Continental GT Speed' },
-  { fichier: 'bmw-i8.glb', classe: 'gt', nom: 'BMW i8' },
-  { fichier: 'bmw-m8-competition.glb', classe: 'gt', nom: 'BMW M8 Competition' },
-  { fichier: 'bugatti-bolide.glb', classe: 'hypercar', nom: 'Bugatti Bolide' },
-  { fichier: 'bugatti-chiron.glb', classe: 'hypercar', nom: 'Bugatti Chiron' },
+  // LES ANCIENS PLACEHOLDERS RETIRÉS (v573). Max : « supprime les anciennes
+  // voitures qui ne sont pas très jolies… toutes les voitures qui se
+  // ressemblent ». Les quarante-sept modèles paramétriques `luxurycarfleet`
+  // (août 2026, des placeholders homogènes, vendor/voitures/LICENSE.md) sont
+  // partis de la flotte ET du dépôt. Restent les trois identifiants dont le
+  // fichier CHARGÉ (`asset`) est un modèle neuf — SF90 XX, Revuelto, 911
+  // reconstruite —, gardés pour les garages et le réseau. Un garage qui
+  // rangeait un modèle retiré ressort une voiture tirée de la flotte
+  // (`voitureNeuve`, repli du vœu).
   // `portiere: false` (v366) : sans habitacle, la portière ouverte ne montre que
   // du noir ; un modèle qui casse vaut moins qu'un modèle qui s'en passe.
   { fichier: 'bugatti-chiron-stealth.glb', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false, portiere: false },
-  { fichier: 'bugatti-veyron.glb', classe: 'hypercar', nom: 'Bugatti Veyron 16.4' },
-  { fichier: 'bugatti-w16-mistral.glb', classe: 'hypercar', nom: 'Bugatti W16 Mistral' },
-  { fichier: 'ferrari-812-competizione.glb', classe: 'sportive', nom: 'Ferrari 812 Competizione' },
-  { fichier: 'ferrari-daytona-sp3.glb', classe: 'sportive', nom: 'Ferrari Daytona SP3' },
-  { fichier: 'ferrari-f40.glb', classe: 'sportive', nom: 'Ferrari F40' },
-  { fichier: 'ferrari-laferrari.glb', classe: 'hypercar', nom: 'Ferrari LaFerrari' },
   // La SF90 XX Stradale de Ddiaz Design (CC-BY-4.0, vendor/voitures/LICENSE.md),
   // posée au manifeste par scripts/ferrari-sf90-xx.py, remplace à l'affichage
   // l'ancienne SF90 : même identifiant pour les garages et le réseau, URL neuve
   // (`asset`) pour le cache. Portières non séparées dans le modèle : `portiere:
   // false` (v366), comme la Revuelto.
   { fichier: 'ferrari-sf90.glb', asset: 'ferrari-sf90-xx.glb', classe: 'sportive', nom: 'Ferrari SF90 XX Stradale', portiere: false },
-  { fichier: 'ford-gt.glb', classe: 'sportive', nom: 'Ford GT' },
-  { fichier: 'koenigsegg-cc850.glb', classe: 'hypercar', nom: 'Koenigsegg CC850' },
-  { fichier: 'koenigsegg-gemera.glb', classe: 'hypercar', nom: 'Koenigsegg Gemera' },
-  { fichier: 'koenigsegg-jesko.glb', classe: 'hypercar', nom: 'Koenigsegg Jesko' },
-  { fichier: 'koenigsegg-regera.glb', classe: 'hypercar', nom: 'Koenigsegg Regera' },
-  { fichier: 'lamborghini-aventador-svj.glb', classe: 'sportive', nom: 'Lamborghini Aventador SVJ' },
-  { fichier: 'lamborghini-countach-lpi-800-4.glb', classe: 'sportive', nom: 'Lamborghini Countach LPI 800-4' },
-  { fichier: 'lamborghini-huracan-sto.glb', classe: 'sportive', nom: 'Lamborghini Huracan STO' },
   // L'identifiant des sauvegardes reste stable ; l'URL neuve renouvelle le
   // modèle dans STATIC_CACHE sans retélécharger toute la flotte. Adaptation
   // CC-BY-4.0 du modèle de BRO (vendor/voitures/LICENSE.md) : portières non
   // séparées, donc `portiere: false` (v366) plutôt qu'un découpage au hasard.
-  { fichier: 'lamborghini-revuelto.glb', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', portiere: false },
-  { fichier: 'lamborghini-sian-fkp-37.glb', classe: 'hypercar', nom: 'Lamborghini Sian FKP 37' },
-  { fichier: 'lexus-lfa.glb', classe: 'gt', nom: 'Lexus LFA' },
-  { fichier: 'lotus-evija.glb', classe: 'hypercar', nom: 'Lotus Evija' },
+  { fichier: 'lamborghini-revuelto.glb', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', laque: 'jamais', portiere: false },
   { fichier: 'lucid-gravity.glb', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
-  { fichier: 'maserati-mc20.glb', classe: 'sportive', nom: 'Maserati MC20' },
   // LA MC12 GT1 RED BULL (v559), adaptation CC-BY-4.0 du modèle de Dave Love
   // (vendor/voitures/LICENSE.md, `scripts/convertir-mc12.py`). Sa livrée EST
   // sa laque : la rue ne la repeint jamais (`laque: 'jamais'`, comme la
@@ -486,29 +466,11 @@ export const FLOTTE = [
   // le modèle : `portiere: false` (v366), plutôt qu'une portière classique
   // découpée dans la tôle d'une voiture qui n'en a pas.
   { fichier: 'maserati-mc12-gt1.glb', classe: 'hypercar', nom: 'Maserati MC12 GT1 Red Bull', laque: 'jamais', portiere: false },
-  { fichier: 'mclaren-765lt.glb', classe: 'sportive', nom: 'McLaren 765LT' },
-  { fichier: 'mclaren-artura.glb', classe: 'sportive', nom: 'McLaren Artura' },
-  { fichier: 'mclaren-p1.glb', classe: 'hypercar', nom: 'McLaren P1' },
-  { fichier: 'mclaren-senna.glb', classe: 'sportive', nom: 'McLaren Senna' },
-  { fichier: 'mclaren-speedtail.glb', classe: 'hypercar', nom: 'McLaren Speedtail' },
-  { fichier: 'mercedes-amg-one.glb', classe: 'hypercar', nom: 'Mercedes-AMG One' },
-  { fichier: 'nissan-gtr-nismo.glb', classe: 'gt', nom: 'Nissan GT-R Nismo' },
-  { fichier: 'pagani-huayra-bc.glb', classe: 'sportive', nom: 'Pagani Huayra BC' },
-  { fichier: 'pagani-utopia.glb', classe: 'sportive', nom: 'Pagani Utopia' },
-  { fichier: 'pagani-zonda-cinque.glb', classe: 'sportive', nom: 'Pagani Zonda Cinque' },
-  { fichier: 'pininfarina-battista.glb', classe: 'hypercar', nom: 'Automobili Pininfarina Battista' },
-  { fichier: 'porsche-718-cayman-gt4-rs.glb', classe: 'gt', nom: 'Porsche 718 Cayman GT4 RS' },
   // LA 911 RECONSTRUITE (v545) : `fichier` reste l'IDENTIFIANT (garages,
   // réseau, couleur de la rue) ; `asset` est le fichier CHARGÉ. Une URL neuve
   // renouvelle le modèle dans STATIC_CACHE, où une URL connue ne se
   // retélécharge jamais (sw.js, `isStaticAsset`).
   { fichier: 'porsche-911-gt3-rs.glb', asset: 'porsche-911-gt3-rs-hd-v2-compact.glb', classe: 'sportive', nom: 'Porsche 911 GT3 RS (992)' },
-  { fichier: 'porsche-918-spyder.glb', classe: 'hypercar', nom: 'Porsche 918 Spyder' },
-  { fichier: 'porsche-carrera-gt.glb', classe: 'sportive', nom: 'Porsche Carrera GT' },
-  { fichier: 'porsche-taycan-turbo-s.glb', classe: 'gt', nom: 'Porsche Taycan Turbo S' },
-  { fichier: 'rimac-nevera.glb', classe: 'hypercar', nom: 'Rimac Nevera' },
-  { fichier: 'rolls-royce-spectre.glb', classe: 'berline', nom: 'Rolls-Royce Spectre' },
-  { fichier: 'sls-amg-black-series.glb', classe: 'gt', nom: 'Mercedes-Benz SLS AMG Black Series' },
   // LES DIX-HUIT DE MAX (v566) : des paquets Sketchfab mis au contrat par
   // `scripts/convertir-flotte.mjs` (crédits dans vendor/voitures/LICENSE.md).
   // Aucun n'a de volant séparé ni de portière découpée : `habitacle: false`,
@@ -529,7 +491,7 @@ export const FLOTTE = [
   { fichier: 'porsche-cayenne-turbo-gt.glb', classe: 'suv', nom: 'Porsche Cayenne Turbo GT', habitacle: false, portiere: false },
   { fichier: 'abt-audi-rs6-r.glb', classe: 'gt', nom: 'ABT Audi RS6-R', habitacle: false, portiere: false },
   { fichier: 'porsche-992-gt3-r.glb', classe: 'sportive', nom: 'Porsche 911 GT3 R (992)', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'bugatti-divo.glb', classe: 'hypercar', nom: 'Bugatti Divo', habitacle: false, portiere: false },
+  { fichier: 'bugatti-divo.glb', classe: 'hypercar', nom: 'Bugatti Divo', laque: 'jamais', habitacle: false, portiere: false },
   { fichier: 'ford-f150-raptor-r.glb', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false, portiere: false },
   { fichier: 'ford-mondeo-taxi.glb', classe: 'berline', nom: 'Ford Mondeo · taxi', laque: 'jamais', habitacle: false, portiere: false },
   // LA VOITURE DE POLICE (v553) : la Ford Crown Victoria Police Interceptor

@@ -4,7 +4,7 @@
 const { Banc } = require('./banc.js');
 const fs = require('fs');
 const DOSSIER = process.argv[2] || '.';
-const MODELES = (process.argv[3] || 'amg-gt-black-series.glb,ferrari-sf90.glb,rolls-royce-spectre.glb,lucid-gravity.glb,bugatti-chiron-stealth.glb,acura-nsx-type-s.glb').split(',');
+const MODELES = (process.argv[3] || 'lucid-gravity.glb,porsche-911-gt3-rs.glb,ferrari-sf90.glb,bugatti-chiron-stealth.glb').split(',');
 (async () => {
   const banc = new Banc({ portJeu: 8419, portPairs: 9419 });
   await banc.ouvrir();

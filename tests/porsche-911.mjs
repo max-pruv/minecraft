@@ -108,10 +108,10 @@ export async function temoinsPorsche911() {
     const V = await import('../src/vehicules.js');
     const e = V.FLOTTE.find((f) => f.fichier === 'porsche-911-gt3-rs.glb');
     ident = e && { asset: e.asset, charge: V.fichierCharge(e), ancien: V.fichierCharge(e, true),
-      autre: V.fichierCharge(V.FLOTTE.find((f) => f.fichier === 'rimac-nevera.glb')) };
+      autre: V.fichierCharge(V.FLOTTE.find((f) => f.fichier === 'tesla-model-y.glb')) };
   } catch (err) { ident = { err: String(err.message || err).slice(0, 120) }; }
   t.push(['911 : l\'identifiant sauvegardé reste porsche-911-gt3-rs.glb, le fichier chargé est le neuf, `?asset=0` rend l\'ancien',
-    !!ident && ident.charge === FICHIER_911 && ident.ancien === 'porsche-911-gt3-rs.glb' && ident.autre === 'rimac-nevera.glb',
+    !!ident && ident.charge === FICHIER_911 && ident.ancien === 'porsche-911-gt3-rs.glb' && ident.autre === 'tesla-model-y.glb',
     JSON.stringify(ident)]);
 
   // LES PORTIÈRES DU JEU (v366) se découpent sur le prototype, sans le toucher.
