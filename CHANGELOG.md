@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v570 — Dix voitures de tous les jours
+
+**Pourquoi.** Max a déposé le « Generic passenger car pack » (Comrade1280,
+Sketchfab, CC-BY-4.0) : « regarde pour intégrer ces voitures si la qualité est
+bonne ». Les rues ne roulaient presque qu'en supercars et en voitures de luxe ;
+il leur manquait des voitures ordinaires.
+
+**Ce que ça change.**
+- Jugées sur rendus avant tout (10 voitures, de trois quarts avant et de côté) :
+  modèles légers (6 000 à 7 800 triangles), textures cuites, silhouettes nettes
+  et cohérentes entre elles — la qualité tient, on les intègre toutes.
+- Dix voitures sans marque rejoignent la flotte et roulent dans les rues : une
+  citadine, un coupé des années 80, une compacte cinq portes, un monospace, un
+  4×4, un pick-up double cabine, une berline, une supercar à aileron, un grand
+  SUV et un break. Chacune garde sa couleur d'origine (cuite dans sa texture).
+- Elles se conduisent comme les autres, chacune à l'allure de sa classe
+  (citadine, berline, utilitaire, SUV, pickup, sportive).
+- Chacune pèse environ 0,45 Mo, dix à vingt fois moins qu'une voiture de la
+  v566 : téléchargée à la première rencontre et gardée hors ligne.
+- Le crédit de l'auteur est dans `vendor/voitures/LICENSE.md`.
+
+**Ce qui le prouve.** `scripts/convertir-flotte.mjs` sait désormais isoler une
+voiture dans un paquet qui en porte plusieurs (fiche `noeud`, quatre nœuds de
+roue exigés, remise dans l'axe par ses roues) et lit les cartes métal/rugosité
+en moyenne ; le sens du nez de chaque voiture est relevé sur vues (quatre
+inversés, corrigés). Sous node : aucune signature de programme neuve, et les
+phares, feux de détresse et feux stop des 87 modèles de la flotte (les dix
+compris) sur la tôle, à leur coin (`sonde-feux-flotte.mjs`, lue par
+`degats.js`). En jeu : les dix chargées par `chargerVoitureFlotte`, sept
+maillages chacune, de jour et de nuit (`sonde-captures-generiques.cjs`,
+captures dans `docs/revue-ecran/v570-generiques/`).
+
+---
+
 ## v569 — Les phares suivent le dessin de chaque voiture
 
 **Pourquoi.** Max : « les phares des voitures, comme la 911, c'est

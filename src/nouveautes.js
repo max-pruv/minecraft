@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 570,
+    titre: 'Dix voitures de tous les jours',
+    puces: [
+      'Citadine, berline, break et monospace',
+      'Un pick-up, un SUV et un 4×4',
+      'Un coupé et une supercar à aileron',
+      'Elles roulent dans les rues',
+    ],
+  },
+  {
     v: 569,
     titre: 'Les vrais phares de chaque voiture',
     puces: [
