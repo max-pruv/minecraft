@@ -129,8 +129,17 @@ async function passage(page) {
     const vus = new Set();
     for (let i = 0; i < 12 && unite; i++) { vus.add(unite.mesh.children.filter((o) => /^Eclat_/.test(o.name) && o.visible).map((o) => o.name).join('+')); await dodo(90); }
     out.gyrophares = [...vus];
-    // deux étoiles : la moto
-    pat.betise('pieton');
+    // deux étoiles : la moto. LE BARÈME NE LES DONNE PAS EN DEUX BÊTISES
+    // (v568) : une voiture (45) et un piéton (55) font 100, sous le seuil de
+    // 120 — ce témoin ne passait que si la poursuite en ajoutait une troisième
+    // par hasard (la voiture garée reprise en tournant sur la dalle). Depuis
+    // que la voiture poussée tourne sur elle-même (v567), elle n'est plus sur
+    // le chemin, et le témoin rougissait sans que la police ait changé. On
+    // ajoute des bêtises jusqu'à la deuxième étoile (trois au plus) : ce qu'il
+    // garde, c'est qu'à deux étoiles la moto vient.
+    out.pointsAvant = pat.etat().points;
+    out.betises2 = 0;
+    for (let i = 0; i < 3 && pat.etoiles() < 2; i++) { pat.betise('pieton'); out.betises2++; }
     const t1 = performance.now();
     while (performance.now() - t1 < 15000 && !pat.etat().unites.some((u) => u.type === 'moto')) await dodo(300);
     out.moto = pat.etat().unites.find((u) => u.type === 'moto') || null;

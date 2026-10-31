@@ -10237,7 +10237,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('police : les deux gyrophares alternent',
         !po.err && Array.isArray(po.gyrophares) && po.gyrophares.length === 2 && po.gyrophares[0] !== po.gyrophares[1], pj);
       verifier('police : une seconde bêtise fait venir la moto',
-        !po.err && po.moto && po.moto.type === 'moto' && po.etoiles2 >= 2, pj);
+        !po.err && po.moto && po.moto.type === 'moto' && po.etoiles2 >= 2,
+        `points avant ${po.pointsAvant}, bêtises ajoutées ${po.betises2}, étoiles ${po.etoiles2}, moto ${po.moto ? po.moto.type : 'aucune'} — ${pj}`);
       verifier('police : à l\'arrêt, la voiture double sans toucher et se gare devant l\'enfant, le policier lui parle',
         !po.err && po.surDalle && po.controle && po.controle.devant && po.controle.parle && po.distanceMin > 2.6
           && po.garee && po.garee.devant > 5 && Math.abs(po.garee.cote) < 2, pj);
