@@ -20,6 +20,31 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v570 — Les passants empêchés trouvent le trottoir
+
+**Pourquoi.** Cinq témoins du portail rougissaient une fois sur deux ou trois,
+sur un code inchangé : la voiture de la rue heurtée (`id: null`), ses feux de
+détresse chez un ami, les feux de recul, le passage peint de Kyoto, le flâneur
+posé sur la chaussée. Un rouge qui va et vient cache les vrais défauts ; et
+l'un des cinq en était un : un passant qui ne pouvait pas atteindre le
+trottoir dans les six secondes adoptait la chaussée comme coin de promenade, et
+y restait.
+
+**Ce que ça change.**
+- Un passant empêché de rejoindre le trottoir (une voiture arrêtée devant lui,
+  un obstacle) garde le trottoir pour but et finit par y aller, au lieu de
+  flâner au milieu de la rue.
+- Pour le banc : quatre témoins attendent désormais le fait qu'ils annoncent
+  (la voiture recule, le message est arrivé, la cible est celle que le jeu lit),
+  et les fenêtres courtes s'observent image par image.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (le passant empêché garde
+le bord pour poste), rouge sur l'ancien code (poste sur la chaussée 3/3, sonde
+`sonde-flaneur-sortie.cjs`, mode « mur »), vert sur le neuf (3/3). Quatre
+sondes neuves mesurent chaque cause : 7 blocs d'écart entre la collecte et le
+maillage à 800 ms par image (27 ciblages ratés sur 30) ; `rue_choc` reçu 2/2 ;
+deux traversées « hors peinture » de Kyoto faites au feu ; la moto qui ne venait qu'une fois sur deux (45 + 55 points sous la seconde étoile, à 120, quand la voiture garée ne rebondissait pas) ; à Rome, zéro
+traversée sans feu même en 60 s de jeu (déclaré dans `TASKS.md`).
 ## v569 — Les phares suivent le dessin de chaque voiture
 
 **Pourquoi.** Max : « les phares des voitures, comme la 911, c'est

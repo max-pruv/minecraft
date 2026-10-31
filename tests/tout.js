@@ -121,6 +121,7 @@ const GARDIENS = {
   'tests/porsche-911-textures.mjs': ['degats.js'],
   // les lumières de la flotte (v550), lues par degats.js sous node
   'tests/sonde-feux-flotte.mjs': ['degats.js'],
+  'tests/sonde-police.cjs': ['monte.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js', 'reglages.js'],
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],

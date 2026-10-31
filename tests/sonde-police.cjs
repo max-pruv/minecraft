@@ -129,8 +129,16 @@ async function passage(page) {
     const vus = new Set();
     for (let i = 0; i < 12 && unite; i++) { vus.add(unite.mesh.children.filter((o) => /^Eclat_/.test(o.name) && o.visible).map((o) => o.name).join('+')); await dodo(90); }
     out.gyrophares = [...vus];
-    // deux étoiles : la moto
-    pat.betise('pieton');
+    // deux étoiles : la moto. LE TÉMOIN POSE SES DEUX ÉTOILES LUI-MÊME : le
+    // choc contre la voiture garée vaut 45 points, ou 90 quand elle rebondit
+    // et publie un second choc (v534) ; un piéton en vaut 55, et la seconde
+    // étoile est à 120 (`SEUILS`). Un seul choc, et 45 + 55 = 100 laissait la
+    // moto au garage — rouge au portail de claude/temoins-intermittents
+    // (`choc.points 45`, `etoiles2 1`), vert quand le choc avait rebondi. On
+    // ajoute des bêtises jusqu'à deux étoiles, trois au plus, et l'on publie
+    // combien il en a fallu.
+    out.betises2 = 0;
+    while (pat.etoiles() < 2 && out.betises2 < 3) { pat.betise('pieton'); out.betises2++; }
     const t1 = performance.now();
     while (performance.now() - t1 < 15000 && !pat.etat().unites.some((u) => u.type === 'moto')) await dodo(300);
     out.moto = pat.etat().unites.find((u) => u.type === 'moto') || null;
