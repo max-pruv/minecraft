@@ -14,6 +14,14 @@
   feux stop de l'ami, partie seule après le départ de l'hôte) et le trio vert ;
   au second portail, deux rouges (GPS relayé, fluidité directe). Une
   distribution qui change à chaque passage, pas une régression.
+  **`monte.js` rejouée seule trois fois** : « et ses roues tournent avec le
+  sol qui défile » rouge UNE fois sur la branche (0,4 m en une demi-seconde,
+  roue tournée juste, un taxi tiré au sort), vert sur `origin/main` (Camaro,
+  3,1 m) et vert au second passage de la branche rebasée (Daytona, 3,3 m) :
+  intermittent, le modèle tiré change d'un passage à l'autre — à démonter par
+  une sonde qui force `ford-mondeo-taxi.glb`. « un passant lancé sur la
+  voiture » et « Atterrissage vers <ville> », rouges au troisième passage et
+  verts aux deux autres, sont déclarés intermittents plus bas.
 
 ## L'altimètre et le décollage à la main (v573) — rouges de portail, aucun de la livraison
 
