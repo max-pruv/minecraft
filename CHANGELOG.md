@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v575 — La tour Eiffel la nuit
+
+**Pourquoi.** La tour du modèle de Max (v564) laissait trois choses derrière
+elle. Elle n'avait pas de nuit : la vraie tour s'allume en or, son phare
+balaie Paris, et elle scintille au début de chaque heure — la nôtre était une
+silhouette noire à minuit. Ses étages ont changé de hauteur (16, 30 et 52 blocs
+du pied avant ; 11–14, 22–26 et 59–62 après) : une cabane posée sur l'ancienne
+plateforme flotterait ou entrerait dans le fer. Et ses tampons n'avaient été
+mesurés qu'une fois, sous node.
+
+**Ce que ça change.**
+- La nuit, le fer de la tour luit d'or et sa salle vitrée s'allume ; de loin,
+  des points ambrés en dessinent la silhouette dorée. Le phare tourne au
+  sommet, deux faisceaux qui balaient la ville.
+- Au début de chaque heure du jeu, la nuit, la tour crépite de près de mille
+  quatre cents ampoules blanches posées sur ses poutres.
+- Ce qu'un enfant aurait bâti sur l'ancienne tour avant la v564 garde
+  l'ancienne tour sous lui, au bloc près : rien ne bouge, rien ne flotte. Le
+  journal de bord ne montre personne là-haut en trente-cinq jours, mais une
+  absence de relevé n'est pas une preuve : on garde au lieu de déplacer.
+- Rien d'autre ne change de jour.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `parishd.js`, vérifiés rouges
+sur l'ancien code : la tour d'avant sous un bloc daté d'avant (et la neuve
+après) ; la lueur du fer ; à minuit le phare tourne, la tour crépite à l'heure
+et s'éteint le jour ; et aucune clé de programme neuve en l'allumant (le phare
+et les ampoules ont la matière des feux, chauffée à l'accueil). L'empreinte des
+490 morceaux rend la constante d'avant, lueur désarmée. Les tampons de la tour,
+remesurés : 5,25 Mo de façades sur ses quatre morceaux (72 900 sommets à
+72 octets), dont un cinquième pour un attribut que partage toute la couche HD
+— déclaré, pas rogné. Revue d'écran au Champ-de-Mars et au pied de la tour,
+iPhone et iPad, jour et nuit (`docs/captures/v575-tour-eiffel/`).
+
+---
+
 ## v574 — La police des amis
 
 **Pourquoi.** La police de la v562 était locale à la tablette : quand Marlon

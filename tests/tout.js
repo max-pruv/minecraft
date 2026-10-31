@@ -159,6 +159,8 @@ const GARDIENS = {
   'src/paris-monuments-hd.js': ['parishd.js', 'plafond.js', 'monte.js', 'carteMonde.js'],
   // La géométrie de la tour Eiffel (v564), lue par le module précédent seul.
   'src/tour-eiffel-donnees.js': ['parishd.js', 'plafond.js', 'monte.js', 'carteMonde.js'],
+  // la nuit de la tour (v575) : le témoin vit dans parishd.js
+  'src/nuit-eiffel.js': ['parishd.js', 'monte.js'],
   'src/matierehd.js': ['parishd.js', 'monte.js'],
   // LES MONUMENTS À LA HAUTEUR DE LEUR VILLE (v335). Importé par `world.js`
   // et `paris-monuments-hd.js` : l'union de leurs gardiens. Le témoin de la
@@ -172,7 +174,8 @@ const GARDIENS = {
   'src/liberer.js': ['realisme.js', 'monte.js', 'fumee.js', 'carte.js', 'reglages.js'],
   'src/couches.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   'src/signatures.js': ['monte.js'],
-  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'manhattan.js'],
+  // (parishd.js : la tour d'avant gardée sous ce qu'un enfant a bâti, v575)
+  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'manhattan.js', 'parishd.js'],
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.
   'src/mondes.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'washington.js', 'metro.js'],

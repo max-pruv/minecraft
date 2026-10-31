@@ -1323,7 +1323,7 @@ const LANDMARKS_V317 = [
       // le Moulin Rouge du monde d'aujourd'hui borde le boulevard (v512)
       ...(nom === 'Moulin Rouge' ? { tour: buildMoulinRougeNord } : {}),
       // la tour du modèle de Johnson Martin (v564) ; le monde d'avant garde l'ancienne
-      ...(nom === 'Tour Eiffel' ? { tour: buildEiffelModele } : {}),
+      ...(nom === 'Tour Eiffel' ? { tour: buildEiffelModele, gardeAvant: 'tourEiffelAvant' } : {}),
       // v306 : Paris doublé se lit à 1,7 bloc par pixel quand il tient entier
       // sur un téléphone ; ses monuments restent sur le plan (carte.js)
       seuil: 2.2,
@@ -1551,7 +1551,10 @@ const LANDMARKS = LANDMARKS_V317.map((lm) => {
     const a = lm.aerodrome;
     return { ...lm, build: (poser) => buildAerodrome(poser, a.profil, a.r) };
   }
-  return lm.tour ? { ...lm, build: lm.tour } : lm;
+  // La tour d'avant reste le bâtisseur DE SECOURS sous ce qu'un enfant a bâti
+  // avant le modèle (`gardeAvant`, v575) : le monde d'aujourd'hui la pose à
+  // la place de la neuve, et rien ne bouge sous la cabane.
+  return lm.tour ? { ...lm, build: lm.tour, ...(lm.gardeAvant ? { batiAvant: lm.build } : {}) } : lm;
 }).concat(
   // LES PISTES PROLONGÉES (v445) — seulement dans le monde d'aujourd'hui : les
   // mondes figés gardent leurs pistes d'avant (`LANDMARKS_V317`).
@@ -2277,6 +2280,24 @@ function dansTrameLondres(x, z, t) {
 // cette date (et ses huit voisines) : elle garde son jardin, et ce qui portait
 // sa cabane. La date se relit à la fusion (v309).
 export const DATE_JARDINS_PARIS = Date.UTC(2026, 9, 18, 12, 20, 0);
+
+// LA TOUR D'AVANT RESTE SOUS CE QU'UN ENFANT Y A BÂTI (v575). Le modèle de Max
+// (v564) a déplacé les étages : l'ancienne plateforme était à 16, 30 et 52
+// blocs du pied, la neuve à 11–14, 22–26 et 59–62. Une cabane posée sur
+// l'ancienne flotterait ou entrerait dans le fer. Plutôt que de DÉPLACER ses
+// blocs (une marche, et le pari qu'on a deviné le bon étage), la tour cède :
+// un bloc posé ou creusé dans son emprise avant cette date (l'heure de la
+// fusion de la v564) fait poser la tour d'avant, au bloc près, et l'enfant la
+// voit en cubes (`monumentsTouches`, v292) comme il la voyait. Aucun bloc
+// d'enfant ne bouge. Mesuré avant d'écrire : zéro relevé du journal de bord à
+// moins de quatorze blocs de la tour en trente-cinq jours (1 477 relevés) —
+// pas une preuve d'absence, d'où la garde plutôt qu'une marche.
+export const DATE_TOUR_EIFFEL = Date.UTC(2026, 9, 25, 21, 49, 1);
+function dansTourEiffelAvant(x, z, t) {
+  if (!(t <= DATE_TOUR_EIFFEL)) return false;
+  const lm = monumentSousLeBloc(x, z);
+  return !!lm && lm.name === 'Tour Eiffel';
+}
 function dansJardinsParis(x, z, t) {
   if (!(t <= DATE_JARDINS_PARIS)) return false;
   const du = x - PARIS.x, dv = z - PARIS.z, r = PARIS.r + 2;
@@ -3188,6 +3209,7 @@ export class World {
     this.dirty = new Set();       // chunk keys needing a remesh
     this.edits = new JournalBlocs();  // "x,y,z" -> block id (player modifications), rangé par morceau (v403)
     this.monumentsTouches = new Set();  // les monuments HD qu'un enfant a modifiés (v292)
+    this.tourEiffelAvant = false;       // un bloc posé dans la tour avant le modèle : la tour d'avant reste (v575)
     this.morceauxAvantClimat = new Set(); // les morceaux (et leurs voisins) bâtis avant les climats (v345)
     this.morceauxAvantClairieres = new Set(); // … et avant les bosquets (v513)
     this.morceauxAvantPistes = new Set();    // … et avant les pistes dégagées (v548)
@@ -4886,7 +4908,7 @@ export class World {
         if (avant && this.ruesAvantGTA(lm.x + dx, lm.z + dz) !== gele) return;
         data[World.index(lx, wy, lz)] = id;
       };
-      lm.build(pose(false));
+      (lm.batiAvant && this[lm.gardeAvant] ? lm.batiAvant : lm.build)(pose(false));
       if (avant) avant.build(pose(true));
     }
 
@@ -5035,6 +5057,7 @@ export class World {
     if (dansJardinsParis(x, z, t)) marquerParisCede(this.colonnesJardinsParis, x, z);
     if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
     if (dansStations(x, z, t)) marquerParisCede(this.colonnesStations, x, z);
+    if (dansTourEiffelAvant(x, z, t)) this.tourEiffelAvant = true;
     if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
     if (t <= DATE_CLAIRIERES) this.marquerAvantClairieres(x, z);
     if (t <= DATE_PISTES_DEGAGEES) this.marquerAvantPistes(x, z);
@@ -5318,8 +5341,9 @@ export class World {
     this.morceauxAvantClimat.clear();
     this.morceauxAvantClairieres.clear();
     this.morceauxAvantPistes.clear();
+    this.tourEiffelAvant = false;
     for (const [k, t] of this.editTimes) {
-      if (!(t <= DATE_PISTES_DEGAGEES || t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS || t <= DATE_CLAIRIERES || t <= DATE_STATIONS || t <= DATE_RUES_GTA)) continue;
+      if (!(t <= DATE_TOUR_EIFFEL || t <= DATE_PISTES_DEGAGEES || t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS || t <= DATE_CLAIRIERES || t <= DATE_STATIONS || t <= DATE_RUES_GTA)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
       if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
@@ -5332,6 +5356,7 @@ export class World {
       if (dansJardinsParis(x, z, t)) marquerParisCede(this.colonnesJardinsParis, x, z);
       if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
       if (dansStations(x, z, t)) marquerParisCede(this.colonnesStations, x, z);
+      if (dansTourEiffelAvant(x, z, t)) this.tourEiffelAvant = true;
     }
     this.monumentsTouches.clear();
     if (REPERES_HD.length === 0) return;
@@ -5460,6 +5485,7 @@ export class World {
     this.edits.clear();
     this.editTimes.clear();
     this.monumentsTouches.clear();
+    this.tourEiffelAvant = false;
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
     this.colonnesRuesGTA.clear();
@@ -5480,6 +5506,7 @@ export class World {
     this.edits.clear();
     this.editTimes.clear();
     this.monumentsTouches.clear();
+    this.tourEiffelAvant = false;
     this.colonnesCedees.clear();
     this.colonnesVilleAvant.clear();
     this.colonnesRuesGTA.clear();

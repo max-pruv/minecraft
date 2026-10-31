@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 575,
+    titre: 'La tour Eiffel la nuit',
+    puces: [
+      'Le fer de la tour brille d\'or',
+      'Le phare tourne au sommet',
+      'Elle scintille au début de chaque heure',
+      'Une cabane sur l\'ancienne tour reste en place',
+    ],
+  },
+  {
     v: 574,
     titre: 'La police des amis',
     puces: [

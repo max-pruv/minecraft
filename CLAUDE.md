@@ -1042,6 +1042,47 @@ sculpté. Six règles.
   (mesurés au rayon sur les trois). Toute variante neuve se rejoue par
   `sonde-embarquement-deposes.cjs` (on monte, on descend, zéro clé neuve).
 
+## La nuit de la tour, et la tour d'avant sous une cabane (v575)
+
+Les trois restes de la v564. Quatre règles.
+
+- **QUAND ON NE PEUT PAS SAVOIR SI UN ENFANT A BÂTI, ON GARDE, ON NE DÉPLACE
+  PAS.** Les profils ne se lisent pas (v295) ; le journal de bord (des données
+  d'appareil) a dit zéro relevé à moins de quatorze blocs de la tour en
+  trente-cinq jours — une fenêtre, pas une preuve. Une marche qui déplace des
+  blocs parie sur l'étage visé ; la garde n'en déplace aucun. Un bloc posé ou
+  creusé dans l'emprise avant `DATE_TOUR_EIFFEL` (l'heure de la fusion de la
+  v564) fait poser la tour d'avant au bloc près (`batiAvant`, `gardeAvant`
+  dans la fiche du repère, `world.tourEiffelAvant`, tenu par `setBlock` et
+  `indexerMonumentsTouches`) — la règle de la v303 et de la v339 (« la ville
+  d'avant se fige sous ce qu'un enfant a bâti »), à l'échelle d'un monument.
+  Le prochain monument qui change de forme se branche sur `gardeAvant`.
+- **UNE LUMIÈRE DE MONUMENT EST UNE LUEUR DE SOMMET.** Le fer d'Eiffel et sa
+  salle vitrée portent la `lueur` de la couche HD (matierehd.js), que `nuitHD`
+  allume : le jour ne change pas d'un pixel, aucune lampe (v248), aucun
+  programme neuf. `reglageNuitEiffel.lueur` à faux rend la v566, pour
+  l'empreinte des 490 morceaux.
+- **CE QUI CLIGNOTE MONTRE ET CACHE DES GROUPES, IL NE TOUCHE À AUCUN
+  MATÉRIAU.** Le scintillement (`nuit-eiffel.js`) range ses ampoules en six
+  maillages, posées sur les sommets du fer (jamais à côté, v230) ; le phare est
+  deux lames croisées. Tout en `matiereAdditive` (v533) : le témoin lit les
+  CLÉS des maillages de la tour contre celles de l'accueil. Le crépitement et
+  le phare sont en temps réel ; le scintillement suit l'heure du JEU (un quart
+  de chaque heure).
+- **UNE LUMIÈRE POSÉE SUR UN MODÈLE SE VOIT AUSSI QUAND LE MODÈLE N'EST PAS
+  LÀ.** Au-delà de la portée du détail, la tour est son squelette de cubes : la
+  lueur du fer n'existe pas, et des ampoules posées sur la surface du modèle
+  sont DANS les cases du voxel, cachées (vu en capture : une tour noire à
+  minuit à soixante-dix blocs). De loin, ampoules et points d'or sortent d'un
+  bloc (`SAILLIE`) ; de près (`pres`, la portée du détail), petites ampoules
+  sur le modèle et pas d'or — de grandes ampoules y faisaient des losanges
+  blancs. Et la lueur se juge en capture : à 0,3, le fer sortait beige délavé ;
+  il vaut 0,07.
+- **CE QU'ON NE PEUT PAS ALLÉGER SANS DÉGRADER SE DÉCLARE.** La tour pèse
+  5,25 Mo de façades sur quatre morceaux, 72 octets par sommet ; un cinquième
+  est l'attribut `tiles`, commun à toute la couche HD. Le levier est le format
+  de sommet de la couche entière, pas la tour : dette, pas rognure.
+
 ## La police et la moto (v562) — une poursuite suit la piste de l'enfant, et un contrôle se range là où la caméra regarde
 
 Max : « dès lors que tu fais une bêtise, un accident, que tu fonces dans
