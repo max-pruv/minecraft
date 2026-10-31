@@ -20,6 +20,40 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v578 — Les voitures au milieu de leur voie
+
+**Pourquoi.** Depuis les rues à la GTA (v544), une collectrice a deux voies de
+4,26 blocs, mais les voitures des villes bâties à la main (Paris, Londres,
+Nice, Lille, San Francisco, Washington) roulaient encore à 1,3 bloc de l'axe,
+le milieu de la voie des anciennes rues étroites : presque sur la ligne du
+milieu, à un tiers de bloc de la voiture d'en face. Mesuré sous node, la grille
+faisait se toucher DE FACE des voitures de deux convois de Paris 161 fois en
+200 secondes.
+
+**Ce que ça change.**
+- Sur une collectrice ou un boulevard que la voiture suit, elle roule au milieu
+  de sa voie (2,13 blocs de l'axe) ; deux voitures qui se croisent passent à
+  deux blocs l'une de l'autre. Sur les boulevards de Paris, la seconde voie
+  reste une voie plus loin.
+- Ailleurs — rues locales d'une seule voie, places, tours de monuments,
+  Washington (avenues sans type) — rien ne change. Le passage de l'un à l'autre
+  se fait en douceur, sur quatre blocs, et la voiture se rabat avant d'entrer
+  dans la rue étroite.
+- La hauteur de la voiture se lit sous sa nouvelle voie (les rues en terrasses
+  de San Francisco).
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` : les contacts de
+face entre convois de Paris (161 → 13, la règle d'avant rejouée sur le même
+code, `sonde-rue-dense.cjs face`) et la part des sommets au milieu de la voie
+(Paris 0,74, San Francisco 0,69, aucun hors des deux bornes). Les deux témoins
+des monuments de Paris (`carteMonde.js`) lisent désormais la voie que le jeu
+pose. La sonde `sonde-voie-gta.cjs` compare les décalages ville par ville ; un
+décalage unique de 2,13 partout est un non-résultat mesuré (Washington 32 →
+54 % de pas hors chaussée). Les voies doubles de Paris : 474 → 666 blocs
+occupés (`sonde-rue-dense.cjs boulevards`).
+
+---
+
 ## v577 — Un avion garé est un obstacle
 
 **Pourquoi.** Deux défauts déclarés qui étaient la même chose vue de deux côtés.

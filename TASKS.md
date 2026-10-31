@@ -546,11 +546,14 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   aussi, un passant traverse sur le passage peint » et « les passants de la
   ville d'arrivée se posent quand le monde est là », déjà déclarés, le premier
   rouge aussi sur `origin/main` rejouée seule.
-- [ ] **Les rues à la GTA (v544), ce qui reste, déclaré.** (1) Les convois des
-  villes bâties à la main roulent à `DECALAGE_AVENUE` (1,3 bloc) de l'axe
-  (v372) quand le milieu de la voie GTA est à 2,13 : recentrer touche les tours
-  de monuments (`VOIE_DE_DROITE`, paris.js), les raccords et la jumelle
-  (voiesdoubles.js), à remesurer ensemble. (2) San Diego retombe à un circuit :
+- [ ] **Les rues à la GTA (v544), ce qui reste, déclaré.** (1) *(v575 : fait — 2,13 sur les collectrices et
+  boulevards suivis, l'ancien décalage ailleurs, `decalerSelonLaSection`.
+  Reste : le huit de la République (−301, 323) a 150 contacts de grille dans
+  sa propre épingle contre 25 (`sonde-rue-dense.cjs jeu 0`), cédés en jeu par
+  la règle locale ; un rabat dans les virages serrés coûtait les voies doubles.
+  Les rues LOCALES (une voie, deux blocs de l'axe au caniveau) gardent 1,3 :
+  le flanc mord le trottoir de 0,3, et deux circuits de sens contraires y
+  seraient de toute façon dans la même voie — question de plan.)* (2) San Diego retombe à un circuit :
   son contresens roulerait à 34,1 blocs du centre, sur 46 blocs le long de la
   baie (33,6 sur la v531, même géographie). (3) Le grand anneau de Shanghai
   passe 32 pas sur le granit de la PLACE CENTRALE, autour de la fontaine — pas

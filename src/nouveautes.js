@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 578,
+    titre: 'Chaque voiture dans sa voie',
+    puces: [
+      'Les voitures roulent au milieu de leur voie',
+      'Elles se croisent sans se frôler',
+      'Paris, Londres, Nice, Lille, San Francisco',
+    ],
+  },
+  {
     v: 577,
     titre: 'Un avion garé est un obstacle',
     puces: [
