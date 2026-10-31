@@ -1508,7 +1508,7 @@ function verifier(nom, ok, detail = '') {
     verifier('le réverbère parisien coûte deux maillages : la fonte fusionnée, la lanterne',
       res0.reverbere === 2, `${res0.reverbere} maillage(s)`);
 
-    // ── L'OMBRE DES FAÇADES EST AJOURÉE (v567) ──────────────────────────────
+    // ── L'OMBRE DES FAÇADES EST AJOURÉE (v569) ──────────────────────────────
     //
     // La passe d'ombre de three échantillonnait la carte aux UV BRUTS : les
     // façades ont des UV en unités du monde, repliées par le shader de la
