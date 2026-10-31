@@ -14858,6 +14858,34 @@ Ce qui reste, déclaré dans `TASKS.md` : une demi-couronne possible à la
 frontière de `RAYON_HD` (un arbre à cheval sur deux morceaux dont un seul est
 détaillé), et l'ombre des façades HD de Paris.
 
+## L'ombre des façades HD (v572) — un matériau qui replie ses UV a son matériau de profondeur
+
+Trois règles.
+
+- **LA PASSE D'OMBRE NE VOIT PAS LE SHADER DE LA COULEUR.** three dessine
+  l'ombre avec un matériau de profondeur à lui, à qui il recopie `map` et
+  `alphaTest`, et qui échantillonne aux UV BRUTS. Tout `onBeforeCompile` qui
+  touche à l'échantillonnage (ici le repli des UV monde dans leur tuile,
+  v287) doit avoir son jumeau de profondeur, posé par
+  `customDepthMaterial` (`profondeurHD`, matierehd.js) — sinon une croisée
+  jette un pavé. Le jumeau fait LE MÊME calcul, dérivées comprises : ce qui
+  est coupé à l'écran est coupé dans l'ombre. `?ombrehd=0` rejoue l'ancienne
+  ombre, pour mesurer.
+- **UN JUMEAU DE PROFONDEUR EST UNE CLÉ DE PROGRAMME, ET `compile` NE LA VOIT
+  PAS (v319).** Elle se chauffe à l'accueil par un vrai rendu d'ombre
+  (`compilerAvecOmbres`, seulement si l'appareil a des ombres), et la forme
+  d'ombre retenue par la chauffe compte le `customDepthMaterial`. Le témoin
+  se joue sans arbres (`arbres=0`) : ceux du point d'apparition compilent la
+  clé à la première image, chauffe ou pas, et il ne mesurerait rien.
+- **UNE SONDE D'OMBRE SE POSE SOUS SON CASSEUR, ET LE CASSEUR SE RETOURNE.**
+  three dessine les ombres par la face ARRIÈRE (`shadowSide` nul → l'envers
+  du côté) : un quad unique tourné vers le soleil n'ombre rien — ma sonde
+  ne voyait d'ombre ni au panneau HD ni au panneau plein. Et un `layers` posé
+  pour cacher le casseur à la caméra le cache AUSSI à la passe d'ombre (elle
+  teste les couches de la caméra principale) : la caméra se met entre le
+  casseur et la dalle. Un témoin d'ombre garde un casseur plein, sinon zéro
+  ombre passe pour une ombre ajourée.
+
 ## Les arbres beaux partout (v528) — un niveau de détail lointain se mesure contre ce qu'il remplace
 
 Max, en vol : « Au loin, les arbres sont moches, ils sont en forme Minecraft. »

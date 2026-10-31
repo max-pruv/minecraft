@@ -1,5 +1,18 @@
 # Ce qui est en cours
 
+## Rouge de portail constaté par la v572 — mesuré identique sur `origin/main`
+
+- [ ] **`carteMonde.js` : les avions dépassent leur gabarit de quelques
+  centièmes.** Trois témoins rouges, rejoués SEULS sur la branche ET sur
+  `origin/main` (v568), mêmes chiffres au centième : longueurs avionligne
+  16,15/16 · concorde 20,13/20 · chasseur 10,22/10 ; envergures 15,69/15,3 ·
+  8,76/8,4 · 7,58/7,2 ; déposés a320 16,23/16, a321 16,23/16, f35 10,23/10
+  et 7,4/7,2 d'envergure. Le surplus est le même (≈ 0,15 à 0,4 bloc) pour
+  sculptés et déposés : un ajout commun à tous les modèles (les feux de bord
+  de la v565, lentille et halos au bout de l'aile et à la queue ?) entre dans
+  la boîte mesurée. À vérifier en mesurant sans le groupe des feux avant de
+  toucher au gabarit. Hors de la zone de la v572 (avions.js, aeroport.js).
+
 ## Les réglages à deux tablettes (v571) — ce qui reste, déclaré
 
 - [ ] **Rouges du portail de la v571 : aucun de la livraison.** Le diff ne
@@ -1410,8 +1423,11 @@ v522 ne touche pas ; la distribution reste à faire.
   (le remaillage suit l'enfant, `entry.hd`), non mesuré en capture ; le
   remède serait de faire taire les feuilles d'un morceau sans détail quand le
   fût est dans un morceau détaillé — une lecture de plus par morceau.
-- [ ] **L'OMBRE DES FAÇADES HD DE PARIS EST JETÉE PAR LEURS UV MONDE (depuis
-  la v287).** La passe d'ombre de three échantillonne `map` aux UV bruts ;
+- [x] **L'OMBRE DES FAÇADES HD DE PARIS EST JETÉE PAR LEURS UV MONDE (depuis
+  la v287).** — FAIT en v572 : `profondeurHD` (matierehd.js) replie les UV
+  dans la passe d'ombre, chauffé à l'accueil ; deux témoins dans `parishd.js`.
+  Reste mesurable sur l'ordinateur de Max (« Graphismes avancés ») : le coût
+  de la passe, `?ombrehd=0` contre défaut. La passe d'ombre de three échantillonne `map` aux UV bruts ;
   les façades portent des UV en unités du monde repliées par le shader de la
   couche, hors de l'atlas pour la passe d'ombre : alpha nul, ombre absente là
   où `alphaTest` coupe. Vu en préparant les arbres (v499), dont les cartes

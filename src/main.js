@@ -671,6 +671,7 @@ world.sansSolContinu = new URLSearchParams(location.search).get('solcontinu') ==
 // Le matériau HD se fabrique à la demande (son environnement préfiltré coûte
 // une PMREM) : la première fois qu'un morceau de Paris arrive avec du détail.
 let hd = null;
+const OMBRE_HD = new URLSearchParams(location.search).get('ombrehd') !== '0';
 function materiauDeParis() {
   if (!hd) hd = materiauHD(renderer);
   return hd.materiau;
@@ -684,14 +685,19 @@ function materiauDeParis() {
 // dessiné (couche 4), avec son propre espace de couleur —, comme les feux
 // (v306). Un quad qui porte les attributs de la couche suffit : `compile` ne
 // dessine rien, il ne regarde que le matériau et les lumières de la scène.
-function chaufferLaCoucheHD(camera) {
-  if (!world.arbres && RAYON_HD <= 0) return;
+function quadDeLaCoucheHD() {
   const t = { positions: new Float32Array([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0]), normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
     uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), colors: new Float32Array(12).fill(1), tiles: new Float32Array([0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]),
     matiere: new Float32Array([1, 0, 1, 0, 1, 0, 1, 0]), lueur: new Float32Array(4), indices: new Uint16Array([0, 1, 2, 0, 2, 3]) };
-  const ici = new THREE.Scene();
   const m = new THREE.Mesh(geometrieHD(t), materiauDeParis());
-  ici.add(decor(m));
+  if (OMBRE_HD) m.customDepthMaterial = hd.profondeur;
+  return decor(m);
+}
+function chaufferLaCoucheHD(camera) {
+  if (!world.arbres && RAYON_HD <= 0) return;
+  const ici = new THREE.Scene();
+  const m = quadDeLaCoucheHD();
+  ici.add(m);
   const cible = refletsVoiture(), avant = renderer.getRenderTarget();
   try {
     renderer.compile(ici, camera, scene);
@@ -1391,6 +1397,8 @@ function installerMorceau(cx, cz, tampons) {
       m.position.set(cx * CHUNK, 0, cz * CHUNK);
       m.castShadow = ombre && (nom === 'facades' || nom === 'arbresLoin');
       m.receiveShadow = true;
+      // l'ombre replie ses UV comme la couleur (v572) ; `?ombrehd=0` rend l'ancienne
+      if (OMBRE_HD) m.customDepthMaterial = hd.profondeur;
       entry[nom] = m;
       scene.add(decor(m));
     }
@@ -9289,6 +9297,11 @@ requestAnimationFrame(() => {
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
     // la couche HD et ses arbres (v541) : un matériau, deux programmes
     try { chaufferLaCoucheHD(camera); } catch (e) { console.warn('chauffe de la couche HD', e); }
+    // et son ombre (v572) : un matériau de profondeur à elle, que `compile` ne
+    // voit pas — un vrai rendu d'ombre, seulement sur un appareil qui en a
+    if (renderer.shadowMap.enabled && OMBRE_HD && (world.arbres || RAYON_HD > 0)) {
+      try { const q = quadDeLaCoucheHD(); compilerAvecOmbres(q); q.geometry.dispose(); } catch (e) { console.warn('chauffe de l’ombre HD', e); }
+    }
     // la fumée et les flammes des dégâts (v343) : deux matériaux neufs
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
     // les traces de pneus (v434) : un matériau neuf, son essaim exact
@@ -9349,7 +9362,7 @@ requestAnimationFrame(() => {
   // profondeur : instanciée, à squelette, faces, découpe), et l'on se contente
   // de compiler la couleur pour les autres.
   const formesDOmbre = new Set();
-  const formeDOmbre = (o, m) => [o.isInstancedMesh ? (o.instanceColor ? 'Ic' : 'I') : '', o.isSkinnedMesh ? 'S' : '',
+  const formeDOmbre = (o, m) => [o.isInstancedMesh ? (o.instanceColor ? 'Ic' : 'I') : '', o.isSkinnedMesh ? 'S' : '', o.customDepthMaterial ? o.customDepthMaterial.uuid : '',
     m.side, m.shadowSide, m.alphaTest > 0, !!m.map, !!m.alphaMap, !!m.displacementMap, !!m.alphaHash].join('|');
   const compilerAvecOmbres = (objet) => {
     let neuve = false;
@@ -9461,6 +9474,7 @@ requestAnimationFrame(() => {
           const copie = o.isInstancedMesh ? new THREE.InstancedMesh(o.geometry, m, 1) : new THREE.Mesh(o.geometry, m);
           if (o.isInstancedMesh && o.instanceColor) copie.setColorAt(0, new THREE.Color(1, 1, 1));
           copie.layers.mask = o.layers.mask;
+          if (o.customDepthMaterial) copie.customDepthMaterial = o.customDepthMaterial;
           compilerAvecOmbres(copie);
         });
       }
