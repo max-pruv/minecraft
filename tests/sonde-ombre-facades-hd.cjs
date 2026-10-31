@@ -1,4 +1,4 @@
-// L'OMBRE DES FAÇADES HD (v569) : une croisée au matériau de la couche HD jette-
+// L'OMBRE DES FAÇADES HD (v571) : une croisée au matériau de la couche HD jette-
 // t-elle une ombre ajourée — le bois ombre, la vitre (vide dans la tuile)
 // laisse passer le soleil — ou une ombre pleine, ou pas d'ombre du tout ?
 //   node tests/sonde-ombre-facades-hd.cjs [rapport.json] [préfixe des captures] [&ombrehd=0]

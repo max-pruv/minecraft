@@ -1424,7 +1424,7 @@ v522 ne touche pas ; la distribution reste à faire.
   remède serait de faire taire les feuilles d'un morceau sans détail quand le
   fût est dans un morceau détaillé — une lecture de plus par morceau.
 - [x] **L'OMBRE DES FAÇADES HD DE PARIS EST JETÉE PAR LEURS UV MONDE (depuis
-  la v287).** — FAIT en v569 : `profondeurHD` (matierehd.js) replie les UV
+  la v287).** — FAIT en v571 : `profondeurHD` (matierehd.js) replie les UV
   dans la passe d'ombre, chauffé à l'accueil ; deux témoins dans `parishd.js`.
   Reste mesurable sur l'ordinateur de Max (« Graphismes avancés ») : le coût
   de la passe, `?ombrehd=0` contre défaut. La passe d'ombre de three échantillonne `map` aux UV bruts ;
