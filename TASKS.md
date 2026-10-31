@@ -231,6 +231,13 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
 
 ## v562 — LA POLICE ET LA MOTO : ce qui reste, déclaré
 
+- [x] **FERMÉ (claude/temoins-intermittents) : « police : une seconde bêtise
+  fait venir la moto »**, rouge au portail de la branche (`choc.points 45`,
+  `etoiles2 1`). Un choc contre la voiture garée vaut 45 points (90 quand elle
+  rebondit et publie un second choc), un piéton 55, la seconde étoile est à
+  120 : le témoin dépendait du rebond. `sonde-police.cjs` ajoute des bêtises
+  jusqu'à deux étoiles (trois au plus) et publie `betises2`.
+
 - **La police est locale à la tablette.** Les étoiles, les unités, le contrôle
   ne voyagent pas sur le réseau : un ami voit la voiture de l'enfant, pas la
   police qui le suit. Piste : les étoiles dans la position (`p.v`, comme les
