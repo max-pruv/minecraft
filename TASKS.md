@@ -184,21 +184,25 @@
   venait de rendre) ; rejoué seul dans une sonde, 3/3 verts (arrêt 0,7 à
   1,8 s, détresse, repart à 6 s). La livraison ne touche ni `heurter` ni la
   collecte. Piste : `etat()` et `dernieres` ne sont pas de la même image.
+- [ ] **`monte.js` « une voiture de la rue heurtée par l'enfant s'arrête, feux
+  de détresse, puis repart »** revient au portail de la v577 sous une autre
+  forme : `pose: false, clignote: false` (arrêt à 1,06 s, repart à 6,2 s,
+  48 images). Vert aux deux tranches précédentes de la branche, et
+  `sonde-heurt-detresse.cjs` (le geste du témoin, six fois, sans charge et à
+  300 ms par image) rend 6/6 `pose: true` sur la branche ET sur `origin/main`
+  v575. Piste : le maillage nommé n'existe pas encore (ou est refait) à l'image
+  où `feuxDeDetresse` s'allume, sous la charge du portail — la sonde publie
+  `sansMaillage` pour le dire.
 - [ ] **`degats.js` « le journal de bord garde le coût réel des dégâts »** :
-  rouge au portail de la v576 (`dernierMs: 0`), vert rejoué seul sur la
+  rouge au portail de la v577 (`dernierMs: 0`), vert rejoué seul sur la
   branche ET sur `origin/main` v575 (`dernierMs: 0,1` des deux côtés,
   31 octobre 2026). Le dernier enfoncement coûte un dixième de milliseconde ;
   sous la charge du portail, l'horloge l'arrondit à zéro, et la barre
   `dernierMs > 0` tombe. La grandeur à exiger est « un enfoncement a été
   mesuré » (le compte), pas une durée strictement positive.
-- [ ] **`carteMonde.js`, les dimensions des avions** (« chaque appareil tient
-  dans le poste », « l'envergure annoncée est celle du modèle rendu », « les
-  avions déposés tiennent dans le gabarit ») : rouges à l'identique sur
-  `origin/main` v569 rejouée seule (avionligne 16,15/16, concorde 20,13/20,
-  chasseur 10,22/10 ; envergures 15,69/15,3 · 8,76/8,4 · 7,58/7,2 ; a320 et
-  a321 16,23/16) et sur la branche de la v577, qui ne touche aucun avion.
-  Mesuré le 31 octobre 2026. Un dépassement de 1 à 2 % : soit la barre du
-  témoin, soit l'échelle du script de conversion (v563) — à démonter.
+- [x] **FERMÉ (v577, rebasée sur la v575)** : `carteMonde.js`, les dimensions
+  des avions — vertes au portail (avionligne 15,92/16, envergures sous leur
+  annonce) : remboursée par 8bbaf48 (« Témoins de la v567 »).
 - [x] **FERMÉ (claude/temoins-intermittents)** : le témoin attend que la voiture
   recule (−2 b/s, borné à douze secondes), puis 0,4 s, et publie `msRecul`.
   Ancienne entrée : **`monte.js` « les feux stop s'allument au freinage, les feux de recul en
