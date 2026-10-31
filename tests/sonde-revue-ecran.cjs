@@ -413,26 +413,72 @@ const ETATS = [
     const choc = await tab.evaluate(async () => {
       const g = window.__game, P = g.player, v = g.vehicules;
       const tenir = (n) => new Promise((f) => setTimeout(f, n * 1000));
-      let cible = null, dm = Infinity;
-      v.etat().forEach((c) => {
-        if (!c.routier || c.nom !== 'voiture') return;
-        for (const q of c.places) {
-          const d = Math.hypot(q[0] - P.pos.x, q[1] - P.pos.z);
-          if (d < dm && d > 8) { dm = d; cible = q; }
-        }
-      });
-      if (!cible) return { err: 'aucune voiture de la rue en vue' };
+      // LA VOITURE VISÉE SE RELÈVE, ELLE NE SE DEVINE PAS : son cap publié
+      // suit la convention du maillage, et une rue tourne — se poser « douze
+      // blocs derrière » en ligne droite tombait dans la cour du Louvre. On la
+      // suit une seconde, puis l'on se pose là où ELLE ÉTAIT (sur la chaussée
+      // par construction), dans le sens où elle roule, et l'on fonce dedans.
+      // UNE VOITURE ARRÊTÉE (un feu, une file), comme le témoin de monte.js :
+      // sur le banc la rue roule en temps RÉEL et la nôtre en temps de JEU, à
+      // quelques images par seconde — une voiture qui roule ne se rattrape
+      // pas (v397). Son cap publié (rotation − π) est celui de son nez dans
+      // la convention du joueur : on se pose dix blocs derrière, dans son
+      // axe, et l'on fonce. Trois essais au plus, la plus proche d'abord.
+      const releve = () => {
+        const m = new Map();
+        v.etat().forEach((c, ci) => {
+          if (!c.routier || c.nom !== 'voiture') return;
+          for (const q of c.places) m.set(ci + '#' + q[3], q);
+        });
+        return m;
+      };
+      const r0 = releve();
+      await tenir(1.2);
+      const r1 = releve();
+      // Il n'y en a souvent aucune à l'arrêt : on PROVOQUE l'arrêt. La rue
+      // attend sans limite devant l'enfant (v245) : on se pose, immobile, sur
+      // le trajet d'une voiture qui roule — vingt blocs devant elle, dans
+      // l'axe de son déplacement relevé, face à elle. Elle s'arrête devant
+      // nous ; alors on fonce dedans.
+      const roulent = [];
+      for (const [k, q0] of r0) {
+        const q1 = r1.get(k); if (!q1) continue;
+        const dx = q1[0] - q0[0], dz = q1[1] - q0[1], l = Math.hypot(dx, dz);
+        const d = Math.hypot(q1[0] - P.pos.x, q1[1] - P.pos.z);
+        if (l > 4 && l < 30 && d < 150) roulent.push({ k, q: q1, ux: dx / l, uz: dz / l, d });
+      }
+      roulent.sort((a, b) => a.d - b.d);
+      if (!roulent.length) return { err: 'aucune voiture de la rue ne roule en vue', vues: r0.size };
       const a = g.fun.montureConduite();
-      const cap = cible[2], fx = Math.sin(cap), fz = Math.cos(cap);
-      a.pos.set(cible[0] - fx * 12, a.pos.y, cible[1] - fz * 12); a.mesh.position.copy(a.pos);
-      P.pos.copy(a.pos); P.yaw = cap + Math.PI; P.pitch = -0.08; P.vitesseVoiture = 25;
-      P.vel.set(fx * 25, 0, fz * 25); P.touchMove.f = 1;
       const n0 = g.fun.projetees();
+      let essais = 0, dm = 0, arret = null; const trace = [];
       const t0 = performance.now();
-      while (performance.now() - t0 < 6000 && g.fun.projetees() === n0) await tenir(0.05);
-      P.touchMove.f = 0;
+      for (const { k, q, ux, uz } of roulent.slice(0, 3)) {
+        essais++;
+        a.pos.set(q[0] + ux * 20, a.pos.y, q[1] + uz * 20); a.mesh.position.copy(a.pos);
+        P.pos.copy(a.pos); P.yaw = Math.atan2(ux, uz); P.pitch = -0.08; P.vitesseVoiture = 0; P.vel.set(0, 0, 0);
+        // elle s'arrête devant nous (huit secondes au plus)
+        let prec = null; arret = null;
+        const ta = performance.now();
+        while (performance.now() - ta < 8000) {
+          await tenir(0.3);
+          const qn = releve().get(k); if (!qn) break;
+          if (prec && Math.hypot(qn[0] - prec[0], qn[1] - prec[1]) < 0.05) { arret = qn; break; }
+          prec = qn;
+        }
+        if (!arret) continue;
+        dm = Math.hypot(arret[0] - P.pos.x, arret[1] - P.pos.z);
+        P.vitesseVoiture = 22; P.vel.set(-Math.sin(P.yaw) * 22, 0, -Math.cos(P.yaw) * 22); P.touchMove.f = 1;
+        const x1 = P.pos.x, z1 = P.pos.z, c1 = P.chocs || 0;
+        const t1 = performance.now();
+        while (performance.now() - t1 < 20000 && g.fun.projetees() === n0) await tenir(0.05);
+        P.touchMove.f = 0;
+        trace.push({ arret: +dm.toFixed(1), roule: +Math.hypot(P.pos.x - x1, P.pos.z - z1).toFixed(1), chocs: (P.chocs || 0) - c1,
+          contact: P.contact && P.contact.famille, force: P.choc && +(P.choc.force || 0).toFixed(2), v: +(P.vitesseVoiture || 0).toFixed(1) });
+        if (g.fun.projetees() > n0) break;
+      }
       await tenir(0.6);
-      return { a: +dm.toFixed(1), projetees: g.fun.projetees() - n0, ms: Math.round(performance.now() - t0) };
+      return { a: +dm.toFixed(1), essais, trace, projetees: g.fun.projetees() - n0, ms: Math.round(performance.now() - t0) };
     });
     return { ...r, ...choc };
   } },

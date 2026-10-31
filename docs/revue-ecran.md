@@ -246,3 +246,23 @@ porte deux rangées d'appareils des quatre modèles
 | # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
 | --- | --- | --- | --- | --- | --- | --- |
 | 36 | basse | au roulage (v565) | [roulage](revue-ecran/v565-aeroports/iphone-aeroport-roulage-jour.jpg) | La rangée étant pleine, l'appareil qui part de son poste vers la piste fait passer un bout d'aile dans son voisin garé : un avion n'est pas un obstacle (v534). | Une boîte d'envergure pour les appareils garés, jugée chez le joueur comme une famille d'obstacle (v252). | `src/main.js`, `src/player.js` |
+
+## Le relevé de la v567 (une voiture de la rue percutée est projetée), 31 octobre 2026
+
+État `voiture-projetee`, iPhone et iPad, jour et nuit, dans
+`docs/revue-ecran/v567-chocs/`, fait après la fusion (la PR #569 a été
+fusionnée avant la revue : elle se rattrape ici). La vraie physique : dans
+Paris, au volant, une voiture de la rue s'arrête devant l'enfant (la rue
+attend sans limite, v245), puis il fonce dedans — force 0,61 à 0,64, une
+voiture libre de plus. Elle part devant la nôtre, feux stop allumés, et la
+police compte une étoile ([iPhone](revue-ecran/v567-chocs/iphone-voiture-projetee-jour.jpg),
+[iPad](revue-ecran/v567-chocs/ipad-voiture-projetee-jour.jpg)). Rien d'autre
+de la livraison ne se voit à l'écran. Le premier jet de l'état ne projetait
+rien : sur le banc la rue roule en temps réel et la nôtre en temps de jeu, une
+voiture qui roule ne se rattrape pas (v397) ; l'état provoque donc l'arrêt.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 37 | basse | au volant, de nuit | [nuit](revue-ecran/v567-chocs/iphone-voiture-projetee-nuit.jpg) | La pilule de la radio « Salle Ronde · Les marches du palais » déborde sa forme à 430 px : la fin du titre sort du bord arrondi. Antérieur. | Une largeur bornée et des points de suspension (`text-overflow: ellipsis`), ou un défilement du titre. | `index.html`, `src/sons.js` |
+| 38 | basse | au volant, Paris | [iPad](revue-ecran/v567-chocs/ipad-voiture-projetee-jour.jpg) | Un grand rectangle noir dans la minicarte, sur la Seine et la rive droite : des points pas encore peints (v540), visibles plusieurs secondes après un saut. Antérieur. | Mesurer combien de temps la bande reste noire après un saut ; peindre d'abord ce qui est sous l'enfant. | `src/main.js` (minicarte) |
+| 39 | basse | au volant, Paris (automne) | [iPad](revue-ecran/v567-chocs/ipad-voiture-projetee-jour.jpg) | De grandes feuilles d'automne flottent à hauteur d'yeux au-dessus de la chaussée, loin de tout arbre ; c'est le rouge déclaré « chaque feuille vole bas » (`monte.js`, écart 6,5 pour une barre de 4). | Celui du témoin. | `src/saisons.js` |

@@ -1544,7 +1544,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return b && getComputedStyle(b).display !== 'none'
         && getComputedStyle(b.closest('.fun-target')).display !== 'none';
     }, null, { timeout: 5000 }).catch(() => {});
-    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    // Un bouton-bascule ne se reclique pas (v252) : déjà au volant, ce clic
+    // ferait DESCENDRE, et le témoin mesurait « 0,0 m parcourus » à pied.
+    // On lit l'état dans le jeu, on ne clique que si l'on est à pied, et
+    // l'on attend d'être monté.
+    const dejaMonte = await tab.evaluate(() => !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()));
+    if (!dejaMonte) await tab.evaluate(() => document.getElementById('ride-btn').click());
+    const monteRoues = await tab.waitForFunction(() => !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()),
+      null, { timeout: 8000 }).then(() => true).catch(() => false);
     await dormir(600);
     // On se place D'ABORD, on lit l'angle ENSUITE : la mise en place est un
     // téléport de douze blocs, et le compter comme du roulage retournait la
@@ -1565,7 +1572,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       tourne != null && rouleSur > 1 && tourne > 0
       && tourne > attendu * 0.7 && tourne < attendu * 1.4,
       `${rouleSur.toFixed(1)} m parcourus · roue tournée de ${tourne == null ? '—' : tourne.toFixed(1)} rad`
-      + (attendu ? ` (attendu ${attendu.toFixed(1)})` : ''));
+      + (attendu ? ` (attendu ${attendu.toFixed(1)})` : '') + ` · déjà monté ${dejaMonte}, au volant ${monteRoues}`);
 
     // LES REFLETS NE FIGENT PLUS L'IMAGE (v245) -------------------------------
     //
@@ -10324,10 +10331,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('police : les deux gyrophares alternent',
         !po.err && Array.isArray(po.gyrophares) && po.gyrophares.length === 2 && po.gyrophares[0] !== po.gyrophares[1], pj);
       verifier('police : une seconde bêtise fait venir la moto',
-        !po.err && po.moto && po.moto.type === 'moto' && po.etoiles2 >= 2, pj);
+        !po.err && po.moto && po.moto.type === 'moto' && po.etoiles2 >= 2,
+        `points avant ${po.pointsAvant}, bêtises ajoutées ${po.betises2}, étoiles ${po.etoiles2}, moto ${po.moto ? po.moto.type : 'aucune'} — ${pj}`);
       verifier('police : à l\'arrêt, la voiture double sans toucher et se gare devant l\'enfant, le policier lui parle',
         !po.err && po.surDalle && po.controle && po.controle.devant && po.controle.parle && po.distanceMin > 2.6
-          && po.garee && po.garee.devant > 5 && Math.abs(po.garee.cote) < 2, pj);
+          && po.garee && po.garee.devant > 5 && Math.abs(po.garee.cote) < 2,
+        `contrôle ${JSON.stringify(po.controle)}, interrompus ${JSON.stringify(po.interrompus)}, distance min ${po.distanceMin}, garée ${JSON.stringify(po.garee)} — ${pj}`);
       verifier('police : la voix dit l\'appel puis ce qui s\'est passé et « Bonne route »',
         !po.err && Array.isArray(po.dits) && po.dits.length >= 2 && /Bonne route/.test(po.dits[po.dits.length - 1].texte),
         JSON.stringify(po.dits));
