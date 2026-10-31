@@ -20,6 +20,39 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v571 — Des ombres de fenêtres
+
+**Pourquoi.** Depuis la couche HD de Paris (v287), l'ombre d'une façade était
+fausse partout où sa tuile est ajourée : la croisée d'une fenêtre, le
+garde-corps d'un balcon, la ferronnerie. La passe d'ombre de three lit la
+texture aux UV bruts ; or les façades portent des UV en unités du monde, que
+seul le shader de la couleur replie dans leur tuile. L'ombre échantillonnait
+donc tout l'atlas, ou son bord : une croisée jetait un aplat traversé d'une
+bande fantôme, comme un pavé plein. Dette déclarée dans `TASKS.md` depuis la
+v499, vue en préparant les arbres. Cela ne se voit que sur un appareil qui a
+des ombres (« Graphismes avancés », l'ordinateur).
+
+**Ce que ça change.**
+- Sous une fenêtre ou un balcon au soleil, l'ombre a les carreaux, le meneau,
+  les barreaux : le soleil passe là où la vitre et le vide sont à l'écran.
+- Rien ne change ailleurs : les arbres (UV absolues depuis la v499) rendent la
+  même ombre, et les tampons de la couche ne bougent pas d'un octet.
+
+**Ce qui le prouve.** Deux témoins neufs dans `parishd.js`, sur une page à
+ombres forcées, tous deux vérifiés rouges :
+- l'ombre d'un panneau de croisées au matériau des vrais maillages de façades
+  (`sonde-ombre-facades-hd.cjs`, lue telle quelle) : carreaux 151,8 · bois
+  157,7 · soleil 183,4 sur l'ancien code (l'aplat), 183,4 · 158,1 ici ; un
+  panneau plein ombre tout (140), sinon la mesure ne prouverait rien ;
+- le programme d'ombre de la couche (`paris-hd-ombre`) est compilé pendant la
+  préparation : aucun ne naît en jeu en arrivant à Paris (chauffe désarmée :
+  0 avant, 1 en jeu).
+Le coût de la passe d'ombre est mesuré en ordre alterné (`?ombrehd=0` rend
+l'ancienne ombre) ; l'empreinte des 490 morceaux est intacte par construction
+(aucun tampon touché).
+
+---
+
 ## v571 — Une langue choisie ne revient plus en arrière
 
 **Pourquoi.** Avec deux tablettes allumées sur le même prénom, un enfant qui

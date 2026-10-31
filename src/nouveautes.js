@@ -7,6 +7,14 @@
 export const NOUVEAUTES = [
   {
     v: 571,
+    titre: 'Des ombres de fenêtres',
+    puces: [
+      'Le soleil passe par les carreaux',
+      'Les balcons en fer aussi',
+      'Fini les ombres en pavé',
+    ],
+  },
+  {
     titre: 'Ta langue reste choisie',
     puces: [
       'Deux tablettes allumées ne se contredisent plus',

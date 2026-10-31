@@ -22,7 +22,7 @@
 // 6. À L'ÉCRAN, le relais près/loin se fait : sous l'enfant le détail est
 //    visible et la tuile cachée ; à cinq morceaux, l'inverse. Et `?hd=0`
 //    n'installe rien de HD du tout.
-const { Banc, dormir } = require('./banc.js');
+const { Banc, dormir, souffler } = require('./banc.js');
 
 const echecs = [];
 function verifier(nom, ok, detail = '') {
@@ -1507,6 +1507,43 @@ function verifier(nom, ok, detail = '') {
     verifier('aucune erreur JavaScript sans HD', bas.erreurs.length === 0, JSON.stringify(bas.erreurs.slice(0, 3)));
     verifier('le réverbère parisien coûte deux maillages : la fonte fusionnée, la lanterne',
       res0.reverbere === 2, `${res0.reverbere} maillage(s)`);
+
+    // ── L'OMBRE DES FAÇADES EST AJOURÉE (v567) ──────────────────────────────
+    //
+    // La passe d'ombre de three échantillonnait la carte aux UV BRUTS : les
+    // façades ont des UV en unités du monde, repliées par le shader de la
+    // couche à l'écran seulement. Une croisée jetait donc un aplat, ou une
+    // bande fantôme d'une autre tuile (depuis la v287). Une page à ombres
+    // forcées (`ombres=1`, v247), à Paris : un panneau de deux croisées sur deux
+    // au matériau ET au matériau de profondeur des vrais maillages de façades,
+    // au-dessus d'une dalle (`sonde-ombre-facades-hd.cjs`, lue telle quelle).
+    // Derrière les carreaux le soleil passe, derrière le bois l'ombre tombe ;
+    // un panneau plein ombre tout (sinon la mesure ne prouverait rien).
+    // Mesuré sur l'ancien code : carreaux 151,8 · bois 157,7 · soleil 183,4 —
+    // l'aplat ; ici 183,4 · 158,1. Et la clé de profondeur de la couche
+    // (`paris-hd-ombre`) est compilée PENDANT LA PRÉPARATION : aucune ne naît
+    // en jeu quand Paris arrive (v246). Rouge sur l'ancien code (pas de clé),
+    // rouge chauffe désarmée (la clé naît en jeu).
+    {
+      const { mesurer: mesurerOmbre } = require('./sonde-ombre-facades-hd.cjs');
+      await souffler();
+      // sans arbres : ceux du point d'apparition jettent leur ombre dès la première
+      // image et compileraient la clé en jeu, chauffe ou pas — la mesure ne
+      // distinguerait plus rien
+      const ombre = await banc.jouerSeul('Ombeline', { rr: 4, ombres: 1, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&hd=2&arbres=0', pret: true });
+      const clesOmbre = () => [...new Set((window.__game.renderer.info.programs || []).map((q) => q.cacheKey))].filter((k) => k.includes('paris-hd-ombre'));
+      const avantO = await ombre.evaluate(clesOmbre);
+      const o = await mesurerOmbre(ombre);
+      const apresO = await ombre.evaluate(clesOmbre);
+      await ombre.close();
+      const neuvesO = apresO.filter((k) => !avantO.includes(k));
+      verifier('l\'ombre d\'une croisée de façade est ajourée : le soleil passe par les carreaux, le bois ombre',
+        !o.erreur && o.ombres && o.profondeur && o.plein.carreaux <= o.plein.soleil - 25
+          && o.hd.carreaux >= o.hd.soleil - 12 && o.hd.bois <= o.hd.soleil - 12,
+        o.erreur || `carreaux ${o.hd && o.hd.carreaux} · bois ${o.hd && o.hd.bois} · soleil ${o.hd && o.hd.soleil} · panneau plein ${JSON.stringify(o.plein)} · profondeur ${o.profondeur}`);
+      verifier('le programme d\'ombre de la couche HD est chauffé à l\'accueil : aucun ne naît quand Paris arrive',
+        avantO.length >= 1 && neuvesO.length === 0, `${avantO.length} avant d'entrer, ${neuvesO.length} neuve(s) en jeu`);
+    }
   } finally {
     await banc.fermer();
   }

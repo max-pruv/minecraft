@@ -663,7 +663,51 @@ export function materiauHD(renderer) {
         totalEmissiveRadiance = vec3(1.0, 0.84, 0.58) * vLueur * nuitHD * 1.4;`);
   };
   materiau.customProgramCacheKey = () => 'paris-hd';
-  return { materiau, uniforms, atlas: canvas };
+  return { materiau, uniforms, atlas: canvas, profondeur: profondeurHD(materiau) };
+}
+
+// L'OMBRE DE LA COUCHE (v567). La passe d'ombre de three dessine chaque
+// maillage avec SON matériau de profondeur, à qui elle recopie `map` et
+// `alphaTest`, et qui échantillonne la carte aux UV BRUTS. Or les UV des façades
+// sont en unités du monde (0..3 sur une baie de trois blocs) : repliées par le
+// shader ci-dessus à l'écran, elles tombaient pour l'ombre sur tout l'atlas
+// (entre 0 et 1) ou sur son bord (au-delà). Une croisée, un garde-corps, une
+// ferronnerie jetaient donc un aplat, ou une bande fantôme d'une autre tuile —
+// mesuré par `sonde-ombre-facades-hd.cjs`. Ce matériau de profondeur replie les
+// UV EXACTEMENT comme la couleur (le même calcul, les mêmes dérivées) : ce qui
+// est coupé à l'écran est coupé dans l'ombre. Les arbres (v499, UV absolues
+// dans le rectangle neutre) rendent la même ombre qu'avant, par construction.
+//
+// Une clé de programme à lui (`paris-hd-ombre`), chauffée à l'accueil quand
+// l'appareil a des ombres (main.js, `chaufferLaCoucheHD`). `map` et `alphaTest`
+// sont reposés par three à chaque passe : ceux du matériau de la couche.
+export function profondeurHD(materiau) {
+  const p = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: materiau.map, alphaTest: materiau.alphaTest });
+  p.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>
+        attribute vec4 tuile;
+        varying vec4 vTuile;
+        varying highp vec2 vUvTuile;`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        vTuile = tuile;
+        vUvTuile = uv;`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec4 vTuile;
+        varying highp vec2 vUvTuile;`)
+      .replace('#include <map_fragment>', `
+        #ifdef USE_MAP
+          vec2 uvHD = vTuile.xy + fract(vUvTuile) * vTuile.zw;
+          #if __VERSION__ >= 300
+            diffuseColor *= textureGrad(map, uvHD, dFdx(vUvTuile) * vTuile.zw, dFdy(vUvTuile) * vTuile.zw);
+          #else
+            diffuseColor *= texture2D(map, uvHD);
+          #endif
+        #endif`);
+  };
+  p.customProgramCacheKey = () => 'paris-hd-ombre';
+  return p;
 }
 
 // La BufferGeometry d'un tampon HD : les attributs du mailleur, plus la

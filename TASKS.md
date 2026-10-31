@@ -1410,8 +1410,11 @@ v522 ne touche pas ; la distribution reste à faire.
   (le remaillage suit l'enfant, `entry.hd`), non mesuré en capture ; le
   remède serait de faire taire les feuilles d'un morceau sans détail quand le
   fût est dans un morceau détaillé — une lecture de plus par morceau.
-- [ ] **L'OMBRE DES FAÇADES HD DE PARIS EST JETÉE PAR LEURS UV MONDE (depuis
-  la v287).** La passe d'ombre de three échantillonne `map` aux UV bruts ;
+- [x] **L'OMBRE DES FAÇADES HD DE PARIS EST JETÉE PAR LEURS UV MONDE (depuis
+  la v287).** — FAIT en v569 : `profondeurHD` (matierehd.js) replie les UV
+  dans la passe d'ombre, chauffé à l'accueil ; deux témoins dans `parishd.js`.
+  Reste mesurable sur l'ordinateur de Max (« Graphismes avancés ») : le coût
+  de la passe, `?ombrehd=0` contre défaut. La passe d'ombre de three échantillonne `map` aux UV bruts ;
   les façades portent des UV en unités du monde repliées par le shader de la
   couche, hors de l'atlas pour la passe d'ombre : alpha nul, ombre absente là
   où `alphaTest` coupe. Vu en préparant les arbres (v499), dont les cartes
