@@ -1510,7 +1510,7 @@ function verifier(nom, ok, detail = '') {
     // la page reste en jeu sinon, et coûte presque tout le banc à la suivante (v427)
     await bas.close();
 
-    // ── L'OMBRE DES FAÇADES EST AJOURÉE (v571) ──────────────────────────────
+    // ── L'OMBRE DES FAÇADES EST AJOURÉE (v572) ──────────────────────────────
     //
     // La passe d'ombre de three échantillonnait la carte aux UV BRUTS : les
     // façades ont des UV en unités du monde, repliées par le shader de la

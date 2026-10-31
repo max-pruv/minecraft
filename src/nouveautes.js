@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 571,
+    v: 572,
     titre: 'Des ombres de fenêtres',
     puces: [
       'Le soleil passe par les carreaux',
@@ -15,6 +15,7 @@ export const NOUVEAUTES = [
     ],
   },
   {
+    v: 571,
     titre: 'Ta langue reste choisie',
     puces: [
       'Deux tablettes allumées ne se contredisent plus',

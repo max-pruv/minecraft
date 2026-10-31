@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v571 — Des ombres de fenêtres
+## v572 — Des ombres de fenêtres
 
 **Pourquoi.** Depuis la couche HD de Paris (v287), l'ombre d'une façade était
 fausse partout où sa tuile est ajourée : la croisée d'une fenêtre, le

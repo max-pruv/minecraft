@@ -666,7 +666,7 @@ export function materiauHD(renderer) {
   return { materiau, uniforms, atlas: canvas, profondeur: profondeurHD(materiau) };
 }
 
-// L'OMBRE DE LA COUCHE (v571). La passe d'ombre de three dessine chaque
+// L'OMBRE DE LA COUCHE (v572). La passe d'ombre de three dessine chaque
 // maillage avec SON matériau de profondeur, à qui elle recopie `map` et
 // `alphaTest`, et qui échantillonne la carte aux UV BRUTS. Or les UV des façades
 // sont en unités du monde (0..3 sur une baie de trois blocs) : repliées par le

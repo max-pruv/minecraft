@@ -14858,7 +14858,7 @@ Ce qui reste, déclaré dans `TASKS.md` : une demi-couronne possible à la
 frontière de `RAYON_HD` (un arbre à cheval sur deux morceaux dont un seul est
 détaillé), et l'ombre des façades HD de Paris.
 
-## L'ombre des façades HD (v571) — un matériau qui replie ses UV a son matériau de profondeur
+## L'ombre des façades HD (v572) — un matériau qui replie ses UV a son matériau de profondeur
 
 Trois règles.
 

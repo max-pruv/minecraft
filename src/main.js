@@ -1397,7 +1397,7 @@ function installerMorceau(cx, cz, tampons) {
       m.position.set(cx * CHUNK, 0, cz * CHUNK);
       m.castShadow = ombre && (nom === 'facades' || nom === 'arbresLoin');
       m.receiveShadow = true;
-      // l'ombre replie ses UV comme la couleur (v571) ; `?ombrehd=0` rend l'ancienne
+      // l'ombre replie ses UV comme la couleur (v572) ; `?ombrehd=0` rend l'ancienne
       if (OMBRE_HD) m.customDepthMaterial = hd.profondeur;
       entry[nom] = m;
       scene.add(decor(m));
@@ -9297,7 +9297,7 @@ requestAnimationFrame(() => {
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
     // la couche HD et ses arbres (v541) : un matériau, deux programmes
     try { chaufferLaCoucheHD(camera); } catch (e) { console.warn('chauffe de la couche HD', e); }
-    // et son ombre (v571) : un matériau de profondeur à elle, que `compile` ne
+    // et son ombre (v572) : un matériau de profondeur à elle, que `compile` ne
     // voit pas — un vrai rendu d'ombre, seulement sur un appareil qui en a
     if (renderer.shadowMap.enabled && OMBRE_HD && (world.arbres || RAYON_HD > 0)) {
       try { const q = quadDeLaCoucheHD(); compilerAvecOmbres(q); q.geometry.dispose(); } catch (e) { console.warn('chauffe de l’ombre HD', e); }

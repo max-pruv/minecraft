@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-## Rouge de portail constaté par la v571 — mesuré identique sur `origin/main`
+## Rouge de portail constaté par la v572 — mesuré identique sur `origin/main`
 
 - [ ] **`carteMonde.js` : les avions dépassent leur gabarit de quelques
   centièmes.** Trois témoins rouges, rejoués SEULS sur la branche ET sur
@@ -11,7 +11,7 @@
   sculptés et déposés : un ajout commun à tous les modèles (les feux de bord
   de la v565, lentille et halos au bout de l'aile et à la queue ?) entre dans
   la boîte mesurée. À vérifier en mesurant sans le groupe des feux avant de
-  toucher au gabarit. Hors de la zone de la v571 (avions.js, aeroport.js).
+  toucher au gabarit. Hors de la zone de la v572 (avions.js, aeroport.js).
 
 ## Les réglages à deux tablettes (v571) — ce qui reste, déclaré
 
@@ -1424,7 +1424,7 @@ v522 ne touche pas ; la distribution reste à faire.
   remède serait de faire taire les feuilles d'un morceau sans détail quand le
   fût est dans un morceau détaillé — une lecture de plus par morceau.
 - [x] **L'OMBRE DES FAÇADES HD DE PARIS EST JETÉE PAR LEURS UV MONDE (depuis
-  la v287).** — FAIT en v571 : `profondeurHD` (matierehd.js) replie les UV
+  la v287).** — FAIT en v572 : `profondeurHD` (matierehd.js) replie les UV
   dans la passe d'ombre, chauffé à l'accueil ; deux témoins dans `parishd.js`.
   Reste mesurable sur l'ordinateur de Max (« Graphismes avancés ») : le coût
   de la passe, `?ombrehd=0` contre défaut. La passe d'ombre de three échantillonne `map` aux UV bruts ;
