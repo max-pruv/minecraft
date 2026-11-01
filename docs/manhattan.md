@@ -1,5 +1,9 @@
 # Manhattan appartient à la Terre
 
+La refonte des immeubles à partir du modèle fourni est décrite dans
+[Manhattan : volumes OSM](manhattan-osm.md), avec son attribution, son échelle
+et ses limites géographiques. Ce document décrit aussi l’architecture historique.
+
 Il existe une seule carte. On rejoint Manhattan par la carte du monde, comme
 toute autre ville, avec les mêmes outils, personnages, créatures, véhicules et
 règles éducatives. Le bouton « Explorer New York » de l'accueil a été retiré en
@@ -131,6 +135,13 @@ Références consultées et inspectées visuellement :
 - [Empire State Building, site officiel](https://www.esbnyc.com/about/facts-figures) : silhouette, retraits, terrasse, mât ; 443 m avec antenne, toit vers 381 m.
 - [Times Square Alliance, écrans et place](https://www.timessquarenyc.org/business-community/advertisement-sponsorships) : One Times Square face au nord, écrans enveloppants, place et abords des marches rouges.
 
+Depuis la v565, l'Empire State Building et la statue de la Liberté sont des
+photogrammétries de Brian Trepanier, et la chaussée, la pierre et dix façades
+lointaines viennent de photos de trois autres paquets Sketchfab, tous sous
+CC-BY-4.0 : crédits complets et modifications dans
+[`vendor/newyork/LICENSE.md`](../vendor/newyork/LICENSE.md), préparation par
+`scripts/new-york.mjs` (qui se rejoue sur les paquets d'origine).
+
 Les photographies de référence restent la propriété de leurs auteurs. Elles
 ne sont pas distribuées comme assets du jeu. Architecture, matériaux,
 publicités fictives et nouvelles berlines sont originaux et couverts par
@@ -138,16 +149,30 @@ publicités fictives et nouvelles berlines sont originaux et couverts par
 existants gardent leurs licences, notamment l'usage privé/familial des voitures
 fournies dans `vendor/voitures/LICENSE.md`. Aucun asset de GTA n'est utilisé.
 
+## Les banlieues (v583)
+
+Autour de l'île, dix quartiers dans le même plan (`src/new-york-banlieues.js`) :
+Hoboken, Fort Lee, Jersey City, Port Newark, le Bronx, Queens, Brooklyn, Coney
+Island, Long Island, Staten Island, et sept ponts. Les bâtiments du paquet « CCity
+Building Set 1 » de Neberkenezer (CC-BY-4.0, `vendor/newyork/LICENSE.md`) les
+peuplent, avec les immeubles procéduraux et des pavillons dessinés. Captures :
+`node tests/sonde-captures-banlieues.cjs <dossier>`.
+
 ## Limites connues
 
-Cette version reste stylisée, avec une géographie comprimée et des collisions
+Les quartiers sont plats (le talus les raccorde au relief), leurs immeubles de
+modèle ne se visitent pas, et les ponts sont des chaussées au ras de l'eau. Cette
+version reste stylisée, avec une géographie comprimée et des collisions
 voxelisées ; elle ne revendique pas une fidélité AAA. Les tours génériques se
 répètent, le passage au détail distant est perceptible, les berges rencontrent
 le terrain mondial à une limite visible et les intérieurs sont peu aménagés.
 Les feux ne commandent pas encore les convois ; les voitures ralentissent
 selon le système existant et ne négocient pas toutes les priorités. Les écrans
-sont lumineux mais leurs publicités sont fixes. Les monuments secondaires,
-les ponts et la Statue de la Liberté demandent une passe supplémentaire.
+sont lumineux mais leurs publicités sont fixes. Les monuments secondaires
+et les ponts demandent une passe supplémentaire. Le modèle de l'Empire State
+peut déborder d'un à trois blocs de ses retraits de collision au niveau des
+corniches des ailes, et au niveau de la rue la diversité des façades reste
+discrète (elle se voit surtout de loin).
 Un iPad physique reste nécessaire pour mesurer Safari et la pression mémoire.
 Deux imports simultanés hors ligne dont les journaux Terre diffèrent peuvent
 choisir des emplacements de secours différents ; les archives conservées

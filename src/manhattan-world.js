@@ -19,7 +19,25 @@ import {
   SOL_ILE,
   dansIleLiberte,
   statueLiberte,
+  statueLiberteModele,
+  escalierFortModele,
+  BATIMENTS,
+  MODELES_NY_ETAT,
+  DATE_NY_MODELES,
 } from "./manhattan-plan.js";
+
+import {
+  ZONES,
+  TALUS,
+  DATE_BANLIEUES,
+  dansZones,
+  memeZone,
+  solDeBanlieue,
+  surfaceDeZone,
+  zoneA,
+} from "./new-york-banlieues.js";
+
+import { BATIMENTS_HISTORIQUES, DATE_OSM, immeublesHistoriquesEn, chevauchent } from './manhattan-historique.js';
 
 export const ORIGINE_MANHATTAN = positionDe("ny");
 export const versTerre = (x, z) => ({
@@ -55,6 +73,21 @@ export function dansManhattan(x, z, marge = 0) {
     p.z >= BORNES.z0 - marge &&
     p.z < BORNES.z1 + marge
   );
+}
+// LES BANLIEUES (v583) : le même plan, dans d'autres rectangles.
+export function dansBanlieue(x, z, marge = 0) {
+  return dansZones(x - ORIGINE_MANHATTAN.x, z - ORIGINE_MANHATTAN.z, marge);
+}
+// Dans le plan de New York : l'île ou un quartier. C'est ce que le rendu et le
+// monde demandent ; `dansManhattan` reste le rectangle de l'île.
+export function dansPlanNY(x, z, marge = 0) {
+  return dansManhattan(x, z, marge) || dansBanlieue(x, z, marge);
+}
+// Un morceau tout entier dans le plan : ses deux coins dans le même rectangle.
+function morceauEntier(ox, oz) {
+  if (dansManhattan(ox, oz) && dansManhattan(ox + CHUNK - 1, oz + CHUNK - 1)) return true;
+  const p = versManhattan(ox, oz);
+  return memeZone(p.x, p.z, p.x + CHUNK - 1, p.z + CHUNK - 1);
 }
 const MARQUE = "@manhattan-v240:";
 const valide = (k, e) =>
@@ -124,6 +157,8 @@ export class TerreUrbaine extends World {
     this.protectedBuildings = new Set();
     this.provenance = new Map();
     this.importMarks = {};
+    this.batimentsTouches = new Set();
+    this.immeublesHistoriques = new Set();
     this.mapPlacesExtra = lieuxManhattan;
     // L'adaptateur ne crée ni monde ni sauvegarde : il convertit les coordonnées
     // locales des maillages vers les coordonnées absolues du même World.
@@ -145,7 +180,7 @@ export class TerreUrbaine extends World {
         );
       },
       buildingAllowed(b) {
-        return !w.protectedBuildings.has(b.id);
+        return b.historique ? w.immeublesHistoriques.has(b.id) : !w.protectedBuildings.has(b.id);
       },
       groundAllowed(x, z) {
         return !w.protectedColumns.has(
@@ -160,6 +195,22 @@ export class TerreUrbaine extends World {
       },
       get buildingRevision() {
         return w.buildingRevision;
+      },
+      // NEW YORK D'APRÈS LES MODÈLES (v565) : un modèle ne se dessine que sur
+      // un monument que l'enfant n'a pas touché (la règle des monuments de
+      // Paris, v292) ; le rendu le demande ici.
+      get empireTouche() {
+        return w.empireTouche;
+      },
+      // un immeuble où l'enfant a posé ou creusé garde sa façade procédurale
+      batimentTouche(id) {
+        return w.batimentsTouches.has(id);
+      },
+      get liberteTouchee() {
+        return w.liberteTouchee;
+      },
+      modeleLibertePret() {
+        w.modeleLibertePret();
       },
       set onVisualEdit(fn) {
         w.onUrbanEdit = fn;
@@ -183,6 +234,87 @@ export class TerreUrbaine extends World {
     }
     this.cacheSol.clear();
     this.refreshProtection();
+    this.deciderModelesNY();
+  }
+  // LES IMMEUBLES TOUCHÉS (v583). Un modèle ne se troue pas : l'immeuble d'un
+  // enfant qui y a posé ou creusé un bloc garde sa façade procédurale. On le sait
+  // au chargement du journal, et bloc par bloc ensuite (`setBlock`).
+  marquerBatimentsTouches() {
+    this.batimentsTouches = new Set();
+    for (const k of this.edits.keys()) {
+      const [x, , z] = k.split(",").map(Number);
+      if (!dansPlanNY(x, z)) continue;
+      const p = versManhattan(x, z),
+        b = this.immeubleEn(p.x, p.z);
+      if (b) this.batimentsTouches.add(b.id);
+    }
+  }
+  // LA VILLE CÈDE À CE QUE L'ENFANT A BÂTI (v303, v565). Un bloc posé ou creusé
+  // AVANT `DATE_NY_MODELES` dans la boîte de l'Empire (marge de trois blocs : un
+  // bloc posé contre sa façade) ou sur Liberty Island garde l'ancien volume et
+  // l'ancien dessin. Un bloc posé APRÈS ne change pas le volume — on ne
+  // retire pas un mur sous les pieds d'un enfant — mais rend le dessin aux
+  // cubes : un trou creusé dans un modèle doit se voir (`empireTouche`).
+  deciderModelesNY() {
+    const empire = BATIMENTS.find((b) => b.photo === "empire"),
+      L = BOITE_LIBERTE;
+    let ancienE = false,
+      ancienL = false;
+    this.empireTouche = false;
+    this.liberteTouchee = false;
+    for (const k of this.edits.keys()) {
+      const [x, , z] = k.split(",").map(Number),
+        p = versManhattan(x, z),
+        avant = (this.editTimes.get(k) || 0) < DATE_NY_MODELES;
+      if (empire && p.x >= empire.x0 - 3 && p.x < empire.x1 + 3 && p.z >= empire.z0 - 3 && p.z < empire.z1 + 3) {
+        if (avant) ancienE = true;
+        if (p.x >= empire.x0 && p.x < empire.x1 && p.z >= empire.z0 && p.z < empire.z1) this.empireTouche = true;
+      }
+      if (p.x >= L.x0 && p.x < L.x1 && p.z >= L.z0 && p.z < L.z1) {
+        this.liberteTouchee = true;
+        if (avant) ancienL = true;
+      }
+    }
+    MODELES_NY_ETAT.empireAncien = ancienE;
+    MODELES_NY_ETAT.liberteAncienne = ancienL;
+  }
+  // Le modèle de la statue est arrivé : les blocs de la statue se taisent (ils
+  // restent ce qui arrête l'enfant), donc les morceaux de l'île se remaillent.
+  modeleLibertePret() {
+    if (this.modeleLiberte) return;
+    this.modeleLiberte = true;
+    this.remaillerLiberte();
+  }
+  remaillerLiberte() {
+    const O = ORIGINE_MANHATTAN,
+      L = BOITE_LIBERTE;
+    for (let cz = Math.floor((O.z + L.z0) / CHUNK); cz <= Math.floor((O.z + L.z1) / CHUNK); cz++)
+      for (let cx = Math.floor((O.x + L.x0) / CHUNK); cx <= Math.floor((O.x + L.x1) / CHUNK); cx++)
+        if (this.chunks.has(World.key(cx, cz))) this.dirty.add(World.key(cx, cz));
+  }
+  // LES CUBES QUE LE MODÈLE COUVRE SE TAISENT (mesher.js) — seulement ceux que
+  // `statueLiberteModele` écrit, jamais l'escalier du fort ni l'île, et
+  // seulement tant que le modèle est là et que l'enfant n'a pas touché l'île.
+  // Rend les index locaux du morceau, ou null (le cas de presque tout le monde).
+  cubesTus(cx, cz) {
+    if (!this.modeleLiberte || this.liberteTouchee || MODELES_NY_ETAT.liberteAncienne) return null;
+    const ox = cx * CHUNK,
+      oz = cz * CHUNK;
+    if (!dansBoiteLiberte(ox, oz, CHUNK)) return null;
+    this.cacheTus ||= new Map();
+    const cle = World.key(cx, cz);
+    if (this.cacheTus.has(cle)) return this.cacheTus.get(cle);
+    const O = ORIGINE_MANHATTAN,
+      tus = new Set();
+    statueLiberteModele((dx, dy, dz) => {
+      const x = Math.floor(O.x + ILE_LIBERTE.x + dx) - ox,
+        z = Math.floor(O.z + ILE_LIBERTE.z + dz) - oz,
+        y = SOL_ILE + 1 + dy;
+      if (x >= 0 && z >= 0 && x < CHUNK && z < CHUNK && y < HEIGHT) tus.add(World.index(x, y, z));
+    });
+    const out = tus.size ? tus : null;
+    this.cacheTus.set(cle, out);
+    return out;
   }
   exportEdits() {
     const out = { ...this.importMarks };
@@ -222,6 +354,17 @@ export class TerreUrbaine extends World {
       normal[k] = e;
     }
     const n = super.mergeEdits(normal);
+    // un bloc d'avant les banlieues reçu du nuage : sa colonne garde son relief
+    for (const [k, e] of Object.entries(normal)) {
+      if (e[1] >= DATE_BANLIEUES) continue;
+      const [x, , z] = k.split(",").map(Number);
+      if (dansBanlieue(x, z, TALUS + 2) && !this.protectedColumns.has(`${x},${z}`)) {
+        terrainModifie = true;
+        break;
+      }
+    }
+    if (n && Object.values(normal).some(e => e[1] < DATE_OSM)) terrainModifie = true;
+    if (n) this.marquerBatimentsTouches();
     if (terrainModifie) {
       this.refreshProtection();
       this.chunks.clear();
@@ -241,9 +384,49 @@ export class TerreUrbaine extends World {
   importerAncienneManhattan(blocks) {
     return this.importerProfil({ [MANHATTAN_ID + ":" + this.ctx]: blocks });
   }
+  // Un bâtiment du plan peut être plus haut OU déplacé après la refonte.
+  // Retenir tout le volume ancien qui porte une construction antérieure, et
+  // écarter les nouveaux immeubles qui le chevaucheraient. État propre au monde.
+  restaurerImmeublesHistoriques() {
+    this.immeublesHistoriques = new Set();
+    for (const [k, t] of this.editTimes) {
+      if (t >= DATE_OSM || !this.edits.has(k) || this.provenance.get(k)) continue;
+      const [x, , z] = k.split(',').map(Number), p = versManhattan(x,z);
+      if (!dansManhattan(x,z)) continue;
+      for (const b of immeublesHistoriquesEn(p.x,p.z,2)) this.immeublesHistoriques.add(b.id);
+      // Une construction dans un ancien espace libre ne doit pas non plus
+      // être avalée par une nouvelle façade.
+      for (const dx of [-2,0,2]) for (const dz of [-2,0,2]) {
+        const b = batimentA(p.x+dx,p.z+dz);
+        if (b?.osm) this.protectedBuildings.add(b.id);
+      }
+    }
+    for (const b of BATIMENTS_HISTORIQUES) if (this.immeublesHistoriques.has(b.id))
+      for (const nouveau of BATIMENTS) if (nouveau.osm && chevauchent(b,nouveau)) this.protectedBuildings.add(nouveau.id);
+  }
+  immeubleEn(x,z) {
+    return (this.immeublesHistoriques?.size ? immeublesHistoriquesEn(x,z).find(b=>this.immeublesHistoriques.has(b.id)) : null) || batimentA(x,z);
+  }
   refreshProtection() {
+    this.immeublesHistoriques = new Set();
     this.protectedColumns = new Map();
     this.protectedBuildings = new Set();
+    this.marquerBatimentsTouches();
+    // CE QU'UN ENFANT A BÂTI AVANT LES BANLIEUES (v583) GARDE SON SOL. Quelle que
+    // soit sa provenance : sa colonne et une marge de deux blocs restent au relief
+    // de la Terre, et le bâtiment qui y tomberait s'efface.
+    for (const [k, t] of this.editTimes) {
+      if (t >= DATE_BANLIEUES || !this.edits.has(k)) continue;
+      const [x, , z] = k.split(",").map(Number);
+      if (!dansBanlieue(x, z, TALUS + 2)) continue;
+      for (let dz = -2; dz <= 2; dz++)
+        for (let dx = -2; dx <= 2; dx++) {
+          this.protectedColumns.set(`${x + dx},${z + dz}`, "terre");
+          const p = versManhattan(x + dx, z + dz),
+            b = this.immeubleEn(p.x, p.z);
+          if (b) this.protectedBuildings.add(b.id);
+        }
+    }
     for (const [k, type] of this.provenance) {
       if (!type || !this.edits.has(k)) continue;
       const [x, , z] = k.split(",").map(Number);
@@ -257,10 +440,12 @@ export class TerreUrbaine extends World {
           if (this.protectedColumns.get(key) !== "terre")
             this.protectedColumns.set(key, type === 1 ? "terre" : "legacy");
           const p = versManhattan(a, c),
-            b = batimentA(p.x, p.z);
+            b = this.immeubleEn(p.x, p.z);
           if (b) this.protectedBuildings.add(b.id);
         }
     }
+    this.restaurerImmeublesHistoriques();
+    this.marquerBatimentsTouches();
     this.visualEpoch++;
   }
   switchContext(ctx) {
@@ -274,13 +459,43 @@ export class TerreUrbaine extends World {
       `${Math.floor(x)},${Math.floor(z)}`,
     );
     if (protection === "legacy") return SOL;
-    if (protection === "terre" || !dansManhattan(x, z))
-      return super.terrainHeight(x, z);
+    if (protection === "terre") return super.terrainHeight(x, z);
     const p = versManhattan(x, z);
-    return surface(p.x, p.z) === "water" ? WATER_LEVEL - 4 : SOL;
+    if (dansManhattan(x, z))
+      return surface(p.x, p.z) === "water" ? WATER_LEVEL - 4 : SOL;
+    if (!dansZones(p.x, p.z, TALUS)) return super.terrainHeight(x, z);
+    return this.reliefBanlieue(x, z, p);
+  }
+  // LE RELIEF D'UN QUARTIER (v583) : plat dedans, et un talus de `TALUS` blocs qui
+  // le raccorde au relief de la Terre — la seule casse déclarée de cette livraison,
+  // et sa borne (`plafond.js` la vérifie).
+  reliefBanlieue(x, z, p) {
+    const q = zoneA(p.x, p.z);
+    if (q) {
+      const s = surface(p.x, p.z);
+      return s === "water" ? WATER_LEVEL - 4 : solDeBanlieue(p.x, p.z, SOL);
+    }
+    // le talus : le point de zone le plus proche donne la cote, la distance le mélange
+    let d = Infinity,
+      bord = null;
+    for (const r of ZONES) {
+      const cx = Math.max(r.x0, Math.min(r.x1 - 1, p.x)),
+        cz = Math.max(r.z0, Math.min(r.z1 - 1, p.z)),
+        e = Math.hypot(p.x - cx, p.z - cz);
+      if (e < d) {
+        d = e;
+        bord = [r, cx, cz];
+      }
+    }
+    const naturel = super.terrainHeight(x, z);
+    if (d >= TALUS) return naturel;
+    const base = surfaceDeZone(bord[0], bord[1], bord[2]) === "water" ? WATER_LEVEL - 4 : SOL,
+      t = d / TALUS,
+      m = t * t * (3 - 2 * t);
+    return Math.round(base + (naturel - base) * m);
   }
   cityAt(x, z) {
-    if (dansManhattan(x, z))
+    if (dansPlanNY(x, z))
       return surface(x - ORIGINE_MANHATTAN.x, z - ORIGINE_MANHATTAN.z) ===
         "water"
         ? null
@@ -298,7 +513,7 @@ export class TerreUrbaine extends World {
     return ["sidewalk", "path", "plaza"].includes(surface(p.x, p.z));
   }
   piedPieton(x, z) {
-    if (!dansManhattan(x, z)) return undefined;
+    if (!dansPlanNY(x, z)) return undefined;
     const a = Math.floor(x),
       c = Math.floor(z);
     if (
@@ -310,20 +525,20 @@ export class TerreUrbaine extends World {
     return null;
   }
   treeAt(x, z) {
-    return dansManhattan(x, z) ? null : super.treeAt(x, z);
+    return dansPlanNY(x, z) ? null : super.treeAt(x, z);
   }
   foret(x, z) {
-    return dansManhattan(x, z) ? 0 : super.foret(x, z);
+    return dansPlanNY(x, z) ? 0 : super.foret(x, z);
   }
   urbanColor(x, z) {
-    if (!dansManhattan(x, z)) return null;
+    if (!dansPlanNY(x, z)) return null;
     const p = versManhattan(x, z);
     return couleurPlan(p.x, p.z);
   }
   originalBlock(x, y, z) {
     const p = versManhattan(x, z),
       s = surface(p.x, p.z),
-      h = s === "water" ? WATER_LEVEL - 4 : SOL;
+      h = s === "water" ? WATER_LEVEL - 4 : solDeBanlieue(p.x, p.z, SOL);
     if (y <= h)
       return y === h
         ? s === "water"
@@ -331,7 +546,7 @@ export class TerreUrbaine extends World {
           : solBloc(p.x, p.z)
         : BLOCK.STONE;
     if (s === "water" && y <= WATER_LEVEL) return BLOCK.WATER;
-    const b = batimentA(p.x, p.z);
+    const b = this.immeubleEn(p.x, p.z);
     if (!b || this.protectedBuildings.has(b.id)) return BLOCK.AIR;
     const yy = y - SOL - 1,
       bh = sommet(b, p.x, p.z);
@@ -346,6 +561,7 @@ export class TerreUrbaine extends World {
         !emprise(b, p.x + dx, p.z + dz) || sommet(b, p.x + dx, p.z + dz) < yy,
     );
     const porte =
+      !b.sansPorte &&
       Math.abs(p.x - (b.x0 + b.x1) / 2) < 1.1 &&
       (Math.abs(p.z - b.z0) < 1 || Math.abs(p.z - (b.z1 - 1)) < 1) &&
       yy < 3;
@@ -362,6 +578,8 @@ export class TerreUrbaine extends World {
   maillageLocal(cx, cz) {
     const ox = cx * CHUNK, oz = cz * CHUNK;
     if (dansManhattan(ox, oz, CHUNK)) return true;
+    // le worker ne connaît ni les quartiers ni leur talus
+    if (dansBanlieue(ox, oz, CHUNK + TALUS)) return true;
     // le worker ne connaît pas l'île (un `World` nu) : elle se maille ici
     if (dansBoiteLiberte(ox, oz, CHUNK)) return true;
     for (let z = oz; z < oz + CHUNK; z++)
@@ -372,8 +590,7 @@ export class TerreUrbaine extends World {
   generateChunk(cx, cz) {
     const ox = cx * CHUNK,
       oz = cz * CHUNK;
-    const entier =
-      dansManhattan(ox, oz) && dansManhattan(ox + CHUNK - 1, oz + CHUNK - 1);
+    const entier = morceauEntier(ox, oz);
     let protege = false;
     for (let z = oz; z < oz + CHUNK && !protege; z++)
       for (let x = ox; x < ox + CHUNK; x++)
@@ -381,7 +598,7 @@ export class TerreUrbaine extends World {
           protege = true;
           break;
         }
-    if (!dansManhattan(ox, oz, CHUNK) && !protege) {
+    if (!dansPlanNY(ox, oz, CHUNK) && !protege) {
       const data = super.generateChunk(cx, cz);
       if (dansBoiteLiberte(ox, oz, CHUNK)) this.batirLiberte(data, ox, oz);
       return data;
@@ -395,7 +612,7 @@ export class TerreUrbaine extends World {
         const wx = ox + x,
           wz = oz + z,
           type = this.protectedColumns.get(`${wx},${wz}`);
-        if (type === "terre" || (!dansManhattan(wx, wz) && type !== "legacy"))
+        if (type === "terre" || (!dansPlanNY(wx, wz) && type !== "legacy"))
           continue;
         for (let y = 0; y < HEIGHT; y++)
           data[World.index(x, y, z)] =
@@ -438,13 +655,18 @@ export class TerreUrbaine extends World {
             ? CITY_BLOCK.GRANITE
             : BLOCK.GRASS;
       }
-    statueLiberte((dx, dy, dz, id) => {
+    const poser = (dx, dy, dz, id) => {
       const x = Math.floor(O.x + ILE_LIBERTE.x + dx) - ox,
         z = Math.floor(O.z + ILE_LIBERTE.z + dz) - oz,
         y = SOL_ILE + 1 + dy;
       if (x < 0 || z < 0 || x >= CHUNK || z >= CHUNK || y >= HEIGHT) return;
       data[World.index(x, y, z)] = id;
-    });
+    };
+    if (MODELES_NY_ETAT.liberteAncienne) statueLiberte(poser);
+    else {
+      statueLiberteModele(poser);
+      escalierFortModele(poser);
+    }
     const blocs = this.edits.duMorceau(Math.floor(ox / CHUNK), Math.floor(oz / CHUNK));
     if (blocs) for (const [k, i] of blocs) {
       const y = Number(k.split(",")[1]);
@@ -456,9 +678,16 @@ export class TerreUrbaine extends World {
     if (!this.provenance.has(key)) this.provenance.set(key, 0);
     super.setBlock(x, y, z, id, ts, remote);
     this.revision++;
-    if (dansManhattan(x, z)) {
+    // un bloc sur Liberty Island rend la statue à ses cubes, aussitôt
+    if (!this.liberteTouchee && dansBoiteLiberte(x, z)) {
+      this.liberteTouchee = true;
+      this.remaillerLiberte();
+    }
+    if (dansPlanNY(x, z)) {
       const p = versManhattan(x, z),
-        b = batimentA(p.x, p.z);
+        b = this.immeubleEn(p.x, p.z);
+      if (b && b.photo === "empire") this.empireTouche = true;
+      if (b) this.batimentsTouches.add(b.id);
       if (b)
         this.buildingRevision.set(
           b.id,
@@ -470,11 +699,7 @@ export class TerreUrbaine extends World {
   hasVisualEdits(cx, cz) {
     const ox = cx * CHUNK,
       oz = cz * CHUNK;
-    if (
-      !dansManhattan(ox, oz) ||
-      !dansManhattan(ox + CHUNK - 1, oz + CHUNK - 1)
-    )
-      return true;
+    if (!morceauEntier(ox, oz)) return true;
     if (this.editIndexRevision !== this.revision) {
       this.editIndexRevision = this.revision;
       this.visualEditChunks = new Set();
@@ -495,11 +720,14 @@ export class TerreUrbaine extends World {
   }
   visualBlock(x, y, z, id) {
     if (
-      !dansManhattan(x, z) ||
+      !dansPlanNY(x, z) ||
       this.protectedColumns.has(`${x},${z}`) ||
       this.edits.has(`${x},${y},${z}`)
     )
       return id;
+    // l'eau du plan est un plan d'eau (manhattan-render.js) : le voxel d'un morceau
+    // à cheval l'aurait doublée d'une bande bleue, d'une autre couleur
+    if (id === BLOCK.WATER) return BLOCK.AIR;
     return y > SOL ? BLOCK.AIR : id;
   }
   visualChunk(cx, cz, source) {
@@ -510,10 +738,14 @@ export class TerreUrbaine extends World {
       for (let x = 0; x < CHUNK; x++) {
         const wx = ox + x,
           wz = oz + z;
-        if (!dansManhattan(wx, wz) || this.protectedColumns.has(`${wx},${wz}`))
+        if (!dansPlanNY(wx, wz) || this.protectedColumns.has(`${wx},${wz}`))
           continue;
         for (let y = SOL + 1; y < HEIGHT; y++)
           data[World.index(x, y, z)] = this.edits.get(`${wx},${y},${wz}`) || 0;
+        // même règle que `visualBlock` : l'eau du plan se dessine, pas son voxel
+        for (let y = WATER_LEVEL - 4; y <= SOL; y++)
+          if (data[World.index(x, y, z)] === BLOCK.WATER && !this.edits.has(`${wx},${y},${wz}`))
+            data[World.index(x, y, z)] = 0;
       }
     return data;
   }

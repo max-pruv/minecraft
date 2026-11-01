@@ -26,6 +26,63 @@ travail est irrattrapable.
 
 ---
 
+## Direction artistique permanente
+
+Décision de Max du 1er novembre 2026 : réalisme et high fidelity dans chaque
+édition future, partout dans le jeu ; aucun nouveau style Minecraft ou pixel art.
+Lire `AGENTS.md` et [la charte](docs/direction-artistique.md). Les voxels internes
+restent possibles, le résultat visible doit être crédible. Textures plaquées,
+modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérifier
+les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
+ils ne constituent pas une exception pour les nouveaux rendus.
+
+## Manhattan : atlas OSM de Max (v583)
+
+Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par
+`scripts/extraire-manhattan-osm.py` à partir du modèle MENUDQ2 fourni par Max.
+Crédit CC BY 4.0, provenance et limites : `docs/manhattan-osm.md`.
+
+- `manhattan-architecture.js` est l'unique interprète du profil : hauteurs,
+  cours, colonnes et rectangles du lointain. Le proche et les collisions lisent
+  ces mêmes colonnes. Une boîte englobante n'est plus une emprise pleine.
+- Toutes les colonnes sont découpées contre rues, places et eau. Quatre coins
+  libres ne prouvent rien sur une rue diagonale qui traverse l'intérieur.
+- Les étages restent de trois unités ; la compression verticale est monotone
+  et conserve la limite du monde. Les rues et les coordonnées des sauvegardes
+  restent celles du plan jouable. Les profils sont des références de quartier,
+  pas des bâtiments promis à une adresse cadastrale exacte.
+- Une édition antérieure à `DATE_OSM` dans un immeuble ordinaire conserve
+  son volume v582 complet (`manhattan-avant-osm.js`, relevé immuable de main
+  7cb7a4b). `manhattan-historique.js` indexe ces volumes ; le monde choisit
+  ceux à garder, et rendu proche/lointain les dessinent au même endroit. Les
+  volumes OSM qui les chevauchent s'effacent. Les importations Terre/legacy
+  gardent leur protection propre. Une arrivée du nuage invalide les morceaux.
+  La date est celle de `DATE_NY_MODELES`, à relire avant fusion.
+- Les accessoires de toit se posent sur une terrasse existante, les enseignes
+  sur un mur existant ; ni le centre de la boîte ni son coin ne sont garantis
+  solides. Les témoins de collision choisissent un vrai mur et vérifient l'arrêt
+  à une demi-largeur de joueur de sa face.
+- Le contrat `tests/architecture-manhattan.mjs` est lancé par `manhattan.js`.
+  Il garde provenance, diversité, cours, collision/LOD, routes et budget d'atlas.
+- La reprise de la PR #587 garde ses banlieues et ses monuments. Ses photos
+  de façades habillent les volumes OSM proches et lointains ; un modèle CCity
+  plein ne remplace jamais une emprise OSM creuse. Les matériaux photographiques
+  restent ceux préchauffés à l'accueil, sans nouvelle variante de shader.
+- Les masques lumineux photographiques suivent les baies repérées dans
+  `scripts/new-york-fenetres.mjs` : une zone sombre peut être l'ombre d'un
+  escalier, pas une fenêtre. Toutes les variantes suivent le cycle nocturne.
+- Un arrêt de collision se mesure sur des images de jeu distinctes : trois
+  lectures identiques entre deux images lentes ne prouvent pas un arrêt.
+
+## Un témoin de terrasse isole son obstacle (v583)
+
+Le témoin de `parishd.js` essaie un autre emplacement si une voiture de la rue
+l'arrête, y compris APRÈS avoir écrasé la terrasse. L'ancien filtre ne retirait
+que les essais où la terrasse restait intacte : une terrasse cassée puis une
+voiture rencontrée à 2,63 blocs produisaient un faux échec. Le verdict reste
+strict : franchir la terrasse cassée ou s'arrêter devant la terrasse intacte.
+Ne pas abaisser les distances pour faire passer une interférence de trafic.
+
 ## Invariants non négociables
 
 1. **Le sol ne bouge jamais.** Les blocs des enfants sont repérés par
@@ -85,6 +142,12 @@ travail est irrattrapable.
    `plafond.js` sont intactes sans rien déclarer — et le monde d'où l'on part
    se garde et se prouve (`CONF_V308`, empreinte relevée sur `origin/main`).
    Voir « Le fondu doux (v309) ».
+
+   **Elle a servi une DOUZIÈME fois, en v583, pour les banlieues de New York** —
+   Max : « créer des banlieues de New York ». Forme bornée, hors de la fenêtre
+   d'empreinte : `ZONES` et leur `TALUS` (new-york-banlieues.js), et un témoin de
+   `plafond.js` compare le monde nu et `TerreUrbaine` dans le même code (zéro
+   colonne hors de la zone). Voir « Les banlieues de New York (v583) ».
 
    **Elle a servi une ONZIÈME fois, en v486, pour Changi** — et c'est la
    forme bornée, hors de la fenêtre d'empreinte : l'île de l'aérodrome est la
@@ -1089,6 +1152,109 @@ La Model Y porte `usine: true` dans FLOTTE : la chaîne (`voitureDeLUsine`,
 vehicules.js) et le garagiste de main.js la lisent, jamais un nom recopié.
 Les voitures de police sont toute fiche `police` de FLOTTE ; la patrouille
 les alterne, la Crown Victoria d'abord, et n'attend qu'elle pour apparaître.
+## Les banlieues de New York (v583) — un quartier est un rectangle de plus dans le plan de l'île
+
+Max a déposé « CCity Building Set 1 » (Sketchfab, CC-BY-4.0) et demandé des
+banlieues et de la diversité. `src/new-york-banlieues.js` est le plan (pur),
+`scripts/new-york-quartiers.mjs` prépare le paquet (rejouable, non versionné),
+`vendor/newyork/quartiers.glb` est le résultat. Huit règles.
+
+- **ON ÉTEND LE PLAN, ON N'AJOUTE PAS UNE VILLE À CÔTÉ.** `surface()` et `BATIMENTS`
+  (manhattan-plan.js) prennent les quartiers : façades, sol, collisions, passants,
+  circuits, minicarte et carte viennent d'eux-mêmes. `dansManhattan` reste le
+  rectangle de l'île (des témoins le mesurent) ; `dansPlanNY` est ce que le monde et
+  le rendu demandent. Une ville engendrée n'aurait eu ni ce rendu ni ces façades.
+- **LE SOL BOUGE DANS `ZONES` + `TALUS`, ET LÀ SEULEMENT.** Invariant 1, douzième
+  fois. Le talus raccorde au relief de la Terre sur 28 blocs. Le worker ne connaît
+  pas les quartiers (`maillageLocal` les garde sur le fil principal, marge du talus
+  comprise), comme l'île. **Un bloc posé avant `DATE_BANLIEUES` garde sa colonne de
+  relief** (`refreshProtection`, quelle que soit sa provenance, et au fil de la
+  fusion du nuage) : le bâtiment qui y tomberait s'efface. La date se relit à la
+  fusion (v309).
+- **UN EMPLACEMENT SE MESURE (v223), ET LA MESURE A SERVI.** Mon premier jet posait
+  Jersey City et Port Newark sur l'I-95 Sud : la sonde (asphalte dans le monde nu,
+  `surLaRoute`) l'a dit. Les marges à JFK sont de 25 et 41 blocs, talus compris.
+  Brooklyn, Coney Island, Long Island et Staten Island sont gagnés sur la mer : la
+  carte n'y a rien, ni relief à casser.
+- **UN PAQUET SE TRIE AVANT DE S'ARRANGER.** C'est une ville de jeu policier : ni
+  armurerie, ni alcool, ni gages, ni marque (la Lotus, l'enseigne du cinéma repeinte,
+  invariant 4). Un témoin lit les noms du fichier produit. Une planche
+  (`sonde-planche-quartiers.cjs`) montre chaque forme de ses quatre côtés : on y a
+  vu l'enseigne restée, la dalle de parking du lavomatique.
+- **UN ATLAS, UNE MATIÈRE, DES ESSAIMS.** Sept textures fondues (UV répétés coupés
+  aux lignes entières, sans répétition dans un atlas), `materiauQuartiers` naît avec
+  la ville dans `mats` : la chauffe la compile sous ses deux formes, l'arrivée du
+  fichier ne change pas sa clé. `Lot` pose chaque forme comme une boîte, une teinte
+  par instance. Un immeuble de 500 triangles coûte dix triangles de loin : le
+  `-loin` est recuit par rayons dans le même atlas, sans transparence.
+- **UN MODÈLE NE SE TROUE PAS.** `modeleDe(b)` : arrivé, et sur un immeuble que
+  l'enfant n'a pas touché (`batimentsTouches`, tenu au journal et à `setBlock`). Sinon
+  la façade procédurale, qui montre le trou. Sur l'île le voxel ne bouge pas, sauf
+  la porte (`sansPorte`) : un modèle n'en a pas à cet endroit, et on ne traverse pas
+  un mur qu'on voit.
+- **CE QUI SE POSE PAR MILLIERS A SON COÛT.** Un arbre d'île pèse 2 500 triangles :
+  les quartiers ont `arbreLeger` (840) et de loin `boule` (80). Les décors et les
+  ponts sont un seul lot, jamais refait.
+- **HORS DU PLAN, LE BROUILLARD SE RAPPROCHE.** Le paysage lointain s'arrête bien
+  avant nos silhouettes : du ciel, les quartiers flottaient sur le vide. Fog et
+  secteurs lointains se bornent à 620 blocs dès qu'on a quitté le plan.
+
+Et l'eau du plan est un plan d'eau : un morceau à cheval dessinait aussi son voxel,
+d'une autre couleur (`visualBlock`, `visualChunk` le taisent). La teinte de l'eau de
+New York suit la mer du monde : du ciel, on ne lit plus le rectangle.
+
+## New York d'après les modèles de Max (v582) — une photogrammétrie se recuit, et le voxel se mesure dedans
+
+Max a déposé six paquets Sketchfab (CC-BY-4.0) et demandé de la diversité.
+`scripts/new-york.mjs` les prépare (rejouable, paquets non versionnés),
+`src/new-york-modeles.js` les charge, `src/new-york-donnees.js` (généré) porte
+ce que le voxel en a mesuré. Six règles.
+
+- **UNE PHOTOGRAMMÉTRIE SE DÉCIME SANS SES UV, PUIS SE RECUIT.** Décimée avec
+  ses UV, elle ne descendait presque pas (les coutures bloquent tout) ; en
+  « permissif », les UV éclataient. On soude les positions, on décime la seule
+  géométrie (`simplify` en erreur absolue de près, `simplifySloppy` de loin),
+  puis on RECUIT la couleur sur un atlas neuf : un triangle par case (deux par
+  carré), cases proportionnelles à l'aire — à cases égales, l'antenne de
+  l'Empire était floue —, couleur lue au point le plus proche du maillage
+  d'origine (`three-mesh-bvh`), et un bourrage par tirer-pousser. Un atlas
+  source à gouttières noires laisse des coutures si l'on recopie ses tuiles :
+  on ne recopie jamais, on rééchantillonne.
+- **UNE TEXTURE CUITE S'ÉGALISE PAR BANDES DE HAUTEUR.** L'Empire sortait
+  sombre et bleu en jeu (la lumière d'un jour couvert est dans les photos) :
+  gain par bande de quatre blocs (borné à 2,6), saturation 0,25, chaleur
+  légère. Ça se juge en capture DANS le jeu, à côté de l'ancien, jamais dans
+  un visualiseur.
+- **LE VOXEL SUIT LE MODÈLE (la règle de la v564), ET IL SE MESURE DANS LE
+  MODÈLE.** Les retraits de collision de l'Empire (`EMPIRE_NIVEAUX`) sont les
+  3e et 97e centiles de la coupe du modèle, en minimum courant, fusionnés ; la
+  statue est voxelisée par la hauteur médiane de sa peau pour le fort et le
+  socle (des coupes remplissaient la terrasse d'un bloc de trop : le
+  parapet), par coupes au-dessus. Ce qui déborde de l'île est coupé (ellipse
+  `dansIleLiberte`). Le modèle peut dépasser le voxel d'un à trois blocs aux
+  corniches de l'Empire : déclaré.
+- **DEUX ÉCHELLES, ENCORE.** Hauteur par étage, emprise par le sol : l'Empire
+  a deux facteurs (8,7 et 11,0) ; la statue suit une seule échelle de la
+  terrasse du fort (`HAUT_FORT`) au flambeau (42,5, plus haute que le
+  Flatiron, comme la vraie : un témoin de la v496 l'exige). Le pied de
+  l'Empire (cinq blocs) reste en blocs : de près, la rue est plus nette qu'une
+  photo recuite.
+- **CE QU'UN ENFANT A BÂTI AVANT GARDE L'ANCIEN MONUMENT, ET UN BLOC POSÉ
+  DEDANS RETIRE LE MODÈLE.** `DATE_NY_MODELES` (relue à la fusion, v309) :
+  une édition antérieure dans la boîte de l'Empire ou de l'île rend l'ancien
+  volume et l'ancienne statue (`MODELES_NY_ETAT`) ; une édition postérieure
+  cache le modèle (`empireTouche`, `liberteTouchee`) — un modèle ne se troue
+  pas. Les cubes que la statue couvre se taisent au mailleur par
+  `world.cubesTus(cx, cz)`, seulement une fois le modèle arrivé.
+- **LA DIVERSITÉ EST DU DESSIN, TIRÉE D'UNE GRAINE.** `variante(b)` (plan) :
+  teinte dans la palette de la matière, rythme des baies, façade lointaine
+  parmi celles de sa famille — même résultat partout, aucune collision ne
+  bouge, aucun programme neuf (couleur par instance). Les matériaux PBR de
+  Manhattan gardent leur clé (`manhattan-pbr-${taille}`) quand une photo
+  remplace une texture, et le matériau des modèles naît avec sa carte
+  d'attente ET son émissive (projecteurs de nuit) : la clé ne change pas à
+  l'arrivée du fichier. Les fichiers sont IMMUABLES (cache statique) : une
+  retouche prend un nom neuf (v545). `?photo=0` rejoue l'ancien New York.
 
 ## Les avions déposés (v563) — un modèle d'artiste se met au contrat, le contrat ne bouge pas
 

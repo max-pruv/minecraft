@@ -2,9 +2,40 @@
 // Le plan d’auteur est ramené à 40 % au sol ; les hauteurs restent jouables.
 // Plan interprété et comprimé ; 1 unité de rue correspond à environ un mètre
 // jouable. Les tours emblématiques restent sous le plafond de construction.
-// Géométrie et matériaux originaux, aucun asset de GTA.
+// Volumes OSM et modèles crédités dans docs/manhattan-osm.md et vendor/newyork/LICENSE.md.
 import { BLOCK, CITY_BLOCK, DECOR_START } from "./blocks.js";
 import { axeDuFeu } from "./feux.js";
+import {
+  EMPIRE_NIVEAUX,
+  LIBERTE_VOXELS,
+  LIBERTE_SOCLE,
+} from "./new-york-donnees.js";
+import {
+  surfaceBanlieue,
+  batimentsBanlieues,
+  QUARTIERS_BANLIEUE,
+  COULEURS_BANLIEUE,
+  boucles as bouclesBanlieue,
+  zoneA,
+} from "./new-york-banlieues.js";
+import { FORMES_QUARTIERS } from "./new-york-quartiers-donnees.js";
+
+// NEW YORK D'APRÈS LES MODÈLES DE MAX (v565). L'Empire State et la statue de la
+// Liberté se dessinent d'après les photogrammétries de Brian Trepanier
+// (new-york-modeles.js), et C'EST LE VOXEL QUI LES SUIT (la règle de la tour
+// Eiffel, v564) : les retraits de l'Empire et les blocs de la statue sont
+// MESURÉS dans le modèle (new-york-donnees.js), dedans, pour qu'on ne bute
+// jamais sur un mur qu'on ne voit pas. LA VILLE CÈDE À CE QUE L'ENFANT A BÂTI
+// (v303) : un bloc posé ou creusé avant `DATE_NY_MODELES` dans la boîte de l'un
+// des deux garde l'ancien volume ET l'ancien dessin — `TerreUrbaine` le décide
+// au chargement du journal (`deciderModelesNY`). La date se relit à la fusion
+// (v309).
+export const DATE_NY_MODELES = Date.parse("2026-11-01T16:28:43Z");
+export const MODELES_NY_ETAT = { empireAncien: false, liberteAncienne: false };
+// le socle de l'Empire reste procédural, net à hauteur de rue : la
+// photogrammétrie, faite d'avion, n'est lisible qu'au-dessus de lui
+export const SOCLE_EMPIRE = EMPIRE_NIVEAUX[0][2];
+import { preparerArchitecture, sommetArchitecture } from "./manhattan-architecture.js";
 
 export const MANHATTAN_ID = "manhattan-v1"; // lecture des sauvegardes v239 uniquement
 export const ECHELLE_PLAN = 0.4;
@@ -137,7 +168,16 @@ function surfaceAuteur(x, z) {
 export const largeurIle = (z) => largeurIleAuteur(z / K) * K;
 export const terre = (x, z) => terreAuteur(x / K, z / K);
 export const broadway = (z) => broadwayAuteur(z / K) * K;
-export const surface = (x, z) => surfaceAuteur(x / K, z / K);
+// LES BANLIEUES ET LES PONTS (v583) passent d'abord : hors d'eux, le plan de
+// l'île au bit près. Un pont ne remplace que l'eau du fleuve.
+export const surface = (x, z) => {
+  const s = surfaceBanlieue(x, z);
+  if (s !== null && s !== "water") {
+    if (zoneA(x, z) || !terreAuteur(x / K, z / K)) return s;
+    return surfaceAuteur(x / K, z / K);
+  }
+  return s === "water" ? s : surfaceAuteur(x / K, z / K);
+};
 export const solBloc = (x, z) =>
   ({
     water: BLOCK.WATER,
@@ -147,6 +187,11 @@ export const solBloc = (x, z) =>
     plaza: CITY_BLOCK.GRANITE,
     grass: BLOCK.GRASS,
     lot: CITY_BLOCK.SIDEWALK,
+    gazon: BLOCK.GRASS,
+    foret: BLOCK.GRASS,
+    beach: BLOCK.SAND,
+    boardwalk: BLOCK.PLANK,
+    quai: CITY_BLOCK.SIDEWALK,
   })[surface(x, z)];
 export const QUARTIERS = [
   { name: "Midtown · Fifth Avenue", x: 15, z: 18, r: 80 },
@@ -165,7 +210,7 @@ export const QUARTIERS = [
   { name: "Wall Street", x: 15, z: 2200, r: 70 },
   { name: "Financial District", x: 15, z: 2110, r: 120 },
   { name: "Battery Park", x: 0, z: 2360, r: 80 },
-].map((q) => ({ ...q, x: q.x * K, z: q.z * K, r: q.r * K }));
+].map((q) => ({ ...q, x: q.x * K, z: q.z * K, r: q.r * K })).concat(QUARTIERS_BANLIEUE);
 // Les adresses visées par la carte sont dans l'espace public, devant l'entrée.
 export const MONUMENTS = [
   {
@@ -200,6 +245,7 @@ export const MONUMENTS = [
     z1: 421,
     h: 108,
     style: "empire",
+    photo: "empire",
     mat: "limestone",
     x: -11,
     z: 382,
@@ -287,6 +333,10 @@ function enregistrer(b) {
         : b[key] * K;
   b.id = tous.length;
   b.seed = Math.floor(ALEA(b.x0, b.z0) * 100000);
+  if (!b.name) {
+    preparerArchitecture(b, surface);
+    if (!b.h) return;
+  }
   tous.push(b);
   for (let cz = Math.floor(b.z0 / 64); cz <= Math.floor(b.z1 / 64); cz++)
     for (let cx = Math.floor(b.x0 / 64); cx <= Math.floor(b.x1 / 64); cx++) {
@@ -296,6 +346,7 @@ function enregistrer(b) {
     }
 }
 export function emprise(b, x, z) {
+  if (b.colonnes) return sommetArchitecture(b, x, z) > 0;
   if (!dedans(x, z, b)) return false;
   // La pointe du Flatiron est réellement triangulaire, aussi pour les collisions.
   return (
@@ -306,6 +357,7 @@ export function emprise(b, x, z) {
 // Retraits partagés entre collision et les deux niveaux de rendu. Chaque
 // étage garde une largeur et une profondeur : l'Empire n'est pas une pyramide.
 export function niveaux(b) {
+  if (b.style === "empire" && !MODELES_NY_ETAT.empireAncien) return EMPIRE_NIVEAUX;
   if (b.style === "empire")
     return [
       [1, 1, 5],
@@ -339,6 +391,7 @@ export function niveaux(b) {
   return [[1, 1, b.h]];
 }
 export function sommet(b, x, z) {
+  if (b.colonnes) return sommetArchitecture(b, x, z);
   if (!emprise(b, x, z)) return 0;
   if (b.style === "steps")
     return Math.max(1, Math.ceil(((b.z1 - z) / (b.z1 - b.z0)) * 3));
@@ -353,9 +406,17 @@ for (let sz = -71; sz < 48; sz++)
   for (let ax = -5; ax < 5; ax++) {
     const rz0 = sz * RUE_AUTEUR + 11,
       rz1 = (sz + 1) * RUE_AUTEUR - 10;
-    for (let part = 0; part < 3; part++) {
-      let x0 = ax * AVENUE_AUTEUR + 16 + part * 23,
-        x1 = x0 + 22,
+    // Les anciens lots faisaient TOUS neuf mètres de façade. Une tour et
+    // une maison ne prennent plus la même parcelle : 1 à 3 adresses par îlot.
+    // Les limites de rue et les carrefours restent celles des sauvegardes.
+    const tours = (rz0 > -816 && rz0 < 650) || rz0 > 1920;
+    const partage = ALEA(ax + 871, sz - 193);
+    const parcelles = rz0 >= 1056 ? 3 : tours ? (partage < .22 ? 1 : partage < .82 ? 2 : 3)
+      : partage < .25 ? 2 : 3;
+    const pas = 69 / parcelles;
+    for (let part = 0; part < parcelles; part++) {
+      let x0 = ax * AVENUE_AUTEUR + 16 + part * pas,
+        x1 = x0 + pas - 1,
         z0 = rz0,
         z1 = rz1;
       const t = trameAuteur((x0 + x1) / 2, (z0 + z1) / 2);
@@ -363,8 +424,9 @@ for (let sz = -71; sz < 48; sz++)
         const [cx, cz] = tournerAuteur((x0 + x1) / 2, (z0 + z1) / 2, t, true);
         // Volumes orthogonaux inscrits dans les parcelles tournées. Chaque
         // colonne est ensuite sondée : aucun mur posé au travers d'une rue.
-        x0 = cx - 9;
-        x1 = cx + 9;
+        const demiLargeur = Math.min(9, (pas - 2) / 2);
+        x0 = cx - demiLargeur;
+        x1 = cx + demiLargeur;
         z0 = cz - 10;
         z1 = cz + 10;
         let coupeRue = false;
@@ -400,37 +462,73 @@ for (let sz = -71; sz < 48; sz++)
         )
       )
         continue;
-      const n = ALEA(x0, z0),
-        midtown = z0 > -816 && z0 < 650,
-        financial = z0 > 1920;
-      const mat =
-        midtown || financial
-          ? n < 0.34
-            ? "glass"
-            : n < 0.67
-              ? "limestone"
-              : "brick"
-          : n < 0.65
-            ? "brick"
-            : "brownstone";
-      const hauteur = ALEA(x0 + 237, z0 - 91);
-      const h =
-        mat === "glass"
-          ? 27 + Math.floor((hauteur ** 1.8 * 60) / 3) * 3
-          : (midtown || financial ? 18 : 12) +
-            Math.floor(hauteur * (midtown ? 9 : 5)) * 3;
-      enregistrer({
-        x0,
-        x1,
-        z0,
-        z1,
-        h,
-        mat,
-        style: mat === "glass" ? "office" : "masonry",
-      });
+      enregistrer({ x0, x1, z0, z1 });
     }
   }
+// LES BANLIEUES (v583). Leur plan est déjà en blocs : ils entrent tels quels dans
+// la même liste, donc les mêmes secteurs, les mêmes collisions, le même rendu. Les
+// identifiants de l'île ne bougent pas : ceux-ci viennent après.
+function enregistrerTel(b) {
+  b.id = tous.length;
+  b.seed = Math.floor(ALEA(b.x0, b.z0) * 100000);
+  tous.push(b);
+  for (let cz = Math.floor(b.z0 / 64); cz <= Math.floor(b.z1 / 64); cz++)
+    for (let cx = Math.floor(b.x0 / 64); cx <= Math.floor(b.x1 / 64); cx++) {
+      const key = `${cx},${cz}`;
+      if (!cadres.has(key)) cadres.set(key, []);
+      cadres.get(key).push(b);
+    }
+}
+// MANHATTAN AUSSI CESSE DE SE RESSEMBLER (v583). Dans les quartiers bas de l'île
+// (hors Midtown et Financial District), un immeuble de maçonnerie sur trois prend
+// un modèle du paquet CCity, serré dans son lot (« deux échelles dans la même
+// ville ») : c'est du DESSIN — son voxel, sa hauteur, ses collisions ne bougent
+// pas, et un bloc posé dedans lui rend sa façade procédurale, qui se troue
+// (`modeleDe`, manhattan-render.js).
+const FORMES_ILE = ["immeuble", "appartements", "immeuble", "appartements", "cinema"];
+for (const b of tous) {
+  const midtown = b.z0 > -816 * K && b.z0 < 650 * K,
+    financial = b.z0 > 1920 * K;
+  if (b.osm || b.style !== "masonry" || midtown || financial || b.h > 21) continue;
+  const r = ALEA(b.seed, 53);
+  if (r > 0.34) continue;
+  b.modele = FORMES_ILE[Math.floor(ALEA(b.seed, 59) * FORMES_ILE.length)];
+  b.cap = ALEA(b.seed, 61) < 0.5 ? 0 : Math.PI;
+  b.hModele = b.h + 1;
+  // un modèle n'a pas de porte à ce coin-là : on ne traverse pas un mur qu'on voit
+  b.sansPorte = true;
+  b.teinte = [[1, 1, 1], [1.06, 1, 0.94], [0.93, 0.95, 1], [1.1, 1.05, 0.98], [0.9, 0.88, 0.86]][Math.floor(ALEA(b.seed, 67) * 5)];
+}
+// Le worker ne regarde pas ces immeubles (il ne lit que `BORNES`) : cent millisecondes
+// de moins à son chargement.
+if (typeof WorkerGlobalScope === "undefined") for (const b of batimentsBanlieues()) enregistrerTel(b);
+export { FORMES_QUARTIERS };
 export const BATIMENTS = tous;
+
+// LA DIVERSITÉ (v565). Max : « Manhattan, c'est vraiment très boring, tout se
+// ressemble ». Chaque immeuble tire de SA graine (donc le même sur toutes les
+// tablettes, d'un lancement à l'autre) : la teinte de son mur dans une palette
+// de sa matière (multipliée par la couleur du matériau, une couleur par
+// instance — aucun programme neuf), le pas de ses baies, et l'une des façades
+// photographiées de sa famille pour sa silhouette lointaine (`loin`, un
+// nombre que le rendu ramène au nombre de variantes qu'il a). Rien ne touche
+// aux volumes ni aux collisions : c'est du dessin.
+const PALETTES = {
+  brick: [[1, 1, 1], [1.12, 0.95, 0.85], [0.9, 0.72, 0.66], [1.02, 0.86, 0.8], [0.84, 0.82, 0.8], [1.18, 1.07, 0.9], [0.95, 0.78, 0.7]],
+  limestone: [[1, 1, 1], [1.07, 1.05, 1.03], [0.88, 0.88, 0.9], [1.03, 0.95, 0.86], [0.96, 0.91, 0.92], [0.93, 0.95, 0.9]],
+  brownstone: [[1, 1, 1], [0.84, 0.8, 0.78], [1.1, 0.92, 0.86], [0.96, 0.86, 0.9]],
+  glass: [[1, 1, 1], [0.82, 1.05, 1.0], [1.1, 0.96, 0.82], [0.9, 0.96, 1.15], [0.74, 0.76, 0.8]],
+};
+const RYTHMES = [2, 3, 3, 4];
+export function variante(b) {
+  if (b.variante) return b.variante;
+  const palette = PALETTES[b.mat] || [[1, 1, 1]];
+  return (b.variante = {
+    teinte: palette[Math.floor(ALEA(b.seed, 41) * palette.length)],
+    rythme: RYTHMES[Math.floor(ALEA(b.seed, 43) * RYTHMES.length)],
+    loin: ALEA(b.seed, 47),
+  });
+}
 export const batimentsSecteur = (x, z) =>
   cadres.get(`${Math.floor(x / 64)},${Math.floor(z / 64)}`) || [];
 export const batimentA = (x, z) =>
@@ -450,6 +548,7 @@ export function couleurPlan(x, z) {
         ? [172, 166, 150]
         : [129, 99, 83];
   return {
+    ...COULEURS_BANLIEUE,
     water: [39, 74, 86],
     grass: [73, 108, 62],
     path: [162, 157, 136],
@@ -517,6 +616,8 @@ export function circuitsManhattan() {
           ajouter(pts);
       }
   }
+  // les tours de pâté des banlieues (v583)
+  for (const pts of bouclesBanlieue()) ajouter(pts);
   return traces;
 }
 
@@ -633,6 +734,52 @@ export function statueLiberte(set) {
     set(0, y, -3, PIERRE);
     set(1, y, -3, PIERRE);
   }
+}
+
+// LA STATUE D'APRÈS LE MODÈLE (v565) : le fort, le socle et la statue
+// voxelisés dans la photogrammétrie (scripts/new-york.mjs) — le fort et le socle
+// par la hauteur médiane de leur peau (la terrasse à dy 3, comme HAUT_FORT), la
+// statue par coupes. Même `set(dx, dy, dz, id)` que `statueLiberte` : le granit
+// du fort sous la terrasse, la pierre du socle, le cuivre de la statue.
+let voxelsLiberte = null;
+export function statueLiberteModele(set) {
+  const { R, NY, bits } = LIBERTE_VOXELS;
+  if (!voxelsLiberte) {
+    const b = typeof atob === "function" ? atob(bits) : Buffer.from(bits, "base64").toString("binary");
+    voxelsLiberte = new Uint8Array(b.length);
+    for (let i = 0; i < b.length; i++) voxelsLiberte[i] = b.charCodeAt(i);
+  }
+  const GRANIT = CITY_BLOCK.GRANITE,
+    PIERRE = DECOR_START + 27 * 10,
+    CUIVRE = CITY_BLOCK.COPPER;
+  for (let dy = 0; dy < NY; dy++)
+    for (let z = 0; z < 2 * R; z++)
+      for (let x = 0; x < 2 * R; x++) {
+        const i = (dy * 2 * R + z) * 2 * R + x;
+        if (!(voxelsLiberte[i >> 3] & (1 << (i & 7)))) continue;
+        // rien hors de l'île : le pied du fort du modèle déborde d'un bloc
+        // de l'ellipse au sud-est, et l'île ne doit rien sortir de l'eau
+        if (!dansIleLiberte(ILE.x + x - R + 0.5, ILE.z + z - R + 0.5)) continue;
+        set(x - R, dy, z - R, dy < HAUT_FORT ? GRANIT : dy < LIBERTE_SOCLE ? PIERRE : CUIVRE);
+      }
+}
+
+// L'escalier du fort, côté Manhattan (−z), comme celui de la statue d'avant :
+// deux marches d'un bloc posées contre le pied du fort du modèle, sur trois de
+// large. Elles se VOIENT (des marches de granit) : `cubesTus` ne les tait pas.
+export function escalierFortModele(set) {
+  const { R, bits } = LIBERTE_VOXELS;
+  if (!voxelsLiberte) statueLiberteModele(() => {});
+  let bord = 0;
+  for (let z = 0; z < 2 * R; z++) {
+    const i = z * 2 * R + R;
+    if (voxelsLiberte[i >> 3] & (1 << (i & 7))) { bord = z - R; break; }
+  }
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = 0; dy < HAUT_FORT - 1; dy++) set(dx, dy, bord - 1, CITY_BLOCK.GRANITE);
+    for (let dy = 0; dy < HAUT_FORT - 2; dy++) set(dx, dy, bord - 2, CITY_BLOCK.GRANITE);
+  }
+  return bits.length;
 }
 
 // ---- LES FEUX DE MANHATTAN (v496) -----------------------------------------

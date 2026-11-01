@@ -25,7 +25,7 @@ import { DISTANCE_PRESENCE } from './presence.js';
 import { Habitant } from './vie.js';
 import { construireHumain } from './personnages.js';
 import { VILLES_MONDE } from './villesmonde.js';
-import { dansManhattan, ORIGINE_MANHATTAN } from './manhattan-world.js';
+import { dansPlanNY, ORIGINE_MANHATTAN } from './manhattan-world.js';
 import { surface as surfaceManhattan, batimentA } from './manhattan-plan.js';
 import { CITIES, TROTTOIR, CHAUSSEE } from './world.js';
 import { CITY_BLOCK, ARCHI } from './blocks.js';
@@ -189,7 +189,7 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       const [x, z] = dansLaVille(site, player.pos.x + Math.cos(a) * d, player.pos.z + Math.sin(a) * d);
       if(site.urbain){
         const lx=x-ORIGINE_MANHATTAN.x,lz=z-ORIGINE_MANHATTAN.z;
-        if(!dansManhattan(x,z)||!['sidewalk','plaza','path'].includes(surfaceManhattan(lx,lz))||batimentA(lx,lz))continue;
+        if(!dansPlanNY(x,z)||!['sidewalk','plaza','path'].includes(surfaceManhattan(lx,lz))||batimentA(lx,lz))continue;
         if(world.piedPieton(x,z)===33)return [x,z];
         continue;
       }
@@ -340,14 +340,14 @@ export function createPassants({ scene, world, player, toast, npcs, sitesCarte =
       // blocs de rayon se peuplait sinon seulement depuis son cœur.
       const d = Math.hypot(player.pos.x - site.x, player.pos.z - site.z);
       if (!site.peuple) {
-        if (site.urbain?dansManhattan(player.pos.x,player.pos.z):d < site.r + PORTEE_REVEIL) peupler(site);
+        if (site.urbain?dansPlanNY(player.pos.x,player.pos.z):d < site.r + PORTEE_REVEIL) peupler(site);
         continue;
       }
       // ON RAPATRIE CEUX QUI SONT RESTÉS DERRIÈRE. Dix passants posés une fois
       // pour toutes, c'est une ville vide dès qu'on s'éloigne de cent mètres.
       // Ceux que l'enfant a distancés reviennent devant lui — la ville reste
       // habitée partout, sans qu'il y ait un seul habitant de plus.
-      if (site.urbain?!dansManhattan(player.pos.x,player.pos.z):d > site.r + PORTEE_REVEIL) continue;
+      if (site.urbain?!dansPlanNY(player.pos.x,player.pos.z):d > site.r + PORTEE_REVEIL) continue;
       // UN DÉPLACEMENT QUI NE RAMÈNE PERSONNE DANS LE CHAMP NE SE FAIT PAS.
       //
       // `dansLaVille` ramène tout candidat DANS la ville : quand l'enfant est

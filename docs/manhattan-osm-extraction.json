@@ -1,0 +1,126 @@
+{
+  "source": {
+    "author": "MENUDQ2 (https://sketchfab.com/noahquintana9)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/manhattan-osm-complete-model-bad7b7c7c6a64febb83950c24fee4d00",
+    "title": "Manhattan OSM Complete Model"
+  },
+  "sha256Gltf": "5610df21dedf71d974649c1bf88aa065d7a338b227280da5e24477d9f94c2d8e",
+  "sha256Bin": "3e9e751552a2e44d5f596e4075abab56e3391c03f902cfac9dcefa4e7822de85",
+  "composantes": 56969,
+  "profils": 879,
+  "octetsSourceBin": 306630456,
+  "octetsAtlas": 170535,
+  "quartiers": {
+    "heights": {
+      "composantesEligibles": 1803,
+      "profils": 80,
+      "hauteursModele": [
+        6.1,
+        18.6,
+        24.8,
+        137.2
+      ]
+    },
+    "harlem": {
+      "composantesEligibles": 2464,
+      "profils": 80,
+      "hauteursModele": [
+        6.0,
+        18.4,
+        36.8,
+        120.1
+      ]
+    },
+    "west": {
+      "composantesEligibles": 1212,
+      "profils": 80,
+      "hauteursModele": [
+        6.2,
+        25.6,
+        63.3,
+        182.0
+      ]
+    },
+    "east": {
+      "composantesEligibles": 1895,
+      "profils": 80,
+      "hauteursModele": [
+        6.0,
+        23.9,
+        66.0,
+        180.0
+      ]
+    },
+    "midtown": {
+      "composantesEligibles": 2216,
+      "profils": 80,
+      "hauteursModele": [
+        6.0,
+        38.9,
+        145.0,
+        425.5
+      ]
+    },
+    "chelsea": {
+      "composantesEligibles": 427,
+      "profils": 79,
+      "hauteursModele": [
+        6.7,
+        23.8,
+        64.7,
+        200.0
+      ]
+    },
+    "village": {
+      "composantesEligibles": 985,
+      "profils": 80,
+      "hauteursModele": [
+        6.2,
+        19.8,
+        45.0,
+        108.0
+      ]
+    },
+    "soho": {
+      "composantesEligibles": 285,
+      "profils": 80,
+      "hauteursModele": [
+        6.3,
+        25.0,
+        53.8,
+        138.4
+      ]
+    },
+    "tribeca": {
+      "composantesEligibles": 147,
+      "profils": 80,
+      "hauteursModele": [
+        6.0,
+        40.9,
+        124.4,
+        250.0
+      ]
+    },
+    "chinatown": {
+      "composantesEligibles": 258,
+      "profils": 80,
+      "hauteursModele": [
+        6.0,
+        23.6,
+        60.3,
+        258.0
+      ]
+    },
+    "financial": {
+      "composantesEligibles": 319,
+      "profils": 80,
+      "hauteursModele": [
+        6.0,
+        78.3,
+        209.5,
+        417.0
+      ]
+    }
+  }
+}
