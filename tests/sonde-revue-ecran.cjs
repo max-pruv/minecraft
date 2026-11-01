@@ -163,6 +163,14 @@ const ETATS = [
     });
     return {monde,architecture,triangles:await tab.evaluate(()=>__game.renderer.info.render.triangles)};
   }})),
+  { nom: 'ny-volant', async prep(tab) {
+    const quartier = await ETATS.find(e => e.nom === 'ny-rue').prep(tab);
+    const O = await tab.evaluate(async () => (await import('/src/manhattan-world.js')).ORIGINE_MANHATTAN);
+    await poserEt(tab, { x: O.x + 1.7, y: 33.01, z: O.z + 14, yaw: 0, pitch: .02 });
+    const voiture = await monterEnVoiture(tab);
+    if (!voiture.auVolant) throw new Error('La revue de New York doit être au volant');
+    return { ...quartier, ...voiture };
+  } },
   { nom: 'campagne', async prep(tab, ctx) {
     const s = await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
     return { monde: s + ' s' };

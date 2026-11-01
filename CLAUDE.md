@@ -36,7 +36,7 @@ modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérif
 les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
 ils ne constituent pas une exception pour les nouveaux rendus.
 
-## Manhattan : atlas OSM de Max (v583)
+## Manhattan : atlas OSM (v583) et façades en relief (v584)
 
 Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par
 `scripts/extraire-manhattan-osm.py` à partir du modèle MENUDQ2 fourni par Max.

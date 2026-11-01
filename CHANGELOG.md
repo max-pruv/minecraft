@@ -20,6 +20,29 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v584 — Les façades de Manhattan prennent du relief
+
+**Pourquoi.** Les photos de façades de la v583 restent plates quand on les
+regarde de biais. Max demande des bâtiments détaillés en trois dimensions.
+
+**Ce que ça change.** Les immeubles OSM ont des vitrages en retrait, des fonds
+séparés du verre, des châssis, appuis, corniches, pilastres et ferronneries
+modélisés. Les travées suivent les pans de mur et les retraits ; les angles
+étroits gardent de la maçonnerie et les escaliers desservent des baies réelles.
+La brique, la pierre et le bois ont des textures à l'échelle du personnage.
+Les baies lointaines restent géométriques, et la lumière nocturne se trouve
+derrière les vitres. Les volumes, les sauvegardes et la circulation sont conservés.
+
+**Vérification.** Huit contrats d'architecture passent. La suite Manhattan
+finale passe en 10 min 34 s, dont un lancer de rayons mesurant 47,5 cm entre
+verre et fond, les collisions, la destruction visible et la PWA. L'ancienne
+façade échoue au même contrôle de relief. L'intermittence PeerJS observée lors
+d'une passe précédente reste déclarée dans `TASKS.md`. Captures de détail,
+de rue et au volant : `docs/manhattan-osm-validation.md`. Les défauts hérités
+et les limites de mesure sur SwiftShader y sont explicités.
+
+---
+
 ## v583 — New York : volumes OSM, monuments et banlieues
 
 **Pourquoi.** Les bâtiments ordinaires étaient des rectangles de dimensions
@@ -32,10 +55,8 @@ parcelles s'élargissent pour les grands immeubles ; huit traitements de façade
 les commerces, les escaliers de secours et les terrasses différencient les rues.
 Le rendu proche, le lointain et les collisions partagent les mêmes volumes.
 La reprise de la PR #587 conserve ses dix quartiers périphériques et ses
-monuments. Les façades OSM ont des fenêtres en retrait, un vitrage séparé de
-son fond, des encadrements, corniches, pilastres et ferronneries en vraie 3D.
-La brique, la pierre et le bois ont des textures à l'échelle des personnages ;
-les baies restent géométriques au loin. Les modèles de ponts supplémentaires sont analysés dans
+monuments ; ses façades photographiques habillent aussi les nouveaux volumes
+de près. Les modèles de ponts supplémentaires sont analysés dans
 `docs/manhattan-ponts-sources.md` et ne sont pas embarqués dans cette livraison.
 La nuit, les fenêtres s'allument dans les dix variantes, sans illuminer les
 ombres d'escaliers présentes sur les photographies.
