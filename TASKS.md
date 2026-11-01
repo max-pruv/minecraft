@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+## La Lucid Air Sapphire (v584) — ce qui reste
+
+- [ ] **POUR MAX, SUR LA TABLETTE : la Lucid Air Sapphire au volant et à l'arrêt.**
+  Le banc rend en logiciel : cadence et bleu réel se jugent sur l'iPad, jour et nuit
+  (`?voiture=lucid-air-sapphire.glb&diag=1`).
+- [ ] **Sa boîte de collision fait 4,4 blocs de long pour 5 de voiture** (la fiche
+  commune `voiture`) : le pare-chocs entre de 0,3 dans un mur, comme les autres
+  longues de la flotte (Ghost, Escalade, F-150).
+- [ ] **Les portes arrière, le capot et le coffre sont fixes**, alors que le paquet
+  les modélise (leurs os sont connus, `boneDoorLR`, `boneHood`, `boneTrunk`).
+- [ ] **Sa licence est la Standard de Sketchfab, pas une Creative Commons**, et le
+  fichier est téléchargeable sur un dépôt public (vendor/voitures/LICENSE.md) : à
+  trancher par Max.
+
 ## New York v583 — revue et dettes déclarées
 
 - [ ] **Rendu encore stylisé.** Les huit vues mobiles Midtown/Brooklyn jour/nuit

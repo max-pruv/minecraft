@@ -1,0 +1,8 @@
+Model Information:
+* title:	Lucid Air Sapphire (2024)
+* source:	https://sketchfab.com/3d-models/lucid-air-sapphire-2024-06159f1e901840e4ac938536fcd742e0
+* author:	geyges (https://sketchfab.com/geyges)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works

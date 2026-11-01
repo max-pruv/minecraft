@@ -20,6 +20,28 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v584 — La Lucid Air Sapphire arrive dans la flotte
+
+**Pourquoi.** Max a déposé un paquet Sketchfab de la Lucid Air Sapphire (2024) à
+intégrer au jeu. Aucune voiture de la flotte actuelle n'a de portes modélisées :
+`portiere: false` sur les dix-huit de la v566, et une découpe de la tôle sur la
+Lucid Gravity. Le paquet en a, avec un habitacle complet, mais il pèse 301 926
+triangles et 474 maillages, et ses couleurs vivent sur ses sommets.
+
+**Ce que ça change.** Une berline bleue roule dans les villes et se conduit à
+l'allure d'une sportive. On monte par sa vraie porte avant : elle s'ouvre sur son
+intérieur, avec le volant, les écrans allumés et les sièges, et l'enfant s'assied
+sur son siège et non dans le dossier. Elle garde son bleu : la rue ne la repeint
+pas.
+
+**Ce qui le prouve.** Quatre témoins de `degats.js` : portes
+vraies et vers l'extérieur, tôle non découpée, autre voiture du même modèle fermée,
+siège mesuré au rayon, budget (138 179 triangles, 29 maillages, 4,8 Mo, ≈ 2,6 Mo en
+gzip). Sur la flotte de la rue : 106 221 → 107 552 triangles et 43,9 → 43,3
+maillages en moyenne. La sonde des feux la range avec les autres (phares, détresse,
+stop sur la tôle). Une signature neuve, déclarée (`Standard+DS+vc`). La séquence de
+montée a été jouée de bout en bout ; la tablette n'a pas été essayée.
+
 ## v583 — New York : volumes OSM, monuments et banlieues
 
 **Pourquoi.** Les bâtiments ordinaires étaient des rectangles de dimensions
