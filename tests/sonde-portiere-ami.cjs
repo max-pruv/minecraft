@@ -20,7 +20,7 @@ const { Banc, nomsVus, dormir, jusqua } = require('./banc.js');
         for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
         g.animalManager.animals.length = 0;
         const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
-        const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'amg-gt-black-series.glb' });
+        const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'lucid-gravity.glb' });
         for (let i = 0; i < 80 && !(a && a.mesh.userData.modele); i++) await dodo(100);
         document.getElementById('ride-btn').click();
         await dodo(800);

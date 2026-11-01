@@ -89,7 +89,7 @@ async function passage(page) {
     P.flying = false; P.yaw = 0; P.pitch = 0; P.vel.set(0, 0, 0);
     P.pos.set(x0 + 0.5, y0 + 1.2, z0 + 40.5);
     await dodo(1500);
-    const a = am.invoquer('voiture', P.pos.x, P.pos.z - 3, false, { flotte: 'amg-gt-black-series.glb' });
+    const a = am.invoquer('voiture', P.pos.x, P.pos.z - 3, false, { flotte: 'lucid-gravity.glb' });
     a.yaw = Math.PI; await dodo(400);
     for (let i = 0; i < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); i++) { document.getElementById('ride-btn').click(); await dodo(600); }
     out.auVolant = !!(g.fun.montureConduite && g.fun.montureConduite());
@@ -103,11 +103,14 @@ async function passage(page) {
     for (let i = 0; i < 40 && Math.abs(P.vitesseVoiture || 0) > 0.3; i++) await dodo(100);
     P.yaw = 0; a.yaw = Math.PI;
     // LA VRAIE BÊTISE : une voiture garée sur la route, et l'on fonce dedans
-    const garee = am.invoquer('voiture', P.pos.x, P.pos.z - 30, false, { flotte: 'amg-gt-black-series.glb' });
+    const garee = am.invoquer('voiture', P.pos.x, P.pos.z - 30, false, { flotte: 'lucid-gravity.glb' });
     garee.yaw = 0;
     P.touchMove.f = 1; P.touchMove.s = 0;
     const tc = performance.now();
-    while (performance.now() - tc < 12000 && pat.etat().points <= 0) await dodo(100);
+    // trente blocs à parcourir : borné à trente secondes, pas douze — à 1,5
+    // image par seconde (une rue de modèles déposés, v579) la voiture n'y
+    // arrivait pas encore ; la durée entre dans le message (v270)
+    while (performance.now() - tc < 30000 && pat.etat().points <= 0) await dodo(100);
     out.choc = { points: pat.etat().points, derniere: pat.etat().derniere, ms: Math.round(performance.now() - tc),
       contact: P.contact && P.contact.famille, force: P.choc && P.choc.force };
     // on tourne sur la dalle : la piste s'allonge, la police arrive
@@ -129,8 +132,17 @@ async function passage(page) {
     const vus = new Set();
     for (let i = 0; i < 12 && unite; i++) { vus.add(unite.mesh.children.filter((o) => /^Eclat_/.test(o.name) && o.visible).map((o) => o.name).join('+')); await dodo(90); }
     out.gyrophares = [...vus];
-    // deux étoiles : la moto
-    pat.betise('pieton');
+    // deux étoiles : la moto. LE TÉMOIN POSE SES DEUX ÉTOILES LUI-MÊME : le
+    // choc contre la voiture garée vaut 45 points, ou 90 quand elle rebondit
+    // et publie un second choc (v534) ; un piéton en vaut 55, et la seconde
+    // étoile est à 120 (`SEUILS`). Un seul choc, et 45 + 55 = 100 laissait la
+    // moto au garage — rouge au portail de claude/temoins-intermittents
+    // (`choc.points 45`, `etoiles2 1`), vert quand le choc avait rebondi. On
+    // ajoute des bêtises jusqu'à deux étoiles, trois au plus, et l'on publie
+    // combien il en a fallu.
+    out.pointsAvant = pat.etat().points;
+    out.betises2 = 0;
+    while (pat.etoiles() < 2 && out.betises2 < 3) { pat.betise('pieton'); out.betises2++; }
     const t1 = performance.now();
     while (performance.now() - t1 < 15000 && !pat.etat().unites.some((u) => u.type === 'moto')) await dodo(300);
     out.moto = pat.etat().unites.find((u) => u.type === 'moto') || null;
@@ -141,16 +153,31 @@ async function passage(page) {
     P.touchMove.f = 0; P.touchMove.s = 0;
     const t2 = performance.now();
     let ctrl = null, distMin = Infinity;
-    while (performance.now() - t2 < 45000) {
+    const interrompus = [];
+    // le contrôle entier (doubler, se garer, parler, repartir) borné à
+    // quatre-vingt-dix secondes : à quarante-cinq, il restait en route une
+    // fois sur deux des DEUX côtés à 1,5 image par seconde (v579, mesuré par
+    // trois passages de cette sonde sur la branche et sur `origin/main`)
+    while (performance.now() - t2 < 90000) {
       await dodo(300);
       const e = pat.etat();
       for (const u of e.unites) distMin = Math.min(distMin, Math.hypot(u.x - P.pos.x, u.z - P.pos.z));
       if (e.controle && !ctrl) ctrl = { ms: Math.round(performance.now() - t2), ...e.controle, ou: { dx: +(P.pos.x - x0).toFixed(1), dz: +(P.pos.z - z0).toFixed(1), dy: +(P.pos.y - y0).toFixed(2), yaw: +P.yaw.toFixed(2) } };
       if (e.controle && window.__traceCtrl) { const ay = P.yaw + Math.PI; for (const u of e.unites) window.__traceCtrl.push([e.controle.etape, u.type, +((u.x - P.pos.x) * Math.sin(ay) + (u.z - P.pos.z) * Math.cos(ay)).toFixed(1), +((u.x - P.pos.x) * Math.cos(ay) - (u.z - P.pos.z) * Math.sin(ay)).toFixed(1)]); }
       if (e.controle && e.controle.etape === 'parle' && ctrl) ctrl.parle = true;
-      if (ctrl && !e.controle) break;
+      if (ctrl && !e.controle) {
+        // un contrôle qui finit sans avoir parlé a été INTERROMPU : l'enfant a
+        // bougé de plus de trois blocs/s (une glissade, une voiture garée
+        // reprise de biais) et la poursuite a repris — c'est la règle. On
+        // attend le contrôle suivant au lieu de conclure sur celui-là.
+        if (ctrl.parle) break;
+        interrompus.push({ ms: ctrl.ms, etape: ctrl.etape, v: +Math.hypot(P.vel.x, P.vel.z).toFixed(1) });
+        ctrl = null;
+      }
     }
     out.controle = ctrl;
+    out.interrompus = interrompus;
+    out.msControle = Math.round(performance.now() - t2);
     out.distanceMin = +distMin.toFixed(2);
     if (window.__traceCtrl) out.trace = window.__traceCtrl;
     out.dits = dits;
@@ -255,4 +282,31 @@ if (require.main === module) (async () => {
     console.log(JSON.stringify(await passageMoto(page), null, 1));
   } finally { await banc.fermer(); process.exit(0); }
 })();
-module.exports = { passage, passageMoto, dalle };
+// LE CONTRÔLE PASSE À DROITE QUAND LA GAUCHE EST BARRÉE (police-réseau). Sur
+// une dalle à soi, l'enfant immobile, une voiture de police dix blocs
+// derrière : le chemin libre passe à gauche ; un mur posé à gauche, il passe à
+// droite ; un mur des deux côtés, il reste derrière et nomme le bloc.
+async function passageCote(page) {
+  const x0 = 51000, z0 = 51000;
+  const y0 = await dalle(page, x0, z0, 30);
+  return page.evaluate(async ([x0, z0, y0]) => {
+    const g = window.__game, P = g.player, pat = window.__patrouille;
+    if (!pat || !pat.essaiDevant) return { err: 'pas d\'essaiDevant (patrouille)' };
+    const { BLOCK } = await import('./src/blocks.js');
+    pat.remiseAZero();
+    P.flying = false; P.yaw = 0; P.vel.set(0, 0, 0);
+    P.pos.set(x0 + 0.5, y0 + 1, z0 + 0.5);
+    const ay = P.yaw + Math.PI, fx = Math.sin(ay), fz = Math.cos(ay), gx = Math.cos(ay), gz = -Math.sin(ay);
+    const derriere = { x: P.pos.x - fx * 10, z: P.pos.z - fz * 10 };
+    const mur = (cote) => {
+      for (let f = -3; f <= 4; f++) for (let k = 3; k <= 6; k++) for (let h = 1; h <= 2; h++)
+        g.world.setBlock(Math.floor(P.pos.x + fx * f + gx * k * cote), y0 + h, Math.floor(P.pos.z + fz * f + gz * k * cote), BLOCK.STONE);
+    };
+    const out = { libre: pat.essaiDevant(derriere.x, derriere.z) };
+    mur(1); out.gaucheBarree = pat.essaiDevant(derriere.x, derriere.z);
+    mur(-1); out.deuxBarres = pat.essaiDevant(derriere.x, derriere.z);
+    return out;
+  }, [x0, z0, y0]);
+}
+
+module.exports = { passage, passageMoto, passageCote, dalle };

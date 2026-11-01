@@ -22,7 +22,7 @@
 // 6. À L'ÉCRAN, le relais près/loin se fait : sous l'enfant le détail est
 //    visible et la tuile cachée ; à cinq morceaux, l'inverse. Et `?hd=0`
 //    n'installe rien de HD du tout.
-const { Banc, dormir } = require('./banc.js');
+const { Banc, dormir, souffler } = require('./banc.js');
 
 const echecs = [];
 function verifier(nom, ok, detail = '') {
@@ -61,6 +61,44 @@ function verifier(nom, ok, detail = '') {
         PAL.PALIERS.bas.hdMo === 0 && PAL.PALIERS.moyen.hdMo > 0 && PAL.PALIERS.haut.hdMo > 0
           && PAL.reglageDe(null, true).hdMo === PAL.PALIERS.moyen.hdMo && PAL.PARAMS_FORCANTS.includes('facadesmo'),
         JSON.stringify({ bas: PAL.PALIERS.bas.hdMo, moyen: PAL.PALIERS.moyen.hdMo, haut: PAL.PALIERS.haut.hdMo }));
+    }
+  }
+  // ── LE MONDE AUSSI A UN BUDGET D'OCTETS (v580) — la règle pure ──────────
+  //
+  // Toutes les sessions « Loin » de l'iPhone de Max à Paris ont planté pour
+  // leur mémoire (journal de bord, v296 → v576). `rayonDuBudget` rend le plus
+  // grand rayon dont les morceaux tiennent dans le budget. Les chiffres sont
+  // ceux du banc au centre de Paris : 0,22 Mo par morceau sans façades,
+  // 128 Mo de façades sur les proches ; dans les champs, 0,14.
+  {
+    const PAL = await import('../src/palier.js');
+    const M = 1048576;
+    if (typeof PAL.rayonDuBudget !== 'function') {
+      verifier('le monde a un budget d’octets : en ville dense le rayon maillé se resserre (rayonDuBudget, palier.js)', false, 'rayonDuBudget absent');
+    } else {
+      const disque = (R, base, facades) => {
+        const t = [];
+        for (let dx = -R; dx <= R; dx++) for (let dz = -R; dz <= R; dz++) {
+          const d = Math.max(Math.abs(dx), Math.abs(dz));
+          const f = d <= 6 ? facades / 169 : 0;
+          t.push({ d, base, octets: base + f });
+        }
+        return t;
+      };
+      const paris = disque(16, 0.22 * M, 128 * M), champs = disque(16, 0.14 * M, 0);
+      const rP = PAL.rayonDuBudget({ tenus: paris, R: 16, rMin: 6, budget: 224 * M, actuel: 16 });
+      const rC = PAL.rayonDuBudget({ tenus: champs, R: 16, rMin: 6, budget: 224 * M, actuel: 16 });
+      const tient = paris.filter((t) => t.d <= rP).reduce((s, t) => s + t.octets, 0);
+      // il ne respire pas : juste sous le budget à r, il ne remonte pas d'un cran
+      const garde = PAL.rayonDuBudget({ tenus: paris, R: 16, rMin: 6, budget: tient * 1.02, actuel: rP });
+      const sans = PAL.rayonDuBudget({ tenus: paris, R: 16, rMin: 6, budget: 0, actuel: 16 });
+      verifier('le monde a un budget d’octets : au centre de Paris le rayon maillé se resserre et tient le budget, dans les champs « Loin » garde ses seize morceaux, sans hésiter d’un cran',
+        rP < 16 && rP >= 8 && tient <= 224 * M && rC === 16 && garde === rP && sans === 16,
+        JSON.stringify({ paris: rP, tientMo: Math.round(tient / M), champs: rC, garde, sans }));
+      verifier('chaque palier porte son budget de monde, l’appareil tactile sans palier aussi, et `?mondemo=` force le budget',
+        PAL.PALIERS.haut.mondeMo > 0 && PAL.PALIERS.moyen.mondeMo > 0 && PAL.reglageDe(null, true).mondeMo > 0
+          && PAL.reglageDe(null, false).mondeMo === 0 && PAL.PARAMS_FORCANTS.includes('mondemo'),
+        JSON.stringify({ bas: PAL.PALIERS.bas.mondeMo, moyen: PAL.PALIERS.moyen.mondeMo, haut: PAL.PALIERS.haut.mondeMo }));
     }
   }
   // Sur l'ancien code, le module n'existe pas : on le dit, on ne s'effondre pas.
@@ -770,6 +808,47 @@ function verifier(nom, ok, detail = '') {
       verifier('un journal installé d\'un bloc refait l\'index des monuments touchés',
         w2.monumentsTouches.has('Tour Eiffel')
         && (buildChunkTampons(w2, ecx, ecz).monumentsDetailles || []).length === 0);
+
+      // 7. CE QU'UN ENFANT A BÂTI SUR L'ANCIENNE TOUR NE FLOTTE PAS (v575). Un
+      //    bloc daté d'avant le modèle (DATE_TOUR_EIFFEL) dans l'emprise : le
+      //    monde d'aujourd'hui pose la tour d'AVANT, au bloc près — sa première
+      //    plateforme (l'anneau à 3–4 du centre, 16 blocs au-dessus du pied)
+      //    porte la cabane — et l'enfant la voit en cubes. Daté d'après : la
+      //    tour neuve, où cette case est du vide. Sur l'ancien code, la tour
+      //    neuve dans les deux cas : rouge.
+      {
+        const sol = new World().terrainHeight(eiffel.x, eiffel.z);
+        const cle = `${eiffel.x + 3},${sol + 17},${eiffel.z}`;
+        const date = W.DATE_TOUR_EIFFEL || Date.UTC(2026, 9, 25, 21, 49, 1);
+        const lire = (t) => {
+          const wa = new World(); wa.hd = 1;
+          wa.installerEdits([[cle, BLOCK.PLANK]], [[cle, t]], 'local');
+          return {
+            plateforme: wa.getBlock(eiffel.x - 3, sol + 16, eiffel.z), coin: wa.getBlock(eiffel.x + 4, sol + 16, eiffel.z - 4),
+            cabane: wa.getBlock(eiffel.x + 3, sol + 17, eiffel.z),
+            enCubes: wa.monumentsTouches.has('Tour Eiffel') && (buildChunkTampons(wa, ecx, ecz).monumentsDetailles || []).length === 0,
+          };
+        };
+        const avantM = lire(date - 3600e3), apresM = lire(date + 3600e3);
+        const plein = (id) => id !== BLOCK.AIR && id !== undefined;
+        verifier('ce qu\'un enfant a posé sur l\'ancienne tour Eiffel garde l\'ancienne tour sous lui : rien ne flotte, rien ne bouge',
+          plein(avantM.plateforme) && plein(avantM.coin) && avantM.cabane === BLOCK.PLANK && avantM.enCubes
+          && !plein(apresM.plateforme) && apresM.cabane === BLOCK.PLANK,
+          `avant la date ${JSON.stringify(avantM)} · après ${JSON.stringify(apresM)}`);
+      }
+
+      // 8. LA TOUR LUIT LA NUIT (v575) : le fer et la salle vitrée portent une
+      //    lueur par sommet, que `nuitHD` allume. Sur l'ancien code, seule la
+      //    salle vitrée en avait une (0,12) : le fer était éteint.
+      {
+        const wl = new World(); wl.hd = 1;
+        const t = buildChunkTampons(wl, ecx, ecz);
+        let fer = 0, total = 0;
+        const lu = t.facades && t.facades.lueur;
+        if (lu) for (const v of lu) { total++; if (v >= 0.05) fer++; }
+        verifier('la nuit, le fer de la tour Eiffel luit d\'or : une lueur sur ses sommets, pilotée par la nuit, sans lampe',
+          total > 0 && fer > total * 0.3, `${fer} sommets lumineux sur ${total}`);
+      }
     }
   }
 
@@ -1476,6 +1555,114 @@ function verifier(nom, ok, detail = '') {
         `${neuves.length} neuve(s) ${JSON.stringify(neuves.map((k) => k.slice(0, 60)).slice(0, 3))} ; ${clesAvant.length} clés à l'accueil, couche ${clesAvant.some((k) => /paris-hd/.test(k)) ? 'chauffée' : 'ABSENTE'}`);
     }
 
+    // LE MONDE A UN BUDGET D'OCTETS, DANS LE JEU (v580). La règle pure est
+    // gardée plus haut ; ici, le câblage : une page au centre de Paris avec un
+    // budget serré (`?mondemo=80`, au-dessus du plancher de six morceaux), et l'on lit ce que la scène TIENT — le
+    // rayon maillé descend sous `rr`, les octets des morceaux restent sous le
+    // budget (un anneau de marge compris), et le disque maillé est celui du
+    // rayon, pas celui de `rr`. Sur l'ancien code `rayonMonde` n'existe pas.
+    {
+      const odon = await banc.jouerSeul('Odon', { rr: 10, params: '&hd=2&mondemo=80', pret: true });
+      const m = await odon.evaluate(async () => {
+        const g = window.__game;
+        const { adresseParis } = await import('./src/paris.js');
+        const [x, z] = adresseParis(-0.8, -0.9);
+        g.player.flying = false; g.player.pos.set(x + 0.5, g.world.terrainHeight(x, z) + 1.01, z + 0.5); g.player.vel.set(0, 0, 0);
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const t0 = performance.now(); let n0 = -1, st = 0;
+        while (performance.now() - t0 < 120000) { await dodo(2000); const n = g.chunkMeshes.size; st = n === n0 ? st + 1 : 0; n0 = n; if (st >= 3) break; }
+        return { attente: Math.round(performance.now() - t0), rayon: g.rayonMonde, morceaux: g.chunkMeshes.size,
+          tenuMo: g.mondeTenu ? Math.round(g.mondeTenu.octets / 104857.6) / 10 : null, budgetMo: g.BUDGET_MONDE ? g.BUDGET_MONDE / 1048576 : null };
+      }).catch((e) => ({ erreur: String(e.message).split('\n')[0] }));
+      await odon.close();
+      verifier('dans Paris, le jeu maille le rayon que le budget du monde permet, et la scène tient le budget (v580)',
+        !m.erreur && typeof m.rayon === 'number' && m.rayon < 10 && m.tenuMo <= m.budgetMo * 1.15
+          && m.morceaux <= (2 * m.rayon + 3) ** 2,
+        JSON.stringify(m));
+    }
+
+    // LA NUIT DE LA TOUR EIFFEL (v575) : le phare tourne, le scintillement
+    // crépite au début de l'heure, et rien ne naît dans les programmes. On se
+    // pose au Champ-de-Mars à minuit, tour en vue ; on lit ce que la page
+    // DESSINE (des maillages `eiffel-*` visibles, l'angle du phare entre deux
+    // relevés), puis l'heure du scintillement, puis les clés de programme
+    // de jour contre celles de minuit, au même endroit. Sur l'ancien code, rien de tout cela n'existe.
+    {
+      const clesN = () => [...new Set((window.__game.renderer.info.programs || []).map((q) => q.cacheKey))];
+      const eiffelle = await banc.jouerSeul('Eiffelle', { rr: 4, params: '&hd=2', pret: true });
+      const clesAccueilN = await eiffelle.evaluate(clesN);
+      // On se pose de JOUR d'abord : le décor de Paris autour de la tour
+      // compile ce qu'il compile en arrivant, et ce n'est pas la nuit de la
+      // tour. Les clés se lisent ensuite au même endroit, avant et après minuit.
+      const pose = await eiffelle.evaluate(async () => {
+        const g = window.__game, n = window.__nuitEiffel;
+        if (!n) return { absent: true };
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const { REPERES } = await import('./src/world.js');
+        const lm = REPERES.find((l) => l.name === 'Tour Eiffel');
+        const y = g.world.terrainHeight(lm.x, lm.z);
+        g.player.pos.set(lm.x + 0.5, y + 2, lm.z + 40.5); g.player.vel.set(0, 0, 0);
+        g.player.yaw = 0; g.player.pitch = 0.5;
+        window.__setDayTime(0.42);
+        const cx = Math.floor(lm.x / 16), cz = Math.floor(lm.z / 16), t0 = performance.now();
+        while (performance.now() - t0 < 60000 && !g.chunkMeshes.get(`${cx},${cz}`)) await dodo(500);
+        // une image rendue en plus, au moins, avec la tour dedans
+        const f0 = g.renderer.info.render.frame;
+        while (performance.now() - t0 < 90000 && g.renderer.info.render.frame < f0 + 4) await dodo(200);
+        return { attente: Math.round(performance.now() - t0), jour: n.groupe.visible };
+      });
+      // Le banc rend une image par seconde dans Paris en relief : on attend
+      // les FAITS (le phare a tourné, la tour a crépité), bornés, jamais une
+      // durée fixe (v270) — et la durée entre dans le message.
+      const nuit = pose.absent ? pose : await eiffelle.evaluate(async () => {
+        const n = window.__nuitEiffel;
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const attendre = async (ok, ms) => { const t0 = performance.now(); while (performance.now() - t0 < ms && !ok()) await dodo(100); return Math.round(performance.now() - t0); };
+        const vus = () => n.groupe.visible ? n.groupe.children.filter((m) => m.visible).length : 0;
+        // minuit, hors du scintillement (la minute 30 de l'heure)
+        window.__setDayTime(0.75 + 0.5 / 24);
+        const tAllume = await attendre(() => n.etat.allumee, 30000);
+        const a0 = n.etat.angle;
+        const tTourne = await attendre(() => Math.abs(n.etat.angle - a0) > 0.1, 30000);
+        const calme = { allumee: n.etat.allumee, scintille: n.etat.scintille, vus: vus() };
+        // le début d'une heure du jeu : la tour crépite, et ses groupes changent
+        window.__setDayTime(0.75 + 0.05 / 24);
+        const tCrepite = await attendre(() => n.etat.scintille, 30000);
+        const motifs = new Set();
+        const tMotifs = await attendre(() => { motifs.add(n.groupe.children.map((m) => (m.visible ? 1 : 0)).join('')); return motifs.size >= 4; }, 45000);
+        // le jour : tout s'éteint
+        window.__setDayTime(0.25);
+        const tEteint = await attendre(() => !n.groupe.visible, 30000);
+        return { calme, tourne: Math.abs(n.etat.angle - a0), crepite: n.etat.scintille || motifs.size > 1, motifs: motifs.size,
+          ampoules: n.nbAmpoules, jour: n.groupe.visible, ms: { tAllume, tTourne, tCrepite, tMotifs, tEteint } };
+      });
+      // Ce qu'on lit : la clé du programme de CHAQUE maillage de la nuit de la
+      // tour, telle que le moteur l'a compilée, contre les clés de l'accueil —
+      // le décor de Paris, lui, continue d'arriver (des voitures neuves, des
+      // clés `physical`) et n'est pas la nuit de la tour.
+      const progs = await eiffelle.evaluate(() => {
+        const g = window.__game, n = window.__nuitEiffel;
+        if (!n) return null;
+        const cles = new Set();
+        n.groupe.traverse((o) => {
+          if (!o.isMesh) return;
+          const p = g.renderer.properties.get(o.material);
+          if (p && p.currentProgram) cles.add(p.currentProgram.cacheKey);
+        });
+        return [...cles];
+      });
+      const errs = eiffelle.erreurs.slice(0, 3);
+      await eiffelle.close();
+      const neuvesN = (progs || []).filter((k) => !clesAccueilN.includes(k));
+      verifier('à minuit la tour Eiffel s\'allume : son phare tourne, et elle crépite au début de chaque heure, puis s\'éteint le jour',
+        !nuit.absent && pose.jour === false && nuit.calme.allumee && !nuit.calme.scintille && nuit.calme.vus >= 1 && nuit.tourne > 0.1
+        && nuit.crepite && nuit.motifs >= 4 && nuit.ampoules > 500 && nuit.jour === false && errs.length === 0,
+        `${JSON.stringify(pose)} ${JSON.stringify(nuit)} ${JSON.stringify(errs)}`);
+      verifier('et la nuit de la tour ne fait naître aucun programme : phare et ampoules ont la matière des feux, chauffée à l\'accueil',
+        !!progs && progs.length >= 1 && neuvesN.length === 0,
+        `${progs ? progs.length : 0} programme(s) dessinant la tour, ${neuvesN.length} né(s) après l'accueil ${JSON.stringify(neuvesN.map((k) => k.slice(0, 80)))}`);
+    }
+
     const bas = await banc.jouerSeul('Firmin', { rr: 4, params: '&hd=0' });
     const res0 = await bas.evaluate(async ([x, z]) => {
       const g = window.__game;
@@ -1507,6 +1694,45 @@ function verifier(nom, ok, detail = '') {
     verifier('aucune erreur JavaScript sans HD', bas.erreurs.length === 0, JSON.stringify(bas.erreurs.slice(0, 3)));
     verifier('le réverbère parisien coûte deux maillages : la fonte fusionnée, la lanterne',
       res0.reverbere === 2, `${res0.reverbere} maillage(s)`);
+    // la page reste en jeu sinon, et coûte presque tout le banc à la suivante (v427)
+    await bas.close();
+
+    // ── L'OMBRE DES FAÇADES EST AJOURÉE (v572) ──────────────────────────────
+    //
+    // La passe d'ombre de three échantillonnait la carte aux UV BRUTS : les
+    // façades ont des UV en unités du monde, repliées par le shader de la
+    // couche à l'écran seulement. Une croisée jetait donc un aplat, ou une
+    // bande fantôme d'une autre tuile (depuis la v287). Une page à ombres
+    // forcées (`ombres=1`, v247), à Paris : un panneau de deux croisées sur deux
+    // au matériau ET au matériau de profondeur des vrais maillages de façades,
+    // au-dessus d'une dalle (`sonde-ombre-facades-hd.cjs`, lue telle quelle).
+    // Derrière les carreaux le soleil passe, derrière le bois l'ombre tombe ;
+    // un panneau plein ombre tout (sinon la mesure ne prouverait rien).
+    // Mesuré sur l'ancien code : carreaux 151,8 · bois 157,7 · soleil 183,4 —
+    // l'aplat ; ici 183,4 · 158,1. Et la clé de profondeur de la couche
+    // (`paris-hd-ombre`) est compilée PENDANT LA PRÉPARATION : aucune ne naît
+    // en jeu quand Paris arrive (v246). Rouge sur l'ancien code (pas de clé),
+    // rouge chauffe désarmée (la clé naît en jeu).
+    {
+      const { mesurer: mesurerOmbre } = require('./sonde-ombre-facades-hd.cjs');
+      await souffler();
+      // sans arbres : ceux du point d'apparition jettent leur ombre dès la première
+      // image et compileraient la clé en jeu, chauffe ou pas — la mesure ne
+      // distinguerait plus rien
+      const ombre = await banc.jouerSeul('Ombeline', { rr: 4, ombres: 1, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&hd=2&arbres=0', pret: true });
+      const clesOmbre = () => [...new Set((window.__game.renderer.info.programs || []).map((q) => q.cacheKey))].filter((k) => k.includes('paris-hd-ombre'));
+      const avantO = await ombre.evaluate(clesOmbre);
+      const o = await mesurerOmbre(ombre);
+      const apresO = await ombre.evaluate(clesOmbre);
+      await ombre.close();
+      const neuvesO = apresO.filter((k) => !avantO.includes(k));
+      verifier('l\'ombre d\'une croisée de façade est ajourée : le soleil passe par les carreaux, le bois ombre',
+        !o.erreur && o.ombres && o.profondeur && o.plein.carreaux <= o.plein.soleil - 25
+          && o.hd.carreaux >= o.hd.soleil - 12 && o.hd.bois <= o.hd.soleil - 12,
+        o.erreur || `carreaux ${o.hd && o.hd.carreaux} · bois ${o.hd && o.hd.bois} · soleil ${o.hd && o.hd.soleil} · panneau plein ${JSON.stringify(o.plein)} · profondeur ${o.profondeur}`);
+      verifier('le programme d\'ombre de la couche HD est chauffé à l\'accueil : aucun ne naît quand Paris arrive',
+        avantO.length >= 1 && neuvesO.length === 0, `${avantO.length} avant d'entrer, ${neuvesO.length} neuve(s) en jeu`);
+    }
   } finally {
     await banc.fermer();
   }

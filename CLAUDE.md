@@ -595,6 +595,35 @@ Et un témoin de conduite qui a besoin de place se pose sa dalle (le virage à
 pleins gaz décrit un cercle d'une trentaine de blocs) : la campagne du point
 d'apparition a des murs et des arbres.
 
+## Cinq intermittents démontés (claude/temoins-intermittents) — la sonde d'abord, et un défaut du jeu dedans
+
+Chacun démonté par une sonde qui sépare les cas (v223), jamais par un rejeu.
+Quatre règles.
+
+- **CE QUE `heurter` LIT ET CE QUE LE MAILLAGE MONTRE NE SONT PAS DE LA MÊME
+  IMAGE.** `cederLePassage` collecte AVANT `update`, `montrer` pose le
+  maillage APRÈS : à 800 ms par image, 7 blocs d'écart pour la même voiture
+  (`sonde-heurter-image.cjs`). Un témoin qui vise une fonction de la collecte
+  (`heurter`, `voitureContre`) prend sa cible dans la collecte
+  (`diagCeder()`), dans la même tâche.
+- **UN ÉVÉNEMENT QUI VOYAGE PAR DEUX CHEMINS ARRIVE DANS LES DEUX ORDRES.**
+  L'histoire des chocs de la rue part par `rue_choc` ET par la position (`rc`,
+  v374) : le froissage peut précéder le message qui allume les feux de
+  détresse. Un verdict sur le second ne se lit pas dans la foulée du premier ;
+  on attend son fait, borné.
+- **UNE FENÊTRE EN TEMPS RÉEL S'OBSERVE PAR IMAGE DANS LA PAGE QUI LA VOIT.**
+  Le feu de la voiture d'un ami dure 3,5 s réelles avant le dépôt ; lu une fois
+  au bout d'une attente, il était déjà fini. Un relevé `requestAnimationFrame`
+  dans la page garde ce qu'elle a vu ; ce qui doit se lire avant la fin
+  (le lieu de l'arrêt) se lit avant.
+- **UNE ÉCHÉANCE NE PREND PAS POUR BUT L'ENDROIT OÙ L'ON A ÉCHOUÉ.** La sortie
+  de chaussée d'un flâneur (v385) expirait au bout de six secondes et prenait
+  le poste LÀ OÙ il s'était arrêté, sur l'asphalte : il y flânait, ressortant
+  sans fin. Le poste est le bord visé (`vie.js`) ; un témoin le provoque par un
+  mur de crochet et lit le poste après l'échéance. Et une traversée AU FEU
+  n'est pas une traversée sans feu : le témoin des passages peints juge les
+  seules traversées décidées sans feu (`tr: null`), comme celui de Rome.
+
 ## Le portail ne va pas plus vite sur une machine : il se répartit (banc, après la v540)
 
 Max : « que la CI soit beaucoup plus rapide, beaucoup plus sélective ». Tout a
@@ -921,6 +950,80 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Un avion garé est un obstacle (v580) — une forme qui n'est pas un rectangle se mesure en silhouette, et l'enfoncement se compte en cases
+
+Deux dettes, une seule chose : la voiture traversait un avion au poste (v534),
+et ✈️ faisait passer l'aile dans le voisin garé (v565). Quatre règles.
+
+- **UNE BOÎTE NE DÉCRIT PAS UN AVION.** « Longueur × envergure » arrêterait
+  une voiture à sept blocs du fuselage ; « longueur × fuselage » laisse passer
+  l'aile, qui est ce qui heurte. `emprise-avion.js` mesure la SILHOUETTE vue du
+  dessus (chaque triangle visible projeté au sol, cases d'un demi-bloc), une
+  fois par modèle, sur un modèle NEUF (`empriseDe`, la règle des feux, v550) :
+  l'appareil de la scène porte un temps son escalier et sa porte ouverte.
+- **L'ENFONCEMENT SE COMPTE EN POINTS** (`sEnfonce`, v560, pour une forme
+  quelconque). Ce qui bouge porte des points — la boîte d'une voiture au
+  demi-bloc, la silhouette de son propre avion — et un pas est refusé s'il en
+  met plus dans l'avion que la pose d'avant. Reculer et se dégager restent
+  permis. Pour la voiture, c'est la famille `avion` de `obstacleVehicule`,
+  qui rebondit sur la normale du mouvement comme le mobilier : une voiture ne
+  pousse pas un avion. Pour l'avion qui roule, c'est `player.obstacleAvion`,
+  lu DANS LA BRANCHE DU PILOTE — elle a son propre déplacement et sort avant le
+  code commun (mon premier jet y posait le crochet : jamais lu, le témoin l'a
+  dit), au sol seulement, avancer comme virer sur place.
+- **AVANT D'ARRÊTER UN TRAJET ASSISTÉ, ON MESURE OÙ IL PASSE.** Bloquer net
+  aurait arrêté 61 départs ✈️ sur 369 contre l'empennage du voisin, d'un
+  demi-bloc. C'est le GUIDAGE qui frôlait : il repartait à quinze blocs par
+  seconde à 34° du cap, en plein virage. `guiderRoulage` vire à
+  `VIRE_ROULAGE` (deux blocs par seconde, le rayon le plus court) jusqu'à
+  `CAP_ROULAGE` (17°) : zéro contact, au moins un demi-bloc d'air partout, pour
+  quatre dixièmes de seconde de roulage de plus. La sonde
+  (`sonde-avions-gares.cjs`) rend la marge (`MARGE=`) : un modèle neuf dans la
+  rangée se rejoue par elle.
+- **UN TÉMOIN DE FORME SE LIT PAR LA MÊME MESURE QUE LE JEU, ET ROUGIT SUR
+  L'ANCIEN CODE PAR LE TRAJET.** Les témoins de `monte.js` comptent les points
+  de la voiture et du chasseur dans la silhouette de l'A320 garé ; l'ancien
+  code (le module de mesure seul ajouté) traverse l'avion sur 45 et 41 blocs.
+- **UNE RÈGLE D'ENFONCEMENT SUPPOSE QU'ON VIENT DU DEHORS.** Un appareil
+  invoqué sur un poste déjà garni NAÎT dans un jumeau ; chaque virage l'y
+  enfonce d'un point et il restait cloué au poste (le témoin du roulage d'Orly,
+  196 refus en une minute — sous node la sonde partait d'une pose identique, à
+  zéro refus, et ne pouvait pas le voir). En roulant on ne dépasse jamais le
+  premier contact : au-delà d'un quart des points dedans (`JUMEAU`), on ignore
+  cet avion jusqu'à en être sorti. « On n'est jamais coincé » se vérifie aussi
+  en partant de dedans.
+
+Ce qui reste, déclaré dans `TASKS.md` : à pied on passe encore sous l'aile et
+dans le fuselage d'un avion garé ; un avion garé n'est pas un obstacle pour
+les voitures de la rue ni pour un ami.
+## La flotte sans ses placeholders (v579) — un modèle retiré part du dépôt, et un témoin nomme un modèle pour ce qu'il porte
+
+Max : « supprime les anciennes voitures… toutes les voitures qui se
+ressemblent ». Les quarante-sept `luxurycarfleet` (des placeholders
+paramétriques) sont partis de `FLOTTE` et de `vendor/voitures/`. Deux règles.
+
+- **ON RETIRE DE LA FLOTTE, JAMAIS UN IDENTIFIANT QUI PORTE UN MODÈLE NEUF.**
+  `ferrari-sf90.glb`, `lamborghini-revuelto.glb` et `porsche-911-gt3-rs.glb`
+  restent : ce sont les identifiants (garages, réseau) de la SF90 XX, de la
+  Revuelto adaptée et de la 911 reconstruite (`asset`), et leur fichier d'avant
+  sert `?asset=0`. Un modèle vraiment retiré, lui, part du dépôt : une
+  sauvegarde ou un ami qui le nomme retombe sur le tirage (`voitureNeuve`,
+  montures.js), une tablette restée sur l'ancienne version sur la coque
+  d'attente. Avant de retirer, on relit les signatures (`signaturesDuGlb` sur
+  les fichiers restants) : aucune ne doit mourir sans sortir de la table.
+- **UN TÉMOIN QUI NOMME UN MODÈLE LE NOMME POUR UNE PROPRIÉTÉ.** Vingt témoins
+  invoquaient l'AMG GT ou la F40 sans dire pourquoi ; il a fallu retrouver ce
+  qu'ils attendaient : une portière découpable (la Lucid Gravity — les
+  dix-huit de la v566 ont `portiere: false`), des feux avant nommés (la DB11,
+  par leur matériau), une classe (la Divo pour l'hypercar), le manifeste (la
+  MC12 et la Model Y), des images partagées entre fichiers (cinq déposés). Un
+  modèle nommé dans un témoin s'écrit avec la raison à côté.
+- **RETIRER DES MODÈLES LÉGERS ALOURDIT LA RUE, ET CELA SE MESURE.** Une
+  voiture de la rue passe de 61 000 à 96 000 triangles et de 36 à 42
+  maillages en moyenne (prototypes chargés dans la page, branche contre
+  `origin/main`) : +17 % d'appels par voiture visible. Toute livraison qui
+  change la composition de la flotte publie cette moyenne avant et après.
+
 ## Les dix-huit voitures déposées (v566) — un paquet se mesure, il ne se lit pas
 
 Max a déposé dix-huit paquets Sketchfab de facture différente.
@@ -958,7 +1061,7 @@ voiture (`VOITURES`). Cinq règles.
   par la boîte et le rayon (v519). Un paquet neuf se passe à cette sonde
   avant d'entrer.
 
-**Un paquet qui porte plusieurs voitures (v570)** — le « Generic passenger
+**Un paquet qui porte plusieurs voitures (v581)** — le « Generic passenger
 car pack », dix voitures dans une scène, posées en cercle et tournées — se
 découpe par une fiche à `noeud` : la carrosserie nommée et ce dont le centre
 tient dans sa boîte, quatre nœuds de roue EXIGÉS (moins, une voisine manquée ;
@@ -1025,6 +1128,47 @@ sculpté. Six règles.
   (mesurés au rayon sur les trois). Toute variante neuve se rejoue par
   `sonde-embarquement-deposes.cjs` (on monte, on descend, zéro clé neuve).
 
+## La nuit de la tour, et la tour d'avant sous une cabane (v575)
+
+Les trois restes de la v564. Quatre règles.
+
+- **QUAND ON NE PEUT PAS SAVOIR SI UN ENFANT A BÂTI, ON GARDE, ON NE DÉPLACE
+  PAS.** Les profils ne se lisent pas (v295) ; le journal de bord (des données
+  d'appareil) a dit zéro relevé à moins de quatorze blocs de la tour en
+  trente-cinq jours — une fenêtre, pas une preuve. Une marche qui déplace des
+  blocs parie sur l'étage visé ; la garde n'en déplace aucun. Un bloc posé ou
+  creusé dans l'emprise avant `DATE_TOUR_EIFFEL` (l'heure de la fusion de la
+  v564) fait poser la tour d'avant au bloc près (`batiAvant`, `gardeAvant`
+  dans la fiche du repère, `world.tourEiffelAvant`, tenu par `setBlock` et
+  `indexerMonumentsTouches`) — la règle de la v303 et de la v339 (« la ville
+  d'avant se fige sous ce qu'un enfant a bâti »), à l'échelle d'un monument.
+  Le prochain monument qui change de forme se branche sur `gardeAvant`.
+- **UNE LUMIÈRE DE MONUMENT EST UNE LUEUR DE SOMMET.** Le fer d'Eiffel et sa
+  salle vitrée portent la `lueur` de la couche HD (matierehd.js), que `nuitHD`
+  allume : le jour ne change pas d'un pixel, aucune lampe (v248), aucun
+  programme neuf. `reglageNuitEiffel.lueur` à faux rend la v566, pour
+  l'empreinte des 490 morceaux.
+- **CE QUI CLIGNOTE MONTRE ET CACHE DES GROUPES, IL NE TOUCHE À AUCUN
+  MATÉRIAU.** Le scintillement (`nuit-eiffel.js`) range ses ampoules en six
+  maillages, posées sur les sommets du fer (jamais à côté, v230) ; le phare est
+  deux lames croisées. Tout en `matiereAdditive` (v533) : le témoin lit les
+  CLÉS des maillages de la tour contre celles de l'accueil. Le crépitement et
+  le phare sont en temps réel ; le scintillement suit l'heure du JEU (un quart
+  de chaque heure).
+- **UNE LUMIÈRE POSÉE SUR UN MODÈLE SE VOIT AUSSI QUAND LE MODÈLE N'EST PAS
+  LÀ.** Au-delà de la portée du détail, la tour est son squelette de cubes : la
+  lueur du fer n'existe pas, et des ampoules posées sur la surface du modèle
+  sont DANS les cases du voxel, cachées (vu en capture : une tour noire à
+  minuit à soixante-dix blocs). De loin, ampoules et points d'or sortent d'un
+  bloc (`SAILLIE`) ; de près (`pres`, la portée du détail), petites ampoules
+  sur le modèle et pas d'or — de grandes ampoules y faisaient des losanges
+  blancs. Et la lueur se juge en capture : à 0,3, le fer sortait beige délavé ;
+  il vaut 0,07.
+- **CE QU'ON NE PEUT PAS ALLÉGER SANS DÉGRADER SE DÉCLARE.** La tour pèse
+  5,25 Mo de façades sur quatre morceaux, 72 octets par sommet ; un cinquième
+  est l'attribut `tiles`, commun à toute la couche HD. Le levier est le format
+  de sommet de la couche entière, pas la tour : dette, pas rognure.
+
 ## La police et la moto (v562) — une poursuite suit la piste de l'enfant, et un contrôle se range là où la caméra regarde
 
 Max : « dès lors que tu fais une bêtise, un accident, que tu fonces dans
@@ -1073,8 +1217,46 @@ s'entend), `src/moto.js` (le modèle, ses éclats). Les modèles sont ceux de Ma
   phrase. Le témoin lit ce que le jeu a demandé de dire (l'appel, puis la cause
   et « Bonne route »), la sirène dans SA bande (1 100–1 450 Hz) sur la sortie.
 
-Ce qui reste, déclaré dans `TASKS.md` : la police est locale à la tablette (un
-ami ne la voit pas) ; la moto a la boîte de collision d'une voiture en longueur.
+**La police d'un ami (v574).** Trois règles.
+
+- **CE QUI VOYAGE, CE SONT LES ÉTOILES, PAS LA PISTE.** `p.v.w` (la position,
+  comme les feux stop v549 : `v` est recopié entier sur `pos` et `rpos`), six
+  octets — envoyer la piste coûterait 587 o/s à 40 b/s et 4,4 Ko à chaque
+  arrivée (mesuré). Chaque tablette RECONSTRUIT la piste de l'ami avec la
+  position qu'elle dessine (`rp.pos`, rejouée) et y mène SA voiture de police
+  (`patrouille.amis`, l'escorte) : gyrophares, sirène, ni bêtise, ni contrôle,
+  ni oubli — c'est la tablette du conducteur qui décide. Née sous 140 blocs,
+  garée au-delà de 180. Un témoin à trois tablettes par chemin (`reseau.js`).
+- **UNE IMAGE LENTE N'EST PAS UN SAUT.** La piste locale coupe au-delà de
+  trente blocs d'une image à l'autre ; une tablette qui rend une image toutes
+  les deux secondes voit un ami à 20 b/s en faire quarante (mesuré : deux
+  coupures sur un trajet relayé, aucune escorte). L'escorte comble la ligne
+  droite ; seul un vrai saut (plus de soixante blocs à plus de 300 b/s, la
+  règle de `fluidite.js`) coupe. Et un témoin de conduite à plusieurs se borne
+  en DISTANCE : une page lente du banc a rendu 540 blocs pour « dix
+  secondes » de `rouler`.
+- **UNE LONGUEUR DE VÉHICULE SE DÉCLARE DANS SA FICHE.** `longueur` (la moto,
+  2,4, mesurée sur le modèle) : `prendreGabarit(largeur, longueur)` pose
+  `player.demiLong`, que la boîte orientée, le point d'impact, le suivi et les
+  crochets d'obstacle de main.js lisent. Sans `longueur`, une voiture, au bit
+  près.
+
+**UN TÉMOIN QUI MESURE UN TRANSPORT GARDE SA SITUATION, ET ATTEND QU'ELLE SE
+POSE.** Verts seuls, les deux témoins de l'escorte sont tombés au portail :
+sans police à portée chez le conducteur, ses étoiles s'oubliaient en huit
+secondes avant d'avoir voyagé (zéro reçue par l'hôte), et une page
+d'observateur qui cale rendait l'ami d'un bond (écart 10 → 82) lu à heure
+fixe. Le conducteur refait une bêtise dès que ses étoiles baissent (on mesure
+le transport, pas l'oubli, que `monte.js` garde), et l'on attend trois écarts
+posés, trente secondes au plus, la durée dans le message.
+
+Et le contrôle double par la DROITE quand la gauche est barrée
+(`cheminDevant` essaie les deux côtés ; `etat().controle.cote`).
+
+Ce qui reste, déclaré dans `TASKS.md` : le policier ne marche pas, la police
+est derrière la caméra pendant la poursuite (décision de Max), l'ami ne voit
+pas le contrôle (l'escorte s'arrête derrière, sans policier), et la rue voit
+une moto d'ami à la longueur d'une voiture.
 
 ## La voiture tombe dans l'eau, et un véhicule ne s'enfonce plus dans un autre (v560)
 
@@ -1567,6 +1749,35 @@ mètres ». Cinq règles, toutes mesurées par `sonde-elan-chocs.cjs`.
   vitesse de sortie, la force reste celle de la vitesse RELATIVE. Sans cela un
   taxi de Manhattan pris de face rejetait l'enfant de sept blocs (et
   `origin/main`, joystick lâché, de trente-neuf à cinquante et un).
+## La voie au milieu de sa moitié (v578) — un décalage se demande à la section que le tracé suit
+
+La dette (1) de la v544. Trois règles.
+
+- **UN DÉCALAGE UNIQUE NE VAUT QUE POUR UNE SECTION UNIQUE.** 1,3 bloc était
+  le milieu de la voie d'une chaussée de 5,2 ; les rues à la GTA ont mis celui
+  d'une collectrice à 2,13 (`sectionGTA('collecteur').voie / 2`). Mais un
+  décalage de 2,13 partout est un non-résultat mesuré (`sonde-voie-gta.cjs`) :
+  une rue locale n'a qu'une voie (deux blocs de l'axe au caniveau), Washington
+  3,5 — le flanc y passait sur le trottoir (Washington 32 → 54 % de pas).
+  `decalagesDuTrace` (voiesdoubles.js, pur) donne 2,13 à un sommet qui SUIT
+  (même direction à 30° près, à moins de `SUR_L_AXE` de l'axe) une collectrice
+  ou un boulevard typé, l'ancien décalage partout ailleurs, et un cône le long
+  du tracé (`PENTE_DECALAGE`) : on ne s'écarte qu'une fois entré, on se rabat
+  avant de sortir. `decalerADroite` (vehicules.js) prend un nombre ou un
+  décalage par sommet ; la jumelle d'un boulevard se pose à `DECALAGE_GTA` +
+  une voie.
+- **QUAND LA VOIE BOUGE, LA COTE SE RELIT SOUS ELLE** (`decalerSelonLaSection`,
+  la règle de la v512) : au milieu de la voie, pas à l'axe — relue à l'axe, une
+  rue en terrasses de San Francisco laissait la voiture dans l'asphalte de la
+  colonne d'à côté (61 → 106 pas, puis 28 relue au milieu).
+- **LA PREUVE EST LA GRILLE REJOUÉE AVEC LES DEUX RÈGLES SUR LE MÊME CODE.**
+  `sonde-rue-dense.cjs face` (lue par `plafond.js`) : contacts de face entre
+  convois de Paris 161 → 13. Les compteurs de grille (`jeu`, `ville`, les voies
+  doubles) bougent beaucoup pour un changement de tracé — le huit de la
+  République passe de 25 à 150 contacts de sa propre file dans son épingle, et
+  une règle de rabat dans les virages serrés ne l'améliorait pas sans coûter
+  les voies doubles (666 → 466) : non-résultat mesuré, retiré, déclaré.
+
 ## Une voiture de la rue percutée est projetée (v567) — l'horloge partagée cède au choc franc
 
 Max : « quand on fonce dans un véhicule, il est projeté et il ne s'arrête pas
@@ -5448,6 +5659,25 @@ Les deux rouges réseau récurrents du palier C. Trois règles.
   une voix restée au quart (`GAIN_APPEL`) et le régime qui varie ; vérifié
   rouge sur une copie où la voix reste au quart.
 
+## Un document à deux auteurs s'écrit sous condition (v571)
+
+La v374 faisait relire chaque tablette avant d'écrire ses réglages ; ce
+n'était qu'une demi-garde. Deux règles.
+
+- **RELIRE AVANT D'ÉCRIRE NE FERME PAS LA FENÊTRE, ÇA LA DÉPLACE.** Une
+  tablette chargée met des secondes entre sa lecture et son écriture (six,
+  mesurées par `sonde-reglages-deux.cjs`) : tout choix posé ailleurs entre
+  les deux était effacé. C'est le serveur qui tranche (`prefsPushSi`,
+  cloud.js) : un PATCH filtré par `prefs->>majProfil` égal à ce qu'on a lu ;
+  zéro ligne écrite → on relit, on adopte, on réessaie. Tout document que
+  deux tablettes écrivent en entier se protège ainsi, par la date de ce qui
+  compte, jamais par un délai.
+- **UN TÉMOIN DE COURSE RETIENT LA REQUÊTE PÉRIMÉE.** Attendre qu'un banc
+  chargé retarde une écriture au bon moment est un tirage (1 rouge sur 2) :
+  `reglages.js` tient la première écriture de l'autre tablette dans
+  `page.route`, fait cliquer, relâche quand le choix est au serveur. Le
+  Supabase de poche (`nuage.js`) écrit sous condition comme le vrai.
+
 ## Un service worker vraiment coincé (v488) — un blocage qu'on provoque se fabrique dans le code, pas dans le réseau
 
 Une règle. Les deux témoins de la v220 bloquaient le RÉSEAU (une requête qui
@@ -7516,6 +7746,28 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   une baie de façade coûte cinquante-six à soixante-neuf sommets par face,
   et c'est le nombre de sommets, pas le rayon ni le budget, qui décidera un
   jour de ce qu'un appareil peut montrer.
+
+## Le monde a un budget d'octets (v580) — un rayon ne borne pas des octets, morceaux compris
+
+Max : « le jeu plante » dans Paris. Le journal de bord : TOUTES les sessions
+« Loin » de son iPhone passées par Paris ont planté, v296 → v576 (20 sur 20),
+la scène à 390–490 Mo de géométrie. Deux règles.
+
+- **CE QUE LA v299 A DIT DES FAÇADES VAUT POUR LE MORCEAU ENTIER.** `hdMo`
+  bornait le détail ; les cubes, le sol et les faces plates n'avaient que le
+  rayon. `rayonDuBudget` (palier.js, pure) rend le plus grand rayon dont les
+  morceaux tiennent dans `mondeMo` (224 en moyen et haut, 128 en bas, rien
+  sur un ordinateur sans palier) ; `main.js` (`rayonMonde`, `ajusterRayonMonde`)
+  ne maille et ne garde que lui, et `horizon.js` dessine le reste, puisqu'il
+  ne couvre que ce qui n'est pas maillé. Dans les champs il ne mord pas.
+  `?mondemo=` force, `?diag=1` et le journal (`rm`, `mondeMo`) l'affichent.
+- **UN MORCEAU PAS ENCORE MAILLÉ S'ESTIME SANS LES FAÇADES.** Les proches
+  portent le détail (déjà borné à part) : leur moyenne faisait tomber le
+  premier jet au rayon plancher (6 au lieu de 11). La règle descend tout de
+  suite et remonte avec quinze pour cent de marge, sinon elle respire à chaque
+  morceau franchi. Le budget se règle sur ce que l'appareil a TENU dans le
+  journal (survécu sous ~480 Mo au total, mort au-delà de ~500), jamais sur le
+  banc, qui a de la mémoire à revendre (v236).
 
 ## Le journal de bord se taille côté serveur (v479) — une purge efface par liste d'autorisation
 
@@ -10408,6 +10660,36 @@ posée au-dessus du relief (le relief naturel n'est jamais plat sur cette
 longueur), PAR LE BOUTON, un relevé tous les dixièmes de seconde — et une
 sonde de captures (`sonde-captures-avion.cjs`) rend une vue de côté par une
 caméra à part, `layers.enableAll()` comme le veut la v250.
+
+## Le décollage à la main, et l'altimètre (v573) — un geste assisté a son symétrique manuel
+
+Max : « voir l'altitude quand on pilote », et « décoller à la main en allant
+suffisamment vite, joystick vers le haut ». Trois règles.
+
+- **AVANT D'AJOUTER UN GESTE, ON LIT CE QUI LE REND IMPOSSIBLE.** Au sol, la
+  manette ne demandait que `gaz × roulage` (six blocs/s) : aucune vitesse de
+  rotation (42 à 62) n'était atteignable sans ✈️, et c'est le témoin sur
+  `origin/main` qui l'a chiffré (vMax 6). Au-delà de `GAZ_ELAN` (0,9) la
+  manette fait la course au décollage, à la poussée de la fiche ; en dessous,
+  le roulage d'avant au bit près. Posé pleins gaz, la manette revient au
+  ralenti à l'arrêt, sinon l'élan relancerait l'appareil sur la piste.
+- **LE SIGNE DU JOYSTICK SE LIT DANS LE CODE.** `forward` positif (l'avant du
+  pavé, l'écran vers le haut, la touche Z) fait monter en vol
+  (`forward × max × PART_MONTEE`) et rouler en avant au sol ; tiré vers soi, il
+  descend en vol et repousse au sol (v269). Le décollage manuel est donc
+  `forward > MANCHE_DECOLLAGE` à la vitesse de rotation : on passe en `vol`
+  sans montée imposée, train sorti jusqu'à `RENTRER_TRAIN_A` (comme le
+  décollage assisté, v261) tant que l'enfant n'a pas touché 🛞. ✈️ ne change
+  pas, et `sonde-decollage-postes.cjs` le garde (370 sur 370).
+- **L'ALTIMÈTRE DIT UNE HAUTEUR, EN MÈTRES VRAIS.** `hauteurAuSol` (player.js)
+  lit le dessus de la colonne survolée, et au-dessus de la mer la SURFACE de
+  l'eau (`sommetColonne` rend le fond, v267). À la verticale un bloc vaut un
+  mètre (un étage, trois blocs, v301) : ce n'est pas l'entorse du compteur de
+  vitesse (v267), qui existe parce qu'à l'horizontale un bloc ne vaut un mètre
+  nulle part. `#alt-val` vit dans la colonne de bord, au-dessus de la vitesse
+  (🛞 et ✈️ montent de quatre pixels), et ne s'écrit que quand le nombre
+  change (v263) : au mètre sous vingt, de cinq en cinq au-dessus. Le témoin lit
+  le TEXTE affiché.
 
 ## Chaque voiture roule à l'allure de sa classe (v260)
 
@@ -14822,6 +15104,34 @@ Ce qui reste, déclaré dans `TASKS.md` : une demi-couronne possible à la
 frontière de `RAYON_HD` (un arbre à cheval sur deux morceaux dont un seul est
 détaillé), et l'ombre des façades HD de Paris.
 
+## L'ombre des façades HD (v572) — un matériau qui replie ses UV a son matériau de profondeur
+
+Trois règles.
+
+- **LA PASSE D'OMBRE NE VOIT PAS LE SHADER DE LA COULEUR.** three dessine
+  l'ombre avec un matériau de profondeur à lui, à qui il recopie `map` et
+  `alphaTest`, et qui échantillonne aux UV BRUTS. Tout `onBeforeCompile` qui
+  touche à l'échantillonnage (ici le repli des UV monde dans leur tuile,
+  v287) doit avoir son jumeau de profondeur, posé par
+  `customDepthMaterial` (`profondeurHD`, matierehd.js) — sinon une croisée
+  jette un pavé. Le jumeau fait LE MÊME calcul, dérivées comprises : ce qui
+  est coupé à l'écran est coupé dans l'ombre. `?ombrehd=0` rejoue l'ancienne
+  ombre, pour mesurer.
+- **UN JUMEAU DE PROFONDEUR EST UNE CLÉ DE PROGRAMME, ET `compile` NE LA VOIT
+  PAS (v319).** Elle se chauffe à l'accueil par un vrai rendu d'ombre
+  (`compilerAvecOmbres`, seulement si l'appareil a des ombres), et la forme
+  d'ombre retenue par la chauffe compte le `customDepthMaterial`. Le témoin
+  se joue sans arbres (`arbres=0`) : ceux du point d'apparition compilent la
+  clé à la première image, chauffe ou pas, et il ne mesurerait rien.
+- **UNE SONDE D'OMBRE SE POSE SOUS SON CASSEUR, ET LE CASSEUR SE RETOURNE.**
+  three dessine les ombres par la face ARRIÈRE (`shadowSide` nul → l'envers
+  du côté) : un quad unique tourné vers le soleil n'ombre rien — ma sonde
+  ne voyait d'ombre ni au panneau HD ni au panneau plein. Et un `layers` posé
+  pour cacher le casseur à la caméra le cache AUSSI à la passe d'ombre (elle
+  teste les couches de la caméra principale) : la caméra se met entre le
+  casseur et la dalle. Un témoin d'ombre garde un casseur plein, sinon zéro
+  ombre passe pour une ombre ajourée.
+
 ## Les arbres beaux partout (v528) — un niveau de détail lointain se mesure contre ce qu'il remplace
 
 Max, en vol : « Au loin, les arbres sont moches, ils sont en forme Minecraft. »
@@ -14951,3 +15261,19 @@ Deux dettes des arbres, une mesure. Deux règles.
   `arbresLoin` gagne 70 % (0,96 Mo pour 169 morceaux de forêt, 4,8 % du
   `solid`, mesuré ; le maillage reste dans le bruit, 5,0 contre 4,9 ms), et un morceau du bord du disque coûte un ou deux appels de dessin
   au lieu d'un ; l'intérieur, rien.
+
+## Le bouleau sur la surface (v576) — un bloc d'arbre neuf se déclare au sol continu
+
+Une règle. `DESSUS_NATUREL` (solcontinu.js) dit ce qui peut vivre AU-DESSUS
+d'une colonne naturelle sans la rendre artificielle ; il nommait `LOG` et
+`LEAVES`, pas `BIRCH`, et chaque bouleau gardait autour de son tronc un carré
+de 3 × 3 colonnes en voxel (612 sur 612 autour des 68 bouleaux de la forêt
+témoin, mesuré). Le remède passe par `dessusNaturel`, que lisent la fiche,
+donc la bande, le contact et le franchissement (v297) : un bloc admis là l'est
+pour tous, et le tronc, au-dessus de la bande, reste un obstacle. **Toute
+essence neuve dont le tronc n'est pas `LOG` s'y déclare** (`TRONCS` d'arbreshd.js
+et `trunkBlock` de world.js en sont les deux autres listes). Ce qui reste en
+voxel autour d'un tronc se juge contre le taux des chênes (des falaises, 2,3 %),
+jamais contre zéro. `reglageSolContinu.bouleau` à faux rejoue l'ancienne règle
+pour l'empreinte des 490 morceaux et pour le témoin de la v541, dont le trou
+est désormais recouvert par la surface.

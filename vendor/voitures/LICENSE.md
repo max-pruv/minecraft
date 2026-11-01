@@ -13,6 +13,10 @@ sans affiliation avec Porsche. Le niveau de fidélité reste à valider.
 
 Cinquante modèles fournis par Max (août 2026, archives
 `luxurycarfleet` partie 1 à 3) pour la diversité des voitures à conduire.
+**Quarante-sept ont été retirés du jeu et du dépôt en v579** (Max : « les
+voitures qui se ressemblent ») ; seuls restent `ferrari-sf90.glb`,
+`lamborghini-revuelto.glb` et `porsche-911-gt3-rs.glb`, fichiers d'avant
+chargés par `?asset=0` derrière leurs modèles neufs.
 
 Ce sont des **modèles paramétriques stylisés générés par code** — le
 manifeste d'origine le dit expressément : « proportions, empattement,
@@ -215,7 +219,7 @@ lentilles `Gyrophare_G` / `Gyrophare_D`.
 - `ford-mondeo-taxi.glb` — This work is based on "Ford Mondeo TAXI" (https://sketchfab.com/3d-models/ford-mondeo-taxi-8bc1c46fe0334d03a5eb927b6a129dc8) by TSB3DMODELS (https://sketchfab.com/TSB3DMODELS) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
 - `police-suv.glb` — This work is based on "Police car SUV" (https://sketchfab.com/3d-models/police-car-suv-3c00056ec42b4552804fe5f4e5af768f) by k26_k29 (https://sketchfab.com/John_Benoveth) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
 
-## Dix voitures de tous les jours (octobre 2026, v570)
+## Dix voitures de tous les jours (octobre 2026, v581)
 
 Un paquet glTF fourni par Max, publié sous licence **Creative Commons
 Attribution 4.0** (CC-BY-4.0), qui exige le crédit ci-dessous, recopié tel quel

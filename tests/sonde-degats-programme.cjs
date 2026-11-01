@@ -138,7 +138,7 @@ function verifier(nom, ok, detail = '') {
       for (let e = 0; e < 6 && g.fun.montureConduite && g.fun.montureConduite(); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
       for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
       g.animalManager.animals.length = 0;
-      const flotte = 'ferrari-f40.glb';
+      const flotte = 'aston-martin-db11.glb';
       const a = g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte });
       const b = g.animalManager.invoquer('voiture', x0 - 12, z0 + 6, false, { flotte });
       if (!a || !b) return { err: 'aucune voiture posée' };
@@ -359,7 +359,7 @@ function verifier(nom, ok, detail = '') {
     const neuf = await tab.evaluate(async () => {
       const g = window.__game, d = g.fun.degats, { x0, z0 } = window.__essai;
       if (!d) return { err: 'pas de module de dégâts' };
-      const c = g.animalManager.invoquer('voiture', x0 - 20, z0 - 4, false, { flotte: 'ferrari-f40.glb' });
+      const c = g.animalManager.invoquer('voiture', x0 - 20, z0 - 4, false, { flotte: 'aston-martin-db11.glb' });
       const vierge = d.etat(c.mesh) === null;
       // le garage répare : on abîme, on répare, chaque pièce retrouve sa géométrie commune
       d.choc(c.mesh, { force: 1, lx: 0, lz: -2.2 });
@@ -429,7 +429,7 @@ function verifier(nom, ok, detail = '') {
       await tenir(0.8);
       for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
       g.animalManager.animals.length = 0;
-      const c = g.animalManager.invoquer('voiture', x0 + 14, z1 + 3, false, { flotte: 'ferrari-f40.glb' });
+      const c = g.animalManager.invoquer('voiture', x0 + 14, z1 + 3, false, { flotte: 'aston-martin-db11.glb' });
       const t0 = performance.now();
       while (performance.now() - t0 < 30000 && !c.mesh.userData.roues) await tenir(0.3);
       c.pos.y = y1 + 1.01; c.mesh.position.y = c.pos.y;
@@ -611,7 +611,7 @@ function verifier(nom, ok, detail = '') {
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
       g.animalManager.animals.length = 0;
       const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
-      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'ferrari-f40.glb' });
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'aston-martin-db11.glb' });
       const t0 = performance.now();
       while (performance.now() - t0 < 30000 && !a.mesh.userData.roues) await dodo(300);
       for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(600); }
@@ -678,7 +678,7 @@ function verifier(nom, ok, detail = '') {
       // flotte dans la scène, à moins de trois blocs (Alice a retiré ses bêtes)
       let voiture = null;
       for (const o of g.scene.children) {
-        if (o.userData && o.userData.flotte === 'ferrari-f40.glb' && l && Math.hypot(o.position.x - l.x, o.position.z - l.z) < 3) voiture = o;
+        if (o.userData && o.userData.flotte === 'aston-martin-db11.glb' && l && Math.hypot(o.position.x - l.x, o.position.z - l.z) < 3) voiture = o;
       }
       const e = voiture && d ? d.etat(voiture) : null;
       const vis = d ? d.particulesVisibles() : { fumee: 0, flammes: 0 };

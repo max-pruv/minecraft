@@ -6,13 +6,110 @@
 
 export const NOUVEAUTES = [
   {
-    v: 570,
+    v: 581,
     titre: 'Dix voitures de tous les jours',
     puces: [
       'Citadine, berline, break et monospace',
       'Un pick-up, un SUV et un 4×4',
       'Un coupé et une supercar à aileron',
       'Elles roulent dans les rues',
+    ],
+  },
+  {
+    v: 580,
+    titre: 'Paris ne fait plus planter',
+    puces: [
+      'En mode Loin, le jeu tient dans Paris',
+      'Au loin, le paysage prend le relais',
+    ],
+  },
+  {
+    v: 579,
+    titre: 'Seulement les plus belles voitures',
+    puces: [
+      'Les vieilles voitures toutes pareilles sont parties',
+      'Il reste les nouveaux modèles détaillés',
+      'Une voiture garée revient avec un beau modèle',
+    ],
+  },
+  {
+    v: 578,
+    titre: 'Chaque voiture dans sa voie',
+    puces: [
+      'Les voitures roulent au milieu de leur voie',
+      'Elles se croisent sans se frôler',
+      'Paris, Londres, Nice, Lille, San Francisco',
+    ],
+  },
+  {
+    v: 577,
+    titre: 'Un avion garé est un obstacle',
+    puces: [
+      'Ta voiture s\'arrête contre un avion',
+      'Ton avion ne traverse plus les autres',
+      'Recule pour te dégager',
+    ],
+  },
+  {
+    v: 576,
+    titre: 'Des bouleaux bien plantés',
+    puces: [
+      'Plus de carré en cubes à leur pied',
+      'Le sol de la forêt est lisse',
+    ],
+  },
+  {
+    v: 575,
+    titre: 'La tour Eiffel la nuit',
+    puces: [
+      'Le fer de la tour brille d\'or',
+      'Le phare tourne au sommet',
+      'Elle scintille au début de chaque heure',
+      'Une cabane sur l\'ancienne tour reste en place',
+    ],
+  },
+  {
+    v: 574,
+    titre: 'La police des amis',
+    puces: [
+      'On voit la police qui suit un ami',
+      'Elle double aussi par la droite',
+      'La moto a sa vraie taille',
+    ],
+  },
+  {
+    v: 573,
+    titre: 'Altitude et décollage à la main',
+    puces: [
+      'Aux commandes, l\'altitude au-dessus du sol',
+      'Pleins gaz, l\'avion prend son élan',
+      'Joystick vers le haut, il décolle',
+      'Trop lent, il reste au sol',
+    ],
+  },
+  {
+    v: 572,
+    titre: 'Des ombres de fenêtres',
+    puces: [
+      'Le soleil passe par les carreaux',
+      'Les balcons en fer aussi',
+      'Fini les ombres en pavé',
+    ],
+  },
+  {
+    v: 571,
+    titre: 'Ta langue reste choisie',
+    puces: [
+      'Deux tablettes allumées ne se contredisent plus',
+      'La langue choisie ne revient plus en arrière',
+    ],
+  },
+  {
+    v: 570,
+    titre: 'Les passants regagnent le trottoir',
+    puces: [
+      'Un passant bloqué revient vers le trottoir',
+      'Il ne flâne plus au milieu des voitures',
     ],
   },
   {

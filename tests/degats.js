@@ -53,12 +53,30 @@ function verifier(nom, ok, detail = '') {
     // laisse en cache est celle que la flotte relit.
     const F = await import('./sonde-feux-flotte.mjs');
     const p = await F.empoisonner();
-    verifier('une voiture abîmée (échelle en pleine animation, un feu détaché) mesurée la première ne fait pas la règle du modèle : la Bolide neuve qui suit a ses feux sur sa tôle',
+    verifier('une voiture abîmée (échelle en pleine animation, un feu détaché) mesurée la première ne fait pas la règle du modèle : la DB11 neuve qui suit a ses feux sur sa tôle',
       p.detOk && p.stopOk && p.phOk && p.otees > 0, JSON.stringify(p));
+    // CE QUE LA RUE REPEINT, UN MATÉRIAU LE PORTE (v579). La rue tirait une
+    // teinte pour la Revuelto (laque `Paint_Arancio`) et la Divo (matériaux
+    // sans nom) : `userData.peinture` l'annonçait, l'ami la recevait, et
+    // aucun maillage ne la portait. Tout modèle déposé qui ne se déclare pas
+    // `laque: 'jamais'` porte un matériau que `EST_LAQUE` reconnaît.
+    {
+      const V = await import('../src/vehicules.js');
+      const fs = require('fs'), pth = require('path');
+      const sansLaque = [];
+      for (const e of V.FLOTTE) {
+        if (e.fabrique || e.laque === 'jamais') continue;
+        const b = fs.readFileSync(pth.resolve(__dirname, '../vendor/voitures', e.asset || e.fichier));
+        const j = JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString());
+        if (!(j.materials || []).some((m) => V.EST_LAQUE.test(m.name || ''))) sansLaque.push(e.asset || e.fichier);
+      }
+      verifier('tout modèle que la rue peut repeindre porte une laque que la règle reconnaît — sinon il se déclare « laque: jamais »',
+        sansLaque.length === 0, JSON.stringify(sansLaque));
+    }
     const flotte = await F.mesurerFlotte();
     const ko = flotte.filter((x) => !(x.phOk && x.detOk && x.stopOk));
     verifier(`les phares, les feux de détresse et les feux stop des ${flotte.length} modèles de la flotte (taxis et utilitaires fabriqués compris) sont sur la tôle, à leur coin`,
-      flotte.length >= 57 && ko.length === 0, JSON.stringify(ko.slice(0, 3)));
+      flotte.length >= 30 && ko.length === 0, JSON.stringify(ko.slice(0, 3)));
     // LES PHARES ÉPOUSENT L'OPTIQUE DU MODÈLE (v569). Max : « la vraie 911 a
     // une barre lumineuse, et le jeu vient créer des phares ronds par-dessus ».
     // De nuit, aucune lueur n'est un disque plaqué : chacune est une copie des
@@ -68,8 +86,10 @@ function verifier(nom, ok, detail = '') {
     const koLueur = flotte.filter((x) => !x.lueurOk);
     const p911 = flotte.find((x) => /911-gt3-rs/.test(x.f)) || {};
     const avecLueur = flotte.filter((x) => x.lueurs > 0).length;
+    // 25 modèles sur 30 ont une optique qui se nomme ou émet (mesuré, v579 :
+    // la flotte sans ses placeholders ; la barre valait 70 sur 77).
     verifier(`de nuit, les phares des ${flotte.length} modèles s'allument dans la forme de leur propre optique — aucun disque plaqué, chaque lueur sur la tôle et au nez — et la 911 allume sa signature`,
-      koLueur.length === 0 && p911.rang === 1 && p911.triangles > 100 && avecLueur >= 70,
+      koLueur.length === 0 && p911.rang === 1 && p911.triangles > 100 && avecLueur >= 25,
       JSON.stringify({ ko: koLueur.slice(0, 3).map((x) => ({ f: x.f, disques: x.disques, tole: x.surToleLueur, horsNez: x.horsNez })), p911: { rang: p911.rang, tri: p911.triangles }, avecLueur }));
   } catch (e) {
     verifier('911 : les témoins du modèle reconstruit se chargent sous node', false, String(e && e.message || e).slice(0, 200));
@@ -300,7 +320,9 @@ function verifier(nom, ok, detail = '') {
       for (let e = 0; e < 6 && g.fun.montureConduite && g.fun.montureConduite(); e++) { document.getElementById('ride-btn').click(); await tenir(0.4); }
       for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
       g.animalManager.animals.length = 0;
-      const flotte = 'ferrari-f40.glb';
+      // une sportive dont les phares sont émissifs et nommés (la F40, v343 ;
+      // la Revuelto adaptée depuis la v579)
+      const flotte = 'lamborghini-revuelto.glb';
       const a = g.animalManager.invoquer('voiture', x0 + 3, z0, false, { flotte });
       const b = g.animalManager.invoquer('voiture', x0 - 12, z0 + 6, false, { flotte });
       if (!a || !b) return { err: 'aucune voiture posée' };
@@ -451,13 +473,21 @@ function verifier(nom, ok, detail = '') {
       // repart-elle ? pleins gaz deux secondes et demie depuis le milieu de la dalle
       await reculer();
       const p0 = { x: g.player.pos.x, z: g.player.pos.z };
+      // pleins gaz jusqu'à trois blocs et demi, borné à douze secondes : la
+      // distance d'une durée fixe mesurait la cadence du banc (v270)
       g.player.gaz = 1;
-      await tenir(2.5);
+      const tg = performance.now();
+      let roule = 0;
+      while (performance.now() - tg < 12000) {
+        await tenir(0.1);
+        roule = Math.hypot(g.player.pos.x - p0.x, g.player.pos.z - p0.z);
+        if (roule > 3.5) break;
+      }
+      const msRoule = Math.round(performance.now() - tg);
       g.player.gaz = 0;
-      const roule = Math.hypot(g.player.pos.x - p0.x, g.player.pos.z - p0.z);
       await reculer();
       return { murs: forces.length, forces, vmax: Math.round(vmax * 10) / 10, publie: g.player.etatVoiture,
-        roule: Math.round(roule * 100) / 100, auVolant: !!g.fun.montureConduite() };
+        roule: Math.round(roule * 100) / 100, msRoule, auVolant: !!g.fun.montureConduite() };
     });
     verifier('deux murs pris à pleine vitesse laissent la voiture ROULANTE : abîmée, mais elle repart',
       !deuxMurs.err && deuxMurs.murs >= 2 && deuxMurs.forces.every((f) => f >= 0.9) && deuxMurs.publie
@@ -563,11 +593,13 @@ function verifier(nom, ok, detail = '') {
     const pieces = await tab.evaluate(() => {
       const g = window.__game, { a, b } = window.__essai, d = g.fun.degats;
       const ps = (d && d.pieces(a.mesh)) || [];
-      const phares = ps.filter((pc) => /light_front|lights_front/i.test(pc.nom));
+      // la règle du jeu (RE_PHARE_AV, degats3d.js), pas un nom de modèle
+      const PH = /light_front|lights_front|headl|daytime|phare/i;
+      const phares = ps.filter((pc) => PH.test(pc.nom));
       const vitres = ps.filter((pc) => /glass|window/i.test(pc.nom));
       const em = (m) => (m && m.emissive ? m.emissive.r + m.emissive.g + m.emissive.b : -1);
       let emB = -1;
-      b.mesh.traverse((o) => { if (o.isMesh && /lights_front/i.test(o.name)) emB = em(o.material); });
+      b.mesh.traverse((o) => { if (o.isMesh && PH.test(`${o.name} ${[].concat(o.material).map((m) => (m && m.name) || '').join(' ')}`)) emB = Math.max(emB, em([].concat(o.material)[0])); });
       return {
         phares: phares.map((pc) => ({ casse: !!pc.cassee, em: em(pc.mesh.material), propre: pc.matPropre })),
         vitres: vitres.map((pc) => ({ etoilee: !!pc.etoilee })),
@@ -719,7 +751,7 @@ function verifier(nom, ok, detail = '') {
     const neuf = await tab.evaluate(async () => {
       const g = window.__game, d = g.fun.degats, { x0, z0 } = window.__essai;
       if (!d) return { err: 'pas de module de dégâts' };
-      const c = g.animalManager.invoquer('voiture', x0 - 20, z0 - 4, false, { flotte: 'ferrari-f40.glb' });
+      const c = g.animalManager.invoquer('voiture', x0 - 20, z0 - 4, false, { flotte: 'aston-martin-db11.glb' });
       const vierge = d.etat(c.mesh) === null;
       // le garage répare : on abîme, on répare, chaque pièce retrouve sa géométrie commune
       d.choc(c.mesh, { force: 1, lx: 0, lz: -2.2 });
@@ -789,7 +821,7 @@ function verifier(nom, ok, detail = '') {
       await tenir(0.8);
       for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
       g.animalManager.animals.length = 0;
-      const c = g.animalManager.invoquer('voiture', x0 + 14, z1 + 3, false, { flotte: 'ferrari-f40.glb' });
+      const c = g.animalManager.invoquer('voiture', x0 + 14, z1 + 3, false, { flotte: 'aston-martin-db11.glb' });
       const t0 = performance.now();
       while (performance.now() - t0 < 30000 && !c.mesh.userData.roues) await tenir(0.3);
       c.pos.y = y1 + 1.01; c.mesh.position.y = c.pos.y;
@@ -1089,7 +1121,7 @@ function verifier(nom, ok, detail = '') {
       const g = window.__game, d = g.fun.degats, R = window.__rue, p = g.player;
       if (!d || !d.chemins) return { err: 'pas de compteur' };
       const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
-      const a = g.animalManager.invoquer('voiture', p.pos.x + 8, p.pos.z + 8, false, { flotte: 'ferrari-f40.glb' });
+      const a = g.animalManager.invoquer('voiture', p.pos.x + 8, p.pos.z + 8, false, { flotte: 'aston-martin-db11.glb' });
       const t0 = performance.now();
       while (performance.now() - t0 < 30000 && !(a && a.mesh.userData.roues)) await dodo(300);
       if (!a || !a.mesh.userData.roues) return { err: 'pas de modèle' };
@@ -1141,7 +1173,7 @@ function verifier(nom, ok, detail = '') {
       // par son `asset` — ses feux se mesurent comme ceux des autres ; la SF90
       // XX (v561) aussi, et la MC12 GT1 (v559), dont les feux vivent dans un
       // export Sketchfab
-      const modeles = ['porsche-718-cayman-gt4-rs.glb', 'porsche-911-gt3-rs.glb', 'ferrari-f40.glb', 'bugatti-bolide.glb', 'rolls-royce-spectre.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb', 'lamborghini-revuelto.glb', 'ferrari-sf90.glb', 'maserati-mc12-gt1.glb'];
+      const modeles = ['tesla-model-y.glb', 'porsche-911-gt3-rs.glb', 'aston-martin-db11.glb', 'bugatti-divo.glb', 'rolls-royce-ghost.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb', 'lamborghini-revuelto.glb', 'ferrari-sf90.glb', 'maserati-mc12-gt1.glb'];
       const rc = new THREE.Raycaster(); rc.layers.enableAll();
       const avantCles = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
       const res = [];
@@ -1197,7 +1229,7 @@ function verifier(nom, ok, detail = '') {
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
       g.animalManager.animals.length = 0;
       const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
-      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'ferrari-f40.glb' });
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'aston-martin-db11.glb' });
       const t0 = performance.now();
       while (performance.now() - t0 < 30000 && !a.mesh.userData.roues) await dodo(300);
       for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(600); }
@@ -1233,13 +1265,36 @@ function verifier(nom, ok, detail = '') {
     verifier('à plusieurs, l\'ami voit la voiture abîmée : la même santé, la tôle enfoncée chez lui aussi',
       volant.auVolant && abimee.sante < 1 && abimee.froissees > 0, JSON.stringify({ volant, abimee }));
     // le feu : Marlon garde trois secondes et demie au volant avant d'être
-    // déposé — c'est dans cette fenêtre qu'Alice doit voir les flammes
+    // déposé — c'est dans cette fenêtre qu'Alice doit voir les flammes.
+    // UN TÉMOIN QUI MESURE UNE FENÊTRE L'OBSERVE PENDANT TOUTE LA FENÊTRE : lu
+    // une seule fois au bout de l'attente, il trouvait parfois Marlon déjà
+    // déposé (`vehicule: false`), la page d'Alice rendant ses images au rythme
+    // du banc — et le témoin de l'épave, qui lisait le lieu APRÈS le dépôt,
+    // rougissait avec lui (`lieu: null`, une cause, deux rouges, v291). Un
+    // relevé dans la page d'Alice garde ce qu'elle a vu de la voiture de
+    // Marlon tant qu'elle existait, et le lieu de l'arrêt se relève avant le feu.
+    const lieu = await hote.evaluate(() => { const a = window.__game.fun.montureConduite(); return a ? { x: a.pos.x, z: a.pos.z } : null; });
+    await alice.evaluate(() => {
+      const g = window.__game, d = g.fun.degats, vu = window.__feuVu = { enFeu: false, flammes: 0, releves: 0 };
+      const t0 = performance.now();
+      const pas = () => {
+        for (const rp of g.remotePlayers.values()) {
+          if (rp.name !== 'Marlon' || !rp.vehicule) continue;
+          const e = d ? d.etat(rp.vehicule.mesh) : null;
+          vu.releves++;
+          if (e && e.enFeu) { vu.enFeu = true; vu.flammes = Math.max(vu.flammes, d.particulesVisibles().flammes); }
+        }
+        if (performance.now() - t0 < 20000) requestAnimationFrame(pas);
+      };
+      requestAnimationFrame(pas);
+    });
     await hote.evaluate(() => {
       const g = window.__game, a = g.fun.montureConduite(), d = g.fun.degats;
       if (d && a) while (!d.etat(a.mesh).enFeu) d.choc(a.mesh, { force: 0.8, lx: 1.1, lz: 0 });
     });
-    await jusqua(async () => { const v = await vuParAlice(); return v.enFeu && v.flammes > 0; }, 4000);
-    const enFeu = await vuParAlice();
+    const tFeu = Date.now();
+    await jusqua(async () => alice.evaluate(() => window.__feuVu.enFeu && window.__feuVu.flammes > 0), 12000);
+    const enFeu = { ...(await alice.evaluate(() => window.__feuVu)), ms: Date.now() - tFeu, maintenant: await vuParAlice() };
     verifier('et elle la voit prendre feu : des flammes sur la voiture de l\'ami', enFeu.enFeu && enFeu.flammes > 0,
       JSON.stringify(enFeu));
 
@@ -1247,7 +1302,6 @@ function verifier(nom, ok, detail = '') {
     // voiture en feu : sa position n'emporte plus de voiture. Chez Alice,
     // l'épave doit rester LÀ OÙ ELLE S'EST ARRÊTÉE, et brûler encore — sur
     // l'ancien code elle s'évanouissait avec le champ `p.v`.
-    const lieu = await hote.evaluate(() => { const a = window.__game.fun.montureConduite(); return a ? { x: a.pos.x, z: a.pos.z } : null; });
     await jusqua(async () => hote.evaluate(() => !window.__game.fun.montureConduite()), 12000);
     const depose = await hote.evaluate(() => !window.__game.fun.montureConduite());
     // le temps que la position sans voiture arrive chez Alice
@@ -1264,7 +1318,7 @@ function verifier(nom, ok, detail = '') {
       // flotte dans la scène, à moins de trois blocs (Alice a retiré ses bêtes)
       let voiture = null;
       for (const o of g.scene.children) {
-        if (o.userData && o.userData.flotte === 'ferrari-f40.glb' && l && Math.hypot(o.position.x - l.x, o.position.z - l.z) < 3) voiture = o;
+        if (o.userData && o.userData.flotte === 'aston-martin-db11.glb' && l && Math.hypot(o.position.x - l.x, o.position.z - l.z) < 3) voiture = o;
       }
       const e = voiture && d ? d.etat(voiture) : null;
       const vis = d ? d.particulesVisibles() : { fumee: 0, flammes: 0 };
@@ -1304,7 +1358,7 @@ function verifier(nom, ok, detail = '') {
       const g = window.__game; const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
       g.animalManager.animals.length = 0;
-      const a = g.animalManager.invoquer('voiture', g.player.pos.x, g.player.pos.z + 1.5, false, { flotte: 'ferrari-f40.glb' });
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x, g.player.pos.z + 1.5, false, { flotte: 'aston-martin-db11.glb' });
       const t0 = performance.now();
       while (performance.now() - t0 < 30000 && !a.mesh.userData.roues) await dodo(300);
       for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(600); }
@@ -1363,12 +1417,24 @@ function verifier(nom, ok, detail = '') {
 
     // 9 bis. ET CHEZ ALICE, ELLE S'ARRÊTE FEUX DE DÉTRESSE ALLUMÉS (v519) :
     // le choc reçu marque la voiture de ce nom, que le convoi lit comme le sien.
-    const detAlice = coup.err ? { err: coup.err } : await alice.evaluate((r) => {
-      // le convoi a lu le choc reçu (`detresseRecue`, compté par vehicules.js) :
-      // un relevé par minuteur ne tient pas, une page de fond les ralentit
+    // LE FROISSAGE PEUT ARRIVER PAR LA POSITION AVANT `rue_choc` (v374) :
+    // l'histoire (`rc`) voyage dans `pos`, huit fois par seconde, et le témoin
+    // d'au-dessus rend la main dès que la tôle est froissée chez Alice. Lu dans
+    // la foulée, `rue_choc` n'était parfois pas encore là — `recues 0, heurte 0`
+    // rejouée seule, `recues 1` au portail : un tirage d'ordre d'arrivée, pas
+    // un défaut (sonde-detresse-ami.cjs : le message est reçu, la voiture
+    // nommée, `heurteRecu` posé puis lu à l'image suivante, 2 sur 2). On attend
+    // donc le FAIT — le convoi d'Alice a lu un choc reçu —, borné à quinze
+    // secondes, la durée dans le message ; l'ancien code (avant la v519) ne le
+    // compte jamais et reste rouge.
+    const lireDet = (r) => alice.evaluate((r) => {
+      // le convoi a lu le choc reçu (`detresseRecue`, compté par vehicules.js)
       const c = window.__convB, m = c.elements[r];
       return { recues: m ? m.userData.detresseRecue || 0 : null, heurte: c.heurte ? +(c.heurte[r] || 0).toFixed(2) : null };
-    }, coup.rang);
+    }, r);
+    const tDet = Date.now();
+    if (!coup.err) await jusqua(async () => ((await lireDet(coup.rang)).recues || 0) > 0, 15000);
+    const detAlice = coup.err ? { err: coup.err } : { ...(await lireDet(coup.rang)), ms: Date.now() - tDet };
     verifier('chez Alice aussi, la voiture de la rue que Marlon percute s\'arrête feux de détresse allumés',
       !detAlice.err && detAlice.recues > 0, JSON.stringify(detAlice));
 

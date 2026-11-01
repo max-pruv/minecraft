@@ -3553,8 +3553,12 @@ const VRAIES_KM = [
       // propres fonctions, et la bande s'élargit d'autant.
       const ve = await import('./src/vehicules.js');
       const VOIE = typeof m.VOIE_DE_DROITE === 'number' ? m.VOIE_DE_DROITE : 1.3;
-      const circuits = m.circuitsParis(solDe)
-        .map((c) => ({ ...c, pts: ve.sansEpis(ve.decalerADroite(ve.sansEpis(c.pts.map((p) => ({ ...p }))), VOIE)) }));
+      // la voie à la GTA (v578) : le décalage par sommet que main.js pose
+      const vd = await import('./src/voiesdoubles.js');
+      const voieDe = (c) => { const p0 = c.pts.map((p) => ({ ...p }));
+        if (!vd.decalerSelonLaSection) return ve.sansEpis(ve.decalerADroite(ve.sansEpis(p0), VOIE));
+        const r = vd.decalerSelonLaSection(c.cle, p0, solDe, VOIE); return ve.sansEpis(ve.decalerADroite(r.pts, r.e)); };
+      const circuits = m.circuitsParis(solDe).map((c) => ({ ...c, pts: voieDe(c) }));
       // LE TÉMOIN LIT LA BANDE QUE LE TOUR EMPRUNTE, PAS LE SOCLE (v318). Il
       // ne jugeait que les points de circuit tombés DANS la boîte d'un socle ;
       // depuis que les circuits font le tour à `AXE_TOUR` (v221), aucun n'y
@@ -3622,8 +3626,10 @@ const VRAIES_KM = [
       if (typeof m.circuitsParis !== 'function') return { absent: true };
       const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
       const VOIE = typeof m.VOIE_DE_DROITE === 'number' ? m.VOIE_DE_DROITE : 1.3;
-      const circuits = m.circuitsParis(solDe)
-        .map((c) => ve.sansEpis(ve.decalerADroite(ve.sansEpis(c.pts.map((p) => ({ ...p }))), VOIE)));
+      const vd = await import('./src/voiesdoubles.js');
+      const circuits = m.circuitsParis(solDe).map((c) => { const p0 = c.pts.map((p) => ({ ...p }));
+        if (!vd.decalerSelonLaSection) return ve.sansEpis(ve.decalerADroite(ve.sansEpis(p0), VOIE));
+        const r = vd.decalerSelonLaSection(c.cle, p0, solDe, VOIE); return ve.sansEpis(ve.decalerADroite(r.pts, r.e)); });
       const tui = m.LIEUX.find((l) => l.nom === 'Tuileries');
       const DEMI = 1.13;
       let dur = 0, lus = 0, tuileries = 0;
@@ -4787,6 +4793,29 @@ const VRAIES_KM = [
         + (r ? ` · roulage au plus ${Math.max(...r.map((l) => l.roulage || 0))} s de jeu` : ''));
     }
 
+    // ET EN SORTANT DE SON POSTE, L'AILE NE PASSE PAS DANS LE VOISIN (v577).
+    //
+    // La rangée est pleine depuis la v565 (quatre blocs de passage entre le
+    // nez de l'un et la queue de l'autre) : ✈️ vire vers la piste, l'aile
+    // EXTÉRIEURE balaie vers l'avant et entrait d'un demi-bloc dans
+    // l'empennage du voisin — vu en capture `aeroport-roulage`, mesuré sur 61
+    // départs sur 369. On rejoue chaque départ avec le vrai joueur, la
+    // silhouette au sol de chaque modèle mesurée dans la page
+    // (`emprise-avion.js`, sculptés et déposés), et l'on compte les cases du
+    // partant qui entrent dans un appareil garé : zéro, et tous en vol.
+    {
+      let r = null, err = null;
+      try {
+        const S = require('./sonde-avions-gares.cjs');
+        const T = await S.mesurerEmprises(tab);
+        r = await S.rejouer(require('path').join(__dirname, '..', 'src'), T);
+        r.modeles = Object.keys(T).join('/');
+      } catch (e) { err = String(e && e.message || e); }
+      verifier('✈️ depuis chacun des postes : l\'aile ne passe pas dans l\'appareil garé voisin, et tous décollent',
+        !err && r && r.departs >= 300 && r.traverses === 0 && r.decolles === r.departs,
+        `${err || ''} ${r ? `${r.traverses} départs dans un voisin sur ${r.departs}, ${r.decolles} en vol · modèles ${r.modeles} · ${r.fautes.slice(0, 5).join(' · ')}` : ''}`);
+    }
+
     // ET L'OUVRAGE RESTE DANS SES BORNES MESURÉES (v280).
     //
     // La plate-forme va jusqu'à `r − 10` alors que `terrainHeight` ne vaut
@@ -4890,11 +4919,27 @@ const VRAIES_KM = [
         // un modèle déposé qui n'a pas pu se charger rend le sculpté : on le
         // dit au lieu de le mesurer sous le nom d'un autre
         if (depose && g.userData.variante !== nom) { out[nom] = { absent: true, espece, depose }; continue; }
-        const bb = new THREE.Box3().setFromObject(g);
+        // LA BOÎTE EST CELLE DE LA CARLINGUE (v568). Les flammes et les feux
+        // de bord n'en font pas partie : depuis la v565 un feu porte deux
+        // halos de lumière, le plus large de 0,3 bloc, et `setFromObject` les
+        // comptait — quinze à vingt centièmes de longueur et quarante
+        // d'envergure sur TOUS les appareils, sculptés compris, pour un halo
+        // qui ne heurte rien et que la v565 voulait justement sans effet sur
+        // les postes. Même exclusion que le témoin du contrat, plus bas.
+        const horsCorps = new Set(g.userData.tuyeres || []);
+        if (g.userData.feuxNav) for (const f of [g.userData.feuxNav.rouge, g.userData.feuxNav.vert, g.userData.feuxNav.eclat]) horsCorps.add(f);
+        const dansLeCorps = (o) => { for (let q = o; q; q = q.parent) if (horsCorps.has(q)) return false; return true; };
+        const bb = new THREE.Box3(), bbo = new THREE.Box3();
+        g.updateMatrixWorld(true);
+        g.traverse((o) => {
+          if (!o.isMesh || !o.geometry || !dansLeCorps(o)) return;
+          if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+          bbo.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); bb.union(bbo);
+        });
         const sommets = [];
         g.traverse((o) => {
           const pos = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
-          if (!pos) return;
+          if (!pos || !dansLeCorps(o)) return;
           for (let i = 0; i < pos.count; i++) sommets.push([pos.getX(i), pos.getY(i), pos.getZ(i)]);
         });
         // L'EFFILEMENT DE L'AILE. On ne cherche pas l'aile par son nom — le

@@ -1,6 +1,6 @@
 // Entry point: scene setup, chunk streaming, input, HUD, and the game loop.
 
-import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde } from './voiesdoubles.js';
+import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde, decalerSelonLaSection, DECALAGE_GTA } from './voiesdoubles.js';
 import * as THREE from 'three';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
@@ -20,7 +20,8 @@ import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
 import { MONUMENTS, MONUMENTS_PAR_VILLE, monumentBati } from './monuments.js';
 import { FAMILLES, batimentVariante, NB_BATIMENTS } from './batiments.js';
-import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR } from './world.js';
+import { World, migrerLesBlocs, CHUNK, WATER_LEVEL, HEIGHT, CITIES, PLACES, MARS, VILLE, CIRCUIT, CHAUSSEE, TROTTOIR, REPERES } from './world.js';
+import { creerNuitEiffel } from './nuit-eiffel.js';
 import { aeroportPres, postesAerodrome } from './aeroport.js';
 import { chargerAvionsDeposes } from './avions.js';
 import { couloirVoiture, cheminDeTraversee, axeCoupe } from './pietons.js';
@@ -42,9 +43,10 @@ import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN
   ABAISSE_TRES_LOIN, rayonTresLoin, silhouetteArbre } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
 import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites, sEnfonce, rectangleDeBoite } from './conduite.js';
+import { empriseDe, cleDEmprise, pointsDeBoite, pointsDAvion, sEnfonceDansAvion } from './emprise-avion.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
-  PARAMS_FORCANTS } from './palier.js';
+  PARAMS_FORCANTS, rayonDuBudget } from './palier.js';
 import { Journal, suretePalier, PLANTAGES_SURETE, PLANTAGES_CLE, BATTEMENT_MS, estimerMemoire } from './journal.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
@@ -231,6 +233,23 @@ if (PALIER && VITESSE_JET[PALIER.nom]) {
   }
 }
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
+// ── LE MONDE A UN BUDGET D'OCTETS (v580, `rayonDuBudget` dans palier.js) ────
+//
+// `rayonMonde` est le rayon qu'on maille VRAIMENT : `RENDER_RADIUS` dans les
+// champs, moins dans une ville dense où un morceau pèse plusieurs fois plus.
+// Toutes les sessions « Loin » de l'iPhone de Max à Paris ont planté pour leur
+// mémoire (journal de bord) ; c'est ce budget qui les borne. `?mondemo=` le
+// force (0 l'éteint), pour mesurer.
+const MONDE_MO_FORCE = new URLSearchParams(location.search).get('mondemo');
+const BUDGET_MONDE = (MONDE_MO_FORCE !== null ? Math.max(0, Number(MONDE_MO_FORCE) || 0)
+  : (PALIER ? PALIER.mondeMo : SANS_PALIER.mondeMo) || 0) * 1048576;
+const RAYON_MONDE_MIN = Math.min(RENDER_RADIUS, 6);
+let rayonMonde = RENDER_RADIUS;
+const mondeTenu = { octets: 0 };            // ce que pèsent les morceaux en scène
+// Au-delà de cette distance un morceau se rend : la marge d'avant (deux
+// morceaux, pour qu'un demi-tour ne remaille rien) quand le budget ne mord
+// pas, un seul quand il mord — sinon l'anneau gardé dépasserait le budget.
+const rayonDeRetrait = () => (rayonMonde < RENDER_RADIUS ? rayonMonde + 1 : UNLOAD_RADIUS);
 // Les BLOCS s'oublient un peu plus loin que les maillages : de la marge pour
 // qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
 const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
@@ -671,6 +690,7 @@ world.sansSolContinu = new URLSearchParams(location.search).get('solcontinu') ==
 // Le matériau HD se fabrique à la demande (son environnement préfiltré coûte
 // une PMREM) : la première fois qu'un morceau de Paris arrive avec du détail.
 let hd = null;
+const OMBRE_HD = new URLSearchParams(location.search).get('ombrehd') !== '0';
 function materiauDeParis() {
   if (!hd) hd = materiauHD(renderer);
   return hd.materiau;
@@ -684,14 +704,19 @@ function materiauDeParis() {
 // dessiné (couche 4), avec son propre espace de couleur —, comme les feux
 // (v306). Un quad qui porte les attributs de la couche suffit : `compile` ne
 // dessine rien, il ne regarde que le matériau et les lumières de la scène.
-function chaufferLaCoucheHD(camera) {
-  if (!world.arbres && RAYON_HD <= 0) return;
+function quadDeLaCoucheHD() {
   const t = { positions: new Float32Array([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0]), normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
     uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), colors: new Float32Array(12).fill(1), tiles: new Float32Array([0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]),
     matiere: new Float32Array([1, 0, 1, 0, 1, 0, 1, 0]), lueur: new Float32Array(4), indices: new Uint16Array([0, 1, 2, 0, 2, 3]) };
-  const ici = new THREE.Scene();
   const m = new THREE.Mesh(geometrieHD(t), materiauDeParis());
-  ici.add(decor(m));
+  if (OMBRE_HD) m.customDepthMaterial = hd.profondeur;
+  return decor(m);
+}
+function chaufferLaCoucheHD(camera) {
+  if (!world.arbres && RAYON_HD <= 0) return;
+  const ici = new THREE.Scene();
+  const m = quadDeLaCoucheHD();
+  ici.add(m);
   const cible = refletsVoiture(), avant = renderer.getRenderTarget();
   try {
     renderer.compile(ici, camera, scene);
@@ -1018,7 +1043,7 @@ statsMaillage.enAttente = enAttente;  // la sonde lit l'âge des demandes (v360)
 // pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
 // réglage lu au démarrage. Et la portée de la vue (v532) : sans elle, on a dû
 // DÉDUIRE du palier que la couronne lointaine n'avait jamais tourné chez Max.
-journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, arbres: world.arbres, facadesMo: BUDGET_FACADES / 1048576,
+journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, arbres: world.arbres, facadesMo: BUDGET_FACADES / 1048576, mondeMo: BUDGET_MONDE / 1048576,
   palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null, etendue: ETENDUE_CHOISIE,
   loin: PORTEE_VUE, logiciel: renduLogiciel() });
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
@@ -1068,7 +1093,7 @@ function recevoirMorceau(m) {
   enAttente.delete(key);
   if (m.generation !== generationDistante) { statsMaillage.refuses++; return; }
   const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
-  if (Math.abs(m.cx - pcx) > UNLOAD_RADIUS || Math.abs(m.cz - pcz) > UNLOAD_RADIUS) { statsMaillage.refuses++; return; }
+  if (Math.abs(m.cx - pcx) > rayonDeRetrait() || Math.abs(m.cz - pcz) > rayonDeRetrait()) { statsMaillage.refuses++; return; }
   // Les blocs : ceux du worker si le fil principal n'a pas déjà engendré ce
   // morceau (collisions, passants) — les deux sont identiques, un témoin le
   // vérifie. Un bloc posé pendant que le worker maillait rend le morceau
@@ -1136,6 +1161,10 @@ for (let i = 0; i < 4; i++) {
 }
 // Le nom de chaque station de métro, écrit sur son quai (v529, stations.js).
 const nomsDeStations = creerNomsDeStations(scene);
+// la nuit de la tour Eiffel : son phare et son scintillement (v575)
+const nuitEiffel = creerNuitEiffel(scene, REPERES.find((lm) => lm.name === 'Tour Eiffel'), world,
+  { pres: Math.max(0, RAYON_HD - 1) * CHUNK });
+window.__nuitEiffel = nuitEiffel;
 const villeRealiste = new renduUrbain.ManhattanRenderer({scene, renderer, world, camera, player, sunLight, hemiLight, touch:IS_TOUCH, renderRadius:RENDER_RADIUS, lamps: lampesRue});
 const effects = createEffects({ scene, world, atlasCanvas });
 const sky = createSky({ scene, camera, sunLight });
@@ -1247,8 +1276,8 @@ const regimeRapide = () => deplacement.v >= (fileRapide ? 0.75 : 1) * VITESSE_CO
 function fileAuRegard(pcx, pcz) {
   const visX = -Math.sin(player.yaw), visZ = -Math.cos(player.yaw);
   meshQueue = [];
-  for (let dz = -RENDER_RADIUS; dz <= RENDER_RADIUS; dz++) {
-    for (let dx = -RENDER_RADIUS; dx <= RENDER_RADIUS; dx++) {
+  for (let dz = -rayonMonde; dz <= rayonMonde; dz++) {
+    for (let dx = -rayonMonde; dx <= rayonMonde; dx++) {
       const cx = pcx + dx, cz = pcz + dz;
       if (chunkMeshes.has(World.key(cx, cz))) continue;
       const d2 = dx * dx + dz * dz, len = Math.sqrt(d2);
@@ -1268,11 +1297,12 @@ function rebuildQueue() {
   const dir = fileRapide
     ? { x: deplacement.vx / deplacement.v, z: deplacement.vz / deplacement.v }
     : { x: -Math.sin(player.yaw), z: -Math.cos(player.yaw) };
-  meshQueue = fileDeMaillage({ pcx, pcz, R: RENDER_RADIUS, dir, rapide: fileRapide,
+  meshQueue = fileDeMaillage({ pcx, pcz, R: rayonMonde, dir, rapide: fileRapide,
     deja: (cx, cz) => chunkMeshes.has(World.key(cx, cz)) });
 }
 
 function disposeChunkMesh(entry) {
+  mondeTenu.octets -= entry.octets || 0; entry.octets = 0;
   if (entry.facades) { detailTenu.octets -= entry.octetsFacades || 0; detailTenu.n--; }
   for (const mesh of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.arbresLoin]) {
     if (!mesh) continue;
@@ -1391,6 +1421,8 @@ function installerMorceau(cx, cz, tampons) {
       m.position.set(cx * CHUNK, 0, cz * CHUNK);
       m.castShadow = ombre && (nom === 'facades' || nom === 'arbresLoin');
       m.receiveShadow = true;
+      // l'ombre replie ses UV comme la couleur (v572) ; `?ombrehd=0` rend l'ancienne
+      if (OMBRE_HD) m.customDepthMaterial = hd.profondeur;
       entry[nom] = m;
       scene.add(decor(m));
     }
@@ -1474,12 +1506,44 @@ function installerMorceau(cx, cz, tampons) {
   for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.arbresLoin, entry.props]) {
     if (m) m.userData.morceau = true;
   }
+  entry.octets = ['solid', 'water', 'lumineux', 'sol', 'facades', 'arbresLoin', 'plat', 'platLumineux']
+    .reduce((n, k) => n + octetsDeTampons(tampons[k]), 0);
+  mondeTenu.octets += entry.octets;
   chunkMeshes.set(key, entry);
+  if (++installsDepuisBudget >= 12) { installsDepuisBudget = 0; ajusterRayonMonde(pcx, pcz); }
   // ses voisins cessent de montrer les arbres dont il porte la base (v554)
   relayerArbresVoisins(cx, cz);
   // un morceau plus lourd que son estimation peut faire déborder le budget :
   // on rend alors les plus loin, tout de suite (v299)
   if (entry.facades) appliquerLeBudget(pcx, pcz, []);
+}
+
+// LE RAYON DU MONDE SE RÈGLE SUR CE QU'IL TIENT (v580). Appelé à chaque
+// morceau franchi et toutes les douze installations : un rayon qui descend
+// rend tout de suite les morceaux au-delà (et refait la file) ; un rayon qui
+// remonte refait la file. `retirer` faux : le morceau franchi s'en charge.
+let installsDepuisBudget = 0;
+function ajusterRayonMonde(pcx, pcz, retirer = true) {
+  if (!(BUDGET_MONDE > 0)) return;
+  const tenus = [];
+  for (const [key, e] of chunkMeshes) {
+    const [cx, cz] = key.split(',').map(Number);
+    tenus.push({ d: Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)), octets: e.octets || 0, base: (e.octets || 0) - (e.octetsFacades || 0) });
+  }
+  const r = rayonDuBudget({ tenus, R: RENDER_RADIUS, rMin: RAYON_MONDE_MIN, budget: BUDGET_MONDE, actuel: rayonMonde });
+  if (r === rayonMonde) return;
+  const descend = r < rayonMonde;
+  rayonMonde = r;
+  statsMaillage.rayonMonde = r;
+  if (descend && retirer) {
+    for (const [key, entry] of chunkMeshes) {
+      const [cx, cz] = key.split(',').map(Number);
+      if (Math.abs(cx - pcx) > rayonDeRetrait() || Math.abs(cz - pcz) > rayonDeRetrait()) {
+        disposeChunkMesh(entry); chunkMeshes.delete(key); relayerArbresVoisins(cx, cz);
+      }
+    }
+  }
+  if (retirer) rebuildQueue();
 }
 
 // Ce que pèsent des tampons HD, en octets — la grandeur que le budget borne.
@@ -1504,6 +1568,7 @@ function budgetPermet() {
 // Rendre les façades détaillées d'un morceau à la carte graphique : il montre
 // alors sa tuile plate, quelle que soit la distance.
 function rendreLeDetail(entry) {
+  if (entry.facades) { entry.octets -= entry.octetsFacades || 0; mondeTenu.octets -= entry.octetsFacades || 0; }
   if (entry.facades) { scene.remove(entry.facades); entry.facades.geometry.dispose(); entry.facades = null; detailTenu.octets -= entry.octetsFacades || 0; detailTenu.n--; }
   entry.detail = false; entry.octetsFacades = 0;
   if (entry.plat) entry.plat.visible = true;
@@ -1764,12 +1829,13 @@ function updateChunks() {
       }
     }
     lastPlayerChunk = chunkKey;
+    ajusterRayonMonde(pcx, pcz, false);
     rebuildQueue();
     const candidats = [];
     // Unload far chunks.
     for (const [key, entry] of chunkMeshes) {
       const [cx, cz] = key.split(',').map(Number);
-      if (Math.abs(cx - pcx) > UNLOAD_RADIUS || Math.abs(cz - pcz) > UNLOAD_RADIUS) {
+      if (Math.abs(cx - pcx) > rayonDeRetrait() || Math.abs(cz - pcz) > rayonDeRetrait()) {
         disposeChunkMesh(entry);
         chunkMeshes.delete(key);
         relayerArbresVoisins(cx, cz);
@@ -1787,7 +1853,7 @@ function updateChunks() {
     // ET LES BLOCS S'OUBLIENT AVEC LEUR MAILLAGE. Défaire le maillage rendait
     // la carte graphique ; les quatre-vingts kilo-octets de blocs, eux,
     // restaient dans `world.chunks` pour toujours. Voir `oublierLoinDe`.
-    world.oublierLoinDe(pcx, pcz, OUBLI_RADIUS);
+    world.oublierLoinDe(pcx, pcz, Math.min(OUBLI_RADIUS, rayonDeRetrait() + 4));
   }
 
   // Budget de temps plutôt qu'un nombre fixe de chunks : un chunk chargé
@@ -1957,7 +2023,7 @@ function updateChunks() {
   // (instanciés par lots : rien à coucher seul, dette déclarée).
   const mobilierDevant = (x, z, cap, casser = null) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
-    const demiLong = 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const demiLong = player.demiLong || 2.2, demiLarg = Math.max(0.3, player.gabarit / 2);
     const y0 = Math.floor(player.pos.y + 0.1);
     const vu = world.mobilierVu, lues = vu ? new Set() : null;
     let bloque = false;
@@ -2025,7 +2091,7 @@ function updateChunks() {
   // les deux s'attendent pour toujours (mesuré : douze secondes sur place).
   const pietonsDans = (x, z, cap) => {
     const ux = Math.sin(cap), uz = Math.cos(cap), vx = uz, vz = -ux;
-    const demiLong = 2.2 + 0.3, demiLarg = Math.max(0.3, player.gabarit / 2);
+    const demiLong = (player.demiLong || 2.2) + 0.3, demiLarg = Math.max(0.3, player.gabarit / 2);
     const dedans = [];
     for (const n of npcs) {
       const dx = n.pos.x - x, dz = n.pos.z - z;
@@ -2062,17 +2128,57 @@ function updateChunks() {
   // laquelle ce pas s'enfonce — on la touchait déjà ou non (`sEnfonce`).
   // Collé à une voiture garée, on traversait celle d'à côté.
   const gareeContre = (x, z, cap, x0, z0) => {
-    const moiB = boiteVoiture(x, z, cap, 2.2, Math.max(0.3, player.gabarit / 2));
+    // la longueur de ce qu'on conduit, et celle de ce qui est garé : une moto
+    // fait 2,4 blocs (sa fiche, police-réseau)
+    const dl = player.demiLong || 2.2;
+    const moiB = boiteVoiture(x, z, cap, dl, Math.max(0.3, player.gabarit / 2));
     const moi = rectangleDeBoite(moiB);
-    const avant = x0 === undefined ? null : rectangleDeBoite(boiteVoiture(x0, z0, cap, 2.2, Math.max(0.3, player.gabarit / 2)));
+    const avant = x0 === undefined ? null : rectangleDeBoite(boiteVoiture(x0, z0, cap, dl, Math.max(0.3, player.gabarit / 2)));
     for (const a of animalManager.animals) {
       const g = a.def.gabarit;
       if (!(g > 1) || a.def.pilote || a.montee || a.dying > 0 || Math.abs(a.pos.y - player.pos.y) > 2.5) continue;
       if ((a.pos.x - x) ** 2 + (a.pos.z - z) ** 2 > 8 * 8) continue;
-      const B = boiteVoiture(a.pos.x, a.pos.z, a.yaw, 2.2, g / 2);
+      const B = boiteVoiture(a.pos.x, a.pos.z, a.yaw, (a.def.longueur || 4.4) / 2, g / 2);
       if (avant ? sEnfonce(avant, moi, rectangleDeBoite(B)) : normaleEntreBoites(moiB, B)) return { a, B };
     }
     return null;
+  };
+  // UN AVION AU SOL EST UN OBSTACLE (v580) — pour la voiture de l'enfant
+  // comme pour l'avion qu'il fait rouler. `gareeContre` écarte les fiches
+  // `pilote` à dessein : une boîte de voiture autour d'un fuselage serait
+  // fausse (v534). La forme juste est la SILHOUETTE vue du dessus, mesurée
+  // une fois par modèle sur l'appareil (`emprise-avion.js`) — l'aile qui
+  // dépasse de sept blocs, le vide entre l'aile et l'empennage. Ce qui bouge
+  // porte des points (la boîte de la voiture, ou la silhouette de son propre
+  // avion) et un pas est refusé s'il en met PLUS dans l'avion que la pose
+  // d'avant (`sEnfonce`, v560, pour une forme qui n'est pas un rectangle).
+  // Une voiture ne pousse pas un avion : c'est une famille à elle, qui
+  // rebondit sur la normale du mouvement, comme le mobilier.
+  const empriseDAvion = (a) => empriseDe(a.def.key, cleDEmprise(a.mesh, a.def.key));
+  const avionContre = (avant, apres, x, z, y) => {
+    for (const a of animalManager.animals) {
+      if (!a.def.pilote || a.montee || a.dying > 0 || Math.abs(a.pos.y - y) > 4) continue;
+      const d2 = (a.pos.x - x) ** 2 + (a.pos.z - z) ** 2;
+      if (d2 > 26 * 26) continue;
+      const e = empriseDAvion(a);
+      if (!e || d2 > (e.rayon + 8) ** 2) continue;
+      if (sEnfonceDansAvion(e, a.pos.x, a.pos.z, a.yaw + Math.PI, avant(), apres())) return a;
+    }
+    return null;
+  };
+  const avionDevant = (x, z, cap, x0, z0) => {
+    const b = Math.max(0.3, player.gabarit / 2);
+    return avionContre(() => pointsDeBoite(boiteVoiture(x0, z0, cap, 2.2, b)), () => pointsDeBoite(boiteVoiture(x, z, cap, 2.2, b)), x, z, player.pos.y);
+  };
+  // l'avion que l'enfant fait rouler : SA silhouette, posée au cap du joueur
+  // (le maillage d'une monture tourne de `yaw + π`, et celui d'un appareil
+  // monté vaut `player.yaw + 2π`, fun.js)
+  player.obstacleAvion = (x, z, yaw, x0, z0, yaw0) => {
+    const moi = animalManager.animals.find((a) => a.montee && a.def.pilote);
+    if (!moi) return null;
+    const e = empriseDAvion(moi);
+    if (!e) return null;
+    return avionContre(() => pointsDAvion(e, x0, z0, yaw0), () => pointsDAvion(e, x, z, yaw), x, z, player.pos.y);
   };
   player.obstacleVehicule = (x, z, cap, x0 = x, z0 = z) => {
     // « pas si l'on est déjà dedans » se juge PAR VÉHICULE et PAR ENFONCEMENT
@@ -2085,6 +2191,7 @@ function updateChunks() {
     const sp = Math.abs(player.vitesseVoiture || 0);
     const sens = sp >= VITESSE_CASSE && pas > 1e-6 && pas < 1.5 ? { dx: (x - x0) / pas, dz: (z - z0) / pas } : null;
     if (gareeContre(x, z, cap, x0, z0)) return 'voiture';
+    if (avionDevant(x, z, cap, x0, z0)) return 'avion';
     if (mobilierDevant(x, z, cap, sens) && !mobilierDevant(x0, z0, cap)) return 'mobilier';
     // `arretDouxT` (v343) : s'arrêter devant un piéton n'est PAS un choc —
     // les dégâts ne comptent jamais un piéton touché.
@@ -3125,6 +3232,8 @@ const gazBase = document.getElementById('gaz-base');
 const gazFill = document.getElementById('gaz-fill');
 const gazKnob = document.getElementById('gaz-knob');
 const gazVal = document.getElementById('gaz-val');
+const altVal = document.getElementById('alt-val');
+let derniereAlt = null;
 const trainBtn = document.getElementById('train-btn');
 const flyLb = document.getElementById('fly-lb');
 const trainLb = document.getElementById('train-lb');
@@ -3228,7 +3337,7 @@ function majBoutonsVehicule() {
   // qu'on ne voit pas finit par dire n'importe quoi sans que personne ne le
   // remarque.
   if (!enAvion) {
-    dernierKmh = null;
+    dernierKmh = null; derniereAlt = null;
     return;
   }
   const v = Math.abs(player.vitesseAvion || 0);
@@ -3259,6 +3368,22 @@ function majBoutonsVehicule() {
     // ce qu'un enfant retient bien mieux qu'un grand nombre de plus.
     const unite = kmh > MACH_KMH ? `Mach ${(kmh / MACH_KMH).toFixed(1).replace('.', ',')}` : 'km/h';
     gazVal.innerHTML = `<b>${kmh}</b><small>${unite}</small>`;
+  }
+  // L'ALTIMÈTRE : la HAUTEUR au-dessus de ce qu'on survole (`hauteurAuSol`,
+  // player.js — la surface de l'eau en mer, pas son fond), en MÈTRES, et un
+  // bloc vaut un mètre. Ce n'est pas l'entorse du compteur de vitesse (v267) :
+  // à l'horizontale un bloc ne vaut un mètre nulle part, mais à la VERTICALE
+  // il le vaut partout — un étage fait trois blocs (v301), trois mètres. Les
+  // toits que l'enfant survole sont donc à leur vraie hauteur, et ce que dit
+  // l'altimètre se vérifie en regardant dehors. Au mètre près en bas (on voit
+  // les roues quitter la piste), de cinq en cinq au-dessus de vingt — un
+  // nombre qui change à chaque image ne se lit pas.
+  const hBlocs = player.hauteurAuSol ? player.hauteurAuSol() : 0;
+  const alt = hBlocs < 20 ? Math.round(hBlocs) : Math.round(hBlocs / 5) * 5;
+  if (alt !== derniereAlt) {
+    derniereAlt = alt;
+    altVal.textContent = `↑ ${alt} m`;
+    altVal.setAttribute('aria-label', `Altitude ${alt} mètres`);
   }
   trainBtn.classList.toggle('sorti', (player.trainSorti === undefined ? 1 : player.trainSorti) > 0.5);
   // CHAQUE BOUTON DIT CE QU'IL FAIT. Un pictogramme de roue ne se devine
@@ -3801,12 +3926,18 @@ function demarrerCirculation(tr) {
   // plus une seule limitation pour tout le circuit. Manhattan garde la sienne.
   const allure = tr.ville === 'ny' ? null : decalage ? (x, z) => allureDuTroncon(tr.cle, x, z)
     : (tr.voie || 'rue') === 'rue' ? allureVilleMonde : null;
-  const prep = (vehicules.circulationParTranches || vehicules.circulation)(tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
+  // LE MILIEU DE LA VOIE À LA GTA (v578) : sur une collectrice ou un
+  // boulevard que le tracé suit, la voie de droite est à `DECALAGE_GTA` (2,13)
+  // de l'axe ; ailleurs l'ancien décalage. Un décalage par sommet, la cote
+  // relue sous la voie (voiesdoubles.js, `decalerSelonLaSection`).
+  const sec = decalage ? decalerSelonLaSection(tr.cle, tr.pts, (x, z) => world.coteRoulable(x, z), decalage) : null;
+  const prep = (vehicules.circulationParTranches || vehicules.circulation)(sec ? sec.pts : tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
     limite: allure ? (x, z) => ALLURE_VOIE[allure(x, z) || tr.voie || 'rue'] : undefined,
-    // les avenues des villes bâties à la main : la voie de droite (v372)
-    decalage,
-    // la seconde voie des boulevards (v423) ; le bus prend la première place
-    voies: decalage ? (x, z) => secondeVoieParis(x, z, decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
+    // les avenues des villes bâties à la main : la voie de droite (v372, v578)
+    decalage: sec ? sec.e : decalage,
+    // la seconde voie des boulevards (v423) ; le bus prend la première place —
+    // la file y roule à `DECALAGE_GTA`, la jumelle une voie plus loin
+    voies: decalage ? (x, z) => secondeVoieParis(x, z, Array.isArray(sec && sec.e) ? DECALAGE_GTA : decalage) : secondeVoieVilleMonde, bus: tr.rang === 0 });
   circulationEnCours = { tr, prep: prep.avancer ? prep : { avancer: () => prep } };
 }
 // avance la préparation en cours sur `budget` ms ; vrai si elle a fini
@@ -4512,17 +4643,32 @@ function pushPrefsToCloud() {
   prefsPushTimer = setTimeout(() => envoyerPrefs(), 1200);
 }
 
+// ET L'ÉCRITURE NE VAUT QUE SI RIEN N'A BOUGÉ DEPUIS LA LECTURE (v571). Une
+// tablette qui rame peut mettre des secondes entre les deux (six, mesurées) ;
+// si l'autre tablette de la maison y pose un choix neuf, l'écriture périmée
+// le défaisait. Le serveur n'écrit donc que si la date du dernier choix vaut
+// encore ce qu'on a lu (`prefsPushSi`) ; sinon on relit, on adopte, on
+// réessaie. Un document absent ou illisible, ou un serveur qui ne sait pas
+// écrire sous condition : l'ancien chemin, on n'arrête jamais d'écrire.
 async function envoyerPrefs() {
   if (!playerProfile.name) return;
-  try {
-    const distant = await cloud.prefsPull(playerProfile.name);
-    if (distant) {
-      // Une autre tablette de la maison a peut-être un choix plus récent que le
-      // nôtre : adopterProfilDistant tranche sur la date et ne fait rien sinon.
-      adopterProfilDistant(distant);
+  const nom = playerProfile.name;
+  for (let essai = 0; essai < 3; essai++) {
+    let distant = null;
+    try { distant = await cloud.prefsPull(nom); } catch { /* hors ligne */ }
+    if (nom !== playerProfile.name) return;   // on a changé d'enfant entre-temps
+    if (!distant) { cloud.prefsPush(nom, prefsPayload()).catch(() => {}); return; }
+    // Une autre tablette de la maison a peut-être un choix plus récent que le
+    // nôtre : adopterProfilDistant tranche sur la date et ne fait rien sinon.
+    adopterProfilDistant(distant);
+    try {
+      if (await cloud.prefsPushSi(nom, prefsPayload(), distant.majProfil)) return;
+    } catch {
+      cloud.prefsPush(nom, prefsPayload()).catch(() => {});
+      return;
     }
-  } catch { /* hors ligne : on écrit quand même ce qu'on a */ }
-  cloud.prefsPush(playerProfile.name, prefsPayload()).catch(() => {});
+    // Quelqu'un a choisi entre notre lecture et notre écriture : on relit.
+  }
 }
 
 // Un battement régulier : sans lui, « en ligne » voudrait dire « a ouvert un
@@ -5157,6 +5303,7 @@ function syncRemotePlayers(list) {
       feuxArriere(rp.vehicule.mesh, { frein: !!(sf & 1), recul: !!(sf & 2) });
     }
     rp.passager = p.p || null;
+    rp.etoiles = (p.v && +p.v.w) || 0;   // ses étoiles de police (police-réseau)
     proposerGPSAmi(p.id, rp, p.g || null);   // sa destination, proposée (v388)
   }
   for (const [id, rp] of remotePlayers) {
@@ -5371,6 +5518,11 @@ function startNetSession(code, isHost, patience) {
       // sinon ; ce que `fun.js` allume sur NOTRE voiture, tel quel.
       const sf = (a.feuxFrein > 0 ? 1 : 0) | (a.feuxRecul ? 2 : 0);
       if (sf) p.v.s = sf;
+      // SES ÉTOILES DE POLICE (police-réseau) : l'ami mène sa propre voiture
+      // de police derrière lui, d'après la piste qu'il dessine (patrouille.js).
+      // Six octets, absents sans étoile ; une ancienne tablette les ignore.
+      const w = patrouille ? patrouille.etoiles() : 0;
+      if (w > 0) p.v.w = w;
     }
     const pa = fun.passagerDe ? fun.passagerDe() : null;
     if (pa) p.p = { de: pa.de, s: pa.s };
@@ -8618,6 +8770,7 @@ function releverLeJournal() {
   journal.relever({
     x: Math.round(player.pos.x), y: Math.round(player.pos.y), z: Math.round(player.pos.z), ville: ville ? ville.key : null,
     ips, pire: Math.round(pireImageJournal), appels: info.render.calls, ktri: Math.round(info.render.triangles / 1000),
+    rm: rayonMonde, mondeMo: Math.round(mondeTenu.octets / 104857.6) / 10,
     morceaux: chunkMeshes.size, monde: world.chunks.size, hd: [...chunkMeshes.values()].reduce((n, e) => n + (e.detail ? 1 : 0), 0),
     geometries: info.memory.geometries, textures: info.memory.textures, tasMo: mem, corps: `${h.prets}/${h.total}`,
     gpu: (({ texMo, geoMo, sources, ms }) => ({ texMo, geoMo, sources, ms }))(memoireGPU(true)),
@@ -8658,7 +8811,7 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
-    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · arbres ${world.arbres ? 'en cartes' : 'en cubes'} · horizon ${PORTEE_VUE}`
+    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS}${rayonMonde < RENDER_RADIUS ? ` (monde ${rayonMonde}, ${Math.round(mondeTenu.octets / 1048576)}/${Math.round(BUDGET_MONDE / 1048576)} Mo)` : ''} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · arbres ${world.arbres ? 'en cartes' : 'en cubes'} · horizon ${PORTEE_VUE}`
     // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
     // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :
     // taire cette différence ferait croire à un classement qui n'arrivera pas.
@@ -8743,7 +8896,7 @@ function texteEmbarquement() {
 function mesureRoulage() {
   const dir = { x: deplacement.vx / deplacement.v, z: deplacement.vz / deplacement.v };
   return { v: Math.round(deplacement.v), trou: trouDevant({ pcx: Math.floor(player.pos.x / CHUNK), pcz: Math.floor(player.pos.z / CHUNK),
-    R: RENDER_RADIUS, dir, maille: (cx, cz) => chunkMeshes.has(World.key(cx, cz)) }),
+    R: rayonMonde, dir, maille: (cx, cz) => chunkMeshes.has(World.key(cx, cz)) }),
     debit: debitRecent(datesInstall, performance.now()) };
 }
 function texteRoulage() {
@@ -8935,7 +9088,7 @@ window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fi
   get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage,
   // le mobilier tombé (v536) : le registre, les comptes, et le maillage d'une pièce
   mobilierCasse: { casses, stats: statsCasse, piece: (cle) => piecesParCle.get(cle) || null }, horizonLoin, horizonTresLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
-  RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
+  RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, BUDGET_MONDE, mondeTenu, get rayonMonde() { return rayonMonde; }, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
   // qui lirait la TABLE vérifierait la table, pas le jeu. `rr` et la file sont
@@ -9109,7 +9262,17 @@ function frame(now) {
   // qu'on sait ce que `dt` vaut.
   edu.update(dtEcran(), running);
   fun.update(dt);
-  if (running && patrouille) patrouille.update();   // la police (v562)
+  if (running && patrouille) {
+    // les amis recherchés, là où on les dessine : leur escorte suit cette piste
+    const amisPolice = [];
+    for (const [id, rp] of remotePlayers) {
+      const d = rp.vehicule && rp.vehicule.def;
+      amisPolice.push({ id, x: rp.pos.x, y: rp.pos.y, z: rp.pos.z, w: rp.etoiles || 0,
+        volant: !!(d && (d.moteur === 'voiture' || d.moteur === 'moto')) && !rp.passager });
+    }
+    patrouille.amis(amisPolice);
+    patrouille.update();   // la police (v562)
+  }
   majEtatPolice();
   majBoutonsVehicule();
   if (running) majGPS();   // à pied comme au volant (v306)
@@ -9170,6 +9333,7 @@ function frame(now) {
 
   animerLesCasses();
   eclairerLaRue();
+  nuitEiffel.maj(nuitDehors, dayTime / DAY_LENGTH, camera.position);
   reglerLesFeux();
   nomsDeStations.update(player.pos);
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
@@ -9274,6 +9438,11 @@ requestAnimationFrame(() => {
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
     // la couche HD et ses arbres (v541) : un matériau, deux programmes
     try { chaufferLaCoucheHD(camera); } catch (e) { console.warn('chauffe de la couche HD', e); }
+    // et son ombre (v572) : un matériau de profondeur à elle, que `compile` ne
+    // voit pas — un vrai rendu d'ombre, seulement sur un appareil qui en a
+    if (renderer.shadowMap.enabled && OMBRE_HD && (world.arbres || RAYON_HD > 0)) {
+      try { const q = quadDeLaCoucheHD(); compilerAvecOmbres(q); q.geometry.dispose(); } catch (e) { console.warn('chauffe de l’ombre HD', e); }
+    }
     // la fumée et les flammes des dégâts (v343) : deux matériaux neufs
     try { fun.degats.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe des dégâts', e); }
     // les traces de pneus (v434) : un matériau neuf, son essaim exact
@@ -9334,7 +9503,7 @@ requestAnimationFrame(() => {
   // profondeur : instanciée, à squelette, faces, découpe), et l'on se contente
   // de compiler la couleur pour les autres.
   const formesDOmbre = new Set();
-  const formeDOmbre = (o, m) => [o.isInstancedMesh ? (o.instanceColor ? 'Ic' : 'I') : '', o.isSkinnedMesh ? 'S' : '',
+  const formeDOmbre = (o, m) => [o.isInstancedMesh ? (o.instanceColor ? 'Ic' : 'I') : '', o.isSkinnedMesh ? 'S' : '', o.customDepthMaterial ? o.customDepthMaterial.uuid : '',
     m.side, m.shadowSide, m.alphaTest > 0, !!m.map, !!m.alphaMap, !!m.displacementMap, !!m.alphaHash].join('|');
   const compilerAvecOmbres = (objet) => {
     let neuve = false;
@@ -9446,6 +9615,7 @@ requestAnimationFrame(() => {
           const copie = o.isInstancedMesh ? new THREE.InstancedMesh(o.geometry, m, 1) : new THREE.Mesh(o.geometry, m);
           if (o.isInstancedMesh && o.instanceColor) copie.setColorAt(0, new THREE.Color(1, 1, 1));
           copie.layers.mask = o.layers.mask;
+          if (o.customDepthMaterial) copie.customDepthMaterial = o.customDepthMaterial;
           compilerAvecOmbres(copie);
         });
       }

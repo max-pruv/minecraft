@@ -15,6 +15,7 @@
 const { Banc, vu, nomsVus, endormir, reveiller, dormir, jusqua, relaisSourd, souffler } = require('./banc.js');
 const { servirLeNuage } = require('./nuage.js');
 const { mesurerFluidite } = require('./sonde-amis-fluides.cjs');
+const { escorte: escorteAmi, juger: jugerEscorte } = require('./sonde-police-reseau.cjs');
 
 // Deux messages de PeerJS ne comptent pas comme des fautes, et seulement ceux-là :
 //
@@ -267,6 +268,23 @@ function verifier(nom, ok, detail = '') {
         JSON.stringify({ relaye, fluideRelaye }));
     }
 
+    // LA POLICE D'UN AMI SE VOIT CHEZ L'AUTRE (police-réseau). La v562 la
+    // laissait locale : un ami voyait la voiture de l'enfant, pas la police qui
+    // le suit. Les ÉTOILES voyagent dans la position (`p.v.w`) et chaque
+    // tablette mène sa propre voiture de police sur la piste qu'elle dessine.
+    // Un champ de position a deux témoins (v406) : Marlon (l'hôte) vu par
+    // Alice en direct (`pos`), Nina vue par Alice à travers l'hôte (`rpos`),
+    // l'hôte réduit à son canvas pendant ce second (il ne fait que relayer).
+    // Rouges sur `origin/main` : pas d'étoiles reçues, pas d'escorte.
+    {
+      const policeDirect = await escorteAmi(hote, alice, 'Marlon');
+      verifier('la police d\'un ami se voit chez l\'autre : ses étoiles arrivent par la position directe, et une voiture de police le suit à son écart, gyrophares allumés',
+        jugerEscorte(policeDirect) && policeDirect.direct, JSON.stringify(policeDirect));
+      const policeRelaye = await escorteAmi(nina, alice, 'Nina', { aCote: [hote] });
+      verifier('et à travers l\'hôte : la police d\'un invité se voit chez l\'autre invité (rpos), et se gare quand il est pardonné',
+        jugerEscorte(policeRelaye) && !policeRelaye.direct, JSON.stringify(policeRelaye));
+    }
+
     // --- l'ami au volant est vu dans sa voiture, et l'on monte avec lui (v253)
     //
     // Max : « en multijoueur, on ne voit pas si un user est dans une voiture,
@@ -377,7 +395,7 @@ function verifier(nom, ok, detail = '') {
     await hote.evaluate(() => {
       const P = window.__game.player, fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw);
       let n = 0;
-      const id = setInterval(() => { if (++n > 40) { clearInterval(id); return; } P.pos.x += fx * 0.35; P.pos.z += fz * 0.35; }, 100);
+      const id = setInterval(() => { if (++n > 80) { clearInterval(id); return; } P.pos.x += fx * 0.35; P.pos.z += fz * 0.35; }, 100);
     });
     await jusqua(async () => {
       const p = await alice.evaluate(async () => { try { return (await import('./src/traces.js')).etatTraces().poses; } catch { return null; } });
@@ -630,7 +648,7 @@ function verifier(nom, ok, detail = '') {
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
       g.animalManager.animals.length = 0;
       const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
-      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'amg-gt-black-series.glb' });
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'lucid-gravity.glb' });
       for (let i = 0; i < 80 && !(a && a.mesh.userData.modele); i++) await dodo(100);
       document.getElementById('ride-btn').click();
       await dodo(800);
@@ -2431,7 +2449,7 @@ function verifier(nom, ok, detail = '') {
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
       g.animalManager.animals.length = 0;
       const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
-      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'amg-gt-black-series.glb' });
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'lucid-gravity.glb' });
       for (let i = 0; i < 80 && !(a && a.mesh.userData.modele); i++) await dodo(100);
       for (let e = 0; e < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(700); }
       const m = g.fun.montureConduite && g.fun.montureConduite();
@@ -2505,10 +2523,14 @@ function verifier(nom, ok, detail = '') {
         for (let i = 0; i < 8; i++) { await dodo(100); relever(); }
         P.keys.delete('KeyS');
       }
+      // la marche arrière tenue jusqu'à ce qu'elle s'allume, bornée à douze
+      // secondes : trois secondes fixes ne suffisaient plus à s'arrêter à
+      // 1,5 image par seconde (v270), la durée entre dans le message
       P.keys.add('KeyS');
-      for (let i = 0; i < 30; i++) { await dodo(100); relever(); }
+      const t0 = performance.now();
+      for (let i = 0; i < 30 || (recul < 3 && performance.now() - t0 < 12000); i++) { await dodo(100); relever(); }
       P.keys.delete('KeyS');
-      return { frein, recul, v: P.vitesseVoiture };
+      return { frein, recul, v: P.vitesseVoiture, ms: Math.round(performance.now() - t0) };
     });
     await dormir(600);
     const feuxIci = await ines.evaluate(() => { window.__feuxStop(); return window.__feuxVus; });

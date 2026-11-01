@@ -418,6 +418,8 @@ export const MONTEE_DECOLLAGE = 14;
 export const H_DEGAGE = 16;
 // Où l'on s'aligne quand il faut toute la piste : douze blocs après le bout.
 export const SEUIL_ROULAGE = 12;
+export const CAP_ROULAGE = 0.3;     // rad : en deçà, on est dans le cap et l'on reprend l'allure
+export const VIRE_ROULAGE = 2;      // blocs/s : l'allure d'un virage au plus serré
 export function pisteDeDecollage(x, z, yaw, fiche) {
   const besoin = longueurDecollage(fiche), fx = -Math.sin(yaw);
   let best = null;
@@ -450,11 +452,22 @@ export function guiderRoulage(r, pos, yaw, fiche) {
   // À contresens, le plus court est ambigu : on tourne du côté où l'appareil
   // se rapproche de l'axe (dériver le cap de +δ déplace le nez de (−cos, sin)).
   if (Math.abs(e) > 2.6 && Math.abs(lat) > 0.5) e = Math.sign(Math.sin(yaw) * -lat || 1) * Math.abs(e);
-  // On vire au pas : à moitié de l'allure de roulage, un demi-tour tient dans
-  // la largeur de la piste (rayon de trois blocs).
+  // On vire au pas, et l'on ne reprend l'allure qu'une fois presque dans le
+  // cap (v577). Sous deux blocs par seconde le rayon du virage ne dépend plus
+  // de la vitesse (deux blocs, `VIRAGE_ROULAGE`) : c'est le plus court que
+  // l'appareil sache faire, et un demi-tour tient dans la piste.
+  // POURQUOI SI SERRÉ : en sortant d'un poste, l'appareil vire vers la piste
+  // et son aile EXTÉRIEURE balaie vers l'avant — vers l'empennage du voisin
+  // garé quatre blocs devant. À la moitié de l'allure de roulage (rayon
+  // trois), et repartant à quinze blocs par seconde dès 34° du cap, l'aile
+  // entrait d'un demi-bloc dans le voisin sur 61 départs sur 369
+  // (`sonde-avions-gares.cjs`) ; à deux blocs par seconde jusqu'à 17° du cap,
+  // zéro, et au moins un demi-bloc d'air partout — 366 départs sur 370 (le
+  // jet privé compris, v568) en gardent un bloc. Le prix : quatre dixièmes de seconde de plus avant la
+  // course de décollage (médiane 3,8 → 4,2 s, `sonde-decollage-postes.cjs`).
   // En ligne droite on roule à `VITESSE_ROULAGE` (le chemin vers le bout
   // peut faire cent blocs, et un enfant n'attend pas vingt secondes).
-  const vitesse = Math.abs(e) > 0.6 ? (fiche.roulage || 6) * 0.5 : Math.max(fiche.roulage || 6, VITESSE_ROULAGE);
+  const vitesse = Math.abs(e) > CAP_ROULAGE ? Math.min(VIRE_ROULAGE, (fiche.roulage || 6) * 0.5) : Math.max(fiche.roulage || 6, VITESSE_ROULAGE);
   const aligne = r.phase === 'ligne' && Math.abs(lat) < 0.7 && Math.abs(angle(r.cap - yaw)) < 0.08
     && pos.x >= p.x0 && pos.x <= p.x1;
   return { capVise, ecart: e, vitesse, aligne, lat, phase: r.phase };

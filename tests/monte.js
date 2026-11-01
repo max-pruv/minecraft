@@ -1544,7 +1544,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return b && getComputedStyle(b).display !== 'none'
         && getComputedStyle(b.closest('.fun-target')).display !== 'none';
     }, null, { timeout: 5000 }).catch(() => {});
-    await tab.evaluate(() => document.getElementById('ride-btn').click());
+    // Un bouton-bascule ne se reclique pas (v252) : déjà au volant, ce clic
+    // ferait DESCENDRE, et le témoin mesurait « 0,0 m parcourus » à pied.
+    // On lit l'état dans le jeu, on ne clique que si l'on est à pied, et
+    // l'on attend d'être monté.
+    const dejaMonte = await tab.evaluate(() => !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()));
+    if (!dejaMonte) await tab.evaluate(() => document.getElementById('ride-btn').click());
+    const monteRoues = await tab.waitForFunction(() => !!(window.__game.fun.montureConduite && window.__game.fun.montureConduite()),
+      null, { timeout: 8000 }).then(() => true).catch(() => false);
     await dormir(600);
     // On se place D'ABORD, on lit l'angle ENSUITE : la mise en place est un
     // téléport de douze blocs, et le compter comme du roulage retournait la
@@ -1565,7 +1572,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       tourne != null && rouleSur > 1 && tourne > 0
       && tourne > attendu * 0.7 && tourne < attendu * 1.4,
       `${rouleSur.toFixed(1)} m parcourus · roue tournée de ${tourne == null ? '—' : tourne.toFixed(1)} rad`
-      + (attendu ? ` (attendu ${attendu.toFixed(1)})` : ''));
+      + (attendu ? ` (attendu ${attendu.toFixed(1)})` : '') + ` · déjà monté ${dejaMonte}, au volant ${monteRoues}`);
 
     // LES REFLETS NE FIGENT PLUS L'IMAGE (v245) -------------------------------
     //
@@ -2303,15 +2310,51 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         while (performance.now() - t0 < 15000 && cat(h.pos.x, h.pos.z) === 'c') await new Promise((f) => setTimeout(f, 250));
         // et l'on regarde encore deux secondes : sortir pour y revenir ne compte pas
         await new Promise((f) => setTimeout(f, 2000));
+        // (sorti puis promu sur le trottoir, il peut TRAVERSER à un passage,
+        // v371 : sur la chaussée au relevé, en traversée, ce n'est pas rester
+        // sur la rue — vu à Paris par sonde-flaneur-sortie.cjs, poste « t »)
         essais.push({ secondes: +((performance.now() - t0) / 1000).toFixed(1), arrivee: cat(h.pos.x, h.pos.z),
-          poste: cat(h.poste.x, h.poste.y), d: +Math.hypot(h.pos.x - ou.x, h.pos.z - ou.z).toFixed(2), sorties: h.sorties || 0 });
+          poste: cat(h.poste.x, h.poste.y), d: +Math.hypot(h.pos.x - ou.x, h.pos.z - ou.z).toFixed(2), sorties: h.sorties || 0,
+          traverse: !!h.traversee });
       }
+      // EMPÊCHÉ D'ATTEINDRE LE BORD, IL LE GARDE POUR POSTE. La sortie expire au
+      // bout de six secondes réelles ; le poste se prenait alors là où il
+      // s'était arrêté, SUR la chaussée (`poste c, sorties 7`, portail de la
+      // v560). On le provoque : un mur de crochet tout autour de lui (le
+      // crochet d'obstacle des voitures, v259), le temps de l'échéance.
+      const empeche = await (async () => {
+        const h = gens[3] || gens[0];
+        let ou = null;
+        for (let r = 2; r < 16 && !ou; r++) for (let k = 0; k < 24 && !ou; k++) {
+          const a = k / 24 * Math.PI * 2;
+          const x = Math.floor(h.pos.x + Math.cos(a) * r) + 0.5, z = Math.floor(h.pos.z + Math.sin(a) * r) + 0.5;
+          if (cat(x, z) === 'c' && Math.abs(w.sommetColonne(Math.floor(x), Math.floor(z)) + 1 - h.pos.y) < 1.2) ou = { x, z };
+        }
+        if (!ou) return { err: 'pas de chaussée' };
+        const crochet = w.obstaclePieton;
+        h.traversee = null; h.ecart = null; h.sortie = null; h.sorties = 0;
+        h.surTrottoir = false; h.etat = 'pause'; h.minuteur = 6;
+        h.poste.set(ou.x, ou.z); h.placeAt(ou.x, ou.z, 40);
+        w.obstaclePieton = (x, z) => Math.hypot(x - ou.x, z - ou.z) > 0.4;
+        g.player.pos.set(ou.x + 4, h.pos.y, ou.z + 4); g.player.vel.set(0, 0, 0);
+        const t0 = performance.now();
+        // la première sortie est finie (expirée) : une seconde a commencé, ou aucune
+        while (performance.now() - t0 < 20000 && !(h.sorties >= 2 || (h.sorties >= 1 && !h.sortie))) await new Promise((f) => setTimeout(f, 250));
+        const r = { secondes: +((performance.now() - t0) / 1000).toFixed(1), sorties: h.sorties || 0, enCours: !!h.sortie,
+          ici: cat(h.pos.x, h.pos.z), poste: cat(h.poste.x, h.poste.y) };
+        w.obstaclePieton = crochet;
+        return r;
+      })();
       g.player.pos.copy(sauve);
-      return { ville: s2.nom, essais };
+      return { ville: s2.nom, essais, empeche };
     });
     verifier('un flâneur posé au milieu de la chaussée en sort et flâne au bord',
-      !sortieRue.err && sortieRue.essais.length > 0 && sortieRue.essais.every((e) => !e.err && e.arrivee !== 'c' && e.poste !== 'c'),
+      !sortieRue.err && sortieRue.essais.length > 0 && sortieRue.essais.every((e) => !e.err && (e.arrivee !== 'c' || e.traverse) && e.poste !== 'c'),
       JSON.stringify(sortieRue));
+    const emp = sortieRue.empeche || {};
+    verifier('et s\'il ne peut pas atteindre le bord, il garde le bord pour poste au lieu de flâner sur la chaussée',
+      !sortieRue.err && !emp.err && emp.sorties >= 1 && emp.ici === 'c' && emp.poste !== 'c',
+      JSON.stringify(emp));
 
     // ---- ET IL MARCHE VRAIMENT (v278, gardé en v279) ------------------------
     //
@@ -2835,9 +2878,18 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return { ville: cle, poses: poses.length, feux: feux.length, traversees, surPassage, detail, secondesDeJeu: +jeu().toFixed(1), secondes: +((performance.now() - t0) / 1000).toFixed(1) };
     }, { cle, biais });
     const auPassage = await auPassageDans('kyoto', false);
+    // UNE TRAVERSÉE AU FEU N'EST PAS UNE TRAVERSÉE SANS FEU (la règle de Rome,
+    // juste en dessous). Rejoué trois fois (sonde-passages-temoin.cjs) : 5/5,
+    // 2/2, puis 4/6 — les deux qui manquaient avaient marché jusqu'à un
+    // carrefour à feux et traversé au vert (`tr: 0`, 0/18 peint), une décision
+    // juste qui relève du témoin du feu. On juge les traversées décidées à un
+    // passage SANS feu (`tr: null`) ; l'ancien code (avant la v386) n'en
+    // décide aucune hors de Paris, et reste rouge.
+    const sansFeu = (auPassage.detail || []).filter((d) => d.tr === null);
+    const peintes = sansFeu.filter((d) => { const [o, n] = d.peint.split('/').map(Number); return n && o * 2 >= n; }).length;
     verifier('hors de Paris aussi, un passant traverse sur le passage peint d\'un carrefour sans feu',
-      !auPassage.err && auPassage.poses >= 4 && auPassage.traversees >= 2 && auPassage.surPassage >= 0.8 * auPassage.traversees,
-      JSON.stringify(auPassage));
+      !auPassage.err && auPassage.poses >= 4 && sansFeu.length >= 2 && peintes >= 0.8 * sansFeu.length,
+      JSON.stringify({ ...auPassage, sansFeu: sansFeu.length, peintes }));
 
     // ---- ET SUR LES PASSAGES EN BIAIS (v421) --------------------------------
     //
@@ -3317,9 +3369,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // Max : « les voitures devraient aller plus vite et surtout une vitesse en
     // fonction du modèle (sportive faster than sedan basic) ». Toute voiture
     // conduite roulait à ×3,4, quel que soit le modèle. On invoque une
-    // citadine et une Koenigsegg Jesko sur un terrain plat, loin des villes,
+    // citadine et une Bugatti Divo (la Jesko, v358, est partie en v579) sur un terrain plat, loin des villes,
     // on monte, on appuie, et l'on lit la VITESSE que l'enfant obtient
-    // (`player.vel`, avant collision) : la Jesko au moins 1,8 fois plus vite,
+    // (`player.vel`, avant collision) : la Divo au moins 1,8 fois plus vite,
     // et la citadine elle-même plus vite qu'avant (×3,4 = 10,9). Sur l'ancien
     // code, les deux rendent 10,9. Le terrain plat se cherche à la lecture de
     // `terrainHeight`, pure, sur trente blocs de ligne droite.
@@ -3351,7 +3403,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const champ = { x0, z0, y0 };
       await dormir(1500);
       const out = {};
-      for (const flotte of ['berline-citadine', 'koenigsegg-jesko.glb']) {
+      for (const flotte of ['berline-citadine', 'bugatti-divo.glb']) {
         retirerVoitures();
         g.player.flying = false; g.player.yaw = -Math.PI / 2; g.player.pitch = 0;           // avant = +x
         g.player.pos.set(champ.x0, champ.y0 + 1.5, champ.z0 + 0.5); g.player.vel.set(0, 0, 0);
@@ -3410,7 +3462,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0);
       return out;
     });
-    const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['koenigsegg-jesko.glb'] || {};
+    const cit = alluresModeles['berline-citadine'] || {}, jes = alluresModeles['bugatti-divo.glb'] || {};
     verifier('une hypercar va plus vite qu\'une citadine, et la citadine plus vite qu\'avant',
       // DEPUIS LA v358 L'ACCÉLÉRATION S'ESSOUFFLE VERS LA POINTE : après une
       // seconde et demie de jeu aucune des deux n'est à sa pointe (14,4 et 23,4
@@ -3844,13 +3896,25 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const heurt = await tab.evaluate(async () => {
       const g = window.__game, v = g.vehicules, dodo = (ms) => new Promise((f) => setTimeout(f, ms));
       if (!v.heurter) return { err: 'pas de heurter' };
+      // LA CIBLE SE PREND DANS LA COLLECTE QUE `heurter` LIT, PAS SUR LE
+      // MAILLAGE. `heurter` cherche dans ce que `cederLePassage` a vu (avant
+      // `update`) ; `etat().places` donne le maillage (après). Mesuré
+      // (sonde-heurter-image.cjs) : à 800 ms par image, 7 blocs d'écart en
+      // médiane et 27 appels sur 30 sans voiture à 4,5 blocs — l'`id: null` du
+      // portail de la v560. Lu dans la même tâche (aucune image ne passe), le
+      // nom de la collecte et la vitesse de l'état désignent la même voiture.
       let cible = null;
       for (let k = 0; k < 100 && !cible; k++) {
         await dodo(150);
+        const vits = new Map();
         v.etat().forEach((c, ci) => {
-          if (cible || !c.routier || c.nom !== 'voiture') return;
-          for (const p of c.places) if ((c.vitesses[p[3]] || 0) > 4 && !cible) cible = { ci, i: p[3], x: p[0], z: p[1] };
+          if (!c.routier || c.nom !== 'voiture') return;
+          for (const p of c.places) vits.set(`${c.cle}#${p[3]}`, { ci, i: p[3], s: c.vitesses[p[3]] || 0 });
         });
+        for (const a of v.diagCeder ? v.diagCeder() : []) {
+          const q = a.nom && vits.get(a.nom);
+          if (q && q.s > 4) { cible = { ...q, x: a.x, z: a.z }; break; }
+        }
       }
       if (!cible) return { err: 'aucune voiture en marche en vue' };
       const id = v.heurter(cible.x, cible.z, 0.8);
@@ -4792,7 +4856,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // roues sortaient des passages de roue, de biais. `normaliserVoiture`
     // posait chaque pivot dans le repère du modèle, où x est la LONGUEUR de
     // cette voiture ; `rotation.x += angle` la faisait donc basculer autour
-    // de l'axe avant-arrière. On charge les cinquante-deux modèles et l'on
+    // de l'axe avant-arrière. On charge tous les modèles chargés (25 depuis la
+    // v579, la barre en demande 20) et l'on
     // mesure, pour chaque pivot de roue : son axe x, exprimé dans le repère
     // de la voiture, est la voie (latéral) ; et un angle positif fait avancer
     // le haut du pneu vers le nez — sur l'ancien code, la Lucid et la Chiron
@@ -4837,7 +4902,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       return out;
     });
     verifier('chaque roue de la flotte tourne autour de son essieu, le haut du pneu vers le nez',
-      roues.modeles >= 40 && roues.roues >= roues.modeles * 4 && roues.essieuxFaux.length === 0 && roues.sensFaux.length === 0 && roues.sansRoue.length === 0,
+      roues.modeles >= 20 && roues.roues >= roues.modeles * 4 && roues.essieuxFaux.length === 0 && roues.sensFaux.length === 0 && roues.sansRoue.length === 0,
       `${roues.modeles} modèles · ${roues.roues} roues · essieux faux : ${JSON.stringify(roues.essieuxFaux.slice(0, 4))} · sens faux : ${JSON.stringify(roues.sensFaux.slice(0, 4))} · sans roue : ${JSON.stringify(roues.sansRoue)}`);
 
     // ---- LE MAILLAGE HORS DU FIL PRINCIPAL (v251) ---------------------------
@@ -7236,6 +7301,131 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !colle.err && colle.pireB <= 0.25 && colle.avance <= 1.1 + colle.bAvance + 0.3 && colle.recule >= 1,
       JSON.stringify(colle));
 
+    // UN AVION GARÉ EST UN OBSTACLE (v577), POUR UNE VOITURE COMME POUR UN
+    // AVION QUI ROULE. Deux dettes, une seule chose : la voiture de l'enfant
+    // traversait un avion au poste (`gareeContre` écartait les fiches
+    // `pilote`, v534), et un appareil qui roule traversait les appareils
+    // garés (v565). On provoque les deux (v233) sur une dalle loin de tout :
+    // un A320 garé, une voiture lancée pleins gaz dans son aile, puis un
+    // chasseur qui roule dans la même aile. On mesure l'enfoncement par la
+    // silhouette au sol (`emprise-avion.js`, les points de ce qui bouge dans
+    // les cases de l'avion garé) : zéro, l'avion garé n'a pas bougé d'un
+    // cheveu (une voiture ne pousse pas un avion), et l'on se dégage en
+    // reculant. Sur l'ancien code, la voiture et le chasseur passent au
+    // travers de l'aile et du fuselage.
+    const gareObstacle = await tab.evaluate(async () => {
+      const g = window.__game;
+      const { BLOCK } = await import('./src/blocks.js');
+      const E = await import('./src/emprise-avion.js');
+      const A = await import('./src/avions.js');
+      if (A.chargerAvionsDeposes) await A.chargerAvionsDeposes();
+      const dodo = (ms) => new Promise((f) => setTimeout(f, ms));
+      const auVolant = () => !!(g.fun.montureConduite && g.fun.montureConduite());
+      const descendre = async () => { g.player.keys.clear(); for (let e = 0; e < 6 && auVolant(); e++) { document.getElementById('ride-btn').click(); await dodo(400); } };
+      await descendre();
+      const vider = () => { for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh); g.animalManager.animals.length = 0; };
+      vider();
+      g.player.touchMove.f = 0; g.player.touchMove.s = 0;
+      g.player.pilote = null; g.player.avionEnVol = false; g.player.avionEtat = undefined; g.player.flying = false; g.player.remonter = 0;
+      const X0 = 31360, Z0 = 31460;
+      let Y0 = 0;
+      for (let d = -10; d <= 50; d += 4) for (let w = -16; w <= 16; w += 4) Y0 = Math.max(Y0, g.world.terrainHeight(X0 + d, Z0 + w));
+      Y0 += 2;
+      const pose = [];
+      const mettre = (x, y, z, id) => { g.world.setBlock(x, y, z, id); pose.push([x, y, z]); };
+      for (let d = -10; d <= 50; d++) for (let w = -16; w <= 16; w++) {
+        mettre(X0 + d, Y0, Z0 + w, BLOCK.STONE);
+        for (let h = 1; h <= 7; h++) if (g.world.getBlock(X0 + d, Y0 + h, Z0 + w) !== 0) mettre(X0 + d, Y0 + h, Z0 + w, 0);
+      }
+      const rendre = async () => { await descendre(); vider(); for (const [x, y, z] of pose) g.world.setBlock(x, y, z, 0); };
+      g.player.pos.set(X0, Y0 + 1.01, Z0 + 0.5); g.player.vel.set(0, 0, 0);
+      await dodo(1000);
+      // l'A320 garé, nez vers −z (yaw −π, donc rotation 0 : son repère est celui du monde)
+      const garer = () => {
+        const av = g.animalManager.invoquer('avionligne', X0 + 22, Z0 + 0.5, false, { variante: 'a320' });
+        if (av) { av.yaw = -Math.PI; av.gare = true; av.mesh.position.copy(av.pos); av.mesh.rotation.y = 0; }
+        return av;
+      };
+      let gare = garer();
+      if (!gare) { await rendre(); return { err: 'avion garé refusé' }; }
+      const e = E.mesurerEmprise(gare.mesh);
+      // une file de l'aile : la case à 5 blocs de l'axe, côté où l'on arrive
+      let lz = null;
+      for (let k = 0; k < e.nz && lz === null; k++) if (e.cases[k * e.nx + Math.floor((-5 - e.ox) / e.pas)]) lz = e.oz + (k + 0.5) * e.pas;
+      if (lz === null) { await rendre(); return { err: 'pas d\'aile trouvée' }; }
+      const garePos0 = { x: gare.pos.x, z: gare.pos.z };
+      const dansGare = (pts) => E.pointsDans(e, gare.pos.x, gare.pos.z, gare.yaw + Math.PI, pts);
+      const foncer = async (points, xLimite) => {
+        let pire = 0, xPrec = g.player.pos.x, immobile = 0;
+        g.player.keys.add('KeyW');
+        const t0 = performance.now();
+        while (performance.now() - t0 < 15000 && immobile < 8 && g.player.pos.x < xLimite) {
+          await dodo(150);
+          pire = Math.max(pire, dansGare(points()));
+          immobile = Math.abs(g.player.pos.x - xPrec) < 0.02 ? immobile + 1 : 0; xPrec = g.player.pos.x;
+        }
+        g.player.keys.delete('KeyW');
+        const arret = g.player.pos.x;
+        g.player.keys.add('KeyS');
+        const t1 = performance.now();
+        while (performance.now() - t1 < 10000 && g.player.pos.x > arret - 1.5) await dodo(150);
+        g.player.keys.delete('KeyS');
+        return { pire, avance: +(arret - X0).toFixed(1), recule: +(arret - g.player.pos.x).toFixed(1), ms: Math.round(performance.now() - t0) };
+      };
+      // 1. LA VOITURE, pleins gaz dans l'aile
+      g.player.pos.set(X0, Y0 + 1.01, Z0 + 0.5 + lz);
+      g.animalManager.invoquer('voiture', X0, Z0 + 0.5 + lz, false, { flotte: 'berline-citadine' });
+      await dodo(700);
+      for (let k = 0; k < 8 && !auVolant(); k++) { document.getElementById('ride-btn').click(); await dodo(500); }
+      if (!auVolant()) { await rendre(); return { err: 'pas au volant' }; }
+      g.player.yaw = -Math.PI / 2; g.player.vitesseVoiture = 0; g.player.vel.set(0, 0, 0);
+      const voiture = await foncer(() => E.pointsDeBoite({ x: g.player.pos.x, z: g.player.pos.z, ux: Math.sin(g.player.yaw + Math.PI), uz: Math.cos(g.player.yaw + Math.PI), a: 2.2, b: g.player.gabarit / 2 }), X0 + 45);
+      voiture.bouge = +Math.hypot(gare.pos.x - garePos0.x, gare.pos.z - garePos0.z).toFixed(2);
+      // 2. LE CHASSEUR, qui roule dans la même aile
+      await descendre(); vider();
+      gare = garer();
+      g.player.pos.set(X0, Y0 + 1.01, Z0 + 0.5 + lz); g.player.vel.set(0, 0, 0);
+      await dodo(500);
+      const ch = g.animalManager.invoquer('chasseur', X0, Z0 + 0.5 + lz, false, { variante: 'f35' });
+      await dodo(500);
+      for (let k = 0; k < 8 && !g.player.pilote; k++) { document.getElementById('ride-btn').click(); await dodo(500); }
+      if (!g.player.pilote || !ch) { await rendre(); return { err: 'pas aux commandes', voiture }; }
+      g.player.yaw = -Math.PI / 2; g.player.vitesseAvion = 0; g.player.avionEtat = 'sol'; g.player.avionEnVol = false; g.player.vel.set(0, 0, 0);
+      await dodo(300);
+      const eCh = E.mesurerEmprise(ch.mesh);
+      const avion = await foncer(() => E.pointsDAvion(eCh, g.player.pos.x, g.player.pos.z, g.player.yaw), X0 + 45);
+      avion.bouge = +Math.hypot(gare.pos.x - garePos0.x, gare.pos.z - garePos0.z).toFixed(2);
+      avion.modele = ch.mesh.userData.variante || 'sculpté';
+      await rendre();
+      return { lz: +lz.toFixed(1), voiture, avion };
+    });
+    verifier('une voiture lancée dans l\'aile d\'un avion garé s\'y arrête sans y entrer, ne le pousse pas, et peut reculer',
+      !gareObstacle.err && gareObstacle.voiture.pire === 0 && gareObstacle.voiture.avance < 16 && gareObstacle.voiture.bouge < 0.01 && gareObstacle.voiture.recule >= 1,
+      JSON.stringify(gareObstacle));
+    verifier('un avion qui roule dans l\'aile d\'un avion garé s\'y arrête sans y entrer, et peut reculer',
+      !gareObstacle.err && gareObstacle.avion && gareObstacle.avion.pire === 0 && gareObstacle.avion.avance < 16 && gareObstacle.avion.bouge < 0.01 && gareObstacle.avion.recule >= 0.5,
+      JSON.stringify(gareObstacle));
+
+    // ON DÉCOLLE À LA MAIN, ET L'ALTIMÈTRE LE DIT (Max : « j'aimerais être
+    // capable de faire un décollage manuel en allant simplement suffisamment
+    // vite […] en mettant le joystick vers le haut », et « qu'on voie
+    // l'altitude quand on pilote un avion »). Le passage vit dans la sonde,
+    // que l'on peut lancer seule (v400). Rouge sur `origin/main` (v568) : la
+    // manette au sol ne demandait que l'allure de roulage, vMax 6 pour une
+    // rotation à 42, l'appareil roule vingt secondes sans quitter le sol, et
+    // il n'y a pas d'altimètre. Vert ici : rotation à 43,8, treize blocs en
+    // 2,2 s de jeu, « ↑ 0 m » sur la dalle et « ↑ 14 m » en l'air.
+    {
+      const { passage, juger } = require('./sonde-decollage-manuel.cjs');
+      let r;
+      try { r = await passage(tab); } catch (e) { r = { err: e.message }; }
+      const j = juger(r);
+      const msg = JSON.stringify(r);
+      verifier('joystick vers le haut AVANT la vitesse de rotation, l\'avion reste au sol', j.resteAuSol, msg);
+      verifier('pleins gaz sans ✈️, puis joystick vers le haut une fois la vitesse atteinte : l\'avion décolle à la main', j.decolle, msg);
+      verifier('l\'altimètre de bord affiche la hauteur : « 0 m » sur la piste, la vraie hauteur en l\'air', j.altimetre, msg);
+    }
+
     // EN AVION : GAZ RÉDUITS, MANCHE EN AVANT, TRAIN SORTI PAR SON BOUTON — ON
     // SE POSE SOI-MÊME, SANS ✈️. Et sans le train, c'est sur le ventre.
     const manuel = await (async () => {
@@ -7703,7 +7893,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // une longueur de voiture plus grande que sa largeur — c'est ce qui dit
     // qu'elle n'est pas en travers.
     //
-    // ET DEUX MODÈLES D'ORIGINE SERVENT DE TÉMOIN DE CONTRÔLE : ils passent
+    // ET DEUX MODÈLES DU MANIFESTE SERVENT DE TÉMOIN DE CONTRÔLE (depuis la v579,
+    // la MC12 et la Model Y : les cinquante d'origine sont partis) : ils passent
     // par le chemin « manifeste », qui ne doit toucher à rien. S'ils bougent,
     // c'est que j'ai cassé la flotte en voulant l'élargir.
     const flotte = await tab.evaluate(async () => {
@@ -7711,7 +7902,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const THREE = await import('three');
       const out = [];
       for (const fichier of ['lucid-gravity.glb', 'bugatti-chiron-stealth.glb',
-        'bugatti-chiron.glb', 'audi-r8-v10-performance.glb']) {
+        'maserati-mc12-gt1.glb', 'tesla-model-y.glb']) {
         const entree = v.FLOTTE.find((e) => e.fichier === fichier);
         if (!entree) { out.push({ fichier, err: 'absente de la flotte' }); continue; }
         const porteur = await v.chargerVoitureFlotte(entree);
@@ -8208,8 +8399,17 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       out.feux = { gaz: feux(), v1: +P.vitesseVoiture.toFixed(1) };
       P.touchMove.f = -1; await tenir(0.4);
       out.feux.frein = feux(); out.feux.v2 = +P.vitesseVoiture.toFixed(1);
-      await tenir(2);
-      out.feux.recul = feux(); out.feux.v3 = +P.vitesseVoiture.toFixed(1);
+      // LE RECUL SE LIT QUAND LA VOITURE RECULE, PAS DEUX SECONDES DE MONTRE
+      // APRÈS LE FREIN (v270 : on attend un fait, borné). À cadence basse elle
+      // n'avait pas fini de décélérer (`v3 −1,3`, les stops encore allumés,
+      // rouge du second portail de la v560 sur un code inchangé ; `v3 −2,1`
+      // au premier). On attend qu'elle recule franchement (−2 b/s), puis un
+      // quart de seconde de plus : les stops s'éteignent 0,25 s de jeu après
+      // la fin de la décélération. La durée entre dans le message.
+      const tRecul = performance.now();
+      for (let k = 0; k < 60 && P.vitesseVoiture > -2; k++) await tenir(0.2);
+      await tenir(0.4);
+      out.feux.recul = feux(); out.feux.v3 = +P.vitesseVoiture.toFixed(1); out.feux.msRecul = Math.round(performance.now() - tRecul);
       P.touchMove.f = 0;
       for (let k = 0; k < 20 && Math.abs(P.vitesseVoiture) > 0.2; k++) await tenir(0.2);
       await tenir(0.6);
@@ -8682,7 +8882,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       vider();
       P.flying = false; P.yaw = -Math.PI / 2; P.pitch = 0;
       P.pos.set(x0, y0 + 1.2, z0 + 0.5); P.vel.set(0, 0, 0);
-      g.animalManager.invoquer('voiture', x0 + 3, z0 + 0.5, false, { flotte: 'koenigsegg-jesko.glb' });
+      g.animalManager.invoquer('voiture', x0 + 3, z0 + 0.5, false, { flotte: 'bugatti-divo.glb' });
       await dormir(600);
       for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
       if (!auVolant()) { for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0); return { err: 'pas au volant' }; }
@@ -8929,7 +9129,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && cd.rasant.x > 150 && cd.rasant.v > 12 && Math.abs(cd.rasant.capDeg) < 3,
       JSON.stringify(cd.rasant));
     // la force suit la vitesse jusqu'à la pointe de la classe (v424) : posée à
-    // 22 sans gaz, la Jesko frappe le mur à une dizaine de blocs/s, 0,22 (0,52
+    // 22 sans gaz, l'hypercar frappe le mur à une dizaine de blocs/s, 0,22 (0,52
     // à l'ancienne échelle) — un choc publié, d'une taille sensée
     verifier('un mur pris de face : la voiture s\'arrête, avec un petit rebond, et le choc dit où',
       !cd.err && cd.face && cd.face.face && cd.face.face.choc && cd.face.face.choc.force > 0.15
@@ -8955,7 +9155,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !cd.err && vf.lu && vf.c && vf.c.contact === 'voiture' && vf.c.force > 0.05 && vf.c.force < 0.4 && vf.c.v > 9 && vf.c.lat > 0.9 && Math.abs(vf.c.long) < 1.8,
       JSON.stringify(vf));
     // « franc » (v424) : la force suit la vitesse jusqu'à la pointe de la
-    // classe — dix-huit blocs/s dans la Jesko (pointe 55) publient 0,39, plus
+    // classe — dix-huit blocs/s dans l'hypercar (pointe 55) publient 0,39, plus
     // 0,9 ; le flanc frôlé, lui, reste sous 0,1.
     // ET ELLE N'EST PLUS UN MUR (v567) : percutée franchement, elle sort de
     // la rue, projetée, et la nôtre continue sur sa lancée — l'ancien code
@@ -9026,7 +9226,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       await new Promise((r) => setTimeout(r, 4000));
       g.player.pos.y = g.world.sommetColonne(x, z) + 1;
       for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
-      const a = g.animalManager.invoquer('voiture', x, z - 4, false, { flotte: 'amg-gt-black-series.glb' });
+      const a = g.animalManager.invoquer('voiture', x, z - 4, false, { flotte: 'lucid-gravity.glb' });
       a.yaw = Math.PI / 2; a.mesh.rotation.y = a.yaw + Math.PI;
       for (let i = 0; i < 80 && !(a.mesh.userData.roues || []).length; i++) await new Promise((r) => setTimeout(r, 100));
       // et le monde a rendu quelques images autour d'elle (sur ce banc, une
@@ -9041,7 +9241,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const etatEmb = () => emb.evaluate(async () => {
       const THREE = await import('three');
       const g = window.__game;
-      const a = g.animalManager.animals.find((x) => x.def.key === 'voiture' && x.mesh.userData.flotte === 'amg-gt-black-series.glb');
+      const a = g.animalManager.animals.find((x) => x.def.key === 'voiture' && x.mesh.userData.flotte === 'lucid-gravity.glb');
       if (!a) return { err: 'pas de voiture' };
       const eq = a.mesh.userData.portieres;
       let arriere = null;
@@ -9119,7 +9319,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         await new Promise((r) => setTimeout(r, 3000));
         await emb.evaluate(() => {
           const g = window.__game;
-          const a = g.animalManager.animals.find((x) => x.def.key === 'voiture' && x.mesh.userData.flotte === 'amg-gt-black-series.glb');
+          const a = g.animalManager.animals.find((x) => x.def.key === 'voiture' && x.mesh.userData.flotte === 'lucid-gravity.glb');
           g.player.yaw = Math.atan2(-(a.pos.x - g.player.pos.x), -(a.pos.z - g.player.pos.z));
         });
         await emb.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -9148,11 +9348,11 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     const embPartage = await emb.evaluate(async () => {
       const g = window.__game;
       const V = await import('./src/vehicules.js');
-      const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === 'amg-gt-black-series.glb'));
+      const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === 'lucid-gravity.glb'));
       const geos = new Set(); proto.traverse((o) => { if (o.isMesh) geos.add(o.geometry); });
       const a = g.animalManager.animals.find((x) => x.mesh.userData.portieres);
       if (!a) return { err: 'aucune voiture n\'a de portière' };
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 9, g.player.pos.z + 9, false, { flotte: 'amg-gt-black-series.glb' });
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 9, g.player.pos.z + 9, false, { flotte: 'lucid-gravity.glb' });
       for (let i = 0; i < 50 && !(b.mesh.userData.roues || []).length; i++) await new Promise((r) => setTimeout(r, 100));
       const compte = (m) => { let n = 0, protoN = 0, idx = 0; m.traverse((o) => { if (!o.isMesh || (o.parent && o.parent.userData.estPortiere)) return; if (o.userData && o.userData.arms) return; n++; if (geos.has(o.geometry)) protoN++; }); return { n, protoN }; };
       const ia = compte(a.mesh), ib = compte(b.mesh);
@@ -9211,6 +9411,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     });
     verifier('« descendre vite » pose l\'enfant à côté sans animation', !embFeu.err && !embFeu.volant && !embFeu.ph && (Math.abs(embFeu.x) > 1.3 || Math.abs(embFeu.z) > 2.6) && embFeu.libre,
       JSON.stringify(embFeu));
+    // (Depuis la v579 ces deux témoins prennent la 911 : la Lucid Gravity est
+    // en double face, sans laque `Paint_Primary`, et son revers se voit déjà.)
     // 9. UNE VOITURE DÉJÀ FROISSÉE NE PREND PAS DE PORTIÈRE (v366). Les
     // dégâts (v343) clonent la géométrie de la pièce touchée ; l'équiper
     // remplacerait ce froissé par « la caisse sans les portières ». On simule
@@ -9220,7 +9422,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       let P;
       try { P = await import('./src/portieres.js'); } catch { return { err: 'pas de portières' }; }
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 12, g.player.pos.z + 12, false, { flotte: 'amg-gt-black-series.glb' });
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 12, g.player.pos.z + 12, false, { flotte: 'porsche-911-gt3-rs.glb' });
       for (let i = 0; i < 50 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
       let m = null;
       if (b.mesh.userData.modele) b.mesh.userData.modele.traverse((o) => { if (!m && o.isMesh && /paint_primary/i.test((o.material && o.material.name) || '')) m = o; });
@@ -9228,7 +9430,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const froissee = m.geometry.clone();
       m.geometry = froissee;
       const r = P.equiperPortieres(b.mesh);
-      const res = { equipee: !!r, gardee: m.geometry === froissee, refus: P.refus.get('amg-gt-black-series.glb#instance') || null };
+      const res = { equipee: !!r, gardee: m.geometry === froissee, refus: P.refus.get('porsche-911-gt3-rs.glb#instance') || null };
       g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
       return res;
     });
@@ -9248,11 +9450,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       let P, V;
       try { P = await import('./src/portieres.js'); V = await import('./src/vehicules.js'); } catch { return { err: 'pas de portières' }; }
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x - 12, g.player.pos.z + 12, false, { flotte: 'lucid-gravity.glb' });
+      const MODELE = 'porsche-911-gt3-rs.glb';   // une portière découpable, et c'est elle qu'on compare à SON prototype
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x - 12, g.player.pos.z + 12, false, { flotte: MODELE });
       for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
       if (!b.mesh.userData.modele) return { err: 'modèle absent' };
       const eq = P.equiperPortieres(b.mesh);
-      if (!eq) return { err: 'pas équipée', refus: P.refus.get('lucid-gravity.glb') || null };
+      if (!eq) return { err: 'pas équipée', refus: P.refus.get(MODELE) || null };
       const plan = eq.plan;
       b.mesh.updateMatrixWorld(true);
       const inv = new THREE.Matrix4().copy(b.mesh.matrixWorld).invert();
@@ -9285,7 +9488,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const n = ix ? ix.count : pos.count;
         for (let i = 0; i < n; i++) { v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(M); zMin = Math.min(zMin, v.z); zMax = Math.max(zMax, v.z); }
       });
-      const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === 'lucid-gravity.glb'));
+      const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === MODELE));
       const aProto = aire(proto, (o) => !(o.userData && o.userData.arms));
       const aVoiture = aire(b.mesh, (o) => !(o.userData && o.userData.arms) && !o.userData.effetDegats);
       const debord = Math.max(0, plan.z0 - zMin) + Math.max(0, zMax - plan.z1);
@@ -9318,7 +9521,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const g = window.__game;
       let P;
       try { P = await import('./src/portieres.js'); } catch { return { err: 'pas de portières' }; }
-      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 14, g.player.pos.z - 12, false, { flotte: 'amg-gt-black-series.glb' });
+      const b = g.animalManager.invoquer('voiture', g.player.pos.x + 14, g.player.pos.z - 12, false, { flotte: 'porsche-911-gt3-rs.glb' });
       for (let i = 0; i < 80 && !b.mesh.userData.modele; i++) await new Promise((r) => setTimeout(r, 100));
       const eq = b.mesh.userData.modele ? P.equiperPortieres(b.mesh) : null;
       if (!eq) return { err: 'pas équipée' };
@@ -10211,11 +10414,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // même témoin rend 0 bon pour 22 mauvais). `origin/main` n'a ni patrouille
     // ni espèce moto : les deux passages le disent proprement.
     {
-      const { passage: passagePolice, passageMoto } = require('./sonde-police.cjs');
+      const { passage: passagePolice, passageMoto, passageCote } = require('./sonde-police.cjs');
       if (!tab.isClosed()) await banc.mettreDeCote(tab);
       const pp = await banc.jouerSeul('MontePolice', { pret: true });
       const po = await passagePolice(pp);
       const mo = await passageMoto(pp);
+      const co = await passageCote(pp);
       await pp.close();
       if (!tab.isClosed()) await banc.ramener(tab);
       const pj = JSON.stringify({ ...po, dits: undefined }).slice(0, 900);
@@ -10237,15 +10441,22 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       verifier('police : les deux gyrophares alternent',
         !po.err && Array.isArray(po.gyrophares) && po.gyrophares.length === 2 && po.gyrophares[0] !== po.gyrophares[1], pj);
       verifier('police : une seconde bêtise fait venir la moto',
-        !po.err && po.moto && po.moto.type === 'moto' && po.etoiles2 >= 2, pj);
+        !po.err && po.moto && po.moto.type === 'moto' && po.etoiles2 >= 2,
+        `points avant ${po.pointsAvant}, bêtises ajoutées ${po.betises2}, étoiles ${po.etoiles2}, moto ${po.moto ? po.moto.type : 'aucune'} — ${pj}`);
       verifier('police : à l\'arrêt, la voiture double sans toucher et se gare devant l\'enfant, le policier lui parle',
         !po.err && po.surDalle && po.controle && po.controle.devant && po.controle.parle && po.distanceMin > 2.6
-          && po.garee && po.garee.devant > 5 && Math.abs(po.garee.cote) < 2, pj);
+          && po.garee && po.garee.devant > 5 && Math.abs(po.garee.cote) < 2,
+        `contrôle ${JSON.stringify(po.controle)}, interrompus ${JSON.stringify(po.interrompus)}, distance min ${po.distanceMin}, garée ${JSON.stringify(po.garee)} — ${pj}`);
       verifier('police : la voix dit l\'appel puis ce qui s\'est passé et « Bonne route »',
         !po.err && Array.isArray(po.dits) && po.dits.length >= 2 && /Bonne route/.test(po.dits[po.dits.length - 1].texte),
         JSON.stringify(po.dits));
       verifier('police : après le contrôle, plus d\'étoiles, et la voiture de police reste garée, montable',
         !po.err && po.apres && po.apres.etat.points === 0 && !po.apres.pilule.vis && po.gareeMontable >= 1, pj);
+      // la gauche barrée, la police double par la droite (police-réseau) —
+      // `origin/main` n'a pas d'`essaiDevant` : le passage le dit proprement
+      verifier('police : la gauche barrée, la police double par la droite ; les deux barrées, elle reste derrière et nomme le bloc',
+        !co.err && co.libre.cote === 'gauche' && co.gaucheBarree.cote === 'droite'
+          && co.deuxBarres.cote === null && !!co.deuxBarres.refus, JSON.stringify(co));
       const mj = JSON.stringify(mo);
       verifier('moto : on l\'enfourche, deux roues, la carrure étroite, le son d\'une moto, l\'enfant à califourchon',
         !mo.err && mo.modele && JSON.stringify(mo.roues) === '["Wheel_F","Wheel_R"]' && mo.enSelle

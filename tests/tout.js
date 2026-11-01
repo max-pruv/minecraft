@@ -117,7 +117,7 @@ const GARDIENS = {
   'vendor/voitures/ford-f150-raptor-r.glb': ['degats.js', 'monte.js'],
   'vendor/voitures/ford-mondeo-taxi.glb': ['degats.js', 'monte.js'],
   'vendor/voitures/police-suv.glb': ['degats.js', 'monte.js'],
-  // les dix voitures de tous les jours de la v570, mêmes gardiens
+  // les dix voitures de tous les jours de la v581, mêmes gardiens
   'vendor/voitures/generique-citadine.glb': ['degats.js', 'monte.js'],
   'vendor/voitures/generique-coupe.glb': ['degats.js', 'monte.js'],
   'vendor/voitures/generique-compacte.glb': ['degats.js', 'monte.js'],
@@ -132,6 +132,7 @@ const GARDIENS = {
   'tests/porsche-911-textures.mjs': ['degats.js'],
   // les lumières de la flotte (v550), lues par degats.js sous node
   'tests/sonde-feux-flotte.mjs': ['degats.js'],
+  'tests/sonde-police.cjs': ['monte.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js', 'reglages.js'],
   'src/nouveautes.js': ['maj.js'],
   'src/cloud.js': ['reseau.js', 'reglages.js', 'manhattan.js', 'parent.js'],
@@ -169,6 +170,8 @@ const GARDIENS = {
   'src/paris-monuments-hd.js': ['parishd.js', 'plafond.js', 'monte.js', 'carteMonde.js'],
   // La géométrie de la tour Eiffel (v564), lue par le module précédent seul.
   'src/tour-eiffel-donnees.js': ['parishd.js', 'plafond.js', 'monte.js', 'carteMonde.js'],
+  // la nuit de la tour (v575) : le témoin vit dans parishd.js
+  'src/nuit-eiffel.js': ['parishd.js', 'monte.js'],
   'src/matierehd.js': ['parishd.js', 'monte.js'],
   // LES MONUMENTS À LA HAUTEUR DE LEUR VILLE (v335). Importé par `world.js`
   // et `paris-monuments-hd.js` : l'union de leurs gardiens. Le témoin de la
@@ -182,7 +185,8 @@ const GARDIENS = {
   'src/liberer.js': ['realisme.js', 'monte.js', 'fumee.js', 'carte.js', 'reglages.js'],
   'src/couches.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   'src/signatures.js': ['monte.js'],
-  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'manhattan.js'],
+  // (parishd.js : la tour d'avant gardée sous ce qu'un enfant a bâti, v575)
+  'src/world.js': ['plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'manhattan.js', 'parishd.js'],
   // Le registre des mondes décide OÙ sont les villes : y toucher les déplace
   // toutes, donc tout ce qui les dessine se rejoue.
   'src/mondes.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'washington.js', 'metro.js'],
@@ -238,7 +242,7 @@ const GARDIENS = {
   'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js', 'degats.js'],
   'src/utilitaires.js': ['carteMonde.js', 'realisme.js', 'monte.js'], // v438 : la fourgonnette et le pickup de la rue
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js', 'degats.js'],
-  'src/voiesdoubles.js': ['monte.js', 'carteMonde.js', 'reseau.js'],
+  'src/voiesdoubles.js': ['monte.js', 'carteMonde.js', 'reseau.js', 'plafond.js'],
   'src/raccords.js': ['plafond.js', 'monte.js', 'carteMonde.js'],   // les raccords d'autoroute courts (v440)
   // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
   // arrête la circulation (monte.js). Un module neuf sans gardien annule tous
@@ -253,7 +257,7 @@ const GARDIENS = {
   // Les poissons : la vie de la mer se prouve au même endroit.
   'src/poissons.js': ['monte.js'],
   'src/animals.js': ['monte.js', 'manhattan.js', 'degats.js'],
-  'src/montures.js': ['monte.js', 'manhattan.js'],
+  'src/montures.js': ['monte.js', 'manhattan.js', 'plafond.js'],   // la boîte de la moto (police-réseau)
   'src/avions.js': ['monte.js', 'carteMonde.js', 'reseau.js'],
   // La cadence de ménage décide si le monde est peuplé : elle se voit dans la
   // vie de rue (fumée + monte) et dans les durées (maj).
@@ -263,6 +267,7 @@ const GARDIENS = {
   // Le cadran de cap lit le registre et s'affiche aux commandes : la monte le garde.
   'src/cap.js': ['monte.js', 'carte.js'],
   'src/approche.js': ['monte.js', 'carteMonde.js'],
+  'src/emprise-avion.js': ['monte.js', 'carteMonde.js'],
   'src/gps.js': ['carte.js'],
   // LES COMMANDES SIMPLIFIÉES : le menu unique, Construire, et les boutons ronds.
   'src/commandes.js': ['maj.js', 'monte.js', 'manhattan.js', 'reglages.js', 'carte.js', 'fumee.js'],
@@ -276,7 +281,7 @@ const GARDIENS = {
   'src/portieres.js': ['monte.js', 'degats.js'],
   // Le hub : presque toute livraison y passe. Deux suites larges le couvrent —
   // la carte traverse l'interface entière, la monte traverse la boucle de jeu.
-  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js', 'reglages.js', 'parishd.js'],   // parishd : les arbres au palier bas (v541)
+  'src/main.js': ['carte.js', 'monte.js', 'washington.js', 'manhattan.js', 'degats.js', 'reglages.js', 'parishd.js', 'reseau.js'],   // parishd : les arbres au palier bas (v541)
   'index.html': ['carte.js', 'reglages.js', 'maj.js', 'manhattan.js'],
 
   // --- v195 : TRENTE FICHIERS MANQUAIENT, et deux d'entre eux étaient des
@@ -327,7 +332,7 @@ const GARDIENS = {
   // LA POLICE ET LA MOTO (v562) : la règle pure, son branchement, la moto ;
   // leurs témoins vivent dans monte.js (sous node et dans la page)
   'src/police.js': ['monte.js'],
-  'src/patrouille.js': ['monte.js'],
+  'src/patrouille.js': ['monte.js', 'reseau.js'],   // l'escorte d'un ami (police-réseau)
   'src/moto.js': ['monte.js'],
   'vendor/voitures/police-car.glb': ['monte.js', 'degats.js'],
   'vendor/voitures/moto-police.glb': ['monte.js'],

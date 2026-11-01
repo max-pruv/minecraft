@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v570 — Dix voitures de tous les jours
+## v581 — Dix voitures de tous les jours
 
 **Pourquoi.** Max a déposé le « Generic passenger car pack » (Comrade1280,
 Sketchfab, CC-BY-4.0) : « regarde pour intégrer ces voitures si la qualité est
@@ -54,6 +54,374 @@ captures dans `docs/revue-ecran/v570-generiques/`).
 
 ---
 
+## v580 — Paris ne fait plus planter le jeu en « Loin »
+
+**Pourquoi.** Max, capture d'iPhone dans une rue de Paris : « le jeu plante ».
+Le journal de bord de son iPhone le dit sans détour : toutes ses sessions en
+« Loin » (16 morceaux de rayon) passées par Paris ont fini en plantage, de la
+v296 à la v576 — vingt sur vingt, dont cinq ce jour-là. Avant chaque mort, la
+scène tenait 390 à 490 Mo de géométrie et jusqu'à 230 Mo de textures, pour
+1 100 à 1 225 morceaux ; les sessions qui ont survécu restaient sous 480 Mo au
+total. La v299 avait borné les façades détaillées ; le reste d'un morceau
+(cubes, sol, faces plates) n'avait que le rayon, et un morceau de Paris pèse
+plusieurs fois un morceau de campagne.
+
+**Ce que ça change.** Le monde a désormais un budget de mémoire, comme les
+façades : en ville dense, le rayon des morceaux en 3D se resserre jusqu'à
+tenir dedans (224 Mo en « Normal » et « Loin »), et le paysage lointain
+dessine le reste. Dans les champs rien ne change, « Loin » garde ses seize
+morceaux. `?diag=1` affiche le rayon tenu et ce qu'il pèse, et le journal de
+bord le relève.
+
+**Ce qui le prouve.** Mesuré au banc à l'endroit exact de la capture, en
+« Loin » : sans budget, 303 Mo de morceaux et toujours en train de charger
+après quatre minutes ; avec, onze morceaux de rayon et 249 Mo à 256 Mo de
+budget, sans différence visible à l'écran. Trois témoins dans `parishd.js` :
+la règle pure (au centre de Paris le rayon se resserre et tient le budget,
+dans les champs il ne bouge pas, et il n'hésite pas d'un cran), les budgets de
+chaque palier, et la page dans Paris (budget 80 Mo : rayon 7, 71 Mo ; sans
+budget : rayon 10, 109 Mo et encore en chargement).
+
+## v579 — Seulement les plus belles voitures
+
+**Pourquoi.** Max : « supprime les anciennes voitures qui ne sont pas très
+jolies et qui ont été créées initialement, garde uniquement les nouvelles…
+toutes les voitures qui se ressemblent ». Les quarante-sept modèles
+`luxurycarfleet` d'août 2026 sont des placeholders paramétriques générés par
+code, homogènes par construction (leur manifeste le dit), et ils étaient
+encore les deux tiers de la rue à côté des modèles détaillés déposés depuis.
+
+**Ce que ça change.**
+- Quarante-sept modèles quittent la flotte et le dépôt (≈ 80 Mo). Restent les
+  dix-huit de la v566, la Lucid Gravity, la Chiron Stealth, la MC12 GT1, la
+  SF90 XX, la Revuelto adaptée et la 911 reconstruite, plus la berline
+  citadine, les utilitaires, les taxis de New York et la police : 30 modèles.
+- Les rues ne tirent plus que ces modèles-là ; une voiture rangée au garage
+  sous un modèle retiré ressort avec un modèle tiré de la flotte (le repli
+  existait déjà), et la voiture d'un ami resté sur l'ancienne version aussi.
+- Les identifiants de la SF90, de la Revuelto et de la 911 ne changent pas :
+  leurs garages et le réseau les retrouvent.
+- La Revuelto et la Divo gardent leur couleur dans la rue : leur laque ne
+  porte pas un nom que la rue sait repeindre (`Paint_Arancio`, des matériaux
+  sans nom), et la rue leur annonçait une teinte que personne ne portait — un
+  ami recevait une couleur que la voiture n'avait pas.
+
+**Ce qui le prouve.** Aucune signature de programme ne naît ni ne meurt (la
+table relue sur les fichiers restants, sous node). Les phares, feux de
+détresse et feux stop des 30 modèles sont sur leur tôle (`sonde-feux-flotte`,
+zéro hors tôle), et la voiture abîmée mesurée la première est désormais la DB11
+(deux feux avant détachés par leur matériau). Les témoins qui nommaient un
+modèle retiré sont repointés : portières et passager sur la Lucid Gravity,
+allure d'hypercar sur la Divo, dégâts sur la DB11, modèles « du manifeste »
+sur la MC12 et la Model Y, images partagées sur cinq modèles déposés qui en
+partagent vraiment (97 images, 91 distinctes). Un témoin de `degats.js` lit les
+matériaux de chaque modèle déposé : tout modèle que la rue peut repeindre porte
+une laque que la règle reconnaît, ou se déclare `laque: 'jamais'` — c'est le
+portail (`reseau.js`, « la voiture qu'on prend garde sa couleur ») qui a vu la
+Revuelto.
+
+**Le prix, mesuré.** Les placeholders étaient légers : une voiture de la rue
+porte désormais 96 000 triangles et 42 maillages en moyenne, contre 61 000 et
+36 (les 28 modèles de rue contre les 75, prototypes chargés dans la page). Une
+rue pleine coûte donc environ 17 % d'appels de dessin de plus, le goulot de
+l'iPad (v196). Au banc, en rendu logiciel, la cadence d'une page à deux
+tablettes tombe de 2,5 à 1,5 image par seconde ; trois témoins qui jugeaient au
+bout d'une durée fixe (les deux murs de `degats.js`, la marche arrière et les
+traces vues par l'ami dans `reseau.js`) attendent désormais leur résultat,
+borné, la durée dans le message (v270).
+## v578 — Les voitures au milieu de leur voie
+
+**Pourquoi.** Depuis les rues à la GTA (v544), une collectrice a deux voies de
+4,26 blocs, mais les voitures des villes bâties à la main (Paris, Londres,
+Nice, Lille, San Francisco, Washington) roulaient encore à 1,3 bloc de l'axe,
+le milieu de la voie des anciennes rues étroites : presque sur la ligne du
+milieu, à un tiers de bloc de la voiture d'en face. Mesuré sous node, la grille
+faisait se toucher DE FACE des voitures de deux convois de Paris 161 fois en
+200 secondes.
+
+**Ce que ça change.**
+- Sur une collectrice ou un boulevard que la voiture suit, elle roule au milieu
+  de sa voie (2,13 blocs de l'axe) ; deux voitures qui se croisent passent à
+  deux blocs l'une de l'autre. Sur les boulevards de Paris, la seconde voie
+  reste une voie plus loin.
+- Ailleurs — rues locales d'une seule voie, places, tours de monuments,
+  Washington (avenues sans type) — rien ne change. Le passage de l'un à l'autre
+  se fait en douceur, sur quatre blocs, et la voiture se rabat avant d'entrer
+  dans la rue étroite.
+- La hauteur de la voiture se lit sous sa nouvelle voie (les rues en terrasses
+  de San Francisco).
+
+**Ce qui le prouve.** Deux témoins neufs dans `plafond.js` : les contacts de
+face entre convois de Paris (161 → 13, la règle d'avant rejouée sur le même
+code, `sonde-rue-dense.cjs face`) et la part des sommets au milieu de la voie
+(Paris 0,74, San Francisco 0,69, aucun hors des deux bornes). Les deux témoins
+des monuments de Paris (`carteMonde.js`) lisent désormais la voie que le jeu
+pose. La sonde `sonde-voie-gta.cjs` compare les décalages ville par ville ; un
+décalage unique de 2,13 partout est un non-résultat mesuré (Washington 32 →
+54 % de pas hors chaussée). Les voies doubles de Paris : 474 → 666 blocs
+occupés (`sonde-rue-dense.cjs boulevards`). Revue d'écran (Paris, Rome, au
+volant en ville ; iPhone et iPad, jour et nuit) : `docs/captures/v578-voies/`.
+
+---
+
+## v577 — Un avion garé est un obstacle
+
+**Pourquoi.** Deux défauts déclarés qui étaient la même chose vue de deux côtés.
+Depuis que les aéroports sont pleins (v565), ✈️ depuis un poste faisait passer
+le bout d'aile dans l'empennage de l'avion garé devant (vu en capture
+`aeroport-roulage`) : mesuré sur 61 départs sur 369. Et la voiture de l'enfant
+traversait un avion au poste de part en part (v534) : la boîte d'une voiture
+autour d'un fuselage aurait été fausse, et rien d'autre n'existait.
+
+**Ce que ça change.**
+- Une voiture lancée dans l'aile d'un avion garé s'y arrête, sans y entrer, et
+  repart en marche arrière. L'avion ne bouge pas : une voiture ne pousse pas un
+  avion.
+- Un avion qu'on fait rouler s'arrête contre l'aile d'un autre, au lieu de la
+  traverser. On recule pour se dégager.
+- ✈️ depuis un poste vire plus court pour sortir de la rangée : l'aile ne touche
+  plus le voisin. Le départ prend quatre dixièmes de seconde de plus.
+- Un avion qui apparaît par-dessus un avion garé (invoqué sur un poste déjà
+  pris) n'y reste plus coincé : il ignore cet avion jusqu'à en être sorti.
+
+**Ce qui le prouve.**
+- `carteMonde.js` : les 370 départs ✈️ rejoués avec le vrai joueur, la
+  silhouette au sol de chaque modèle mesurée dans la page (sculptés, A320,
+  A321, F-35, jet) : aucune aile dans un voisin, tous en vol. Sur l'ancien
+  guidage, 61 départs touchaient.
+- `monte.js` : une voiture pleins gaz dans l'aile d'un A320 garé, puis un F-35
+  qui roule dans la même aile. Aucun point de la voiture ou du chasseur dans
+  l'avion garé, qui n'a pas bougé, et l'on recule. Sur l'ancien code, la
+  voiture traverse l'avion sur 45 blocs, le chasseur sur 41.
+- La sonde `sonde-avions-gares.cjs` (isolée) refait la mesure et dit la marge.
+  Avec le nouveau virage, il reste au moins un demi-bloc d'air partout, et au
+  moins un bloc pour 366 départs sur 370.
+- Le témoin du roulage d'Orly (`monte.js`) a trouvé le jumeau : le Concorde
+  invoqué sur un poste déjà garni restait au poste, 196 refus en une minute.
+  Avec la règle du jumeau, il roule jusqu'à la piste et décolle.
+
+---
+## v576 — La forêt sans carrés au pied des bouleaux
+
+**Pourquoi.** Au pied de chaque bouleau, un carré d'herbe de trois colonnes
+sur trois restait en cubes, au ras du sol lisse de la forêt : le reste du
+trou bouché en v541. Le tronc du bouleau est un autre bloc que celui du
+chêne, et la règle du sol continu ne l'admettait pas au-dessus d'une colonne
+naturelle — mesuré sur 68 bouleaux de la forêt témoin, les 612 colonnes
+autour du tronc restaient en voxel.
+
+**Ce que ça change.**
+- La surface continue passe au pied du bouleau comme au pied du chêne : plus
+  de carré en cubes, le sol est lisse jusqu'au tronc.
+- Le tronc reste un obstacle, le relief ne bouge pas d'un bloc.
+
+**Ce qui le prouve.** Un témoin neuf dans `plafond.js`, rouge sur l'ancien
+code : 68 bouleaux, tous les troncs naturels, 2,9 % de colonnes non couvertes
+autour d'eux (des falaises, contre 2,3 % autour de 417 chênes), 100 % avant.
+Les deux empreintes du relief sont intactes ; l'empreinte des 490 morceaux
+change et, l'interrupteur `reglageSolContinu.bouleau` à faux, elle
+rend la constante d'avant (ed369fdb…) au bit près. Le témoin du trou sous un
+tronc tu (v541) se joue sur l'ancienne règle, puisque la surface couvre
+désormais ce trou-là.
+
+## v575 — La tour Eiffel la nuit
+
+**Pourquoi.** La tour du modèle de Max (v564) laissait trois choses derrière
+elle. Elle n'avait pas de nuit : la vraie tour s'allume en or, son phare
+balaie Paris, et elle scintille au début de chaque heure — la nôtre était une
+silhouette noire à minuit. Ses étages ont changé de hauteur (16, 30 et 52 blocs
+du pied avant ; 11–14, 22–26 et 59–62 après) : une cabane posée sur l'ancienne
+plateforme flotterait ou entrerait dans le fer. Et ses tampons n'avaient été
+mesurés qu'une fois, sous node.
+
+**Ce que ça change.**
+- La nuit, le fer de la tour luit d'or et sa salle vitrée s'allume ; de loin,
+  des points ambrés en dessinent la silhouette dorée. Le phare tourne au
+  sommet, deux faisceaux qui balaient la ville.
+- Au début de chaque heure du jeu, la nuit, la tour crépite de près de mille
+  quatre cents ampoules blanches posées sur ses poutres.
+- Ce qu'un enfant aurait bâti sur l'ancienne tour avant la v564 garde
+  l'ancienne tour sous lui, au bloc près : rien ne bouge, rien ne flotte. Le
+  journal de bord ne montre personne là-haut en trente-cinq jours, mais une
+  absence de relevé n'est pas une preuve : on garde au lieu de déplacer.
+- Rien d'autre ne change de jour.
+
+**Ce qui le prouve.** Quatre témoins neufs dans `parishd.js`, vérifiés rouges
+sur l'ancien code : la tour d'avant sous un bloc daté d'avant (et la neuve
+après) ; la lueur du fer ; à minuit le phare tourne, la tour crépite à l'heure
+et s'éteint le jour ; et aucune clé de programme neuve en l'allumant (le phare
+et les ampoules ont la matière des feux, chauffée à l'accueil). L'empreinte des
+490 morceaux rend la constante d'avant, lueur désarmée. Les tampons de la tour,
+remesurés : 5,25 Mo de façades sur ses quatre morceaux (72 900 sommets à
+72 octets), dont un cinquième pour un attribut que partage toute la couche HD
+— déclaré, pas rogné. Revue d'écran au Champ-de-Mars et au pied de la tour,
+iPhone et iPad, jour et nuit (`docs/captures/v575-tour-eiffel/`).
+
+---
+
+## v574 — La police des amis
+
+**Pourquoi.** La police de la v562 était locale à la tablette : quand Marlon
+faisait une bêtise au volant, Alice voyait sa voiture filer, mais pas la
+voiture de police qui le suivait. La moto, elle, avait la boîte de collision
+d'une voiture en longueur : de face, elle s'arrêtait à 2,2 blocs d'un mur,
+comme le capot d'une voiture. Et quand un bloc barrait la gauche, la police
+restait derrière l'enfant au contrôle, donc derrière la caméra.
+
+**Ce que ça change.**
+- À plusieurs, chacun voit la police qui suit un ami recherché : une voiture
+  de police derrière lui, gyrophares allumés et sirène. Elle se gare quand il
+  est pardonné. Ce qui voyage, ce sont ses étoiles (six octets dans sa
+  position) ; chaque tablette mène sa propre voiture de police sur la route
+  qu'elle voit l'ami prendre.
+- La moto a sa longueur à elle (2,4 blocs, mesurée sur son modèle) : elle
+  s'approche d'un mur, d'une voiture garée ou d'un poteau à sa vraie taille.
+- Au contrôle, quand la gauche est barrée, la police double par la droite et
+  se gare devant l'enfant ; seulement si les deux côtés sont barrés, elle
+  reste derrière.
+
+**Ce qui le prouve.** Quatre témoins neufs, tous rouges sur `origin/main` :
+deux à trois tablettes dans `reseau.js`, un par chemin de la position (Marlon
+vu par Alice en direct, Nina vue par Alice à travers l'hôte) — sur
+l'ancien code, la voiture de l'ami arrive mais aucune étoile, aucune escorte ;
+ici l'escorte s'arrête à 10 à 13 blocs derrière lui et se gare au pardon. Un
+dans `plafond.js` (le vrai joueur sous node face à un mur : moto 1,2, voiture
+2,2 ; `origin/main` 2,2 et 2,2). Un dans `monte.js` (gauche libre, gauche
+barrée, les deux barrées). Coût mesuré : +6 octets par position (+50 o/s),
+contre 587 o/s pour envoyer la piste elle-même. Au premier portail, les deux
+témoins réseau sont tombés alors qu'ils étaient verts seuls : le conducteur
+perdait ses étoiles par l'oubli avant qu'elles n'aient voyagé, et l'écart
+était lu pendant un rattrapage. Le témoin garde désormais la situation et
+attend que l'écart se pose ; rejoués seuls sur la branche rebasée, verts tous
+les deux. Les rouges qui restent sont mesurés à l'identique sur
+`origin/main` et déclarés dans `TASKS.md`. La revue d'écran n'a pas été faite :
+ses états ne mettent pas en scène plusieurs tablettes.
+
+---
+
+## v573 — L'altitude aux commandes, et le décollage à la main
+
+**Pourquoi.** Max : « J'aimerais qu'on voie l'altitude quand on pilote un
+avion. Et aussi, j'aimerais être capable de faire un décollage manuel en allant
+simplement suffisamment vite […] et bien entendu en mettant le joystick vers le
+haut. Aujourd'hui, il faut absolument avoir le décollage automatique. » Mesuré
+avant d'écrire : au sol, la manette ne demandait que l'allure de roulage — six
+blocs par seconde à fond, pour une vitesse de rotation de 42 — si bien qu'aucun
+geste ne faisait décoller l'appareil sans ✈️. Et la colonne de bord n'avait que
+la vitesse.
+
+**Ce que ça change.**
+- *L'altimètre.* Aux commandes, sous ✈️ et 🛞, juste au-dessus de la vitesse :
+  « ↑ 0 m » sur la piste, « ↑ 45 m » en l'air. C'est la hauteur au-dessus de ce
+  qu'on survole (la surface de l'eau en mer, pas son fond), en mètres — un bloc
+  vaut un mètre à la verticale, un étage trois blocs. Au mètre près en bas, de
+  cinq en cinq au-dessus de vingt.
+- *Le décollage à la main.* Manette poussée tout en haut, au sol : l'avion fait
+  sa course au décollage. Une fois la vitesse de rotation atteinte, joystick
+  vers le haut : il quitte la piste, train sorti jusqu'à huit blocs, et c'est le
+  joystick qui tient la hauteur. Joystick vers le haut trop tôt : il reste au
+  sol. Sous la manette à fond, le roulage d'avant ne change pas, et ✈️ marche
+  exactement comme avant. Posé pleins gaz, la manette revient au ralenti à
+  l'arrêt.
+
+**Ce qui le prouve.** Trois témoins dans `monte.js` (la sonde
+`sonde-decollage-manuel.cjs`, lancée seule ou par la suite), sur une dalle à
+l'écart, sans toucher ✈️ : au sol tant que la vitesse est sous la rotation ;
+envol au-delà, au-dessus de huit blocs ; l'altimètre lu dans son TEXTE, à 0 sur
+la dalle et à la vraie hauteur en l'air. Rouge sur `origin/main` (vitesse
+maximale 6, vingt secondes au sol, aucun altimètre), vert ici (envol à 43,8,
+quatorze blocs en 2,2 s). La sonde des décollages depuis les postes (✈️) rend
+toujours tous ses postes en vol.
+
+---
+
+## v572 — Des ombres de fenêtres
+
+**Pourquoi.** Depuis la couche HD de Paris (v287), l'ombre d'une façade était
+fausse partout où sa tuile est ajourée : la croisée d'une fenêtre, le
+garde-corps d'un balcon, la ferronnerie. La passe d'ombre de three lit la
+texture aux UV bruts ; or les façades portent des UV en unités du monde, que
+seul le shader de la couleur replie dans leur tuile. L'ombre échantillonnait
+donc tout l'atlas, ou son bord : une croisée jetait un aplat traversé d'une
+bande fantôme, comme un pavé plein. Dette déclarée dans `TASKS.md` depuis la
+v499, vue en préparant les arbres. Cela ne se voit que sur un appareil qui a
+des ombres (« Graphismes avancés », l'ordinateur).
+
+**Ce que ça change.**
+- Sous une fenêtre ou un balcon au soleil, l'ombre a les carreaux, le meneau,
+  les barreaux : le soleil passe là où la vitre et le vide sont à l'écran.
+- Rien ne change ailleurs : les arbres (UV absolues depuis la v499) rendent la
+  même ombre, et les tampons de la couche ne bougent pas d'un octet.
+
+**Ce qui le prouve.** Deux témoins neufs dans `parishd.js`, sur une page à
+ombres forcées, tous deux vérifiés rouges :
+- l'ombre d'un panneau de croisées au matériau des vrais maillages de façades
+  (`sonde-ombre-facades-hd.cjs`, lue telle quelle) : carreaux 151,8 · bois
+  157,7 · soleil 183,4 sur l'ancien code (l'aplat), 183,4 · 158,1 ici ; un
+  panneau plein ombre tout (140), sinon la mesure ne prouverait rien ;
+- le programme d'ombre de la couche (`paris-hd-ombre`) est compilé pendant la
+  préparation : aucun ne naît en jeu en arrivant à Paris (chauffe désarmée :
+  0 avant, 1 en jeu).
+Le coût de la passe d'ombre est mesuré en ordre alterné (`?ombrehd=0` rend
+l'ancienne ombre) ; l'empreinte des 490 morceaux est intacte par construction
+(aucun tampon touché).
+
+---
+
+## v571 — Une langue choisie ne revient plus en arrière
+
+**Pourquoi.** Avec deux tablettes allumées sur le même prénom, un enfant qui
+changeait de langue la voyait parfois revenir à l'ancienne quelques secondes,
+puis repartir. Le témoin de `reglages.js` était rouge 2 fois sur 2 seul et 1
+fois sur 2 sur `origin/main`. La v374 avait fait relire chaque tablette avant
+d'écrire ; `sonde-reglages-deux.cjs` a montré ce qui restait : une tablette
+chargée lit le document, puis ne l'écrit que six secondes plus tard. Un choix
+posé par l'autre tablette entre les deux était effacé par une écriture fondée
+sur une lecture périmée.
+
+**Ce que ça change.**
+- Le serveur n'accepte une écriture des réglages que si la date du dernier
+  choix (`majProfil`) n'a pas changé depuis la lecture. Sinon la tablette
+  relit, adopte le choix neuf, et réessaie (trois fois au plus).
+- Un serveur qui ne sait pas écrire sous condition, ou un document absent :
+  l'ancienne écriture, on n'arrête jamais d'écrire.
+
+**Ce qui le prouve.** Le témoin provoque la course au lieu de l'attendre : il
+retient la première écriture de la seconde tablette (donc postérieure à sa
+lecture), fait cliquer « English » sur la première, puis relâche l'écriture
+une fois le choix arrivé au serveur. Ancien code : 2 retours à l'ancienne
+langue, rouge ; neuf : l'écriture conditionnelle est refusée, la tablette
+relit et adopte, 0 retour. `reglages.js` 50 verts seule. Le Supabase de poche
+écrit sous condition comme le vrai PostgREST, dont la syntaxe a été vérifiée
+en production sur une ligne inexistante (rien n'a été écrit).
+
+---
+
+## v570 — Les passants empêchés trouvent le trottoir
+
+**Pourquoi.** Cinq témoins du portail rougissaient une fois sur deux ou trois,
+sur un code inchangé : la voiture de la rue heurtée (`id: null`), ses feux de
+détresse chez un ami, les feux de recul, le passage peint de Kyoto, le flâneur
+posé sur la chaussée. Un rouge qui va et vient cache les vrais défauts ; et
+l'un des cinq en était un : un passant qui ne pouvait pas atteindre le
+trottoir dans les six secondes adoptait la chaussée comme coin de promenade, et
+y restait.
+
+**Ce que ça change.**
+- Un passant empêché de rejoindre le trottoir (une voiture arrêtée devant lui,
+  un obstacle) garde le trottoir pour but et finit par y aller, au lieu de
+  flâner au milieu de la rue.
+- Pour le banc : quatre témoins attendent désormais le fait qu'ils annoncent
+  (la voiture recule, le message est arrivé, la cible est celle que le jeu lit),
+  et les fenêtres courtes s'observent image par image.
+
+**Ce qui le prouve.** Un témoin neuf dans `monte.js` (le passant empêché garde
+le bord pour poste), rouge sur l'ancien code (poste sur la chaussée 3/3, sonde
+`sonde-flaneur-sortie.cjs`, mode « mur »), vert sur le neuf (3/3). Quatre
+sondes neuves mesurent chaque cause : 7 blocs d'écart entre la collecte et le
+maillage à 800 ms par image (27 ciblages ratés sur 30) ; `rue_choc` reçu 2/2 ;
+deux traversées « hors peinture » de Kyoto faites au feu ; la moto qui ne venait qu'une fois sur deux (45 + 55 points sous la seconde étoile, à 120, quand la voiture garée ne rebondissait pas) ; à Rome, zéro
+traversée sans feu même en 60 s de jeu (déclaré dans `TASKS.md`).
 ## v569 — Les phares suivent le dessin de chaque voiture
 
 **Pourquoi.** Max : « les phares des voitures, comme la 911, c'est

@@ -40,8 +40,10 @@ export const RACCORDS_COURTS = {
   '401|toronto': 39, 'Hansalinie|cologne': 4.5, 'Hansalinie|hambourg': 0,
   'I-95|boston': 0, 'Tōmei|tokyo': 1.5, 'A8|marseille': 0.5, 'US-101|losangeles': 8.5,
   // les villes bâties à la main (v450) : leur entrée finit sur une avenue
-  // nommée que des circuits roulent — Lille dès la rue de Paris
-  'A1|paris': 262.5, 'A6|paris': 202, 'A1|lille': 11.5, 'A8|nice': 17.5,
+  // nommée que des circuits roulent — Lille dès la rue de Paris. Remesurée
+  // avec la voie au milieu de sa moitié (v578) : A6 Paris et A1 Lille d'un
+  // demi-bloc.
+  'A1|paris': 262.5, 'A6|paris': 201.5, 'A1|lille': 12, 'A8|nice': 17.5,
 };
 
 // Une voie à moins de 1,6 bloc, dans le même axe (|cos| > 0,7) : c'est le

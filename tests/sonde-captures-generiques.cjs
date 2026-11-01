@@ -1,4 +1,4 @@
-// CAPTURES DES DIX VOITURES DE TOUS LES JOURS (v570) : le « Generic passenger
+// CAPTURES DES DIX VOITURES DE TOUS LES JOURS (v581) : le « Generic passenger
 // car pack » de Comrade1280, converti par scripts/convertir-flotte.mjs. Les
 // dix posées en rang devant la caméra, de trois quarts avant puis arrière, de
 // jour et de nuit, chargées comme le jeu les charge (`chargerVoitureFlotte`,

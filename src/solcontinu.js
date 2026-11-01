@@ -63,8 +63,19 @@ export const SOL_NATUREL = new Set([BLOCK.GRASS, BLOCK.DIRT, BLOCK.SAND, BLOCK.S
 // sur la surface), et une fleur, une touffe, un champignon (`isProp`) — du
 // décor posé SUR le sol, pas un bloc qui en fait partie. Sans cela chaque
 // fleur des prés laissait une colonne voxel au milieu du champ lissé.
+//
+// LE BOULEAU AUSSI (v576). Son tronc est `BIRCH`, pas `LOG` (`world.js`,
+// `trunkBlock`) : la colonne du tronc n'était pas naturelle, ses quatre
+// cellules ne se dessinaient pas, et les huit colonnes autour gardaient leur
+// cube de sommet — un carré d'herbe en voxel (3 × 3) au pied de chaque
+// bouleau, au ras de la surface. Toute la règle passe par `dessusNaturel`
+// (la fiche que lisent la bande, le contact et le franchissement, v297) : un
+// bloc admis ici l'est pour tous. `reglageSolContinu.bouleau` à faux rejoue
+// l'ancienne règle, pour l'empreinte des 490 morceaux et le témoin — jamais
+// un réglage du jeu.
+export const reglageSolContinu = { bouleau: true };
 const DESSUS_NATUREL = new Set([BLOCK.AIR, BLOCK.WATER, BLOCK.LOG, BLOCK.LEAVES]);
-const dessusNaturel = (id) => DESSUS_NATUREL.has(id) || isProp(id);
+const dessusNaturel = (id) => DESSUS_NATUREL.has(id) || isProp(id) || (id === BLOCK.BIRCH && reglageSolContinu.bouleau);
 
 // LE SOL D'UNE ROUTE (v300) : l'asphalte de la chaussée et de l'accotement,
 // l'herbe du terre-plein et du talus, le sable d'un talus au bord de l'eau.

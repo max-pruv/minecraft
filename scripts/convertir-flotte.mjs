@@ -75,7 +75,7 @@ export const VOITURES = {
   'bugatti-divo': { paquet: 'bugati_divo', empattement: 2.711, avant: 1, laque: null, budget: 90000 },
   'ford-f150-raptor-r': { paquet: '2024_ford_f-150_raptor_r', empattement: 3.696, avant: 1, laque: /^RaptorPaaint$/, budget: 100000 },
   'ford-mondeo-taxi': { paquet: 'ford_mondeo_taxi', empattement: 2.850, avant: 1, livree: /./, budget: 20000 },
-  // LE PAQUET « GENERIC PASSENGER CAR PACK » (v570, Comrade1280, CC-BY-4.0) :
+  // LE PAQUET « GENERIC PASSENGER CAR PACK » (v581, Comrade1280, CC-BY-4.0) :
   // dix voitures de tous les jours dans UNE scène, posées en cercle et
   // tournées (le signe `avant` relevé sur les vues : quatre sur dix ont le
   // nez vers −z une fois remises dans l'axe). `noeud` nomme la carrosserie : la voiture est ce qui tient dans
@@ -150,7 +150,7 @@ function maillagesCuits(scene) {
 
 const triangles = (g) => g.index.count / 3;
 
-// UNE VOITURE DANS UN PAQUET QUI EN PORTE PLUSIEURS (v570). La carrosserie
+// UNE VOITURE DANS UN PAQUET QUI EN PORTE PLUSIEURS (v581). La carrosserie
 // est le nœud que la fiche nomme ; la voiture est ce dont le centre tient dans
 // la boîte de ce nœud (au sol, x et z), hors des autres carrosseries. Elle
 // est posée de biais : l'axe de ses roues (les pièces d'un nœud « Wheel »),
@@ -189,7 +189,7 @@ function isolerVoiture(pieces, noeud) {
   return garde;
 }
 
-// LES CARTES MÉTAL/RUGOSITÉ EN MOYENNE (v570) : le contrat des programmes
+// LES CARTES MÉTAL/RUGOSITÉ EN MOYENNE (v581) : le contrat des programmes
 // n'en veut pas (signatures.js), et sans elles GLTFLoader laisse les facteurs
 // à 1 — une carrosserie de métal brut, noire sous le ciel. On multiplie les
 // facteurs par la moyenne des canaux (vert : rugosité, bleu : métal).
