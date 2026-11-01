@@ -10,6 +10,21 @@
   longues de la flotte (Ghost, Escalade, F-150).
 - [ ] **Les portes arrière, le capot et le coffre sont fixes**, alors que le paquet
   les modélise (leurs os sont connus, `boneDoorLR`, `boneHood`, `boneTrunk`).
+- [ ] **Les rouges du portail GitHub Actions de la PR #589 (acdee9c), une passe de chaque
+  côté, contre celle de la v583 (595bee8f, même arbre que `main`).** Les quatre tranches
+  sont rouges, comme trois sur quatre à la v583. Rouges des deux côtés : Moscou ×2, les
+  deux chevauchements de voitures, « rendent leur mémoire », la fluidité de l'ami ×2.
+  Rouges ici seulement, déjà déclarés comme intermittents : caméra en virage, rue vide,
+  « collée à une voiture », « deux murs », les deux loaders. « Deux murs » est vert rejoué
+  seul sur cette machine (`degats.js`, 67 ✅, 0 ❌) ; les deux loaders y restent rouges
+  (`maj.js`, 72 ✅, 2 ❌), alors que `maj.js` était verte en CI à la v583 : pas de mesure
+  de `maj.js` seule sur `main` dans cette passe. Trois jamais déclarés, verts rejoués
+  seuls ici (`monte.js`) : les reflets (7 tours pour une garde à 8) et les deux klaxons
+  (−40 dB lâché pour −39,9 tenu ; −67 pour −54). Leurs témoins lisent désormais une
+  fenêtre plus longue, bornée, et le klaxon publie son horloge audio : cause non établie.
+  `monte.js` seule ici, en plus : passage peint de Rome, chauffe de New York, worker à sec,
+  « Atterrissage vers », et `carte.js` la flèche du GPS, tous déjà déclarés ; pas de rejeu
+  sur `main` de ceux-là dans cette passe.
 - [ ] **Sa licence est la Standard de Sketchfab, pas une Creative Commons**, et le
   fichier est téléchargeable sur un dépôt public (vendor/voitures/LICENSE.md) : à
   trancher par Max.
