@@ -18,7 +18,7 @@ const { Banc, jusqua } = require('./banc.js');
         for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
         g.animalManager.animals.length = 0;
         const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
-        const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'ferrari-f40.glb' });
+        const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'porsche-911-gt3-rs.glb' });
         const t0 = performance.now();
         while (performance.now() - t0 < 30000 && !a.mesh.userData.roues) await dodo(300);
         for (let e = 0; e < 8 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(600); }

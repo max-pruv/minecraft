@@ -89,7 +89,7 @@ async function passage(page) {
     P.flying = false; P.yaw = 0; P.pitch = 0; P.vel.set(0, 0, 0);
     P.pos.set(x0 + 0.5, y0 + 1.2, z0 + 40.5);
     await dodo(1500);
-    const a = am.invoquer('voiture', P.pos.x, P.pos.z - 3, false, { flotte: 'amg-gt-black-series.glb' });
+    const a = am.invoquer('voiture', P.pos.x, P.pos.z - 3, false, { flotte: 'lucid-gravity.glb' });
     a.yaw = Math.PI; await dodo(400);
     for (let i = 0; i < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); i++) { document.getElementById('ride-btn').click(); await dodo(600); }
     out.auVolant = !!(g.fun.montureConduite && g.fun.montureConduite());
@@ -103,11 +103,14 @@ async function passage(page) {
     for (let i = 0; i < 40 && Math.abs(P.vitesseVoiture || 0) > 0.3; i++) await dodo(100);
     P.yaw = 0; a.yaw = Math.PI;
     // LA VRAIE BÊTISE : une voiture garée sur la route, et l'on fonce dedans
-    const garee = am.invoquer('voiture', P.pos.x, P.pos.z - 30, false, { flotte: 'amg-gt-black-series.glb' });
+    const garee = am.invoquer('voiture', P.pos.x, P.pos.z - 30, false, { flotte: 'lucid-gravity.glb' });
     garee.yaw = 0;
     P.touchMove.f = 1; P.touchMove.s = 0;
     const tc = performance.now();
-    while (performance.now() - tc < 12000 && pat.etat().points <= 0) await dodo(100);
+    // trente blocs à parcourir : borné à trente secondes, pas douze — à 1,5
+    // image par seconde (une rue de modèles déposés, v579) la voiture n'y
+    // arrivait pas encore ; la durée entre dans le message (v270)
+    while (performance.now() - tc < 30000 && pat.etat().points <= 0) await dodo(100);
     out.choc = { points: pat.etat().points, derniere: pat.etat().derniere, ms: Math.round(performance.now() - tc),
       contact: P.contact && P.contact.famille, force: P.choc && P.choc.force };
     // on tourne sur la dalle : la piste s'allonge, la police arrive
@@ -151,7 +154,11 @@ async function passage(page) {
     const t2 = performance.now();
     let ctrl = null, distMin = Infinity;
     const interrompus = [];
-    while (performance.now() - t2 < 45000) {
+    // le contrôle entier (doubler, se garer, parler, repartir) borné à
+    // quatre-vingt-dix secondes : à quarante-cinq, il restait en route une
+    // fois sur deux des DEUX côtés à 1,5 image par seconde (v579, mesuré par
+    // trois passages de cette sonde sur la branche et sur `origin/main`)
+    while (performance.now() - t2 < 90000) {
       await dodo(300);
       const e = pat.etat();
       for (const u of e.unites) distMin = Math.min(distMin, Math.hypot(u.x - P.pos.x, u.z - P.pos.z));
@@ -170,6 +177,7 @@ async function passage(page) {
     }
     out.controle = ctrl;
     out.interrompus = interrompus;
+    out.msControle = Math.round(performance.now() - t2);
     out.distanceMin = +distMin.toFixed(2);
     if (window.__traceCtrl) out.trace = window.__traceCtrl;
     out.dits = dits;

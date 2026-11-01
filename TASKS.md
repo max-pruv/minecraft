@@ -93,6 +93,38 @@
   quand la manette passe 90 % (`GAZ_ELAN`) ; sous ce seuil, le roulage d'avant.
   Au clavier seul (sans toucher la manette à la souris), pas de décollage
   manuel : `forward` reste l'allure de roulage. Faut-il une touche de gaz ?
+## La flotte sans ses placeholders (v579) — ce qui reste, déclaré
+
+- [ ] **Le coût de la rue sur l'iPad.** Sans les 47 placeholders, une voiture
+  de la rue porte 96 000 triangles et 42 maillages en moyenne (61 000 et 36
+  avant) : +17 % d'appels par voiture visible. À relire sur la tablette avec
+  `?diag=1` dans une rue de Paris (appels, cadence) ; si la cadence tombe, le
+  levier est un niveau de détail lointain des voitures, pas le retour des
+  placeholders (décision de Max).
+- [ ] **Rouges du portail de la v579, rejoués seuls des deux côtés.**
+  `washington.js` vert des deux côtés ; `degats.js` vert (63) sur la branche
+  une fois « deux murs » mesuré au résultat. `reseau.js` rouge des deux côtés,
+  sur des témoins qui changent d'un passage à l'autre : la fluidité par le
+  nuage (« pas par paquets », rouge sur `origin/main` aussi), « seule après le
+  départ de l'hôte » (déjà déclaré), le passager par la portière droite (rouge
+  sur `origin/main`, vert sur la branche). `monte.js` : `origin/main` 292 verts
+  et 3 rouges (« la rue vide », l'atterrissage près de bas-sd, la sirène de la
+  police) ; la branche, dernier passage, 288 et 7 — le flâneur, les passages
+  peints de Rome et de Londres et le passant au feu (piétons, déjà déclarés et
+  intermittents), le feu qui freine et la radio (déjà déclarés), deux témoins
+  du contrôle de police (mesurés à part par `sonde-police.cjs`, ci-dessous).
+  Un rouge de la branche, la voiture arrêtée en plein dérapage (traces de
+  pneus, `parcouru −0,7`), n'est d'aucun modèle : `sonde-traces-flotte.cjs`
+  rejoue le passage avec chacun des 23 modèles de rue, tous dérapent (13 à 16
+  blocs) et laissent leurs traces ; il vient de l'état que laisse le témoin
+  d'avant, et ne revient pas au passage suivant.
+  **Portail de la v579 (alors v578), rebasée sur la v577, en deux tranches (78 et 71
+  min)** : quinze suites vertes ; `degats.js` (« percuter une voiture de la
+  rue l'abîme AUSSI », déjà déclaré intermittent), `monte.js` (passage peint
+  de Rome, « la rue roule », la caisse en dérapage : déclarés), `maj.js` (les
+  deux loaders : déclarés), `reseau.js` (départ de l'hôte : déclaré ; la
+  fluidité de la voiture de l'ami, directe et par le nuage : rouges aussi sur
+  `origin/main` rejouée seule, mesurée ci-dessus).
 
 ## Rouge de portail constaté par la v572 — mesuré identique sur `origin/main`
 

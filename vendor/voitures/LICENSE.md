@@ -13,6 +13,10 @@ sans affiliation avec Porsche. Le niveau de fidélité reste à valider.
 
 Cinquante modèles fournis par Max (août 2026, archives
 `luxurycarfleet` partie 1 à 3) pour la diversité des voitures à conduire.
+**Quarante-sept ont été retirés du jeu et du dépôt en v579** (Max : « les
+voitures qui se ressemblent ») ; seuls restent `ferrari-sf90.glb`,
+`lamborghini-revuelto.glb` et `porsche-911-gt3-rs.glb`, fichiers d'avant
+chargés par `?asset=0` derrière leurs modèles neufs.
 
 Ce sont des **modèles paramétriques stylisés générés par code** — le
 manifeste d'origine le dit expressément : « proportions, empattement,

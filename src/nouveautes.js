@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 579,
+    titre: 'Seulement les plus belles voitures',
+    puces: [
+      'Les vieilles voitures toutes pareilles sont parties',
+      'Il reste les nouveaux modèles détaillés',
+      'Une voiture garée revient avec un beau modèle',
+    ],
+  },
+  {
     v: 578,
     titre: 'Chaque voiture dans sa voie',
     puces: [

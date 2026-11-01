@@ -395,7 +395,7 @@ function verifier(nom, ok, detail = '') {
     await hote.evaluate(() => {
       const P = window.__game.player, fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw);
       let n = 0;
-      const id = setInterval(() => { if (++n > 40) { clearInterval(id); return; } P.pos.x += fx * 0.35; P.pos.z += fz * 0.35; }, 100);
+      const id = setInterval(() => { if (++n > 80) { clearInterval(id); return; } P.pos.x += fx * 0.35; P.pos.z += fz * 0.35; }, 100);
     });
     await jusqua(async () => {
       const p = await alice.evaluate(async () => { try { return (await import('./src/traces.js')).etatTraces().poses; } catch { return null; } });
@@ -648,7 +648,7 @@ function verifier(nom, ok, detail = '') {
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
       g.animalManager.animals.length = 0;
       const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
-      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'amg-gt-black-series.glb' });
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'lucid-gravity.glb' });
       for (let i = 0; i < 80 && !(a && a.mesh.userData.modele); i++) await dodo(100);
       document.getElementById('ride-btn').click();
       await dodo(800);
@@ -2449,7 +2449,7 @@ function verifier(nom, ok, detail = '') {
       for (const a of [...g.animalManager.animals]) g.animalManager.scene.remove(a.mesh);
       g.animalManager.animals.length = 0;
       const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
-      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'amg-gt-black-series.glb' });
+      const a = g.animalManager.invoquer('voiture', g.player.pos.x + fx * 2.5, g.player.pos.z + fz * 2.5, false, { flotte: 'lucid-gravity.glb' });
       for (let i = 0; i < 80 && !(a && a.mesh.userData.modele); i++) await dodo(100);
       for (let e = 0; e < 6 && !(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await dodo(700); }
       const m = g.fun.montureConduite && g.fun.montureConduite();
@@ -2523,10 +2523,14 @@ function verifier(nom, ok, detail = '') {
         for (let i = 0; i < 8; i++) { await dodo(100); relever(); }
         P.keys.delete('KeyS');
       }
+      // la marche arrière tenue jusqu'à ce qu'elle s'allume, bornée à douze
+      // secondes : trois secondes fixes ne suffisaient plus à s'arrêter à
+      // 1,5 image par seconde (v270), la durée entre dans le message
       P.keys.add('KeyS');
-      for (let i = 0; i < 30; i++) { await dodo(100); relever(); }
+      const t0 = performance.now();
+      for (let i = 0; i < 30 || (recul < 3 && performance.now() - t0 < 12000); i++) { await dodo(100); relever(); }
       P.keys.delete('KeyS');
-      return { frein, recul, v: P.vitesseVoiture };
+      return { frein, recul, v: P.vitesseVoiture, ms: Math.round(performance.now() - t0) };
     });
     await dormir(600);
     const feuxIci = await ines.evaluate(() => { window.__feuxStop(); return window.__feuxVus; });
