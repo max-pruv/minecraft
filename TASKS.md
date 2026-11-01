@@ -1,5 +1,29 @@
 # Ce qui est en cours
 
+## La voie au milieu de sa moitié (v578) — rouges de portail, chacun mesuré des deux côtés
+
+- [ ] **Double mesure de la v578 : chaque suite rouge rejouée SEULE, branche
+  et `origin/main` (v574), `monte.js` deux fois de chaque côté.** `plafond.js`
+  verte. `carteMonde.js` (gabarits d'avion) et `maj.js` (les deux loaders) :
+  IDENTIQUES des deux côtés, déclarés plus bas. `reseau.js` : 16 rouges sur
+  `origin/main`, 12 sur la branche ; « la voiture de la rue qui arrive derrière
+  celle de l'enfant l'attend » rouge des deux côtés avec ZÉRO relevé (la
+  situation ne s'est pas produite : le témoin mesure l'absence, pas le jeu) ;
+  les rouges de la branche seule sont fluidité et réseau bloqué (cadence 1,5
+  image/s). `monte.js` : police ×3, caméra en virage, « Atterrissage vers »
+  rouges à une passe et verts à l'autre, sur les DEUX arbres (police rouge aux
+  deux secondes passes) ; écart des voisines et rue vide rouges des deux côtés
+  (déclarés) ; Rome en biais, feu « piler », Moscou ×2 : déclarés.
+  **La monoplace « ralentit assez pour qu'on la rejoigne »** : au plus lent
+  4,6 et 6,3 m/s sur `origin/main`, 7,0 et 9,1 sur la branche (barre 9). Preuve
+  STRUCTURELLE qu'elle n'est pas de la livraison (v291) : son tracé vient du
+  bâtisseur du circuit et ne passe pas par `decalerSelonLaSection` ;
+  `decalerADroite` rend le même tracé au bit près quand le décalage est un
+  nombre. Le minimum est échantillonné toutes les 300 ms sur un seul tour
+  (252 blocs) : un tirage de cadence (v279, « un minimum échantillonné est une
+  propriété de la cadence »). Le remède est de lire le minimum dans le PROFIL
+  publié de la grille, pas dans des relevés : zone véhicules.
+
 ## Un avion garé est un obstacle (v577) — rouges de portail, aucun de la livraison
 
 - [ ] **Portail complet de la v577 (deux passages : le premier arrêté à 2 h
