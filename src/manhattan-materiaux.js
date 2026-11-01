@@ -1,8 +1,9 @@
-// Matériaux originaux générés localement : aucun téléchargement ni licence
-// tierce supplémentaire. Les motifs sont en mètres du monde, pas étirés par
+// Motifs générés localement, complétés par les photos créditées dans
+// vendor/newyork/LICENSE.md. Les motifs sont en mètres du monde, pas étirés par
 // la taille des cubes instanciés. PBR Three.js r160, reflets PMREM.
 import * as THREE from "three";
 import { ALEA } from "./manhattan-plan.js";
+import { PHOTO_NY } from "./new-york-modeles.js";
 function texture(type) {
   const c = document.createElement("canvas");
   c.width = c.height = 256;
@@ -27,6 +28,8 @@ function texture(type) {
       if (type === "paving")
         v = x % 128 < 2 || y % 128 < 2 ? 113 : 195 + (n - 0.5) * 25;
       if (type === "asphalt") v = 100 + (n - 0.5) * 44 + (n > 0.96 ? 30 : 0);
+      // l'herbe et le sable (v583) : un grain clair, ni dalle ni bitume
+      if (type === "grain") v = 206 + (n - 0.5) * 58 + (ALEA(x >> 2, y >> 2) - 0.5) * 30;
       if (type.startsWith("facade")) {
         const px = x % 64,
           py = y % 64;
@@ -129,15 +132,24 @@ export function materiauxManhattan(renderer) {
     stone = texture("stone"),
     paving = texture("paving"),
     asphalt = texture("asphalt"),
+    grain = texture("grain"),
     metal = texture("metal");
   const facade = texture("facade"),
     facadeglass = texture("facadeglass"),
     lights = texture("facadelights");
   const mats = {
     farBrick: physique(0xbfa18d, facade, 12, 0.86),
-    farLimestone: physique(0xd7d1c0, facade, 12, 0.82),
+    farLimestone: physique(0xd7d1c0, facade, PHOTO_NY ? 32 : 12, 0.82),
     farBrownstone: physique(0x9f8a7b, facade, 12, 0.88),
-    farGlass: physique(0x7b9faa, facadeglass, 12, 0.24, 0.42),
+    farGlass: physique(0x7b9faa, facadeglass, PHOTO_NY ? 32 : 12, 0.24, 0.42),
+    // les variantes des façades lointaines (v565) : chaque immeuble en tire une
+    // (manhattan-render.js, `loinDe`) ; la tuile suit le rythme de la photo
+    farBrick2: physique(0xbfa18d, facade, 12, 0.86),
+    farBrick3: physique(0xbfa18d, facade, 12, 0.86),
+    farBrick4: physique(0xbfa18d, facade, 12, 0.86),
+    farLimestone2: physique(0xd7d1c0, facade, PHOTO_NY ? 48 : 12, 0.82),
+    farLimestone3: physique(0xd7d1c0, facade, PHOTO_NY ? 48 : 12, 0.6, 0.15),
+    farGlass2: physique(0x7b9faa, facadeglass, PHOTO_NY ? 24 : 12, 0.2, 0.45),
     brick: physique(0xa6765c, brick, 3, 0.89),
     brownstone: physique(0x786052, brick, 3, 0.92),
     limestone: physique(0xe3d3b5, stone, 5, 0.78),
@@ -145,11 +157,11 @@ export function materiauxManhattan(renderer) {
     concrete: physique(0xb2b1a6, paving, 4, 0.96),
     asphalt: physique(0x60656a, asphalt, 4, 0.94),
     path: physique(0xbcb393, paving, 4, 0.95),
-    grass: physique(0x647347, asphalt, 3, 1),
+    grass: physique(0x7ea04e, grain, 3, 1),
     metal: physique(0x555e63, metal, 1, 0.44, 0.65),
     steel: physique(0xaab3bb, metal, 1, 0.24, 0.85),
     red: physique(0xb92329, null, 1, 0.36, 0.15),
-    roof: physique(0x545958, asphalt, 4, 0.94),
+    roof: physique(0x7d807f, grain, 4, 0.94),
     glass: physique(0x65818b, null, 1, 0.19, 0.55),
     glassDark: physique(0x304a55, null, 1, 0.22, 0.5),
     glassLit: physique(0x9eaaa1, null, 1, 0.32, 0.22),
@@ -165,17 +177,77 @@ export function materiauxManhattan(renderer) {
     signalOrange: physique(0xe0a24a, null, 1, 0.4),
     // le cuivre oxydé de la statue de la Liberté, vue de loin
     copper: physique(0x6aa58f, null, 1, 0.62),
-    water: physique(0x355d69, null, 1, 0.18, 0.58),
+    // la teinte de la mer du monde autour : la limite du plan ne se voit plus du ciel
+    water: physique(0x3f7fb0, null, 1, 0.2, 0.42),
+    // les banlieues (v583) : les mêmes réglages que des matières déjà là, donc les
+    // mêmes programmes — le sable sur la dalle, la tuile sur l'asphalte
+    sable: physique(0xe6d3a4, grain, 4, 0.98),
+    tuile: physique(0xa8603f, grain, 3, 0.9),
+    ardoise: physique(0x737c82, grain, 3, 0.86),
+    herbeClaire: physique(0x8cac58, grain, 3, 1),
   };
   for (const m of [
     mats.farBrick,
     mats.farBrownstone,
     mats.farLimestone,
     mats.farGlass,
+    mats.farBrick2,
+    mats.farBrick3,
+    mats.farBrick4,
+    mats.farLimestone2,
+    mats.farLimestone3,
+    mats.farGlass2,
   ]) {
     m.emissiveMap = lights;
     m.emissive.set(0xffcb82);
     m.emissiveIntensity = 0;
+  }
+  // LES MATIÈRES PHOTOGRAPHIÉES DE NEW YORK (v565). Les paquets de Max portent
+  // de vraies photos de matières new-yorkaises ; scripts/new-york.mjs en a tiré
+  // des tuiles (vendor/newyork/, crédits dans LICENSE.md). Chaque matériau naît
+  // avec son motif peint et reçoit la photo quand elle arrive : remplacer une
+  // carte par une autre ne change pas la clé de programme, et une photo absente
+  // laisse la ville d'avant. Les façades lointaines prennent aussi leurs
+  // fenêtres allumées, lues dans la même photo. Les teintes se rapprochent du
+  // blanc : elles teintaient un motif gris, la photo porte ses couleurs.
+  const photos = [];
+  if (PHOTO_NY) {
+    const charger = (nom, quand) => {
+      new THREE.TextureLoader().load(`./vendor/newyork/${nom}.jpg`, (t) => {
+        t.wrapS = t.wrapT = THREE.MirroredRepeatWrapping;
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = 4;
+        photos.push(t);
+        quand(t);
+      });
+    };
+    const surface = (m, nom, teinte) =>
+      charger(nom, (t) => {
+        m.map = t;
+        m.bumpMap = t;
+        m.color.set(teinte);
+      });
+    surface(mats.asphalt, "chaussee", 0x6a6f74);
+    surface(mats.path, "allee", 0xf2ead2);
+    surface(mats.limestone, "pierre", 0xf0e2c4);
+    surface(mats.trim, "pierre", 0xd8ccb2);
+    for (const [m, nom, teinte] of [
+      [mats.farBrick, "facade-brique", 0xe8e2dc],
+      [mats.farBrownstone, "facade-brownstone", 0xd8ccc4],
+      [mats.farLimestone, "facade-calcaire", 0xf2efe8],
+      [mats.farGlass, "facade-verre", 0xd8e2ea],
+      [mats.farBrick2, "facade-brique-2", 0xe8e2dc],
+      [mats.farBrick3, "facade-brique-3", 0xe8e2dc],
+      [mats.farBrick4, "facade-brique-4", 0xe8e2dc],
+      [mats.farLimestone2, "facade-calcaire-2", 0xf2efe8],
+      [mats.farLimestone3, "facade-calcaire-3", 0xf2efe8],
+      [mats.farGlass2, "facade-verre-2", 0xd8e2ea],
+    ]) {
+      surface(m, nom, teinte);
+      charger(`${nom}-nuit`, (t) => {
+        m.emissiveMap = t;
+      });
+    }
   }
   mats.signal.emissive.set(0x28ff83);
   mats.signal.emissiveIntensity = 1.2;
@@ -231,11 +303,13 @@ export function materiauxManhattan(renderer) {
         stone,
         paving,
         asphalt,
+        grain,
         metal,
         facade,
         facadeglass,
         lights,
       ].forEach((t) => t.dispose());
+      photos.forEach((t) => t.dispose());
       rt.dispose();
     },
   };

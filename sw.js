@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v583';
+const CACHE_VERSION = 'web-minecraft-v584';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -24,7 +24,11 @@ const STATIC_CACHE = 'web-minecraft-static-v1';
 const isStaticAsset = (url) =>
   url.includes('/vendor/face-api.js') || url.includes('/vendor/face-models/')
   || url.includes('/vendor/voitures/') || url.includes('/vendor/humains/')
-  || url.includes('/vendor/polices/') || url.includes('/vendor/avions/') || url.includes('/vendor/nature/') || url.includes('/vendor/animaux/');
+  || url.includes('/vendor/polices/') || url.includes('/vendor/avions/')
+  || url.includes('/vendor/nature/') || url.includes('/vendor/animaux/')
+  // les modèles et photos de New York (v565) : immuables, téléchargés à la
+  // première visite de Manhattan, jamais avant
+  || url.includes('/vendor/newyork/');
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
@@ -69,9 +73,17 @@ const ASSETS = [
   './src/signatures.js',
   './src/manhattan.js',
   './src/manhattan-plan.js',
+  './src/manhattan-architecture.js',
+  './src/manhattan-avant-osm.js',
+  './src/manhattan-historique.js',
+  './src/manhattan-osm-data.js',
   './src/manhattan-world.js',
   './src/manhattan-materiaux.js',
   './src/manhattan-render.js',
+  './src/new-york-modeles.js',
+  './src/new-york-donnees.js',
+  './src/new-york-banlieues.js',
+  './src/new-york-quartiers-donnees.js',
   './src/pole.js',
   './src/paris.js',
   './src/paris-v302.js',

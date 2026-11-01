@@ -2,6 +2,11 @@
 // écrasement, architecture éditable et contrats des nouveaux personnages/taxis.
 const { servirLeNuage } = require("./nuage.js");
 const { Banc, dormir } = require("./banc.js");
+// Le contrat des volumes est rapide et protège aussi les quartiers éloignés
+// que le parcours navigateur n'a pas tous à visiter.
+const architecture = require("child_process").spawnSync(process.execPath,
+  ["--test", require("path").join(__dirname, "architecture-manhattan.mjs")], { stdio: "inherit" });
+if (architecture.status !== 0) process.exit(architecture.status || 1);
 const echecs = [];
 function verifier(nom, ok, detail = "") {
   console.log(`${ok ? "✅" : "❌"} ${nom}${detail ? " — " + detail : ""}`);
@@ -63,22 +68,35 @@ function verifier(nom, ok, detail = "") {
       const base = new World(),
         w = new TerreUrbaine(),
         ret = {};
+      const { ZONES, TALUS } = await import("/src/new-york-banlieues.js");
+      // Depuis la PR 587, les anciens points à ±280 sont dans les banlieues.
+      // Mesurer au-delà de l'ensemble des quartiers et de leur talus ; le
+      // témoin de plafond.js garde séparément chaque frontière des dix zones.
+      const ouest = Math.min(...ZONES.map(q => q.x0)) - TALUS - 10;
+      const est = Math.max(...ZONES.map(q => q.x1)) + TALUS + 10;
+      const nord = Math.min(...ZONES.map(q => q.z0)) - TALUS - 10;
+      const sud = Math.max(...ZONES.map(q => q.z1)) + TALUS + 10;
       let diff = 0;
       for (const [ax, az] of [
         [0, 0],
         [-200, 180],
-        [O.x - 280, O.z],
-        [O.x + 280, O.z],
-        [O.x, O.z - 1350],
-        [O.x, O.z + 1040],
+        [O.x + ouest, O.z],
+        [O.x + est, O.z],
+        [O.x, O.z + nord],
+        [O.x, O.z + sud],
       ])
         for (let z = az - 4; z <= az + 4; z++)
           for (let x = ax - 4; x <= ax + 4; x++)
             if (base.terrainHeight(x, z) !== w.terrainHeight(x, z)) diff++;
       ret.horsZone = diff;
-      const site = BATIMENTS.find((b) => b.x0 > 0 && b.z0 > 0 && b.z0 < 10),
-        x = O.x + site.x0,
-        z = O.z + site.z0;
+      const site = BATIMENTS.find((b) => b.x0 > 0 && b.z0 > 0 && b.z0 < 10);
+      // Une vraie emprise OSM peut avoir une cour au coin de sa boîte.
+      // Choisir un mur existant, pas présumer que la boîte est un bâtiment.
+      let point;
+      for (let z = site.z0; z < site.z1 && !point; z++)
+        for (let x = site.x0; x < site.x1; x++)
+          if (batimentA(x, z)?.id === site.id) { point = { x, z }; break; }
+      const x = O.x + point.x, z = O.z + point.z;
       const y = base.sommetColonne(x, z) + 1,
         key = `${x},${y},${z}`;
       w.mergeEdits({ [key]: [20, 100] });
@@ -298,6 +316,91 @@ function verifier(nom, ok, detail = "") {
         liberte.carte.length === 1 && liberte.carte[0] === true,
       JSON.stringify(liberte),
     );
+    // ---- LES BANLIEUES (v583) ---------------------------------------------
+    // Le paquet arrive, Brooklyn se dessine avec ses modèles, aucune matière neuve
+    // ne compile en y entrant ; un bloc posé dans un immeuble lui rend sa façade
+    // (un modèle ne se troue pas), et l'île garde ses collisions.
+    const quartiers = await p.evaluate(async () => {
+      try {
+        const ny = await import("/src/new-york-modeles.js");
+        const P = await import("/src/manhattan-plan.js");
+        const { ORIGINE_MANHATTAN: O } = await import("/src/manhattan-world.js");
+        const formes = await ny.chargerQuartiers();
+        const g = __game, v = g.villeRealiste, w = g.world;
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const b = P.BATIMENTS.find((a) => a.quartier === "brooklyn" && a.modele === "cinema");
+        const avant = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, vol: g.player.flying };
+        const clesAvant = g.renderer.info.programs.length;
+        g.player.flying = true;
+        const pose = setInterval(() => {
+          g.player.pos.set(O.x + b.x0 - 14, P.SOL + 4, O.z + b.z0 - 14);
+          g.player.vel.set(0, 0, 0);
+        }, 40);
+        const t0 = performance.now();
+        let dessin = null;
+        while (performance.now() - t0 < 60000) {
+          await dodo(500);
+          dessin = v.buildings.get(b.id);
+          if (dessin && v.quartiersPrets) break;
+        }
+        await dodo(1500);
+        const essaims = dessin ? dessin.children.filter((m) => m.material === v.mats.photoQuartiers).length : -1;
+        const actif = v.active, clesApres = g.renderer.info.programs.length;
+        // un bloc posé dans l'immeuble : il retrouve sa façade procédurale
+        const x = O.x + b.x0 + 1, y = P.SOL + 3, z = O.z + b.z0;
+        w.setBlock(x, y, z, 0, Date.now());
+        const touche = v.modeleDe(b) === null;
+        clearInterval(pose);
+        g.player.pos.set(avant.x, avant.y, avant.z);
+        g.player.flying = avant.vol;
+        const lieux = __carte.catalogueDesLieux().map((l) => l.c.name);
+        return { formes: Object.keys(formes || {}).length, essaims, actif, clesAvant, clesApres, touche,
+          lieux: ["Brooklyn", "The Bronx", "Queens", "Coney Island", "Staten Island"].filter((n) => lieux.includes(n)).length,
+          attente: Math.round(performance.now() - t0) };
+      } catch (err) {
+        return { err: String((err && err.stack) || err) };
+      }
+    });
+    verifier(
+      "les banlieues se dessinent avec les modèles de Max, sans compiler de matière en y entrant",
+      !quartiers.err && quartiers.formes === 16 && quartiers.essaims === 1 && quartiers.actif && quartiers.clesApres <= quartiers.clesAvant + 1,
+      JSON.stringify(quartiers),
+    );
+    verifier(
+      "un bloc posé dans un immeuble de modèle lui rend sa façade, et la carte connaît les quartiers",
+      !quartiers.err && quartiers.touche && quartiers.lieux === 5,
+      JSON.stringify(quartiers),
+    );
+    // ---- LES MODÈLES DE MAX (v565) ----------------------------------------
+    // L'Empire State et la statue arrivent après le démarrage (un modèle absent
+    // n'empêche jamais New York d'exister). Une fois là, les cubes de la statue
+    // que le modèle couvre se taisent (`cubesTus`) — ce sont les blocs qui
+    // arrêtent l'enfant, ils ne doivent pas se dessiner par-dessus le modèle.
+    const modelesNY = await p.evaluate(async () => {
+      try {
+        const ny = await import("/src/new-york-modeles.js");
+        const [e, l] = await Promise.all([ny.chargerModeleNY("empire"), ny.chargerModeleNY("liberte")]);
+        const P = await import("/src/manhattan-plan.js");
+        const { ORIGINE_MANHATTAN: O } = await import("/src/manhattan-world.js");
+        const w = __game.world;
+        w.modeleLibertePret?.();
+        const I = P.ILE_LIBERTE;
+        let tus = 0;
+        for (let cz = Math.floor((O.z + I.z - 16) / 16); cz <= Math.floor((O.z + I.z + 16) / 16); cz++)
+          for (let cx = Math.floor((O.x + I.x - 16) / 16); cx <= Math.floor((O.x + I.x + 16) / 16); cx++)
+            tus += w.cubesTus?.(cx, cz)?.size || 0;
+        const tri = (m) => (m?.index ? m.index.count / 3 : 0);
+        return { empire: [tri(e?.proche), tri(e?.loin)], liberte: [tri(l?.proche), tri(l?.loin)], carte: !!(e?.carte && l?.carte), tus };
+      } catch (err) {
+        return { err: String(err && err.message || err) };
+      }
+    });
+    verifier(
+      "les modèles de l'Empire State et de la Liberté arrivent, de près et de loin, et la statue en blocs se tait sous le sien",
+      !modelesNY.err && modelesNY.empire[0] > 20000 && modelesNY.empire[1] > 1000 && modelesNY.empire[1] < modelesNY.empire[0] &&
+        modelesNY.liberte[0] > 5000 && modelesNY.liberte[1] > 500 && modelesNY.carte && modelesNY.tus > 500,
+      JSON.stringify(modelesNY),
+    );
 
     // ---- LES FEUX COMMANDENT LA CIRCULATION DE MANHATTAN (v496) -----------
     // Les feux de Manhattan étaient des potences de décor, toujours vertes, et
@@ -320,6 +423,9 @@ function verifier(nom, ok, detail = "") {
         const horsTrottoir = F.filter((f) => !sol.has(P.surface(f.x, f.z))).length;
         let coins = 0, vus = 0;
         for (const t of P.circuitsManhattan()) {
+          // Ce contrat concerne les feux de l'île. La PR 587 ajoute 48
+          // circuits périphériques, sans réseau de feux dans ces quartiers.
+          if (!t.pts.every(q => q.x >= P.BORNES.x0 && q.x < P.BORNES.x1 && q.z >= P.BORNES.z0 && q.z < P.BORNES.z1)) continue;
           const q = t.pts;
           for (let i = 0; i < q.length; i++) {
             const a = q[(i - 1 + q.length) % q.length], b = q[i];
@@ -342,7 +448,7 @@ function verifier(nom, ok, detail = "") {
     verifier(
       "chaque carrefour de Manhattan a ses feux, et les circuits ont devant eux un feu de leur axe",
       !feuxRegle.err && feuxRegle.feux > 1000 && feuxRegle.malAxe === 0 &&
-        feuxRegle.horsTrottoir === 0 && feuxRegle.vus >= feuxRegle.coins * 0.9,
+        feuxRegle.horsTrottoir === 0 && feuxRegle.coins === 79 * 4 && feuxRegle.vus >= feuxRegle.coins * 0.9,
       JSON.stringify(feuxRegle),
     );
     const t0Feux = Date.now();
@@ -440,15 +546,38 @@ function verifier(nom, ok, detail = "") {
         && marche.debit > 0.75 && marche.surChaussee <= marche.total / 5,
       JSON.stringify({ ...marche, attente_ms: Date.now() - debut }),
     );
-    await p.evaluate((NY) => {
+    const facadeCible = await p.evaluate((NY) => {
+      const g = __game;
+      // getBlock/isSolid lisent des COORDONNÉES DE VOXEL entières, comme
+      // sweepAxis dans le joueur ; une position fractionnaire n'est pas un voxel.
+      const solide = (x, y, z) => g.world.isSolid(Math.floor(NY.x + x), y, Math.floor(NY.z + z));
+      // Un lampadaire ou une voiture ne doit pas servir de faux témoin de mur.
+      for (let z = 7.5; z < 16; z++) for (let x = 5; x < 35; x++) {
+        if (![33, 34, 35].every(y => solide(x, y, z))) continue;
+        const depart = x - 1.6;
+        let libre = true;
+        for (let k = 0; k <= 12; k++) {
+          const a = depart + k * .1;
+          if (g.player.pietonBloque?.(NY.x + a, NY.z + z, 33.01)) libre = false;
+          for (const dx of [-.3, .3]) for (const dz of [-.3, .3]) for (const y of [33, 34])
+            if (solide(a + dx, y, z + dz)) libre = false;
+        }
+        if (libre) return { mur: x, depart, z };
+      }
+      throw new Error("Aucun trajet libre vers une façade proche");
+    }, NY);
+    await p.evaluate(({ NY, cible }) => {
       const j = __game.player;
-      j.pos.set(NY.x + 4.5, 33.01, NY.z + 7.5);
+      j.pos.set(NY.x + cible.depart, 33.01, NY.z + cible.z);
       j.vel.set(0, 0, 0);
       j.yaw = -Math.PI / 2;
       j.pitch = 0;
       j.flying = false;
       j.syncCamera();
-    }, NY);
+      window.__marcheTemoin = { images: 0, fin: false };
+      const tic = () => { window.__marcheTemoin.images++; if (!window.__marcheTemoin.fin) requestAnimationFrame(tic); };
+      requestAnimationFrame(tic);
+    }, { NY, cible: facadeCible });
     // ON MARCHE JUSQU'À S'ARRÊTER, PAS PENDANT 1,2 s (v242). Pendant que les
     // façades se construisent, le banc en rendu logiciel tombe à une image
     // par seconde : 1,2 s de touche enfoncée ne valaient qu'UN pas de 0,16
@@ -457,26 +586,29 @@ function verifier(nom, ok, detail = "") {
     // ne bougent plus (leçon de l'Air et l'Espace, washington.js).
     // Et l'immobilité ne compte qu'APRÈS le premier pas : à une image par
     // seconde, trois relevés sans mouvement arrivent avant que la touche n'ait
-    // produit une seule image — le témoin annonçait « arrêt à 4,5 », le point
-    // de départ. Trente secondes au plus, ce qui laisse le temps de démarrer.
+    // produit une seule image. On compte donc trois IMAGES distinctes sans
+    // déplacement, pas trois lectures du même état entre deux images lentes.
     await p.keyboard.down("KeyW");
     const departX = await p.evaluate(() => __game.player.pos.x);
     let figee = 0,
       dernierX = departX,
-      parti = false;
-    for (let i = 0; i < 60 && figee < 3; i++) {
+      parti = false, derniereImage = -1;
+    for (let i = 0; i < 120 && figee < 3; i++) {
       await dormir(500);
-      const x = await p.evaluate(() => __game.player.pos.x);
+      const { x, image } = await p.evaluate(() => ({ x: __game.player.pos.x, image: window.__marcheTemoin.images }));
+      if (image === derniereImage) continue;
+      derniereImage = image;
       if (!parti) parti = Math.abs(x - departX) > 0.05;
       else figee = Math.abs(x - dernierX) < 0.01 ? figee + 1 : 0;
       dernierX = x;
     }
     await p.keyboard.up("KeyW");
+    await p.evaluate(() => { window.__marcheTemoin.fin = true; });
     const arret = await p.evaluate((NY) => +(__game.player.pos.x - NY.x).toFixed(2), NY);
     verifier(
-      "le déplacement s’arrête devant la façade à l’est du trottoir",
-      arret > 4.6 && arret <= 5.71,
-      `arrêt à ${arret} blocs de l'origine (façade à 6)`,
+      "le déplacement s’arrête au contact d’une vraie façade, après un trajet libre",
+      arret > facadeCible.depart + .1 && Math.abs(arret - (facadeCible.mur - .3)) < .08,
+      `arrêt à ${arret} blocs de l'origine — ${JSON.stringify(facadeCible)}, ${figee} images immobiles`,
     );
     const hit = await p.evaluate(async () => {
       const { raycastBlocks } = await import("/src/player.js");
@@ -611,6 +743,9 @@ function verifier(nom, ok, detail = "") {
         (await p.evaluate(
           () =>
             __game.villeRealiste.mats.glassLit.emissiveIntensity > 0.8 &&
+            Object.entries(__game.villeRealiste.mats)
+              .filter(([nom]) => nom.startsWith("far"))
+              .every(([, m]) => m.emissiveIntensity > 0.7) &&
             __game.villeRealiste.lamps.some((l) => l.intensity > 0),
         )),
       `nuit tombée en ${nuitVenue.ms} ms${nuitVenue.vu ? "" : " — jamais tombée"}`,

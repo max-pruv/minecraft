@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v583 — Des matières photographiques et des animaux détaillés
+## v584 — Des matières photographiques et des animaux détaillés
 
 **Pourquoi.** Max demande plus de textures et de variété dans toute la nature,
 en s'inspirant de trois scans fournis : Field and Garden, les alpages de
@@ -64,6 +64,133 @@ budget végétal et l'exclusion des routes. `plafond.js` protège le relief, les
 surfaces de contact et la conduite ; `parishd.js` protège la couche HD.
 `animaux.js` vérifie les dimensions, l'absence de cubes, l'indépendance des
 squelettes, le partage des ressources, les contacts au sol et la monte.
+
+---
+
+## v583 — New York : volumes OSM, monuments et banlieues
+
+**Pourquoi.** Les bâtiments ordinaires étaient des rectangles de dimensions
+presque identiques, avec deux styles et des hauteurs aléatoires. Max demande
+une ville plus variée, plus crédible à hauteur de personnage et au volant.
+
+**Ce que ça change.** Un atlas compact extrait du modèle de MENUDQ2 donne aux
+quartiers leurs distributions de hauteur, leurs cours, ailes et retraits. Les
+parcelles s'élargissent pour les grands immeubles ; huit traitements de façade,
+les commerces, les escaliers de secours et les terrasses différencient les rues.
+Le rendu proche, le lointain et les collisions partagent les mêmes volumes.
+La reprise de la PR #587 conserve ses dix quartiers périphériques et ses
+monuments ; ses façades photographiques habillent aussi les nouveaux volumes
+de près. Les modèles de ponts supplémentaires sont analysés dans
+`docs/manhattan-ponts-sources.md` et ne sont pas embarqués dans cette livraison.
+La nuit, les fenêtres s'allument dans les dix variantes, sans illuminer les
+ombres d'escaliers présentes sur les photographies.
+La carte reste une adaptation compacte : les rues et les berges existantes
+ne sont pas remplacées par un cadastre au mètre près.
+
+**Vérification.** Le contrat d'architecture vérifie notamment la provenance,
+les cours ouvertes à toutes les distances, les hauteurs et les routes libres.
+Les résultats navigateur sont consignés dans `docs/manhattan-osm-validation.md`.
+Les constructions antérieures gardent aussi leur immeuble ordinaire v582 en
+entier : la sonde initiale perdait dix-neuf supports de toits sur vingt. Le
+contrat de migration garde maintenant le volume, le toit, le transfert du
+journal et son rendu, en écartant les volumes OSM qui le chevaucheraient.
+Les huit contrats passent, ainsi que la suite Manhattan du portail complet ;
+huit captures mobiles jour/nuit et une sonde réelle de toit complètent la revue.
+Les échecs hérités du portail sont déclarés dans `TASKS.md` : le portail n'est
+pas intégralement vert. La direction high fidelity demandée par Max est écrite
+dans `AGENTS.md` et `docs/direction-artistique.md` pour toutes les éditions
+futures ; les défauts graphiques restants ne sont pas présentés comme résolus.
+
+---
+
+### Les dix quartiers périphériques
+
+**Pourquoi.** Max a déposé le paquet « CCity Building Set 1 » : « sers-toi de ce
+modèle-là pour améliorer la ville de New York, créer des banlieues et augmenter le
+niveau de réalisme, parce qu'aujourd'hui, tout se ressemble beaucoup trop… beaucoup
+plus de diversité dans les paysages ». Autour de Manhattan, il n'y avait que la
+campagne du monde et la mer, et aucun pont n'allait nulle part.
+
+**Ce que ça change.**
+- Dix quartiers autour de l'île, et dix paysages : Hoboken et Jersey City en brique
+  le long de l'Hudson, Brooklyn et ses rangées de grès brun autour de Prospect Park,
+  les rues basses de Queens et son globe de Flushing Meadows, les barres, les
+  pelouses et les terrains de basket du Bronx, les pavillons de Fort Lee et de Long
+  Island sur des rues courbes, Staten Island boisée dans la baie, le port à
+  conteneurs de Port Newark et ses grues, et Coney Island : sa plage, ses parasols,
+  sa promenade de planches, sa grande roue et ses montagnes russes.
+- Sept ponts (Queensboro, Williamsburg, Brooklyn, George-Washington, l'Hudson,
+  Jersey City, Harlem) : on y va à pied ou en voiture depuis l'île.
+- Huit bâtiments du paquet (le cinéma, la clinique, le lavomatique, la conserverie,
+  deux immeubles, la barre, le terrain de basket) peuplent les quartiers, et un
+  immeuble bas de Manhattan sur trois prend l'un d'eux : l'île ne se ressemble plus
+  d'un pâté à l'autre. L'armurerie, le magasin d'alcool, le prêteur sur gages et la
+  voiture de marque ne sont pas repris ; l'enseigne du cinéma est repeinte.
+- Les berges ont un mur, l'herbe de Central Park et les toits s'éclaircissent, et
+  l'eau de New York prend la teinte de la mer autour : du ciel, on ne voit plus le
+  rectangle du plan. Les quartiers sont sur la carte, les voitures y tournent et des
+  passants y marchent.
+- Ce qu'un enfant a bâti là avant cette version garde son sol, et le bâtiment qui
+  tomberait dessus s'efface (`DATE_BANLIEUES`). Un bloc posé dans un immeuble de
+  modèle lui rend sa façade procédurale, qui se troue.
+
+**Ce qui le prouve.** Sept témoins de `plafond.js` : hors des zones et de leur talus,
+le relief ne bouge pas d'une colonne (0 sur 57 467, le monde nu et `TerreUrbaine`
+comparés dans le même code) ; ni route, ni aérodrome, ni repère, ni ville dans
+l'emprise ; un bloc d'avant garde son sol ; le plan se refait au bit près et rien
+n'est posé sur une rue ; les ponts n'ont pas une case d'eau ; le paquet ne porte que
+les huit formes gardées et le crédit de son auteur. Deux témoins de `manhattan.js` :
+Brooklyn se dessine avec les modèles sans compiler de matière, un bloc posé rend la
+façade. Captures dans `tests/sonde-captures-banlieues.cjs`, jour et nuit, rue et ciel.
+
+---
+
+### Les modèles photographiques
+
+**Pourquoi.** Max a déposé six paquets Sketchfab (CC-BY-4.0) pour « améliorer
+la qualité de New York », et ajouté : « le but des différents bâtiments, c'est
+aussi de donner de la diversité, parce qu'aujourd'hui Manhattan, c'est vraiment
+très boring, tout se ressemble ». L'Empire State était une pile de volumes
+gris, la statue de la Liberté une statue en blocs, et les façades de Manhattan
+se répétaient d'un immeuble à l'autre.
+
+**Ce que ça change.**
+- L'Empire State est la photogrammétrie de Brian Trepanier, allégée pour la
+  tablette (46 050 triangles de près, 3 485 de loin), sa texture recuite et
+  égalisée en couleur. Le pied reste en blocs, pour une rue nette ; de nuit, il
+  est éclairé par projecteurs. Le petit personnage costumé de l'antenne est
+  retiré (invariant 4).
+- La statue de la Liberté est la photogrammétrie de l'île : la statue, son
+  socle et le fort en étoile. Les blocs qui arrêtent l'enfant sont mesurés dans
+  le modèle et se taisent sous lui ; deux marches de granit montent au fort,
+  côté Manhattan.
+- La chaussée, les allées et la pierre de Manhattan prennent des textures
+  photographiées (« Low road », la façade Beaux-Arts).
+- Dix façades photographiées (brique, grès brun, calcaire, verre) habillent
+  les immeubles de loin, avec leurs fenêtres allumées la nuit ; chaque immeuble
+  tire de sa graine une teinte, un rythme de fenêtres et l'une des façades de
+  sa famille. Du ciel, Manhattan ne se ressemble plus d'un bloc à l'autre ; au
+  niveau de la rue, la différence est plus discrète.
+- Ce qu'un enfant a bâti avant cette version contre l'Empire State ou sur
+  l'île garde l'ancien monument (`DATE_NY_MODELES`), et un bloc posé dedans
+  ensuite rend l'ancien dessin plutôt qu'un modèle troué.
+- Le paquet « New York City. Manhattan » n'est pas intégré : il ne couvre que
+  le sud de l'île et sa géographie ne s'accorde pas avec le plan comprimé.
+- `?photo=0` rejoue le New York d'avant, pour mesurer et comparer.
+
+**Ce qui le prouve.** Quatre témoins neufs. Dans `plafond.js` : les retraits de
+collision de l'Empire montent sans s'élargir et diffèrent de l'ancien plan, que
+la date garde (12 niveaux contre 10) ; la statue voxelisée tient dans l'île
+(zéro case dehors, granit, pierre et cuivre, 41 blocs, escalier devant le
+fort) ; la variante d'un immeuble est la même à chaque calcul et il y en a 124
+combinaisons sur 600 immeubles. Dans `manhattan.js` : les deux modèles
+arrivent (de près et de loin) et les cubes de la statue se taisent sous le sien.
+Le témoin de la v496 (la statue sur son île, au-dessus du Flatiron, rien hors
+de l'eau) tient : la statue a été remise à 42 blocs pour rester plus haute que
+le Flatiron, comme la vraie (93 m contre 87). Captures avant/après de jour et de
+nuit validées par Max (`tests/sonde-captures-new-york.cjs`). Prix : 8,2 Mo de
+modèles et de photos, dans le cache immuable, téléchargés à la première visite
+de Manhattan seulement. Les crédits sont dans `vendor/newyork/LICENSE.md`.
 
 ## v582 — Les avions volent plus haut, et « Loin » voit deux fois plus loin
 

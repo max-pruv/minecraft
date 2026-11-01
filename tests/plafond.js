@@ -2221,6 +2221,166 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !suivi.absent && suivi.paris && suivi.apparition && suivi.neuf && suivi.archive && suivi.idempotent,
     suivi.absent ? 'la migration de carte 3 n\'existe pas' : suivi.bilan);
 
+  // LES BANLIEUES DE NEW YORK (v583). La seule casse du sol de cette livraison, et
+  // sa borne : dans `ZONES` et leur `TALUS`, le relief change (décision de Max) ;
+  // au-dehors, pas d'une colonne — le monde nu et `TerreUrbaine` se comparent DANS
+  // LE MÊME CODE. Et ce qui s'y trouvait déjà : ni route, ni aérodrome, ni repère, ni
+  // ville dans l'emprise, et ce qu'un enfant a bâti avant la date garde son sol.
+  const banlieues = await (async () => {
+    try {
+      if (!globalThis.localStorage) globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {}, key: () => null, length: 0 };
+      if (!globalThis.location) globalThis.location = { search: '', hostname: 'x', href: 'http://x/' };
+      const B = await import('../src/new-york-banlieues.js');
+      const W = await import('../src/world.js');
+      const MW = await import('../src/manhattan-world.js');
+      const P = await import('../src/manhattan-plan.js');
+      const Rt = await import('../src/routes.js');
+      const A = await import('../src/aeroport.js');
+      const O = MW.ORIGINE_MANHATTAN;
+      const nu = new W.World(), ny = new MW.TerreUrbaine();
+      // 1. la borne : hors des zones, de leur talus et de l'île, zéro colonne changée
+      let dehors = 0, horsTotal = 0, dedans = 0;
+      const X = B.BOITE_ZONES, M = B.TALUS + 260;
+      for (let x = X.x0 - M; x < X.x1 + M; x += 11)
+        for (let z = X.z0 - M; z < X.z1 + M; z += 11) {
+          const wx = O.x + x, wz = O.z + z;
+          if (MW.dansManhattan(wx, wz)) continue;
+          const diff = nu.terrainHeight(wx, wz) !== ny.terrainHeight(wx, wz);
+          if (B.dansZones(x, z, B.TALUS)) { if (diff) dedans++; } else { horsTotal++; if (diff) dehors++; }
+        }
+      // 2. le site : rien dans l'emprise
+      let routes = 0;
+      for (const q of B.ZONES)
+        for (let x = q.x0 - B.TALUS; x < q.x1 + B.TALUS; x += 6)
+          for (let z = q.z0 - B.TALUS; z < q.z1 + B.TALUS; z += 6) if (Rt.surLaRoute(O.x + x, O.z + z)) routes++;
+      const aero = A.AEROPORTS.filter((a) => {
+        const dx = a.x - O.x, dz = a.z - O.z;
+        return B.ZONES.some((q) => Math.hypot(dx - Math.max(q.x0, Math.min(q.x1, dx)), dz - Math.max(q.z0, Math.min(q.z1, dz))) < a.r + B.TALUS);
+      }).map((a) => a.cle);
+      const reperes = W.REPERES.filter((r) => B.dansZones(r.x - O.x, r.z - O.z, B.TALUS + (r.box || 0))).map((r) => r.name);
+      const villes = W.CITIES.filter((c) => c.key !== 'ny' && B.dansZones(c.x - O.x, c.z - O.z, B.TALUS + c.r)).map((c) => c.key);
+      const ile = B.ZONES.filter((q) => P.ILE_LIBERTE.x + 20 + B.TALUS > q.x0 && P.ILE_LIBERTE.x - 20 - B.TALUS < q.x1 && P.ILE_LIBERTE.z + 20 + B.TALUS > q.z0 && P.ILE_LIBERTE.z - 20 - B.TALUS < q.z1).map((q) => q.id);
+      // 3. un bloc d'avant la date garde son sol ; un bloc d'après, non
+      const q = B.ZONES.find((z) => z.id === 'queens');
+      const bat = P.BATIMENTS.find((b) => b.quartier === 'queens' && b.modele);
+      const cx = Math.floor((bat.x0 + bat.x1) / 2), cz = Math.floor((bat.z0 + bat.z1) / 2);
+      const wx = O.x + cx, wz = O.z + cz;
+      const relief = nu.terrainHeight(wx, wz), plat = ny.terrainHeight(wx, wz);
+      const k = `${wx},${relief + 1},${wz}`;
+      const av = new MW.TerreUrbaine();
+      av.edits.set(k, 3); av.editTimes.set(k, B.DATE_BANLIEUES - 1000);
+      av.refreshProtection();
+      const garde = av.terrainHeight(wx, wz), voisin = av.terrainHeight(wx + 2, wz), efface = av.protectedBuildings.has(bat.id);
+      const ap = new MW.TerreUrbaine();
+      ap.edits.set(k, 3); ap.editTimes.set(k, B.DATE_BANLIEUES + 1000);
+      ap.refreshProtection();
+      const apres = ap.terrainHeight(wx, wz), touche = ap.batimentsTouches.has(bat.id);
+      // 4. le plan : reproductible, sur des lots, et le voxel suit le corps du modèle
+      const un = JSON.stringify(B.batimentsBanlieues()), deux = JSON.stringify(B.batimentsBanlieues());
+      let horsLot = 0, porte = 0;
+      for (const b of P.BATIMENTS) {
+        if (!b.quartier) continue;
+        for (const [a, c] of [[b.x0, b.z0], [b.x1 - 1, b.z0], [b.x0, b.z1 - 1], [b.x1 - 1, b.z1 - 1]]) if (['road', 'water'].includes(P.surface(a + 0.5, c + 0.5))) horsLot++;
+      }
+      const mur = P.BATIMENTS.find((b) => b.quartier === 'brooklyn' && b.modele === 'immeuble');
+      const my = P.SOL + 2, centreFace = (mur.x0 + mur.x1) >> 1;
+      const plein = ny.originalBlock(O.x + centreFace, my, O.z + mur.z0) !== 0, avantMur = ny.originalBlock(O.x + centreFace, my, O.z + mur.z0 - 1);
+      // 5. les ponts : la chaussée continue, de la rive à la rive
+      let coupes = 0;
+      for (const p of B.PONTS) for (let l = p.a; l < p.b; l++) {
+        const s = p.axe === 'x' ? P.surface(l + 0.5, p.z) : P.surface(p.x, l + 0.5);
+        if (s === 'water' || s === undefined) coupes++;
+      }
+      // 6. la diversité : dix zones, cinq genres, chaque forme gardée sert
+      const formes = new Set(P.BATIMENTS.filter((b) => b.quartier && b.modele).map((b) => b.modele));
+      const genres = new Set(B.ZONES.map((z) => z.genre));
+      const parZone = {};
+      for (const b of P.BATIMENTS) if (b.quartier) parZone[b.quartier] = (parZone[b.quartier] || 0) + 1;
+      // 7. ce qui a été écarté du paquet n'y est pas
+      const fs = require('fs'), path = require('path');
+      const glb = fs.readFileSync(path.join(__dirname, '../vendor/newyork/quartiers.glb'));
+      const json = JSON.parse(glb.slice(20, 20 + glb.readUInt32LE(12)).toString());
+      const noms = json.nodes.map((n) => n.name);
+      const licence = fs.readFileSync(path.join(__dirname, '../vendor/newyork/LICENSE.md'), 'utf8');
+      return { dehors, horsTotal, dedans, routes, aero, reperes, villes, ile, relief, plat, garde, voisin, efface, apres, touche, q: q.id,
+        repro: un === deux, horsLot, plein, avantMur, porte, coupes, formes: [...formes], genres: [...genres], parZone, noms,
+        copyright: json.asset.copyright, licence: licence.includes('CCity Building Set 1') && licence.includes('Neberkenezer'), n: P.BATIMENTS.filter((b) => b.quartier).length };
+    } catch (e) { return { err: String(e && e.stack || e) }; }
+  })();
+  verifier('les banlieues : hors de leurs zones et de leur talus, le relief ne bouge pas d\'une colonne',
+    !banlieues.err && banlieues.dehors === 0 && banlieues.horsTotal > 50000 && banlieues.dedans > 1000,
+    banlieues.err || `${banlieues.dehors} sur ${banlieues.horsTotal} au-dehors, ${banlieues.dedans} changées dedans`);
+  verifier('elles ne touchent ni route, ni aérodrome, ni repère, ni ville, ni Liberty Island',
+    !banlieues.err && banlieues.routes === 0 && !banlieues.aero.length && !banlieues.reperes.length && !banlieues.villes.length && !banlieues.ile.length,
+    banlieues.err || JSON.stringify({ routes: banlieues.routes, aero: banlieues.aero, reperes: banlieues.reperes, villes: banlieues.villes, ile: banlieues.ile }));
+  verifier('un bloc posé avant la date y garde son sol et efface le bâtiment ; un bloc d\'après ne déplace rien',
+    !banlieues.err && banlieues.garde === banlieues.relief && banlieues.voisin === banlieues.relief && banlieues.efface && banlieues.apres === banlieues.plat && banlieues.touche,
+    banlieues.err || JSON.stringify({ relief: banlieues.relief, plat: banlieues.plat, garde: banlieues.garde, apres: banlieues.apres, efface: banlieues.efface, touche: banlieues.touche }));
+  verifier('leur plan se refait au bit près, rien n\'est posé sur une rue ni dans l\'eau, et un mur de modèle arrête l\'enfant',
+    !banlieues.err && banlieues.repro && banlieues.horsLot === 0 && banlieues.plein && banlieues.avantMur === 0,
+    banlieues.err || JSON.stringify({ repro: banlieues.repro, horsLot: banlieues.horsLot, plein: banlieues.plein, avantMur: banlieues.avantMur }));
+  verifier('les ponts relient l\'île à ses rives, sans une case d\'eau',
+    !banlieues.err && banlieues.coupes === 0, banlieues.err || `${banlieues.coupes} cases d'eau`);
+  verifier('dix paysages : cinq genres, toutes les formes servent, et aucune zone n\'est vide',
+    !banlieues.err && banlieues.genres.length >= 5 && banlieues.formes.length === 8 && Object.keys(banlieues.parZone).length === 10 && Object.values(banlieues.parZone).every((n) => n > 30),
+    banlieues.err || JSON.stringify({ genres: banlieues.genres, formes: banlieues.formes, parZone: banlieues.parZone }));
+  verifier('le paquet ne porte que les huit formes gardées (ni armurerie, ni alcool, ni gages, ni marque) et le crédit de son auteur',
+    !banlieues.err && banlieues.noms.length === 16 && !banlieues.noms.some((n) => /gun|arms|liquor|pawn|elise|lotus|tire/i.test(n)) && /Neberkenezer/.test(banlieues.copyright) && banlieues.licence,
+    banlieues.err || JSON.stringify(banlieues.noms));
+
+  // NEW YORK D'APRÈS LES MODÈLES DE MAX (v565). « Le voxel suit le modèle »
+  // (v564) : les retraits de collision de l'Empire State sont MESURÉS dans la
+  // photogrammétrie, la statue de la Liberté est voxelisée dans la sienne. Le
+  // témoin lit les fonctions pures du plan : les retraits montent sans jamais
+  // s'élargir, l'ancien plan reste pour ce qu'un enfant a bâti avant (le
+  // garde-fou de la date), la statue tient dans son île avec ses trois
+  // matières et son escalier côté Manhattan, et la diversité des immeubles est
+  // la MÊME à chaque calcul (une graine, jamais un tirage) et vraiment variée.
+  const nyModeles = await (async () => {
+    const P = await import('../src/manhattan-plan.js');
+    if (!P.statueLiberteModele || !P.variante || !P.MODELES_NY_ETAT) return { absent: true };
+    const emp = P.MONUMENTS.find((b) => b.style === 'empire');
+    const neuf = P.niveaux(emp);
+    let monte = true;
+    for (let i = 1; i < neuf.length; i++)
+      if (neuf[i][2] <= neuf[i - 1][2] || neuf[i][0] > neuf[i - 1][0] + 1e-9 || neuf[i][1] > neuf[i - 1][1] + 1e-9) monte = false;
+    P.MODELES_NY_ETAT.empireAncien = true;
+    const ancien = P.niveaux(emp);
+    P.MODELES_NY_ETAT.empireAncien = false;
+    const cases = new Map();
+    P.statueLiberteModele((dx, dy, dz, id) => cases.set(`${dx},${dy},${dz}`, id));
+    let sommet = 0, hors = 0;
+    const I = P.ILE_LIBERTE;
+    for (const k of cases.keys()) {
+      const [dx, dy, dz] = k.split(',').map(Number);
+      sommet = Math.max(sommet, dy);
+      if (!P.dansIleLiberte(I.x + dx + 0.5, I.z + dz + 0.5)) hors++;
+    }
+    const marches = [];
+    P.escalierFortModele((dx, dy, dz) => marches.push([dx, dy, dz]));
+    const devant = marches.length > 0 && marches.every(([dx, dy, dz]) => dz < 0 && !cases.has(`${dx},${dy},${dz}`));
+    const sig = (v) => `${v.teinte.join()}|${v.rythme}|${Math.floor(v.loin * 4)}`;
+    const combos = new Set();
+    let stable = true;
+    for (const b of P.BATIMENTS.slice(0, 600)) {
+      const a = sig(P.variante(b));
+      if (sig(P.variante({ ...b, variante: undefined })) !== a) stable = false;
+      combos.add(a);
+    }
+    return { monte, n: neuf.length, ancien: ancien.length, differents: JSON.stringify(ancien) !== JSON.stringify(neuf),
+      sommet, matieres: new Set(cases.values()).size, cases: cases.size, hors, marches: marches.length, devant,
+      combos: combos.size, stable };
+  })();
+  verifier('l\'Empire State a ses retraits mesurés dans le modèle — ils montent sans s\'élargir, et l\'ancien plan reste pour ce qui a été bâti avant',
+    !nyModeles.absent && nyModeles.monte && nyModeles.n >= 10 && nyModeles.differents && nyModeles.ancien === 10,
+    nyModeles.absent ? 'pas de modèles de New York dans le plan' : JSON.stringify(nyModeles));
+  verifier('la statue du modèle tient sur son île, en granit, pierre et cuivre, avec son escalier côté Manhattan',
+    !nyModeles.absent && nyModeles.hors === 0 && nyModeles.matieres === 3 && nyModeles.sommet >= 40 && nyModeles.devant,
+    nyModeles.absent ? 'pas de modèles de New York dans le plan' : JSON.stringify(nyModeles));
+  verifier('chaque immeuble de Manhattan a sa variante, la même à chaque calcul, et elles sont nombreuses',
+    !nyModeles.absent && nyModeles.stable && nyModeles.combos >= 30,
+    nyModeles.absent ? 'pas de modèles de New York dans le plan' : `${nyModeles.combos} combinaisons`);
+
   // TOUT CUBE D'UNE COLONNE COUVERTE EST SOUS SA SURFACE, pas seulement le
   // sommet (v297, portail) : une voiture de 2,26 blocs de large a le nez deux
   // colonnes devant son centre, et sur une pente d'un bloc par bloc le cube

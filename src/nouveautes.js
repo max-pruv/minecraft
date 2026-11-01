@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 583,
+    v: 584,
     titre: 'La nature prend vie',
     puces: [
       'De vraies textures de prairie, de terre et de roche',
@@ -15,12 +15,23 @@ export const NOUVEAUTES = [
     ],
   },
   {
+    v: 583,
+    titre: 'Un nouveau New York',
+    puces: [
+      'Des immeubles, des cours et des terrasses',
+      'L’Empire State et la Liberté en détail',
+      'Brooklyn, Queens, le Bronx et Staten Island',
+      'Sept ponts et une plage à Coney Island',
+      'Le soir, les fenêtres et les monuments s’allument',
+    ],
+  },
+  {
     v: 582,
     titre: 'Plus haut, plus loin',
     puces: [
       'Les avions montent jusqu\'à 1 500 mètres',
       'De là-haut, se poser va plus vite',
-      'En mode Loin, on voit deux fois plus loin',
+      'Deux fois plus loin en mode Loin',
     ],
   },
   {

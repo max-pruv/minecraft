@@ -1342,7 +1342,9 @@ function verifier(nom, ok, detail = '') {
       // ce qui arrête, et son morceau se remaille sans elle
       const ecrasee = !!(g.mobilierCasse && g.mobilierCasse.casses.has('h' + site.bx + ',' + site.bz));
       const r = { monte, depart: +a0.toFixed(2), plusPres: +plusPres.toFixed(2), fin: +fin.toFixed(2), parcouru: +(a0 - fin).toFixed(2), secondes: +((performance.now() - t0) / 1000).toFixed(1), site, devant, ecrasee, contact: g.player.contact || null  };
-        const gene = !r.ecrasee && r.contact && r.contact.famille === 'voiture';
+        // Une voiture peut gêner APRÈS l'écrasement aussi : le test porte
+        // sur la terrasse, pas sur l'obstacle suivant dans la rue.
+        const gene = r.contact && r.contact.famille === 'voiture';
         if (!gene) return { ...r, genes };
         await dodo(800);
         genes.push({ site: [site.bx, site.bz], autre: r.contact.autre });

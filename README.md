@@ -5,15 +5,17 @@ Vanilla JavaScript and [Three.js](https://threejs.org) power terrain, physics,
 creatures and rendering. Libraries and vehicle models supplied for this family game are vendored;
 optional network services provide multiplayer and cloud saves.
 
-## Permanent visual direction
+**Permanent art direction:** realistic, high-fidelity visuals across the game,
+including low-detail views and fallback assets; no new Minecraft or pixel-art
+styling. See [the art direction](docs/direction-artistique.md) and
+[agent instructions](AGENTS.md). The current game still contains documented
+visual shortcomings, listed in [TASKS.md](TASKS.md); this is the target, not a
+claim that every existing asset already meets it.
 
-Every future version must pursue realistic, high-fidelity rendering throughout
-the game. Minecraft-like styling, visible voxel aesthetics and pixel art are
-excluded from new visual work, including distant views, lower quality tiers
-and fallback models. Performance improvements must preserve this direction,
-existing saves and usable driving routes. See the
-[visual direction charter](docs/direction-artistique.md) and [agent instructions](AGENTS.md).
-The current renderer still has migration work listed in [TASKS.md](TASKS.md).
+**New York's boroughs (v583):** ten neighbourhoods around the island — Hoboken, Fort
+Lee, Jersey City, Port Newark, the Bronx, Queens, Brooklyn, Coney Island, Long Island,
+Staten Island — and seven bridges, built with "CCity Building Set 1" by Neberkenezer
+(CC-BY-4.0, `vendor/newyork/LICENSE.md`).
 
 **Manhattan on Earth:** teleport to New York from the world map (the old
 `/?lieu=manhattan` link still works). One map, one shared-world code: detailed landmarks, Times
@@ -190,6 +192,10 @@ or recycled container costs one suite rather than the whole run;
 `npm test -- --depuis-zero` forces a full replay. `npm test -- --tranche=k/n`
 plays only one of n balanced slices, so n machines run the whole thing in
 parallel (two slices: about 55 minutes each).
+
+Manhattan’s building shapes now use a compact atlas derived from MENUDQ2’s
+[Manhattan OSM Complete Model](docs/manhattan-osm.md) (CC BY 4.0), adapted to
+playable parcels with varied courtyards, setbacks, heights and street façades.
 
 Every pull request to `main` also runs the full suite on GitHub Actions
 (`.github/workflows/portail.yml`): four slices on four machines at once, each
