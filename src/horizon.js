@@ -106,6 +106,20 @@ export const PORTEE_COURONNE = 2560;
 export const ABAISSE_TRES_LOIN = 16;
 export const rayonTresLoin = (blocs) => Math.round(blocs / PAS_TRES_LOIN) * PAS_TRES_LOIN;
 
+// ET UN QUATRIÈME ÉTAGE (v582). Max : « que le mode de loin voie encore plus
+// loin. » Même règle que la v518 : on AJOUTE un étage, on n'élargit pas le
+// précédent. La troisième grille garde ses 10 240 blocs (`PORTEE_TRES_LOIN`) ;
+// une grille de deux cent cinquante-six blocs porte jusqu'à `loin` (20 480 au
+// palier `haut`), 161 × 161 sommets comme les deux autres, ~3,3 Mo. Son
+// abaissement suit encore la précision du tampon de profondeur : à 10 240
+// blocs, plan proche à 0,1, un pas vaut ≈ z² / (près × 2²⁴) = 62 blocs, et la
+// grille est posée soixante-quatre blocs sous la troisième — là où les deux se
+// recouvrent, la troisième gagne. `?loin=10240` rend la v581 au sommet près.
+export const PAS_ULTRA_LOIN = 256;
+export const PORTEE_TRES_LOIN = 10240;
+export const ABAISSE_ULTRA_LOIN = 64;
+export const rayonUltraLoin = (blocs) => Math.round(blocs / PAS_ULTRA_LOIN) * PAS_ULTRA_LOIN;
+
 // Le contenu se déplace de (−dix, −diz) cases. Même figure que `decalerCarte`
 // dans `main.js` : les lignes se parcourent dans le sens qui évite d'écraser ce
 // qu'on n'a pas encore lu, et `copyWithin` fait le reste.

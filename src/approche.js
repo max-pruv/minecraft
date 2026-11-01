@@ -44,6 +44,18 @@ export const H_ARRONDI = 3;      // sous cette hauteur, l'arrondi
 export const ARRONDI_VZ = 2;     // … qui pose les roues à deux blocs par seconde
 export const DESCENTE_MAX = 12;  // ce que le guidage demande au plus, vers le bas
 export const MONTEE_MAX = 16;    // … et vers le haut
+// DE TRÈS HAUT, L'APPROCHE DESCEND PLUS VITE (v582). Un avion monte désormais à
+// 1 500 blocs en « Loin » (`plafondAvion`, player.js) ; à douze blocs par
+// seconde, il arriverait au point d'entrée mille blocs trop haut et referait
+// des tours. Au-delà de `TROP_HAUT` au-dessus de la hauteur visée (150 : plus
+// que tout l'écart que l'ancien toit de 158 permettait, donc la règle d'avant
+// au bit près en dessous), la descente permise suit l'écart, jusqu'à
+// `DESCENTE_HAUTE_MAX`.
+export const TROP_HAUT = 150;
+export const DESCENTE_HAUTE_MAX = 40;
+export function descenteMaxApproche(ecart) {
+  return ecart > TROP_HAUT ? Math.min(DESCENTE_HAUTE_MAX, DESCENTE_MAX * ecart / TROP_HAUT) : DESCENTE_MAX;
+}
 export const MARGE_RELIEF = 14;  // en ralliement, la hauteur gardée au-dessus du relief
 
 let memo = null;
@@ -348,7 +360,7 @@ export function guiderApproche(ap, pos, yaw, v, fiche, solA, entree = {}, plein 
     vy = -Math.max(ARRONDI_VZ, Math.min(PENTE * v, h * 1.5));
   } else {
     vy = (yVise - pos.y) / 2 - (ap.phase === 'finale' && ap.surPlan ? PENTE * v : 0);
-    vy = Math.max(-DESCENTE_MAX, Math.min(MONTEE_MAX, vy));
+    vy = Math.max(-descenteMaxApproche(pos.y - yVise), Math.min(MONTEE_MAX, vy));
     // PRÈS DE LA PISTE, ON NE PLONGE PAS. Un relief qui a tenu l'avion haut
     // jusqu'au seuil le laissait ensuite descendre à douze blocs par seconde,
     // et il touchait à huit (Roissy, Los Angeles : mesuré). La descente se borne

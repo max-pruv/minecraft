@@ -186,7 +186,10 @@ export const PALIERS = {
   // trente-deux s'arrête toujours à 2 560 ; une troisième grille de cent
   // vingt-huit blocs (horizon.js, `PAS_TRES_LOIN`) porte le reste, pour le
   // prix d'une couronne de plus (~3,3 Mo). `rr`, file, `hdMo` : inchangés.
-  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, mondeMo: 224, loin: 10240, surChoixSeulement: true },
+  // v582 — « que le mode de loin voie encore plus loin » : 10 240 → 20 480, par
+  // un quatrième étage de deux cent cinquante-six blocs (horizon.js,
+  // `PAS_ULTRA_LOIN`), ~3,3 Mo de plus. `rr`, file, `hdMo` : inchangés.
+  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, mondeMo: 224, loin: 20480, surChoixSeulement: true },
 };
 
 export const PALIER_PAR_DEFAUT = 'moyen';
