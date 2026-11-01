@@ -139,10 +139,10 @@ export const PALIERS = {
   // morceau proche ; sur l'iPad de quatre ans, rien.
   // `hdMo` (v299) : ce que les façades DÉTAILLÉES peuvent peser, en mégaoctets
   // — voir `planDetail` plus bas. Zéro : la couche est éteinte de toute façon.
-  bas: { rr: 8, file: 6, hd: 0, hdMo: 0 },
+  bas: { rr: 8, file: 6, hd: 0, hdMo: 0, mondeMo: 128 },
   // CE QUE LE JEU FAIT AUJOURD'HUI, au réglage près. Un appareil que la mesure
   // ne sait pas classer atterrit ici et ne perd rien.
-  moyen: { rr: 12, file: 8, hd: 3, hdMo: 128 },
+  moyen: { rr: 12, file: 8, hd: 3, hdMo: 128, mondeMo: 224 },
   // ── ET CELUI-CI N'A JAMAIS TOURNÉ NULLE PART (v291) ───────────────────────
   //
   // Max, capture d'iPhone sur la production de la v290 : « A problem repeatedly
@@ -186,7 +186,7 @@ export const PALIERS = {
   // trente-deux s'arrête toujours à 2 560 ; une troisième grille de cent
   // vingt-huit blocs (horizon.js, `PAS_TRES_LOIN`) porte le reste, pour le
   // prix d'une couronne de plus (~3,3 Mo). `rr`, file, `hdMo` : inchangés.
-  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, loin: 10240, surChoixSeulement: true },
+  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, mondeMo: 224, loin: 10240, surChoixSeulement: true },
 };
 
 export const PALIER_PAR_DEFAUT = 'moyen';
@@ -452,7 +452,7 @@ export const etendueRange = (choix) => !choix || choix === 'auto';
 // Une liste qui décide d'une règle se range avec la règle : c'est la discipline
 // de `postesAvion` — deux tables qui décrivent la même chose finissent par
 // diverger — et c'est ce qui permet à un témoin de la lire sous node.
-export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd', 'palier', 'facadesmo', 'loin'];
+export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd', 'palier', 'facadesmo', 'loin', 'mondemo'];
 
 // ── ET CE QUE VAUT « PAS DE PALIER » SE PUBLIE, IL NE SE RECOPIE PAS ─────────
 //
@@ -468,8 +468,9 @@ export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'ma
 // portable. Deux tables qui décrivent la même chose finissent par diverger —
 // discipline de `postesAvion`.
 export const reglageDe = (palier, tactile) => (palier
-  ? { rr: palier.rr, file: palier.file, hd: palier.hd, hdMo: palier.hdMo, loin: palier.loin || 0 }
-  : { rr: tactile ? 12 : 16, file: 8, hd: PALIERS[PALIER_PAR_DEFAUT].hd, hdMo: PALIERS[PALIER_PAR_DEFAUT].hdMo, loin: 0 });
+  ? { rr: palier.rr, file: palier.file, hd: palier.hd, hdMo: palier.hdMo, mondeMo: palier.mondeMo || 0, loin: palier.loin || 0 }
+  : { rr: tactile ? 12 : 16, file: 8, hd: PALIERS[PALIER_PAR_DEFAUT].hd, hdMo: PALIERS[PALIER_PAR_DEFAUT].hdMo,
+    mondeMo: tactile ? PALIERS[PALIER_PAR_DEFAUT].mondeMo : 0, loin: 0 });
 
 // ── LE DÉTAIL A UN BUDGET D'OCTETS, PAS SEULEMENT UN RAYON (v299) ───────────
 //
@@ -512,4 +513,50 @@ export function planDetail({ candidats = [], tenus = [], budget = 0, estimation 
     if (total + estimation <= budget) { demander.push(c.key); total += estimation; }
   }
   return { rendre, demander, total };
+}
+
+// ── LE MONDE AUSSI A UN BUDGET D'OCTETS, PAS SEULEMENT UN RAYON (v580) ──────
+//
+// Max, capture d'iPhone dans Paris : « le jeu plante ». Le journal de bord de
+// son iPhone le dit sans détour : TOUTES ses sessions en « Loin » (rr 16) à
+// Paris ont fini en plantage, de la v296 à la v576 — vingt sur vingt. Ce qui
+// monte avant chaque mort, c'est la géométrie que la scène tient : 390 à 490 Mo
+// (plus 50 à 230 Mo de textures), pour 1 100 à 1 225 morceaux. Les sessions
+// qui ont survécu à Paris tenaient 317 à 428 Mo de géométrie et 49 à 136 de
+// textures ; celles qui sont mortes, au-delà de 500 au total. La v299 avait
+// borné les FAÇADES (`hdMo`) ; le reste du morceau — voxel, sol, faces
+// plates — n'avait que le rayon, et un rayon ne borne pas des octets. Un
+// morceau de Paris pèse plusieurs fois un morceau de campagne : seize morceaux
+// de rayon, c'est 150 Mo dans les champs et plus de 350 au centre de Paris.
+//
+// Le rayon du monde se règle donc sur ce qu'il TIENT : le plus grand rayon
+// (jusqu'à `R`, le rayon du palier) dont les morceaux tiennent dans `budget`,
+// ceux qu'on n'a pas encore maillés comptés à la moyenne de ceux qu'on tient.
+// Au-delà, le paysage lointain dessine ce que les morceaux ne dessinent pas
+// (horizon.js ne couvre que ce qui n'est PAS maillé). Dans les champs le
+// budget ne mord pas : « Loin » garde ses seize morceaux.
+//
+// Il descend tout de suite et remonte avec une marge (`marge`, quinze pour
+// cent) : sinon il respirerait à chaque morceau franchi. Pure, lue sous node.
+//
+// `tenus`  : [{ d, octets, base }] les morceaux maillés, `d` en distance de
+//            Tchebychev à l'enfant, `base` ce qu'ils pèsent SANS leurs façades
+//            détaillées : ce sont elles qui estiment un morceau pas encore
+//            maillé. Les proches portent le détail (déjà borné par `hdMo`) ;
+//            leur moyenne en ferait trois fois un morceau lointain, et le
+//            premier essai au banc tombait au rayon minimum (6 au lieu de 12).
+// `actuel` : le rayon en vigueur. Rend le rayon à appliquer.
+export function rayonDuBudget({ tenus = [], R, rMin = 4, budget = 0, actuel = R, marge = 0.15 } = {}) {
+  if (!(budget > 0) || !tenus.length) return R;
+  const moyenne = tenus.reduce((s, t) => s + (t.base != null ? t.base : t.octets || 0), 0) / tenus.length;
+  const prevu = (r) => {
+    let somme = 0, n = 0;
+    for (const t of tenus) if (t.d <= r) { somme += t.octets || 0; n++; }
+    const cases = (2 * r + 1) * (2 * r + 1);
+    return somme + Math.max(0, cases - n) * moyenne;
+  };
+  const plusGrand = (b) => { for (let r = R; r > rMin; r--) if (prevu(r) <= b) return r; return rMin; };
+  const bas = plusGrand(budget);
+  if (bas < actuel) return bas;
+  return Math.min(R, Math.max(actuel, plusGrand(budget * (1 - marge))));
 }

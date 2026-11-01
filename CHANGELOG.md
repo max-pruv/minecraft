@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v580 — Paris ne fait plus planter le jeu en « Loin »
+
+**Pourquoi.** Max, capture d'iPhone dans une rue de Paris : « le jeu plante ».
+Le journal de bord de son iPhone le dit sans détour : toutes ses sessions en
+« Loin » (16 morceaux de rayon) passées par Paris ont fini en plantage, de la
+v296 à la v576 — vingt sur vingt, dont cinq ce jour-là. Avant chaque mort, la
+scène tenait 390 à 490 Mo de géométrie et jusqu'à 230 Mo de textures, pour
+1 100 à 1 225 morceaux ; les sessions qui ont survécu restaient sous 480 Mo au
+total. La v299 avait borné les façades détaillées ; le reste d'un morceau
+(cubes, sol, faces plates) n'avait que le rayon, et un morceau de Paris pèse
+plusieurs fois un morceau de campagne.
+
+**Ce que ça change.** Le monde a désormais un budget de mémoire, comme les
+façades : en ville dense, le rayon des morceaux en 3D se resserre jusqu'à
+tenir dedans (224 Mo en « Normal » et « Loin »), et le paysage lointain
+dessine le reste. Dans les champs rien ne change, « Loin » garde ses seize
+morceaux. `?diag=1` affiche le rayon tenu et ce qu'il pèse, et le journal de
+bord le relève.
+
+**Ce qui le prouve.** Mesuré au banc à l'endroit exact de la capture, en
+« Loin » : sans budget, 303 Mo de morceaux et toujours en train de charger
+après quatre minutes ; avec, onze morceaux de rayon et 249 Mo à 256 Mo de
+budget, sans différence visible à l'écran. Trois témoins dans `parishd.js` :
+la règle pure (au centre de Paris le rayon se resserre et tient le budget,
+dans les champs il ne bouge pas, et il n'hésite pas d'un cran), les budgets de
+chaque palier, et la page dans Paris (budget 80 Mo : rayon 7, 71 Mo ; sans
+budget : rayon 10, 109 Mo et encore en chargement).
+
 ## v579 — Seulement les plus belles voitures
 
 **Pourquoi.** Max : « supprime les anciennes voitures qui ne sont pas très

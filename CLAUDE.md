@@ -950,7 +950,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Un avion garé est un obstacle (v577) — une forme qui n'est pas un rectangle se mesure en silhouette, et l'enfoncement se compte en cases
+## Un avion garé est un obstacle (v580) — une forme qui n'est pas un rectangle se mesure en silhouette, et l'enfoncement se compte en cases
 
 Deux dettes, une seule chose : la voiture traversait un avion au poste (v534),
 et ✈️ faisait passer l'aile dans le voisin garé (v565). Quatre règles.
@@ -7734,6 +7734,28 @@ répondu en une requête : iPhone, en vol à l'ouest de Paris, 1 089 morceaux
   une baie de façade coûte cinquante-six à soixante-neuf sommets par face,
   et c'est le nombre de sommets, pas le rayon ni le budget, qui décidera un
   jour de ce qu'un appareil peut montrer.
+
+## Le monde a un budget d'octets (v580) — un rayon ne borne pas des octets, morceaux compris
+
+Max : « le jeu plante » dans Paris. Le journal de bord : TOUTES les sessions
+« Loin » de son iPhone passées par Paris ont planté, v296 → v576 (20 sur 20),
+la scène à 390–490 Mo de géométrie. Deux règles.
+
+- **CE QUE LA v299 A DIT DES FAÇADES VAUT POUR LE MORCEAU ENTIER.** `hdMo`
+  bornait le détail ; les cubes, le sol et les faces plates n'avaient que le
+  rayon. `rayonDuBudget` (palier.js, pure) rend le plus grand rayon dont les
+  morceaux tiennent dans `mondeMo` (224 en moyen et haut, 128 en bas, rien
+  sur un ordinateur sans palier) ; `main.js` (`rayonMonde`, `ajusterRayonMonde`)
+  ne maille et ne garde que lui, et `horizon.js` dessine le reste, puisqu'il
+  ne couvre que ce qui n'est pas maillé. Dans les champs il ne mord pas.
+  `?mondemo=` force, `?diag=1` et le journal (`rm`, `mondeMo`) l'affichent.
+- **UN MORCEAU PAS ENCORE MAILLÉ S'ESTIME SANS LES FAÇADES.** Les proches
+  portent le détail (déjà borné à part) : leur moyenne faisait tomber le
+  premier jet au rayon plancher (6 au lieu de 11). La règle descend tout de
+  suite et remonte avec quinze pour cent de marge, sinon elle respire à chaque
+  morceau franchi. Le budget se règle sur ce que l'appareil a TENU dans le
+  journal (survécu sous ~480 Mo au total, mort au-delà de ~500), jamais sur le
+  banc, qui a de la mémoire à revendre (v236).
 
 ## Le journal de bord se taille côté serveur (v479) — une purge efface par liste d'autorisation
 

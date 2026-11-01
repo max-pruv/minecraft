@@ -46,7 +46,7 @@ import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites, sEnfo
 import { empriseDe, cleDEmprise, pointsDeBoite, pointsDAvion, sEnfonceDansAvion } from './emprise-avion.js';
 import { PALIERS, PALIER_CLE, choisirPalier, VITESSE_JET,
   ETENDUE_CLE, ETENDUE_PAR_DEFAUT, ETENDUES, palierRetenu, palierPropose, etendueRange, reglageDe, planDetail,
-  PARAMS_FORCANTS } from './palier.js';
+  PARAMS_FORCANTS, rayonDuBudget } from './palier.js';
 import { Journal, suretePalier, PLANTAGES_SURETE, PLANTAGES_CLE, BATTEMENT_MS, estimerMemoire } from './journal.js';
 import { liberer } from './liberer.js';
 import { createEffects } from './effects.js';
@@ -233,6 +233,23 @@ if (PALIER && VITESSE_JET[PALIER.nom]) {
   }
 }
 const UNLOAD_RADIUS = RENDER_RADIUS + 2;
+// ── LE MONDE A UN BUDGET D'OCTETS (v580, `rayonDuBudget` dans palier.js) ────
+//
+// `rayonMonde` est le rayon qu'on maille VRAIMENT : `RENDER_RADIUS` dans les
+// champs, moins dans une ville dense où un morceau pèse plusieurs fois plus.
+// Toutes les sessions « Loin » de l'iPhone de Max à Paris ont planté pour leur
+// mémoire (journal de bord) ; c'est ce budget qui les borne. `?mondemo=` le
+// force (0 l'éteint), pour mesurer.
+const MONDE_MO_FORCE = new URLSearchParams(location.search).get('mondemo');
+const BUDGET_MONDE = (MONDE_MO_FORCE !== null ? Math.max(0, Number(MONDE_MO_FORCE) || 0)
+  : (PALIER ? PALIER.mondeMo : SANS_PALIER.mondeMo) || 0) * 1048576;
+const RAYON_MONDE_MIN = Math.min(RENDER_RADIUS, 6);
+let rayonMonde = RENDER_RADIUS;
+const mondeTenu = { octets: 0 };            // ce que pèsent les morceaux en scène
+// Au-delà de cette distance un morceau se rend : la marge d'avant (deux
+// morceaux, pour qu'un demi-tour ne remaille rien) quand le budget ne mord
+// pas, un seul quand il mord — sinon l'anneau gardé dépasserait le budget.
+const rayonDeRetrait = () => (rayonMonde < RENDER_RADIUS ? rayonMonde + 1 : UNLOAD_RADIUS);
 // Les BLOCS s'oublient un peu plus loin que les maillages : de la marge pour
 // qu'un demi-tour ne réengendre pas ce qu'on vient de quitter (v236).
 const OUBLI_RADIUS = UNLOAD_RADIUS + 4;
@@ -1026,7 +1043,7 @@ statsMaillage.enAttente = enAttente;  // la sonde lit l'âge des demandes (v360)
 // pas seulement ce qu'il est. Écrit ici parce que la file est le dernier
 // réglage lu au démarrage. Et la portée de la vue (v532) : sans elle, on a dû
 // DÉDUIRE du palier que la couronne lointaine n'avait jamais tourné chez Max.
-journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, arbres: world.arbres, facadesMo: BUDGET_FACADES / 1048576,
+journal.regler({ rr: RENDER_RADIUS, file: EN_ATTENTE_MAX, hd: RAYON_HD, arbres: world.arbres, facadesMo: BUDGET_FACADES / 1048576, mondeMo: BUDGET_MONDE / 1048576,
   palier: PALIER ? PALIER.nom : null, source: PALIER ? PALIER.source : null, etendue: ETENDUE_CHOISIE,
   loin: PORTEE_VUE, logiciel: renduLogiciel() });
 let generationDistante = 0;           // monte à chaque resynchronisation des blocs
@@ -1076,7 +1093,7 @@ function recevoirMorceau(m) {
   enAttente.delete(key);
   if (m.generation !== generationDistante) { statsMaillage.refuses++; return; }
   const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
-  if (Math.abs(m.cx - pcx) > UNLOAD_RADIUS || Math.abs(m.cz - pcz) > UNLOAD_RADIUS) { statsMaillage.refuses++; return; }
+  if (Math.abs(m.cx - pcx) > rayonDeRetrait() || Math.abs(m.cz - pcz) > rayonDeRetrait()) { statsMaillage.refuses++; return; }
   // Les blocs : ceux du worker si le fil principal n'a pas déjà engendré ce
   // morceau (collisions, passants) — les deux sont identiques, un témoin le
   // vérifie. Un bloc posé pendant que le worker maillait rend le morceau
@@ -1259,8 +1276,8 @@ const regimeRapide = () => deplacement.v >= (fileRapide ? 0.75 : 1) * VITESSE_CO
 function fileAuRegard(pcx, pcz) {
   const visX = -Math.sin(player.yaw), visZ = -Math.cos(player.yaw);
   meshQueue = [];
-  for (let dz = -RENDER_RADIUS; dz <= RENDER_RADIUS; dz++) {
-    for (let dx = -RENDER_RADIUS; dx <= RENDER_RADIUS; dx++) {
+  for (let dz = -rayonMonde; dz <= rayonMonde; dz++) {
+    for (let dx = -rayonMonde; dx <= rayonMonde; dx++) {
       const cx = pcx + dx, cz = pcz + dz;
       if (chunkMeshes.has(World.key(cx, cz))) continue;
       const d2 = dx * dx + dz * dz, len = Math.sqrt(d2);
@@ -1280,11 +1297,12 @@ function rebuildQueue() {
   const dir = fileRapide
     ? { x: deplacement.vx / deplacement.v, z: deplacement.vz / deplacement.v }
     : { x: -Math.sin(player.yaw), z: -Math.cos(player.yaw) };
-  meshQueue = fileDeMaillage({ pcx, pcz, R: RENDER_RADIUS, dir, rapide: fileRapide,
+  meshQueue = fileDeMaillage({ pcx, pcz, R: rayonMonde, dir, rapide: fileRapide,
     deja: (cx, cz) => chunkMeshes.has(World.key(cx, cz)) });
 }
 
 function disposeChunkMesh(entry) {
+  mondeTenu.octets -= entry.octets || 0; entry.octets = 0;
   if (entry.facades) { detailTenu.octets -= entry.octetsFacades || 0; detailTenu.n--; }
   for (const mesh of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.arbresLoin]) {
     if (!mesh) continue;
@@ -1488,12 +1506,44 @@ function installerMorceau(cx, cz, tampons) {
   for (const m of [entry.solid, entry.water, entry.lumineux, entry.sol, entry.facades, entry.plat, entry.platLumineux, entry.arbresLoin, entry.props]) {
     if (m) m.userData.morceau = true;
   }
+  entry.octets = ['solid', 'water', 'lumineux', 'sol', 'facades', 'arbresLoin', 'plat', 'platLumineux']
+    .reduce((n, k) => n + octetsDeTampons(tampons[k]), 0);
+  mondeTenu.octets += entry.octets;
   chunkMeshes.set(key, entry);
+  if (++installsDepuisBudget >= 12) { installsDepuisBudget = 0; ajusterRayonMonde(pcx, pcz); }
   // ses voisins cessent de montrer les arbres dont il porte la base (v554)
   relayerArbresVoisins(cx, cz);
   // un morceau plus lourd que son estimation peut faire déborder le budget :
   // on rend alors les plus loin, tout de suite (v299)
   if (entry.facades) appliquerLeBudget(pcx, pcz, []);
+}
+
+// LE RAYON DU MONDE SE RÈGLE SUR CE QU'IL TIENT (v580). Appelé à chaque
+// morceau franchi et toutes les douze installations : un rayon qui descend
+// rend tout de suite les morceaux au-delà (et refait la file) ; un rayon qui
+// remonte refait la file. `retirer` faux : le morceau franchi s'en charge.
+let installsDepuisBudget = 0;
+function ajusterRayonMonde(pcx, pcz, retirer = true) {
+  if (!(BUDGET_MONDE > 0)) return;
+  const tenus = [];
+  for (const [key, e] of chunkMeshes) {
+    const [cx, cz] = key.split(',').map(Number);
+    tenus.push({ d: Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)), octets: e.octets || 0, base: (e.octets || 0) - (e.octetsFacades || 0) });
+  }
+  const r = rayonDuBudget({ tenus, R: RENDER_RADIUS, rMin: RAYON_MONDE_MIN, budget: BUDGET_MONDE, actuel: rayonMonde });
+  if (r === rayonMonde) return;
+  const descend = r < rayonMonde;
+  rayonMonde = r;
+  statsMaillage.rayonMonde = r;
+  if (descend && retirer) {
+    for (const [key, entry] of chunkMeshes) {
+      const [cx, cz] = key.split(',').map(Number);
+      if (Math.abs(cx - pcx) > rayonDeRetrait() || Math.abs(cz - pcz) > rayonDeRetrait()) {
+        disposeChunkMesh(entry); chunkMeshes.delete(key); relayerArbresVoisins(cx, cz);
+      }
+    }
+  }
+  if (retirer) rebuildQueue();
 }
 
 // Ce que pèsent des tampons HD, en octets — la grandeur que le budget borne.
@@ -1518,6 +1568,7 @@ function budgetPermet() {
 // Rendre les façades détaillées d'un morceau à la carte graphique : il montre
 // alors sa tuile plate, quelle que soit la distance.
 function rendreLeDetail(entry) {
+  if (entry.facades) { entry.octets -= entry.octetsFacades || 0; mondeTenu.octets -= entry.octetsFacades || 0; }
   if (entry.facades) { scene.remove(entry.facades); entry.facades.geometry.dispose(); entry.facades = null; detailTenu.octets -= entry.octetsFacades || 0; detailTenu.n--; }
   entry.detail = false; entry.octetsFacades = 0;
   if (entry.plat) entry.plat.visible = true;
@@ -1778,12 +1829,13 @@ function updateChunks() {
       }
     }
     lastPlayerChunk = chunkKey;
+    ajusterRayonMonde(pcx, pcz, false);
     rebuildQueue();
     const candidats = [];
     // Unload far chunks.
     for (const [key, entry] of chunkMeshes) {
       const [cx, cz] = key.split(',').map(Number);
-      if (Math.abs(cx - pcx) > UNLOAD_RADIUS || Math.abs(cz - pcz) > UNLOAD_RADIUS) {
+      if (Math.abs(cx - pcx) > rayonDeRetrait() || Math.abs(cz - pcz) > rayonDeRetrait()) {
         disposeChunkMesh(entry);
         chunkMeshes.delete(key);
         relayerArbresVoisins(cx, cz);
@@ -1801,7 +1853,7 @@ function updateChunks() {
     // ET LES BLOCS S'OUBLIENT AVEC LEUR MAILLAGE. Défaire le maillage rendait
     // la carte graphique ; les quatre-vingts kilo-octets de blocs, eux,
     // restaient dans `world.chunks` pour toujours. Voir `oublierLoinDe`.
-    world.oublierLoinDe(pcx, pcz, OUBLI_RADIUS);
+    world.oublierLoinDe(pcx, pcz, Math.min(OUBLI_RADIUS, rayonDeRetrait() + 4));
   }
 
   // Budget de temps plutôt qu'un nombre fixe de chunks : un chunk chargé
@@ -2091,7 +2143,7 @@ function updateChunks() {
     }
     return null;
   };
-  // UN AVION AU SOL EST UN OBSTACLE (v577) — pour la voiture de l'enfant
+  // UN AVION AU SOL EST UN OBSTACLE (v580) — pour la voiture de l'enfant
   // comme pour l'avion qu'il fait rouler. `gareeContre` écarte les fiches
   // `pilote` à dessein : une boîte de voiture autour d'un fuselage serait
   // fausse (v534). La forme juste est la SILHOUETTE vue du dessus, mesurée
@@ -8718,6 +8770,7 @@ function releverLeJournal() {
   journal.relever({
     x: Math.round(player.pos.x), y: Math.round(player.pos.y), z: Math.round(player.pos.z), ville: ville ? ville.key : null,
     ips, pire: Math.round(pireImageJournal), appels: info.render.calls, ktri: Math.round(info.render.triangles / 1000),
+    rm: rayonMonde, mondeMo: Math.round(mondeTenu.octets / 104857.6) / 10,
     morceaux: chunkMeshes.size, monde: world.chunks.size, hd: [...chunkMeshes.values()].reduce((n, e) => n + (e.detail ? 1 : 0), 0),
     geometries: info.memory.geometries, textures: info.memory.textures, tasMo: mem, corps: `${h.prets}/${h.total}`,
     gpu: (({ texMo, geoMo, sources, ms }) => ({ texMo, geoMo, sources, ms }))(memoireGPU(true)),
@@ -8758,7 +8811,7 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
-    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · arbres ${world.arbres ? 'en cartes' : 'en cubes'} · horizon ${PORTEE_VUE}`
+    + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS}${rayonMonde < RENDER_RADIUS ? ` (monde ${rayonMonde}, ${Math.round(mondeTenu.octets / 1048576)}/${Math.round(BUDGET_MONDE / 1048576)} Mo)` : ''} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · arbres ${world.arbres ? 'en cartes' : 'en cubes'} · horizon ${PORTEE_VUE}`
     // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
     // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :
     // taire cette différence ferait croire à un classement qui n'arrivera pas.
@@ -8843,7 +8896,7 @@ function texteEmbarquement() {
 function mesureRoulage() {
   const dir = { x: deplacement.vx / deplacement.v, z: deplacement.vz / deplacement.v };
   return { v: Math.round(deplacement.v), trou: trouDevant({ pcx: Math.floor(player.pos.x / CHUNK), pcz: Math.floor(player.pos.z / CHUNK),
-    R: RENDER_RADIUS, dir, maille: (cx, cz) => chunkMeshes.has(World.key(cx, cz)) }),
+    R: rayonMonde, dir, maille: (cx, cz) => chunkMeshes.has(World.key(cx, cz)) }),
     debit: debitRecent(datesInstall, performance.now()) };
 }
 function texteRoulage() {
@@ -9035,7 +9088,7 @@ window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fi
   get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage,
   // le mobilier tombé (v536) : le registre, les comptes, et le maillage d'une pièce
   mobilierCasse: { casses, stats: statsCasse, piece: (cle) => piecesParCle.get(cle) || null }, horizonLoin, horizonTresLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
-  RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, get atlasHD() { return hd ? hd.atlas : null; },
+  RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, BUDGET_MONDE, mondeTenu, get rayonMonde() { return rayonMonde; }, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
   // qui lirait la TABLE vérifierait la table, pas le jeu. `rr` et la file sont
