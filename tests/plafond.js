@@ -872,6 +872,28 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
   }
+  // --- L'AVION VOLE PLUS HAUT (v582) ----------------------------------------
+  // Max : « permettre qu'un avion vole beaucoup plus haut en altitude ». Le
+  // toit d'un avion suit la portée de la vue (`plafondAvion`, player.js) :
+  // 158 au banc, ~380 en « Normal », 1 500 en « Loin ». Le VRAI joueur sous
+  // node (`sonde-altitude-avion.cjs`) : manche tiré soixante secondes, le toit
+  // du réglage est atteint et jamais dépassé, l'ancien toit tient sans
+  // réglage ; ✈️ depuis 1 500 blocs se pose sur place en moins d'une minute,
+  // et l'approche assistée d'Orly se pose sans tour manqué. Mesuré sur
+  // `origin/main` : toit 158 quoi qu'on demande, pose sur place inachevée en
+  // 120 s (descente à 12 blocs/s), approche posée en 136 s après un tour.
+  {
+    let t = null, err = '';
+    try { t = await require('./sonde-altitude-avion.cjs').mesurer(); } catch (e) { err = String(e && e.message || e); }
+    verifier('un avion monte jusqu\'au toit de la portée de la vue (1 500 en « Loin »), jamais au-delà, et l\'enfant garde le toit de 158',
+      !!t && t.toitDemande === 1500 && t.toit_regle >= 1499 && t.toit_regle <= 1500 && Math.abs(t.toit_sans - 158) < 0.5
+        && !!t.plafonds && t.plafonds[0] === 158 && t.plafonds[2] > 300 && t.plafonds[2] < 632,
+      t ? JSON.stringify(t) : `sonde : ${err}`);
+    verifier('depuis 1 500 blocs, ✈️ se pose sur place en moins d\'une minute, et l\'approche assistée se pose sur la piste sans tour manqué',
+      !!t && t.surPlace.etat === 'freinage' && !t.surPlace.crash && t.surPlace.t < 60
+        && t.approche.surPiste && !t.approche.crash && t.approche.tours === 0 && (t.approche.etat === 'freinage' || t.approche.etat === 'sol'),
+      t ? JSON.stringify({ surPlace: t.surPlace, approche: t.approche }) : `sonde : ${err}`);
+  }
   // --- LA BOÎTE DE LA MOTO (police-réseau) ---------------------------------
   // La v562 donnait à la moto la boîte d'une voiture EN LONGUEUR : son nez
   // butait sur un mur à 2,2 blocs de son centre, comme le capot d'une voiture.
@@ -5146,6 +5168,78 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         !r.err && r.pas === 128 && r.portee >= 9800 && r.trous === 0 && r.vus > 1000 && r.dansCouronne === 0 && r.cases > 1000,
         JSON.stringify(r));
       verifier('« Loin » : la troisième grille est posée sous la couronne, et tient en moins de 4 Mo',
+        !r.err && r.lus > 20 && r.sous === r.lus && r.mo < 4, JSON.stringify(r));
+    }
+
+    // ET UN QUATRIÈME ÉTAGE (v582). Max : « que le mode de loin voie encore
+    // plus loin. » La troisième grille s'arrête à 10 240 ; une grille de deux
+    // cent cinquante-six blocs porte jusqu'à 20 480. Même épreuve qu'au-dessus,
+    // un étage plus loin : elle porte jusque-là dans l'axe du regard, aucun
+    // trou de ciel entre 9 000 et 13 000 blocs, aucune case dans le disque sûr
+    // de la troisième, posée sous elle, moins de 4 Mo. Rouge sur la v581 :
+    // `PAS_ULTRA_LOIN` n'existe pas.
+    {
+      const r = await tab.evaluate(async () => {
+        const H = await import('./src/horizon.js');
+        if (!H.PAS_ULTRA_LOIN) return { err: 'pas de quatrième grille' };
+        const w = window.__game.world;
+        const x = 1200, z = -900;
+        const fine = new H.Horizon(w, 632);
+        const loin = new H.Horizon(w, 2560, { pas: H.PAS_LOIN, interieur: fine, abaisse: H.ABAISSE_LOIN, bords: false });
+        const tres = new H.Horizon(w, H.PORTEE_TRES_LOIN, { pas: H.PAS_TRES_LOIN, interieur: loin, abaisse: H.ABAISSE_TRES_LOIN, bords: false });
+        const ultra = new H.Horizon(w, 20480, { pas: H.PAS_ULTRA_LOIN, interieur: tres, abaisse: H.ABAISSE_ULTRA_LOIN, bords: false });
+        for (const h of [fine, loin, tres, ultra]) while (h.maj(x, z, 1e9) > 0 && h.etat().manquantes > 0) { /* tout remplir */ }
+        for (const h of [fine, loin, tres]) h.majDecoupe(() => false, x, z, 0, -1);
+        const t1 = performance.now();
+        ultra.majDecoupe(() => false, x, z, 0, -1);
+        const msDecoupe = +(performance.now() - t1).toFixed(1);
+        const dessinees = (h) => {
+          const idx = h.geo.index.array, pos = h.geo.attributes.position.array, set = new Set();
+          for (let k = 0; k < h.geo.drawRange.count; k += 6) set.add(Math.round(pos[idx[k] * 3] / h.pas) + ',' + Math.round(pos[idx[k] * 3 + 2] / h.pas));
+          return set;
+        };
+        const T = dessinees(tres), U = dessinees(ultra);
+        let trous = 0, vus = 0;
+        for (let a = -60; a <= 60; a += 1.5) {
+          const r0 = a * Math.PI / 180;
+          for (let d = 9000; d <= 13000; d += 100) {
+            const px = x + Math.sin(r0) * d, pz = z - Math.cos(r0) * d;
+            vus++;
+            if (!T.has(Math.floor(px / 128) + ',' + Math.floor(pz / 128)) && !U.has(Math.floor(px / 256) + ',' + Math.floor(pz / 256))) trous++;
+          }
+        }
+        let dansTres = 0, portee = 0;
+        const idx = ultra.geo.index.array, pos = ultra.geo.attributes.position.array, n = ultra.geo.drawRange.count;
+        for (let k = 0; k < n; k += 6) {
+          const ax = pos[idx[k] * 3], az = pos[idx[k] * 3 + 2];
+          const coins = [[ax, az], [ax + 256, az], [ax, az + 256], [ax + 256, az + 256]];
+          if (coins.every(([qx, qz]) => Math.hypot(qx - x, qz - z) < H.PORTEE_TRES_LOIN - 128)) dansTres++;
+          const cx = ax - x, cz = az - z;
+          if (Math.abs(cx) < -cz * 0.6) portee = Math.max(portee, -cz);
+        }
+        let sous = 0, lus = 0;
+        const pt = tres.geo.attributes.position.array;
+        for (let i = 0; i < tres.N * tres.N; i += 7) {
+          const px = pt[i * 3], pz = pt[i * 3 + 2];
+          if (px % 256 || pz % 256) continue;
+          const j = ((px / 256) - ultra.ox) * ultra.N + ((pz / 256) - ultra.oz);
+          if (j < 0 || j >= ultra.N * ultra.N) continue;
+          lus++;
+          if (pos[j * 3 + 1] <= pt[i * 3 + 1] - 32) sous++;
+        }
+        let octets = 0;
+        for (const a of Object.values(ultra.geo.attributes)) octets += a.array.byteLength;
+        octets += ultra.geo.index.array.byteLength + ultra.bat.instanceMatrix.array.byteLength + ultra.bat.instanceColor.array.byteLength;
+        for (const k of ['hauteurs', 'pret', 'bati', 'toits', 'estNY', 'climats']) octets += ultra[k].byteLength;
+        const out = { pas: ultra.pas, sommets: ultra.N * ultra.N, cases: n / 6, portee: Math.round(portee), trous, vus, dansTres,
+          sous, lus, mo: +(octets / 1048576).toFixed(2), msDecoupe };
+        for (const h of [fine, loin, tres, ultra]) h.geo.dispose();
+        return out;
+      });
+      verifier('« Loin » : un quatrième étage porte à 20 480 blocs, sans un trou de ciel entre lui et la troisième grille',
+        !r.err && r.pas === 256 && r.portee >= 19500 && r.trous === 0 && r.vus > 1000 && r.dansTres === 0 && r.cases > 1000,
+        JSON.stringify(r));
+      verifier('« Loin » : le quatrième étage est posé sous la troisième grille, et tient en moins de 4 Mo',
         !r.err && r.lus > 20 && r.sous === r.lus && r.mo < 4, JSON.stringify(r));
     }
 

@@ -29,6 +29,22 @@ const PLAYER_HEIGHT = 1.8;
 // Assez bas pour que la tête reste dans le monde, assez haut pour qu'on
 // puisse bâtir jusqu'au dernier étage.
 const PLAFOND_VOL = HEIGHT - PLAYER_HEIGHT - 0.2;
+// UN AVION VOLE BIEN PLUS HAUT QUE L'ENFANT (v582). Max : « permettre qu'un
+// avion vole beaucoup plus haut en altitude ». Le toit de 158 blocs est celui
+// du MONDE : au-dessus, on ne bâtit plus rien, et c'est juste pour l'enfant
+// qui vole. Un avion, lui, n'a rien à bâtir — mais il doit encore VOIR le sol :
+// le brouillard s'arrête au bout du paysage lointain (`PORTEE_VUE`, main.js),
+// et au-dessus d'une certaine hauteur on ne verrait plus que lui. Le toit d'un
+// avion suit donc la portée de la vue (`plafondAvion`) : 158 blocs au banc
+// (rr 2), ~380 en « Normal », ~250 en « Court », 1 500 en « Loin ».
+// À la verticale un bloc vaut un mètre (v301, v573) : 1 500 m d'altitude.
+export const PLAFOND_AVION_MAX = 1500;
+export const PART_TOIT_AVION = 0.6;
+export function plafondAvion(porteeVue) {
+  const p = Math.round((Number(porteeVue) || 0) * PART_TOIT_AVION);
+  return Math.max(PLAFOND_VOL, Math.min(PLAFOND_AVION_MAX, p));
+}
+export { PLAFOND_VOL };
 const EYE_HEIGHT = 1.62;
 const GRAVITY = 26;
 const JUMP_SPEED = 8.6;
@@ -86,6 +102,16 @@ const PALIER_DECOLLAGE = 20;
 // en tire la longueur de piste qu'il faut devant soi.)
 const PART_MONTEE = 0.33;
 const DESCENTE = 12;      // la perte d'altitude quand on se pose
+// ET DE HAUT, ON DESCEND PLUS VITE (v582). À douze blocs par seconde, se poser
+// depuis 1 500 blocs prendrait deux minutes. Au-dessus de `HAUT_DESCENTE`
+// (150 : plus haut que tout ce que l'ancien toit permettait au-dessus du sol,
+// donc la règle d'avant au bit près sous lui), la descente suit la hauteur,
+// jusqu'à `DESCENTE_HAUTE` — moins que ce que le manche en avant donne déjà.
+const HAUT_DESCENTE = 150;
+export const DESCENTE_HAUTE = 40;
+export function descenteSelonHauteur(hauteur) {
+  return hauteur > HAUT_DESCENTE ? Math.min(DESCENTE_HAUTE, DESCENTE * hauteur / HAUT_DESCENTE) : DESCENTE;
+}
 // UN AVION DÉCOLLE DE SA PISTE, ET IL S'Y POSE (v261). Max : « une vraie
 // motion de décollage, accélération sur la piste puis décollage en levant le
 // nez ; idem à l'atterrissage, baisser l'altitude et ouvrir le train ; et le
@@ -168,6 +194,8 @@ export class Player {
     this.pitch = 0;
     this.onGround = false;
     this.flying = false;
+    // le toit d'un avion (v582) : posé par main.js d'après la portée de la vue
+    this.plafondAvion = PLAFOND_VOL;
     // UNE VOITURE NE VOLE PAS (Max, août 2026 : « aujourd'hui, on est capable
     // de voler avec une voiture. Je ne veux pas qu'une voiture vole »).
     //
@@ -995,9 +1023,9 @@ export class Player {
   // bloc au-dessus — 159 pour un toit à 158, vu au portail. La montée de
   // l'image se borne donc à ce qui reste jusqu'au toit, quelle que soit la
   // cadence.
-  sousLeToit(dt) {
+  sousLeToit(dt, plafond = PLAFOND_VOL) {
     if (this.vel.y <= 0) return;
-    const reste = PLAFOND_VOL - this.pos.y;
+    const reste = plafond - this.pos.y;
     this.vel.y = reste <= 0 || !(dt > 0) ? 0 : Math.min(this.vel.y, reste / dt);
   }
 
@@ -1255,7 +1283,7 @@ export class Player {
           const sol = this.world.sommetColonne(Math.floor(this.pos.x), Math.floor(this.pos.z));
           const hauteur = this.pos.y - (sol + 1);
           const arrondi = hauteur < HAUTEUR_ARRONDI;
-          this.vel.y = arrondi ? -DESCENTE_ARRONDI : -DESCENTE;
+          this.vel.y = arrondi ? -DESCENTE_ARRONDI : -descenteSelonHauteur(hauteur);
           cibleAssiette = arrondi ? ASSIETTE_ARRONDI : ASSIETTE_APPROCHE;
         }
       } else {
@@ -1274,8 +1302,9 @@ export class Player {
       if (this.decollageManuel && (etat !== 'vol' || this.pos.y - this.altitudeDecollage >= RENTRER_TRAIN_A)) this.decollageManuel = false;
       this.trainSorti = Math.max(0, Math.min(1,
         this.trainSorti + (trainDehors ? 1 : -1) * dt / TRAIN_SECONDES));
-      // Le ciel a le même toit que pour tout le monde — voir `sousLeToit`.
-      this.sousLeToit(dt);
+      // Le ciel a un toit — celui d'un avion suit la portée de la vue (v582,
+      // `plafondAvion`) ; sans réglage, celui de tout le monde.
+      this.sousLeToit(dt, this.plafondAvion || PLAFOND_VOL);
       const vol = this.vel.clone().multiplyScalar(dt);
       // UN AVION GARÉ EST UN OBSTACLE POUR UN AVION QUI ROULE (v577). La boîte
       // de collision d'un appareil est la largeur de son FUSELAGE (une boîte

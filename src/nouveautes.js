@@ -7,23 +7,35 @@
 export const NOUVEAUTES = [
   {
     v: 583,
-    titre: 'New York a des banlieues',
+    titre: 'Un nouveau New York',
     puces: [
+      'Des immeubles variés, avec des cours et des terrasses',
+      'L’Empire State et la statue de la Liberté en détail',
       'Brooklyn, Queens, le Bronx et Staten Island',
-      'Des ponts pour y aller',
-      'Une plage et sa grande roue à Coney Island',
-      'Des maisons, un port et des immeubles tous différents',
+      'Sept ponts et une plage à Coney Island',
+      'Le soir, les fenêtres et les monuments s’allument',
     ],
   },
   {
-    v: 567,
     v: 582,
-    titre: 'Le vrai New York',
+    titre: 'Plus haut, plus loin',
     puces: [
-      'Le vrai Empire State Building',
-      'La vraie statue de la Liberté',
-      'Des immeubles tous différents',
-      'Le soir, l’Empire State s’allume',
+      'Les avions montent jusqu\'à 1 500 mètres',
+      'De là-haut, se poser va plus vite',
+      'En mode Loin, on voit deux fois plus loin',
+    ],
+  },
+  {
+    v: 581,
+    titre: 'Dix voitures de tous les jours',
+    puces: [
+      'Citadine, berline, break et monospace',
+      'Un pick-up, un SUV et un 4×4',
+      'Un coupé et une supercar à aileron',
+      'Elles roulent dans les rues',
+    ],
+  },
+  {
     v: 580,
     titre: 'Paris ne fait plus planter',
     puces: [

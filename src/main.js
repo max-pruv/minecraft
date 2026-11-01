@@ -40,7 +40,8 @@ import { toast } from './bandeau.js';
 import { creerGuides, parlerAVoixHaute } from './guides.js';
 import { creerPatrouille } from './patrouille.js';
 import { Horizon, rayonHorizon, rayonLoin, PAS_LOIN, ABAISSE_LOIN, PAS_TRES_LOIN, PORTEE_COURONNE,
-  ABAISSE_TRES_LOIN, rayonTresLoin, silhouetteArbre } from './horizon.js';
+  ABAISSE_TRES_LOIN, rayonTresLoin, silhouetteArbre, PAS_ULTRA_LOIN, PORTEE_TRES_LOIN, ABAISSE_ULTRA_LOIN,
+  rayonUltraLoin } from './horizon.js';
 import { fileDeMaillage, VITESSE_CONE, estUnSaut, FENETRE_ARRIVEE_MS, trouDevant, debitRecent } from './plafond-sol.js';
 import { mondeDevant, ligneDiagConduite, boiteVoiture, normaleEntreBoites, sEnfonce, rectangleDeBoite } from './conduite.js';
 import { empriseDe, cleDEmprise, pointsDeBoite, pointsDAvion, sEnfonceDansAvion } from './emprise-avion.js';
@@ -73,7 +74,7 @@ import { raccordDe } from './raccords.js';
 import { ENTREES_PARIS } from './paris.js';
 import { ENTREES_LILLE } from './lille.js';
 import { ENTREES_LONDRES } from './londres.js';
-import { Player, raycastBlocks } from './player.js';
+import { Player, raycastBlocks, plafondAvion } from './player.js';
 import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
 import { MODELES_MONTURE, MONTURES } from './montures.js';
@@ -297,10 +298,17 @@ const RAYON_LOIN = (() => {
 // brouillard et le plan lointain reculent avec elle. `?loin=2560` rend la
 // v497 au sommet près.
 const RAYON_TRES_LOIN = (() => {
-  const r = rayonTresLoin(LOIN_VOULU);
+  const r = rayonTresLoin(Math.min(LOIN_VOULU, PORTEE_TRES_LOIN));
   return RAYON_LOIN && r > RAYON_LOIN + PAS_TRES_LOIN ? r : 0;
 })();
-const PORTEE_VUE = RAYON_TRES_LOIN || RAYON_LOIN || RAYON_HORIZON;
+// ET UN QUATRIÈME ÉTAGE (v582) : « que le mode de loin voie encore plus loin ».
+// La troisième grille s'arrête à 10 240 ; une grille de deux cent cinquante-six
+// porte jusqu'à `loin` (20 480 au palier `haut`). `?loin=10240` rend la v581.
+const RAYON_ULTRA_LOIN = (() => {
+  const r = rayonUltraLoin(LOIN_VOULU);
+  return RAYON_TRES_LOIN && r > RAYON_TRES_LOIN + PAS_ULTRA_LOIN ? r : 0;
+})();
+const PORTEE_VUE = RAYON_ULTRA_LOIN || RAYON_TRES_LOIN || RAYON_LOIN || RAYON_HORIZON;
 // Millisecondes maximum consacrées par frame à construire des chunks.
 //
 // LE BUDGET ÉTAIT SOUS LE COÛT D'UN SEUL MORCEAU (v229). Mesuré dans la boucle
@@ -505,6 +513,24 @@ scene.background = DAY_SKY.clone();
 // de bord à fondre, et à cent six blocs le paysage lointain arrivait déjà
 // délavé. Il commence au bout du monde proche et fond jusqu'à l'horizon.
 scene.fog = new THREE.Fog(scene.background, RENDER_RADIUS * CHUNK, PORTEE_VUE);
+// LE BROUILLARD S'OUVRE SOUS UN AVION QUI MONTE (v582). Un avion vole désormais
+// jusqu'à `plafondAvion(PORTEE_VUE)` (player.js) ; à quatre cents blocs, le sol
+// juste dessous serait déjà dans la brume d'un brouillard qui commence à
+// cent quatre-vingt-douze. Le DÉBUT du brouillard recule de la hauteur
+// au-dessus de `BROUILLARD_HAUT` (150 : sous l'ancien toit de 158, la règle
+// d'avant au bit près) ; la FIN ne bouge jamais — c'est elle qui cache le bout
+// du paysage lointain, quelle que soit la hauteur — et le début reste sous 85 %
+// de la fin.
+const BROUILLARD_PRES = RENDER_RADIUS * CHUNK;
+const BROUILLARD_HAUT = 150;
+function brouillardSelonHauteur() {
+  let h = 0;
+  if (player.pilote && player.pos.y > BROUILLARD_HAUT) {
+    h = player.pos.y - world.terrainHeight(Math.floor(player.pos.x), Math.floor(player.pos.z));
+  }
+  const pres = BROUILLARD_PRES + Math.max(0, h - BROUILLARD_HAUT);
+  scene.fog.near = Math.min(pres, Math.max(BROUILLARD_PRES, scene.fog.far * 0.85));
+}
 
 // Le plan lointain recule avec la couronne lointaine (v497) — de quoi voir son
 // bord depuis le ciel — et reste à 900 partout ailleurs, au bit près.
@@ -774,6 +800,15 @@ if (horizonTresLoin) {
   horizonTresLoin.mesh.renderOrder = 3;
   scene.add(decor(horizonTresLoin.objet()));
 }
+// Le quatrième étage (v582) : `null` sous 10 240 blocs de portée. Il cède à la
+// troisième grille, comme elle cède à la couronne.
+const horizonUltraLoin = RAYON_ULTRA_LOIN ? new Horizon(world, RAYON_ULTRA_LOIN,
+  { pas: PAS_ULTRA_LOIN, interieur: horizonTresLoin, abaisse: ABAISSE_ULTRA_LOIN, bords: false }) : null;
+if (horizonUltraLoin) {
+  horizonUltraLoin.mesh.name = 'horizon-ultra-loin';
+  horizonUltraLoin.mesh.renderOrder = 4;
+  scene.add(decor(horizonUltraLoin.objet()));
+}
 // LE BÂTI LOINTAIN SE COUPE EN RENDU LOGICIEL, COMME LES OMBRES ET LA COUCHE
 // HD (v331). Mesuré en A/B sur la même page, en vol vers Paris à rr=12, ordre
 // alterné : 4,8 · 5,8 · 5,7 images par seconde avec, 15,0 · 17,6 · 11,6 sans
@@ -786,6 +821,7 @@ if (horizonTresLoin) {
   horizon.bat.visible = voulu != null ? voulu !== '0' : !renduLogiciel();
   if (horizonLoin) horizonLoin.bat.visible = horizon.bat.visible;
   if (horizonTresLoin) horizonTresLoin.bat.visible = horizon.bat.visible;
+  if (horizonUltraLoin) horizonUltraLoin.bat.visible = horizon.bat.visible;
 }
 
 // LA MIGRATION AVANT LE CHARGEMENT, jamais après : `loadEdits` lit ce que le
@@ -1149,6 +1185,8 @@ world.onBloc = (x, y, z, id) => {
 };
 
 const player = new Player(camera, world);
+// le toit d'un avion suit la portée de la vue (v582, player.js)
+player.plafondAvion = plafondAvion(PORTEE_VUE);
 // LES LAMPES DE RUE (v248) : quatre lumières ponctuelles, posées la nuit
 // sous les réverbères les plus proches de l'enfant (`eclairerLaRue`), et
 // prêtées à Manhattan quand il y est. Quatre et pas plus : le nombre de
@@ -2745,7 +2783,10 @@ function positionDuCloud(state) {
 // flying, bad save), float them gently back to the ground.
 setInterval(() => {
   if (!running) return;
-  if (player.pos.y > HEIGHT + 40 || player.pos.y < -12) {
+  // Un avion vole au-dessus du monde, jusqu'à son toit (v582) : ce n'est pas
+  // un enfant perdu dans le ciel. Descendu de l'avion là-haut, il l'est.
+  const toit = player.pilote ? Math.max(HEIGHT, player.plafondAvion || 0) : HEIGHT;
+  if (player.pos.y > toit + 40 || player.pos.y < -12) {
     const gy = surfaceAt(player.pos.x, player.pos.z);
     player.pos.y = gy + 0.2;
     player.vel.set(0, 0, 0);
@@ -8112,6 +8153,7 @@ function updateSky(dt) {
   if (weather === 'rain' && surMars < 0.5) skyColor.multiplyScalar(0.62); // grey rainy skies
   scene.background.copy(skyColor);
   scene.fog.color.copy(skyColor);
+  if (!renduDansManhattan) brouillardSelonHauteur();
 
   const wDim = weather === 'rain' ? 0.8 : 1;
   const level = (0.25 + 0.75 * daylight) * wDim;
@@ -9087,7 +9129,7 @@ window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fi
   // la lit au banc, où le rendu est toujours logiciel
   get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage,
   // le mobilier tombé (v536) : le registre, les comptes, et le maillage d'une pièce
-  mobilierCasse: { casses, stats: statsCasse, piece: (cle) => piecesParCle.get(cle) || null }, horizonLoin, horizonTresLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
+  mobilierCasse: { casses, stats: statsCasse, piece: (cle) => piecesParCle.get(cle) || null }, horizonLoin, horizonTresLoin, horizonUltraLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
   RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, BUDGET_MONDE, mondeTenu, get rayonMonde() { return rayonMonde; }, get atlasHD() { return hd ? hd.atlas : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
@@ -9221,6 +9263,12 @@ function frame(now) {
     horizonTresLoin.sansNY = renduDansManhattan;
     horizonTresLoin.maj(player.pos.x, player.pos.z, horizon.complet && horizonLoin.complet ? 2 : 0.3);
   }
+  // le quatrième étage (v582) prend ce que la troisième laisse, deux millisecondes
+  if (horizonUltraLoin) {
+    horizonUltraLoin.sansNY = renduDansManhattan;
+    horizonUltraLoin.maj(player.pos.x, player.pos.z,
+      horizon.complet && horizonLoin.complet && horizonTresLoin.complet ? 2 : 0.3);
+  }
   // La découpe se refait à une cadence en TEMPS RÉEL, et tout de suite si le
   // joueur a franchement tourné la tête — sinon le cône de vision découvrirait
   // un quart de seconde de ciel vide au milieu d'un virage.
@@ -9240,6 +9288,12 @@ function frame(now) {
       horizonTresLoin.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
         player.pos.x, player.pos.z, vise, viseZ);
       horizonTresLoin.msDecoupe = performance.now() - tl;
+    }
+    if (horizonUltraLoin) {
+      const tl = performance.now();
+      horizonUltraLoin.majDecoupe((cx, cz) => chunkMeshes.has(World.key(cx, cz)),
+        player.pos.x, player.pos.z, vise, viseZ);
+      horizonUltraLoin.msDecoupe = performance.now() - tl;
     }
   }
   updateSky(dt);
