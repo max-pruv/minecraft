@@ -7,6 +7,7 @@ const dossier = process.argv[2] || '/tmp/manhattan-osm';
 const choix = process.argv[3]?.split(',');
 const vues = [
   { nom: 'midtown-rue', x: 4.6, y: 33.01, z: 7.4, yaw: .22, pitch: .08 },
+  { nom: 'facade-detail', x: 4.5, y: 36.4, z: 12.7, yaw: -1.15, pitch: .06 },
   { nom: 'midtown-toits', x: 175, y: 135, z: 210, yaw: .65, pitch: -.25 },
   { nom: 'village', x: 0, y: 33.01, z: 500, yaw: -.5, pitch: .10 },
   { nom: 'brooklyn', x: 343, y: 33.01, z: 212, yaw: Math.PI, pitch: .06 },
@@ -20,7 +21,7 @@ const vues = [
   try {
     await banc.ouvrir();
     const page = await banc.jouerSeul('RevueOSM', {
-      carte: 'manhattan', rr: 4, viewport: { width: 240, height: 160 }, dpr: 1,
+      carte: 'manhattan', rr: 4, viewport: { width: 240, height: 160 }, dpr: 1, ombres: true,
     });
     page.on('response', r => { if (r.status() >= 400) erreursHttp.push([r.status(), r.url()]); });
     for (const vue of vues) {
@@ -32,6 +33,9 @@ const vues = [
         const { ORIGINE_MANHATTAN: O } = await import('/src/manhattan-world.js');
         const ny = await import('/src/new-york-modeles.js');
         const g = window.__game;
+        // Le framebuffer réduit ne réduit pas le coût de la shadow map.
+        // Préparer les secteurs sans la recalculer ; la capture la rafraîchit.
+        g.renderer.shadowMap.autoUpdate = false;
         g.renderer.domElement.style.setProperty('width', '16px', 'important');
         g.renderer.domElement.style.setProperty('height', '16px', 'important');
         g.player.pos.set(O.x + v.x, v.y, O.z + v.z);
@@ -55,6 +59,8 @@ const vues = [
       await page.evaluate(() => {
         const c = __game.renderer.domElement;
         c.style.removeProperty('width'); c.style.removeProperty('height');
+        __game.renderer.shadowMap.autoUpdate = true;
+        __game.renderer.shadowMap.needsUpdate = true;
       });
       await page.setViewportSize({ width: 1200, height: 800 });
       await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));

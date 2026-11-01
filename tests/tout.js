@@ -301,6 +301,7 @@ const GARDIENS = {
   'src/manhattan-architecture.js': ['manhattan.js', 'plafond.js', 'carte.js', 'carteMonde.js'],
   'src/manhattan-osm-data.js': ['manhattan.js', 'plafond.js', 'carte.js', 'carteMonde.js'],
   'tests/architecture-manhattan.mjs': ['manhattan.js'],
+  'tests/relief-manhattan.cjs': ['manhattan.js'],
   'src/manhattan-world.js': ['manhattan.js', 'sauvegarde.js', 'plafond.js', 'carte.js', 'washington.js', 'metro.js', 'carteMonde.js', 'monte.js', 'reseau.js', 'hote.js'],
   'src/manhattan-materiaux.js': ['manhattan.js', 'carte.js'],
   'src/manhattan-render.js': ['manhattan.js', 'monte.js'],

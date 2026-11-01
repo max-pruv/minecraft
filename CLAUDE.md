@@ -64,10 +64,14 @@ Crédit CC BY 4.0, provenance et limites : `docs/manhattan-osm.md`.
   à une demi-largeur de joueur de sa face.
 - Le contrat `tests/architecture-manhattan.mjs` est lancé par `manhattan.js`.
   Il garde provenance, diversité, cours, collision/LOD, routes et budget d'atlas.
-- La reprise de la PR #587 garde ses banlieues et ses monuments. Ses photos
-  de façades habillent les volumes OSM proches et lointains ; un modèle CCity
-  plein ne remplace jamais une emprise OSM creuse. Les matériaux photographiques
-  restent ceux préchauffés à l'accueil, sans nouvelle variante de shader.
+- La reprise de la PR #587 garde ses banlieues et ses monuments. Un modèle
+  CCity plein ne remplace jamais une emprise OSM creuse. Les façades OSM n'ont
+  aucune photo d'immeuble plaquée : maçonnerie texturée à l'échelle du monde,
+  tableaux, châssis, appuis et corniches géométriques. Une vitre transparente
+  est séparée de son fond de 48 cm ; les ferronneries sont des volumes.
+  Le lointain garde des baies simplifiées en géométrie. Le test de relief lance
+  des rayons dans le maillage réellement affiché, au centre et au bord des baies.
+  Les nouveaux matériaux suivent aussi le préchauffage à l'accueil.
 - Les masques lumineux photographiques suivent les baies repérées dans
   `scripts/new-york-fenetres.mjs` : une zone sombre peut être l'ombre d'un
   escalier, pas une fenêtre. Toutes les variantes suivent le cycle nocturne.

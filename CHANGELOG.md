@@ -32,8 +32,10 @@ parcelles s'élargissent pour les grands immeubles ; huit traitements de façade
 les commerces, les escaliers de secours et les terrasses différencient les rues.
 Le rendu proche, le lointain et les collisions partagent les mêmes volumes.
 La reprise de la PR #587 conserve ses dix quartiers périphériques et ses
-monuments ; ses façades photographiques habillent aussi les nouveaux volumes
-de près. Les modèles de ponts supplémentaires sont analysés dans
+monuments. Les façades OSM ont des fenêtres en retrait, un vitrage séparé de
+son fond, des encadrements, corniches, pilastres et ferronneries en vraie 3D.
+La brique, la pierre et le bois ont des textures à l'échelle des personnages ;
+les baies restent géométriques au loin. Les modèles de ponts supplémentaires sont analysés dans
 `docs/manhattan-ponts-sources.md` et ne sont pas embarqués dans cette livraison.
 La nuit, les fenêtres s'allument dans les dix variantes, sans illuminer les
 ombres d'escaliers présentes sur les photographies.
