@@ -24,7 +24,7 @@
   propriété de la cadence »). Le remède est de lire le minimum dans le PROFIL
   publié de la grille, pas dans des relevés : zone véhicules.
 
-## Un avion garé est un obstacle (v577) — rouges de portail, aucun de la livraison
+## Un avion garé est un obstacle (v580) — rouges de portail, aucun de la livraison
 
 - [ ] **Portail complet de la v577 (deux passages : le premier arrêté à 2 h
   pendant `monte.js`, le second en reprise sur les six suites restantes).**
@@ -49,6 +49,21 @@
     ville, la file qui se rend après une téléportation, « Atterrissage vers
     Saint-Dizier ») : déclarés.
 ## Le bouleau sur la surface (v576) — ce qui reste, déclaré
+
+- [ ] **Portail de la v580 (budget du monde).** Coupé à deux heures en plein
+  `monte.js`, rejouée seule ensuite (296 verts). Rouges, tous déjà déclarés :
+  `maj.js` (les deux loaders), `reseau.js` (fluidité « pas par bonds »),
+  `monte.js` (Moscou ×2, « Atterrissage vers Saint-Dizier » ; au premier
+  passage aussi le feu qui pile, la rue vide, les passants de la ville
+  d'arrivée). `degats.js` « le dernier enfoncement en ms » rendait 0 ms au
+  portail et est verte rejouée seule (62/62). Preuve STRUCTURELLE (v291) :
+  le budget ne mord qu'au-delà de 224 Mo de morceaux, ce qu'aucune page du
+  banc n'atteint (rr ≤ 12, sans HD hors `parishd.js`) — `rayonDuBudget` rend
+  alors `R` et le jeu maille comme avant.
+- [ ] **Confirmer sur l'iPhone de Max que « Loin » ne plante plus à Paris.**
+  Le budget (224 Mo de morceaux) est posé sur ce que le journal a vu tenir,
+  pas mesuré sur l'appareil. Lire `rm` et `mondeMo` dans les relevés de
+  `journal_appareil` de sa prochaine session parisienne.
 
 - [ ] **Rouges du portail de la v576 : aucun de la livraison.** Le diff ne
   touche que `dessusNaturel` (sol continu, colonnes autour d'un tronc de

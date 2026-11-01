@@ -63,6 +63,44 @@ function verifier(nom, ok, detail = '') {
         JSON.stringify({ bas: PAL.PALIERS.bas.hdMo, moyen: PAL.PALIERS.moyen.hdMo, haut: PAL.PALIERS.haut.hdMo }));
     }
   }
+  // ── LE MONDE AUSSI A UN BUDGET D'OCTETS (v580) — la règle pure ──────────
+  //
+  // Toutes les sessions « Loin » de l'iPhone de Max à Paris ont planté pour
+  // leur mémoire (journal de bord, v296 → v576). `rayonDuBudget` rend le plus
+  // grand rayon dont les morceaux tiennent dans le budget. Les chiffres sont
+  // ceux du banc au centre de Paris : 0,22 Mo par morceau sans façades,
+  // 128 Mo de façades sur les proches ; dans les champs, 0,14.
+  {
+    const PAL = await import('../src/palier.js');
+    const M = 1048576;
+    if (typeof PAL.rayonDuBudget !== 'function') {
+      verifier('le monde a un budget d’octets : en ville dense le rayon maillé se resserre (rayonDuBudget, palier.js)', false, 'rayonDuBudget absent');
+    } else {
+      const disque = (R, base, facades) => {
+        const t = [];
+        for (let dx = -R; dx <= R; dx++) for (let dz = -R; dz <= R; dz++) {
+          const d = Math.max(Math.abs(dx), Math.abs(dz));
+          const f = d <= 6 ? facades / 169 : 0;
+          t.push({ d, base, octets: base + f });
+        }
+        return t;
+      };
+      const paris = disque(16, 0.22 * M, 128 * M), champs = disque(16, 0.14 * M, 0);
+      const rP = PAL.rayonDuBudget({ tenus: paris, R: 16, rMin: 6, budget: 224 * M, actuel: 16 });
+      const rC = PAL.rayonDuBudget({ tenus: champs, R: 16, rMin: 6, budget: 224 * M, actuel: 16 });
+      const tient = paris.filter((t) => t.d <= rP).reduce((s, t) => s + t.octets, 0);
+      // il ne respire pas : juste sous le budget à r, il ne remonte pas d'un cran
+      const garde = PAL.rayonDuBudget({ tenus: paris, R: 16, rMin: 6, budget: tient * 1.02, actuel: rP });
+      const sans = PAL.rayonDuBudget({ tenus: paris, R: 16, rMin: 6, budget: 0, actuel: 16 });
+      verifier('le monde a un budget d’octets : au centre de Paris le rayon maillé se resserre et tient le budget, dans les champs « Loin » garde ses seize morceaux, sans hésiter d’un cran',
+        rP < 16 && rP >= 8 && tient <= 224 * M && rC === 16 && garde === rP && sans === 16,
+        JSON.stringify({ paris: rP, tientMo: Math.round(tient / M), champs: rC, garde, sans }));
+      verifier('chaque palier porte son budget de monde, l’appareil tactile sans palier aussi, et `?mondemo=` force le budget',
+        PAL.PALIERS.haut.mondeMo > 0 && PAL.PALIERS.moyen.mondeMo > 0 && PAL.reglageDe(null, true).mondeMo > 0
+          && PAL.reglageDe(null, false).mondeMo === 0 && PAL.PARAMS_FORCANTS.includes('mondemo'),
+        JSON.stringify({ bas: PAL.PALIERS.bas.mondeMo, moyen: PAL.PALIERS.moyen.mondeMo, haut: PAL.PALIERS.haut.mondeMo }));
+    }
+  }
   // Sur l'ancien code, le module n'existe pas : on le dit, on ne s'effondre pas.
   const HD = await import('../src/facadeshd.js').catch(() => null);
   verifier('la couche HD existe (src/facadeshd.js)', !!HD);
@@ -1515,6 +1553,32 @@ function verifier(nom, ok, detail = '') {
       verifier('et la couche HD s\'est chauffée à l\'accueil : sa clé est là avant d\'entrer, aucune clé de programme neuve en arrivant dans la forêt au palier bas',
         clesAvant.some((k) => /paris-hd/.test(k)) && neuves.length === 0,
         `${neuves.length} neuve(s) ${JSON.stringify(neuves.map((k) => k.slice(0, 60)).slice(0, 3))} ; ${clesAvant.length} clés à l'accueil, couche ${clesAvant.some((k) => /paris-hd/.test(k)) ? 'chauffée' : 'ABSENTE'}`);
+    }
+
+    // LE MONDE A UN BUDGET D'OCTETS, DANS LE JEU (v580). La règle pure est
+    // gardée plus haut ; ici, le câblage : une page au centre de Paris avec un
+    // budget serré (`?mondemo=80`, au-dessus du plancher de six morceaux), et l'on lit ce que la scène TIENT — le
+    // rayon maillé descend sous `rr`, les octets des morceaux restent sous le
+    // budget (un anneau de marge compris), et le disque maillé est celui du
+    // rayon, pas celui de `rr`. Sur l'ancien code `rayonMonde` n'existe pas.
+    {
+      const odon = await banc.jouerSeul('Odon', { rr: 10, params: '&hd=2&mondemo=80', pret: true });
+      const m = await odon.evaluate(async () => {
+        const g = window.__game;
+        const { adresseParis } = await import('./src/paris.js');
+        const [x, z] = adresseParis(-0.8, -0.9);
+        g.player.flying = false; g.player.pos.set(x + 0.5, g.world.terrainHeight(x, z) + 1.01, z + 0.5); g.player.vel.set(0, 0, 0);
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const t0 = performance.now(); let n0 = -1, st = 0;
+        while (performance.now() - t0 < 120000) { await dodo(2000); const n = g.chunkMeshes.size; st = n === n0 ? st + 1 : 0; n0 = n; if (st >= 3) break; }
+        return { attente: Math.round(performance.now() - t0), rayon: g.rayonMonde, morceaux: g.chunkMeshes.size,
+          tenuMo: g.mondeTenu ? Math.round(g.mondeTenu.octets / 104857.6) / 10 : null, budgetMo: g.BUDGET_MONDE ? g.BUDGET_MONDE / 1048576 : null };
+      }).catch((e) => ({ erreur: String(e.message).split('\n')[0] }));
+      await odon.close();
+      verifier('dans Paris, le jeu maille le rayon que le budget du monde permet, et la scène tient le budget (v580)',
+        !m.erreur && typeof m.rayon === 'number' && m.rayon < 10 && m.tenuMo <= m.budgetMo * 1.15
+          && m.morceaux <= (2 * m.rayon + 3) ** 2,
+        JSON.stringify(m));
     }
 
     // LA NUIT DE LA TOUR EIFFEL (v575) : le phare tourne, le scintillement

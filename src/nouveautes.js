@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 580,
+    titre: 'Paris ne fait plus planter',
+    puces: [
+      'En mode Loin, le jeu tient dans Paris',
+      'Au loin, le paysage prend le relais',
+    ],
+  },
+  {
     v: 579,
     titre: 'Seulement les plus belles voitures',
     puces: [
