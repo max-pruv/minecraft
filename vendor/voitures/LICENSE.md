@@ -247,3 +247,31 @@ n'est pas versionné ; le script se rejoue dessus) :
   carrosserie nommée `Livree_*` (sa couleur est dans la texture, elle ne se
   repeint pas).
 Aucune forme ni texture inventée : ce sont celles de l'auteur.
+
+## Lucid Air Sapphire (novembre 2026)
+
+`lucid-air-sapphire.glb`, paquet glTF fourni par Max, converti par
+`scripts/convertir-lucid-air.mjs` (le paquet brut n'est pas versionné). Son
+`license.txt`, recopié tel quel :
+
+> Model Information:
+> * title:	Lucid Air Sapphire (2024)
+> * source:	https://sketchfab.com/3d-models/lucid-air-sapphire-2024-06159f1e901840e4ac938536fcd742e0
+> * author:	geyges (https://sketchfab.com/geyges)
+>
+> Model License:
+> * license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+> * requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works
+
+**Ce n'est pas une licence Creative Commons, contrairement aux modèles ci-dessus.**
+La licence Standard de Sketchfab autorise l'usage dans une œuvre, sous les
+restrictions de la page citée ; le dépôt et le jeu étant publics, le fichier
+converti y est téléchargeable. Usage privé et familial, sans affiliation avec Lucid.
+
+Modifications, toutes par le script : repère du jeu et échelle sur l'empattement
+réel (2,96 m) ; couleurs cuites par sommet ; 301 926 → 138 179 triangles et 474 →
+29 maillages (pièces invisibles retirées par rayons, simplification par
+meshoptimizer) ; cartes retirées, sauf un atlas des inscriptions et l'écran de
+bord ; bleu Sapphire et sombres relevés pour l'éclairage du jeu ; vitrages en
+transparence simple ; roues, volant et portes avant regroupés sous leurs nœuds.
+

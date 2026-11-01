@@ -2490,7 +2490,11 @@ function verifier(nom, ok, detail = '') {
     const pendantK = await ecouter(1500);
     await lucas.evaluate(() => window.__game.player.keys.delete('KeyH'));
     await dormir(500);
-    const apresK = await ecouter(1200);
+    // Le lâcher voyage : sur GitHub Actions, −54 dB tenu pour −67 dans la première
+    // fenêtre. On réécoute une fois, 2,9 s après le lâcher au plus : sous les quatre
+    // secondes où le klaxon d'un ami se tait seul, le témoin garde donc le message.
+    let apresK = await ecouter(1200);
+    if (!(apresK.db < pendantK.db - 15)) apresK = await ecouter(1200);
     await ines.evaluate(() => { if (window.__oreille) window.__oreille.ecouter = false; });
     verifier('à plusieurs, l\'ami entend le klaxon de l\'enfant (ses passants aussi), et il se tait au lâcher',
       volantK.auVolant && pendantK.db !== null && pendantK.db > avantK.db + 15 && apresK.db < pendantK.db - 15 && pendantK.amis >= 1

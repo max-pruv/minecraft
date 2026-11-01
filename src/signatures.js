@@ -55,6 +55,7 @@ export const SIGNATURES_GLB = [
   'Standard+map+alpha+DS',    // les étiquettes et logos détourés, le verre des feux
   'Standard+map+nrm+alpha+DS',// les grilles ajourées des prises d'air
   'Standard+map+nrm+DS',      // les pneus et leur bande de roulement ; la SF90 XX (Ddiaz Design) aussi : carbone, moteur, grilles, jantes, habitacle
+  'Standard+DS+vc',           // la Lucid Air Sapphire : habitacle, plastiques et jantes, cuits par sommet (une matière pour 90)
 ];
 
 // ET CE QUE LE JEU FABRIQUE LUI-MÊME, mesuré à l'arrivée à Paris une fois les

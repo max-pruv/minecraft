@@ -376,6 +376,54 @@ export function planPortieres(g) {
   return plan;
 }
 
+// LES VRAIES PORTES D'UN MODÈLE (Lucid Air Sapphire) : deux nœuds `Portiere_G` et
+// `Portiere_D` posés sur leur charnière, avec leur intérieur. Rien à découper,
+// aucune géométrie à toucher : chaque clone a déjà ses pivots, et l'on ne fait
+// que rendre ce que la séquence attend. Le plan se mesure une fois par modèle,
+// dans le repère de la voiture (nez en −z). Le modèle est dans un cadre tourné
+// d'un demi-tour autour de y : la rotation d'`ouvrir` commute avec lui, et le
+// signe reste celui du flanc VU DANS LA VOITURE.
+function vraiesPortes(g) {
+  const modele = g.userData.modele || g;
+  const G = modele.getObjectByName('Portiere_G'), D = modele.getObjectByName('Portiere_D');
+  if (!G || !D) return null;
+  g.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(g.matrixWorld).invert();
+  const M = new THREE.Matrix4();
+  const mesure = (pivot) => {
+    const boite = new THREE.Box3();
+    pivot.traverse((o) => {
+      if (!o.isMesh) return;
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      M.multiplyMatrices(inv, o.matrixWorld);
+      boite.union(o.geometry.boundingBox.clone().applyMatrix4(M));
+    });
+    return boite;
+  };
+  const cle = cleModele(g);
+  let plan = cle ? plans.get(cle) : null;
+  if (!plan) {
+    const a = mesure(G), b = mesure(D);
+    const boite = mesure(modele);
+    plan = { cle, vraie: true, ms: 0, demiLarg: Math.max(Math.abs(boite.min.x), Math.abs(boite.max.x)),
+      z0: Math.min(a.min.z, b.min.z), z1: Math.max(a.max.z, b.max.z), y0: Math.min(a.min.y, b.min.y), y1: Math.max(a.max.y, b.max.y),
+      longueur: { '-1': a.max.z - a.min.z, '1': b.max.z - b.min.z }, ambigues: 0, triangles: 0, tranches: 0, sommetsNeufs: 0 };
+    if (cle) plans.set(cle, plan);
+  }
+  // un flanc se lit dans la voiture, jamais dans le nom d'un paquet
+  const sens = (pivot) => { M.multiplyMatrices(inv, pivot.matrixWorld); return new THREE.Vector3().setFromMatrixPosition(M).x < 0 ? -1 : 1; };
+  const out = { plan };
+  for (const p of [G, D]) {
+    const cote = sens(p);
+    p.userData.estPortiere = true;
+    p.userData.cote = cote;
+    p.userData.longueur = plan.longueur[String(cote)] ?? plan.longueur['-1'];
+    out[String(cote)] = p;
+  }
+  g.userData.portieres = out;
+  return out;
+}
+
 // ÉQUIPER UNE VOITURE : SES maillages perdent les portières, elle gagne deux
 // pivots. Rend `{ '-1': pivot, '1': pivot, plan }`, ou null si le modèle ne
 // s'y prête pas. Idempotent : une voiture déjà équipée rend ses pivots.
@@ -383,6 +431,8 @@ export function equiperPortieres(g, refuse = false) {
   if (!g) return null;
   if (g.userData.portieres) return g.userData.portieres;
   if (refuse) return null;
+  const vraies = vraiesPortes(g);
+  if (vraies) return vraies;
   const plan = planPortieres(g);
   if (!plan) return null;
   const modele = g.userData.modele;

@@ -511,6 +511,16 @@ export const FLOTTE = [
   { fichier: 'generique-supercar.glb', classe: 'sportive', nom: 'Supercar à aileron', laque: 'jamais', habitacle: false, portiere: false },
   { fichier: 'generique-suv.glb', classe: 'suv', nom: 'Grand SUV', laque: 'jamais', habitacle: false, portiere: false },
   { fichier: 'generique-break.glb', classe: 'berline', nom: 'Break familial', laque: 'jamais', habitacle: false, portiere: false },
+  // LA LUCID AIR SAPPHIRE (`scripts/convertir-lucid-air.mjs`, crédit dans
+  // vendor/voitures/LICENSE.md) : la seule du dépôt avec un vrai habitacle, un
+  // volant à elle et de vraies portes avant (`Portiere_G`, `Portiere_D`, que
+  // portieres.js prend sans découper la tôle). Le bleu Sapphire est son identité
+  // (`laque: 'jamais'`), et ses 1 234 ch la rangent avec les sportives. Ses
+  // sièges sont MESURÉS sur son assise (`sonde-captures-lucid.cjs`) : à la place
+  // commune de la fiche `voiture`, l'enfant était assis dans le dossier.
+  { fichier: 'lucid-air-sapphire.glb', classe: 'sportive', nom: 'Lucid Air Sapphire', laque: 'jamais',
+    siege: { x: -0.37, y: 0.43, z: -0.02 },
+    sieges: [{ x: 0.37, y: 0.43, z: -0.02 }, { x: -0.37, y: 0.5, z: 0.82 }, { x: 0.37, y: 0.5, z: 0.82 }] },
   // LA VOITURE DE POLICE (v553) : la Ford Crown Victoria Police Interceptor
   // fournie par Max (Mateusz Woliński, CC-BY-4.0, vendor/voitures/LICENSE.md),
   // convertie au contrat par `scripts/convertir-police.mjs`. Sa livrée noir et

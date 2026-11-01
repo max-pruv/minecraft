@@ -1594,7 +1594,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         const tour = () => {
           const f = g.renderer.info.render.frame;
           deltas.push(f - prec); prec = f;
-          if (performance.now() - t0 < 4000) requestAnimationFrame(tour); else fin();
+          // La fenêtre se compte en TOURS : sur GitHub Actions, 7 tours en quatre
+          // secondes rougissaient la seule garde `tours > 8`, avec le bon résultat.
+          const ms = performance.now() - t0;
+          if (ms < 4000 || (deltas.length < 12 && ms < 25000)) requestAnimationFrame(tour); else fin();
         };
         requestAnimationFrame(tour);
       });
@@ -8368,8 +8371,14 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const pendantK = await bandeMax(0.8, 350, 560);
       const ev = P.klaxon;
       P.keys.delete('KeyH'); await tenir(0.6);
-      const apresK = await bandeMax(0.8, 350, 560);
-      out.klaxon = { avant: avantK, pendant: pendantK, apres: apresK, evenement: !!(ev && typeof ev.t === 'number'), passant: passant ? passant.klaxonsEntendus : null };
+      // Sur GitHub Actions le lâcher s'est lu à −40 dB pour −39,9 tenu : on écoute
+      // jusqu'à trois fenêtres (lâché, rien ne peut plus le faire taire tout seul)
+      // et l'horloge audio entre dans le message, pour séparer un son qui tient
+      // d'un contexte audio affamé.
+      const ctxK = window.__sons.contexte(), audio0 = ctxK ? ctxK.currentTime : 0, reel0 = performance.now();
+      let apresK = await bandeMax(0.8, 350, 560);
+      for (let k = 0; k < 2 && pendantK - apresK < 10; k++) apresK = await bandeMax(0.8, 350, 560);
+      out.klaxon = { avant: avantK, pendant: pendantK, apres: apresK, audioS: +((ctxK ? ctxK.currentTime : 0) - audio0).toFixed(2), reelS: +((performance.now() - reel0) / 1000).toFixed(2), evenement: !!(ev && typeof ev.t === 'number'), passant: passant ? passant.klaxonsEntendus : null };
       // — LA ROUTE SOUS LES ROUES : la pierre tient (1), l'herbe moins ; à
       // vingt blocs par seconde l'herbe gronde (60-300 Hz) et la caméra
       // tremble ; la pierre, non —
