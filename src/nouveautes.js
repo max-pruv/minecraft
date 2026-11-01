@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 582,
+    titre: 'Plus haut, plus loin',
+    puces: [
+      'Les avions montent jusqu\'à 1 500 mètres',
+      'De là-haut, se poser va plus vite',
+      'En mode Loin, on voit deux fois plus loin',
+    ],
+  },
+  {
     v: 581,
     titre: 'Dix voitures de tous les jours',
     puces: [
