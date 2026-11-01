@@ -1,5 +1,46 @@
 # Ce qui est en cours
 
+## New York v583 — revue et dettes déclarées
+
+- [ ] **Rendu encore stylisé.** Les huit vues mobiles Midtown/Brooklyn jour/nuit
+  sont dans `docs/revue-ecran/v583-new-york/`. Feuillage anguleux et fin de rue
+  vide restent aux points 40–41 de `docs/revue-ecran.md`. Cette livraison ne
+  réalise pas la refonte nature high fidelity : la PR #588 reste suspendue.
+- [ ] **Portail complet [41320845365](https://github.com/max-pruv/minecraft/actions/runs/41320845365),
+  tête `bfba5e6`, quatre tranches terminées.** `reseau.js` : fluidité directe
+  (part juste 0,88, saut maximal 85,67), passager (suivi 4,64 pour 8,63 parcourus),
+  fluidité nuage (part juste 0,44, saut 40,43). Ce sont les témoins intermittents
+  déjà mesurés des deux côtés dans les livraisons antérieures, pas un portail
+  vert. La [référence v582](https://github.com/max-pruv/minecraft/actions/runs/41317404967)
+  (arbre `beb6f43` identique à `7cb7a4b`) échoue aussi sur le réseau, notamment
+  la fluidité nuage (part juste 0). Aucun changement de transport réseau ici.
+- [ ] **`carte.js` : deux témoins déjà déclarés avec double mesure**, flèche GPS
+  (texte gauche, matrice encore à +1,57 rad) et fond de carte à froid
+  (431 ms pour une borne de 400). Voir notamment le relevé v487 plus bas.
+  `maj.js`, `plafond.js` et `manhattan.js` passent sur cette reprise.
+- [ ] **`parishd.js` : terrasse cassée puis voiture de rue rencontrée** à
+  2,63 blocs. Le témoin ne retentait pas ce cas après écrasement. Son filtre
+  reconnaît maintenant cette interférence ; les distances du verdict restent
+  inchangées. Rejoué seul : main passe après deux interférences retirées
+  (terrasse cassée, 14,92 blocs parcourus) ; New York passe (terrasse intacte,
+  arrêt à 3,04, 4,96 blocs parcourus). Aucun défaut JavaScript. Voir la revue OSM.
+
+- [ ] **`monte.js` : dix rouges, des témoins déjà déclarés.** Apparition du
+  trafic ; collisions et écart des voitures ; taux de chevauchement ; rue vide ;
+  Moscou (deux) ; libération de mémoire sans voitures à Rome ; plongée à quai ;
+  recul contre une voiture (0,7). La référence v582 rend douze rouges, dont les
+  collisions au même point (-330,310), Moscou et la mémoire. Les doubles mesures
+  des autres intermittences figurent notamment aux relevés v570/v578 et de la
+  circulation plus bas. Le quai et le recul à 0,7 étaient déjà mesurés sur main
+  v569 (relevé v570). La fusion ne signifie pas que ces défauts sont corrigés.
+- [x] **Dernière passe avant fusion** : dates de migration rafraîchies à
+  `2026-11-01T16:28:43Z` ; contrats d'architecture 8/8. Depuis la tête du portail complet,
+  seuls changent ces dates, le filtre du témoin café vérifié séparément, les
+  sondes et la documentation. Le portail automatique du dernier commit peut
+  être encore en cours à la fusion : les quatre tranches complètes du code
+  fonctionnel ont été examinées, les vérifications ciblées de la passe finale
+  sont inscrites dans `docs/manhattan-osm-validation.md`.
+
 ## Dix voitures de tous les jours (v581) — ce qui reste, déclaré
 
 - [ ] Le tirage de la rue est uniforme sur toute la flotte (38 modèles de rue

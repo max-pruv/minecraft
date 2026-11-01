@@ -30,7 +30,7 @@ import { FORMES_QUARTIERS } from "./new-york-quartiers-donnees.js";
 // des deux garde l'ancien volume ET l'ancien dessin — `TerreUrbaine` le décide
 // au chargement du journal (`deciderModelesNY`). La date se relit à la fusion
 // (v309).
-export const DATE_NY_MODELES = Date.parse("2026-11-01T15:08:35Z");
+export const DATE_NY_MODELES = Date.parse("2026-11-01T16:28:43Z");
 export const MODELES_NY_ETAT = { empireAncien: false, liberteAncienne: false };
 // le socle de l'Empire reste procédural, net à hauteur de rue : la
 // photogrammétrie, faite d'avion, n'est lisible qu'au-dessus de lui

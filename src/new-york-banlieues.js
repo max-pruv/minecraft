@@ -30,7 +30,7 @@
 import { FORMES_QUARTIERS as F } from "./new-york-quartiers-donnees.js";
 
 // La date se relit à la fusion (v309).
-export const DATE_BANLIEUES = Date.parse("2026-11-01T15:08:35Z");
+export const DATE_BANLIEUES = Date.parse("2026-11-01T16:28:43Z");
 export const TALUS = 28;
 export const CREDIT_QUARTIERS =
   '"CCity Building Set 1" (https://sketchfab.com/3d-models/ccity-building-set-1-a2d5c7bfcc2148fb8994864c43dfcc97) by Neberkenezer (https://sketchfab.com/neberkenezer), CC-BY-4.0';

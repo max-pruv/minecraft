@@ -47,6 +47,12 @@ Les constructions antérieures gardent aussi leur immeuble ordinaire v582 en
 entier : la sonde initiale perdait dix-neuf supports de toits sur vingt. Le
 contrat de migration garde maintenant le volume, le toit, le transfert du
 journal et son rendu, en écartant les volumes OSM qui le chevaucheraient.
+Les huit contrats passent, ainsi que la suite Manhattan du portail complet ;
+huit captures mobiles jour/nuit et une sonde réelle de toit complètent la revue.
+Les échecs hérités du portail sont déclarés dans `TASKS.md` : le portail n'est
+pas intégralement vert. La direction high fidelity demandée par Max est écrite
+dans `AGENTS.md` et `docs/direction-artistique.md` pour toutes les éditions
+futures ; les défauts graphiques restants ne sont pas présentés comme résolus.
 
 ---
 

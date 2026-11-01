@@ -26,6 +26,16 @@ travail est irrattrapable.
 
 ---
 
+## Direction artistique permanente
+
+Décision de Max du 1er novembre 2026 : réalisme et high fidelity dans chaque
+édition future, partout dans le jeu ; aucun nouveau style Minecraft ou pixel art.
+Lire `AGENTS.md` et [la charte](docs/direction-artistique.md). Les voxels internes
+restent possibles, le résultat visible doit être crédible. Textures plaquées,
+modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérifier
+les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
+ils ne constituent pas une exception pour les nouveaux rendus.
+
 ## Manhattan : atlas OSM de Max (v583)
 
 Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par
@@ -63,6 +73,15 @@ Crédit CC BY 4.0, provenance et limites : `docs/manhattan-osm.md`.
   escalier, pas une fenêtre. Toutes les variantes suivent le cycle nocturne.
 - Un arrêt de collision se mesure sur des images de jeu distinctes : trois
   lectures identiques entre deux images lentes ne prouvent pas un arrêt.
+
+## Un témoin de terrasse isole son obstacle (v583)
+
+Le témoin de `parishd.js` essaie un autre emplacement si une voiture de la rue
+l'arrête, y compris APRÈS avoir écrasé la terrasse. L'ancien filtre ne retirait
+que les essais où la terrasse restait intacte : une terrasse cassée puis une
+voiture rencontrée à 2,63 blocs produisaient un faux échec. Le verdict reste
+strict : franchir la terrasse cassée ou s'arrêter devant la terrasse intacte.
+Ne pas abaisser les distances pour faire passer une interférence de trafic.
 
 ## Invariants non négociables
 

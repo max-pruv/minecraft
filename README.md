@@ -5,6 +5,12 @@ Vanilla JavaScript and [Three.js](https://threejs.org) power terrain, physics,
 creatures and rendering. Libraries and vehicle models supplied for this family game are vendored;
 optional network services provide multiplayer and cloud saves.
 
+**Permanent art direction:** realistic, high-fidelity visuals across the game,
+including low-detail views and fallback assets; no new Minecraft or pixel-art
+styling. See [the art direction](docs/direction-artistique.md). The current game
+still contains documented visual shortcomings; this is the target, not a claim
+that every existing asset already meets it.
+
 **New York's boroughs (v583):** ten neighbourhoods around the island — Hoboken, Fort
 Lee, Jersey City, Port Newark, the Bronx, Queens, Brooklyn, Coney Island, Long Island,
 Staten Island — and seven bridges, built with "CCity Building Set 1" by Neberkenezer
