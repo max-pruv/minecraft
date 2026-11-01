@@ -33,6 +33,17 @@ const vues = [
         const { ORIGINE_MANHATTAN: O } = await import('/src/manhattan-world.js');
         const ny = await import('/src/new-york-modeles.js');
         const g = window.__game;
+        if (v.nom === 'facade-detail') {
+          // Cadrer une baie existante, même si le rythme des travées évolue.
+          const P = await import('/src/manhattan-plan.js');
+          const b = P.BATIMENTS.find(b => b.osm && b.x0 >= 0 && b.x0 < 15 && b.z0 >= 0 && b.z0 < 15);
+          let baie;
+          for (let x = b.x0; x < b.x1 && !baie; x++) for (let z = b.z0; z < b.z1 && !baie; z++)
+            if (P.sommet(b, x, z) > 8 && !P.sommet(b, x - 1, z) && g.villeRealiste.baieOsm(b, x, z, -1, 0, 4))
+              baie = { x, z };
+          if (!baie) throw new Error('Aucune embrasure pour le gros plan');
+          v.x = baie.x - 2.5; v.z = baie.z + 1.7;
+        }
         // Le framebuffer réduit ne réduit pas le coût de la shadow map.
         // Préparer les secteurs sans la recalculer ; la capture la rafraîchit.
         g.renderer.shadowMap.autoUpdate = false;
@@ -48,11 +59,16 @@ const vues = [
         let precedent = -1, stable = 0;
         while (performance.now() - debut < 120000) {
           await new Promise(r => setTimeout(r, 800));
+          // Quatre lectures entre deux images ne prouvent pas que la ville
+          // est prête après un saut : attendre des images de jeu distinctes.
+          await new Promise(r => requestAnimationFrame(r));
           const n = g.chunkMeshes.size + (g.villeRealiste?.buildings.size || 0);
-          if (n === precedent && !g.villeRealiste?.stats.queued) { if (++stable >= 4) break; }
+          const v = g.villeRealiste;
+          const enCours = v && (v.queue?.length || v.groundQueue?.length || v.farQueue?.length || v.job);
+          if (n === precedent && !enCours) { if (++stable >= 4) break; }
           else { precedent = n; stable = 0; }
         }
-        return { attente: Math.round(performance.now() - debut), running: g.running,
+        return { ...v, attente: Math.round(performance.now() - debut), running: g.running,
           rendu: { ...g.renderer.info.render }, proches: g.villeRealiste?.buildings.size,
           file: g.villeRealiste?.stats.queued, webgl: g.renderer.getContext().getError() };
       }, vue);

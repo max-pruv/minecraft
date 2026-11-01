@@ -880,6 +880,18 @@ export class ManhattanRenderer {
   }
   // Le lointain garde des baies géométriques et le matériau du mur. Il ne
   // plaque pas une photographie d'immeuble sur le volume OSM.
+  baieOsm(b, x, z, nx, nz, y) {
+    if (b.mat === "glass") return true;
+    const bas = Math.floor(y / 3) * 3, haut = bas + 2;
+    const pan = (a, c) => sommet(b, a, c) > haut && sommet(b, a + nx, c + nz) <= bas;
+    // Un trumeau de chaque côté. Le rythme repart au début du VRAI pan de
+    // mur : le coin de la boîte englobante peut se trouver dans une cour.
+    if (!pan(x, z) || !pan(x - nz, z - nx) || !pan(x + nz, z + nx)) return false;
+    let pas = 0, a = x, c = z;
+    while (pan(a - nz, c - nx)) { a -= nz; c -= nx; pas++; }
+    const baie = pas % b.travee;
+    return baie === 1 || b.architecture === "loft" && baie > 1;
+  }
   baiesLointainesOsm(lot, b) {
     for (let z = b.z0; z < b.z1; z++) for (let x = b.x0; x < b.x1; x++) {
       const h = sommet(b, x, z);
@@ -887,11 +899,11 @@ export class ManhattanRenderer {
       for (const [nx, nz] of [[1,0],[-1,0],[0,1],[0,-1]]) {
         const adjacent = sommet(b, x + nx, z + nz);
         if (adjacent >= h) continue;
-        const t = nx ? z - b.z0 : x - b.x0, baie = t % b.travee;
+        const t = nx ? z - b.z0 : x - b.x0;
         const vitre = b.mat === "glass";
-        if (!vitre && !(baie === 1 || b.architecture === "loft" && baie > 1)) continue;
         for (let y = 4; y + 1 < h; y += 3) {
           if (y <= adjacent) continue;
+          if (!this.baieOsm(b, x, z, nx, nz, y)) continue;
           const allume = ALEA(b.seed + Math.floor(t / b.travee), Math.floor(y / 3)) > .64;
           const largeur = vitre ? .92 : .76;
           lot.put(allume ? "glassLit" : "glassDark", x + .5 + nx * .51,
@@ -903,7 +915,6 @@ export class ManhattanRenderer {
   }
   facadeOsm(lot, b, x, z, nx, nz, h, premier) {
     const t = nx ? z - b.z0 : x - b.x0;
-    const baie = ((t % b.travee) + b.travee) % b.travee;
     const verre = b.mat === "glass", loft = b.architecture === "loft";
     const brownstone = b.architecture === "brownstone", artdeco = b.architecture === "artdeco";
     const teinte = b.teinte, cadre = verre ? "metal" : "trim";
@@ -917,9 +928,9 @@ export class ManhattanRenderer {
     for (let yy = premier; yy <= h; yy++) {
       if (!this.present(x, NIVEAU + yy, z)) continue;
       const etage = yy % 3;
-      const boutique = b.enseigne && yy < 3 && baie !== 0;
-      const fenetre = yy >= 4 && yy < h - 1 && etage !== 0 &&
-        (verre || baie === 1 || loft && baie > 1);
+      const baie = this.baieOsm(b, x, z, nx, nz, yy);
+      const boutique = baie && b.enseigne && yy < 3;
+      const fenetre = baie && yy >= 4 && yy < h && etage !== 0;
       if (fenetre || boutique) {
         const allume = !boutique && ALEA(b.seed + Math.floor(t / b.travee), Math.floor(yy / 3)) > .64;
         const largeur = verre || boutique || loft ? .91 : .76;
@@ -963,7 +974,7 @@ export class ManhattanRenderer {
         }
       } else {
         piece(b.mat, yy + .5, 1, 1, .94, -.45, teinte);
-        if ((artdeco || loft) && baie === 0 && yy > 2) {
+        if ((artdeco || loft) && t % b.travee === 0 && yy > 2) {
           piece("trim", yy + .5, loft ? .24 : .18, 1, .28, .08, teinte);
           if (artdeco) for (const u of [-.12, .12])
             piece("trim", yy + .5, .045, 1, .34, .11, teinte, u);
@@ -999,9 +1010,18 @@ export class ManhattanRenderer {
       }
       // Un escalier de secours étroit à l'échelle des humains, accroché au mur.
       if (largeur >= 5 && ["tenement", "cour", "loft"].includes(b.architecture)) {
-        const fx = b.x0 + i + 1.5;
-        for (let y = 6; y < sommet(b, Math.floor(fx), z) - 2; y += 3) {
-          if (!this.present(Math.floor(fx), NIVEAU + y, z)) continue;
+        // Le palier dessert une vraie baie, jamais un angle devenu plein ni
+        // la partie étroite d'une tour au-dessus des ailes basses.
+        let colonne = null;
+        for (let c = b.x0 + i + 1; c < b.x0 + fin - 1; c++) {
+          if (this.baieOsm(b, c, z, 0, 1, 7)) {
+            colonne = c; break;
+          }
+        }
+        const fx = colonne + .5;
+        for (let y = 6; colonne !== null && y < sommet(b, colonne, z) - 2; y += 3) {
+          if (!this.baieOsm(b, colonne, z, 0, 1, y + 1)) break;
+          if (!this.present(colonne, NIVEAU + y, z) || !this.present(colonne, NIVEAU + y + 1, z)) continue;
           lot.put("metal", fx, NIVEAU + y, z + 1.45, 1.6, .08, .9);
           lot.put("metal", fx, NIVEAU + y + .9, z + 1.85, 1.6, .05, .05);
           for (const dx of [-.72, -.36, 0, .36, .72])

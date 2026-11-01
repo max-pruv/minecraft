@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+## Façades en relief de Manhattan (v584) — validation du 1er novembre
+
+- [ ] `npm test -- --tranche=4/17` : fumée verte (144 modules), huit contrats
+  d'architecture verts, puis **un échec** de `manhattan.js` en 10 min 42 s :
+  « les deux clients restent sans erreur de jeu », PeerJS `Aborting!` / `ID is
+  taken`. Les échanges de blocs, les avatars, les sauvegardes et la PWA passent,
+  ainsi que le nouveau contrôle de profondeur des fenêtres. Ce message est déjà
+  répertorié ci-dessous dans les portails v375 et v518 ; `src/net.js` et le banc
+  sont identiques à `origin/main` 7cb7a4b. Il n'est ni filtré ni transformé en
+  succès. Le rapport de cette passe est `docs/manhattan-osm-validation.md`.
+- [x] Après recalage des travées sur les pans de mur : **Manhattan verte en
+  10 min 34 s**, huit contrats d’architecture verts et aucun défaut JavaScript
+  ou WebGL. La passe précédente et son intermittence PeerJS restent consignées.
+
 ## New York v583 — revue et dettes déclarées
 
 - [ ] **Rendu encore stylisé.** Les huit vues mobiles Midtown/Brooklyn jour/nuit
@@ -40,6 +54,7 @@
   être encore en cours à la fusion : les quatre tranches complètes du code
   fonctionnel ont été examinées, les vérifications ciblées de la passe finale
   sont inscrites dans `docs/manhattan-osm-validation.md`.
+
 
 ## Dix voitures de tous les jours (v581) — ce qui reste, déclaré
 

@@ -72,6 +72,11 @@ Crédit CC BY 4.0, provenance et limites : `docs/manhattan-osm.md`.
   Le lointain garde des baies simplifiées en géométrie. Le test de relief lance
   des rayons dans le maillage réellement affiché, au centre et au bord des baies.
   Les nouveaux matériaux suivent aussi le préchauffage à l'accueil.
+- Une baie de maçonnerie garde un trumeau aux angles étroits des profils :
+  deux encadrements perpendiculaires ne doivent pas se pénétrer dans une même
+  colonne. Le lointain suit le même choix de baies.
+  Le rythme des travées repart au début du pan de mur réel, étage par étage ;
+  l'origine de la boîte englobante ne doit pas rendre un retrait aveugle.
 - Les masques lumineux photographiques suivent les baies repérées dans
   `scripts/new-york-fenetres.mjs` : une zone sombre peut être l'ombre d'un
   escalier, pas une fenêtre. Toutes les variantes suivent le cycle nocturne.

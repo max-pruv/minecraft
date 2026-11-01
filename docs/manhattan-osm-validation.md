@@ -3,9 +3,20 @@
 Reprise de [la PR #587](https://github.com/max-pruv/minecraft/pull/587), à partir
 de `6c8be9a`, avec les profils du modèle OSM fourni par Max. Les dix quartiers
 périphériques, les monuments photographiques et les protections de sauvegardes
-de cette PR sont conservés. La livraison regroupe ces changements sous v583.
+de cette PR sont conservés dans la v583. La v584 ajoute les façades en relief
+décrites ici, sur la base de main `f1482ef`.
 
-## Résultat visible
+## Résultat visible : architecture en relief
+
+Les immeubles OSM utilisent des embrasures, vitrages transparents, fonds de
+fenêtres, châssis, appuis, corniches et ferronneries en géométrie. Les briques
+sont à l'échelle du personnage ; la pierre et le bois ont leurs propres
+textures et microreliefs. Les fenêtres restent géométriques au loin.
+Les angles étroits gardent un trumeau plein, et les escaliers de secours se
+placent devant des baies existantes. Le dernier étage garde des fenêtres de
+même hauteur que les étages inférieurs.
+
+![Embrasure et châssis vus de biais](manhattan-osm-captures/facade-detail.png)
 
 | Midtown, à hauteur de piéton | Midtown, volumes et terrasses |
 | --- | --- |
@@ -15,10 +26,12 @@ de cette PR sont conservés. La livraison regroupe ces changements sous v583.
 | --- | --- |
 | ![Village](manhattan-osm-captures/village.png) | ![Nuit](manhattan-osm-captures/midtown-nuit.png) |
 
-Les cours et les retraits viennent de l'atlas OSM. Les photographies proviennent
-du paquet New York Buildings déjà converti dans la PR #587. Le masque nocturne
-ne confond plus ombres d'escaliers et fenêtres, et les dix variantes de façade
-s'allument. Les captures de Brooklyn et de la Liberté ont également été inspectées.
+Les cours et les retraits viennent de l'atlas OSM. La lumière nocturne des
+immeubles OSM vient des fonds derrière les vitres. Les photographies du paquet
+New York Buildings restent utilisées par les modèles hérités ; leurs masques
+nocturnes suivent les baies et non les ombres d'escaliers.
+
+Les captures de cette galerie sont en cours de remplacement par la passe finale.
 
 ## Données et échelle
 
@@ -58,15 +71,23 @@ il ne mesure pas les performances d'un iPad physique.
   hauteurs, cours et collision/lointain, rues libres, cache hors ligne).
 - Extraction répétée : atlas identique octet pour octet avec le cache de source
   contrôlé par SHA-256.
-- Six vues inspectées, puis nouvelle capture nocturne après correction des
-  masques ; aucune erreur JavaScript ou WebGL relevée pendant les captures.
-- Fumée : **aucun échec** ; tous les 142 modules résolvent leurs imports et
+- Contrôle du relief : six baies de maillages affichés ont **47,5 cm entre le
+  vitrage et le fond**, avec des tableaux saillants. Les douze immeubles OSM
+  examinés n'emploient aucune photo de façade. L'ancien rendu de `b77ac64`, servi
+  à la même sonde, échoue avec zéro baie profonde et douze façades photographiques.
+- Fumée : **aucun échec** ; tous les 144 modules résolvent leurs imports et
   figurent dans le cache hors ligne.
-- Suite Manhattan : **aucun échec**, terminée en 7 min 59 s via le portail
-  (`npm test -- --tranche=4/17`). Les collisions, la destruction visible,
-  la conduite tactile, les sauvegardes, les deux clients et la PWA hors ligne passent.
-- Portail complet : **non entièrement vert**. Le relevé détaillé de la reprise
-  figure ci-dessous et dans `TASKS.md`.
+- Suite Manhattan finale : **aucun échec**, terminée en **10 min 34 s** via
+  `npm test -- --tranche=4/17`, après recalage des travées. Les contrôles de
+  relief, collisions, destruction, conduite tactile, sauvegardes, partage des
+  blocs, absence d’erreurs JavaScript/WebGL et PWA hors ligne passent.
+- Une passe précédente de 10 min 42 s avait signalé PeerJS `Aborting!` / `ID is
+  taken` dans le contrôle des deux clients, tandis que les échanges réussissaient.
+  Cette intermittence déjà répertoriée reste consignée dans `TASKS.md` ; aucun
+  filtre d’erreur ni changement réseau n’a été ajouté pour la masquer.
+- Le relevé du portail complet de la v583 est conservé plus bas ; il ne constitue
+  pas une validation globale des nouvelles façades de la v584.
+
 
 Les contrôles hérités ont été adaptés au périmètre réel : les sondes de terrain
 se trouvent au-delà des dix nouvelles zones et de leur talus, et le contrat des
@@ -83,20 +104,24 @@ CHROMIUM=/usr/bin/chromium node tests/sonde-captures-osm.cjs /tmp/manhattan-osm
 CHROMIUM=/usr/bin/chromium node tests/sonde-captures-osm.cjs /tmp/manhattan-osm midtown-nuit
 ```
 
-La sonde borne son attente à deux minutes par vue ; le rendu logiciel peut
+La sonde attend des images de jeu distinctes après chaque déplacement, puis
+rafraîchit les ombres avant la capture. Elle borne son attente à deux minutes
+par vue ; le rendu logiciel peut
 encore préparer des secteurs hors champ à cette borne. Ses compteurs de triangles
 et d'appels de rendu ne sont pas un benchmark comparable aux captures anciennes.
 
-Limites héritées de la PR : les quartiers périphériques n'ont pas encore le
+Limites : les quartiers périphériques n'ont pas encore le
 réseau de feux de Manhattan ; les passants sont moins présents dans les zones
-éloignées. Le rendu et les rues restent stylisés et voxelisés.
+éloignées. Le rendu, les contours des empreintes et les rues restent stylisés
+et voxelisés. Le relief des façades est réel ; la fidélité globale d'un GTA
+récent n'est pas atteinte.
 
 Revue mobile après intégration de main et correction des supports : huit
 captures Midtown/Brooklyn, jour et nuit, iPhone et iPad, dans
 `docs/revue-ecran/v583-new-york/`. Les limites observées (feuillage anguleux,
 fin de rue vide) figurent au relevé 40–41 de `docs/revue-ecran.md`.
 
-## Contrôles de la reprise sur main
+## Contrôles de la v583, avant les façades en relief
 
 Sur `bfba5e6`, le [portail complet](https://github.com/max-pruv/minecraft/actions/runs/41320845365)
 est lancé en quatre tranches. Les suites `manhattan`, `plafond`, `sauvegarde`,

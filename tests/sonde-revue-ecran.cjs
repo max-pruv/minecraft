@@ -137,8 +137,31 @@ const ETATS = [
     const O=await tab.evaluate(async()=> (await import('/src/manhattan-world.js')).ORIGINE_MANHATTAN);
     const monde=await poserEt(tab,{x:O.x+x,y,z:O.z+z,yaw,pitch});
     await tab.evaluate(async()=>{const N=await import('/src/new-york-modeles.js');await Promise.all([N.chargerModeleNY('empire'),N.chargerModeleNY('liberte'),N.chargerQuartiers()]);});
-    await dormir(3000);
-    return {monde,triangles:await tab.evaluate(()=>__game.renderer.info.render.triangles)};
+    const architecture = await tab.evaluate(async () => {
+      const g = __game, c = g.renderer.domElement, debut = performance.now();
+      const largeur = [c.style.getPropertyValue('width'), c.style.getPropertyPriority('width')];
+      const hauteur = [c.style.getPropertyValue('height'), c.style.getPropertyPriority('height')];
+      const ombres = g.renderer.shadowMap.autoUpdate;
+      c.style.setProperty('width', '16px', 'important');
+      c.style.setProperty('height', '16px', 'important');
+      g.renderer.shadowMap.autoUpdate = false;
+      let stable = 0;
+      try {
+        do {
+          await new Promise(r => requestAnimationFrame(r));
+          const v = g.villeRealiste;
+          const enCours = !v?.active || v.queue?.length || v.groundQueue?.length || v.job;
+          stable = enCours ? 0 : stable + 1;
+        } while (stable < 4 && performance.now() - debut < 120000);
+      } finally {
+        for (const [nom, valeur] of [['width', largeur], ['height', hauteur]])
+          valeur[0] ? c.style.setProperty(nom, ...valeur) : c.style.removeProperty(nom);
+        g.renderer.shadowMap.autoUpdate = ombres;
+        g.renderer.shadowMap.needsUpdate = true;
+      }
+      return { attente: Math.round(performance.now() - debut), proches: g.villeRealiste?.buildings.size };
+    });
+    return {monde,architecture,triangles:await tab.evaluate(()=>__game.renderer.info.render.triangles)};
   }})),
   { nom: 'campagne', async prep(tab, ctx) {
     const s = await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
@@ -762,7 +785,9 @@ async function monterEnAvion(tab, espece = 'avionligne', voeu = null) {
           noter(`  loin ${JSON.stringify(loin)}`);
           for (const [nomH, h] of HEURES) {
             await tab.evaluate((h) => window.__setDayTime(h), h);
-            await dormir(2500);   // le ciel tourne à l'image suivante (v291)
+            // Le ciel et les ombres tournent à l'image suivante, pas après
+            // une durée fixe sur un moteur graphique logiciel lent.
+            await tab.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
             await prendre(tab, `${vue}-${e.nom}-${nomH}`);
           }
           if (e.apres) await e.apres(tab);
