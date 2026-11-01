@@ -90,3 +90,8 @@ et d'appels de rendu ne sont pas un benchmark comparable aux captures anciennes.
 Limites héritées de la PR : les quartiers périphériques n'ont pas encore le
 réseau de feux de Manhattan ; les passants sont moins présents dans les zones
 éloignées. Le rendu et les rues restent stylisés et voxelisés.
+
+Revue mobile après intégration de main et correction des supports : huit
+captures Midtown/Brooklyn, jour et nuit, iPhone et iPad, dans
+`docs/revue-ecran/v583-new-york/`. Les limites observées (feuillage anguleux,
+fin de rue vide) figurent au relevé 40–41 de `docs/revue-ecran.md`.

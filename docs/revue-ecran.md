@@ -266,3 +266,21 @@ voiture qui roule ne se rattrape pas (v397) ; l'état provoque donc l'arrêt.
 | 37 | basse | au volant, de nuit | [nuit](revue-ecran/v567-chocs/iphone-voiture-projetee-nuit.jpg) | La pilule de la radio « Salle Ronde · Les marches du palais » déborde sa forme à 430 px : la fin du titre sort du bord arrondi. Antérieur. | Une largeur bornée et des points de suspension (`text-overflow: ellipsis`), ou un défilement du titre. | `index.html`, `src/sons.js` |
 | 38 | basse | au volant, Paris | [iPad](revue-ecran/v567-chocs/ipad-voiture-projetee-jour.jpg) | Un grand rectangle noir dans la minicarte, sur la Seine et la rive droite : des points pas encore peints (v540), visibles plusieurs secondes après un saut. Antérieur. | Mesurer combien de temps la bande reste noire après un saut ; peindre d'abord ce qui est sous l'enfant. | `src/main.js` (minicarte) |
 | 39 | basse | au volant, Paris (automne) | [iPad](revue-ecran/v567-chocs/ipad-voiture-projetee-jour.jpg) | De grandes feuilles d'automne flottent à hauteur d'yeux au-dessus de la chaussée, loin de tout arbre ; c'est le rouge déclaré « chaque feuille vole bas » (`monte.js`, écart 6,5 pour une barre de 4). | Celui du témoin. | `src/saisons.js` |
+
+## Le relevé de la v583 — New York, 1er novembre 2026
+
+Reprise de la PR #587 : huit captures sur iPhone (430 × 932) et iPad
+(820 × 1180), Midtown et Brooklyn, jour et nuit. Reproduction :
+`node tests/sonde-revue-ecran.cjs /tmp/ny --vues=iphone,ipad --etats=ny-rue,ny-brooklyn --rr=4`.
+[Midtown, iPhone](revue-ecran/v583-new-york/iphone-ny-rue-jour.jpg),
+[Brooklyn, iPhone](revue-ecran/v583-new-york/iphone-ny-brooklyn-jour.jpg),
+[Midtown de nuit, iPad](revue-ecran/v583-new-york/ipad-ny-rue-nuit.jpg).
+Les volumes, les photos de façades et les baies nocturnes sont visibles ;
+les silhouettes et les cours varient entre les immeubles. Les réglages tactiles
+restent accessibles. Cette passe ne démontre pas un rendu photoréaliste global
+ni une cadence sur un iPad physique : le banc utilise SwiftShader.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 40 | moyenne | Midtown et Brooklyn | [Brooklyn](revue-ecran/v583-new-york/iphone-ny-brooklyn-jour.jpg) | Les couronnes des arbres restent des plaques anguleuses peu détaillées. | Remplacer le feuillage urbain et ses LOD par des silhouettes et des matériaux conformes à la direction high fidelity. | `src/manhattan-render.js` |
+| 41 | moyenne | Brooklyn, en bout de rue | [iPhone](revue-ecran/v583-new-york/iphone-ny-brooklyn-jour.jpg) | Le bout de la rue paraît très vide, sous un horizon uniforme ; la transition avec les quartiers lointains manque de profondeur. | Reprendre les silhouettes lointaines et la transition du brouillard hors du plan. | `src/manhattan-render.js`, `src/main.js` |
