@@ -28,6 +28,8 @@ function texture(type) {
       if (type === "paving")
         v = x % 128 < 2 || y % 128 < 2 ? 113 : 195 + (n - 0.5) * 25;
       if (type === "asphalt") v = 100 + (n - 0.5) * 44 + (n > 0.96 ? 30 : 0);
+      // l'herbe et le sable (v583) : un grain clair, ni dalle ni bitume
+      if (type === "grain") v = 206 + (n - 0.5) * 58 + (ALEA(x >> 2, y >> 2) - 0.5) * 30;
       if (type.startsWith("facade")) {
         const px = x % 64,
           py = y % 64;
@@ -130,6 +132,7 @@ export function materiauxManhattan(renderer) {
     stone = texture("stone"),
     paving = texture("paving"),
     asphalt = texture("asphalt"),
+    grain = texture("grain"),
     metal = texture("metal");
   const facade = texture("facade"),
     facadeglass = texture("facadeglass"),
@@ -154,11 +157,11 @@ export function materiauxManhattan(renderer) {
     concrete: physique(0xb2b1a6, paving, 4, 0.96),
     asphalt: physique(0x60656a, asphalt, 4, 0.94),
     path: physique(0xbcb393, paving, 4, 0.95),
-    grass: physique(0x647347, asphalt, 3, 1),
+    grass: physique(0x7ea04e, grain, 3, 1),
     metal: physique(0x555e63, metal, 1, 0.44, 0.65),
     steel: physique(0xaab3bb, metal, 1, 0.24, 0.85),
     red: physique(0xb92329, null, 1, 0.36, 0.15),
-    roof: physique(0x545958, asphalt, 4, 0.94),
+    roof: physique(0x7d807f, grain, 4, 0.94),
     glass: physique(0x65818b, null, 1, 0.19, 0.55),
     glassDark: physique(0x304a55, null, 1, 0.22, 0.5),
     glassLit: physique(0x9eaaa1, null, 1, 0.32, 0.22),
@@ -174,7 +177,14 @@ export function materiauxManhattan(renderer) {
     signalOrange: physique(0xe0a24a, null, 1, 0.4),
     // le cuivre oxydé de la statue de la Liberté, vue de loin
     copper: physique(0x6aa58f, null, 1, 0.62),
-    water: physique(0x355d69, null, 1, 0.18, 0.58),
+    // la teinte de la mer du monde autour : la limite du plan ne se voit plus du ciel
+    water: physique(0x3f7fb0, null, 1, 0.2, 0.42),
+    // les banlieues (v583) : les mêmes réglages que des matières déjà là, donc les
+    // mêmes programmes — le sable sur la dalle, la tuile sur l'asphalte
+    sable: physique(0xe6d3a4, grain, 4, 0.98),
+    tuile: physique(0xa8603f, grain, 3, 0.9),
+    ardoise: physique(0x737c82, grain, 3, 0.86),
+    herbeClaire: physique(0x8cac58, grain, 3, 1),
   };
   for (const m of [
     mats.farBrick,
@@ -293,6 +303,7 @@ export function materiauxManhattan(renderer) {
         stone,
         paving,
         asphalt,
+        grain,
         metal,
         facade,
         facadeglass,

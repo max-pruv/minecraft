@@ -43,6 +43,56 @@ export function materiauNY(nom) {
   return (materiaux[nom] = m);
 }
 
+// LES QUARTIERS (v583) : le paquet CCity préparé par scripts/new-york-quartiers.mjs,
+// un seul fichier, un seul atlas. La matière naît avec la ville, comme les deux
+// monuments, avec son émissive et ses deux faces : la chauffe la compile, l'arrivée
+// du fichier ne change pas sa clé. `Lot` (manhattan-render.js) pose chaque forme en
+// essaim, et une teinte par instance.
+let matiereQuartiers = null;
+export function materiauQuartiers() {
+  if (matiereQuartiers) return matiereQuartiers;
+  const attente = new THREE.DataTexture(new Uint8Array([150, 150, 150, 255]), 1, 1);
+  attente.colorSpace = THREE.SRGBColorSpace;
+  attente.needsUpdate = true;
+  const noir = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+  noir.colorSpace = THREE.SRGBColorSpace;
+  noir.needsUpdate = true;
+  matiereQuartiers = new THREE.MeshStandardMaterial({
+    map: attente, emissiveMap: noir, emissive: 0xffffff, emissiveIntensity: 0,
+    roughness: 0.88, metalness: 0, side: THREE.DoubleSide,
+  });
+  // l'atlas est sombre sous ACES (vu en capture) : on l'éclaircit d'un quart
+  matiereQuartiers.color.setRGB(1.28, 1.28, 1.28);
+  matiereQuartiers.name = "quartiers-new-york";
+  return matiereQuartiers;
+}
+let promesseQuartiers = null;
+// Rend { nom: géométrie } (les corps et leurs `-loin`), ou null sans le fichier.
+export function chargerQuartiers() {
+  if (!PHOTO_NY) return null;
+  if (!promesseQuartiers) {
+    promesseQuartiers = new GLTFLoader().loadAsync("./vendor/newyork/quartiers.glb").then((gltf) => {
+      const out = {}, m = materiauQuartiers();
+      gltf.scene.traverse((o) => {
+        if (!o.isMesh) return;
+        // GLTFLoader remplace les « - » d'un nom de nœud : on relit le maillage
+        out[o.name.replace(/_loin$/, "-loin")] = o.geometry;
+        if (o.material.map) {
+          o.material.map.colorSpace = THREE.SRGBColorSpace;
+          o.material.map.anisotropy = 4;
+          m.map = o.material.map;
+        }
+        if (o.material.emissiveMap) {
+          o.material.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+          m.emissiveMap = o.material.emissiveMap;
+        }
+      });
+      return out;
+    }).catch((e) => { console.warn("quartiers de New York", e); return null; });
+  }
+  return promesseQuartiers;
+}
+
 const charges = {}, prets = {};
 export function chargerModeleNY(nom) {
   if (!PHOTO_NY) return null;

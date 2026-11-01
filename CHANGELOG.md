@@ -20,6 +20,48 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v583 — New York a des banlieues
+
+**Pourquoi.** Max a déposé le paquet « CCity Building Set 1 » : « sers-toi de ce
+modèle-là pour améliorer la ville de New York, créer des banlieues et augmenter le
+niveau de réalisme, parce qu'aujourd'hui, tout se ressemble beaucoup trop… beaucoup
+plus de diversité dans les paysages ». Autour de Manhattan, il n'y avait que la
+campagne du monde et la mer, et aucun pont n'allait nulle part.
+
+**Ce que ça change.**
+- Dix quartiers autour de l'île, et dix paysages : Hoboken et Jersey City en brique
+  le long de l'Hudson, Brooklyn et ses rangées de grès brun autour de Prospect Park,
+  les rues basses de Queens et son globe de Flushing Meadows, les barres, les
+  pelouses et les terrains de basket du Bronx, les pavillons de Fort Lee et de Long
+  Island sur des rues courbes, Staten Island boisée dans la baie, le port à
+  conteneurs de Port Newark et ses grues, et Coney Island : sa plage, ses parasols,
+  sa promenade de planches, sa grande roue et ses montagnes russes.
+- Sept ponts (Queensboro, Williamsburg, Brooklyn, George-Washington, l'Hudson,
+  Jersey City, Harlem) : on y va à pied ou en voiture depuis l'île.
+- Huit bâtiments du paquet (le cinéma, la clinique, le lavomatique, la conserverie,
+  deux immeubles, la barre, le terrain de basket) peuplent les quartiers, et un
+  immeuble bas de Manhattan sur trois prend l'un d'eux : l'île ne se ressemble plus
+  d'un pâté à l'autre. L'armurerie, le magasin d'alcool, le prêteur sur gages et la
+  voiture de marque ne sont pas repris ; l'enseigne du cinéma est repeinte.
+- Les berges ont un mur, l'herbe de Central Park et les toits s'éclaircissent, et
+  l'eau de New York prend la teinte de la mer autour : du ciel, on ne voit plus le
+  rectangle du plan. Les quartiers sont sur la carte, les voitures y tournent et des
+  passants y marchent.
+- Ce qu'un enfant a bâti là avant cette version garde son sol, et le bâtiment qui
+  tomberait dessus s'efface (`DATE_BANLIEUES`). Un bloc posé dans un immeuble de
+  modèle lui rend sa façade procédurale, qui se troue.
+
+**Ce qui le prouve.** Sept témoins de `plafond.js` : hors des zones et de leur talus,
+le relief ne bouge pas d'une colonne (0 sur 57 467, le monde nu et `TerreUrbaine`
+comparés dans le même code) ; ni route, ni aérodrome, ni repère, ni ville dans
+l'emprise ; un bloc d'avant garde son sol ; le plan se refait au bit près et rien
+n'est posé sur une rue ; les ponts n'ont pas une case d'eau ; le paquet ne porte que
+les huit formes gardées et le crédit de son auteur. Deux témoins de `manhattan.js` :
+Brooklyn se dessine avec les modèles sans compiler de matière, un bloc posé rend la
+façade. Captures dans `tests/sonde-captures-banlieues.cjs`, jour et nuit, rue et ciel.
+
+---
+
 ## v582 — New York d'après les modèles de Max
 
 **Pourquoi.** Max a déposé six paquets Sketchfab (CC-BY-4.0) pour « améliorer

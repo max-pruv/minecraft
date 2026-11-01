@@ -86,6 +86,12 @@ travail est irrattrapable.
    se garde et se prouve (`CONF_V308`, empreinte relevée sur `origin/main`).
    Voir « Le fondu doux (v309) ».
 
+   **Elle a servi une DOUZIÈME fois, en v583, pour les banlieues de New York** —
+   Max : « créer des banlieues de New York ». Forme bornée, hors de la fenêtre
+   d'empreinte : `ZONES` et leur `TALUS` (new-york-banlieues.js), et un témoin de
+   `plafond.js` compare le monde nu et `TerreUrbaine` dans le même code (zéro
+   colonne hors de la zone). Voir « Les banlieues de New York (v583) ».
+
    **Elle a servi une ONZIÈME fois, en v486, pour Changi** — et c'est la
    forme bornée, hors de la fenêtre d'empreinte : l'île de l'aérodrome est la
    zone à terre de son repère (`box + 30`), rien d'autre. Un témoin de
@@ -1065,7 +1071,58 @@ La Model Y porte `usine: true` dans FLOTTE : la chaîne (`voitureDeLUsine`,
 vehicules.js) et le garagiste de main.js la lisent, jamais un nom recopié.
 Les voitures de police sont toute fiche `police` de FLOTTE ; la patrouille
 les alterne, la Crown Victoria d'abord, et n'attend qu'elle pour apparaître.
-## New York d'après les modèles de Max (v567) — une photogrammétrie se recuit, et le voxel se mesure dedans
+## Les banlieues de New York (v583) — un quartier est un rectangle de plus dans le plan de l'île
+
+Max a déposé « CCity Building Set 1 » (Sketchfab, CC-BY-4.0) et demandé des
+banlieues et de la diversité. `src/new-york-banlieues.js` est le plan (pur),
+`scripts/new-york-quartiers.mjs` prépare le paquet (rejouable, non versionné),
+`vendor/newyork/quartiers.glb` est le résultat. Huit règles.
+
+- **ON ÉTEND LE PLAN, ON N'AJOUTE PAS UNE VILLE À CÔTÉ.** `surface()` et `BATIMENTS`
+  (manhattan-plan.js) prennent les quartiers : façades, sol, collisions, passants,
+  circuits, minicarte et carte viennent d'eux-mêmes. `dansManhattan` reste le
+  rectangle de l'île (des témoins le mesurent) ; `dansPlanNY` est ce que le monde et
+  le rendu demandent. Une ville engendrée n'aurait eu ni ce rendu ni ces façades.
+- **LE SOL BOUGE DANS `ZONES` + `TALUS`, ET LÀ SEULEMENT.** Invariant 1, douzième
+  fois. Le talus raccorde au relief de la Terre sur 28 blocs. Le worker ne connaît
+  pas les quartiers (`maillageLocal` les garde sur le fil principal, marge du talus
+  comprise), comme l'île. **Un bloc posé avant `DATE_BANLIEUES` garde sa colonne de
+  relief** (`refreshProtection`, quelle que soit sa provenance, et au fil de la
+  fusion du nuage) : le bâtiment qui y tomberait s'efface. La date se relit à la
+  fusion (v309).
+- **UN EMPLACEMENT SE MESURE (v223), ET LA MESURE A SERVI.** Mon premier jet posait
+  Jersey City et Port Newark sur l'I-95 Sud : la sonde (asphalte dans le monde nu,
+  `surLaRoute`) l'a dit. Les marges à JFK sont de 25 et 41 blocs, talus compris.
+  Brooklyn, Coney Island, Long Island et Staten Island sont gagnés sur la mer : la
+  carte n'y a rien, ni relief à casser.
+- **UN PAQUET SE TRIE AVANT DE S'ARRANGER.** C'est une ville de jeu policier : ni
+  armurerie, ni alcool, ni gages, ni marque (la Lotus, l'enseigne du cinéma repeinte,
+  invariant 4). Un témoin lit les noms du fichier produit. Une planche
+  (`sonde-planche-quartiers.cjs`) montre chaque forme de ses quatre côtés : on y a
+  vu l'enseigne restée, la dalle de parking du lavomatique.
+- **UN ATLAS, UNE MATIÈRE, DES ESSAIMS.** Sept textures fondues (UV répétés coupés
+  aux lignes entières, sans répétition dans un atlas), `materiauQuartiers` naît avec
+  la ville dans `mats` : la chauffe la compile sous ses deux formes, l'arrivée du
+  fichier ne change pas sa clé. `Lot` pose chaque forme comme une boîte, une teinte
+  par instance. Un immeuble de 500 triangles coûte dix triangles de loin : le
+  `-loin` est recuit par rayons dans le même atlas, sans transparence.
+- **UN MODÈLE NE SE TROUE PAS.** `modeleDe(b)` : arrivé, et sur un immeuble que
+  l'enfant n'a pas touché (`batimentsTouches`, tenu au journal et à `setBlock`). Sinon
+  la façade procédurale, qui montre le trou. Sur l'île le voxel ne bouge pas, sauf
+  la porte (`sansPorte`) : un modèle n'en a pas à cet endroit, et on ne traverse pas
+  un mur qu'on voit.
+- **CE QUI SE POSE PAR MILLIERS A SON COÛT.** Un arbre d'île pèse 2 500 triangles :
+  les quartiers ont `arbreLeger` (840) et de loin `boule` (80). Les décors et les
+  ponts sont un seul lot, jamais refait.
+- **HORS DU PLAN, LE BROUILLARD SE RAPPROCHE.** Le paysage lointain s'arrête bien
+  avant nos silhouettes : du ciel, les quartiers flottaient sur le vide. Fog et
+  secteurs lointains se bornent à 620 blocs dès qu'on a quitté le plan.
+
+Et l'eau du plan est un plan d'eau : un morceau à cheval dessinait aussi son voxel,
+d'une autre couleur (`visualBlock`, `visualChunk` le taisent). La teinte de l'eau de
+New York suit la mer du monde : du ciel, on ne lit plus le rectangle.
+
+## New York d'après les modèles de Max (v582) — une photogrammétrie se recuit, et le voxel se mesure dedans
 
 Max a déposé six paquets Sketchfab (CC-BY-4.0) et demandé de la diversité.
 `scripts/new-york.mjs` les prépare (rejouable, paquets non versionnés),

@@ -6,6 +6,17 @@
 
 export const NOUVEAUTES = [
   {
+    v: 583,
+    titre: 'New York a des banlieues',
+    puces: [
+      'Brooklyn, Queens, le Bronx et Staten Island',
+      'Des ponts pour y aller',
+      'Une plage et sa grande roue à Coney Island',
+      'Des maisons, un port et des immeubles tous différents',
+    ],
+  },
+  {
+    v: 567,
     v: 582,
     titre: 'Le vrai New York',
     puces: [

@@ -10,6 +10,15 @@ import {
   LIBERTE_VOXELS,
   LIBERTE_SOCLE,
 } from "./new-york-donnees.js";
+import {
+  surfaceBanlieue,
+  batimentsBanlieues,
+  QUARTIERS_BANLIEUE,
+  COULEURS_BANLIEUE,
+  boucles as bouclesBanlieue,
+  zoneA,
+} from "./new-york-banlieues.js";
+import { FORMES_QUARTIERS } from "./new-york-quartiers-donnees.js";
 
 // NEW YORK D'APRÈS LES MODÈLES DE MAX (v565). L'Empire State et la statue de la
 // Liberté se dessinent d'après les photogrammétries de Brian Trepanier
@@ -21,7 +30,7 @@ import {
 // des deux garde l'ancien volume ET l'ancien dessin — `TerreUrbaine` le décide
 // au chargement du journal (`deciderModelesNY`). La date se relit à la fusion
 // (v309).
-export const DATE_NY_MODELES = Date.parse("2026-10-26T13:00:00Z");
+export const DATE_NY_MODELES = Date.parse("2026-10-31T19:00:00Z");
 export const MODELES_NY_ETAT = { empireAncien: false, liberteAncienne: false };
 // le socle de l'Empire reste procédural, net à hauteur de rue : la
 // photogrammétrie, faite d'avion, n'est lisible qu'au-dessus de lui
@@ -158,7 +167,16 @@ function surfaceAuteur(x, z) {
 export const largeurIle = (z) => largeurIleAuteur(z / K) * K;
 export const terre = (x, z) => terreAuteur(x / K, z / K);
 export const broadway = (z) => broadwayAuteur(z / K) * K;
-export const surface = (x, z) => surfaceAuteur(x / K, z / K);
+// LES BANLIEUES ET LES PONTS (v583) passent d'abord : hors d'eux, le plan de
+// l'île au bit près. Un pont ne remplace que l'eau du fleuve.
+export const surface = (x, z) => {
+  const s = surfaceBanlieue(x, z);
+  if (s !== null && s !== "water") {
+    if (zoneA(x, z) || !terreAuteur(x / K, z / K)) return s;
+    return surfaceAuteur(x / K, z / K);
+  }
+  return s === "water" ? s : surfaceAuteur(x / K, z / K);
+};
 export const solBloc = (x, z) =>
   ({
     water: BLOCK.WATER,
@@ -168,6 +186,11 @@ export const solBloc = (x, z) =>
     plaza: CITY_BLOCK.GRANITE,
     grass: BLOCK.GRASS,
     lot: CITY_BLOCK.SIDEWALK,
+    gazon: BLOCK.GRASS,
+    foret: BLOCK.GRASS,
+    beach: BLOCK.SAND,
+    boardwalk: BLOCK.PLANK,
+    quai: CITY_BLOCK.SIDEWALK,
   })[surface(x, z)];
 export const QUARTIERS = [
   { name: "Midtown · Fifth Avenue", x: 15, z: 18, r: 80 },
@@ -186,7 +209,7 @@ export const QUARTIERS = [
   { name: "Wall Street", x: 15, z: 2200, r: 70 },
   { name: "Financial District", x: 15, z: 2110, r: 120 },
   { name: "Battery Park", x: 0, z: 2360, r: 80 },
-].map((q) => ({ ...q, x: q.x * K, z: q.z * K, r: q.r * K }));
+].map((q) => ({ ...q, x: q.x * K, z: q.z * K, r: q.r * K })).concat(QUARTIERS_BANLIEUE);
 // Les adresses visées par la carte sont dans l'espace public, devant l'entrée.
 export const MONUMENTS = [
   {
@@ -453,6 +476,44 @@ for (let sz = -71; sz < 48; sz++)
       });
     }
   }
+// LES BANLIEUES (v583). Leur plan est déjà en blocs : ils entrent tels quels dans
+// la même liste, donc les mêmes secteurs, les mêmes collisions, le même rendu. Les
+// identifiants de l'île ne bougent pas : ceux-ci viennent après.
+function enregistrerTel(b) {
+  b.id = tous.length;
+  b.seed = Math.floor(ALEA(b.x0, b.z0) * 100000);
+  tous.push(b);
+  for (let cz = Math.floor(b.z0 / 64); cz <= Math.floor(b.z1 / 64); cz++)
+    for (let cx = Math.floor(b.x0 / 64); cx <= Math.floor(b.x1 / 64); cx++) {
+      const key = `${cx},${cz}`;
+      if (!cadres.has(key)) cadres.set(key, []);
+      cadres.get(key).push(b);
+    }
+}
+// MANHATTAN AUSSI CESSE DE SE RESSEMBLER (v583). Dans les quartiers bas de l'île
+// (hors Midtown et Financial District), un immeuble de maçonnerie sur trois prend
+// un modèle du paquet CCity, serré dans son lot (« deux échelles dans la même
+// ville ») : c'est du DESSIN — son voxel, sa hauteur, ses collisions ne bougent
+// pas, et un bloc posé dedans lui rend sa façade procédurale, qui se troue
+// (`modeleDe`, manhattan-render.js).
+const FORMES_ILE = ["immeuble", "appartements", "immeuble", "appartements", "cinema"];
+for (const b of tous) {
+  const midtown = b.z0 > -816 * K && b.z0 < 650 * K,
+    financial = b.z0 > 1920 * K;
+  if (b.style !== "masonry" || midtown || financial || b.h > 21) continue;
+  const r = ALEA(b.seed, 53);
+  if (r > 0.34) continue;
+  b.modele = FORMES_ILE[Math.floor(ALEA(b.seed, 59) * FORMES_ILE.length)];
+  b.cap = ALEA(b.seed, 61) < 0.5 ? 0 : Math.PI;
+  b.hModele = b.h + 1;
+  // un modèle n'a pas de porte à ce coin-là : on ne traverse pas un mur qu'on voit
+  b.sansPorte = true;
+  b.teinte = [[1, 1, 1], [1.06, 1, 0.94], [0.93, 0.95, 1], [1.1, 1.05, 0.98], [0.9, 0.88, 0.86]][Math.floor(ALEA(b.seed, 67) * 5)];
+}
+// Le worker ne regarde pas ces immeubles (il ne lit que `BORNES`) : cent millisecondes
+// de moins à son chargement.
+if (typeof WorkerGlobalScope === "undefined") for (const b of batimentsBanlieues()) enregistrerTel(b);
+export { FORMES_QUARTIERS };
 export const BATIMENTS = tous;
 
 // LA DIVERSITÉ (v565). Max : « Manhattan, c'est vraiment très boring, tout se
@@ -498,6 +559,7 @@ export function couleurPlan(x, z) {
         ? [172, 166, 150]
         : [129, 99, 83];
   return {
+    ...COULEURS_BANLIEUE,
     water: [39, 74, 86],
     grass: [73, 108, 62],
     path: [162, 157, 136],
@@ -565,6 +627,8 @@ export function circuitsManhattan() {
           ajouter(pts);
       }
   }
+  // les tours de pâté des banlieues (v583)
+  for (const pts of bouclesBanlieue()) ajouter(pts);
   return traces;
 }
 

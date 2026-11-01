@@ -10031,3 +10031,17 @@ l'embarquement a eu lieu, pas par une hypothèse.
 - [x] **v157** — la monoplace freine dans les virages.
 - [x] **v156** — l'enfant n'est plus seul dans un monde peuplé.
 - [x] **v155** — on monte sur les bêtes, et on monte à bord.
+
+## Dettes des banlieues de New York (v583)
+
+- Les immeubles de modèle ne se visitent pas (pas de porte, un intérieur vide).
+- Les quartiers sont plats : le relief n'y entre que par leur talus. Un quartier en
+  pente demanderait un sol du plan qui ne soit plus une constante (`NIVEAU`).
+- Les ponts sont des chaussées au ras de l'eau : ni rampe, ni bateau dessous.
+- La couronne lointaine n'a pas de silhouette des quartiers hors du plan : au-delà
+  de 620 blocs, le brouillard les fond (`horsVille`, manhattan-render.js).
+- Le lavomatique garde sa dalle de parking, qui déborde de son voxel, et le dos de
+  son enseigne est noir (atlas du paquet).
+- Pas de feux aux carrefours des quartiers : les voitures y passent sans s'arrêter.
+- À mesurer sur un iPad : 570 000 triangles dans une rue de Brooklyn au réglage
+  tablette (banc), contre 1,6 million à Harlem au réglage bureau.

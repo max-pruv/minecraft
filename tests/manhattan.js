@@ -298,6 +298,61 @@ function verifier(nom, ok, detail = "") {
         liberte.carte.length === 1 && liberte.carte[0] === true,
       JSON.stringify(liberte),
     );
+    // ---- LES BANLIEUES (v583) ---------------------------------------------
+    // Le paquet arrive, Brooklyn se dessine avec ses modèles, aucune matière neuve
+    // ne compile en y entrant ; un bloc posé dans un immeuble lui rend sa façade
+    // (un modèle ne se troue pas), et l'île garde ses collisions.
+    const quartiers = await p.evaluate(async () => {
+      try {
+        const ny = await import("/src/new-york-modeles.js");
+        const P = await import("/src/manhattan-plan.js");
+        const { ORIGINE_MANHATTAN: O } = await import("/src/manhattan-world.js");
+        const formes = await ny.chargerQuartiers();
+        const g = __game, v = g.villeRealiste, w = g.world;
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const b = P.BATIMENTS.find((a) => a.quartier === "brooklyn" && a.modele === "cinema");
+        const avant = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, vol: g.player.flying };
+        const clesAvant = g.renderer.info.programs.length;
+        g.player.flying = true;
+        const pose = setInterval(() => {
+          g.player.pos.set(O.x + b.x0 - 14, P.SOL + 4, O.z + b.z0 - 14);
+          g.player.vel.set(0, 0, 0);
+        }, 40);
+        const t0 = performance.now();
+        let dessin = null;
+        while (performance.now() - t0 < 60000) {
+          await dodo(500);
+          dessin = v.buildings.get(b.id);
+          if (dessin && v.quartiersPrets) break;
+        }
+        await dodo(1500);
+        const essaims = dessin ? dessin.children.filter((m) => m.material === v.mats.photoQuartiers).length : -1;
+        const actif = v.active, clesApres = g.renderer.info.programs.length;
+        // un bloc posé dans l'immeuble : il retrouve sa façade procédurale
+        const x = O.x + b.x0 + 1, y = P.SOL + 3, z = O.z + b.z0;
+        w.setBlock(x, y, z, 0, Date.now());
+        const touche = v.modeleDe(b) === null;
+        clearInterval(pose);
+        g.player.pos.set(avant.x, avant.y, avant.z);
+        g.player.flying = avant.vol;
+        const lieux = __carte.catalogueDesLieux().map((l) => l.c.name);
+        return { formes: Object.keys(formes || {}).length, essaims, actif, clesAvant, clesApres, touche,
+          lieux: ["Brooklyn", "The Bronx", "Queens", "Coney Island", "Staten Island"].filter((n) => lieux.includes(n)).length,
+          attente: Math.round(performance.now() - t0) };
+      } catch (err) {
+        return { err: String((err && err.stack) || err) };
+      }
+    });
+    verifier(
+      "les banlieues se dessinent avec les modèles de Max, sans compiler de matière en y entrant",
+      !quartiers.err && quartiers.formes === 16 && quartiers.essaims === 1 && quartiers.actif && quartiers.clesApres <= quartiers.clesAvant + 1,
+      JSON.stringify(quartiers),
+    );
+    verifier(
+      "un bloc posé dans un immeuble de modèle lui rend sa façade, et la carte connaît les quartiers",
+      !quartiers.err && quartiers.touche && quartiers.lieux === 5,
+      JSON.stringify(quartiers),
+    );
     // ---- LES MODÈLES DE MAX (v565) ----------------------------------------
     // L'Empire State et la statue arrivent après le démarrage (un modèle absent
     // n'empêche jamais New York d'exister). Une fois là, les cubes de la statue

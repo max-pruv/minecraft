@@ -145,9 +145,20 @@ publicités fictives et nouvelles berlines sont originaux et couverts par
 existants gardent leurs licences, notamment l'usage privé/familial des voitures
 fournies dans `vendor/voitures/LICENSE.md`. Aucun asset de GTA n'est utilisé.
 
+## Les banlieues (v583)
+
+Autour de l'île, dix quartiers dans le même plan (`src/new-york-banlieues.js`) :
+Hoboken, Fort Lee, Jersey City, Port Newark, le Bronx, Queens, Brooklyn, Coney
+Island, Long Island, Staten Island, et sept ponts. Les bâtiments du paquet « CCity
+Building Set 1 » de Neberkenezer (CC-BY-4.0, `vendor/newyork/LICENSE.md`) les
+peuplent, avec les immeubles procéduraux et des pavillons dessinés. Captures :
+`node tests/sonde-captures-banlieues.cjs <dossier>`.
+
 ## Limites connues
 
-Cette version reste stylisée, avec une géographie comprimée et des collisions
+Les quartiers sont plats (le talus les raccorde au relief), leurs immeubles de
+modèle ne se visitent pas, et les ponts sont des chaussées au ras de l'eau. Cette
+version reste stylisée, avec une géographie comprimée et des collisions
 voxelisées ; elle ne revendique pas une fidélité AAA. Les tours génériques se
 répètent, le passage au détail distant est perceptible, les berges rencontrent
 le terrain mondial à une limite visible et les intérieurs sont peu aménagés.

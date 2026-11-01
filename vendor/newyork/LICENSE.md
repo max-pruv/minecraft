@@ -58,6 +58,21 @@ by Yarelon (https://sketchfab.com/yarelon111) licensed under CC-BY-4.0
 
 Modifications : textures extraites et mises en 512 × 512.
 
+## Les quartiers (banlieues et immeubles bas de Manhattan) — `quartiers.glb`
+
+This work is based on "CCity Building Set 1"
+(https://sketchfab.com/3d-models/ccity-building-set-1-a2d5c7bfcc2148fb8994864c43dfcc97)
+by Neberkenezer (https://sketchfab.com/neberkenezer) licensed under CC-BY-4.0
+(http://creativecommons.org/licenses/by/4.0/)
+
+Modifications (`scripts/new-york-quartiers.mjs`) : huit bâtiments gardés sur le
+paquet (deux immeubles, un cinéma, une clinique, un lavomatique, une conserverie,
+une barre d'habitation, un terrain de basket). Ne sont PAS repris : l'armurerie, le
+magasin d'alcool, le prêteur sur gages, la voiture et les rues. L'enseigne du cinéma
+est repeinte (elle portait une marque). Toutes les textures sont fondues en un
+atlas de 2 048 pixels, les UV répétés sont coupés, le lointain de chaque bâtiment
+est recuit par rayons, et les bâtiments sont mis à l'unité.
+
 ## Non utilisé
 
 "New York City. Manhattan" de truekit

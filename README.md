@@ -5,6 +5,11 @@ Vanilla JavaScript and [Three.js](https://threejs.org) power terrain, physics,
 creatures and rendering. Libraries and vehicle models supplied for this family game are vendored;
 optional network services provide multiplayer and cloud saves.
 
+**New York's boroughs (v583):** ten neighbourhoods around the island — Hoboken, Fort
+Lee, Jersey City, Port Newark, the Bronx, Queens, Brooklyn, Coney Island, Long Island,
+Staten Island — and seven bridges, built with "CCity Building Set 1" by Neberkenezer
+(CC-BY-4.0, `vendor/newyork/LICENSE.md`).
+
 **Manhattan on Earth:** teleport to New York from the world map (the old
 `/?lieu=manhattan` link still works). One map, one shared-world code: detailed landmarks, Times
 Square, yellow taxis and rigged human characters with textured faces and clothing.
