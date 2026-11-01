@@ -89,7 +89,7 @@ const { Banc, souffler } = require('./banc.js');
       P.touchMove.f = 1; await enJeu(2); res.panne = { v: +P.vitesseVoiture.toFixed(2), x: +(P.pos.x - x0).toFixed(1) };
       P.touchMove.f = 0; P.etatVoiture = undefined;
       return res;
-    }, process.env.FLOTTE || 'koenigsegg-jesko.glb');
+    }, process.env.FLOTTE || 'bugatti-divo.glb');
     console.log(JSON.stringify(out));
   } finally { await banc.fermer(); process.exit(0); }
 })();

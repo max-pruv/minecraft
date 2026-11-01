@@ -24,7 +24,7 @@ const { Banc, dormir, souffler } = require('./banc.js');
       vider();
       P.flying = false; P.yaw = -Math.PI / 2; P.pitch = 0;
       P.pos.set(x0, y0 + 1.2, z0 + 0.5); P.vel.set(0, 0, 0);
-      g.animalManager.invoquer('voiture', x0 + 3, z0 + 0.5, false, { flotte: 'koenigsegg-jesko.glb' });
+      g.animalManager.invoquer('voiture', x0 + 3, z0 + 0.5, false, { flotte: 'bugatti-divo.glb' });
       await dormir(600);
       for (let e = 0; e < 8 && !auVolant(); e++) { document.getElementById('ride-btn').click(); const t = performance.now(); while (!auVolant() && performance.now() - t < 2500) await dormir(150); }
       if (!auVolant()) { for (const [x, y, z] of poses) g.world.setBlock(x, y, z, 0); return { err: 'pas au volant' }; }

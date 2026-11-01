@@ -996,6 +996,33 @@ et ✈️ faisait passer l'aile dans le voisin garé (v565). Quatre règles.
 Ce qui reste, déclaré dans `TASKS.md` : à pied on passe encore sous l'aile et
 dans le fuselage d'un avion garé ; un avion garé n'est pas un obstacle pour
 les voitures de la rue ni pour un ami.
+## La flotte sans ses placeholders (v579) — un modèle retiré part du dépôt, et un témoin nomme un modèle pour ce qu'il porte
+
+Max : « supprime les anciennes voitures… toutes les voitures qui se
+ressemblent ». Les quarante-sept `luxurycarfleet` (des placeholders
+paramétriques) sont partis de `FLOTTE` et de `vendor/voitures/`. Deux règles.
+
+- **ON RETIRE DE LA FLOTTE, JAMAIS UN IDENTIFIANT QUI PORTE UN MODÈLE NEUF.**
+  `ferrari-sf90.glb`, `lamborghini-revuelto.glb` et `porsche-911-gt3-rs.glb`
+  restent : ce sont les identifiants (garages, réseau) de la SF90 XX, de la
+  Revuelto adaptée et de la 911 reconstruite (`asset`), et leur fichier d'avant
+  sert `?asset=0`. Un modèle vraiment retiré, lui, part du dépôt : une
+  sauvegarde ou un ami qui le nomme retombe sur le tirage (`voitureNeuve`,
+  montures.js), une tablette restée sur l'ancienne version sur la coque
+  d'attente. Avant de retirer, on relit les signatures (`signaturesDuGlb` sur
+  les fichiers restants) : aucune ne doit mourir sans sortir de la table.
+- **UN TÉMOIN QUI NOMME UN MODÈLE LE NOMME POUR UNE PROPRIÉTÉ.** Vingt témoins
+  invoquaient l'AMG GT ou la F40 sans dire pourquoi ; il a fallu retrouver ce
+  qu'ils attendaient : une portière découpable (la Lucid Gravity — les
+  dix-huit de la v566 ont `portiere: false`), des feux avant nommés (la DB11,
+  par leur matériau), une classe (la Divo pour l'hypercar), le manifeste (la
+  MC12 et la Model Y), des images partagées entre fichiers (cinq déposés). Un
+  modèle nommé dans un témoin s'écrit avec la raison à côté.
+- **RETIRER DES MODÈLES LÉGERS ALOURDIT LA RUE, ET CELA SE MESURE.** Une
+  voiture de la rue passe de 61 000 à 96 000 triangles et de 36 à 42
+  maillages en moyenne (prototypes chargés dans la page, branche contre
+  `origin/main`) : +17 % d'appels par voiture visible. Toute livraison qui
+  change la composition de la flotte publie cette moyenne avant et après.
 
 ## Les dix-huit voitures déposées (v566) — un paquet se mesure, il ne se lit pas
 

@@ -19,7 +19,7 @@ const DOSSIER = process.argv[2] || '';
       g.player.pos.y = g.world.sommetColonne(x, z) + 1;
       for (const a of [...g.animalManager.animals]) { g.animalManager.scene.remove(a.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(a), 1); }
       // la voiture à quatre blocs devant, de travers : l'enfant arrive par le flanc DROIT
-      const a = g.animalManager.invoquer('voiture', x, z - 4, false, { flotte: 'amg-gt-black-series.glb' });
+      const a = g.animalManager.invoquer('voiture', x, z - 4, false, { flotte: 'lucid-gravity.glb' });
       a.yaw = Math.PI / 2; a.mesh.rotation.y = a.yaw + Math.PI;
       for (let i = 0; i < 50 && !(a.mesh.userData.roues || []).length; i++) await new Promise((r) => setTimeout(r, 100));
       return { roues: (a.mesh.userData.roues || []).length, p: [g.player.pos.x, g.player.pos.y, g.player.pos.z].map((v) => +v.toFixed(2)), car: [a.pos.x, a.pos.y, a.pos.z].map((v) => +v.toFixed(2)) };
