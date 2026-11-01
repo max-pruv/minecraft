@@ -72,6 +72,7 @@ export function liberer(objet) {
   let rendues = 0;
   const squelettes = new Set();
   objet.traverse((o) => {
+    if(o.customDepthMaterial?.userData.animalHD){o.customDepthMaterial.dispose();rendues++;}
     if(o.isSkinnedMesh && o.skeleton && !squelettes.has(o.skeleton)){squelettes.add(o.skeleton);o.skeleton.dispose();}
     const g = o.geometry;
     if (g && !g.userData.partagee) { g.dispose(); rendues++; }

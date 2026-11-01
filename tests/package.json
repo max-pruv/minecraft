@@ -24,6 +24,8 @@
     "hote": "node hote.js",
     "manhattan": "node manhattan.js",
     "realisme": "node realisme.js",
+    "nature": "node nature.js",
+    "animaux": "node animaux.js",
     "parishd": "node parishd.js",
     "degats": "node degats.js"
   },

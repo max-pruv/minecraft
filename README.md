@@ -5,6 +5,16 @@ Vanilla JavaScript and [Three.js](https://threejs.org) power terrain, physics,
 creatures and rendering. Libraries and vehicle models supplied for this family game are vendored;
 optional network services provide multiplayer and cloud saves.
 
+## Permanent visual direction
+
+Every future version must pursue realistic, high-fidelity rendering throughout
+the game. Minecraft-like styling, visible voxel aesthetics and pixel art are
+excluded from new visual work, including distant views, lower quality tiers
+and fallback models. Performance improvements must preserve this direction,
+existing saves and usable driving routes. See the
+[visual direction charter](docs/direction-artistique.md) and [agent instructions](AGENTS.md).
+The current renderer still has migration work listed in [TASKS.md](TASKS.md).
+
 **Manhattan on Earth:** teleport to New York from the world map (the old
 `/?lieu=manhattan` link still works). One map, one shared-world code: detailed landmarks, Times
 Square, yellow taxis and rigged human characters with textured faces and clothing.
@@ -36,6 +46,20 @@ rendering budgets, licensing and limitations.
 - **Procedural textures** — the block atlas is painted onto a canvas at
   startup. Manhattan on Earth adds procedural physical materials
   and geometric facade details; existing vehicle assets keep their licenses.
+- **Photographic landscapes** — eight natural material layers blend at several
+  world-space scales: meadow, alpine grass, dry grass, soil, scree, rock, sand
+  and snow. Continuous water has animated ripples and sky-tinted reflections;
+  nearby meadows have curved grass blades. Terrain contacts and vehicle paths
+  keep the same geometry. The local 2.2 MB material atlas works offline and
+  occupies about 11 MB of GPU memory, including mipmaps. Sources and adaptation
+  credits: [nature assets](vendor/nature/LICENSE.md).
+- **Detailed wildlife** — the supplied cows, deer, horse and rabbit use local
+  textured artist models, supplemented by a cat, bear and a subdivided animated
+  fox. Other species use articulated curved anatomy; fish have curved fins and
+  birds flap separate feathered wings. Farm animals and rideable animals share
+  the same factories. Skeletons and damage colors belong to each instance,
+  while geometry and textures are shared. [Animal credits and licenses](vendor/animaux/LICENSE.md)
+  include the horse's noncommercial, share-alike terms.
 - **Paris in relief (HD layer)** — the voxel world is the skeleton; on top of
   it, a second mesher pass emits real facade geometry for Paris (recessed
   windows, railings, running balconies, cornices, awnings, dormers) and

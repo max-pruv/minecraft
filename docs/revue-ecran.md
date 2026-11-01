@@ -5,6 +5,12 @@ son iPhone, sept défauts qu'une capture d'écran montrait au premier regard.
 Son verdict : « C'est vraiment des choses que tu devrais anticiper. » Il donne
 une grille de lecture, la façon de jouer la sonde, et le premier relevé.
 
+La [direction artistique permanente](direction-artistique.md) s'applique à
+toutes les vues et versions futures : réalisme et high fidelity partout,
+y compris aux paliers bas, au loin et dans les modèles de secours. Les
+relevés historiques ci-dessous restent des constats ; ils ne fixent pas
+un niveau de qualité acceptable pour les nouvelles modifications.
+
 ## Comment la jouer
 
 ```
@@ -29,7 +35,9 @@ qu'elle touche.
 2. Ce qui monte est au-dessus de ce qui descend.
 3. On sort d'un mode là où on y est entré.
 4. Rien ne flotte qui ne devrait pas : effets, lumières, objets, cubes.
-5. Aucun reste « Minecraft en carrés » là où le jeu a une version HD.
+5. Aucun aspect Minecraft, pixel art ou pixelisation grossière, dans aucune
+   vue, distance ou palier. Contrôler aussi les silhouettes, les matières,
+   les animations et les secours selon la charte high fidelity.
 6. Rien ne se recouvre, et rien n'empiète sur le quart du joystick.
 7. Le texte est lisible et contrasté, de jour comme de nuit.
 8. Il ne reste rien d'une fonctionnalité retirée.

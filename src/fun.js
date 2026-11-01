@@ -18,6 +18,7 @@
 // n'ouvre plus que les Souvenirs.
 
 import * as THREE from 'three';
+import { animerAnimalHD } from './animauxhd.js';
 import { liberer } from './liberer.js';
 import { toast } from './bandeau.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
@@ -1408,7 +1409,7 @@ export function initFun(ctx) {
     const moving = Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5;
     a.animTime += dt;
     const swing = moving ? Math.sin(a.animTime * 10) * 0.6 : 0;
-    a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
+    if (!animerAnimalHD(a.mesh, dt, Math.hypot(player.vel.x, player.vel.z))) a.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
     // Trois façons d'être porté : dos de bête (`assise`, relative), habitacle
     // simple (`oeil`, hauteur absolue), ou VUE DE POURSUITE (`poursuite`,
     // verdict de Max après deux essais de vue intérieure : « une vue un peu

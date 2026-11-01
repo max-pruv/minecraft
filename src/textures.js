@@ -1218,8 +1218,9 @@ export function activerTuilage(material, { onde = false } = {}) {
         ${onde ? `
         // seule la surface bouge : les faces immergées restent en place
         if (normal.y > 0.5) {
-          float houle = sin(position.x * 0.9 + temps * 1.7) * 0.5
-                      + sin(position.z * 1.3 + temps * 2.3) * 0.5;
+          vec3 mondeEau = (modelMatrix * vec4(position, 1.0)).xyz;
+          float houle = sin(mondeEau.x * 0.9 + temps * 1.7) * 0.5
+                      + sin(mondeEau.z * 1.3 + temps * 2.3) * 0.5;
           transformed.y += houle * 0.055;
         }` : ''}`);
 

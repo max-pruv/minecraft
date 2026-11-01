@@ -20,6 +20,51 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v583 — Des matières photographiques et des animaux détaillés
+
+**Pourquoi.** Max demande plus de textures et de variété dans toute la nature,
+en s'inspirant de trois scans fournis : Field and Garden, les alpages de
+Rossmatt et Mountain road. La circulation automobile doit rester possible.
+Il demande aussi de retirer les animaux cubiques en utilisant Archive 2.zip.
+Il fixe ensuite cette direction comme principe permanent de toutes les
+éditions futures : réalisme et high fidelity partout, aucun style Minecraft
+ni pixellisation. `AGENTS.md`, `CLAUDE.md` et la nouvelle charte
+`docs/direction-artistique.md` portent cette règle ; le README, le programme
+« monde fidèle » et la revue d'écran y renvoient, secours et paliers compris.
+
+**Ce que ça change.** Huit matières de prairie, alpage, chaume, terre,
+éboulis, roche, sable et neige sont mélangées à plusieurs échelles, en
+coordonnées du monde. Leur relief de détail reçoit la lumière sans déplacer
+le sol. Les climats gardent leurs teintes, les prés proches portent des brins
+courbés et le panorama a de grandes variations de couleur. L'eau abandonne
+son motif pixelisé pour des rides animées et une teinte du ciel à angle rasant ;
+la houle a la même phase aux frontières des morceaux. Les hauteurs du terrain,
+les cellules de contact et les chemins des voitures restent identiques.
+
+L'atlas local (~2,2 Mo téléchargés, ~11 Mo vidéo) se conserve dans le cache
+statique ; les crédits CC-BY sont dans `vendor/nature/LICENSE.md`. La
+végétation réutilise le tampon HD, avec au plus 64 touffes par morceau et
+aucune collision ajoutée. La forme existante des falaises et des constructions
+est conservée ; cette version enrichit les matières et la végétation basse.
+
+Le second lot apporte deux vaches, le cerf, le cheval et le lapin texturés.
+Le chat, l'ours et le renard viennent de sources complémentaires créditées ;
+le renard est subdivisé en conservant son rig et ses clips. Les autres espèces
+emploient une anatomie galbée articulée, avec une matière physique. Ce sont des
+modèles procéduraux, pas des scans photoréalistes. Les 45 entrées du bestiaire
+commun couvrent la faune, les montures, les enclos et les oiseaux en vol ;
+les poissons quittent aussi leurs boîtes pour des corps fuselés, des yeux,
+des nageoires courbes et une queue fourchue. Les ressources se partagent,
+les squelettes et les matériaux d'instance restent privés. Les modèles locaux
+se conservent dans le cache statique (17 Mo au premier chargement).
+
+**Vérification.** `tests/nature.js` exerce le chargement photographique dans
+le jeu, compare les captures avant/après et garde l'identité des solides, le
+budget végétal et l'exclusion des routes. `plafond.js` protège le relief, les
+surfaces de contact et la conduite ; `parishd.js` protège la couche HD.
+`animaux.js` vérifie les dimensions, l'absence de cubes, l'indépendance des
+squelettes, le partage des ressources, les contacts au sol et la monte.
+
 ## v582 — Les avions volent plus haut, et « Loin » voit deux fois plus loin
 
 **Pourquoi.** Deux demandes de Max dans le même message : « je voudrais

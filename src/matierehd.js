@@ -85,6 +85,14 @@ function peintre(img, fn) {
 const ALPHA_VIDE = 76;
 
 const PEINTRES = {
+  brin(p, rempli, N) {
+    rempli((x,y) => {
+      const nervure = Math.exp(-Math.pow((x/N-.5)*16,2));
+      const fibre = Math.sin(x*2.8+y*.09)*.04;
+      const v = .76+nervure*.18+fibre;
+      p(x,y,v*255,v*255,v*225);
+    });
+  },
   // La pierre de taille : quatre assises par étage, joints décalés, chaque
   // pierre sa nuance, et un voile de salissure qui monte du sol.
   pierre(p, rempli, N) {

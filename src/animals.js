@@ -1,4 +1,5 @@
-// Passive animals, Minecraft-style: farm animals wander the grasslands,
+// Animaux détaillés : modèles d’artistes et anatomies articulées communes.
+// Farm animals wander the grasslands,
 // beach animals live on the sand, penguins waddle on the snowy peaks.
 // Some spawn as babies. They are ambience — catch-balls ignore them.
 
@@ -7,226 +8,14 @@ import { liberer } from './liberer.js';
 import { BLOCK, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { WATER_LEVEL } from './world.js';
 import { MONTURES, MODELES_MONTURE } from './montures.js';
+import { ANIMAUX_HD, creerAnimalHD, animerAnimalHD } from './animauxhd.js';
 import { chronoReel } from './cadence.js';
 import { FROTTEMENT_POUSSEE, VRILLE_TAU } from './conduite.js';
 
 const GRAVITY = 22;
 
-function box(w, h, d, color, x = 0, y = 0, z = 0) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color }));
-  m.position.set(x, y, z);
-  return m;
-}
-
-// Builders face -z, feet at y=0. Legs stored in userData for walk animation.
-function quadruped({ bodyColor, headColor, bodyW = 0.55, bodyH = 0.45, bodyL = 0.85, legH = 0.35, extras }) {
-  const g = new THREE.Group();
-  const legs = [];
-  const legPos = [[-0.18, -0.28], [0.18, -0.28], [-0.18, 0.28], [0.18, 0.28]];
-  for (const [lx, lz] of legPos) {
-    const leg = box(0.13, legH, 0.13, 0x3a2e22, lx, legH / 2, lz);
-    g.add(leg);
-    legs.push(leg);
-  }
-  const body = box(bodyW, bodyH, bodyL, bodyColor, 0, legH + bodyH / 2, 0);
-  g.add(body);
-  const head = box(0.36, 0.34, 0.32, headColor, 0, legH + bodyH + 0.05, -bodyL / 2 - 0.05);
-  g.add(head);
-  for (const sx of [-1, 1]) {
-    g.add(box(0.05, 0.06, 0.02, 0x1a1a1a, sx * 0.1, legH + bodyH + 0.1, -bodyL / 2 - 0.22));
-  }
-  if (extras) extras(g, { legH, bodyH, bodyL });
-  g.userData.legs = legs;
-  return g;
-}
-
-const BUILDERS = {
-  cow: () => quadruped({
-    bodyColor: 0xf2f2ee, headColor: 0xf2f2ee,
-    extras(g, { legH, bodyH, bodyL }) {
-      g.add(box(0.56, 0.2, 0.3, 0x2b2b2b, 0, legH + bodyH - 0.05, 0.1));  // patches
-      g.add(box(0.3, 0.46, 0.2, 0x2b2b2b, -0.1, legH + 0.15, -0.2));
-      g.add(box(0.2, 0.1, 0.06, 0xe8bd93, 0, legH + bodyH - 0.02, -bodyL / 2 - 0.23)); // muzzle
-      for (const sx of [-1, 1]) g.add(box(0.06, 0.08, 0.06, 0xd8d8d0, sx * 0.2, legH + bodyH + 0.26, -bodyL / 2 - 0.02)); // horns
-    },
-  }),
-  pig: () => quadruped({
-    bodyColor: 0xf0a8b8, headColor: 0xf0a8b8, legH: 0.25,
-    extras(g, { legH, bodyH, bodyL }) {
-      g.add(box(0.14, 0.1, 0.05, 0xd87a90, 0, legH + bodyH + 0.02, -bodyL / 2 - 0.24)); // snout
-      g.add(box(0.08, 0.1, 0.08, 0xf0a8b8, 0, legH + bodyH / 2, bodyL / 2 + 0.03));     // tail
-    },
-  }),
-  sheep: () => quadruped({
-    bodyColor: 0xf4f0e6, headColor: 0xd8cfc0, bodyH: 0.5,
-    extras(g, { legH, bodyH }) {
-      g.add(box(0.4, 0.14, 0.3, 0xf4f0e6, 0, legH + bodyH + 0.22, -0.55)); // wool cap
-    },
-  }),
-  horse: () => quadruped({
-    bodyColor: 0x8a5a30, headColor: 0x8a5a30, bodyH: 0.5, bodyL: 1.0, legH: 0.5,
-    extras(g, { legH, bodyH, bodyL }) {
-      g.add(box(0.2, 0.4, 0.2, 0x8a5a30, 0, legH + bodyH + 0.2, -bodyL / 2 + 0.02));  // neck
-      g.add(box(0.1, 0.34, 0.06, 0x4a3218, 0, legH + bodyH + 0.28, -bodyL / 2 + 0.16)); // mane
-      g.add(box(0.1, 0.35, 0.1, 0x4a3218, 0, legH + bodyH - 0.05, bodyL / 2 + 0.05));   // tail
-    },
-  }),
-  chicken: () => {
-    const g = new THREE.Group();
-    const legs = [];
-    for (const sx of [-0.07, 0.07]) {
-      const leg = box(0.05, 0.2, 0.05, 0xe8a53c, sx, 0.1, 0);
-      g.add(leg);
-      legs.push(leg);
-    }
-    g.add(box(0.32, 0.3, 0.42, 0xf4f2ec, 0, 0.35, 0));
-    g.add(box(0.2, 0.24, 0.2, 0xf4f2ec, 0, 0.62, -0.24));    // head
-    g.add(box(0.08, 0.06, 0.08, 0xe8a53c, 0, 0.6, -0.38));   // beak
-    g.add(box(0.06, 0.08, 0.1, 0xd83a3a, 0, 0.76, -0.24));   // comb
-    for (const sx of [-1, 1]) g.add(box(0.04, 0.16, 0.3, 0xe4e0d6, sx * 0.19, 0.4, 0)); // wings
-    for (const sx of [-1, 1]) g.add(box(0.04, 0.05, 0.02, 0x1a1a1a, sx * 0.06, 0.66, -0.34));
-    g.userData.legs = legs;
-    return g;
-  },
-  rabbit: () => {
-    const g = new THREE.Group();
-    const legs = [];
-    for (const [lx, lz] of [[-0.09, -0.1], [0.09, -0.1], [-0.09, 0.12], [0.09, 0.12]]) {
-      const leg = box(0.07, 0.12, 0.07, 0xb0a090, lx, 0.06, lz);
-      g.add(leg);
-      legs.push(leg);
-    }
-    g.add(box(0.28, 0.24, 0.4, 0xc4b4a4, 0, 0.24, 0));
-    g.add(box(0.2, 0.18, 0.18, 0xc4b4a4, 0, 0.42, -0.24));
-    for (const sx of [-1, 1]) {
-      g.add(box(0.06, 0.22, 0.04, 0xc4b4a4, sx * 0.06, 0.62, -0.24)); // long ears
-      g.add(box(0.04, 0.05, 0.02, 0x1a1a1a, sx * 0.05, 0.44, -0.34));
-    }
-    g.add(box(0.1, 0.1, 0.08, 0xf2f2ee, 0, 0.26, 0.22)); // fluffy tail
-    g.userData.legs = legs;
-    return g;
-  },
-  goat: () => quadruped({
-    bodyColor: 0xd8d4cc, headColor: 0xd8d4cc,
-    extras(g, { legH, bodyH, bodyL }) {
-      for (const sx of [-1, 1]) g.add(box(0.06, 0.14, 0.06, 0x8a7a5a, sx * 0.12, legH + bodyH + 0.3, -bodyL / 2 + 0.02)); // horns
-      g.add(box(0.08, 0.12, 0.06, 0xbab4a8, 0, legH + bodyH - 0.08, -bodyL / 2 - 0.18)); // little beard
-    },
-  }),
-  deer: () => quadruped({
-    bodyColor: 0x9a6b3f, headColor: 0x9a6b3f, bodyH: 0.42, bodyL: 0.9, legH: 0.5,
-    extras(g, { legH, bodyH, bodyL }) {
-      for (const sx of [-1, 1]) { // antlers
-        g.add(box(0.05, 0.26, 0.05, 0x6a4a26, sx * 0.12, legH + bodyH + 0.36, -bodyL / 2 - 0.02));
-        g.add(box(0.16, 0.05, 0.05, 0x6a4a26, sx * 0.16, legH + bodyH + 0.46, -bodyL / 2 - 0.02));
-      }
-      g.add(box(0.12, 0.12, 0.06, 0xf2ede2, 0, legH + bodyH - 0.02, bodyL / 2 + 0.03)); // white tail
-    },
-  }),
-  fox: () => quadruped({
-    bodyColor: 0xe07a3a, headColor: 0xe07a3a, bodyW: 0.42, bodyH: 0.36, bodyL: 0.7, legH: 0.3,
-    extras(g, { legH, bodyH, bodyL }) {
-      for (const sx of [-1, 1]) g.add(box(0.08, 0.12, 0.04, 0xe07a3a, sx * 0.11, legH + bodyH + 0.26, -bodyL / 2 - 0.02)); // pointy ears
-      g.add(box(0.12, 0.1, 0.08, 0xf2ede2, 0, legH + bodyH - 0.02, -bodyL / 2 - 0.22)); // white muzzle
-      g.add(box(0.15, 0.15, 0.34, 0xe07a3a, 0, legH + bodyH / 2 + 0.05, bodyL / 2 + 0.18)); // bushy tail…
-      g.add(box(0.13, 0.13, 0.1, 0xf2ede2, 0, legH + bodyH / 2 + 0.05, bodyL / 2 + 0.38));  // …with a white tip
-    },
-  }),
-  wolf: () => quadruped({
-    bodyColor: 0x9a9aa2, headColor: 0x9a9aa2, bodyH: 0.42, bodyL: 0.85, legH: 0.4,
-    extras(g, { legH, bodyH, bodyL }) {
-      for (const sx of [-1, 1]) g.add(box(0.08, 0.12, 0.05, 0x7a7a82, sx * 0.11, legH + bodyH + 0.26, -bodyL / 2 - 0.02)); // ears
-      g.add(box(0.12, 0.12, 0.3, 0x7a7a82, 0, legH + bodyH / 2 + 0.08, bodyL / 2 + 0.15)); // tail
-      g.add(box(0.14, 0.1, 0.1, 0xc6c6cc, 0, legH + bodyH - 0.04, -bodyL / 2 - 0.2)); // muzzle
-    },
-  }),
-  duck: () => {
-    const g = new THREE.Group();
-    const legs = [];
-    for (const sx of [-0.07, 0.07]) {
-      const leg = box(0.05, 0.16, 0.05, 0xe8963c, sx, 0.08, 0);
-      g.add(leg);
-      legs.push(leg);
-    }
-    g.add(box(0.32, 0.26, 0.44, 0x9a8a6a, 0, 0.3, 0));       // brown body
-    g.add(box(0.18, 0.2, 0.18, 0x2a7a3a, 0, 0.56, -0.24));   // green mallard head
-    g.add(box(0.1, 0.05, 0.12, 0xe8c53c, 0, 0.52, -0.38));   // flat yellow bill
-    for (const sx of [-1, 1]) g.add(box(0.04, 0.14, 0.3, 0x8a7a5a, sx * 0.19, 0.34, 0)); // wings
-    for (const sx of [-1, 1]) g.add(box(0.04, 0.04, 0.02, 0x1a1a1a, sx * 0.06, 0.6, -0.32));
-    g.userData.legs = legs;
-    return g;
-  },
-  turtle: () => {
-    const g = new THREE.Group();
-    const legs = [];
-    for (const [lx, lz] of [[-0.2, -0.15], [0.2, -0.15], [-0.2, 0.18], [0.2, 0.18]]) {
-      const leg = box(0.1, 0.1, 0.12, 0x8aa04a, lx, 0.05, lz);
-      g.add(leg);
-      legs.push(leg);
-    }
-    g.add(box(0.4, 0.12, 0.5, 0x8aa04a, 0, 0.14, 0));        // body
-    g.add(box(0.44, 0.14, 0.52, 0x4a7a3a, 0, 0.27, 0));      // shell
-    g.add(box(0.3, 0.08, 0.38, 0x3a6a2e, 0, 0.38, 0));       // shell top
-    g.add(box(0.16, 0.14, 0.14, 0x8aa04a, 0, 0.2, -0.32));   // head
-    for (const sx of [-1, 1]) g.add(box(0.03, 0.04, 0.02, 0x1a1a1a, sx * 0.05, 0.24, -0.4));
-    g.userData.legs = legs;
-    return g;
-  },
-  crab: () => {
-    const g = new THREE.Group();
-    const legs = [];
-    for (const [lx, lz] of [[-0.28, -0.08], [0.28, -0.08], [-0.28, 0.12], [0.28, 0.12]]) {
-      const leg = box(0.06, 0.12, 0.06, 0xb83a2e, lx, 0.06, lz);
-      g.add(leg);
-      legs.push(leg);
-    }
-    g.add(box(0.5, 0.18, 0.36, 0xd84a3a, 0, 0.22, 0));       // flat body
-    for (const sx of [-1, 1]) {
-      g.add(box(0.12, 0.12, 0.14, 0xe86a5a, sx * 0.24, 0.24, -0.24)); // claws
-      g.add(box(0.04, 0.1, 0.04, 0xd84a3a, sx * 0.08, 0.38, -0.1));   // eye stalks
-      g.add(box(0.05, 0.05, 0.05, 0x1a1a1a, sx * 0.08, 0.45, -0.1));
-    }
-    g.userData.legs = legs;
-    return g;
-  },
-  penguin: () => {
-    const g = new THREE.Group();
-    const legs = [];
-    for (const sx of [-0.08, 0.08]) {
-      const leg = box(0.08, 0.08, 0.12, 0xe8963c, sx, 0.04, 0);
-      g.add(leg);
-      legs.push(leg);
-    }
-    g.add(box(0.34, 0.5, 0.3, 0x2a2a34, 0, 0.33, 0));        // body
-    g.add(box(0.24, 0.38, 0.05, 0xf2f2ee, 0, 0.3, -0.15));   // white belly
-    g.add(box(0.26, 0.22, 0.26, 0x2a2a34, 0, 0.68, 0));      // head
-    g.add(box(0.07, 0.05, 0.12, 0xe8963c, 0, 0.66, -0.18));  // beak
-    for (const sx of [-1, 1]) {
-      g.add(box(0.05, 0.3, 0.16, 0x2a2a34, sx * 0.2, 0.4, 0)); // flippers
-      g.add(box(0.04, 0.05, 0.02, 0x1a1a1a, sx * 0.07, 0.72, -0.14));
-    }
-    g.userData.legs = legs;
-    return g;
-  },
-  squirrel: () => {
-    const g = new THREE.Group();
-    const legs = [];
-    for (const [lx, lz] of [[-0.07, -0.08], [0.07, -0.08], [-0.07, 0.1], [0.07, 0.1]]) {
-      const leg = box(0.05, 0.1, 0.05, 0x8a5430, lx, 0.05, lz);
-      g.add(leg);
-      legs.push(leg);
-    }
-    g.add(box(0.2, 0.18, 0.32, 0xa4643a, 0, 0.2, 0));        // body
-    g.add(box(0.16, 0.15, 0.15, 0xa4643a, 0, 0.36, -0.2));   // head
-    for (const sx of [-1, 1]) {
-      g.add(box(0.04, 0.07, 0.03, 0xa4643a, sx * 0.05, 0.48, -0.2)); // little ears
-      g.add(box(0.03, 0.04, 0.02, 0x1a1a1a, sx * 0.04, 0.38, -0.29));
-    }
-    g.add(box(0.14, 0.4, 0.14, 0xb87848, 0, 0.34, 0.22));    // big fluffy tail, raised
-    g.userData.legs = legs;
-    return g;
-  },
-  ...MODELES_MONTURE,
+const BUILDERS = { ...MODELES_MONTURE,
+  ...Object.fromEntries(Object.keys(ANIMAUX_HD).map(k => [k, () => creerAnimalHD(k)])),
 };
 
 // habitat: 'grass' (default) for meadows, 'sand' for beaches, 'snow' for peaks
@@ -391,7 +180,9 @@ class Animal {
 
     this.animTime += dt;
     const swing = speed > 0 ? Math.sin(this.animTime * 8) * 0.5 : 0;
-    this.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
+    if (!this.montee && !animerAnimalHD(this.mesh, dt, Math.hypot(this.vel.x, this.vel.z))) {
+      this.mesh.userData.legs.forEach((leg, i) => { leg.rotation.x = i % 2 ? -swing : swing; });
+    }
     this.mesh.position.copy(this.pos);
     this.mesh.rotation.y = this.yaw + Math.PI;
     this.roulerRoues();
