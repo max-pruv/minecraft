@@ -1,0 +1,83 @@
+# LE PORTAIL SUR GITHUB ACTIONS.
+#
+# Le portail (`cd tests && npm test`) ne tournait que dans les sessions de
+# travail, une machine à la fois : 108 minutes mesurées en une tranche, 54 et 87
+# en deux (CLAUDE.md, « Le portail ne va pas plus vite sur une machine : il se
+# répartit »). Le dépôt est public : les machines de GitHub y sont gratuites,
+# sans limite de minutes, et elles ont la taille de celle où le portail est
+# mesuré (4 cœurs, 16 Go). On y joue donc les tranches EN MÊME TEMPS.
+#
+# Ce que chaque tâche fait est exactement le portail d'une session :
+#   - `npm test -- --tranche=k/N` : l'aiguillage (`--voie`) lit le diff contre
+#     `origin/main` — d'où `fetch-depth: 0` —, puis `trancher` répartit les
+#     suites choisies par durée mesurée ; chaque tranche joue ses suites
+#     ENTIÈRES, la fumée en tête ;
+#   - Chromium vient de Playwright (`playwright-core`, la version du
+#     `package-lock`), rendu logiciel comme au banc (`banc.js`) ;
+#   - le serveur du jeu, le courtier PeerJS et le Supabase de poche sont
+#     locaux : rien ne sort de la machine.
+#
+# Le portail est vert quand TOUTES les tranches le sont. Il est INDICATIF tant
+# que la branche `main` n'exige pas ce contrôle : un rouge déjà déclaré dans
+# `TASKS.md` (double mesure sur `origin/main`) ne bloque pas une fusion (v195).
+# Le journal de chaque tranche est gardé (artefact `portail-k`) : c'est lui qui
+# démonte un rouge, pas la coche.
+
+name: Portail
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un nouveau commit sur la même PR rend le portail en cours sans objet.
+concurrency:
+  group: portail-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tranche:
+    name: tranche ${{ matrix.tranche }}/4
+    runs-on: ubuntu-latest
+    # `monte.js` seule fait 37 min sur une machine de banc ; 108 min en une
+    # tranche, ≈ 170 sur un conteneur plus lent (v547). Trois heures couvrent
+    # le pire sans laisser une tâche figée occuper une machine six heures.
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        tranche: [1, 2, 3, 4]
+    defaults:
+      run:
+        shell: bash
+        working-directory: tests
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Dépendances du banc
+        run: npm ci
+
+      - name: Chromium (Playwright)
+        run: npx playwright-core install --with-deps chromium
+
+      - name: Portail, tranche ${{ matrix.tranche }}/4
+        run: npm test -- --tranche=${{ matrix.tranche }}/4 2>&1 | tee portail.log
+
+      - name: Journal de la tranche
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portail-${{ matrix.tranche }}
+          path: tests/portail.log
+          retention-days: 14

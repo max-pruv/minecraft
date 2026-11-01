@@ -305,6 +305,15 @@ function verifier(nom, ok, detail = '') {
       // s'étend donc vers l'arrière jusqu'à x0 − ELAN − 6.
       const ELAN = 100;
       for (let d = -ELAN - 6; d <= L; d += 4) for (let w = -8; w <= 8; w += 4) y0 = Math.max(y0, g.world.terrainHeight(x0 + d, z0 + w));
+      // UNE DALLE DE TÉMOIN SE POSE AU SEC (v560). (30 000, 32 400) est en mer :
+      // le relief y vaut 24, la dalle se posait à 26, quatre blocs sous l'eau.
+      // Depuis la v560 une voiture dans l'eau freine et cale : elle s'arrêtait
+      // à 23 ou 31 blocs, avant le mur de 40, et « foncer dans un mur » ne
+      // rencontrait aucun mur — un, trois ou sept rouges selon le passage, au
+      // banc comme sur GitHub Actions. Au moins `WATER_LEVEL`, comme le veut
+      // la règle de la v560.
+      const { WATER_LEVEL } = await import('./src/world.js');
+      y0 = Math.max(y0, WATER_LEVEL);
       y0 += 2;
       for (let d = -ELAN - 6; d <= L; d++) for (let w = -8; w <= 8; w++) {
         g.world.setBlock(x0 + d, y0, z0 + w, BLOCK.STONE);
@@ -811,6 +820,8 @@ function verifier(nom, ok, detail = '') {
       const z1 = z0 + 60;
       let y1 = 0;
       for (let dx = -70; dx <= 70; dx += 4) for (let dz = -4; dz <= 16; dz += 4) y1 = Math.max(y1, g.world.terrainHeight(x0 + dx, z1 + dz));
+      // au sec, comme la première dalle (v560) : en mer, le relief vaut 24
+      y1 = Math.max(y1, (await import('./src/world.js')).WATER_LEVEL);
       y1 += 2;
       for (let dx = -70; dx <= 70; dx++) for (let dz = -4; dz <= 16; dz++) {
         g.world.setBlock(x0 + dx, y1, z1 + dz, BLOCK.STONE);
