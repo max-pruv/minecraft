@@ -2,8 +2,8 @@
 
 ## Dix voitures de tous les jours (v581) — ce qui reste, déclaré
 
-- [ ] Le tirage de la rue est uniforme sur toute la flotte (87 modèles) : les
-  dix voitures ordinaires y font environ 12 %. Les pondérer plus haut dans
+- [ ] Le tirage de la rue est uniforme sur toute la flotte (38 modèles de rue
+  depuis la v579) : les dix voitures ordinaires y font environ 26 %. Les pondérer autrement dans
   `choixFlotte` est une décision de Max (proposée, pas faite).
 - [ ] **Rouge du portail, pas de la livraison : les dimensions des avions**
   (`carteMonde.js`, trois témoins). Rejouée SEULE sur `origin/main` (v569,
