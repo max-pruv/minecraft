@@ -16,7 +16,7 @@ La sonde prend des captures à 430 × 932 (l'iPhone de Max) et à 820 × 1180
 `rr=9`, la couche HD (`hd=3`) et les ombres forcées. Elle couvre ces états :
 `accueil`, `menu`, `campagne`, `paris`, `minicarte`, `carte-monde`,
 `volant-arret`, `volant-roule`, `voiture-rue-percutee`, `vol-libre`,
-`avion-sol`, `avion-vol`, `avion-approche`, `construction`, `metro`, plus deux
+`avion-sol`, `avion-vol`, `avion-approche`, `avion-haut` (v582, l’avion à son toit), `construction`, `metro`, plus deux
 tablettes avec `--en-ligne`. Chaque état part à pied et note dans `journal.txt`
 ce qu'il a obtenu (au volant, aux commandes, à bord, phase d'approche). Un état
 qui échoue le dit et la sonde passe au suivant. Le tour complet prend environ

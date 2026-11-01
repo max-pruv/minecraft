@@ -528,6 +528,20 @@ const ETATS = [
     await attendreMonde(tab, 15000);
     return { ...r, etat: await tab.evaluate(() => window.__game.player.avionEtat) };
   } },
+  // v582 : l'avion à son toit (1 500 en « Loin », ~380 en « Normal ») — ce
+  // que le brouillard laisse voir du sol, et le bout du paysage lointain caché
+  { nom: 'avion-haut', async prep(tab, ctx) {
+    await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
+    const r = await monterEnAvion(tab);
+    const toit = await tab.evaluate(() => {
+      const P = window.__game.player;
+      P.pos.y = (P.plafondAvion || 158) - 5; P.vitesseAvion = P.pilote ? P.pilote.max * 0.8 : 0;
+      P.avionEnVol = true; P.avionEtat = 'vol'; P.trainVoulu = false; P.pitch = -0.35;
+      return Math.round(P.plafondAvion || 158);
+    });
+    await attendreMonde(tab, 15000);
+    return { ...r, toit, brouillard: await tab.evaluate(() => [Math.round(window.__game.scene.fog.near), Math.round(window.__game.scene.fog.far)]) };
+  } },
   { nom: 'avion-approche', async prep(tab) {
     // La règle de monte.js (v452) : un aérodrome générique, départ décalé, ✈️ en vol.
     const a = await tab.evaluate(async () => {
