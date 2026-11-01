@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 586,
+    titre: 'Plein de voitures différentes',
+    puces: [
+      'New York roule avec toutes les voitures',
+      'Un taxi jaune sur trois à New York',
+      'Des 4×4 et des pick-up sur les routes',
+    ],
+  },
+  {
     v: 585,
     titre: 'New York prend du relief',
     puces: [

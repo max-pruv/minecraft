@@ -18,6 +18,7 @@ import { Atelier } from './modeles.js';
 import { liberer, partagerTout } from './liberer.js';
 import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { MONDES, cielDe } from './mondes.js';
 import { CLASSES, MARCHE, sEnfonce } from './conduite.js';
 import { flammeDeChauffe, matiereAdditive } from './avions.js';
 
@@ -401,17 +402,108 @@ export function chargerVraieVoiture() {
 // carrosserie, pas la livrée.
 export const EST_LAQUE = /paint_primary|pearl|bodywork|(?<![a-z])body(?![a-z])/i;
 
-// LE MODÈLE DE LA VOITURE n D'UNE VILLE — fonction PURE, sans rien bâtir.
-// New York ne tire que ses taxis et berlines ; ailleurs, une voiture sur six
-// est la berline citadine, une sur six un utilitaire (v438 : la fourgonnette
-// et le pickup en alternance), les autres viennent de la flotte au pas de 17.
-// La règle ne lit que `n` : la même rue sur deux tablettes (v305).
-export function choixFlotte(n, ville) {
+// LE MODÈLE DE LA VOITURE n — fonction PURE, sans rien bâtir (v586).
+//
+// Max : « quand je me promène à New York, je ne vois qu'un taxi et une voiture
+// noire… à la campagne, des 4×4, des pick-up ; à New York, de tout » — et
+// « ça s'applique sur toutes les villes et tous les endroits ». La règle
+// d'avant enfermait Manhattan dans les DEUX modèles marqués `ville: 'ny'` (le
+// taxi jaune et la berline noire, tous deux fabriqués par taxis.js) pendant
+// que la plus petite ville engendrée tirait dans trente-neuf ; et la route
+// tirait exactement comme la rue.
+//
+// LE TIRAGE SE FAIT DANS UN MÉLANGE PROPRE AU MILIEU. Un milieu, c'est un
+// lieu (Manhattan, une ville, la route entre deux villes) et une région du
+// monde (Amérique du Nord, Europe, le reste) : `MELANGES` donne la part de
+// chaque CLASSE de la flotte, et la part d'une classe se partage entre ses
+// modèles. Ce qui a une identité de lieu se nomme à part : le taxi jaune ne
+// roule qu'à Manhattan (un tiers de la rue, comme la vraie), le taxi Mondeo
+// qu'en Europe et ailleurs, et la fourgonnette et le pickup fabriqués gardent
+// leur part de ville (les témoins de la v438 la lisent).
+//
+// La règle ne lit que `n` et le milieu : la même rue sur deux tablettes
+// (v305). `n` passe par un mélange d'entiers (`melanger`), jamais par un pas
+// irrationnel : les voitures n, n + 17, n + 34 d'une file tombaient sur des
+// fractions voisines, donc sur le même modèle une voiture sur deux.
+export const MELANGES = {
+  // Manhattan : un tiers de taxis jaunes, des berlines de service, des SUV,
+  // des livreurs, et de tout le reste un peu
+  ny: { taxiNY: 30, berlineNY: 6, berline: 12, suv: 18, citadine: 8, utilitaire: 10, pickup: 3, sportive: 6, gt: 5, hypercar: 2 },
+  'ville-europe': { citadine: 28, berline: 18, taxi: 3, suv: 13, fourgonnette: 14, pickupFab: 5, utilitaire: 3, sportive: 8, gt: 6, hypercar: 2 },
+  'ville-amerique': { berline: 20, suv: 24, pickup: 14, citadine: 8, fourgonnette: 10, utilitaire: 6, sportive: 9, gt: 7, hypercar: 2 },
+  'ville-monde': { citadine: 26, berline: 18, taxi: 3, suv: 18, fourgonnette: 10, pickupFab: 4, pickup: 4, utilitaire: 4, sportive: 7, gt: 4, hypercar: 2 },
+  // la route : moins de citadines, plus de SUV, de pickups et de grandes routières
+  'route-europe': { berline: 22, citadine: 14, suv: 22, utilitaire: 8, fourgonnette: 8, pickup: 6, gt: 10, sportive: 8, hypercar: 2 },
+  'route-amerique': { suv: 30, pickup: 26, berline: 14, utilitaire: 6, fourgonnette: 4, citadine: 3, gt: 9, sportive: 6, hypercar: 2 },
+  'route-monde': { suv: 26, pickup: 20, berline: 16, citadine: 12, utilitaire: 8, fourgonnette: 6, gt: 6, sportive: 4, hypercar: 2 },
+};
+
+// La région d'un point du globe : assez grossier pour ne jamais trembler,
+// assez juste pour qu'Houston ait ses pickups et Lyon ses citadines.
+export function regionDuGlobe(lat, lon) {
+  if (lon < -50 && lat > 14) return 'amerique';
+  if (lon > -30 && lon < 45 && lat > 34) return 'europe';
+  return 'monde';
+}
+
+// LE MILIEU D'UNE CIRCULATION, une fois à sa naissance. `x, z` : un point de
+// son tracé ; `sel` distingue deux milieux du même genre (deux autoroutes
+// partagent la graine 41, et tireraient sinon la même file de modèles).
+export function milieuDe({ ville, voie, x, z, sel = 0 } = {}) {
+  if (ville === 'ny' && voie !== 'autoroute') return { cle: 'ny', sel };
+  let region = 'europe';
+  if (Number.isFinite(x) && Number.isFinite(z)) {
+    const c = cielDe(x, z);
+    if (c) region = regionDuGlobe(c.lat, c.lon);
+  } else if (ville) {
+    const l = (MONDES.terre.lieux || []).find((e) => e.cle === ville);
+    if (l) region = regionDuGlobe(l.lat, l.lon);
+  }
+  return { cle: `${voie === 'autoroute' ? 'route' : 'ville'}-${region}`, sel };
+}
+
+// un mélange d'entiers 32 bits (le même partout, sans flottant)
+function melanger(n) {
+  let h = Math.imul((n | 0) ^ 0x9e3779b9, 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+// les modèles de chaque « case » d'un mélange, tirés de la FLOTTE
+const casesMemo = new Map();
+function casesDuMelange(cle) {
+  if (casesMemo.has(cle)) return casesMemo.get(cle);
+  const rue = FLOTTE.filter((e) => !e.horsRue && !e.police);
+  const fab = new Set(['berline-citadine', 'fourgonnette', 'pickup']);
+  const de = (k) => {
+    if (k === 'taxiNY') return rue.filter((e) => e.fichier === 'ny-crown-victoria');
+    if (k === 'berlineNY') return rue.filter((e) => e.fichier === 'ny-town-sedan');
+    if (k === 'taxi') return rue.filter((e) => e.taxi);
+    if (k === 'fourgonnette') return rue.filter((e) => e.fichier === 'fourgonnette');
+    if (k === 'pickupFab') return rue.filter((e) => e.fichier === 'pickup');
+    // une classe : ses modèles de la rue, hors identités de lieu ; la
+    // berline citadine fabriquée compte comme une citadine
+    return rue.filter((e) => e.classe === k && !e.ville && !e.taxi && (e.fichier === 'berline-citadine' || !fab.has(e.fichier)));
+  };
+  const out = []; let total = 0;
+  for (const [k, poids] of Object.entries(MELANGES[cle] || MELANGES['ville-europe'])) {
+    const modeles = de(k);
+    if (!modeles.length || !poids) continue;
+    total += poids; out.push({ cumul: total, modeles });
+  }
+  const r = { total, cases: out };
+  casesMemo.set(cle, r);
+  return r;
+}
+
+export function choixFlotte(n, ville, milieu) {
   if (VOITURE_FORCEE) return VOITURE_FORCEE;
-  const choix = FLOTTE.filter((e) => !e.horsRue && (ville === 'ny' ? e.ville === 'ny' : e.ville !== 'ny'));
-  if (ville !== 'ny' && n % 6 === 0) return FLOTTE.find((e) => e.fichier === 'berline-citadine');
-  if (ville !== 'ny' && n % 6 === 3) return FLOTTE.find((e) => e.fichier === (((n % 12) + 12) % 12 === 3 ? 'fourgonnette' : 'pickup'));
-  return choix[((n % choix.length) + choix.length) % choix.length];
+  const m = milieu || milieuDe({ ville });
+  const { total, cases } = casesDuMelange(m.cle);
+  const h = melanger(n * 131 + (m.sel | 0) * 7919);
+  const u = (h % 100003) / 100003 * total;
+  const c = cases.find((e) => u < e.cumul) || cases[cases.length - 1];
+  return c.modeles[melanger(h + 0x51ed) % c.modeles.length];
 }
 
 // LA GRAINE D'UN CONVOI VIENT DE SA VILLE (v246). Elle valait « nombre de
@@ -433,8 +525,8 @@ export const FLOTTE = [
   // cabine : `habitacle: false`, comme les carrosseries seules (v230).
   {fichier:'fourgonnette', classe: 'utilitaire', nom:'Fourgonnette de livraison', habitacle: false, laque: 'jamais', fabrique:()=>construireUtilitaire()},
   {fichier:'pickup', classe: 'pickup', nom:'Pickup de chantier', habitacle: false, laque: 'toujours', fabrique:()=>construirePickup({chargement: true})},
-  {fichier:'ny-crown-victoria', classe: 'berline',ville:'ny',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
-  {fichier:'ny-town-sedan', classe: 'berline',ville:'ny',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
+  {fichier:'ny-crown-victoria', classe: 'berline',ville:'ny',laque:'jamais',nom:'Ford Crown Victoria · taxi jaune',fabrique:()=>construireTaxi()},
+  {fichier:'ny-town-sedan', classe: 'berline',ville:'ny',laque:'jamais',nom:'Berline new-yorkaise',fabrique:()=>construireTaxi({taxi:false})},
   // LES ANCIENS PLACEHOLDERS RETIRÉS (v579). Max : « supprime les anciennes
   // voitures qui ne sont pas très jolies… toutes les voitures qui se
   // ressemblent ». Les quarante-sept modèles paramétriques `luxurycarfleet`
@@ -493,7 +585,7 @@ export const FLOTTE = [
   { fichier: 'porsche-992-gt3-r.glb', classe: 'sportive', nom: 'Porsche 911 GT3 R (992)', laque: 'jamais', habitacle: false, portiere: false },
   { fichier: 'bugatti-divo.glb', classe: 'hypercar', nom: 'Bugatti Divo', laque: 'jamais', habitacle: false, portiere: false },
   { fichier: 'ford-f150-raptor-r.glb', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false, portiere: false },
-  { fichier: 'ford-mondeo-taxi.glb', classe: 'berline', nom: 'Ford Mondeo · taxi', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'ford-mondeo-taxi.glb', classe: 'berline', taxi: true, nom: 'Ford Mondeo · taxi', laque: 'jamais', habitacle: false, portiere: false },
   // LES DIX VOITURES DE TOUS LES JOURS (v581) : le « Generic passenger car
   // pack » de Comrade1280 (CC-BY-4.0, vendor/voitures/LICENSE.md), dix
   // voitures sans marque dans une seule scène, isolées et mises au contrat par
@@ -2914,9 +3006,9 @@ export function createVehicules({ scene, player }) {
   // remplace dès qu'il est là (cachée d'ici là depuis la v544). C'est le même échange qu'aux
   // montures, à un détail près : ici on garde une trace des pivots de roue,
   // parce que c'est le convoi qui les fait tourner.
-  function voitureDeVille(n, teinte, ville) {
+  function voitureDeVille(n, teinte, ville, milieu) {
     const g = construireVoitureRoute(teinte);
-    const entree = choixFlotte(n, ville);
+    const entree = choixFlotte(n, ville, milieu);
     // Elle retient QUEL modèle elle est. Sans cela, un enfant qui prend le
     // volant d'une Bugatti croisée dans la rue repartirait au hasard de la
     // flotte — c'est le même soin que pour la voiture garée.
@@ -2943,7 +3035,7 @@ export function createVehicules({ scene, player }) {
     // seule est repeinte : vitres, chromes et carbone gardent leur rendu.
     // Posée dès la naissance (v547) : elle ne dépend que de la place.
     const laque = entree.laque ? entree.laque === 'toujours'
-      : entree.fichier !== 'berline-citadine' && ville !== 'ny' && n % 3 !== 0;
+      : entree.fichier !== 'berline-citadine' && n % 3 !== 0;
     g.userData.laque = laque ? teinte : null;
     // ce que la rue a réellement peint, quelle que soit la règle : c'est
     // ce qui part avec la voiture quand l'enfant la prend (v305)
@@ -3061,6 +3153,11 @@ export function createVehicules({ scene, player }) {
     // entrées de ville et réaccélère comme une voiture. `limite(x, z)` dit
     // l'allure permise en un point du tracé (l'autoroute qui entre en ville).
     const voie = options.voie || 'rue';
+    // LE MILIEU DU CONVOI (v586) : où il roule décide de ce qui roule. Le point
+    // du tracé donne la région ; la route et la ville de départ donnent le sel
+    // (toutes les autoroutes naissent sous la graine 41).
+    const milieu = options.milieu || milieuDe({ ville: options.ville, voie, x: pts[0] && pts[0].x, z: pts[0] && pts[0].z,
+      sel: [...`${options.route || ''}|${options.ville || ''}`].reduce((h, ch) => (Math.imul(h, 31) + ch.charCodeAt(0)) | 0, 0) });
     const vitesse = options.vitesse ?? ALLURE_VOIE[voie] ?? ALLURE_VOIE.rue;
     const facteur = allureDuConducteur(graine * 31 + Math.round(p.longueur));
     const lim = options.limite
@@ -3185,7 +3282,7 @@ export function createVehicules({ scene, player }) {
       // encore sans conséquence ; il vaut mieux un pas PREMIER avec la taille
       // de la flotte, et 17 l'est aussi de cinquante-deux — cinquante-deux
       // modèles différents.
-      modele: (i) => voitureDeVille(graine * 7 + i * 17, TEINTES[(graine + i) % TEINTES.length],options.ville),
+      modele: (i) => voitureDeVille(graine * 7 + i * 17, TEINTES[(graine + i) % TEINTES.length], options.ville, milieu),
     });
     // Ce que le jeu par voiture lit (v438) : le tracé et la grille de la
     // création (les croisements y sont déjà calculés), et la section à deux
@@ -3198,7 +3295,7 @@ export function createVehicules({ scene, player }) {
     // diversité le lit avant que la moindre voiture ne soit née.
     c.graine = graine;
     c.voie = voie;
-    c.modeles = Array.from({ length: nb }, (_, i) => choixFlotte(graine * 7 + i * 17, options.ville).fichier);
+    c.modeles = Array.from({ length: nb }, (_, i) => choixFlotte(graine * 7 + i * 17, options.ville, milieu).fichier);
     // LA JUMELLE (v423). Une portion de deux voies d'au moins quarante blocs, et
     // aucun contact sur un tour là où les deux files se rejoignent sur une
     // seule voie. Le bus du grand anneau (`options.bus`) prend la première
@@ -3215,10 +3312,10 @@ export function createVehicules({ scene, player }) {
         profil: { limite: options.limite || null, facteur, calcule: prof },
         route: options.route || null,
         nom: 'voiture', emoji: '🚙', assise: 1.15, vu: VU_VOITURE,
-        modele: (i) => voitureDeVille(graineB * 7 + i * 17, TEINTES[(graineB + i) % TEINTES.length], options.ville),
+        modele: (i) => voitureDeVille(graineB * 7 + i * 17, TEINTES[(graineB + i) % TEINTES.length], options.ville, milieu),
       });
       b.graine = graineB; b.voie = voie; b.jeuDe = c;
-      b.modeles = Array.from({ length: nbB }, (_, i) => choixFlotte(graineB * 7 + i * 17, options.ville).fichier);
+      b.modeles = Array.from({ length: nbB }, (_, i) => choixFlotte(graineB * 7 + i * 17, options.ville, milieu).fichier);
       c.jumelle = b;
     };
     if (tout) poserJumelle(tout);
