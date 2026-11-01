@@ -1710,7 +1710,7 @@ mètres ». Cinq règles, toutes mesurées par `sonde-elan-chocs.cjs`.
   vitesse de sortie, la force reste celle de la vitesse RELATIVE. Sans cela un
   taxi de Manhattan pris de face rejetait l'enfant de sept blocs (et
   `origin/main`, joystick lâché, de trente-neuf à cinquante et un).
-## La voie au milieu de sa moitié (v575) — un décalage se demande à la section que le tracé suit
+## La voie au milieu de sa moitié (v578) — un décalage se demande à la section que le tracé suit
 
 La dette (1) de la v544. Trois règles.
 

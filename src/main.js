@@ -3874,14 +3874,14 @@ function demarrerCirculation(tr) {
   // plus une seule limitation pour tout le circuit. Manhattan garde la sienne.
   const allure = tr.ville === 'ny' ? null : decalage ? (x, z) => allureDuTroncon(tr.cle, x, z)
     : (tr.voie || 'rue') === 'rue' ? allureVilleMonde : null;
-  // LE MILIEU DE LA VOIE À LA GTA (v575) : sur une collectrice ou un
+  // LE MILIEU DE LA VOIE À LA GTA (v578) : sur une collectrice ou un
   // boulevard que le tracé suit, la voie de droite est à `DECALAGE_GTA` (2,13)
   // de l'axe ; ailleurs l'ancien décalage. Un décalage par sommet, la cote
   // relue sous la voie (voiesdoubles.js, `decalerSelonLaSection`).
   const sec = decalage ? decalerSelonLaSection(tr.cle, tr.pts, (x, z) => world.coteRoulable(x, z), decalage) : null;
   const prep = (vehicules.circulationParTranches || vehicules.circulation)(sec ? sec.pts : tr.pts, graineDeVille(tr), { ville: tr.ville, voie: tr.voie || 'rue',
     limite: allure ? (x, z) => ALLURE_VOIE[allure(x, z) || tr.voie || 'rue'] : undefined,
-    // les avenues des villes bâties à la main : la voie de droite (v372, v575)
+    // les avenues des villes bâties à la main : la voie de droite (v372, v578)
     decalage: sec ? sec.e : decalage,
     // la seconde voie des boulevards (v423) ; le bus prend la première place —
     // la file y roule à `DECALAGE_GTA`, la jumelle une voie plus loin

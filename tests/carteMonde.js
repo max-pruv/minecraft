@@ -3553,7 +3553,7 @@ const VRAIES_KM = [
       // propres fonctions, et la bande s'élargit d'autant.
       const ve = await import('./src/vehicules.js');
       const VOIE = typeof m.VOIE_DE_DROITE === 'number' ? m.VOIE_DE_DROITE : 1.3;
-      // la voie à la GTA (v575) : le décalage par sommet que main.js pose
+      // la voie à la GTA (v578) : le décalage par sommet que main.js pose
       const vd = await import('./src/voiesdoubles.js');
       const voieDe = (c) => { const p0 = c.pts.map((p) => ({ ...p }));
         if (!vd.decalerSelonLaSection) return ve.sansEpis(ve.decalerADroite(ve.sansEpis(p0), VOIE));

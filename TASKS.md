@@ -570,7 +570,7 @@ branche, puis chaque témoin touché rejoué sur une copie DÉSARMÉE (sondes
   aussi, un passant traverse sur le passage peint » et « les passants de la
   ville d'arrivée se posent quand le monde est là », déjà déclarés, le premier
   rouge aussi sur `origin/main` rejouée seule.
-- [ ] **Les rues à la GTA (v544), ce qui reste, déclaré.** (1) *(v575 : fait — 2,13 sur les collectrices et
+- [ ] **Les rues à la GTA (v544), ce qui reste, déclaré.** (1) *(v578 : fait — 2,13 sur les collectrices et
   boulevards suivis, l'ancien décalage ailleurs, `decalerSelonLaSection`.
   Reste : le huit de la République (−301, 323) a 150 contacts de grille dans
   sa propre épingle contre 25 (`sonde-rue-dense.cjs jeu 0`), cédés en jeu par

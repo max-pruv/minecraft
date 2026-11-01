@@ -2344,7 +2344,7 @@ export function sansEpis(pts) {
 // direction (fx, fz) est (−fz, fx) (v271, mesurée). À chaque sommet on suit la
 // bissectrice, allongée de 1/cos(θ/2) pour garder la distance aux deux côtés,
 // et bornée à deux fois le décalage dans un coin très fermé. `e` est un
-// nombre, ou un décalage par sommet (la section de la rue, v575).
+// nombre, ou un décalage par sommet (la section de la rue, v578).
 export function decalerADroite(pts, e) {
   const n = pts.length, out = [];
   for (let i = 0; i < n; i++) {

@@ -50,7 +50,8 @@ des monuments de Paris (`carteMonde.js`) lisent désormais la voie que le jeu
 pose. La sonde `sonde-voie-gta.cjs` compare les décalages ville par ville ; un
 décalage unique de 2,13 partout est un non-résultat mesuré (Washington 32 →
 54 % de pas hors chaussée). Les voies doubles de Paris : 474 → 666 blocs
-occupés (`sonde-rue-dense.cjs boulevards`).
+occupés (`sonde-rue-dense.cjs boulevards`). Revue d'écran (Paris, Rome, au
+volant en ville ; iPhone et iPad, jour et nuit) : `docs/captures/v578-voies/`.
 
 ---
 

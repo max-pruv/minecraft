@@ -1023,7 +1023,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       !!r && r.circuits > 40 && r.egaux === r.circuits && r.avecJumelle > 5 && r.enQuatreEtapesOuPlus === r.circuits,
       r ? JSON.stringify(r) : `sonde : ${err}`);
   }
-  // --- LE MILIEU DE LA VOIE À LA GTA (v575) ------------------------------
+  // --- LE MILIEU DE LA VOIE À LA GTA (v578) ------------------------------
   // Les convois des villes bâties à la main roulaient à 1,3 bloc de l'axe,
   // quand les rues à la GTA (v544) mettent le milieu de la voie de droite
   // d'une collectrice à 2,13 : deux voitures qui se croisaient passaient à

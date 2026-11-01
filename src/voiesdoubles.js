@@ -167,7 +167,7 @@ export function allureVilleMonde(x, z) {
   return secondeVoieVilleMonde(x, z) ? 'avenue' : 'rue';
 }
 
-// LE MILIEU DE LA VOIE À LA GTA (v575). Depuis la v372 les convois des villes
+// LE MILIEU DE LA VOIE À LA GTA (v578). Depuis la v372 les convois des villes
 // bâties à la main roulaient à `DECALAGE_BASE` (1,3 bloc) à droite de l'axe :
 // le milieu de la voie de droite quand une chaussée faisait 5,2 blocs. Les
 // rues à la GTA (v544) donnent à une collectrice deux voies de 4,26 (8,52 de
@@ -240,7 +240,7 @@ export function decalagesDuTrace(cle, pts, base = DECALAGE_BASE) {
 }
 
 // LE TRACÉ D'UN CIRCUIT D'AVENUE ET SES DÉCALAGES, LA COTE RELUE SOUS LA VOIE
-// (v575). La cote d'un point se lit sous la carrosserie dans sa voie (v512,
+// (v578). La cote d'un point se lit sous la carrosserie dans sa voie (v512,
 // `densifierCircuit`), à `VOIE_CIRCUIT` de l'axe : là où le décalage change,
 // elle se relit à la nouvelle voie — sinon, en dévers, le flanc d'une voiture
 // à 2,13 entre dans le pavé d'une colonne plus haute (San Francisco : 61 → 106
