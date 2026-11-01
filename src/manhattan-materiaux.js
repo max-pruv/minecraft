@@ -1,5 +1,5 @@
-// Matériaux originaux générés localement : aucun téléchargement ni licence
-// tierce supplémentaire. Les motifs sont en mètres du monde, pas étirés par
+// Motifs générés localement, complétés par les photos créditées dans
+// vendor/newyork/LICENSE.md. Les motifs sont en mètres du monde, pas étirés par
 // la taille des cubes instanciés. PBR Three.js r160, reflets PMREM.
 import * as THREE from "three";
 import { ALEA } from "./manhattan-plan.js";

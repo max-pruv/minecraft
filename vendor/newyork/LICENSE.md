@@ -38,7 +38,8 @@ by sumitmangela (https://sketchfab.com/sumitmangela) licensed under CC-BY-4.0
 (http://creativecommons.org/licenses/by/4.0/)
 
 Modifications : recadrages de photos de façades, mis en 512 × 512 ; les
-masques de nuit (fenêtres allumées) sont calculés à partir de ces photos.
+masques de nuit (fenêtres allumées) suivent des baies repérées dans les photos,
+hors des ombres et des escaliers (`scripts/new-york-fenetres.mjs`).
 
 ## Pierre — `pierre.jpg`
 

@@ -1,5 +1,9 @@
 # Manhattan appartient à la Terre
 
+La refonte des immeubles à partir du modèle fourni est décrite dans
+[Manhattan : volumes OSM](manhattan-osm.md), avec son attribution, son échelle
+et ses limites géographiques. Ce document décrit aussi l’architecture historique.
+
 Il existe une seule carte. On rejoint Manhattan par la carte du monde, comme
 toute autre ville, avec les mêmes outils, personnages, créatures, véhicules et
 règles éducatives. Le bouton « Explorer New York » de l'accueil a été retiré en

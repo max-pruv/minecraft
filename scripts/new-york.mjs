@@ -27,6 +27,7 @@
 //    jamais sur un mur qu'on ne voit pas) et les couches de la statue.
 import { MeshoptSimplifier as S } from 'meshoptimizer';
 import sharp from 'sharp';
+import { ecrireFenetres } from './new-york-fenetres.mjs';
 import * as THREE from 'three';
 import { MeshBVH } from 'three-mesh-bvh';
 import fs from 'fs';
@@ -615,24 +616,7 @@ for (const m of MATIERES) {
   }
   await sharp(brut, { raw: { width: 512, height: 512, channels: 3 } }).jpeg({ quality: 84, mozjpeg: true }).toFile(path.join(sortie, `${m.nom}.jpg`));
   if (!m.nuit) { console.log(`matière ${m.nom}`); continue; }
-  // LES FENÊTRES ALLUMÉES SE LISENT DANS LA PHOTO : une fenêtre est plus sombre
-  // que le mur qui l'entoure (luminance sous 62 % de la moyenne locale, sur
-  // 33 px) ; une sur deux environ s'allume, tirée par case de 24 px. Sur un
-  // mur-rideau c'est l'inverse — les meneaux sont sombres, les vitres claires.
-  const L = new Float32Array(512 * 512);
-  for (let i = 0; i < L.length; i++) L[i] = 0.2126 * brut[3 * i] + 0.7152 * brut[3 * i + 1] + 0.0722 * brut[3 * i + 2];
-  const integrale = new Float64Array(513 * 513);
-  for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) integrale[(y + 1) * 513 + x + 1] = L[y * 512 + x] + integrale[y * 513 + x + 1] + integrale[(y + 1) * 513 + x] - integrale[y * 513 + x];
-  const nuit = Buffer.alloc(512 * 512);
-  let allumes = 0;
-  for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
-    const x0 = Math.max(0, x - 16), x1 = Math.min(512, x + 17), y0 = Math.max(0, y - 16), y1 = Math.min(512, y + 17);
-    const moy = (integrale[y1 * 513 + x1] - integrale[y0 * 513 + x1] - integrale[y1 * 513 + x0] + integrale[y0 * 513 + x0]) / ((x1 - x0) * (y1 - y0));
-    const h = Math.imul((x / 24) | 0, 374761393) ^ Math.imul((y / 24) | 0, 668265263);
-    const tirage = ((Math.imul(h ^ (h >>> 13), 1274126177) >>> 0) % 1000) / 1000;
-    const vitre = m.vitres === 'claires' ? L[y * 512 + x] > 1.08 * moy : L[y * 512 + x] < 0.62 * moy;
-    if (vitre && tirage > 0.48) { nuit[y * 512 + x] = 255; allumes++; }
-  }
-  await sharp(nuit, { raw: { width: 512, height: 512, channels: 1 } }).blur(0.8).jpeg({ quality: 80 }).toFile(path.join(sortie, `${m.nom}-nuit.jpg`));
-  console.log(`matière ${m.nom} (fenêtres allumées : ${((100 * allumes) / nuit.length).toFixed(1)} % des texels)`);
+  // Baies repérées dans les recadrages : aucune ombre d'escalier ne s'allume.
+  await ecrireFenetres(m.nom, sortie);
+  console.log(`matière ${m.nom} (fenêtres repérées)`);
 }

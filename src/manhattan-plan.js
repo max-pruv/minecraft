@@ -2,7 +2,7 @@
 // Le plan d’auteur est ramené à 40 % au sol ; les hauteurs restent jouables.
 // Plan interprété et comprimé ; 1 unité de rue correspond à environ un mètre
 // jouable. Les tours emblématiques restent sous le plafond de construction.
-// Géométrie et matériaux originaux, aucun asset de GTA.
+// Volumes OSM et modèles crédités dans docs/manhattan-osm.md et vendor/newyork/LICENSE.md.
 import { BLOCK, CITY_BLOCK, DECOR_START } from "./blocks.js";
 import { axeDuFeu } from "./feux.js";
 import {
@@ -35,6 +35,7 @@ export const MODELES_NY_ETAT = { empireAncien: false, liberteAncienne: false };
 // le socle de l'Empire reste procédural, net à hauteur de rue : la
 // photogrammétrie, faite d'avion, n'est lisible qu'au-dessus de lui
 export const SOCLE_EMPIRE = EMPIRE_NIVEAUX[0][2];
+import { preparerArchitecture, sommetArchitecture } from "./manhattan-architecture.js";
 
 export const MANHATTAN_ID = "manhattan-v1"; // lecture des sauvegardes v239 uniquement
 export const ECHELLE_PLAN = 0.4;
@@ -332,6 +333,10 @@ function enregistrer(b) {
         : b[key] * K;
   b.id = tous.length;
   b.seed = Math.floor(ALEA(b.x0, b.z0) * 100000);
+  if (!b.name) {
+    preparerArchitecture(b, surface);
+    if (!b.h) return;
+  }
   tous.push(b);
   for (let cz = Math.floor(b.z0 / 64); cz <= Math.floor(b.z1 / 64); cz++)
     for (let cx = Math.floor(b.x0 / 64); cx <= Math.floor(b.x1 / 64); cx++) {
@@ -341,6 +346,7 @@ function enregistrer(b) {
     }
 }
 export function emprise(b, x, z) {
+  if (b.colonnes) return sommetArchitecture(b, x, z) > 0;
   if (!dedans(x, z, b)) return false;
   // La pointe du Flatiron est réellement triangulaire, aussi pour les collisions.
   return (
@@ -385,6 +391,7 @@ export function niveaux(b) {
   return [[1, 1, b.h]];
 }
 export function sommet(b, x, z) {
+  if (b.colonnes) return sommetArchitecture(b, x, z);
   if (!emprise(b, x, z)) return 0;
   if (b.style === "steps")
     return Math.max(1, Math.ceil(((b.z1 - z) / (b.z1 - b.z0)) * 3));
@@ -399,9 +406,17 @@ for (let sz = -71; sz < 48; sz++)
   for (let ax = -5; ax < 5; ax++) {
     const rz0 = sz * RUE_AUTEUR + 11,
       rz1 = (sz + 1) * RUE_AUTEUR - 10;
-    for (let part = 0; part < 3; part++) {
-      let x0 = ax * AVENUE_AUTEUR + 16 + part * 23,
-        x1 = x0 + 22,
+    // Les anciens lots faisaient TOUS neuf mètres de façade. Une tour et
+    // une maison ne prennent plus la même parcelle : 1 à 3 adresses par îlot.
+    // Les limites de rue et les carrefours restent celles des sauvegardes.
+    const tours = (rz0 > -816 && rz0 < 650) || rz0 > 1920;
+    const partage = ALEA(ax + 871, sz - 193);
+    const parcelles = rz0 >= 1056 ? 3 : tours ? (partage < .22 ? 1 : partage < .82 ? 2 : 3)
+      : partage < .25 ? 2 : 3;
+    const pas = 69 / parcelles;
+    for (let part = 0; part < parcelles; part++) {
+      let x0 = ax * AVENUE_AUTEUR + 16 + part * pas,
+        x1 = x0 + pas - 1,
         z0 = rz0,
         z1 = rz1;
       const t = trameAuteur((x0 + x1) / 2, (z0 + z1) / 2);
@@ -409,8 +424,9 @@ for (let sz = -71; sz < 48; sz++)
         const [cx, cz] = tournerAuteur((x0 + x1) / 2, (z0 + z1) / 2, t, true);
         // Volumes orthogonaux inscrits dans les parcelles tournées. Chaque
         // colonne est ensuite sondée : aucun mur posé au travers d'une rue.
-        x0 = cx - 9;
-        x1 = cx + 9;
+        const demiLargeur = Math.min(9, (pas - 2) / 2);
+        x0 = cx - demiLargeur;
+        x1 = cx + demiLargeur;
         z0 = cz - 10;
         z1 = cz + 10;
         let coupeRue = false;
@@ -446,34 +462,7 @@ for (let sz = -71; sz < 48; sz++)
         )
       )
         continue;
-      const n = ALEA(x0, z0),
-        midtown = z0 > -816 && z0 < 650,
-        financial = z0 > 1920;
-      const mat =
-        midtown || financial
-          ? n < 0.34
-            ? "glass"
-            : n < 0.67
-              ? "limestone"
-              : "brick"
-          : n < 0.65
-            ? "brick"
-            : "brownstone";
-      const hauteur = ALEA(x0 + 237, z0 - 91);
-      const h =
-        mat === "glass"
-          ? 27 + Math.floor((hauteur ** 1.8 * 60) / 3) * 3
-          : (midtown || financial ? 18 : 12) +
-            Math.floor(hauteur * (midtown ? 9 : 5)) * 3;
-      enregistrer({
-        x0,
-        x1,
-        z0,
-        z1,
-        h,
-        mat,
-        style: mat === "glass" ? "office" : "masonry",
-      });
+      enregistrer({ x0, x1, z0, z1 });
     }
   }
 // LES BANLIEUES (v583). Leur plan est déjà en blocs : ils entrent tels quels dans
@@ -500,7 +489,7 @@ const FORMES_ILE = ["immeuble", "appartements", "immeuble", "appartements", "cin
 for (const b of tous) {
   const midtown = b.z0 > -816 * K && b.z0 < 650 * K,
     financial = b.z0 > 1920 * K;
-  if (b.style !== "masonry" || midtown || financial || b.h > 21) continue;
+  if (b.osm || b.style !== "masonry" || midtown || financial || b.h > 21) continue;
   const r = ALEA(b.seed, 53);
   if (r > 0.34) continue;
   b.modele = FORMES_ILE[Math.floor(ALEA(b.seed, 59) * FORMES_ILE.length)];

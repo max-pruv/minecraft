@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## En préparation — Manhattan reprend les volumes du modèle OSM fourni
+
+**Pourquoi.** Les bâtiments ordinaires étaient des rectangles de dimensions
+presque identiques, avec deux styles et des hauteurs aléatoires. Max demande
+une ville plus variée, plus crédible à hauteur de personnage et au volant.
+
+**Ce que ça change.** Un atlas compact extrait du modèle de MENUDQ2 donne aux
+quartiers leurs distributions de hauteur, leurs cours, ailes et retraits. Les
+parcelles s'élargissent pour les grands immeubles ; huit traitements de façade,
+les commerces, les escaliers de secours et les terrasses différencient les rues.
+Le rendu proche, le lointain et les collisions partagent les mêmes volumes.
+La reprise de la PR #587 conserve ses dix quartiers périphériques et ses
+monuments ; ses façades photographiques habillent aussi les nouveaux volumes
+de près. Les modèles de ponts supplémentaires sont analysés dans
+`docs/manhattan-ponts-sources.md` et ne sont pas embarqués dans cette livraison.
+La nuit, les fenêtres s'allument dans les dix variantes, sans illuminer les
+ombres d'escaliers présentes sur les photographies.
+La carte reste une adaptation compacte : les rues et les berges existantes
+ne sont pas remplacées par un cadastre au mètre près.
+
+**Vérification.** Le contrat d'architecture vérifie notamment la provenance,
+les cours ouvertes à toutes les distances, les hauteurs et les routes libres.
+Les résultats navigateur sont consignés dans `docs/manhattan-osm-validation.md`.
+
+---
+
 ## v583 — New York a des banlieues
 
 **Pourquoi.** Max a déposé le paquet « CCity Building Set 1 » : « sers-toi de ce

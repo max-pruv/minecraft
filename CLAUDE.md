@@ -26,6 +26,37 @@ travail est irrattrapable.
 
 ---
 
+## Manhattan : atlas OSM de Max (refonte en préparation)
+
+Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par
+`scripts/extraire-manhattan-osm.py` à partir du modèle MENUDQ2 fourni par Max.
+Crédit CC BY 4.0, provenance et limites : `docs/manhattan-osm.md`.
+
+- `manhattan-architecture.js` est l'unique interprète du profil : hauteurs,
+  cours, colonnes et rectangles du lointain. Le proche et les collisions lisent
+  ces mêmes colonnes. Une boîte englobante n'est plus une emprise pleine.
+- Toutes les colonnes sont découpées contre rues, places et eau. Quatre coins
+  libres ne prouvent rien sur une rue diagonale qui traverse l'intérieur.
+- Les étages restent de trois unités ; la compression verticale est monotone
+  et conserve la limite du monde. Les rues et les coordonnées des sauvegardes
+  restent celles du plan jouable. Les profils sont des références de quartier,
+  pas des bâtiments promis à une adresse cadastrale exacte.
+- Les accessoires de toit se posent sur une terrasse existante, les enseignes
+  sur un mur existant ; ni le centre de la boîte ni son coin ne sont garantis
+  solides. Les témoins de collision choisissent un vrai mur et vérifient l'arrêt
+  à une demi-largeur de joueur de sa face.
+- Le contrat `tests/architecture-manhattan.mjs` est lancé par `manhattan.js`.
+  Il garde provenance, diversité, cours, collision/LOD, routes et budget d'atlas.
+- La reprise de la PR #587 garde ses banlieues et ses monuments. Ses photos
+  de façades habillent les volumes OSM proches et lointains ; un modèle CCity
+  plein ne remplace jamais une emprise OSM creuse. Les matériaux photographiques
+  restent ceux préchauffés à l'accueil, sans nouvelle variante de shader.
+- Les masques lumineux photographiques suivent les baies repérées dans
+  `scripts/new-york-fenetres.mjs` : une zone sombre peut être l'ombre d'un
+  escalier, pas une fenêtre. Toutes les variantes suivent le cycle nocturne.
+- Un arrêt de collision se mesure sur des images de jeu distinctes : trois
+  lectures identiques entre deux images lentes ne prouvent pas un arrêt.
+
 ## Invariants non négociables
 
 1. **Le sol ne bouge jamais.** Les blocs des enfants sont repérés par

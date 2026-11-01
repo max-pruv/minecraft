@@ -486,6 +486,8 @@ export class ManhattanRenderer {
   // La forme du paquet CCity d'un immeuble (v583) : arrivée, et sur un immeuble que
   // l'enfant n'a pas touché — un modèle ne se troue pas, la façade procédurale si.
   modeleDe(b) {
+    // Un modèle plein ne peut remplacer une emprise OSM à cour ou retraits.
+    if (b.osm) return null;
     if (!b.modele || !this.quartiersPrets || this.world.batimentTouche?.(b.id)) return null;
     return this.geos[b.modele] ? b.modele : null;
   }
@@ -686,6 +688,16 @@ export class ManhattanRenderer {
         z = (b.z0 + b.z1) / 2,
         w = b.x1 - b.x0,
         d = b.z1 - b.z0;
+      if (b.volumes) {
+        const mat = loinDe(b);
+        for (const v of b.volumes) {
+          lot.put(mat, v.x + v.w / 2, NIVEAU + (v.h + 1) / 2, v.z + v.d / 2,
+            v.w, v.h + 1, v.d, "box", 0, b.teinte);
+          lot.put("roof", v.x + v.w / 2, NIVEAU + v.h + .94, v.z + v.d / 2,
+            v.w, .12, v.d);
+        }
+        continue;
+      }
       // un immeuble d'après le paquet CCity : son lointain cuit (dix triangles)
       const forme = this.modeleDe(b);
       if (forme) {
@@ -760,6 +772,7 @@ export class ManhattanRenderer {
     );
   }
   facade(lot, b, x, z, nx, nz, h, premier = 0) {
+    if (b.osm) return this.facadeOsm(lot, b, x, z, nx, nz, h, premier);
     const tangent = nx ? z : x,
       angle = nx ? Math.PI / 2 : 0;
     for (let yy = premier; yy <= h; yy++) {
@@ -859,6 +872,92 @@ export class ManhattanRenderer {
           nz ? 0.46 : 1.04,
         );
       }
+    }
+  }
+  facadeOsm(lot, b, x, z, nx, nz, h, premier) {
+    const t = nx ? z - b.z0 : x - b.x0;
+    const baie = ((t % b.travee) + b.travee) % b.travee;
+    const verre = b.mat === "glass", loft = b.architecture === "loft";
+    const teinte = b.teinte;
+    const ex = x + .5 + nx * .49, ez = z + .5 + nz * .49;
+    const piece = (mat, y, largeur, haut, profondeur, recul = 0, couleur = 1) =>
+      lot.put(mat, ex + nx * recul, NIVEAU + y, ez + nz * recul,
+        nx ? profondeur : largeur, haut, nz ? profondeur : largeur, "box", 0, couleur);
+    for (let yy = premier; yy <= h; yy++) {
+      if (!this.present(x, NIVEAU + yy, z)) continue;
+      const etage = yy % 3;
+      const boutique = b.enseigne && yy < 3 && baie !== 0;
+      const fenetre = yy >= 4 && yy < h - 1 && etage !== 0 &&
+        (verre || (baie >= 1 && baie < b.travee - (loft ? 0 : 1)) || (b.travee === 2 && baie === 1));
+      if (PHOTO_NY && yy >= 4 && yy < h) {
+        piece(loinDe(b), yy + .5, 1, 1, .94, -.45, teinte);
+      } else if (fenetre || boutique) {
+        const allume = !boutique && ALEA(b.seed + Math.floor(t / b.travee), Math.floor(yy / 3)) > .64;
+        piece(allume ? "glassLit" : verre ? "glass" : "glassDark", yy + .5, .98, .98, .12, -.17);
+        // Meneaux aux bords de la travée, pas une grille de carrés d'un mètre.
+        if (verre || baie === 1)
+          lot.put(loft ? "trim" : "metal", ex - (nz ? .46 : 0), NIVEAU + yy + .5,
+            ez - (nx ? .46 : 0), nx ? .35 : .065, 1, nz ? .35 : .065);
+        if (etage === 1 || boutique && yy === 0)
+          piece(loft ? "trim" : "metal", yy + .04, 1.04, .1, .38, .02);
+        if (etage === 2) piece(loft ? "trim" : "metal", yy + .96, 1.04, .1, .38, .02);
+      } else {
+        piece(b.mat, yy + .5, 1, 1, .94, -.45, teinte);
+        // Les tours Art déco ont des nervures ; les lofts, des pilastres.
+        if ((b.architecture === "artdeco" || loft) && baie === 0 && yy > 2)
+          piece("trim", yy + .5, loft ? .18 : .12, 1, .18, .09, teinte);
+      }
+      if (yy === h || yy === 3 || (b.architecture === "loft" && yy % 3 === 0))
+        piece("trim", yy + .92, 1.06, yy === h ? .24 : .12, .28, .07, teinte);
+    }
+  }
+  detailsOsm(lot, b) {
+    // Trouver les vrais pans de mur donnant au sud, y compris dans un retrait.
+    // Pas d'auvent au-dessus du vide ni de panneau qui bouche une entrée.
+    const face = [];
+    for (let x = b.x0; x < b.x1; x++) {
+      let z = b.z1 - 1;
+      while (z >= b.z0 && sommet(b, x, z) < 6) z--;
+      face.push(z);
+    }
+    for (let i = 0; i < face.length;) {
+      let fin = i + 1;
+      while (fin < face.length && face[fin] === face[i]) fin++;
+      const largeur = fin - i, z = face[i], x = b.x0 + i + largeur / 2;
+      if (largeur >= 4 && z >= b.z0 && b.enseigne && this.present(Math.floor(x), NIVEAU + 3, z)) {
+        lot.sign(4 + b.seed % 4, x, NIVEAU + 3.55, z + 1.06, Math.min(largeur - .5, 7), .58);
+        lot.put(b.seed % 2 ? "metal" : "brownstone", x, NIVEAU + 3.1, z + 1.3,
+          largeur - .3, .12, .6);
+      }
+      // Un escalier de secours étroit à l'échelle des humains, accroché au mur.
+      if (largeur >= 5 && ["tenement", "cour", "loft"].includes(b.architecture)) {
+        const fx = b.x0 + i + 1.5;
+        for (let y = 6; y < sommet(b, Math.floor(fx), z) - 2; y += 3) {
+          if (!this.present(Math.floor(fx), NIVEAU + y, z)) continue;
+          lot.put("metal", fx, NIVEAU + y, z + 1.45, 1.6, .08, .9);
+          lot.put("metal", fx, NIVEAU + y + .9, z + 1.85, 1.6, .05, .05);
+          for (const dx of [-.72, -.36, 0, .36, .72])
+            lot.put("metal", fx + dx, NIVEAU + y + .45, z + 1.85, .035, .9, .035);
+          for (let k = 0; k < 10; k++)
+            lot.put("metal", fx - .6 + k * .12, NIVEAU + y - k * .3, z + 1.45, .4, .05, .55);
+        }
+      }
+      i = fin;
+    }
+    // Équipements uniquement sur une terrasse suffisamment large et intacte.
+    const toit = b.volumes.filter(v => v.w >= 3 && v.d >= 3)
+      .sort((a, c) => c.h - a.h || c.w * c.d - a.w * a.d)[0];
+    if (!toit) return;
+    const x = toit.x + toit.w / 2, z = toit.z + toit.d / 2, y = NIVEAU + toit.h + 1;
+    for (const dx of [-1, 0, 1]) for (const dz of [-1, 0, 1])
+      if (!this.present(x + dx, y - 1, z + dz)) return;
+    lot.put("metal", x, y + .45, z, 1.8, .9, 1.5);
+    for (let i = 0; i < 5; i++) lot.put("roof", x, y + .15 + i * .15, z + .76, 1.6, .03, .04);
+    if (["loft", "tenement", "cour"].includes(b.architecture) && b.seed % 3 === 0 && toit.w >= 5 && toit.d >= 5) {
+      for (const dx of [-.75, .75]) for (const dz of [-.75, .75])
+        lot.put("metal", x + dx, y + .65, z + dz, .08, 1.3, .08);
+      lot.put("wood", x, y + 2.1, z, 2.1, 2.1, 2.1, "cylinder");
+      lot.put("metal", x, y + 3.35, z, 2.35, .45, 2.35, "cone");
     }
   }
   *buildBuilding(b) {
@@ -983,7 +1082,7 @@ export class ManhattanRenderer {
     }
     yield;
     // Devantures, seuils et auvents ; les portes restent libres sur 3 mètres.
-    if (b.style === "masonry" || b.style === "office") {
+    if (!b.osm && (b.style === "masonry" || b.style === "office")) {
       for (let sx = b.x0 + 5; sx < b.x1 - 3; sx += 8) {
         lot.sign(
           4 + ((b.seed + Math.floor(sx)) % 4),
@@ -999,7 +1098,7 @@ export class ManhattanRenderer {
     }
     // Escaliers de secours des immeubles en maçonnerie : paliers ajourés et
     // marches visibles, ancrés sur une colonne encore présente.
-    if (b.mat === "brick" || b.mat === "brownstone")
+    if (!b.osm && (b.mat === "brick" || b.mat === "brownstone"))
       for (let yy = 6; yy < b.h - 2; yy += 6) {
         const ex = b.x0 + 5,
           ez = b.z0 - 0.9;
@@ -1032,7 +1131,7 @@ export class ManhattanRenderer {
     // Centrales de ventilation avec grilles et réservoirs sur leurs supports.
     for (
       let k = 0;
-      k < (["office", "masonry"].includes(b.style) ? 1 : 0);
+      k < (!b.osm && ["office", "masonry"].includes(b.style) ? 1 : 0);
       k++
     ) {
       const px = x + (k - 0.5) * 5;
@@ -1041,7 +1140,7 @@ export class ManhattanRenderer {
         lot.put("roof", px, top + 0.5 + j * 0.11, z + 1.66, 2.2, 0.035, 0.04);
       lot.put("roof", px, top + 1.34, z, 1.2, 0.08, 1.2, "cylinder");
     }
-    if (b.mat !== "glass" && b.style === "masonry" && b.seed % 3 === 0) {
+    if (!b.osm && b.mat !== "glass" && b.style === "masonry" && b.seed % 3 === 0) {
       const tx = x + Math.min(1, w / 5),
         tz = z - Math.min(1, d / 5);
       for (const dx of [-1, 1])
@@ -1052,6 +1151,7 @@ export class ManhattanRenderer {
       for (const yy of [1.8, 3, 4.2])
         lot.put("metal", tx, top + yy, tz, 3.05, 0.09, 3.05, "cylinder");
     }
+    if (b.osm) this.detailsOsm(lot, b);
     if (!photo) this.couronnement(lot, b);
     if (b.style === "terminal") {
       lot.sign(9, x, NIVEAU + 12, b.z1 + 0.3, w * 0.7, 2);
@@ -1072,6 +1172,7 @@ export class ManhattanRenderer {
       );
     }
     if (
+      !b.osm &&
       z > -125 &&
       z < 28 &&
       b.style !== "times" &&
@@ -1095,7 +1196,7 @@ export class ManhattanRenderer {
     }
     if (b.style === "church")
       lot.put("brownstone", x, top + 8, b.z0 + 5, 9, 16, 9, "cone");
-    if (Math.abs(x - broadway(z)) < 18 && z > -120 && z < 32) {
+    if (!b.osm && Math.abs(x - broadway(z)) < 18 && z > -120 && z < 32) {
       lot.sign(
         14 + (b.seed % 2),
         x,
@@ -1926,6 +2027,12 @@ export class ManhattanRenderer {
       this.mats.farBrownstone,
       this.mats.farLimestone,
       this.mats.farGlass,
+      this.mats.farBrick2,
+      this.mats.farBrick3,
+      this.mats.farBrick4,
+      this.mats.farLimestone2,
+      this.mats.farLimestone3,
+      this.mats.farGlass2,
     ])
       m.emissiveIntensity = night * 0.8;
     this.mats.glow.emissiveIntensity = 0.6 + night * 3;

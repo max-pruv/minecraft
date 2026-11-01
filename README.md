@@ -172,6 +172,10 @@ or recycled container costs one suite rather than the whole run;
 plays only one of n balanced slices, so n machines run the whole thing in
 parallel (two slices: about 55 minutes each).
 
+Manhattan’s building shapes now use a compact atlas derived from MENUDQ2’s
+[Manhattan OSM Complete Model](docs/manhattan-osm.md) (CC BY 4.0), adapted to
+playable parcels with varied courtyards, setbacks, heights and street façades.
+
 See `tests/README.md` for what each scenario reproduces — every one of them is
 a failure that actually happened to the children playing — and `CLAUDE.md` for
 the invariants a change must not break.
