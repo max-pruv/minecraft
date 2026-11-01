@@ -75,6 +75,26 @@ export const VOITURES = {
   'bugatti-divo': { paquet: 'bugati_divo', empattement: 2.711, avant: 1, laque: null, budget: 90000 },
   'ford-f150-raptor-r': { paquet: '2024_ford_f-150_raptor_r', empattement: 3.696, avant: 1, laque: /^RaptorPaaint$/, budget: 100000 },
   'ford-mondeo-taxi': { paquet: 'ford_mondeo_taxi', empattement: 2.850, avant: 1, livree: /./, budget: 20000 },
+  // LE PAQUET « GENERIC PASSENGER CAR PACK » (v581, Comrade1280, CC-BY-4.0) :
+  // dix voitures de tous les jours dans UNE scène, posées en cercle et
+  // tournées (le signe `avant` relevé sur les vues : quatre sur dix ont le
+  // nez vers −z une fois remises dans l'axe). `noeud` nomme la carrosserie : la voiture est ce qui tient dans
+  // sa boîte, remise dans l'axe par ses roues (`isolerVoiture`). Leur couleur
+  // est cuite dans la texture de carrosserie : une livrée, qu'on ne repeint
+  // pas. `cartesMR` : les cartes métal/rugosité se lisent en moyenne (sans
+  // elles, GLTFLoader laisse métal 1 et rugosité 1 : une carrosserie noire).
+  ...Object.fromEntries([
+    ['generique-citadine', 'Compact_Body', 2.40, /^Body$/],
+    ['generique-coupe', 'Coupe_Body', 2.40, /^Body_0$/],
+    ['generique-compacte', 'Hatchback_Body', 2.55, /^Body_1$/],
+    ['generique-monospace', 'minivan_body', 2.90, /^Body_2$/],
+    ['generique-tout-terrain', 'Offroad_Body', 2.45, /^Body_3$/, -1],
+    ['generique-pickup', 'Pickup_Body', 3.20, /^Body_4$/],
+    ['generique-berline', 'Sedan_Body', 2.62, /^Body_5$/],
+    ['generique-supercar', 'Sport_body', 2.70, /^Body_6$/, -1],
+    ['generique-suv', 'SUV_Body', 2.95, /^Body_7$/, -1],
+    ['generique-break', 'Wagon_Body', 2.70, /^Body_8$/, -1],
+  ].map(([cle, noeud, empattement, livree, avant = 1]) => [cle, { paquet: 'generic_passenger_car_pack', noeud, empattement, avant, livree, cartesMR: true, sansFeuxNommes: true, budget: 20000 }])),
 };
 
 // --- chargement : buffers en ligne, images en souches ---------------------
@@ -129,6 +149,62 @@ function maillagesCuits(scene) {
 }
 
 const triangles = (g) => g.index.count / 3;
+
+// UNE VOITURE DANS UN PAQUET QUI EN PORTE PLUSIEURS (v581). La carrosserie
+// est le nœud que la fiche nomme ; la voiture est ce dont le centre tient dans
+// la boîte de ce nœud (au sol, x et z), hors des autres carrosseries. Elle
+// est posée de biais : l'axe de ses roues (les pièces d'un nœud « Wheel »),
+// par l'analyse en composantes principales de leurs centres, se ramène sur z
+// par une rotation pure autour de y — l'étape 1 fait le reste. On exige
+// quatre nœuds de roue : moins, c'est une voiture voisine manquée ; plus,
+// c'est une voiture voisine attrapée.
+function isolerVoiture(pieces, noeud) {
+  const chemin = (p) => p.nom.split('/');
+  const corps = pieces.filter((p) => chemin(p).includes(noeud));
+  if (!corps.length) throw new Error(`aucun nœud ${noeud}`);
+  const b = new THREE.Box3();
+  for (const p of corps) { p.g.computeBoundingBox(); b.union(p.g.boundingBox); }
+  const centre = (p) => { p.g.computeBoundingBox(); return p.g.boundingBox.getCenter(new THREE.Vector3()); };
+  const garde = pieces.filter((p) => {
+    if (corps.includes(p)) return true;
+    if (chemin(p).some((n) => n !== noeud && /body/i.test(n))) return false;
+    const c = centre(p);
+    return c.x >= b.min.x && c.x <= b.max.x && c.z >= b.min.z && c.z <= b.max.z;
+  });
+  const noeudRoue = (p) => chemin(p).find((n) => /^wheel/i.test(n));
+  const roues = garde.filter(noeudRoue);
+  const n = new Set(roues.map(noeudRoue)).size;
+  if (n !== 4) throw new Error(`${noeud} : ${n} nœuds de roue au lieu de 4`);
+  const cs = roues.map(centre);
+  const mx = cs.reduce((s, c) => s + c.x, 0) / cs.length, mz = cs.reduce((s, c) => s + c.z, 0) / cs.length;
+  let sxx = 0, szz = 0, sxz = 0;
+  for (const c of cs) { sxx += (c.x - mx) ** 2; szz += (c.z - mz) ** 2; sxz += (c.x - mx) * (c.z - mz); }
+  const theta = 0.5 * Math.atan2(2 * sxz, sxx - szz);   // l'axe long, depuis x
+  // makeRotationY(a) envoie (cos θ, 0, sin θ) sur (cos(θ+a)…) : a = θ − π/2
+  // le pose sur z (au signe près, que `avant` tranche)
+  const R = new THREE.Matrix4().makeTranslation(mx, 0, mz)
+    .multiply(new THREE.Matrix4().makeRotationY(theta - Math.PI / 2))
+    .multiply(new THREE.Matrix4().makeTranslation(-mx, 0, -mz));
+  for (const p of garde) p.g.applyMatrix4(R);
+  return garde;
+}
+
+// LES CARTES MÉTAL/RUGOSITÉ EN MOYENNE (v581) : le contrat des programmes
+// n'en veut pas (signatures.js), et sans elles GLTFLoader laisse les facteurs
+// à 1 — une carrosserie de métal brut, noire sous le ciel. On multiplie les
+// facteurs par la moyenne des canaux (vert : rugosité, bleu : métal).
+async function moyennesMR(pieces) {
+  const memo = new Map();
+  for (const p of pieces) {
+    const m = p.m, src = m.roughnessMap?.userData.source || m.metalnessMap?.userData.source;
+    if (!src || memo.has(m) || !fs.existsSync(src)) continue;
+    const st = await sharp(fs.readFileSync(src)).stats();
+    const ch = st.channels;
+    const g = (ch[1] || ch[0]).mean / 255, bl = (ch[2] || ch[0]).mean / 255;
+    memo.set(m, { roughness: (m.roughness ?? 1) * g, metalness: (m.metalness ?? 1) * bl });
+  }
+  return memo;
+}
 
 // Les pièces connexes d'une géométrie indexée : un numéro par triangle.
 function composantes(g) {
@@ -313,6 +389,8 @@ async function convertir(cle, fiche, dossier) {
   const gltf = await charger(path.join(dossier, fiche.paquet));
   let pieces = maillagesCuits(gltf.scene).filter((p) => p.g.index.count > 0);
   if (fiche.retirer) pieces = pieces.filter((p) => !fiche.retirer.test(p.mat) && !fiche.retirer.test(p.nom));
+  if (fiche.noeud) pieces = isolerVoiture(pieces, fiche.noeud);
+  const mr = fiche.cartesMR ? await moyennesMR(pieces) : new Map();
 
   // 1. LE REPÈRE : y en haut, la longueur sur l'horizontale la plus longue
   let b = new THREE.Box3(); for (const p of pieces) { p.g.computeBoundingBox(); b.union(p.g.boundingBox); }
@@ -416,7 +494,7 @@ async function convertir(cle, fiche, dossier) {
   };
   // la carrosserie garde ses 1 024 pixels, le reste en a 512
   const matDe = (m) => {
-    if (!memoMat.has(m)) { const nom = nomDe(m); memoMat.set(m, matiere(m, nom, { dim: /^(Paint_Primary|Livree_)/.test(nom) ? 1024 : 512, laque: nom === 'Paint_Primary' })); }
+    if (!memoMat.has(m)) { const nom = nomDe(m); memoMat.set(m, matiere(mr.has(m) ? Object.assign(m.clone(), mr.get(m)) : m, nom, { dim: /^(Paint_Primary|Livree_)/.test(nom) ? 1024 : 512, laque: nom === 'Paint_Primary' })); }
     return memoMat.get(m);
   };
   // une première passe mesure ce que la simplification obtient vraiment ;

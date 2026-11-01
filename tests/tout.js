@@ -117,6 +117,17 @@ const GARDIENS = {
   'vendor/voitures/ford-f150-raptor-r.glb': ['degats.js', 'monte.js'],
   'vendor/voitures/ford-mondeo-taxi.glb': ['degats.js', 'monte.js'],
   'vendor/voitures/police-suv.glb': ['degats.js', 'monte.js'],
+  // les dix voitures de tous les jours de la v581, mêmes gardiens
+  'vendor/voitures/generique-citadine.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/generique-coupe.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/generique-compacte.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/generique-monospace.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/generique-tout-terrain.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/generique-pickup.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/generique-berline.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/generique-supercar.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/generique-suv.glb': ['degats.js', 'monte.js'],
+  'vendor/voitures/generique-break.glb': ['degats.js', 'monte.js'],
   'tests/porsche-911.mjs': ['degats.js'],
   'tests/porsche-911-textures.mjs': ['degats.js'],
   // les lumières de la flotte (v550), lues par degats.js sous node

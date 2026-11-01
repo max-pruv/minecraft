@@ -1,5 +1,42 @@
 # Ce qui est en cours
 
+## Dix voitures de tous les jours (v581) — ce qui reste, déclaré
+
+- [ ] Le tirage de la rue est uniforme sur toute la flotte (38 modèles de rue
+  depuis la v579) : les dix voitures ordinaires y font environ 26 %. Les pondérer autrement dans
+  `choixFlotte` est une décision de Max (proposée, pas faite).
+- [ ] **Rouge du portail, pas de la livraison : les dimensions des avions**
+  (`carteMonde.js`, trois témoins). Rejouée SEULE sur `origin/main` (v569,
+  493f1d3) : les trois mêmes rouges, mêmes valeurs au centième (avion de ligne
+  16,15/16 et envergure 15,69/15,3, Concorde 20,13/20, chasseur 10,22/10 ; A320
+  16,23/16…). Tout dépasse de 0,13 à 0,23 bloc, nez, queue et bouts d'aile :
+  piste à vérifier, les halos des feux de bord (`FEU_HALOS`, v565) comptés dans
+  la boîte du modèle. Le témoin devrait mesurer le modèle sans ses feux, ou les
+  feux rester dans le gabarit.
+
+- [ ] **Portail de la v570 (avant le rebase sur la v580), en deux tranches : aucun rouge de la livraison.**
+  Tranche 1 : `parent`, `degats`, `washington`, `parishd` vertes. `reglages.js`
+  morte deux fois au banc (lignes 821 puis 799, une page restée ouverte, 3,8
+  cœurs) : rejouée SEULE, verte 2/2 sur la branche (75) et 1/1 sur
+  `origin/main` (75). `visio.js` « la radio parle plus bas pendant l'appel »
+  (`avant 0.0000`) : verte rejouée seule (26). Tranche 2 : `metro`,
+  `realisme`, `sauvegarde`, `hote`, `plafond` vertes ; `carte.js` (fond de
+  carte 508 ms à froid, déclaré) et `manhattan.js` (morte au clic sur
+  « Jouer ») vertes rejouées seules (123 et 34) ; `maj.js` les deux témoins du
+  loader (déclarés, v559) ; `carteMonde.js` les dimensions des avions
+  (ci-dessus). `monte.js` (62 min, 13 rouges) rejouée SEULE sur `origin/main`
+  v569 par une session sœur (71 min, 280 ✅ / 15 ❌) : « une voiture tombe dans
+  l'eau » (arrivée d 13,1 y 28, la voiture ne plonge pas), « collée à une
+  voiture… elle peut reculer » (recule 0,7) et « police : une seconde bêtise
+  fait venir la moto » sont rouges LÀ AUSSI — non déclarés jusqu'ici, ils sont
+  en production. Moscou ×2 et « les voitures de la rue rendent leur mémoire »
+  rouges des deux côtés ; le reste (caméra en virage, flâneur, passage peint de
+  Kyoto, deux voisines, au feu piler, rue vide, « Atterrissage vers <ville> »)
+  déjà déclaré comme intermittent. Les deux témoins d'eau et de collision
+  invoquent une `berline-citadine` imposée : la livraison n'y entre pas.
+  `reseau.js` « chez l'ami, la voiture avance en temps réel » rendu à 2 images
+  par seconde : voir la mesure d'`origin/main` ci-dessous.
+
 ## La voie au milieu de sa moitié (v578) — rouges de portail, chacun mesuré des deux côtés
 
 - [ ] **Double mesure de la v578 : chaque suite rouge rejouée SEULE, branche
