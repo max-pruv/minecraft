@@ -20,6 +20,85 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v582 — Les avions volent plus haut, et « Loin » voit deux fois plus loin
+
+**Pourquoi.** Deux demandes de Max dans le même message : « je voudrais
+permettre qu'un avion vole beaucoup plus haut en altitude », et « que le mode
+de loin voie encore plus loin ». Un avion butait sur le toit du monde, 158
+blocs — celui de l'enfant qui vole, fait pour qu'on bâtisse jusqu'au dernier
+étage. Et « Loin » s'arrêtait à 10 240 blocs depuis la v518.
+
+**Ce que ça change.**
+- **Un avion monte jusqu'à 1 500 blocs en « Loin »** (1 500 m : à la verticale
+  un bloc vaut un mètre). Son toit suit la portée de la vue
+  (`plafondAvion`) : environ 380 en « Normal », 250 en « Court » — plus haut,
+  on ne verrait que du brouillard. L'enfant qui vole sans avion garde son toit
+  de 158.
+- **Le brouillard s'ouvre sous l'avion qui monte** : il commence plus loin à
+  mesure qu'on s'élève au-dessus de 150 blocs, et il finit toujours au bout du
+  paysage lointain, qui reste caché à toute hauteur.
+- **De haut, on redescend plus vite** : ✈️ « se poser » et l'approche assistée
+  descendent jusqu'à 40 blocs par seconde au lieu de 12 quand l'avion est très
+  au-dessus de son but. Depuis 1 500 blocs, la pose sur place prend 50 s, et
+  l'approche d'Orly se pose en 60 s sans tour manqué. Sous 150 blocs, rien ne
+  change.
+- **« Loin » porte à 20 480 blocs au lieu de 10 240**, par un quatrième étage
+  de paysage lointain (une grille de 256 blocs, ~3,3 Mo, rien de fabriqué). Le
+  brouillard et le plan lointain reculent avec lui. « Court » et « Normal » ne
+  changent pas.
+
+**Ce qui le prouve.** Quatre témoins neufs. `plafond.js` : le vrai joueur sous
+node (`sonde-altitude-avion.cjs`) — manche tiré soixante secondes, le toit du
+réglage (1 500) est atteint et jamais dépassé, l'ancien toit tient sans
+réglage ; depuis 1 500 blocs, pose sur place en 50,5 s et approche d'Orly en
+59,8 s sans tour (sur `origin/main` : toit 158, pose inachevée en 120 s,
+approche en 136 s après un tour) ; le quatrième étage porte à 20 480, sans un
+trou de ciel entre 9 000 et 13 000 blocs, posé sous la troisième grille, en
+moins de 4 Mo. `maj.js` lit la scène de « Loin » : quatre grilles nommées, le
+brouillard à 20 480, chaque étage plus bas que celui de dedans ; « Normal » et
+la page sans palier ne gagnent rien.
+
+---
+
+## v581 — Dix voitures de tous les jours
+
+**Pourquoi.** Max a déposé le « Generic passenger car pack » (Comrade1280,
+Sketchfab, CC-BY-4.0) : « regarde pour intégrer ces voitures si la qualité est
+bonne ». Les rues ne roulaient presque qu'en supercars et en voitures de luxe ;
+il leur manquait des voitures ordinaires.
+
+**Ce que ça change.**
+- Jugées sur rendus avant tout (10 voitures, de trois quarts avant et de côté) :
+  modèles légers (6 000 à 7 800 triangles), textures cuites, silhouettes nettes
+  et cohérentes entre elles — la qualité tient, on les intègre toutes.
+- Dix voitures sans marque rejoignent la flotte et roulent dans les rues : une
+  citadine, un coupé des années 80, une compacte cinq portes, un monospace, un
+  4×4, un pick-up double cabine, une berline, une supercar à aileron, un grand
+  SUV et un break. Chacune garde sa couleur d'origine (cuite dans sa texture).
+- Elles se conduisent comme les autres, chacune à l'allure de sa classe
+  (citadine, berline, utilitaire, SUV, pickup, sportive).
+- Chacune pèse environ 0,45 Mo, dix à vingt fois moins qu'une voiture de la
+  v566 : téléchargée à la première rencontre et gardée hors ligne.
+- Le crédit de l'auteur est dans `vendor/voitures/LICENSE.md`.
+- Rebasée sur la v580 : depuis la v579 (les placeholders retirés), la rue tire
+  parmi 38 modèles, et les dix voitures ordinaires y font un quart des
+  voitures. Ce que pèse un modèle de la rue, lu dans les fichiers (règle de la
+  v579) : 106 000 triangles et 44 primitives en moyenne sans elles, 76 000 et
+  33 avec — la rue s'allège.
+
+**Ce qui le prouve.** `scripts/convertir-flotte.mjs` sait désormais isoler une
+voiture dans un paquet qui en porte plusieurs (fiche `noeud`, quatre nœuds de
+roue exigés, remise dans l'axe par ses roues) et lit les cartes métal/rugosité
+en moyenne ; le sens du nez de chaque voiture est relevé sur vues (quatre
+inversés, corrigés). Sous node : aucune signature de programme neuve, et les
+phares, feux de détresse et feux stop des 40 modèles de la flotte (les dix
+compris) sur la tôle, à leur coin (`sonde-feux-flotte.mjs`, lue par
+`degats.js`). En jeu : les dix chargées par `chargerVoitureFlotte`, sept
+maillages chacune, de jour et de nuit (`sonde-captures-generiques.cjs`,
+captures dans `docs/revue-ecran/v570-generiques/`).
+
+---
+
 ## v580 — Paris ne fait plus planter le jeu en « Loin »
 
 **Pourquoi.** Max, capture d'iPhone dans une rue de Paris : « le jeu plante ».

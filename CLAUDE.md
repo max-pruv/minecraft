@@ -1073,6 +1073,18 @@ voiture (`VOITURES`). Cinq règles.
   par la boîte et le rayon (v519). Un paquet neuf se passe à cette sonde
   avant d'entrer.
 
+**Un paquet qui porte plusieurs voitures (v581)** — le « Generic passenger
+car pack », dix voitures dans une scène, posées en cercle et tournées — se
+découpe par une fiche à `noeud` : la carrosserie nommée et ce dont le centre
+tient dans sa boîte, quatre nœuds de roue EXIGÉS (moins, une voisine manquée ;
+plus, une voisine attrapée), remise dans l'axe par l'analyse en composantes
+principales des centres de ses roues. Le nez se relève ensuite sur vues comme
+pour les autres : quatre sur dix étaient à l'envers. Et une carte
+métal/rugosité qu'on retire se remplace par sa MOYENNE (`cartesMR`) : sans
+elle GLTFLoader laisse métal 1 et rugosité 1, une carrosserie noire. Une
+couleur cuite dans la texture de carrosserie est une livrée (`laque:
+'jamais'`) : la teinte tirée la multiplierait.
+
 La Model Y porte `usine: true` dans FLOTTE : la chaîne (`voitureDeLUsine`,
 vehicules.js) et le garagiste de main.js la lisent, jamais un nom recopié.
 Les voitures de police sont toute fiche `police` de FLOTTE ; la patrouille
@@ -2391,6 +2403,38 @@ Deux règles.
   est posée `ABAISSE_LOIN` blocs plus bas et dessinée après : jamais de trou
   de ciel entre les deux, jamais la grossière par-dessus la fine. Au-delà de
   sa portée le brouillard est plein, elle n'y dessine rien.
+## Plus haut, plus loin (v582) — le toit d'un avion suit ce qu'on voit
+
+Max : « qu'un avion vole beaucoup plus haut », et « que le mode de loin voie
+encore plus loin ». Quatre règles.
+
+- **LE TOIT DU MONDE N'EST PAS CELUI DU CIEL.** `PLAFOND_VOL` (158) borne
+  l'enfant qui vole : au-dessus on ne bâtit plus rien. Un avion a son toit à
+  lui, `player.plafondAvion`, posé par main.js d'après la portée de la vue
+  (`plafondAvion(PORTEE_VUE)`, 60 % de la portée, entre 158 et
+  `PLAFOND_AVION_MAX` 1 500) : plus haut que ce que le brouillard laisse voir,
+  on ne verrait que lui. Un joueur sous node sans réglage garde 158, au bloc
+  près. Et tout ce qui « sauve » un joueur trop haut lit ce toit : le
+  sauvetage de main.js renvoyait au sol tout joueur au-dessus de 200 blocs.
+- **LE BROUILLARD S'OUVRE PAR SON DÉBUT, JAMAIS PAR SA FIN.** three mesure le
+  brouillard en PROFONDEUR de vue, pas en distance : reculer sa fin, c'est
+  montrer le bout du paysage lointain à quiconque regarde à l'horizontale. Le
+  début recule de la hauteur au-dessus de 150 blocs (`brouillardSelonHauteur`,
+  hors Manhattan, qui règle le sien), sous 85 % de la fin.
+- **CE QUI DESCEND DE TRÈS HAUT DESCEND PLUS VITE, ET SOUS L'ANCIEN TOIT RIEN
+  NE CHANGE.** `descenteSelonHauteur` (player.js) et `descenteMaxApproche`
+  (approche.js) suivent la hauteur au-delà de 150 blocs, jusqu'à 40 blocs par
+  seconde (moins que le manche en avant) : à 12, l'approche arrivait au point
+  d'entrée mille blocs trop haut et faisait des tours. 150 est au-dessus de
+  tout écart que l'ancien toit permettait : les sondes d'approche d'avant
+  rendent la même chose.
+- **UN ÉTAGE DE PLUS, ENCORE.** La troisième grille s'arrête à
+  `PORTEE_TRES_LOIN` (10 240) ; le quatrième étage (`PAS_ULTRA_LOIN` 256,
+  `ABAISSE_ULTRA_LOIN` 64, la précision du tampon de profondeur à 10 240 blocs
+  avec un plan proche à 0,1) porte jusqu'à `loin` (20 480, fiche `haut`). Même
+  règle que la v518 : il cède à la troisième ce que son disque couvre à coup
+  sûr. `?loin=10240` rend la v581.
+
 ## Le lointain très lointain (v518) — une grille de dedans qui a sa portée ne cède que son disque
 
 Max : « le mode Loin n'est pas assez loin ». Trois règles.

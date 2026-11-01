@@ -494,6 +494,23 @@ export const FLOTTE = [
   { fichier: 'bugatti-divo.glb', classe: 'hypercar', nom: 'Bugatti Divo', laque: 'jamais', habitacle: false, portiere: false },
   { fichier: 'ford-f150-raptor-r.glb', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false, portiere: false },
   { fichier: 'ford-mondeo-taxi.glb', classe: 'berline', nom: 'Ford Mondeo · taxi', laque: 'jamais', habitacle: false, portiere: false },
+  // LES DIX VOITURES DE TOUS LES JOURS (v581) : le « Generic passenger car
+  // pack » de Comrade1280 (CC-BY-4.0, vendor/voitures/LICENSE.md), dix
+  // voitures sans marque dans une seule scène, isolées et mises au contrat par
+  // `scripts/convertir-flotte.mjs` (fiche `noeud`). Six à huit mille
+  // triangles chacune, ~0,45 Mo : la rue gagne des voitures ordinaires à côté
+  // des supercars. Leur couleur est cuite dans la texture de carrosserie (une
+  // livrée) : `laque: 'jamais'`, sinon la teinte tirée la multiplierait.
+  { fichier: 'generique-citadine.glb', classe: 'citadine', nom: 'Citadine', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'generique-coupe.glb', classe: 'citadine', nom: 'Coupé des années 80', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'generique-compacte.glb', classe: 'citadine', nom: 'Compacte cinq portes', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'generique-monospace.glb', classe: 'utilitaire', nom: 'Monospace', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'generique-tout-terrain.glb', classe: 'suv', nom: 'Tout-terrain 4×4', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'generique-pickup.glb', classe: 'pickup', nom: 'Pick-up double cabine', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'generique-berline.glb', classe: 'berline', nom: 'Berline familiale', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'generique-supercar.glb', classe: 'sportive', nom: 'Supercar à aileron', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'generique-suv.glb', classe: 'suv', nom: 'Grand SUV', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'generique-break.glb', classe: 'berline', nom: 'Break familial', laque: 'jamais', habitacle: false, portiere: false },
   // LA VOITURE DE POLICE (v553) : la Ford Crown Victoria Police Interceptor
   // fournie par Max (Mateusz Woliński, CC-BY-4.0, vendor/voitures/LICENSE.md),
   // convertie au contrat par `scripts/convertir-police.mjs`. Sa livrée noir et
