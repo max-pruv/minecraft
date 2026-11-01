@@ -2,8 +2,9 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "three": "0.160.0",
+    "meshoptimizer": "1.0.1",
     "sharp": "0.34.3",
-    "meshoptimizer": "1.0.1"
+    "three": "0.160.0",
+    "three-mesh-bvh": "0.7.8"
   }
 }

@@ -1065,6 +1065,58 @@ La Model Y porte `usine: true` dans FLOTTE : la chaîne (`voitureDeLUsine`,
 vehicules.js) et le garagiste de main.js la lisent, jamais un nom recopié.
 Les voitures de police sont toute fiche `police` de FLOTTE ; la patrouille
 les alterne, la Crown Victoria d'abord, et n'attend qu'elle pour apparaître.
+## New York d'après les modèles de Max (v567) — une photogrammétrie se recuit, et le voxel se mesure dedans
+
+Max a déposé six paquets Sketchfab (CC-BY-4.0) et demandé de la diversité.
+`scripts/new-york.mjs` les prépare (rejouable, paquets non versionnés),
+`src/new-york-modeles.js` les charge, `src/new-york-donnees.js` (généré) porte
+ce que le voxel en a mesuré. Six règles.
+
+- **UNE PHOTOGRAMMÉTRIE SE DÉCIME SANS SES UV, PUIS SE RECUIT.** Décimée avec
+  ses UV, elle ne descendait presque pas (les coutures bloquent tout) ; en
+  « permissif », les UV éclataient. On soude les positions, on décime la seule
+  géométrie (`simplify` en erreur absolue de près, `simplifySloppy` de loin),
+  puis on RECUIT la couleur sur un atlas neuf : un triangle par case (deux par
+  carré), cases proportionnelles à l'aire — à cases égales, l'antenne de
+  l'Empire était floue —, couleur lue au point le plus proche du maillage
+  d'origine (`three-mesh-bvh`), et un bourrage par tirer-pousser. Un atlas
+  source à gouttières noires laisse des coutures si l'on recopie ses tuiles :
+  on ne recopie jamais, on rééchantillonne.
+- **UNE TEXTURE CUITE S'ÉGALISE PAR BANDES DE HAUTEUR.** L'Empire sortait
+  sombre et bleu en jeu (la lumière d'un jour couvert est dans les photos) :
+  gain par bande de quatre blocs (borné à 2,6), saturation 0,25, chaleur
+  légère. Ça se juge en capture DANS le jeu, à côté de l'ancien, jamais dans
+  un visualiseur.
+- **LE VOXEL SUIT LE MODÈLE (la règle de la v564), ET IL SE MESURE DANS LE
+  MODÈLE.** Les retraits de collision de l'Empire (`EMPIRE_NIVEAUX`) sont les
+  3e et 97e centiles de la coupe du modèle, en minimum courant, fusionnés ; la
+  statue est voxelisée par la hauteur médiane de sa peau pour le fort et le
+  socle (des coupes remplissaient la terrasse d'un bloc de trop : le
+  parapet), par coupes au-dessus. Ce qui déborde de l'île est coupé (ellipse
+  `dansIleLiberte`). Le modèle peut dépasser le voxel d'un à trois blocs aux
+  corniches de l'Empire : déclaré.
+- **DEUX ÉCHELLES, ENCORE.** Hauteur par étage, emprise par le sol : l'Empire
+  a deux facteurs (8,7 et 11,0) ; la statue suit une seule échelle de la
+  terrasse du fort (`HAUT_FORT`) au flambeau (42,5, plus haute que le
+  Flatiron, comme la vraie : un témoin de la v496 l'exige). Le pied de
+  l'Empire (cinq blocs) reste en blocs : de près, la rue est plus nette qu'une
+  photo recuite.
+- **CE QU'UN ENFANT A BÂTI AVANT GARDE L'ANCIEN MONUMENT, ET UN BLOC POSÉ
+  DEDANS RETIRE LE MODÈLE.** `DATE_NY_MODELES` (relue à la fusion, v309) :
+  une édition antérieure dans la boîte de l'Empire ou de l'île rend l'ancien
+  volume et l'ancienne statue (`MODELES_NY_ETAT`) ; une édition postérieure
+  cache le modèle (`empireTouche`, `liberteTouchee`) — un modèle ne se troue
+  pas. Les cubes que la statue couvre se taisent au mailleur par
+  `world.cubesTus(cx, cz)`, seulement une fois le modèle arrivé.
+- **LA DIVERSITÉ EST DU DESSIN, TIRÉE D'UNE GRAINE.** `variante(b)` (plan) :
+  teinte dans la palette de la matière, rythme des baies, façade lointaine
+  parmi celles de sa famille — même résultat partout, aucune collision ne
+  bouge, aucun programme neuf (couleur par instance). Les matériaux PBR de
+  Manhattan gardent leur clé (`manhattan-pbr-${taille}`) quand une photo
+  remplace une texture, et le matériau des modèles naît avec sa carte
+  d'attente ET son émissive (projecteurs de nuit) : la clé ne change pas à
+  l'arrivée du fichier. Les fichiers sont IMMUABLES (cache statique) : une
+  retouche prend un nom neuf (v545). `?photo=0` rejoue l'ancien New York.
 
 ## Les avions déposés (v563) — un modèle d'artiste se met au contrat, le contrat ne bouge pas
 

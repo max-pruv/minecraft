@@ -298,6 +298,36 @@ function verifier(nom, ok, detail = "") {
         liberte.carte.length === 1 && liberte.carte[0] === true,
       JSON.stringify(liberte),
     );
+    // ---- LES MODÈLES DE MAX (v565) ----------------------------------------
+    // L'Empire State et la statue arrivent après le démarrage (un modèle absent
+    // n'empêche jamais New York d'exister). Une fois là, les cubes de la statue
+    // que le modèle couvre se taisent (`cubesTus`) — ce sont les blocs qui
+    // arrêtent l'enfant, ils ne doivent pas se dessiner par-dessus le modèle.
+    const modelesNY = await p.evaluate(async () => {
+      try {
+        const ny = await import("/src/new-york-modeles.js");
+        const [e, l] = await Promise.all([ny.chargerModeleNY("empire"), ny.chargerModeleNY("liberte")]);
+        const P = await import("/src/manhattan-plan.js");
+        const { ORIGINE_MANHATTAN: O } = await import("/src/manhattan-world.js");
+        const w = __game.world;
+        w.modeleLibertePret?.();
+        const I = P.ILE_LIBERTE;
+        let tus = 0;
+        for (let cz = Math.floor((O.z + I.z - 16) / 16); cz <= Math.floor((O.z + I.z + 16) / 16); cz++)
+          for (let cx = Math.floor((O.x + I.x - 16) / 16); cx <= Math.floor((O.x + I.x + 16) / 16); cx++)
+            tus += w.cubesTus?.(cx, cz)?.size || 0;
+        const tri = (m) => (m?.index ? m.index.count / 3 : 0);
+        return { empire: [tri(e?.proche), tri(e?.loin)], liberte: [tri(l?.proche), tri(l?.loin)], carte: !!(e?.carte && l?.carte), tus };
+      } catch (err) {
+        return { err: String(err && err.message || err) };
+      }
+    });
+    verifier(
+      "les modèles de l'Empire State et de la Liberté arrivent, de près et de loin, et la statue en blocs se tait sous le sien",
+      !modelesNY.err && modelesNY.empire[0] > 20000 && modelesNY.empire[1] > 1000 && modelesNY.empire[1] < modelesNY.empire[0] &&
+        modelesNY.liberte[0] > 5000 && modelesNY.liberte[1] > 500 && modelesNY.carte && modelesNY.tus > 500,
+      JSON.stringify(modelesNY),
+    );
 
     // ---- LES FEUX COMMANDENT LA CIRCULATION DE MANHATTAN (v496) -----------
     // Les feux de Manhattan étaient des potences de décor, toujours vertes, et

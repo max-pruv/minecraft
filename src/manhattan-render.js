@@ -30,8 +30,33 @@ import {
   materiauxManhattan,
   enseignesManhattan,
 } from "./manhattan-materiaux.js";
+import { SOCLE_EMPIRE, MODELES_NY_ETAT, variante } from "./manhattan-plan.js";
+import {
+  PHOTO_NY,
+  materiauNY,
+  chargerModeleNY,
+  modeleNY,
+  maillageNY,
+} from "./new-york-modeles.js";
 
 const NIVEAU = SOL + 1;
+// La façade lointaine d'un immeuble : une variante de sa famille (v565), ou la
+// famille seule pour le New York d'avant (`?photo=0`).
+const FAMILLES_LOIN = {
+  brick: ["farBrick", "farBrick2", "farBrick3", "farBrick4"],
+  brownstone: ["farBrownstone", "farBrownstone"],
+  limestone: ["farLimestone", "farLimestone2", "farLimestone3"],
+  glass: ["farGlass", "farGlass2"],
+  red: ["red"],
+};
+const SANS_VARIANTE = { teinte: [1, 1, 1], rythme: 3, loin: 0 };
+const varianteDe = (b) => (PHOTO_NY ? variante(b) : SANS_VARIANTE);
+const loinDe = (b) => {
+  const f = FAMILLES_LOIN[b.mat];
+  return f[PHOTO_NY ? Math.floor(varianteDe(b).loin * f.length) : 0];
+};
+// le premier bloc au-dessus du sol de l'île (dy = 0 de la statue)
+const SOL_ILE_RENDU = SOL + 1;
 
 function feuillage() {
   const p = [],
@@ -104,7 +129,8 @@ class Lot {
         obj.rotation.set(0, p[6], 0);
         obj.updateMatrix();
         mesh.setMatrixAt(i, obj.matrix);
-        color.setRGB(p[7], p[7], p[7]);
+        if (Array.isArray(p[7])) color.setRGB(p[7][0], p[7][1], p[7][2]);
+        else color.setRGB(p[7], p[7], p[7]);
         mesh.setColorAt(i, color);
       });
       mesh.instanceMatrix.needsUpdate = true;
@@ -341,6 +367,61 @@ export class ManhattanRenderer {
       return im;
     });
     this.makeFar();
+    // NEW YORK D'APRÈS LES MODÈLES DE MAX (v565). Les deux matériaux naissent
+    // avec la ville (dans `mats`, que la chauffe de New York compile pendant
+    // l'accueil) ; les fichiers arrivent ensuite, et ce qui était déjà dessiné
+    // se refait avec eux.
+    this.mats.photoEmpire = materiauNY("empire");
+    this.mats.photoLiberte = materiauNY("liberte");
+    const empire = BATIMENTS.find((b) => b.photo === "empire");
+    chargerModeleNY("empire")?.then((m) => {
+      if (!m || !empire) return;
+      const g = this.buildings.get(empire.id);
+      if (g) {
+        disposeGroup(g);
+        this.buildings.delete(empire.id);
+        this.nearSet.delete(empire.id);
+      }
+      this.rebuildFar(`${Math.floor(empire.x0 / 256)},${Math.floor(empire.z0 / 256)}`);
+    });
+    // La statue : un niveau de détail à elle, hors des secteurs lointains (elle
+    // est hors du rectangle, comme son île).
+    chargerModeleNY("liberte")?.then((m) => {
+      if (!m) return;
+      const lod = new THREE.LOD();
+      lod.name = "Statue de la Liberté — modèle";
+      lod.addLevel(maillageNY("liberte", "proche"), 0);
+      lod.addLevel(maillageNY("liberte", "loin"), 170);
+      // Dans la SCÈNE, pas sous `root` : `root` s'éteint dès qu'on quitte la
+      // ville et ses abords, et la statue se voit de bien plus loin — de la
+      // baie, du ciel, de Brooklyn (vu en capture : disparue à 160 blocs).
+      lod.position.set(
+        ORIGINE_MANHATTAN.x + ILE_LIBERTE.x,
+        SOL_ILE_RENDU,
+        ORIGINE_MANHATTAN.z + ILE_LIBERTE.z,
+      );
+      lod.visible = false;
+      this.statueNY = lod;
+      this.scene.add(decor(lod));
+      this.world.modeleLibertePret();
+      this.majStatueNY(true);
+    });
+  }
+  // Le modèle d'un bâtiment, s'il se dessine : arrivé, et sur un monument que
+  // l'enfant n'a ni touché (un trou doit se voir) ni bâti avant la date.
+  photoDe(b) {
+    if (!b.photo || MODELES_NY_ETAT.empireAncien || this.world.empireTouche) return null;
+    return modeleNY(b.photo);
+  }
+  statueVisible() {
+    return !!this.statueNY && !MODELES_NY_ETAT.liberteAncienne && !this.world.liberteTouchee;
+  }
+  majStatueNY(force = false) {
+    const v = this.statueVisible();
+    if (!force && v === this.statueAffichee) return;
+    this.statueAffichee = v;
+    if (this.statueNY) this.statueNY.visible = v;
+    this.rebuildFar(`${Math.floor(ILE_LIBERTE.x / 256)},${Math.floor(ILE_LIBERTE.z / 256)}`);
   }
   // Les feux à `r` blocs de (wx, wz) — coordonnées du MONDE — avec leur état
   // à l'heure de la rue `t` (ms). Rend la liste que `main.js` donne à la
@@ -496,6 +577,7 @@ export class ManhattanRenderer {
           0.8 + ALEA(x, z) * 0.3,
         );
       }
+    const modeles = [];
     for (const b of this.farGroups.get(key) || []) {
       if (!this.world.buildingAllowed(b)) continue;
       if (this.nearSet.has(b.id)) continue;
@@ -503,43 +585,49 @@ export class ManhattanRenderer {
         z = (b.z0 + b.z1) / 2,
         w = b.x1 - b.x0,
         d = b.z1 - b.z0;
-      const levels = niveaux(b);
+      // un monument dessiné d'après son modèle : le socle procédural, puis la
+      // silhouette lointaine du modèle — ni volumes, ni couronnement
+      const photo = this.photoDe(b) && maillageNY(b.photo, "loin");
+      if (photo) {
+        photo.position.set(x, NIVEAU, z);
+        modeles.push(photo);
+      }
+      const levels = photo ? [[1, 1, SOCLE_EMPIRE]] : niveaux(b);
       let y = 0;
+      const teinte = varianteDe(b).teinte;
       for (const [k, kd, h] of levels) {
         lot.put(
-          {
-            brick: "farBrick",
-            brownstone: "farBrownstone",
-            limestone: "farLimestone",
-            glass: "farGlass",
-            red: "red",
-          }[b.mat],
+          loinDe(b),
           x,
           NIVEAU + (h + y) / 2,
           z,
           w * k,
           h - y,
           d * kd,
+          "box",
+          0,
+          teinte,
         );
         y = h;
       }
       lot.put(
         "roof",
         x,
-        NIVEAU + b.h + 0.15,
+        NIVEAU + (photo ? SOCLE_EMPIRE : b.h) + 0.15,
         z,
         w * levels.at(-1)[0],
         0.3,
         d * levels.at(-1)[1],
       );
-      this.couronnement(lot, b);
+      if (!photo) this.couronnement(lot, b);
     }
     if (
       key ===
       `${Math.floor(ILE_LIBERTE.x / 256)},${Math.floor(ILE_LIBERTE.z / 256)}`
     )
-      this.liberteLointaine(lot);
+      this.liberteLointaine(lot, !this.statueVisible());
     const g = lot.finish();
+    for (const m of modeles) g.add(m);
     g.userData.key = key;
     this.root.add(decor(g));
     this.far.set(key, g);
@@ -568,9 +656,10 @@ export class ManhattanRenderer {
       // Les travées de l'Empire forment des rubans verticaux séparés par de
       // fins piliers de pierre ; des bandeaux pleins à chaque étage écrasent
       // sa silhouette Art déco, même lorsque ses volumes sont justes.
-      const empire = b.style === "empire";
+      const empire = b.style === "empire",
+        v = varianteDe(b);
       const window =
-        Math.round(tangent - (nx ? b.z0 : b.x0)) % (empire ? 2 : 3) === 1 &&
+        Math.round(tangent - (nx ? b.z0 : b.x0)) % (empire ? 2 : v.rythme) === 1 &&
         yy > 0 &&
         yy < h - 1 &&
         (empire || yy % 3 !== 0);
@@ -634,7 +723,9 @@ export class ManhattanRenderer {
           nz ? 0.92 : 1,
           "box",
           0,
-          empire ? 1 : 0.89 + ALEA(b.seed, Math.floor(yy / 3)) * 0.16,
+          ((t) => v.teinte.map((c) => c * t))(
+            empire ? 1 : 0.89 + ALEA(b.seed, Math.floor(yy / 3)) * 0.16,
+          ),
         );
       }
       if (
@@ -699,9 +790,14 @@ export class ManhattanRenderer {
     }
     // Les volumes à retraits et le Flatiron se maillent depuis la même emprise
     // que les collisions : aucune façade ne coupe une avenue par approximation.
+    // Un monument dessiné d'après son modèle (v565) ne garde en procédural que
+    // son socle, net à hauteur de rue ; le modèle se pose dessus.
+    const photo = this.photoDe(b),
+      plafond = photo ? SOCLE_EMPIRE : Infinity,
+      sommetVu = (xx, zz) => Math.min(sommet(b, xx, zz), plafond);
     for (let zz = b.z0; zz < b.z1; zz++) {
       for (let xx = b.x0; xx < b.x1; xx++) {
-        const h = sommet(b, xx, zz);
+        const h = sommetVu(xx, zz);
         if (!h) continue;
         for (const [nx, nz] of [
           [-1, 0],
@@ -709,7 +805,7 @@ export class ManhattanRenderer {
           [0, -1],
           [0, 1],
         ]) {
-          const adjacent = sommet(b, xx + nx, zz + nz);
+          const adjacent = sommetVu(xx + nx, zz + nz);
           if (adjacent === 0) this.facade(lot, b, xx, zz, nx, nz, h);
           else if (adjacent < h)
             this.facade(lot, b, xx, zz, nx, nz, h, adjacent + 1);
@@ -730,7 +826,7 @@ export class ManhattanRenderer {
     }
     // Planchers praticables visibles depuis les portes ; leur grille correspond
     // à la physique. Pas de grande dalle par-dessus un trou creusé.
-    for (let yy = 3; yy < b.h; yy += 3) {
+    for (let yy = 3; yy < Math.min(b.h, plafond); yy += 3) {
       for (let zz = b.z0 + 1; zz < b.z1 - 1; zz++) {
         let debut = null;
         for (let xx = b.x0 + 1; xx <= b.x1 - 1; xx++) {
@@ -827,7 +923,7 @@ export class ManhattanRenderer {
       for (const yy of [1.8, 3, 4.2])
         lot.put("metal", tx, top + yy, tz, 3.05, 0.09, 3.05, "cylinder");
     }
-    this.couronnement(lot, b);
+    if (!photo) this.couronnement(lot, b);
     if (b.style === "terminal") {
       lot.sign(9, x, NIVEAU + 12, b.z1 + 0.3, w * 0.7, 2);
       for (let sx = b.x0 + 5; sx < b.x1; sx += 8)
@@ -882,6 +978,11 @@ export class ManhattanRenderer {
       lot.put("metal", x, NIVEAU + 12, b.z1 + 0.1, Math.min(w, 19), 12.7, 0.3);
     }
     const g = lot.finish();
+    const modele = photo && maillageNY(b.photo, "proche");
+    if (modele) {
+      modele.position.set(x, NIVEAU, z);
+      g.add(modele);
+    }
     g.name = b.name || `Immeuble ${b.id}`;
     g.userData.buildingId = b.id;
     g.userData.revision = this.world.buildingRevision.get(b.id) || 0;
@@ -1160,7 +1261,7 @@ export class ManhattanRenderer {
   // silhouette, on ne la verrait que de tout près. Chaque pièce est un peu
   // PLUS PETITE que les blocs de `statueLiberte` (plan) : quand les morceaux
   // de l'île arrivent, la silhouette est dedans et ne se voit plus.
-  liberteLointaine(lot) {
+  liberteLointaine(lot, statue = true) {
     const I = ILE_LIBERTE,
       x = I.x + 0.5,
       z = I.z + 0.5,
@@ -1176,6 +1277,9 @@ export class ManhattanRenderer {
       "cylinder",
       Math.atan2(I.ux, I.uz),
     );
+    // le modèle de la statue a son propre niveau de détail (v565) : l'île
+    // lointaine ne porte plus alors que sa pelouse
+    if (!statue) return;
     lot.put("trim", x, y(1.45), z, 13.6, 2.8, 13.6, "cylinder");
     lot.put("limestone", x, y(5), z, 8.6, 3.8, 8.6);
     lot.put("limestone", x, y(13), z, 6.6, 11.8, 6.6);
@@ -1295,6 +1399,7 @@ export class ManhattanRenderer {
         this.sunLight.target.updateMatrixWorld();
       }
     }
+    this.majStatueNY();
     if (!active) return;
     if (this.lastFrame) {
       this.frames.push(now - this.lastFrame);
@@ -1344,6 +1449,8 @@ export class ManhattanRenderer {
       .addScaledVector(direction, 160);
     this.sunLight.target.updateMatrixWorld();
     this.mats.glassLit.emissiveIntensity = night * 0.9;
+    // Les deux monuments photographiés sont éclairés par projecteurs la nuit.
+    for (const m of [this.mats.photoEmpire, this.mats.photoLiberte]) if (m) m.emissiveIntensity = night * 0.42;
     for (const m of [
       this.mats.farBrick,
       this.mats.farBrownstone,
@@ -1549,6 +1656,7 @@ export class ManhattanRenderer {
     }
   }
   dispose() {
+    this.statueNY?.removeFromParent();
     for (const g of [
       ...this.buildings.values(),
       ...this.ground.values(),

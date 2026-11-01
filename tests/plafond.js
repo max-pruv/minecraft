@@ -2199,6 +2199,59 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !suivi.absent && suivi.paris && suivi.apparition && suivi.neuf && suivi.archive && suivi.idempotent,
     suivi.absent ? 'la migration de carte 3 n\'existe pas' : suivi.bilan);
 
+  // NEW YORK D'APRÈS LES MODÈLES DE MAX (v565). « Le voxel suit le modèle »
+  // (v564) : les retraits de collision de l'Empire State sont MESURÉS dans la
+  // photogrammétrie, la statue de la Liberté est voxelisée dans la sienne. Le
+  // témoin lit les fonctions pures du plan : les retraits montent sans jamais
+  // s'élargir, l'ancien plan reste pour ce qu'un enfant a bâti avant (le
+  // garde-fou de la date), la statue tient dans son île avec ses trois
+  // matières et son escalier côté Manhattan, et la diversité des immeubles est
+  // la MÊME à chaque calcul (une graine, jamais un tirage) et vraiment variée.
+  const nyModeles = await (async () => {
+    const P = await import('../src/manhattan-plan.js');
+    if (!P.statueLiberteModele || !P.variante || !P.MODELES_NY_ETAT) return { absent: true };
+    const emp = P.MONUMENTS.find((b) => b.style === 'empire');
+    const neuf = P.niveaux(emp);
+    let monte = true;
+    for (let i = 1; i < neuf.length; i++)
+      if (neuf[i][2] <= neuf[i - 1][2] || neuf[i][0] > neuf[i - 1][0] + 1e-9 || neuf[i][1] > neuf[i - 1][1] + 1e-9) monte = false;
+    P.MODELES_NY_ETAT.empireAncien = true;
+    const ancien = P.niveaux(emp);
+    P.MODELES_NY_ETAT.empireAncien = false;
+    const cases = new Map();
+    P.statueLiberteModele((dx, dy, dz, id) => cases.set(`${dx},${dy},${dz}`, id));
+    let sommet = 0, hors = 0;
+    const I = P.ILE_LIBERTE;
+    for (const k of cases.keys()) {
+      const [dx, dy, dz] = k.split(',').map(Number);
+      sommet = Math.max(sommet, dy);
+      if (!P.dansIleLiberte(I.x + dx + 0.5, I.z + dz + 0.5)) hors++;
+    }
+    const marches = [];
+    P.escalierFortModele((dx, dy, dz) => marches.push([dx, dy, dz]));
+    const devant = marches.length > 0 && marches.every(([dx, dy, dz]) => dz < 0 && !cases.has(`${dx},${dy},${dz}`));
+    const sig = (v) => `${v.teinte.join()}|${v.rythme}|${Math.floor(v.loin * 4)}`;
+    const combos = new Set();
+    let stable = true;
+    for (const b of P.BATIMENTS.slice(0, 600)) {
+      const a = sig(P.variante(b));
+      if (sig(P.variante({ ...b, variante: undefined })) !== a) stable = false;
+      combos.add(a);
+    }
+    return { monte, n: neuf.length, ancien: ancien.length, differents: JSON.stringify(ancien) !== JSON.stringify(neuf),
+      sommet, matieres: new Set(cases.values()).size, cases: cases.size, hors, marches: marches.length, devant,
+      combos: combos.size, stable };
+  })();
+  verifier('l\'Empire State a ses retraits mesurés dans le modèle — ils montent sans s\'élargir, et l\'ancien plan reste pour ce qui a été bâti avant',
+    !nyModeles.absent && nyModeles.monte && nyModeles.n >= 10 && nyModeles.differents && nyModeles.ancien === 10,
+    nyModeles.absent ? 'pas de modèles de New York dans le plan' : JSON.stringify(nyModeles));
+  verifier('la statue du modèle tient sur son île, en granit, pierre et cuivre, avec son escalier côté Manhattan',
+    !nyModeles.absent && nyModeles.hors === 0 && nyModeles.matieres === 3 && nyModeles.sommet >= 40 && nyModeles.devant,
+    nyModeles.absent ? 'pas de modèles de New York dans le plan' : JSON.stringify(nyModeles));
+  verifier('chaque immeuble de Manhattan a sa variante, la même à chaque calcul, et elles sont nombreuses',
+    !nyModeles.absent && nyModeles.stable && nyModeles.combos >= 30,
+    nyModeles.absent ? 'pas de modèles de New York dans le plan' : `${nyModeles.combos} combinaisons`);
+
   // TOUT CUBE D'UNE COLONNE COUVERTE EST SOUS SA SURFACE, pas seulement le
   // sommet (v297, portail) : une voiture de 2,26 blocs de large a le nez deux
   // colonnes devant son centre, et sur une pente d'un bloc par bloc le cube

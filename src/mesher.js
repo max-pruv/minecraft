@@ -319,6 +319,11 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   const teintes = world.teintesDuMorceau ? world.teintesDuMorceau(cx, cz) : null;
   const couvertes = grille ? grille.couvertes : null;
   const hauts = grille ? grille.hauts : null;
+  // LES CUBES QU'UN MODÈLE DE NEW YORK COUVRE (v565) : la statue de la Liberté
+  // voxelisée d'après la photogrammétrie reste ce qui arrête l'enfant, mais ne
+  // s'émet plus — le modèle la dessine. Null partout ailleurs, d'une question
+  // par morceau (`TerreUrbaine.cubesTus`).
+  const tus = world.cubesTus ? world.cubesTus(cx, cz) : null;
 
   // LES MONUMENTS EN RELIEF (v292). Ce qu'on masque est ce que le BÂTISSEUR du
   // voxel a écrit, et seulement là où le bloc du morceau est ENCORE le sien :
@@ -444,6 +449,7 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
           const id = data[x + z * CHUNK + y * CHUNK * CHUNK];
           if (id === BLOCK.AIR || OBJET[id]) continue;
           if (couvertes && couvertes[x + z * CHUNK] && y === hauts[x + z * CHUNK]) continue;
+          if (tus && tus.has(x + z * CHUNK + y * CHUNK * CHUNK)) continue;
 
           const isWater = id === BLOCK.WATER;
           const slab = DALLE[id] === 1;

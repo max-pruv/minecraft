@@ -6,6 +6,13 @@
 
 export const NOUVEAUTES = [
   {
+    v: 582,
+    titre: 'Le vrai New York',
+    puces: [
+      'Le vrai Empire State Building',
+      'La vraie statue de la Liberté',
+      'Des immeubles tous différents',
+      'Le soir, l’Empire State s’allume',
     v: 580,
     titre: 'Paris ne fait plus planter',
     puces: [

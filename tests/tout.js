@@ -289,6 +289,8 @@ const GARDIENS = {
   'src/manhattan-materiaux.js': ['manhattan.js', 'carte.js'],
   'src/manhattan-render.js': ['manhattan.js', 'monte.js'],
   'src/manhattan.js': ['carte.js', 'carteMonde.js', 'plafond.js'],
+  'src/new-york-modeles.js': ['manhattan.js', 'monte.js', 'carte.js'],
+  'src/new-york-donnees.js': ['manhattan.js', 'plafond.js', 'carteMonde.js', 'carte.js'],
   'src/sanfrancisco.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],
   'src/lille.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js'],    // la couche HD lit Lille (v392)
   // Les régions et les sites du tour du monde : ils aplanissent leur parvis,

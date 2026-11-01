@@ -131,6 +131,13 @@ Références consultées et inspectées visuellement :
 - [Empire State Building, site officiel](https://www.esbnyc.com/about/facts-figures) : silhouette, retraits, terrasse, mât ; 443 m avec antenne, toit vers 381 m.
 - [Times Square Alliance, écrans et place](https://www.timessquarenyc.org/business-community/advertisement-sponsorships) : One Times Square face au nord, écrans enveloppants, place et abords des marches rouges.
 
+Depuis la v565, l'Empire State Building et la statue de la Liberté sont des
+photogrammétries de Brian Trepanier, et la chaussée, la pierre et dix façades
+lointaines viennent de photos de trois autres paquets Sketchfab, tous sous
+CC-BY-4.0 : crédits complets et modifications dans
+[`vendor/newyork/LICENSE.md`](../vendor/newyork/LICENSE.md), préparation par
+`scripts/new-york.mjs` (qui se rejoue sur les paquets d'origine).
+
 Les photographies de référence restent la propriété de leurs auteurs. Elles
 ne sont pas distribuées comme assets du jeu. Architecture, matériaux,
 publicités fictives et nouvelles berlines sont originaux et couverts par
@@ -146,8 +153,11 @@ répètent, le passage au détail distant est perceptible, les berges rencontren
 le terrain mondial à une limite visible et les intérieurs sont peu aménagés.
 Les feux ne commandent pas encore les convois ; les voitures ralentissent
 selon le système existant et ne négocient pas toutes les priorités. Les écrans
-sont lumineux mais leurs publicités sont fixes. Les monuments secondaires,
-les ponts et la Statue de la Liberté demandent une passe supplémentaire.
+sont lumineux mais leurs publicités sont fixes. Les monuments secondaires
+et les ponts demandent une passe supplémentaire. Le modèle de l'Empire State
+peut déborder d'un à trois blocs de ses retraits de collision au niveau des
+corniches des ailes, et au niveau de la rue la diversité des façades reste
+discrète (elle se voit surtout de loin).
 Un iPad physique reste nécessaire pour mesurer Safari et la pression mémoire.
 Deux imports simultanés hors ligne dont les journaux Terre diffèrent peuvent
 choisir des emplacements de secours différents ; les archives conservées

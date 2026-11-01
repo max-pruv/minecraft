@@ -3,6 +3,7 @@
 // la taille des cubes instanciés. PBR Three.js r160, reflets PMREM.
 import * as THREE from "three";
 import { ALEA } from "./manhattan-plan.js";
+import { PHOTO_NY } from "./new-york-modeles.js";
 function texture(type) {
   const c = document.createElement("canvas");
   c.width = c.height = 256;
@@ -135,9 +136,17 @@ export function materiauxManhattan(renderer) {
     lights = texture("facadelights");
   const mats = {
     farBrick: physique(0xbfa18d, facade, 12, 0.86),
-    farLimestone: physique(0xd7d1c0, facade, 12, 0.82),
+    farLimestone: physique(0xd7d1c0, facade, PHOTO_NY ? 32 : 12, 0.82),
     farBrownstone: physique(0x9f8a7b, facade, 12, 0.88),
-    farGlass: physique(0x7b9faa, facadeglass, 12, 0.24, 0.42),
+    farGlass: physique(0x7b9faa, facadeglass, PHOTO_NY ? 32 : 12, 0.24, 0.42),
+    // les variantes des façades lointaines (v565) : chaque immeuble en tire une
+    // (manhattan-render.js, `loinDe`) ; la tuile suit le rythme de la photo
+    farBrick2: physique(0xbfa18d, facade, 12, 0.86),
+    farBrick3: physique(0xbfa18d, facade, 12, 0.86),
+    farBrick4: physique(0xbfa18d, facade, 12, 0.86),
+    farLimestone2: physique(0xd7d1c0, facade, PHOTO_NY ? 48 : 12, 0.82),
+    farLimestone3: physique(0xd7d1c0, facade, PHOTO_NY ? 48 : 12, 0.6, 0.15),
+    farGlass2: physique(0x7b9faa, facadeglass, PHOTO_NY ? 24 : 12, 0.2, 0.45),
     brick: physique(0xa6765c, brick, 3, 0.89),
     brownstone: physique(0x786052, brick, 3, 0.92),
     limestone: physique(0xe3d3b5, stone, 5, 0.78),
@@ -172,10 +181,63 @@ export function materiauxManhattan(renderer) {
     mats.farBrownstone,
     mats.farLimestone,
     mats.farGlass,
+    mats.farBrick2,
+    mats.farBrick3,
+    mats.farBrick4,
+    mats.farLimestone2,
+    mats.farLimestone3,
+    mats.farGlass2,
   ]) {
     m.emissiveMap = lights;
     m.emissive.set(0xffcb82);
     m.emissiveIntensity = 0;
+  }
+  // LES MATIÈRES PHOTOGRAPHIÉES DE NEW YORK (v565). Les paquets de Max portent
+  // de vraies photos de matières new-yorkaises ; scripts/new-york.mjs en a tiré
+  // des tuiles (vendor/newyork/, crédits dans LICENSE.md). Chaque matériau naît
+  // avec son motif peint et reçoit la photo quand elle arrive : remplacer une
+  // carte par une autre ne change pas la clé de programme, et une photo absente
+  // laisse la ville d'avant. Les façades lointaines prennent aussi leurs
+  // fenêtres allumées, lues dans la même photo. Les teintes se rapprochent du
+  // blanc : elles teintaient un motif gris, la photo porte ses couleurs.
+  const photos = [];
+  if (PHOTO_NY) {
+    const charger = (nom, quand) => {
+      new THREE.TextureLoader().load(`./vendor/newyork/${nom}.jpg`, (t) => {
+        t.wrapS = t.wrapT = THREE.MirroredRepeatWrapping;
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = 4;
+        photos.push(t);
+        quand(t);
+      });
+    };
+    const surface = (m, nom, teinte) =>
+      charger(nom, (t) => {
+        m.map = t;
+        m.bumpMap = t;
+        m.color.set(teinte);
+      });
+    surface(mats.asphalt, "chaussee", 0x6a6f74);
+    surface(mats.path, "allee", 0xf2ead2);
+    surface(mats.limestone, "pierre", 0xf0e2c4);
+    surface(mats.trim, "pierre", 0xd8ccb2);
+    for (const [m, nom, teinte] of [
+      [mats.farBrick, "facade-brique", 0xe8e2dc],
+      [mats.farBrownstone, "facade-brownstone", 0xd8ccc4],
+      [mats.farLimestone, "facade-calcaire", 0xf2efe8],
+      [mats.farGlass, "facade-verre", 0xd8e2ea],
+      [mats.farBrick2, "facade-brique-2", 0xe8e2dc],
+      [mats.farBrick3, "facade-brique-3", 0xe8e2dc],
+      [mats.farBrick4, "facade-brique-4", 0xe8e2dc],
+      [mats.farLimestone2, "facade-calcaire-2", 0xf2efe8],
+      [mats.farLimestone3, "facade-calcaire-3", 0xf2efe8],
+      [mats.farGlass2, "facade-verre-2", 0xd8e2ea],
+    ]) {
+      surface(m, nom, teinte);
+      charger(`${nom}-nuit`, (t) => {
+        m.emissiveMap = t;
+      });
+    }
   }
   mats.signal.emissive.set(0x28ff83);
   mats.signal.emissiveIntensity = 1.2;
@@ -236,6 +298,7 @@ export function materiauxManhattan(renderer) {
         facadeglass,
         lights,
       ].forEach((t) => t.dispose());
+      photos.forEach((t) => t.dispose());
       rt.dispose();
     },
   };

@@ -5,6 +5,27 @@
 // Géométrie et matériaux originaux, aucun asset de GTA.
 import { BLOCK, CITY_BLOCK, DECOR_START } from "./blocks.js";
 import { axeDuFeu } from "./feux.js";
+import {
+  EMPIRE_NIVEAUX,
+  LIBERTE_VOXELS,
+  LIBERTE_SOCLE,
+} from "./new-york-donnees.js";
+
+// NEW YORK D'APRÈS LES MODÈLES DE MAX (v565). L'Empire State et la statue de la
+// Liberté se dessinent d'après les photogrammétries de Brian Trepanier
+// (new-york-modeles.js), et C'EST LE VOXEL QUI LES SUIT (la règle de la tour
+// Eiffel, v564) : les retraits de l'Empire et les blocs de la statue sont
+// MESURÉS dans le modèle (new-york-donnees.js), dedans, pour qu'on ne bute
+// jamais sur un mur qu'on ne voit pas. LA VILLE CÈDE À CE QUE L'ENFANT A BÂTI
+// (v303) : un bloc posé ou creusé avant `DATE_NY_MODELES` dans la boîte de l'un
+// des deux garde l'ancien volume ET l'ancien dessin — `TerreUrbaine` le décide
+// au chargement du journal (`deciderModelesNY`). La date se relit à la fusion
+// (v309).
+export const DATE_NY_MODELES = Date.parse("2026-10-26T13:00:00Z");
+export const MODELES_NY_ETAT = { empireAncien: false, liberteAncienne: false };
+// le socle de l'Empire reste procédural, net à hauteur de rue : la
+// photogrammétrie, faite d'avion, n'est lisible qu'au-dessus de lui
+export const SOCLE_EMPIRE = EMPIRE_NIVEAUX[0][2];
 
 export const MANHATTAN_ID = "manhattan-v1"; // lecture des sauvegardes v239 uniquement
 export const ECHELLE_PLAN = 0.4;
@@ -200,6 +221,7 @@ export const MONUMENTS = [
     z1: 421,
     h: 108,
     style: "empire",
+    photo: "empire",
     mat: "limestone",
     x: -11,
     z: 382,
@@ -306,6 +328,7 @@ export function emprise(b, x, z) {
 // Retraits partagés entre collision et les deux niveaux de rendu. Chaque
 // étage garde une largeur et une profondeur : l'Empire n'est pas une pyramide.
 export function niveaux(b) {
+  if (b.style === "empire" && !MODELES_NY_ETAT.empireAncien) return EMPIRE_NIVEAUX;
   if (b.style === "empire")
     return [
       [1, 1, 5],
@@ -431,6 +454,31 @@ for (let sz = -71; sz < 48; sz++)
     }
   }
 export const BATIMENTS = tous;
+
+// LA DIVERSITÉ (v565). Max : « Manhattan, c'est vraiment très boring, tout se
+// ressemble ». Chaque immeuble tire de SA graine (donc le même sur toutes les
+// tablettes, d'un lancement à l'autre) : la teinte de son mur dans une palette
+// de sa matière (multipliée par la couleur du matériau, une couleur par
+// instance — aucun programme neuf), le pas de ses baies, et l'une des façades
+// photographiées de sa famille pour sa silhouette lointaine (`loin`, un
+// nombre que le rendu ramène au nombre de variantes qu'il a). Rien ne touche
+// aux volumes ni aux collisions : c'est du dessin.
+const PALETTES = {
+  brick: [[1, 1, 1], [1.12, 0.95, 0.85], [0.9, 0.72, 0.66], [1.02, 0.86, 0.8], [0.84, 0.82, 0.8], [1.18, 1.07, 0.9], [0.95, 0.78, 0.7]],
+  limestone: [[1, 1, 1], [1.07, 1.05, 1.03], [0.88, 0.88, 0.9], [1.03, 0.95, 0.86], [0.96, 0.91, 0.92], [0.93, 0.95, 0.9]],
+  brownstone: [[1, 1, 1], [0.84, 0.8, 0.78], [1.1, 0.92, 0.86], [0.96, 0.86, 0.9]],
+  glass: [[1, 1, 1], [0.82, 1.05, 1.0], [1.1, 0.96, 0.82], [0.9, 0.96, 1.15], [0.74, 0.76, 0.8]],
+};
+const RYTHMES = [2, 3, 3, 4];
+export function variante(b) {
+  if (b.variante) return b.variante;
+  const palette = PALETTES[b.mat] || [[1, 1, 1]];
+  return (b.variante = {
+    teinte: palette[Math.floor(ALEA(b.seed, 41) * palette.length)],
+    rythme: RYTHMES[Math.floor(ALEA(b.seed, 43) * RYTHMES.length)],
+    loin: ALEA(b.seed, 47),
+  });
+}
 export const batimentsSecteur = (x, z) =>
   cadres.get(`${Math.floor(x / 64)},${Math.floor(z / 64)}`) || [];
 export const batimentA = (x, z) =>
@@ -633,6 +681,52 @@ export function statueLiberte(set) {
     set(0, y, -3, PIERRE);
     set(1, y, -3, PIERRE);
   }
+}
+
+// LA STATUE D'APRÈS LE MODÈLE (v565) : le fort, le socle et la statue
+// voxelisés dans la photogrammétrie (scripts/new-york.mjs) — le fort et le socle
+// par la hauteur médiane de leur peau (la terrasse à dy 3, comme HAUT_FORT), la
+// statue par coupes. Même `set(dx, dy, dz, id)` que `statueLiberte` : le granit
+// du fort sous la terrasse, la pierre du socle, le cuivre de la statue.
+let voxelsLiberte = null;
+export function statueLiberteModele(set) {
+  const { R, NY, bits } = LIBERTE_VOXELS;
+  if (!voxelsLiberte) {
+    const b = typeof atob === "function" ? atob(bits) : Buffer.from(bits, "base64").toString("binary");
+    voxelsLiberte = new Uint8Array(b.length);
+    for (let i = 0; i < b.length; i++) voxelsLiberte[i] = b.charCodeAt(i);
+  }
+  const GRANIT = CITY_BLOCK.GRANITE,
+    PIERRE = DECOR_START + 27 * 10,
+    CUIVRE = CITY_BLOCK.COPPER;
+  for (let dy = 0; dy < NY; dy++)
+    for (let z = 0; z < 2 * R; z++)
+      for (let x = 0; x < 2 * R; x++) {
+        const i = (dy * 2 * R + z) * 2 * R + x;
+        if (!(voxelsLiberte[i >> 3] & (1 << (i & 7)))) continue;
+        // rien hors de l'île : le pied du fort du modèle déborde d'un bloc
+        // de l'ellipse au sud-est, et l'île ne doit rien sortir de l'eau
+        if (!dansIleLiberte(ILE.x + x - R + 0.5, ILE.z + z - R + 0.5)) continue;
+        set(x - R, dy, z - R, dy < HAUT_FORT ? GRANIT : dy < LIBERTE_SOCLE ? PIERRE : CUIVRE);
+      }
+}
+
+// L'escalier du fort, côté Manhattan (−z), comme celui de la statue d'avant :
+// deux marches d'un bloc posées contre le pied du fort du modèle, sur trois de
+// large. Elles se VOIENT (des marches de granit) : `cubesTus` ne les tait pas.
+export function escalierFortModele(set) {
+  const { R, bits } = LIBERTE_VOXELS;
+  if (!voxelsLiberte) statueLiberteModele(() => {});
+  let bord = 0;
+  for (let z = 0; z < 2 * R; z++) {
+    const i = z * 2 * R + R;
+    if (voxelsLiberte[i >> 3] & (1 << (i & 7))) { bord = z - R; break; }
+  }
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = 0; dy < HAUT_FORT - 1; dy++) set(dx, dy, bord - 1, CITY_BLOCK.GRANITE);
+    for (let dy = 0; dy < HAUT_FORT - 2; dy++) set(dx, dy, bord - 2, CITY_BLOCK.GRANITE);
+  }
+  return bits.length;
 }
 
 // ---- LES FEUX DE MANHATTAN (v496) -----------------------------------------

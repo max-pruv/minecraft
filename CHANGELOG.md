@@ -20,6 +20,52 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v582 — New York d'après les modèles de Max
+
+**Pourquoi.** Max a déposé six paquets Sketchfab (CC-BY-4.0) pour « améliorer
+la qualité de New York », et ajouté : « le but des différents bâtiments, c'est
+aussi de donner de la diversité, parce qu'aujourd'hui Manhattan, c'est vraiment
+très boring, tout se ressemble ». L'Empire State était une pile de volumes
+gris, la statue de la Liberté une statue en blocs, et les façades de Manhattan
+se répétaient d'un immeuble à l'autre.
+
+**Ce que ça change.**
+- L'Empire State est la photogrammétrie de Brian Trepanier, allégée pour la
+  tablette (46 050 triangles de près, 3 485 de loin), sa texture recuite et
+  égalisée en couleur. Le pied reste en blocs, pour une rue nette ; de nuit, il
+  est éclairé par projecteurs. Le petit personnage costumé de l'antenne est
+  retiré (invariant 4).
+- La statue de la Liberté est la photogrammétrie de l'île : la statue, son
+  socle et le fort en étoile. Les blocs qui arrêtent l'enfant sont mesurés dans
+  le modèle et se taisent sous lui ; deux marches de granit montent au fort,
+  côté Manhattan.
+- La chaussée, les allées et la pierre de Manhattan prennent des textures
+  photographiées (« Low road », la façade Beaux-Arts).
+- Dix façades photographiées (brique, grès brun, calcaire, verre) habillent
+  les immeubles de loin, avec leurs fenêtres allumées la nuit ; chaque immeuble
+  tire de sa graine une teinte, un rythme de fenêtres et l'une des façades de
+  sa famille. Du ciel, Manhattan ne se ressemble plus d'un bloc à l'autre ; au
+  niveau de la rue, la différence est plus discrète.
+- Ce qu'un enfant a bâti avant cette version contre l'Empire State ou sur
+  l'île garde l'ancien monument (`DATE_NY_MODELES`), et un bloc posé dedans
+  ensuite rend l'ancien dessin plutôt qu'un modèle troué.
+- Le paquet « New York City. Manhattan » n'est pas intégré : il ne couvre que
+  le sud de l'île et sa géographie ne s'accorde pas avec le plan comprimé.
+- `?photo=0` rejoue le New York d'avant, pour mesurer et comparer.
+
+**Ce qui le prouve.** Quatre témoins neufs. Dans `plafond.js` : les retraits de
+collision de l'Empire montent sans s'élargir et diffèrent de l'ancien plan, que
+la date garde (12 niveaux contre 10) ; la statue voxelisée tient dans l'île
+(zéro case dehors, granit, pierre et cuivre, 41 blocs, escalier devant le
+fort) ; la variante d'un immeuble est la même à chaque calcul et il y en a 124
+combinaisons sur 600 immeubles. Dans `manhattan.js` : les deux modèles
+arrivent (de près et de loin) et les cubes de la statue se taisent sous le sien.
+Le témoin de la v496 (la statue sur son île, au-dessus du Flatiron, rien hors
+de l'eau) tient : la statue a été remise à 42 blocs pour rester plus haute que
+le Flatiron, comme la vraie (93 m contre 87). Captures avant/après de jour et de
+nuit validées par Max (`tests/sonde-captures-new-york.cjs`). Prix : 8,2 Mo de
+modèles et de photos, dans le cache immuable, téléchargés à la première visite
+de Manhattan seulement. Les crédits sont dans `vendor/newyork/LICENSE.md`.
 ## v580 — Paris ne fait plus planter le jeu en « Loin »
 
 **Pourquoi.** Max, capture d'iPhone dans une rue de Paris : « le jeu plante ».
