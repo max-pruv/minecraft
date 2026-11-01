@@ -7,9 +7,10 @@ optional network services provide multiplayer and cloud saves.
 
 **Permanent art direction:** realistic, high-fidelity visuals across the game,
 including low-detail views and fallback assets; no new Minecraft or pixel-art
-styling. See [the art direction](docs/direction-artistique.md). The current game
-still contains documented visual shortcomings; this is the target, not a claim
-that every existing asset already meets it.
+styling. See [the art direction](docs/direction-artistique.md) and
+[agent instructions](AGENTS.md). The current game still contains documented
+visual shortcomings, listed in [TASKS.md](TASKS.md); this is the target, not a
+claim that every existing asset already meets it.
 
 **New York's boroughs (v583):** ten neighbourhoods around the island — Hoboken, Fort
 Lee, Jersey City, Port Newark, the Bronx, Queens, Brooklyn, Coney Island, Long Island,
@@ -47,6 +48,20 @@ rendering budgets, licensing and limitations.
 - **Procedural textures** — the block atlas is painted onto a canvas at
   startup. Manhattan on Earth adds procedural physical materials
   and geometric facade details; existing vehicle assets keep their licenses.
+- **Photographic landscapes** — eight natural material layers blend at several
+  world-space scales: meadow, alpine grass, dry grass, soil, scree, rock, sand
+  and snow. Continuous water has animated ripples and sky-tinted reflections;
+  nearby meadows have curved grass blades. Terrain contacts and vehicle paths
+  keep the same geometry. The local 2.2 MB material atlas works offline and
+  occupies about 11 MB of GPU memory, including mipmaps. Sources and adaptation
+  credits: [nature assets](vendor/nature/LICENSE.md).
+- **Detailed wildlife** — the supplied cows, deer, horse and rabbit use local
+  textured artist models, supplemented by a cat, bear and a subdivided animated
+  fox. Other species use articulated curved anatomy; fish have curved fins and
+  birds flap separate feathered wings. Farm animals and rideable animals share
+  the same factories. Skeletons and damage colors belong to each instance,
+  while geometry and textures are shared. [Animal credits and licenses](vendor/animaux/LICENSE.md)
+  include the horse's noncommercial, share-alike terms.
 - **Paris in relief (HD layer)** — the voxel world is the skeleton; on top of
   it, a second mesher pass emits real facade geometry for Paris (recessed
   windows, railings, running balconies, cornices, awnings, dormers) and

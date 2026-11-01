@@ -15,6 +15,8 @@ npm run reglages  # les réglages, enfant et parent
 npm run carte     # la carte : glisser, zoomer, voyager
 npm run manhattan # édition, sauvegardes, réseau, conduite tactile et PWA
 npm run realisme  # anatomies, demi-tour, fondu et reflets automobiles
+npm run nature    # matières photographiques, prairies, routes et budget végétal
+npm run animaux   # modèles, appuis, animation, partage des ressources et monte
 ```
 
 Sur macOS, `CHROMIUM_ANGLE=metal npm test` utilise le GPU natif. Le défaut

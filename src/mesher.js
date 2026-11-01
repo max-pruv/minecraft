@@ -24,6 +24,7 @@ import { TEINTE_HERBE_LIN as TEINTE_HERBE, TEINTE_FEUILLES_LIN as TEINTE_FEUILLE
 import { emettreMonument, cellulesDuMorceau } from './paris-monuments-hd.js';
 import { reconnaitreArbres, emettreArbres, directionDuVoisin, DIRECTIONS_VOISINS } from './arbreshd.js';
 import { grilleSol, emettreSolContinu, emettreRubans, emettreBandesPassages } from './solcontinu.js';
+import { emettrePrairie } from './prairie.js';
 
 // Faces: corner positions (CCW from outside), normal, tile slot (0 top / 1 side / 2 bottom), shade.
 //
@@ -696,6 +697,22 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
   }
 
   const surface = grille ? emettreSolContinu(solid, world, cx, cz, CHUNK, grille, teintes) : null;
+  let touffesPrairie = 0;
+  // Le détail suit la même portée et le même budget que les arbres proches.
+  // Même une clairière sans arbre peut avoir son herbe ; les empreintes
+  // historiques (vraisArbres:false) gardent leurs tampons d'avant.
+  if (grille && vraisArbres && options.detail !== false && options.prairie !== false) {
+    const prairie = new GeomBufferHD();
+    touffesPrairie = emettrePrairie(prairie,world,grille,teintes);
+    if (touffesPrairie) {
+      if (!facades) facades = prairie;
+      else {
+        const base = facades.positions.length/3;
+        for (const cle of ['positions','normals','uvs','colors','tiles','matiere','lueur']) facades[cle].push(...prairie[cle]);
+        for (const i of prairie.indices) facades.indices.push(base+i);
+      }
+    }
+  }
   // les tabliers des ponts et le marquage des routes (v300), avec la surface
   // Les rubans (marquage, tabliers, rails) sont de la géométrie pure : ils
   // s'émettent même sans sol continu (`?solcontinu=0`), sinon les rails
@@ -734,8 +751,8 @@ export function buildChunkTampons(world, cx, cz, options = {}) {
     // (seulement quand les arbres sont armés : l'empreinte des 490 morceaux
     // hache aussi les champs scalaires du retour, et un champ neuf la change
     // sans qu'un sommet bouge — v421, le contenu neuf se retire par l'option)
-    ...(vraisArbres ? { arbres: arbres ? arbres.liste.length : 0, arbresEmis, facesArbresTues, facesSousArbre,
+    ...(vraisArbres ? { prairie: touffesPrairie, arbres: arbres ? arbres.liste.length : 0, arbresEmis, facesArbresTues, facesSousArbre,
       arbresLoin: arbresLoin ? arbresLoin.toTampons(false) : null, arbresBord } : {}),
-    detail: detail || arbresDetail,
+    detail: detail || arbresDetail || touffesPrairie > 0,
   };
 }

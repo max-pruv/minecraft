@@ -21,6 +21,7 @@
 import * as THREE from 'three';
 import { BLOCK } from './blocks.js';
 import { WATER_LEVEL } from './world.js';
+import { Atelier } from './modeles.js';
 
 const EFFECTIF = 22;            // le banc autour de l'enfant
 // Naître à portée de VUE : sous l'eau, on ne voit pas à trente blocs — un
@@ -48,21 +49,39 @@ function estEau(world, x, y, z) {
 }
 
 function construirePoisson(robe, taille) {
-  const g = new THREE.Group();
-  // Basic, pas Lambert : sous l'eau, la lumière de la scène éteignait les
-  // robes — le poisson-clown ressortait marron. Un poisson de récif est un
-  // aplat de couleur vive, et c'est la brume bleue qui fait l'ambiance.
-  const mat = (c) => new THREE.MeshBasicMaterial({ color: c });
-  const corps = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.24, 0.14), mat(robe.corps));
-  g.add(corps);
-  const queue = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.05), mat(robe.queue));
-  queue.position.x = -0.34;
-  g.add(queue);
-  const nageoire = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.04), mat(robe.queue));
-  nageoire.position.set(0.05, 0.18, 0);
-  g.add(nageoire);
+  const a=new Atelier();
+  a.sphere(robe.corps,{p:[0,0,0],e:[.58,.25,.15],seg:38});
+  // Nageoires à bord courbe et queue fourchue, fusionnées par articulation.
+  const nageoire=(points,couleur)=>{
+    const forme=new THREE.Shape();forme.moveTo(...points[0]);
+    for(let i=1;i<points.length;i+=2)forme.quadraticCurveTo(...points[i],...points[i+1]);
+    forme.closePath();
+    const geo=new THREE.ExtrudeGeometry(forme,{depth:.008,bevelEnabled:true,bevelSize:.003,bevelThickness:.003,bevelSegments:2,steps:1,curveSegments:12});
+    a.geometrie(geo,couleur,{p:[0,0,-.004]});geo.dispose();
+  };
+  nageoire([[-.17,.07],[-.08,.24],[.04,.2],[.09,.16],[.15,.08]],robe.queue);
+  nageoire([[-.14,-.06],[-.1,-.2],[.02,-.16],[.07,-.12],[.13,-.07]],robe.queue);
+  for(const s of [-1,1]) {
+    a.sphere(0xc6bf99,{p:[.2,.035,s*.055],e:[.055,.055,.022],seg:24});
+    a.sphere(0x091315,{p:[.208,.035,s*.065],e:[.032,.037,.014],seg:24});
+  }
+  a.membre('queue',[-.24,0,0]);
+  nageoire([[-.23,0],[-.4,.06],[-.49,.15],[-.43,0],[-.49,-.15],[-.4,-.06],[-.23,0]],robe.queue);
+  const g=a.finir();
+  const mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.42,metalness:.12,emissive:robe.corps,emissiveIntensity:.09});
+  mat.onBeforeCompile=shader=>{
+    shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\n varying vec3 vEcaille;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\n vEcaille=position;');
+    shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\n varying vec3 vEcaille;')
+      .replace('#include <color_fragment>',`#include <color_fragment>
+        float rang=floor(vEcaille.y*130.0);
+        float ecaille=sin(vEcaille.x*270.0+mod(rang,2.0)*3.14159)*sin(vEcaille.y*410.0);
+        diffuseColor.rgb*=.92+ecaille*.07;`);
+  };
+  mat.customProgramCacheKey=()=> 'poisson-ecailles-v1';
+  g.traverse(o=>{if(o.isMesh)o.material=mat;});
   g.scale.setScalar(taille);
-  g.userData.queue = queue;
+  g.userData.queue = g.userData.membres.queue;
   return g;
 }
 

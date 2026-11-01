@@ -1,5 +1,47 @@
 # Ce qui est en cours
 
+## Principe de conception permanent — toutes les éditions futures
+
+Appliquer la [charte high fidelity](docs/direction-artistique.md) et
+`AGENTS.md` à tout nouveau travail visuel : réalisme partout, aucun style
+Minecraft ni pixel art, y compris au loin, sur les paliers bas et dans les
+secours. Les écarts existants restent à corriger ; ils ne constituent pas
+un niveau de qualité accepté pour les prochaines fonctionnalités.
+
+- [ ] Recenser et remplacer les chemins historiques de rendu ou de secours
+  qui réintroduisent des textures pixelisées, des cubes apparents ou des
+  modèles grossiers ; valider leur remplacement dans le jeu selon la charte.
+
+## Nature et animaux détaillés (v584, demande en cours)
+
+- [x] Matières des paysages extraites des trois scans de
+  `https://fileport.io/7dkQ48hNe632` ; huit couches, prairie basse sans
+  collision, eau continue et panorama. `plafond.js` : 229 contrôles verts ;
+  `parishd.js` : 170 contrôles verts sur la passe paysages ; `nature.js` :
+  chargement réel, solides identiques, routes sans brins et captures comparées.
+- [x] Archive 2 obtenue via `https://fileport.io/dfasAg4JMxWB` : deux vaches,
+  cerf, cheval et lapin convertis ; chat, ours et renard complémentaires.
+  Licences et provenance dans `vendor/animaux/LICENSE.md` (cheval NC-SA).
+  Bestiaire partagé pour faune, montures et enclos ; oiseaux à ailes articulées,
+  poissons fuselés. 45 entrées, 14 variantes utilisant les modèles texturés,
+  géométries/cartes partagées, squelettes et matériaux d'instance privés.
+- [x] Validation finale ciblée : `nature.js` et `animaux.js` verts avec les
+  nouveaux animaux intégrés. 45 entrées sans boîte, 14 variantes utilisant
+  les GLB, au plus 9 maillages par animal, squelettes indépendants ; appuis
+  à 0,0001 bloc de la surface et cheval montable. Captures dans
+  `/workspace/outputs/paysage.png` et `/workspace/outputs/animaux-jeu.png`.
+- [ ] **Atteindre la charte photoréaliste permanente sur tout le bestiaire.** Les
+  espèces sans GLB restent des anatomies procédurales : porcins, ovins,
+  chèvres, loups/chiens, écureuils, éléphants, ânes, camélidés, autruches,
+  canards/autres volailles, manchots, tortues et crabes, oiseaux du ciel et
+  poissons. Leurs cubes sont retirés ; ne pas les annoncer comme des modèles
+  photoréalistes. Pour ce niveau de fidélité, obtenir des modèles d'artistes
+  appropriés et les ajouter à la fabrique commune, sans perdre marche,
+  appuis, monte ni partage des ressources.
+- [ ] Les falaises gardent leur géométrie existante : une refonte de leur
+  silhouette doit partager son contact avec les roues et préserver les appuis
+  des constructions. Les matières seules ne réalisent pas cet objectif.
+
 ## New York v583 — revue et dettes déclarées
 
 - [ ] **Rendu encore stylisé.** Les huit vues mobiles Midtown/Brooklyn jour/nuit

@@ -90,6 +90,7 @@ export const TUILES_HD = [
   'aiguilles',     // un amas d'aiguilles de pin (alpha)
   'palme',         // une palme entière, la nervure au milieu (alpha)
   'bouleau',       // l'écorce blanche du bouleau, ses lenticelles sombres
+  'brin',         // nervure et fibres des graminées, la forme vient du maillage
 ];
 export const COLS_HD = 8;
 export const PX_HD = 128;

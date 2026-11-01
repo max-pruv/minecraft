@@ -12,6 +12,95 @@ pas le droit d'avoir un train de retard sur la production.
 
 ---
 
+## Principe permanent — réalisme et high fidelity partout
+
+**Décision explicite de Max, pour toutes les éditions futures : abandonner
+complètement les designs de style Minecraft et la pixellisation ; viser un
+rendu réaliste et high fidelity dans l'ensemble du jeu.** Lire et appliquer
+la [charte de direction artistique](docs/direction-artistique.md) avant toute
+création, modification ou optimisation visuelle. `AGENTS.md` porte aussi cette
+consigne pour les prochaines sessions.
+
+Cela vaut pour tous les éléments, toutes les distances, tous les paliers,
+les animations et les solutions de secours. Ni des cubes texturés, ni des
+primitives simplement arrondies, ni un fichier nommé « HD » ne suffisent.
+Refuser les gros pixels, les facettes grossières, les triangles déformés et
+les raccords artificiels. Les optimisations doivent conserver cette direction
+artistique, avec une validation visuelle dans le jeu et une circulation
+automobile cohérente avec le sol visible.
+
+La structure voxel peut rester interne aux données ; elle ne définit plus
+l'esthétique. Préserver les sauvegardes, les appuis et les passages existants.
+Les exceptions graphiques anciennes et les limites constatées ci-dessous
+sont des défauts à corriger, pas une autorisation de les reproduire. Ne pas
+annoncer un rendu intégralement photoréaliste tant que ces écarts subsistent.
+
+---
+
+## Matières de nature photographiques (v584)
+
+`nature-matiere.js` enrichit le matériau Lambert existant APRÈS
+`activerTuilage` : il compose son `onBeforeCompile`, ne le remplace pas sans
+l'appeler. Les matières naturelles seules lisent `vendor/nature/sols-v1.webp`
+(huit couches, 512 px chacune, ~11 Mo vidéo avec les mipmaps). Coordonnées
+absolues du monde, dérivées explicites avant `fract`, gouttières périodiques,
+deux orientations et des variations plus larges que les cellules : aucun
+remappage par bloc. La conversion sRGB est explicite pour ce sampler, pas
+pour l'atlas historique. L'alpha porte un relief dérivé, jamais de transparence.
+En cas de chargement manquant, le matériau reprend l'atlas historique.
+
+`prairie.js` émet des brins courbés uniquement dans le détail HD, dans son
+tampon existant : au plus 64 touffes / 1 536 sommets par morceau. Leur base
+lit la triangulation du sol continu. Ni corridor, ni ville, ni bloc au-dessus
+du point d'ancrage ; aucun bloc et aucune collision ne sont ajoutés. Une
+clairière sans arbre déclare aussi son détail (`prairie` dans les tampons),
+pour que le relais et le budget le reprennent. `prairie:false` rejoue le
+maillage sans ces brins ; `vraisArbres:false` garde les empreintes historiques.
+Ni les cotes, ni les indices du sol et de l'eau, ni `terrainHeight`, ni la
+physique ne changent. Les falaises et les constructions gardent leur forme
+existante : ce chantier de matière n'autorise pas à déplacer le sol sauvegardé.
+
+Les images sont immuables, avec un nom versionné et le cache statique des
+modèles ; les deux modules neufs sont dans `ASSETS`. Les crédits CC-BY et les
+transformations figurent dans `vendor/nature/LICENSE.md`. Le script
+`scripts/preparer-nature.py` prend les sources décompressées, sans réseau.
+`tests/nature.js` vérifie le vrai rendu, les solides identiques, l'absence de
+brins sur route et le budget végétal ; `plafond.js` garde le contact et le
+relief, `parishd.js` la couche et ses ombres.
+
+### Bestiaire partagé (v584)
+
+`animauxhd.js` centralise les 45 entrées : faune de `animals.js`, montures
+de `montures.js` (les amis distants passent aussi par cette fabrique),
+enclos de `vie.js`, oiseaux du ciel. Les modèles d'artistes locaux sont
+chargés par deux au plus, normalisés sur leurs sommets transformés (appui,
+hauteur et cap), puis clonés avec `SkeletonUtils`. Ne jamais remplacer
+l'échelle normalisée d'un GLTF par sa taille dans le jeu : la multiplier,
+position comprise, sinon le lapin devient trois fois trop grand.
+
+Géométrie et cartes sont partagées ; matériaux de blessure et squelettes sont
+privés. `liberer` rend aussi la profondeur propre aux scans animés (marquée
+sur le matériau). `animerAnimalHD` est appelé dans la faune, les enclos ET
+la monte ; une bête montée n'est animée que par cette dernière. Les scans
+statiques ont une flexion douce des pattes, identique dans l'ombre ; les
+modèles riggés utilisent leur clip ou leurs articulations. Le nouveau modèle
+arrive dans la racine existante, sans changer position, collision ou passager.
+
+`anatomie-animaux.js` fournit les anatomies articulées des espèces absentes
+des fichiers, et le secours si un GLB manque : aucune boîte ni retour aux
+anciennes bêtes cubiques. Ces espèces restent procédurales ; ne pas annoncer
+tout le bestiaire comme photoréaliste. Les poissons ont deux groupes fusionnés
+(corps/nageoires/yeux et queue), avec leur propre matière à écailles.
+
+Les témoins de chauffe gardent leurs matériaux : les libérer juste après
+`renderer.compile` détruirait les programmes qu'on vient de chauffer. Les
+variantes de robe se chauffent aussi. Les GLB immuables et versionnés sont
+dans le cache statique ; les modules dans `ASSETS`. Le cheval est NC-SA,
+les autres licences et transformations sont dans `vendor/animaux/LICENSE.md`.
+`tests/animaux.js` garde appuis, dimensions, partage, indépendance et monte.
+
+---
+
 ## Pour qui
 
 Un jeu éducatif pour **Marlon** (~7 ans) et **Alice** (CM1), famille

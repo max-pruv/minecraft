@@ -34,6 +34,7 @@ import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, optionsMetro, HORAIRE_METRO, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
 import { materiauHD, geometrieHD } from './matierehd.js';
+import { enrichirNature, enrichirEau } from './nature-matiere.js';
 import { DIRECTIONS_VOISINS } from './arbreshd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
@@ -77,6 +78,7 @@ import { ENTREES_LONDRES } from './londres.js';
 import { Player, raycastBlocks, plafondAvion } from './player.js';
 import { actualiserPresence } from './presence.js';
 import { animerHumain, chargerHumains, humainsCharges, humainsPrets } from './humains.js';
+import { chargerAnimaux, animauxPourChauffe, creerAnimalHD, animerAnimalHD } from './animauxhd.js';
 import { MODELES_MONTURE, MONTURES } from './montures.js';
 import { initFun } from './fun.js';
 import { vieDistante } from './sensations.js';
@@ -665,7 +667,9 @@ const waterMaterial = new THREE.MeshLambertMaterial({
 // seize blocs, ses UV vont donc au-delà de 1 et c'est le shader qui les ramène
 // dans la bonne tuile de l'atlas. L'eau y ajoute son clapot.
 activerTuilage(solidMaterial);
+enrichirNature(solidMaterial, renderer);
 activerTuilage(waterMaterial, { onde: true });
+enrichirEau(waterMaterial, scene);
 // Les fenêtres allumées sont de la même géométrie fusionnée : sans ce même
 // repli, une baie étirée sur trois blocs échantillonnait l'atlas ENTIER —
 // un immeuble arc-en-ciel en pleine rue, vu à la première capture de nuit.
@@ -716,6 +720,7 @@ world.sansSolContinu = new URLSearchParams(location.search).get('solcontinu') ==
 // Le matériau HD se fabrique à la demande (son environnement préfiltré coûte
 // une PMREM) : la première fois qu'un morceau de Paris arrive avec du détail.
 let hd = null;
+const temoinsAnimaux = []; // leurs matériaux gardent les programmes chauffés
 const OMBRE_HD = new URLSearchParams(location.search).get('ombrehd') !== '0';
 function materiauDeParis() {
   if (!hd) hd = materiauHD(renderer);
@@ -1425,7 +1430,7 @@ function installerMorceau(cx, cz, tampons) {
   const entry = { solid: null, water: null, lumineux: null, props: null, sol: null, facades: null, plat: null, platLumineux: null, arbresLoin: null,
     // ce morceau touche la couche HD (ou porte des arbres, v499), et il a été
     // maillé AVEC ses façades détaillées (v296)
-    hd: !!tampons.hd || !!tampons.arbres, detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0),
+    hd: !!tampons.hd || !!tampons.arbres || !!tampons.prairie || (!!world.arbres && tampons.cellulesSol > 0), detail: !!tampons.detail, arbres: Math.max(0, tampons.arbres || 0),
     // les plages d'indices des arbres du bord (v554), et la dernière plage montrée
     arbresBord: tampons.arbresBord || null, bordSig: null, cle: [cx, cz] };
   const pcx = Math.floor(player.pos.x / CHUNK), pcz = Math.floor(player.pos.z / CHUNK);
@@ -8681,12 +8686,10 @@ function updateClouds(dt) {
 
 const flocks = [];
 {
-  const birdMat = new THREE.MeshBasicMaterial({ color: 0x2a2a2e, side: THREE.DoubleSide });
   for (let f = 0; f < 3; f++) {
     const g = new THREE.Group();
     for (let b = 0; b < 5; b++) {
-      const bird = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.6, 3), birdMat);
-      bird.rotation.x = Math.PI / 2;
+      const bird = creerAnimalHD('oiseau');
       bird.position.set((b - 2) * 2.2, 0, Math.abs(b - 2) * 1.8); // V formation
       g.add(bird);
     }
@@ -8706,7 +8709,7 @@ function updateBirds(dt) {
     g.position.x -= Math.sin(u.dir) * u.speed * dt;
     g.position.z -= Math.cos(u.dir) * u.speed * dt;
     g.rotation.y = u.dir;
-    g.scale.y = 0.7 + Math.sin(u.flap) * 0.3; // wing-flap illusion
+    for (const bird of g.children) animerAnimalHD(bird, dt, u.speed);
     if (Math.hypot(g.position.x - player.pos.x, g.position.z - player.pos.z) > 320) {
       u.dir = Math.random() * Math.PI * 2;
       g.position.set(
@@ -9437,6 +9440,13 @@ requestAnimationFrame(() => {
   // (voir humains.js). C'était le « vingt secondes avant de pouvoir cliquer »
   // de Max sur l'iPad de quatre ans.
   chargerHumains();
+  chargerAnimaux(async (nom) => {
+    for (const animal of animauxPourChauffe(nom)) {
+      const ici = new THREE.Scene(); ici.add(animal);
+      renderer.compile(ici, camera, scene);
+      temoinsAnimaux.push(animal);
+    }
+  });
   // Les avions déposés (v563), 2,4 Mo : même moment, même raison. Un avion
   // garé qui naîtrait avant eux reste sculpté (avions.js).
   chargerAvionsDeposes();

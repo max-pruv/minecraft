@@ -57,6 +57,7 @@ import { BLOCK, DECOR_START, decorMapColor } from './blocks.js';
 import { decor } from './couches.js';
 import { MAP_COLORS } from './carte.js';
 import { villeMondeEn } from './villesmonde.js';
+import { enrichirHorizon } from './nature-matiere.js';
 
 export const PAS_HORIZON = 8;   // un sommet tous les huit blocs
 
@@ -410,6 +411,7 @@ export class Horizon {
     for (let i = 0; i < N * N; i++) normales[i * 3 + 1] = 1;
     geo.setAttribute('normal', new THREE.BufferAttribute(normales, 3));
     this.materiau = new THREE.MeshLambertMaterial({ vertexColors: true, fog: true });
+    enrichirHorizon(this.materiau);
     this.mesh = new THREE.Mesh(geo, this.materiau);
     decor(this.mesh);   // le paysage lointain se reflète dans les carrosseries
     this.mesh.frustumCulled = false;         // il entoure toujours le joueur

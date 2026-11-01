@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 584,
+    titre: 'La nature prend vie',
+    puces: [
+      'De vraies textures de prairie, de terre et de roche',
+      'Vaches, chevaux, cerfs et lapins tout en détail',
+      'Les animaux et les poissons quittent les cubes',
+    ],
+  },
+  {
     v: 583,
     titre: 'Un nouveau New York',
     puces: [

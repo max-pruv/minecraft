@@ -114,7 +114,10 @@ par Max : matières plaquées, ruptures carrées du terrain et faune incohérent
 avec sa région. Elle doit être reprise avant publication. New York v583 améliore
 les volumes et les façades ; son feuillage hérité et certains environnements
 restent en dessous du niveau demandé. Aucune de ces livraisons ne permet
-d'affirmer que le jeu entier est devenu photoréaliste.
+d'affirmer que le jeu entier est devenu photoréaliste. Les écarts restants,
+dont les chemins historiques de rendu ou de secours à atlas pixelisé, sont une
+dette de migration à corriger, jamais une référence de qualité pour une
+nouvelle fonctionnalité.
 
 Le suivi se trouve dans [TASKS.md](../TASKS.md). Cette charte fixe l'objectif
 permanent ; elle ne prétend pas que la refonte graphique intégrale est achevée.

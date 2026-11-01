@@ -17,7 +17,8 @@ import { CASTLE, VILLANDRY, GAULOIS, ESPACE, VILLE, CHAUSSEE, TROTTOIR } from '.
 import { BLOCK, DECOR_START, isSolid as blockIsSolid, isSlab } from './blocks.js';
 import { construireHumain } from './personnages.js';
 import { Atelier } from './modeles.js';
-import { construireBete, BETES } from './betes.js';
+import { BETES } from './betes.js';
+import { creerAnimalHD, animerAnimalHD } from './animauxhd.js';
 import { posteDuGuide, essaiParBlocs, CIEL } from './guidesvilles.js';
 import { feuPieton, ALLURE_TRAVERSEE, ATTENTE_MAX_S, ENVIE_TRAVERSER } from './pietons.js';
 
@@ -473,7 +474,7 @@ class Bestiole {
     this.onGround = false;
     this.temps = Math.random() * 10;
     this.cri = 8 + Math.random() * 30;
-    this.mesh = construireBete(espece);
+    this.mesh = creerAnimalHD(espece);
   }
 
   update(dt, world, player, toast) {
@@ -517,7 +518,7 @@ class Bestiole {
 
     this.temps += dt;
     const balance = vitesse > 0 ? Math.sin(this.temps * (this.humeur === 'vive' ? 13 : 8)) * 0.55 : 0;
-    this.mesh.userData.legs.forEach((p, i) => { p.rotation.x = i % 2 ? -balance : balance; });
+    if (!animerAnimalHD(this.mesh, dt, vitesse)) this.mesh.userData.legs.forEach((p, i) => { p.rotation.x = i % 2 ? -balance : balance; });
     this.mesh.position.copy(this.pos);
     this.mesh.rotation.y = this.yaw + Math.PI;
 

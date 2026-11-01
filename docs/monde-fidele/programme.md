@@ -13,6 +13,14 @@ est décidé**, **ce qui est mesuré** et **ce qui reste conceptuel**. Le journa
 des versions (`CHANGELOG.md`) dit ce que chaque livraison apporte ;
 `CLAUDE.md` ce qu'il ne faut pas casser.
 
+**Principe permanent ajouté par Max le 1er novembre 2026 :** toutes les
+éditions futures doivent viser un rendu réaliste et high fidelity partout,
+sans style Minecraft ni pixellisation. La
+[charte de direction artistique](../direction-artistique.md) est la référence
+visuelle. Les mentions de voxels dans ce programme décrivent les données,
+l'édition et les collisions ; elles n'autorisent pas à conserver ou introduire
+une esthétique cubique dans les futures couches de rendu.
+
 ## 1. Ce qui existe déjà, et qu'on ne remplace pas
 
 | Élément du dépôt | Ce qu'il apporte au programme |

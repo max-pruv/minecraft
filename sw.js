@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v583';
+const CACHE_VERSION = 'web-minecraft-v584';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -25,6 +25,7 @@ const isStaticAsset = (url) =>
   url.includes('/vendor/face-api.js') || url.includes('/vendor/face-models/')
   || url.includes('/vendor/voitures/') || url.includes('/vendor/humains/')
   || url.includes('/vendor/polices/') || url.includes('/vendor/avions/')
+  || url.includes('/vendor/nature/') || url.includes('/vendor/animaux/')
   // les modèles et photos de New York (v565) : immuables, téléchargés à la
   // première visite de Manhattan, jamais avant
   || url.includes('/vendor/newyork/');
@@ -33,6 +34,9 @@ const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemis
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
 // les avions déposés (v563) : immuables, comme les corps et la flotte
 const AVIONS = ['airbus-a320', 'airbus-a321', 'chasseur-f35', 'jet-prive'].map((n) => `./vendor/avions/${n}.glb`);
+// Matières photographiques immuables : le nom change si leurs pixels changent.
+const NATURE = ['./vendor/nature/sols-v1.webp'];
+const ANIMAUX = ['vache','vache-pie','cerf','cheval','lapin','chat','ours','renard'].map(n=>`./vendor/animaux/${n}-v1.glb`);
 
 const ASSETS = [
   './',
@@ -48,6 +52,10 @@ const ASSETS = [
   './src/facadeshd.js',
   './src/arbreshd.js',
   './src/matierehd.js',
+  './src/nature-matiere.js',
+  './src/prairie.js',
+  './src/animauxhd.js',
+  './src/anatomie-animaux.js',
   './src/tuiles.js',
   './src/maillage-worker.js',
   './src/carte.js',
@@ -233,7 +241,7 @@ self.addEventListener('install', (event) => {
   // première demande.
   caches.open(STATIC_CACHE).then(async (cache) => {
     // Les polices d'abord : l'accueil les attend, les corps non (v245).
-    for (const u of [...POLICES, ...HUMAINS, ...AVIONS]) {
+    for (const u of [...POLICES, ...NATURE, ...HUMAINS, ...AVIONS, ...ANIMAUX]) {
       if (await cache.match(u)) continue;
       await cache.add(u).catch(() => {});
     }

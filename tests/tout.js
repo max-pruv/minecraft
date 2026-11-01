@@ -32,6 +32,8 @@ const SUITES = [
   // les chiffres d'avant dataient de la v251 et `monte.js` en avait doublé
   'metro.js',        //  0 min 34 s
   'realisme.js',     //  1 min 14 s
+  'nature.js',       // matières photographiques, brins et routes
+  'animaux.js',      // anatomies, modèles locaux, appuis et monte
   'visio.js',        //  1 min 23 s
   'parent.js',       //  1 min 35 s
   'carteMonde.js',   //  1 min 49 s
@@ -72,6 +74,13 @@ const SUITES = [
 // créatures : la voie rapide suffit. Tout ce qui peut coûter les données d'un
 // enfant est ici, et la table doit grandir avec le code.
 const GARDIENS = {
+  'src/animauxhd.js': ['animaux.js', 'monte.js', 'plafond.js'],
+  'src/anatomie-animaux.js': ['animaux.js', 'monte.js'],
+  'tests/animaux.js': ['animaux.js'],
+  'src/nature-matiere.js': ['nature.js', 'parishd.js', 'maj.js'],
+  'src/prairie.js': ['nature.js', 'parishd.js', 'plafond.js', 'monte.js'],
+  'vendor/nature/sols-v1.webp': ['nature.js'],
+  'tests/nature.js': ['nature.js'],
   'src/humains.js': ['realisme.js', 'monte.js', 'reglages.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/presence.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   'vendor/SkeletonUtils.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
