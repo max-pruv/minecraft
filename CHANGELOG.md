@@ -33,13 +33,16 @@ La brique, la pierre et le bois ont des textures à l'échelle du personnage.
 Les baies lointaines restent géométriques, et la lumière nocturne se trouve
 derrière les vitres. Les volumes, les sauvegardes et la circulation sont conservés.
 
-**Vérification.** Huit contrats d'architecture passent. La suite Manhattan
-finale passe en 10 min 34 s, dont un lancer de rayons mesurant 47,5 cm entre
-verre et fond, les collisions, la destruction visible et la PWA. L'ancienne
-façade échoue au même contrôle de relief. L'intermittence PeerJS observée lors
-d'une passe précédente reste déclarée dans `TASKS.md`. Captures de détail,
-de rue et au volant : `docs/manhattan-osm-validation.md`. Les défauts hérités
-et les limites de mesure sur SwiftShader y sont explicités.
+**Vérification.** Huit contrats d'architecture passent. Une passe Manhattan
+sans échec en 10 min 34 s valide les collisions, la destruction visible et la
+PWA, dont un lancer de rayons mesurant 47,5 cm entre verre et fond ; l’ancienne
+façade échoue au même contrôle de relief. La passe complémentaire sur v584
+confirme le relief, mais échoue ensuite sur le délai de réception d’un bloc
+chez l’invité : elle n’est pas déclarée verte. Les résultats et les témoins
+intermittents sont consignés dans `TASKS.md` et `docs/manhattan-osm-validation.md`.
+Treize captures réelles, dont les vues à pied et au volant sur iPhone/iPad,
+montrent le résultat et les défauts visuels restants. Les mesures SwiftShader
+ne valident pas les performances d’un appareil physique.
 
 ---
 

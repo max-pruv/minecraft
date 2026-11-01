@@ -91,7 +91,8 @@ il ne mesure pas les performances d'un iPad physique.
   à la même sonde, échoue avec zéro baie profonde et douze façades photographiques.
 - Fumée : **aucun échec** ; tous les 144 modules résolvent leurs imports et
   figurent dans le cache hors ligne.
-- Suite Manhattan finale : **aucun échec**, terminée en **10 min 34 s** via
+- Passe Manhattan après recalage des travées, avant la reprise finale de main
+  et le numéro v584 : **aucun échec**, terminée en **10 min 34 s** via
   `npm test -- --tranche=4/17`, après recalage des travées. Les contrôles de
   relief, collisions, destruction, conduite tactile, sauvegardes, partage des
   blocs, absence d’erreurs JavaScript/WebGL et PWA hors ligne passent.
@@ -99,6 +100,18 @@ il ne mesure pas les performances d'un iPad physique.
   taken` dans le contrôle des deux clients, tandis que les échanges réussissaient.
   Cette intermittence déjà répertoriée reste consignée dans `TASKS.md` ; aucun
   filtre d’erreur ni changement réseau n’a été ajouté pour la masquer.
+- Passe complémentaire sur la v584 complète : fumée verte et `carte.js` verte
+  en **4 min 05 s**. `manhattan.js` termine en **9 min 54 s** avec **un échec** :
+  le bloc posé par l’hôte n’est pas reçu par l’invité en 30 secondes
+  (`tests/manhattan.js:1103`). Les contrôles locaux, dont le nouveau relief,
+  passent ; les contrôles multijoueurs et hors ligne situés après ce délai ne
+  sont pas atteints dans cette passe. Le même symptôme apparaît dans le suivi
+  v245–v246 du banc ; il n’est pas transformé en succès ici.
+- La première passe `maj.js` a relevé deux témoins déjà déclarés du loader et
+  une puce v584 trop longue. Le portail a été arrêté avant modification des
+  sources ; la puce est raccourcie à huit mots, puis les deux suites restantes
+  sont reprises séquentiellement via `--tranche=3/17` (mise à jour) et
+  `--tranche=1/17` (conduite). Aucun changement de géométrie depuis les captures.
 - Le relevé du portail complet de la v583 est conservé plus bas ; il ne constitue
   pas une validation globale des nouvelles façades de la v584.
 

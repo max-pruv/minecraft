@@ -10,7 +10,7 @@ export const NOUVEAUTES = [
     titre: 'New York prend du relief',
     puces: [
       'Des fenêtres en retrait et des rebords détaillés',
-      'La brique, la pierre et le bois se voient de près',
+      'Brique, pierre et bois se voient de près',
       'Le soir, la lumière brille derrière les vitres',
     ],
   },

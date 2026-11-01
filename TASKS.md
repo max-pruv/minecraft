@@ -14,6 +14,25 @@
   10 min 34 s**, huit contrats d’architecture verts et aucun défaut JavaScript
   ou WebGL. La passe précédente et son intermittence PeerJS restent consignées.
 
+- [ ] **Passe complémentaire v584 (`npm test`, après reprise de main).** La
+  fumée et `carte.js` passent (carte : 4 min 05 s). `manhattan.js` échoue en
+  9 min 54 s sur `tests/manhattan.js:1103` : l’invité ne reçoit pas le bloc de
+  l’hôte dans les 30 s. Tous les contrôles locaux de géométrie, collision,
+  destruction, conduite et sauvegarde atteints auparavant passent ; les
+  contrôles suivants du partage et du hors ligne ne sont pas atteints dans
+  cette passe. Ce symptôme est décrit dans le relevé v245–v246 plus bas
+  (« bloc de l’hôte jamais reçu par l’invité »), mais cette occurrence reste
+  rouge. `src/net.js`, `tests/banc.js` et ce scénario sont inchangés par la
+  v584 ; la passe verte de 10 min 34 s reste une mesure antérieure distincte.
+  `maj.js` signale les deux témoins du loader déjà mesurés des deux côtés en
+  v518 : compteur de fichiers absent et disparition du loader avant la fin
+  de la préparation. Un troisième témoin a trouvé une puce v584 trop longue :
+  corrigée à huit mots. Le portail a été arrêté avant cette correction, puis
+  les deux suites restantes (`maj.js`, `monte.js`) reprises séquentiellement
+  par leurs tranches 3/17 et 1/17. Les captures JPEG et leurs mesures élargissent
+  l’aiguillage documentaire à tout le portail ; elles ne changent pas les
+  quatre gardiens sélectionnés pour le code au début de cette passe.
+  Les verdicts complets sont consignés dans la revue.
 - [ ] **Fidélité visuelle encore insuffisante à l’échelle du quartier.** La
   v584 apporte des embrasures et des éléments saillants réels, mais les contours
   diagonaux restent en escalier. Dans Greenwich Village, les petits pans
