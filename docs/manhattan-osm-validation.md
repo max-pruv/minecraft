@@ -36,13 +36,25 @@ cadastrale exacte. Les limites et la régénération sont détaillées dans
 [manhattan-osm.md](manhattan-osm.md). Les [deux ponts fournis](manhattan-ponts-sources.md)
 ont été inspectés, mais leurs scans ne sont pas intégrés à cette livraison.
 
+## Sauvegardes : correction avant publication
+
+La reprise sur main a révélé une régression : sur vingt anciens toits portant
+un bloc sauvegardé, dix-neuf perdaient leur support avec les volumes OSM.
+Les volumes v582 correspondants sont maintenant conservés en entier, dans
+le rendu proche, le lointain et la collision ; les nouveaux immeubles qui
+les chevaucheraient s'effacent. Les autres quartiers gardent la refonte OSM.
+Le nouveau contrat vérifie quatre anciens toits, le transfert de leur journal,
+l'invalidation d'un morceau déjà généré et le maintien des volumes nouveaux
+pour les éditions postérieures à la migration. La sonde des vingt toits ne
+présente plus d'écart après correction.
+
 ## Vérification
 
 Environnement : Node.js 24.19, Chromium 154, SwiftShader, suites exécutées
 successivement. Le rendu logiciel sert à vérifier le comportement et l'image ;
 il ne mesure pas les performances d'un iPad physique.
 
-- Contrats d'architecture : **7/7 passent** (provenance, quartiers, diversité,
+- Contrats d'architecture : **8/8 passent** (provenance, quartiers, diversité,
   hauteurs, cours et collision/lointain, rues libres, cache hors ligne).
 - Extraction répétée : atlas identique octet pour octet avec le cache de source
   contrôlé par SHA-256.

@@ -43,6 +43,10 @@ ne sont pas remplacées par un cadastre au mètre près.
 **Vérification.** Le contrat d'architecture vérifie notamment la provenance,
 les cours ouvertes à toutes les distances, les hauteurs et les routes libres.
 Les résultats navigateur sont consignés dans `docs/manhattan-osm-validation.md`.
+Les constructions antérieures gardent aussi leur immeuble ordinaire v582 en
+entier : la sonde initiale perdait dix-neuf supports de toits sur vingt. Le
+contrat de migration garde maintenant le volume, le toit, le transfert du
+journal et son rendu, en écartant les volumes OSM qui le chevaucheraient.
 
 ---
 

@@ -37,6 +37,8 @@ import {
   zoneA,
 } from "./new-york-banlieues.js";
 
+import { BATIMENTS_HISTORIQUES, DATE_OSM, immeublesHistoriquesEn, chevauchent } from './manhattan-historique.js';
+
 export const ORIGINE_MANHATTAN = positionDe("ny");
 export const versTerre = (x, z) => ({
   x: x + ORIGINE_MANHATTAN.x,
@@ -156,6 +158,7 @@ export class TerreUrbaine extends World {
     this.provenance = new Map();
     this.importMarks = {};
     this.batimentsTouches = new Set();
+    this.immeublesHistoriques = new Set();
     this.mapPlacesExtra = lieuxManhattan;
     // L'adaptateur ne crée ni monde ni sauvegarde : il convertit les coordonnées
     // locales des maillages vers les coordonnées absolues du même World.
@@ -177,7 +180,7 @@ export class TerreUrbaine extends World {
         );
       },
       buildingAllowed(b) {
-        return !w.protectedBuildings.has(b.id);
+        return b.historique ? w.immeublesHistoriques.has(b.id) : !w.protectedBuildings.has(b.id);
       },
       groundAllowed(x, z) {
         return !w.protectedColumns.has(
@@ -242,7 +245,7 @@ export class TerreUrbaine extends World {
       const [x, , z] = k.split(",").map(Number);
       if (!dansPlanNY(x, z)) continue;
       const p = versManhattan(x, z),
-        b = batimentA(p.x, p.z);
+        b = this.immeubleEn(p.x, p.z);
       if (b) this.batimentsTouches.add(b.id);
     }
   }
@@ -360,6 +363,7 @@ export class TerreUrbaine extends World {
         break;
       }
     }
+    if (n && Object.values(normal).some(e => e[1] < DATE_OSM)) terrainModifie = true;
     if (n) this.marquerBatimentsTouches();
     if (terrainModifie) {
       this.refreshProtection();
@@ -380,7 +384,31 @@ export class TerreUrbaine extends World {
   importerAncienneManhattan(blocks) {
     return this.importerProfil({ [MANHATTAN_ID + ":" + this.ctx]: blocks });
   }
+  // Un bâtiment du plan peut être plus haut OU déplacé après la refonte.
+  // Retenir tout le volume ancien qui porte une construction antérieure, et
+  // écarter les nouveaux immeubles qui le chevaucheraient. État propre au monde.
+  restaurerImmeublesHistoriques() {
+    this.immeublesHistoriques = new Set();
+    for (const [k, t] of this.editTimes) {
+      if (t >= DATE_OSM || !this.edits.has(k) || this.provenance.get(k)) continue;
+      const [x, , z] = k.split(',').map(Number), p = versManhattan(x,z);
+      if (!dansManhattan(x,z)) continue;
+      for (const b of immeublesHistoriquesEn(p.x,p.z,2)) this.immeublesHistoriques.add(b.id);
+      // Une construction dans un ancien espace libre ne doit pas non plus
+      // être avalée par une nouvelle façade.
+      for (const dx of [-2,0,2]) for (const dz of [-2,0,2]) {
+        const b = batimentA(p.x+dx,p.z+dz);
+        if (b?.osm) this.protectedBuildings.add(b.id);
+      }
+    }
+    for (const b of BATIMENTS_HISTORIQUES) if (this.immeublesHistoriques.has(b.id))
+      for (const nouveau of BATIMENTS) if (nouveau.osm && chevauchent(b,nouveau)) this.protectedBuildings.add(nouveau.id);
+  }
+  immeubleEn(x,z) {
+    return (this.immeublesHistoriques?.size ? immeublesHistoriquesEn(x,z).find(b=>this.immeublesHistoriques.has(b.id)) : null) || batimentA(x,z);
+  }
   refreshProtection() {
+    this.immeublesHistoriques = new Set();
     this.protectedColumns = new Map();
     this.protectedBuildings = new Set();
     this.marquerBatimentsTouches();
@@ -395,7 +423,7 @@ export class TerreUrbaine extends World {
         for (let dx = -2; dx <= 2; dx++) {
           this.protectedColumns.set(`${x + dx},${z + dz}`, "terre");
           const p = versManhattan(x + dx, z + dz),
-            b = batimentA(p.x, p.z);
+            b = this.immeubleEn(p.x, p.z);
           if (b) this.protectedBuildings.add(b.id);
         }
     }
@@ -412,10 +440,12 @@ export class TerreUrbaine extends World {
           if (this.protectedColumns.get(key) !== "terre")
             this.protectedColumns.set(key, type === 1 ? "terre" : "legacy");
           const p = versManhattan(a, c),
-            b = batimentA(p.x, p.z);
+            b = this.immeubleEn(p.x, p.z);
           if (b) this.protectedBuildings.add(b.id);
         }
     }
+    this.restaurerImmeublesHistoriques();
+    this.marquerBatimentsTouches();
     this.visualEpoch++;
   }
   switchContext(ctx) {
@@ -516,7 +546,7 @@ export class TerreUrbaine extends World {
           : solBloc(p.x, p.z)
         : BLOCK.STONE;
     if (s === "water" && y <= WATER_LEVEL) return BLOCK.WATER;
-    const b = batimentA(p.x, p.z);
+    const b = this.immeubleEn(p.x, p.z);
     if (!b || this.protectedBuildings.has(b.id)) return BLOCK.AIR;
     const yy = y - SOL - 1,
       bh = sommet(b, p.x, p.z);
@@ -655,7 +685,7 @@ export class TerreUrbaine extends World {
     }
     if (dansPlanNY(x, z)) {
       const p = versManhattan(x, z),
-        b = batimentA(p.x, p.z);
+        b = this.immeubleEn(p.x, p.z);
       if (b && b.photo === "empire") this.empireTouche = true;
       if (b) this.batimentsTouches.add(b.id);
       if (b)

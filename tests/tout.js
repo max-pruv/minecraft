@@ -296,6 +296,8 @@ const GARDIENS = {
   'src/paris-v302.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js', 'parishd.js', 'sauvegarde.js'],
   'src/voirie.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js', 'parishd.js'],
   'src/manhattan-plan.js': ['manhattan.js', 'plafond.js', 'carte.js', 'carteMonde.js'],
+  'src/manhattan-avant-osm.js': ['manhattan.js', 'plafond.js'],
+  'src/manhattan-historique.js': ['manhattan.js', 'plafond.js', 'sauvegarde.js'],
   'src/manhattan-architecture.js': ['manhattan.js', 'plafond.js', 'carte.js', 'carteMonde.js'],
   'src/manhattan-osm-data.js': ['manhattan.js', 'plafond.js', 'carte.js', 'carteMonde.js'],
   'tests/architecture-manhattan.mjs': ['manhattan.js'],

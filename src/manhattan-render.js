@@ -1,3 +1,4 @@
+import { BATIMENTS_HISTORIQUES } from './manhattan-historique.js';
 import * as THREE from "three";
 import { WATER_LEVEL } from "./world.js";
 import { decor } from "./couches.js";
@@ -23,7 +24,7 @@ import {
   RUE,
   PARC,
   ALEA,
-  BATIMENTS,
+  BATIMENTS as BATIMENTS_NOUVEAUX,
   QUARTIERS,
   surface,
   broadway,
@@ -35,6 +36,7 @@ import {
   feuxSecteur,
   feuxAutour,
 } from "./manhattan-plan.js";
+const BATIMENTS = [...BATIMENTS_NOUVEAUX, ...BATIMENTS_HISTORIQUES];
 import {
   materiauxManhattan,
   enseignesManhattan,

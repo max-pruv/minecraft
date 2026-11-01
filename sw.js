@@ -66,6 +66,8 @@ const ASSETS = [
   './src/manhattan.js',
   './src/manhattan-plan.js',
   './src/manhattan-architecture.js',
+  './src/manhattan-avant-osm.js',
+  './src/manhattan-historique.js',
   './src/manhattan-osm-data.js',
   './src/manhattan-world.js',
   './src/manhattan-materiaux.js',

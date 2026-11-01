@@ -26,7 +26,7 @@ travail est irrattrapable.
 
 ---
 
-## Manhattan : atlas OSM de Max (refonte en préparation)
+## Manhattan : atlas OSM de Max (v583)
 
 Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par
 `scripts/extraire-manhattan-osm.py` à partir du modèle MENUDQ2 fourni par Max.
@@ -41,6 +41,13 @@ Crédit CC BY 4.0, provenance et limites : `docs/manhattan-osm.md`.
   et conserve la limite du monde. Les rues et les coordonnées des sauvegardes
   restent celles du plan jouable. Les profils sont des références de quartier,
   pas des bâtiments promis à une adresse cadastrale exacte.
+- Une édition antérieure à `DATE_OSM` dans un immeuble ordinaire conserve
+  son volume v582 complet (`manhattan-avant-osm.js`, relevé immuable de main
+  7cb7a4b). `manhattan-historique.js` indexe ces volumes ; le monde choisit
+  ceux à garder, et rendu proche/lointain les dessinent au même endroit. Les
+  volumes OSM qui les chevauchent s'effacent. Les importations Terre/legacy
+  gardent leur protection propre. Une arrivée du nuage invalide les morceaux.
+  La date est celle de `DATE_NY_MODELES`, à relire avant fusion.
 - Les accessoires de toit se posent sur une terrasse existante, les enseignes
   sur un mur existant ; ni le centre de la boîte ni son coin ne sont garantis
   solides. Les témoins de collision choisissent un vrai mur et vérifient l'arrêt

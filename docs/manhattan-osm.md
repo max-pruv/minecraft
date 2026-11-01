@@ -73,7 +73,13 @@ du monde. Cette fonction est la même dans tous les quartiers et monotone.
 
 Le champ de chaque bâtiment est découpé contre **toutes** les colonnes de rue,
 de place et d'eau : tester seulement les quatre coins ne protège pas Broadway.
-Le relief, les données des joueurs et la migration historique ne changent pas.
+Le relief et les données des joueurs restent en place. Une construction
+antérieure à la refonte conserve tout son immeuble ordinaire v582, y compris
+son toit : `manhattan-avant-osm.js` est le relevé immuable de main 7cb7a4b,
+et `manhattan-historique.js` sélectionne les volumes nécessaires par monde.
+Le proche, le lointain et la collision les partagent ; les nouveaux volumes
+qui les chevaucheraient sont écartés. Les importations Terre/legacy gardent
+leurs protections existantes.
 
 ## Régénérer l'atlas
 

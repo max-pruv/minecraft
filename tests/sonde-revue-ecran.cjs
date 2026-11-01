@@ -130,6 +130,16 @@ const ETATS = [
     await dormir(800);
     return tab.evaluate(() => ({ ouvert: window.__commandes.estOuvert() }));
   } },
+  ...[
+    ['ny-rue', 4.6, 33.01, 7.4, .22, .08],
+    ['ny-brooklyn', 343, 33.01, 212, Math.PI, .06],
+  ].map(([nom,x,y,z,yaw,pitch])=>({nom,async prep(tab){
+    const O=await tab.evaluate(async()=> (await import('/src/manhattan-world.js')).ORIGINE_MANHATTAN);
+    const monde=await poserEt(tab,{x:O.x+x,y,z:O.z+z,yaw,pitch});
+    await tab.evaluate(async()=>{const N=await import('/src/new-york-modeles.js');await Promise.all([N.chargerModeleNY('empire'),N.chargerModeleNY('liberte'),N.chargerQuartiers()]);});
+    await dormir(3000);
+    return {monde,triangles:await tab.evaluate(()=>__game.renderer.info.render.triangles)};
+  }})),
   { nom: 'campagne', async prep(tab, ctx) {
     const s = await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
     return { monde: s + ' s' };
