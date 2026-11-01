@@ -31,7 +31,21 @@ immeubles OSM vient des fonds derrière les vitres. Les photographies du paquet
 New York Buildings restent utilisées par les modèles hérités ; leurs masques
 nocturnes suivent les baies et non les ombres d'escaliers.
 
-Les captures de cette galerie sont en cours de remplacement par la passe finale.
+Les cinq captures de cette galerie montrent la v584, après la dernière passe
+sur les travées : aucune erreur JavaScript, HTTP ou WebGL. Les
+[mesures de capture](manhattan-osm-captures/mesures-v584.json) gardent les positions,
+les durées et les compteurs. Le gros plan montre le vitrage en retrait, les
+châssis et les appuis vus de biais ; la vue nocturne montre les fonds éclairés.
+La vue Village expose aussi le défaut restant : les petits pans des contours
+en escalier ont peu de baies et découpent les corniches. Il reste à reprendre
+ces contours pour atteindre la fidélité demandée.
+
+La revue tactile de la v584 comporte **huit captures**, iPhone/iPad,
+à pied et au volant, jour/nuit, sans échec de préparation ou de capture.
+Les deux préparations de conduite confirment `auVolant: true`. Les images
+sont archivées en JPEG à leur taille d’origine dans
+[`revue-ecran/v584-facades/`](revue-ecran/v584-facades/), avec les liens et
+la commande de reproduction dans [la revue d’écran](revue-ecran.md).
 
 ## Données et échelle
 
@@ -113,10 +127,13 @@ et d'appels de rendu ne sont pas un benchmark comparable aux captures anciennes.
 Limites : les quartiers périphériques n'ont pas encore le
 réseau de feux de Manhattan ; les passants sont moins présents dans les zones
 éloignées. Le rendu, les contours des empreintes et les rues restent stylisés
-et voxelisés. Le relief des façades est réel ; la fidélité globale d'un GTA
+et voxelisés. Les pans étroits des empreintes diagonales restent souvent
+aveugles, avec des corniches fragmentées (défaut 42 de la revue). Le relief
+des façades est réel ; la fidélité globale d'un GTA
 récent n'est pas atteinte.
 
-Revue mobile après intégration de main et correction des supports : huit
+Revue mobile historique de la v583, après intégration de main et correction
+des supports : huit
 captures Midtown/Brooklyn, jour et nuit, iPhone et iPad, dans
 `docs/revue-ecran/v583-new-york/`. Les limites observées (feuillage anguleux,
 fin de rue vide) figurent au relevé 40–41 de `docs/revue-ecran.md`.

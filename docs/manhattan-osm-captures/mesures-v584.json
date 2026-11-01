@@ -1,0 +1,107 @@
+{
+  "bilan": [
+    {
+      "nom": "midtown-rue",
+      "x": 4.6,
+      "y": 33.01,
+      "z": 7.4,
+      "yaw": 0.22,
+      "pitch": 0.08,
+      "attente": 122712,
+      "running": true,
+      "rendu": {
+        "frame": 136,
+        "calls": 424,
+        "triangles": 2629219,
+        "points": 0,
+        "lines": 0
+      },
+      "proches": 27,
+      "file": 78,
+      "webgl": 0
+    },
+    {
+      "nom": "facade-detail",
+      "x": 3.5,
+      "y": 36.4,
+      "z": 11.7,
+      "yaw": -1.15,
+      "pitch": 0.06,
+      "attente": 120326,
+      "running": true,
+      "rendu": {
+        "frame": 199,
+        "calls": 342,
+        "triangles": 2063744,
+        "points": 0,
+        "lines": 12
+      },
+      "proches": 31,
+      "file": 20,
+      "webgl": 0
+    },
+    {
+      "nom": "midtown-toits",
+      "x": 175,
+      "y": 135,
+      "z": 210,
+      "yaw": 0.65,
+      "pitch": -0.25,
+      "attente": 118657,
+      "running": true,
+      "rendu": {
+        "frame": 255,
+        "calls": 159,
+        "triangles": 1649098,
+        "points": 0,
+        "lines": 0
+      },
+      "proches": 17,
+      "file": 0,
+      "webgl": 0
+    },
+    {
+      "nom": "village",
+      "x": 0,
+      "y": 33.01,
+      "z": 500,
+      "yaw": -0.5,
+      "pitch": 0.1,
+      "attente": 87006,
+      "running": true,
+      "rendu": {
+        "frame": 303,
+        "calls": 455,
+        "triangles": 1863450,
+        "points": 0,
+        "lines": 0
+      },
+      "proches": 30,
+      "file": 0,
+      "webgl": 0
+    },
+    {
+      "nom": "midtown-nuit",
+      "x": 4.6,
+      "y": 33.01,
+      "z": 7.4,
+      "yaw": 0.22,
+      "pitch": 0.08,
+      "heure": 0.75,
+      "attente": 120356,
+      "running": true,
+      "rendu": {
+        "frame": 361,
+        "calls": 499,
+        "triangles": 2610292,
+        "points": 420,
+        "lines": 0
+      },
+      "proches": 23,
+      "file": 4,
+      "webgl": 0
+    }
+  ],
+  "erreurs": [],
+  "erreursHttp": []
+}

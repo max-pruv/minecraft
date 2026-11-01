@@ -14,6 +14,19 @@
   10 min 34 s**, huit contrats d’architecture verts et aucun défaut JavaScript
   ou WebGL. La passe précédente et son intermittence PeerJS restent consignées.
 
+- [ ] **Fidélité visuelle encore insuffisante à l’échelle du quartier.** La
+  v584 apporte des embrasures et des éléments saillants réels, mais les contours
+  diagonaux restent en escalier. Dans Greenwich Village, les petits pans
+  successifs gardent beaucoup de murs aveugles et fragmentent les corniches.
+  Reprendre les contours visibles et leur implantation de baies sans modifier
+  les sauvegardes ni créer de désaccord avec la collision. Les défauts de
+  feuillage et d’horizon 40–41 restent ouverts. Voir la galerie actuelle dans
+  `docs/manhattan-osm-validation.md` ; ce résultat n’est pas présenté comme
+  photoréaliste ni équivalent à un GTA récent.
+- [ ] **Performance sur appareil réel à mesurer.** Les captures et les tests
+  tournent sur Chromium/SwiftShader. Ils ne démontrent ni la cadence, ni la
+  mémoire GPU, ni la fluidité des transitions de détail sur iPhone/iPad physique.
+
 ## New York v583 — revue et dettes déclarées
 
 - [ ] **Rendu encore stylisé.** Les huit vues mobiles Midtown/Brooklyn jour/nuit

@@ -284,3 +284,34 @@ ni une cadence sur un iPad physique : le banc utilise SwiftShader.
 | --- | --- | --- | --- | --- | --- | --- |
 | 40 | moyenne | Midtown et Brooklyn | [Brooklyn](revue-ecran/v583-new-york/iphone-ny-brooklyn-jour.jpg) | Les couronnes des arbres restent des plaques anguleuses peu détaillées. | Remplacer le feuillage urbain et ses LOD par des silhouettes et des matériaux conformes à la direction high fidelity. | `src/manhattan-render.js` |
 | 41 | moyenne | Brooklyn, en bout de rue | [iPhone](revue-ecran/v583-new-york/iphone-ny-brooklyn-jour.jpg) | Le bout de la rue paraît très vide, sous un horizon uniforme ; la transition avec les quartiers lointains manque de profondeur. | Reprendre les silhouettes lointaines et la transition du brouillard hors du plan. | `src/manhattan-render.js`, `src/main.js` |
+
+## Le relevé de la v584 — façades en relief, 1er novembre 2026
+
+Les cinq vues de la [galerie Manhattan](manhattan-osm-validation.md) sont
+renouvelées sur la v584 : piéton, gros plan oblique, toits, Greenwich Village
+et nuit. Le [gros plan](manhattan-osm-captures/facade-detail.png) montre une
+embrasure réelle, son vitrage en retrait, les châssis et l’appui saillant.
+Les textures de matière ne remplacent plus les détails architecturaux des
+immeubles OSM. L’éclairage nocturne vient du fond derrière les vitres.
+Aucune erreur JavaScript, HTTP ou WebGL pendant ces cinq captures.
+
+| # | Gravité | État | Capture | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- | --- |
+| 42 | importante | Greenwich Village, piéton | [Village](manhattan-osm-captures/village.png) | Les contours diagonaux forment des marches ; les petits pans successifs restent aveugles et fragmentent les corniches. Le détail des fenêtres ne suffit pas à rendre cet immeuble crédible. | Reconstruire les contours visibles continus et leurs travées tout en conservant la correspondance avec les collisions et les constructions sauvegardées. | `src/manhattan-render.js`, `src/manhattan-architecture.js` |
+
+La passe tactile utilise les formats iPhone (430 × 932) et iPad (820 × 1180),
+à pied et au volant, de jour et de nuit. Reproduction :
+
+```sh
+CHROMIUM=/usr/bin/chromium node tests/sonde-revue-ecran.cjs /tmp/ny-v584 --vues=iphone,ipad --etats=ny-rue,ny-volant --rr=4 '--params=&carte=manhattan&qualite=tablette'
+```
+
+| Appareil | À pied, jour | À pied, nuit | Au volant, jour | Au volant, nuit |
+| --- | --- | --- | --- | --- |
+| iPhone | [image](revue-ecran/v584-facades/iphone-ny-rue-jour.jpg) | [image](revue-ecran/v584-facades/iphone-ny-rue-nuit.jpg) | [image](revue-ecran/v584-facades/iphone-ny-volant-jour.jpg) | [image](revue-ecran/v584-facades/iphone-ny-volant-nuit.jpg) |
+| iPad | [image](revue-ecran/v584-facades/ipad-ny-rue-jour.jpg) | [image](revue-ecran/v584-facades/ipad-ny-rue-nuit.jpg) | [image](revue-ecran/v584-facades/ipad-ny-volant-jour.jpg) | [image](revue-ecran/v584-facades/ipad-ny-volant-nuit.jpg) |
+
+Les défauts 40–41 restent ouverts. Cette revue ne valide pas la fidélité
+photographique globale ni les performances d’un appareil physique : Chromium
+utilise SwiftShader. Le changement améliore la géométrie des façades, mais
+l’objectif d’une ville au niveau de fidélité d’un GTA récent reste à atteindre.
