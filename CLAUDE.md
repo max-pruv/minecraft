@@ -36,7 +36,7 @@ modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérif
 les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
 ils ne constituent pas une exception pour les nouveaux rendus.
 
-## Manhattan : atlas OSM (v583) et façades en relief (v584)
+## Manhattan : atlas OSM (v583) et façades en relief (v585)
 
 Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par
 `scripts/extraire-manhattan-osm.py` à partir du modèle MENUDQ2 fourni par Max.
@@ -1080,6 +1080,44 @@ et ✈️ faisait passer l'aile dans le voisin garé (v565). Quatre règles.
 Ce qui reste, déclaré dans `TASKS.md` : à pied on passe encore sous l'aile et
 dans le fuselage d'un avion garé ; un avion garé n'est pas un obstacle pour
 les voitures de la rue ni pour un ami.
+## La Lucid Air Sapphire (v584) — un paquet aux vraies pièces se garde ses pièces, et ses couleurs peuvent être sur ses sommets
+
+Max a déposé un paquet Sketchfab que les règles de la v566 ne couvraient pas :
+`scripts/convertir-lucid-air.mjs` reprend le chargement et l'exportation de
+`convertir-flotte.mjs`. Cinq règles.
+
+- **ON LIT `COLOR_0` AVANT DE CROIRE UNE CARTE.** Le bleu, le cuir et les plastiques
+  sont sur les sommets ; les cartes sont presque unies. On cuit la couleur par
+  sommet (carte × `COLOR_0`), et 90 matériaux tiennent en deux : une seule
+  signature neuve (`Standard+DS+vc`), 474 → 29 maillages. Une fois les couleurs
+  cuites, fusionner ne coûte plus de teintes : c'est moins d'appels de dessin que
+  la moyenne de la flotte, à plus de triangles.
+- **UN PAQUET RÉGLÉ POUR UN ENVIRONNEMENT SORT NOIR DANS LE JEU.** Une laque à
+  (0,004 ; 0,008 ; 0,027), métal 0,9, est belle dans un visualiseur et noire sous
+  nos lampes (vu en capture, pas au témoin). Le bleu et les sombres se règlent en
+  capture DANS le jeu, et le visualiseur ne sert qu'à comparer les formes.
+- **LES NORMALES DE L'AUTEUR COMPTENT DANS LA SIMPLIFICATION.** Refaites après coup
+  (`toCreasedNormals`), elles marbraient l'aile ; gardées mais ignorées par
+  `simplify`, la tôle se tachait. `simplifyWithAttributes` les pèse. Un paquet déjà
+  lissé se simplifie ainsi, jamais en recalculant ses normales.
+- **DE VRAIES PORTES SE PRENNENT, ELLES NE SE DÉCOUPENT PAS.** Deux nœuds
+  `Portiere_G` et `Portiere_D` sur leur charnière : `equiperPortieres` les lit
+  (`vraiesPortes`, `plan.vraie`) sans toucher à la géométrie, et le reste de la
+  séquence ne sait pas d'où elles viennent. Ces pivots vivent dans le cadre du
+  modèle, tourné d'un demi-tour : leur +z local va vers le nez, à l'inverse des
+  portières découpées. `ouvrir` ne s'en soucie pas (une rotation autour de y
+  commute), mais une sonde qui lit un point local doit le savoir.
+- **UN HABITACLE RÉEL DEMANDE SON SIÈGE.** La place commune de la fiche `voiture`
+  (z 0,22) tombait dans le dossier. `siege` et `sieges` de FLOTTE passent par
+  `userData`, le chemin du jet d'affaires (v568), et se mesurent au rayon. Un modèle
+  dont l'habitacle se voit déclare les siens.
+
+Et un objet qu'on voit à travers une voiture n'est pas forcément à elle : la
+« colonne gris-vert » de mes captures à Paris était du mobilier de rue sous la
+voiture invoquée. Le rayon l'a dit (`intersectObject` sur la voiture : rien), après
+qu'une fausse piste eut noirci les ceintures. Les captures de voiture se font aussi
+sur la dalle.
+
 ## La flotte sans ses placeholders (v579) — un modèle retiré part du dépôt, et un témoin nomme un modèle pour ce qu'il porte
 
 Max : « supprime les anciennes voitures… toutes les voitures qui se

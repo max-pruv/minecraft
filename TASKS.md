@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-## Façades en relief de Manhattan (v584) — validation du 1er novembre
+## Façades en relief de Manhattan (v585) — validation du 1er novembre
 
 - [ ] `npm test -- --tranche=4/17` : fumée verte (144 modules), huit contrats
   d'architecture verts, puis **un échec** de `manhattan.js` en 10 min 42 s :
@@ -14,7 +14,7 @@
   10 min 34 s**, huit contrats d’architecture verts et aucun défaut JavaScript
   ou WebGL. La passe précédente et son intermittence PeerJS restent consignées.
 
-- [ ] **Passe complémentaire v584 (`npm test`, après reprise de main).** La
+- [ ] **Passe complémentaire v585 (`npm test`, après reprise de main).** La
   fumée et `carte.js` passent (carte : 4 min 05 s). `manhattan.js` échoue en
   9 min 54 s sur `tests/manhattan.js:1103` : l’invité ne reçoit pas le bloc de
   l’hôte dans les 30 s. Tous les contrôles locaux de géométrie, collision,
@@ -23,10 +23,10 @@
   cette passe. Ce symptôme est décrit dans le relevé v245–v246 plus bas
   (« bloc de l’hôte jamais reçu par l’invité »), mais cette occurrence reste
   rouge. `src/net.js`, `tests/banc.js` et ce scénario sont inchangés par la
-  v584 ; la passe verte de 10 min 34 s reste une mesure antérieure distincte.
+  v585 ; la passe verte de 10 min 34 s reste une mesure antérieure distincte.
   `maj.js` signale les deux témoins du loader déjà mesurés des deux côtés en
   v518 : compteur de fichiers absent et disparition du loader avant la fin
-  de la préparation. Un troisième témoin a trouvé une puce v584 trop longue :
+  de la préparation. Un troisième témoin a trouvé une puce v585 trop longue :
   corrigée à huit mots. Le portail a été arrêté avant cette correction, puis
   les deux suites restantes (`maj.js`, `monte.js`) reprises séquentiellement
   par leurs tranches 3/17 et 1/17. Les captures JPEG et leurs mesures élargissent
@@ -34,7 +34,7 @@
   quatre gardiens sélectionnés pour le code au début de cette passe.
   Les verdicts complets sont consignés dans la revue.
 - [ ] **Fidélité visuelle encore insuffisante à l’échelle du quartier.** La
-  v584 apporte des embrasures et des éléments saillants réels, mais les contours
+  v585 apporte des embrasures et des éléments saillants réels, mais les contours
   diagonaux restent en escalier. Dans Greenwich Village, les petits pans
   successifs gardent beaucoup de murs aveugles et fragmentent les corniches.
   Reprendre les contours visibles et leur implantation de baies sans modifier
@@ -45,6 +45,35 @@
 - [ ] **Performance sur appareil réel à mesurer.** Les captures et les tests
   tournent sur Chromium/SwiftShader. Ils ne démontrent ni la cadence, ni la
   mémoire GPU, ni la fluidité des transitions de détail sur iPhone/iPad physique.
+
+## La Lucid Air Sapphire (v584) — ce qui reste
+
+- [ ] **POUR MAX, SUR LA TABLETTE : la Lucid Air Sapphire au volant et à l'arrêt.**
+  Le banc rend en logiciel : cadence et bleu réel se jugent sur l'iPad, jour et nuit
+  (`?voiture=lucid-air-sapphire.glb&diag=1`).
+- [ ] **Sa boîte de collision fait 4,4 blocs de long pour 5 de voiture** (la fiche
+  commune `voiture`) : le pare-chocs entre de 0,3 dans un mur, comme les autres
+  longues de la flotte (Ghost, Escalade, F-150).
+- [ ] **Les portes arrière, le capot et le coffre sont fixes**, alors que le paquet
+  les modélise (leurs os sont connus, `boneDoorLR`, `boneHood`, `boneTrunk`).
+- [ ] **Les rouges du portail GitHub Actions de la PR #589 (acdee9c), une passe de chaque
+  côté, contre celle de la v583 (595bee8f, même arbre que `main`).** Les quatre tranches
+  sont rouges, comme trois sur quatre à la v583. Rouges des deux côtés : Moscou ×2, les
+  deux chevauchements de voitures, « rendent leur mémoire », la fluidité de l'ami ×2.
+  Rouges ici seulement, déjà déclarés comme intermittents : caméra en virage, rue vide,
+  « collée à une voiture », « deux murs », les deux loaders. « Deux murs » est vert rejoué
+  seul sur cette machine (`degats.js`, 67 ✅, 0 ❌) ; les deux loaders y restent rouges
+  (`maj.js`, 72 ✅, 2 ❌), alors que `maj.js` était verte en CI à la v583 : pas de mesure
+  de `maj.js` seule sur `main` dans cette passe. Trois jamais déclarés, verts rejoués
+  seuls ici (`monte.js`) : les reflets (7 tours pour une garde à 8) et les deux klaxons
+  (−40 dB lâché pour −39,9 tenu ; −67 pour −54). Leurs témoins lisent désormais une
+  fenêtre plus longue, bornée, et le klaxon publie son horloge audio : cause non établie.
+  `monte.js` seule ici, en plus : passage peint de Rome, chauffe de New York, worker à sec,
+  « Atterrissage vers », et `carte.js` la flèche du GPS, tous déjà déclarés ; pas de rejeu
+  sur `main` de ceux-là dans cette passe.
+- [ ] **Sa licence est la Standard de Sketchfab, pas une Creative Commons**, et le
+  fichier est téléchargeable sur un dépôt public (vendor/voitures/LICENSE.md) : à
+  trancher par Max.
 
 ## New York v583 — revue et dettes déclarées
 

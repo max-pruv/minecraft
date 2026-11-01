@@ -1,4 +1,4 @@
-# Journal de capture v584
+# Journal de capture v585
 
 Huit vues produites par la sonde, sans échec. Images JPEG qualité 90, dimensions
 conservées. La sonde utilise Chromium/SwiftShader ; ces durées ne mesurent pas

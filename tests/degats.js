@@ -73,6 +73,55 @@ function verifier(nom, ok, detail = '') {
       verifier('tout modèle que la rue peut repeindre porte une laque que la règle reconnaît — sinon il se déclare « laque: jamais »',
         sansLaque.length === 0, JSON.stringify(sansLaque));
     }
+    // LA LUCID AIR SAPPHIRE, UN PAQUET AUX VRAIES PIÈCES. Ses portes avant sont des
+    // nœuds posés sur leur charnière : on les ouvre sans découper la tôle, chaque
+    // voiture a les siennes, et l'on s'assied sur SON siège. Sans navigateur : ce
+    // sont des faits du modèle.
+    {
+      const THREE = await import('three');
+      const V = await import('../src/vehicules.js');
+      const P = await import('../src/portieres.js');
+      const e = V.FLOTTE.find((x) => x.fichier === 'lucid-air-sapphire.glb');
+      const proto = e && await V.chargerVoitureFlotte(e);
+      if (!proto) verifier('la Lucid Air Sapphire est dans la flotte', false, 'absente');
+      else {
+        const neuve = () => { const m = new THREE.Group(), mo = proto.clone(true); m.add(mo); m.userData.flotte = e.fichier; m.userData.modele = mo; m.userData.proto = proto; m.updateMatrixWorld(true); return m; };
+        const a = neuve(), b = neuve();
+        const corpsA = []; a.traverse((o) => { if (o.isMesh && /^Body_/.test(o.name)) corpsA.push(o.geometry); });
+        const eq = P.equiperPortieres(a), eqB = P.equiperPortieres(b);
+        const flancDe = (pivot, m) => { m.updateMatrixWorld(true); const bx = new THREE.Box3().setFromObject(pivot); return bx; };
+        const fermeeG = eq && flancDe(eq['-1'], a), fermeeD = eq && flancDe(eq['1'], a);
+        if (eq) { P.ouvrir(eq['-1'], 1); P.ouvrir(eq['1'], 1); }
+        const ouverteG = eq && flancDe(eq['-1'], a), ouverteD = eq && flancDe(eq['1'], a);
+        const memeCaisse = []; a.traverse((o) => { if (o.isMesh && /^Body_/.test(o.name)) memeCaisse.push(o.geometry); });
+        verifier('ses portes avant sont les vraies : chaque flanc a la sienne, elle s\'ouvre vers l\'extérieur, et la tôle n\'est pas découpée',
+          !!eq && eq.plan.vraie === true && fermeeG.max.x < 0 && fermeeD.min.x > 0
+            && ouverteG.min.x < fermeeG.min.x - 0.5 && ouverteD.max.x > fermeeD.max.x + 0.5
+            && memeCaisse.length === corpsA.length && memeCaisse.every((g, i) => g === corpsA[i]),
+          JSON.stringify(eq ? { vraie: eq.plan.vraie, fermee: [fermeeG.max.x, fermeeD.min.x], ouverte: [ouverteG.min.x, ouverteD.max.x] } : null));
+        verifier('et une autre voiture du même modèle garde les siennes fermées',
+          !!eqB && eqB['-1'] !== (eq && eq['-1']) && eqB['-1'].rotation.y === 0, JSON.stringify(eqB && eqB['-1'].rotation.y));
+        // le siège : l'assise sous les hanches, le dossier derrière, le toit au-dessus
+        const c = neuve(); c.updateMatrixWorld(true);
+        const solides = []; c.traverse((o) => { if (o.isMesh && !o.material.transparent) solides.push(o); });
+        const rc = new THREE.Raycaster(); rc.layers.enableAll();
+        const tir = (o, d) => { rc.set(new THREE.Vector3(...o), new THREE.Vector3(...d)); const h = rc.intersectObjects(solides, false)[0]; return h ? +h.distance.toFixed(3) : null; };
+        const s = e.siege;
+        const assise = tir([s.x, s.y + 0.5, s.z], [0, -1, 0]);
+        const dos = tir([s.x, s.y + 0.4, s.z], [0, 0, 1]);
+        const devant = tir([s.x, s.y + 0.4, s.z], [0, 0, -1]);
+        const toit = tir([s.x, s.y + 0.1, s.z], [0, 1, 0]);
+        verifier('l\'enfant est assis sur SON siège : l\'assise sous lui, le dossier dans son dos, la place devant lui, la tête sous le toit',
+          assise !== null && Math.abs(assise - 0.5) < 0.08 && dos !== null && dos < 0.4 && devant !== null && devant > 0.3 && toit !== null && toit > 0.65,
+          JSON.stringify({ assise, dos, devant, toit, siege: s }));
+        const ref = []; c.traverse((o) => { if (/^Wheel_(FL|FR|RL|RR)$/.test(o.name || '') || /steeringwheel/i.test(o.name || '')) ref.push(o.name); });
+        let triangles = 0, maillages = 0; c.traverse((o) => { if (o.isMesh) { maillages++; triangles += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; } });
+        const octets = require('fs').statSync(require('path').resolve(__dirname, '../vendor/voitures/lucid-air-sapphire.glb')).size;
+        verifier('quatre roues, un volant, et elle tient son budget (150 000 triangles, 32 maillages, 6 Mo) — le paquet en portait 301 926 et 474',
+          ref.filter((n) => /^Wheel_/.test(n)).length === 4 && ref.some((n) => /steeringwheel/i.test(n)) && triangles <= 150000 && maillages <= 32 && octets <= 6e6,
+          JSON.stringify({ triangles, maillages, octets }));
+      }
+    }
     const flotte = await F.mesurerFlotte();
     const ko = flotte.filter((x) => !(x.phOk && x.detOk && x.stopOk));
     verifier(`les phares, les feux de détresse et les feux stop des ${flotte.length} modèles de la flotte (taxis et utilitaires fabriqués compris) sont sur la tôle, à leur coin`,

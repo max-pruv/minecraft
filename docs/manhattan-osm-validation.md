@@ -3,7 +3,7 @@
 Reprise de [la PR #587](https://github.com/max-pruv/minecraft/pull/587), à partir
 de `6c8be9a`, avec les profils du modèle OSM fourni par Max. Les dix quartiers
 périphériques, les monuments photographiques et les protections de sauvegardes
-de cette PR sont conservés dans la v583. La v584 ajoute les façades en relief
+de cette PR sont conservés dans la v583. La v585 ajoute les façades en relief
 décrites ici, sur la base de main `f1482ef`.
 
 ## Résultat visible : architecture en relief
@@ -31,20 +31,20 @@ immeubles OSM vient des fonds derrière les vitres. Les photographies du paquet
 New York Buildings restent utilisées par les modèles hérités ; leurs masques
 nocturnes suivent les baies et non les ombres d'escaliers.
 
-Les cinq captures de cette galerie montrent la v584, après la dernière passe
+Les cinq captures de cette galerie montrent la v585, après la dernière passe
 sur les travées : aucune erreur JavaScript, HTTP ou WebGL. Les
-[mesures de capture](manhattan-osm-captures/mesures-v584.json) gardent les positions,
+[mesures de capture](manhattan-osm-captures/mesures-v585.json) gardent les positions,
 les durées et les compteurs. Le gros plan montre le vitrage en retrait, les
 châssis et les appuis vus de biais ; la vue nocturne montre les fonds éclairés.
 La vue Village expose aussi le défaut restant : les petits pans des contours
 en escalier ont peu de baies et découpent les corniches. Il reste à reprendre
 ces contours pour atteindre la fidélité demandée.
 
-La revue tactile de la v584 comporte **huit captures**, iPhone/iPad,
+La revue tactile de la v585 comporte **huit captures**, iPhone/iPad,
 à pied et au volant, jour/nuit, sans échec de préparation ou de capture.
 Les deux préparations de conduite confirment `auVolant: true`. Les images
 sont archivées en JPEG à leur taille d’origine dans
-[`revue-ecran/v584-facades/`](revue-ecran/v584-facades/), avec les liens et
+[`revue-ecran/v585-facades/`](revue-ecran/v585-facades/), avec les liens et
 la commande de reproduction dans [la revue d’écran](revue-ecran.md).
 
 ## Données et échelle
@@ -92,7 +92,7 @@ il ne mesure pas les performances d'un iPad physique.
 - Fumée : **aucun échec** ; tous les 144 modules résolvent leurs imports et
   figurent dans le cache hors ligne.
 - Passe Manhattan après recalage des travées, avant la reprise finale de main
-  et le numéro v584 : **aucun échec**, terminée en **10 min 34 s** via
+  et le numéro v585 : **aucun échec**, terminée en **10 min 34 s** via
   `npm test -- --tranche=4/17`, après recalage des travées. Les contrôles de
   relief, collisions, destruction, conduite tactile, sauvegardes, partage des
   blocs, absence d’erreurs JavaScript/WebGL et PWA hors ligne passent.
@@ -100,7 +100,7 @@ il ne mesure pas les performances d'un iPad physique.
   taken` dans le contrôle des deux clients, tandis que les échanges réussissaient.
   Cette intermittence déjà répertoriée reste consignée dans `TASKS.md` ; aucun
   filtre d’erreur ni changement réseau n’a été ajouté pour la masquer.
-- Passe complémentaire sur la v584 complète : fumée verte et `carte.js` verte
+- Passe complémentaire sur la v585 complète : fumée verte et `carte.js` verte
   en **4 min 05 s**. `manhattan.js` termine en **9 min 54 s** avec **un échec** :
   le bloc posé par l’hôte n’est pas reçu par l’invité en 30 secondes
   (`tests/manhattan.js:1103`). Les contrôles locaux, dont le nouveau relief,
@@ -108,12 +108,12 @@ il ne mesure pas les performances d'un iPad physique.
   sont pas atteints dans cette passe. Le même symptôme apparaît dans le suivi
   v245–v246 du banc ; il n’est pas transformé en succès ici.
 - La première passe `maj.js` a relevé deux témoins déjà déclarés du loader et
-  une puce v584 trop longue. Le portail a été arrêté avant modification des
+  une puce v585 trop longue. Le portail a été arrêté avant modification des
   sources ; la puce est raccourcie à huit mots, puis les deux suites restantes
   sont reprises séquentiellement via `--tranche=3/17` (mise à jour) et
   `--tranche=1/17` (conduite). Aucun changement de géométrie depuis les captures.
 - Le relevé du portail complet de la v583 est conservé plus bas ; il ne constitue
-  pas une validation globale des nouvelles façades de la v584.
+  pas une validation globale des nouvelles façades de la v585.
 
 
 Les contrôles hérités ont été adaptés au périmètre réel : les sondes de terrain

@@ -98,7 +98,7 @@ export const VOITURES = {
 };
 
 // --- chargement : buffers en ligne, images en souches ---------------------
-async function charger(dir) {
+export async function charger(dir) {
   const json = JSON.parse(fs.readFileSync(path.join(dir, 'scene.gltf'), 'utf8'));
   for (const b of json.buffers) b.uri = 'data:application/octet-stream;base64,' + fs.readFileSync(path.join(dir, b.uri)).toString('base64');
   const loader = new GLTFLoader();
@@ -117,7 +117,7 @@ async function charger(dir) {
   return gltf;
 }
 
-function maillagesCuits(scene) {
+export function maillagesCuits(scene) {
   const out = [];
   scene.traverse((o) => {
     if (!o.isMesh || !o.visible) return;
@@ -207,7 +207,7 @@ async function moyennesMR(pieces) {
 }
 
 // Les pièces connexes d'une géométrie indexée : un numéro par triangle.
-function composantes(g) {
+export function composantes(g) {
   const pos = g.attributes.position;
   const m = mergeVertices(new THREE.BufferGeometry().setAttribute('position', pos.clone()).setIndex(g.index.clone()), 1e-4);
   const ix = m.index.array, n = m.attributes.position.count;
@@ -240,7 +240,7 @@ function sousGeometrie(g, garde) {
   return compacter(s);
 }
 
-function compacter(g) {
+export function compacter(g) {
   const idx = g.index.array, n = g.attributes.position.count;
   const map = new Int32Array(n).fill(-1);
   let k = 0;
@@ -336,7 +336,7 @@ function matiere(m, nom, { dim = 1024, laque = false } = {}) {
 }
 
 // --- exportation GLB, images recompressées par sharp (convertir-police.mjs) --
-async function exporter(racineScene, fichier) {
+export async function exporter(racineScene, fichier) {
   const gltf = await new GLTFExporter().parseAsync(racineScene, { binary: false, onlyVisible: false });
   const chunks = [Buffer.from(gltf.buffers[0].uri.split(',')[1], 'base64')];
   let length = chunks[0].length;
@@ -367,6 +367,7 @@ async function exporter(racineScene, fichier) {
     delete mat.extras;
     mat.pbrMetallicRoughness = mat.pbrMetallicRoughness || {};
     if (src.color) mat.pbrMetallicRoughness.baseColorTexture = { index: await image(src.color, src.dim, src.alpha) };
+    if (src.emissive) { mat.emissiveTexture = { index: await image(src.emissive, src.dim, false) }; mat.emissiveFactor = [1, 1, 1]; }
   }
   gltf.buffers = [{ byteLength: length }];
   let json = Buffer.from(JSON.stringify(gltf));

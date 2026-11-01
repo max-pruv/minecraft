@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v584 — Les façades de Manhattan prennent du relief
+## v585 — Les façades de Manhattan prennent du relief
 
 **Pourquoi.** Les photos de façades de la v583 restent plates quand on les
 regarde de biais. Max demande des bâtiments détaillés en trois dimensions.
@@ -36,13 +36,37 @@ derrière les vitres. Les volumes, les sauvegardes et la circulation sont conser
 **Vérification.** Huit contrats d'architecture passent. Une passe Manhattan
 sans échec en 10 min 34 s valide les collisions, la destruction visible et la
 PWA, dont un lancer de rayons mesurant 47,5 cm entre verre et fond ; l’ancienne
-façade échoue au même contrôle de relief. La passe complémentaire sur v584
+façade échoue au même contrôle de relief. La passe complémentaire sur la branche
 confirme le relief, mais échoue ensuite sur le délai de réception d’un bloc
 chez l’invité : elle n’est pas déclarée verte. Les résultats et les témoins
 intermittents sont consignés dans `TASKS.md` et `docs/manhattan-osm-validation.md`.
 Treize captures réelles, dont les vues à pied et au volant sur iPhone/iPad,
 montrent le résultat et les défauts visuels restants. Les mesures SwiftShader
 ne valident pas les performances d’un appareil physique.
+
+---
+
+## v584 — La Lucid Air Sapphire arrive dans la flotte
+
+**Pourquoi.** Max a déposé un paquet Sketchfab de la Lucid Air Sapphire (2024) à
+intégrer au jeu. Aucune voiture de la flotte actuelle n'a de portes modélisées :
+`portiere: false` sur les dix-huit de la v566, et une découpe de la tôle sur la
+Lucid Gravity. Le paquet en a, avec un habitacle complet, mais il pèse 301 926
+triangles et 474 maillages, et ses couleurs vivent sur ses sommets.
+
+**Ce que ça change.** Une berline bleue roule dans les villes et se conduit à
+l'allure d'une sportive. On monte par sa vraie porte avant : elle s'ouvre sur son
+intérieur, avec le volant, les écrans allumés et les sièges, et l'enfant s'assied
+sur son siège et non dans le dossier. Elle garde son bleu : la rue ne la repeint
+pas.
+
+**Ce qui le prouve.** Quatre témoins de `degats.js` : portes
+vraies et vers l'extérieur, tôle non découpée, autre voiture du même modèle fermée,
+siège mesuré au rayon, budget (138 179 triangles, 29 maillages, 4,8 Mo, ≈ 2,6 Mo en
+gzip). Sur la flotte de la rue : 106 221 → 107 552 triangles et 43,9 → 43,3
+maillages en moyenne. La sonde des feux la range avec les autres (phares, détresse,
+stop sur la tôle). Une signature neuve, déclarée (`Standard+DS+vc`). La séquence de
+montée a été jouée de bout en bout ; la tablette n'a pas été essayée.
 
 ---
 

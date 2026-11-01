@@ -356,6 +356,9 @@ function voitureNeuve(voeu) {
   // l'enfant — et chez l'ami qui le regarde conduire.
   const peinture = enFlotte && voeu && typeof voeu.peinture === 'number' ? voeu.peinture : null;
   g.userData.peinture = peinture;
+  // UN MODÈLE PEUT PORTER SES SIÈGES (la Lucid Air Sapphire), comme le jet
+  // d'affaires (v568) : animals.js et l'ami les lisent sur le maillage.
+  if (enFlotte && enFlotte.sieges) { g.userData.siege = enFlotte.siege; g.userData.sieges = enFlotte.sieges; }
   const chargement = enFlotte ? chargerVoitureFlotte(enFlotte) : chargerVraieVoiture();
   if (chargement) {
     chargement.then((proto) => {

@@ -5386,7 +5386,7 @@ function synchroniserVehiculeDistant(rp, v) {
   mesh.position.copy(rp.pos);
   scene.add(mesh);
   // les sièges propres à l'appareil (le jet d'affaires, v568), comme chez soi
-  rp.vehicule = { cle, mesh, def: mesh.userData.sieges ? { ...def, sieges: mesh.userData.sieges } : def };
+  rp.vehicule = { cle, mesh, def: mesh.userData.sieges ? { ...def, sieges: mesh.userData.sieges, siege: mesh.userData.siege || def.siege } : def };
 }
 // L'avatar d'un ami revient dans la scène, debout, à sa taille : c'est ce
 // qu'on fait quand il descend, quand son véhicule disparaît, quand il part.
