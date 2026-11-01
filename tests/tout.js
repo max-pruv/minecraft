@@ -231,7 +231,7 @@ const GARDIENS = {
   'src/taxis.js': ['realisme.js', 'monte.js', 'sauvegarde.js', 'manhattan.js', 'degats.js'],
   'src/utilitaires.js': ['carteMonde.js', 'realisme.js', 'monte.js'], // v438 : la fourgonnette et le pickup de la rue
   'src/vehicules.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js', 'degats.js'],
-  'src/voiesdoubles.js': ['monte.js', 'carteMonde.js', 'reseau.js'],
+  'src/voiesdoubles.js': ['monte.js', 'carteMonde.js', 'reseau.js', 'plafond.js'],
   'src/raccords.js': ['plafond.js', 'monte.js', 'carteMonde.js'],   // les raccords d'autoroute courts (v440)
   // LE FEU TRICOLORE (v273) : il s'allume dans le monde (carteMonde.js) et il
   // arrête la circulation (monte.js). Un module neuf sans gardien annule tous

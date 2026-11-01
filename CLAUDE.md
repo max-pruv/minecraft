@@ -1710,6 +1710,35 @@ mètres ». Cinq règles, toutes mesurées par `sonde-elan-chocs.cjs`.
   vitesse de sortie, la force reste celle de la vitesse RELATIVE. Sans cela un
   taxi de Manhattan pris de face rejetait l'enfant de sept blocs (et
   `origin/main`, joystick lâché, de trente-neuf à cinquante et un).
+## La voie au milieu de sa moitié (v578) — un décalage se demande à la section que le tracé suit
+
+La dette (1) de la v544. Trois règles.
+
+- **UN DÉCALAGE UNIQUE NE VAUT QUE POUR UNE SECTION UNIQUE.** 1,3 bloc était
+  le milieu de la voie d'une chaussée de 5,2 ; les rues à la GTA ont mis celui
+  d'une collectrice à 2,13 (`sectionGTA('collecteur').voie / 2`). Mais un
+  décalage de 2,13 partout est un non-résultat mesuré (`sonde-voie-gta.cjs`) :
+  une rue locale n'a qu'une voie (deux blocs de l'axe au caniveau), Washington
+  3,5 — le flanc y passait sur le trottoir (Washington 32 → 54 % de pas).
+  `decalagesDuTrace` (voiesdoubles.js, pur) donne 2,13 à un sommet qui SUIT
+  (même direction à 30° près, à moins de `SUR_L_AXE` de l'axe) une collectrice
+  ou un boulevard typé, l'ancien décalage partout ailleurs, et un cône le long
+  du tracé (`PENTE_DECALAGE`) : on ne s'écarte qu'une fois entré, on se rabat
+  avant de sortir. `decalerADroite` (vehicules.js) prend un nombre ou un
+  décalage par sommet ; la jumelle d'un boulevard se pose à `DECALAGE_GTA` +
+  une voie.
+- **QUAND LA VOIE BOUGE, LA COTE SE RELIT SOUS ELLE** (`decalerSelonLaSection`,
+  la règle de la v512) : au milieu de la voie, pas à l'axe — relue à l'axe, une
+  rue en terrasses de San Francisco laissait la voiture dans l'asphalte de la
+  colonne d'à côté (61 → 106 pas, puis 28 relue au milieu).
+- **LA PREUVE EST LA GRILLE REJOUÉE AVEC LES DEUX RÈGLES SUR LE MÊME CODE.**
+  `sonde-rue-dense.cjs face` (lue par `plafond.js`) : contacts de face entre
+  convois de Paris 161 → 13. Les compteurs de grille (`jeu`, `ville`, les voies
+  doubles) bougent beaucoup pour un changement de tracé — le huit de la
+  République passe de 25 à 150 contacts de sa propre file dans son épingle, et
+  une règle de rabat dans les virages serrés ne l'améliorait pas sans coûter
+  les voies doubles (666 → 466) : non-résultat mesuré, retiré, déclaré.
+
 ## Une voiture de la rue percutée est projetée (v567) — l'horloge partagée cède au choc franc
 
 Max : « quand on fonce dans un véhicule, il est projeté et il ne s'arrête pas

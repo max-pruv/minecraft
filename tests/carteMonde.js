@@ -3553,8 +3553,12 @@ const VRAIES_KM = [
       // propres fonctions, et la bande s'élargit d'autant.
       const ve = await import('./src/vehicules.js');
       const VOIE = typeof m.VOIE_DE_DROITE === 'number' ? m.VOIE_DE_DROITE : 1.3;
-      const circuits = m.circuitsParis(solDe)
-        .map((c) => ({ ...c, pts: ve.sansEpis(ve.decalerADroite(ve.sansEpis(c.pts.map((p) => ({ ...p }))), VOIE)) }));
+      // la voie à la GTA (v578) : le décalage par sommet que main.js pose
+      const vd = await import('./src/voiesdoubles.js');
+      const voieDe = (c) => { const p0 = c.pts.map((p) => ({ ...p }));
+        if (!vd.decalerSelonLaSection) return ve.sansEpis(ve.decalerADroite(ve.sansEpis(p0), VOIE));
+        const r = vd.decalerSelonLaSection(c.cle, p0, solDe, VOIE); return ve.sansEpis(ve.decalerADroite(r.pts, r.e)); };
+      const circuits = m.circuitsParis(solDe).map((c) => ({ ...c, pts: voieDe(c) }));
       // LE TÉMOIN LIT LA BANDE QUE LE TOUR EMPRUNTE, PAS LE SOCLE (v318). Il
       // ne jugeait que les points de circuit tombés DANS la boîte d'un socle ;
       // depuis que les circuits font le tour à `AXE_TOUR` (v221), aucun n'y
@@ -3622,8 +3626,10 @@ const VRAIES_KM = [
       if (typeof m.circuitsParis !== 'function') return { absent: true };
       const solDe = (x, z) => (w.coteRoulable ? w.coteRoulable(x, z) : w.terrainHeight(x, z));
       const VOIE = typeof m.VOIE_DE_DROITE === 'number' ? m.VOIE_DE_DROITE : 1.3;
-      const circuits = m.circuitsParis(solDe)
-        .map((c) => ve.sansEpis(ve.decalerADroite(ve.sansEpis(c.pts.map((p) => ({ ...p }))), VOIE)));
+      const vd = await import('./src/voiesdoubles.js');
+      const circuits = m.circuitsParis(solDe).map((c) => { const p0 = c.pts.map((p) => ({ ...p }));
+        if (!vd.decalerSelonLaSection) return ve.sansEpis(ve.decalerADroite(ve.sansEpis(p0), VOIE));
+        const r = vd.decalerSelonLaSection(c.cle, p0, solDe, VOIE); return ve.sansEpis(ve.decalerADroite(r.pts, r.e)); });
       const tui = m.LIEUX.find((l) => l.nom === 'Tuileries');
       const DEMI = 1.13;
       let dur = 0, lus = 0, tuileries = 0;
