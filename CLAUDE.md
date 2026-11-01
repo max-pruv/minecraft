@@ -224,6 +224,18 @@ une version qu'on ne saura pas déboguer.
    une session sœur, et le portail est vert quand les deux le sont.
    Aucune publication sur un portail rouge — c'est ce qui produit les
    régressions en cascade.
+
+   **ET LE PORTAIL TOURNE AUSSI SUR GITHUB ACTIONS, EN QUATRE TRANCHES À LA
+   FOIS** (`.github/workflows/portail.yml`, sur chaque PR vers `main`). Le
+   dépôt est public : les machines de GitHub y sont gratuites, sans limite de
+   minutes, de la taille du banc (4 cœurs, 16 Go). Chaque tâche joue
+   `npm test -- --tranche=k/4`, exactement le portail d'une session ; le
+   portail est vert quand les quatre le sont. Le journal de chaque tranche est
+   un artefact (`portail-k`) : c'est lui qu'on lit pour démonter un rouge, avec
+   les règles de cette section (double mesure, `TASKS.md`). Il est INDICATIF
+   tant que `main` n'exige pas le contrôle — un rouge déjà déclaré ne bloque pas
+   une fusion (v195) — et il ne remplace pas la revue d'écran (6 bis). Avant de
+   fusionner, on attend ses quatre coches, ou on dit pourquoi pas.
 2. Bump de `CACHE_VERSION` dans `sw.js` à **chaque** livraison, sinon les
    clients installés (PWA sur l'iPad) ne voient jamais la mise à jour. C'est ce
    numéro qui fait foi partout ailleurs.
