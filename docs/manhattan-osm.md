@@ -22,9 +22,10 @@ présents. Les façades photographiques proviennent de **New York Buildings**,
 par **sumitmangela**, également sous CC BY 4.0 : c'est la seconde archive fournie
 par Max, déjà convertie dans cette PR. Les attributions complètes et les
 transformations figurent dans [vendor/newyork/LICENSE.md](../vendor/newyork/LICENSE.md).
-Ces façades habillent désormais aussi les volumes OSM proches. Les modèles
-pleins CCity restent dans les quartiers périphériques : ils ne remplacent pas
-les bâtiments OSM, dont ils boucheraient les cours et les retraits.
+Les photographies de façades restent utilisées par les modèles hérités ; les
+immeubles OSM utilisent une architecture en relief, décrite ci-dessous. Les
+modèles pleins CCity restent dans les quartiers périphériques : ils ne remplacent
+pas les bâtiments OSM, dont ils boucheraient les cours et les retraits.
 
 Transformations réalisées : extraction des composantes géométriques, rotation
 du plan de 29°, sélection par quartiers, rasterisation des toits en 12 × 12,
@@ -37,6 +38,14 @@ empreintes SHA-256, effectifs et distributions sont conservés dans
 - Huit traitements de façade : brownstone, tenement, loft, cour, résidence,
   Art déco, tour vitrée et tour à retraits. Les travées, pilastres, corniches,
   vitrines et escaliers de secours varient avec le traitement.
+- Les façades OSM proches ont de vraies embrasures : verre transparent en
+  retrait, fond à 48 cm derrière la vitre, tableaux de maçonnerie, châssis,
+  appuis et linteaux. Corniches à trois profils, pilastres, rideaux et certains
+  balconnets en ferronnerie sont des volumes distincts, avec leur parallaxe.
+  Les balconnets sont des garde-corps décoratifs, sans plancher praticable.
+  La brique mesure environ 20 × 7,5 cm ; pierre et bois ont leurs propres
+  textures, rugosités et microreliefs. Aucune photo de façade entière ne couvre
+  un bâtiment OSM, même au loin : les baies distantes sont simplifiées en 3D.
 - De une à trois parcelles par îlot au nord de la 14e Rue, avec des façades
   allant jusqu'à 28 unités. Le réseau plus serré du sud garde ses petites
   parcelles afin que les bâtiments ne coupent pas les rues tournées.
@@ -49,8 +58,9 @@ empreintes SHA-256, effectifs et distributions sont conservés dans
   sont fusionnés par rectangles de hauteur égale, sans remplir les vides.
 - Les équipements de toit sont posés sur une terrasse réelle. Les commerces
   et escaliers de secours s'accrochent à une façade existante.
-- La nuit, les baies repérées dans les photos s'allument, sans éclairer les
-  ombres d'escaliers. Les dix variantes de façade suivent le même cycle.
+- La nuit, les fonds des fenêtres OSM s'allument derrière les vitres. Sur les
+  modèles photographiques conservés, les baies repérées s'allument sans éclairer
+  les ombres d'escaliers. Les dix variantes suivent le même cycle.
   Les masques se régénèrent avec `node scripts/new-york-fenetres.mjs vendor/newyork`.
 
 ## Échelle et géographie
@@ -111,8 +121,9 @@ Le contrat d'architecture est aussi lancé par la suite Manhattan. Il vérifie l
 provenance, les quartiers, la diversité, les cours, les limites de hauteur, la
 cohérence du lointain, l'absence de murs sur la chaussée, les 79 circuits de
 l'île et les 48 circuits des quartiers périphériques.
-La suite navigateur vérifie notamment les collisions, la destruction visible,
-les sauvegardes, les taxis, les joueurs et le démarrage hors ligne.
+La suite navigateur vérifie notamment la profondeur des fenêtres par lancer
+de rayons, les collisions, la destruction visible, les sauvegardes, les taxis,
+les joueurs et le démarrage hors ligne.
 
 Le rendu demeure stylisé et voxelisé. Les captures sur Chromium avec SwiftShader
 ne mesurent ni Safari ni les performances sur un iPad physique.

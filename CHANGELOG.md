@@ -20,6 +20,32 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v585 — Les façades de Manhattan prennent du relief
+
+**Pourquoi.** Les photos de façades de la v583 restent plates quand on les
+regarde de biais. Max demande des bâtiments détaillés en trois dimensions.
+
+**Ce que ça change.** Les immeubles OSM ont des vitrages en retrait, des fonds
+séparés du verre, des châssis, appuis, corniches, pilastres et ferronneries
+modélisés. Les travées suivent les pans de mur et les retraits ; les angles
+étroits gardent de la maçonnerie et les escaliers desservent des baies réelles.
+La brique, la pierre et le bois ont des textures à l'échelle du personnage.
+Les baies lointaines restent géométriques, et la lumière nocturne se trouve
+derrière les vitres. Les volumes, les sauvegardes et la circulation sont conservés.
+
+**Vérification.** Huit contrats d'architecture passent. Une passe Manhattan
+sans échec en 10 min 34 s valide les collisions, la destruction visible et la
+PWA, dont un lancer de rayons mesurant 47,5 cm entre verre et fond ; l’ancienne
+façade échoue au même contrôle de relief. La passe complémentaire sur la branche
+confirme le relief, mais échoue ensuite sur le délai de réception d’un bloc
+chez l’invité : elle n’est pas déclarée verte. Les résultats et les témoins
+intermittents sont consignés dans `TASKS.md` et `docs/manhattan-osm-validation.md`.
+Treize captures réelles, dont les vues à pied et au volant sur iPhone/iPad,
+montrent le résultat et les défauts visuels restants. Les mesures SwiftShader
+ne valident pas les performances d’un appareil physique.
+
+---
+
 ## v584 — La Lucid Air Sapphire arrive dans la flotte
 
 **Pourquoi.** Max a déposé un paquet Sketchfab de la Lucid Air Sapphire (2024) à
@@ -41,6 +67,8 @@ gzip). Sur la flotte de la rue : 106 221 → 107 552 triangles et 43,9 → 43,3
 maillages en moyenne. La sonde des feux la range avec les autres (phares, détresse,
 stop sur la tôle). Une signature neuve, déclarée (`Standard+DS+vc`). La séquence de
 montée a été jouée de bout en bout ; la tablette n'a pas été essayée.
+
+---
 
 ## v583 — New York : volumes OSM, monuments et banlieues
 

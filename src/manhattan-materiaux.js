@@ -54,6 +54,7 @@ function texture(type) {
             ? 255
             : 0;
       if (type === "metal") v = 180 + (n - 0.5) * 9 + (y % 8 === 0 ? -28 : 0);
+      if (type === "wood") v = 170 + Math.sin(x * .23 + Math.sin(y * .035) * 1.8) * 17 + (n - .5) * 14;
       const i = (y * 256 + x) * 4;
       img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
       img.data[i + 3] = 255;
@@ -133,7 +134,8 @@ export function materiauxManhattan(renderer) {
     paving = texture("paving"),
     asphalt = texture("asphalt"),
     grain = texture("grain"),
-    metal = texture("metal");
+    metal = texture("metal"),
+    wood = texture("wood");
   const facade = texture("facade"),
     facadeglass = texture("facadeglass"),
     lights = texture("facadelights");
@@ -150,8 +152,9 @@ export function materiauxManhattan(renderer) {
     farLimestone2: physique(0xd7d1c0, facade, PHOTO_NY ? 48 : 12, 0.82),
     farLimestone3: physique(0xd7d1c0, facade, PHOTO_NY ? 48 : 12, 0.6, 0.15),
     farGlass2: physique(0x7b9faa, facadeglass, PHOTO_NY ? 24 : 12, 0.2, 0.45),
-    brick: physique(0xa6765c, brick, 3, 0.89),
-    brownstone: physique(0x786052, brick, 3, 0.92),
+    // Brique de 20 × 7,5 cm : le motif ne représente plus des blocs de 28 cm.
+    brick: physique(0xa6765c, brick, 0.8, 0.89),
+    brownstone: physique(0x786052, stone, 1.2, 0.92),
     limestone: physique(0xe3d3b5, stone, 5, 0.78),
     trim: physique(0xc6b99f, stone, 4, 0.72),
     concrete: physique(0xb2b1a6, paving, 4, 0.96),
@@ -165,10 +168,11 @@ export function materiauxManhattan(renderer) {
     glass: physique(0x65818b, null, 1, 0.19, 0.55),
     glassDark: physique(0x304a55, null, 1, 0.22, 0.5),
     glassLit: physique(0x9eaaa1, null, 1, 0.32, 0.22),
+    windowGlass: physique(0xb7d1dc, null, 1, 0.12, 0.18),
     white: physique(0xe6dfc9, null, 1, 0.92),
     yellow: physique(0xd9ad4b, null, 1, 0.84),
     foliage: physique(0x8b9b61, null, 2, 0.96),
-    wood: physique(0x6e5341, brick, 2, 0.97),
+    wood: physique(0x6e5341, wood, .6, 0.97),
     glow: physique(0xffdc98, null, 1, 0.38),
     signal: physique(0x71d3a4, null, 1, 0.4),
     // les deux autres optiques des feux (v496) : mêmes réglages que le vert,
@@ -186,6 +190,13 @@ export function materiauxManhattan(renderer) {
     ardoise: physique(0x737c82, grain, 3, 0.86),
     herbeClaire: physique(0x8cac58, grain, 3, 1),
   };
+  // Vitre devant une vraie embrasure et un fond de pièce : pas de photo de
+  // fenêtre, ni de transmission plein écran coûteuse sur les tablettes.
+  mats.windowGlass.transparent = true;
+  mats.windowGlass.opacity = 0.32;
+  mats.windowGlass.depthWrite = false;
+  mats.brick.bumpScale = 0.009;
+  mats.brownstone.bumpScale = 0.012;
   for (const m of [
     mats.farBrick,
     mats.farBrownstone,
@@ -305,6 +316,7 @@ export function materiauxManhattan(renderer) {
         asphalt,
         grain,
         metal,
+        wood,
         facade,
         facadeglass,
         lights,

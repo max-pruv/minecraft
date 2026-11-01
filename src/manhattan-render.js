@@ -169,6 +169,7 @@ class Lot {
         this.o.mats[mat],
         items.length,
       );
+      mesh.name = key;
       items.forEach((p, i) => {
         obj.position.set(p[0], p[1], p[2]);
         obj.scale.set(p[3], p[4], p[5]);
@@ -184,6 +185,7 @@ class Lot {
         "glass",
         "glassDark",
         "glassLit",
+        "windowGlass",
         "glow",
         "grass",
         "water",
@@ -691,13 +693,13 @@ export class ManhattanRenderer {
         w = b.x1 - b.x0,
         d = b.z1 - b.z0;
       if (b.volumes) {
-        const mat = loinDe(b);
         for (const v of b.volumes) {
-          lot.put(mat, v.x + v.w / 2, NIVEAU + (v.h + 1) / 2, v.z + v.d / 2,
+          lot.put(b.mat, v.x + v.w / 2, NIVEAU + (v.h + 1) / 2, v.z + v.d / 2,
             v.w, v.h + 1, v.d, "box", 0, b.teinte);
           lot.put("roof", v.x + v.w / 2, NIVEAU + v.h + .94, v.z + v.d / 2,
             v.w, .12, v.d);
         }
+        this.baiesLointainesOsm(lot, b);
         continue;
       }
       // un immeuble d'après le paquet CCity : son lointain cuit (dix triangles)
@@ -876,41 +878,116 @@ export class ManhattanRenderer {
       }
     }
   }
+  // Le lointain garde des baies géométriques et le matériau du mur. Il ne
+  // plaque pas une photographie d'immeuble sur le volume OSM.
+  baieOsm(b, x, z, nx, nz, y) {
+    if (b.mat === "glass") return true;
+    const bas = Math.floor(y / 3) * 3, haut = bas + 2;
+    const pan = (a, c) => sommet(b, a, c) > haut && sommet(b, a + nx, c + nz) <= bas;
+    // Un trumeau de chaque côté. Le rythme repart au début du VRAI pan de
+    // mur : le coin de la boîte englobante peut se trouver dans une cour.
+    if (!pan(x, z) || !pan(x - nz, z - nx) || !pan(x + nz, z + nx)) return false;
+    let pas = 0, a = x, c = z;
+    while (pan(a - nz, c - nx)) { a -= nz; c -= nx; pas++; }
+    const baie = pas % b.travee;
+    return baie === 1 || b.architecture === "loft" && baie > 1;
+  }
+  baiesLointainesOsm(lot, b) {
+    for (let z = b.z0; z < b.z1; z++) for (let x = b.x0; x < b.x1; x++) {
+      const h = sommet(b, x, z);
+      if (h < 6) continue;
+      for (const [nx, nz] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const adjacent = sommet(b, x + nx, z + nz);
+        if (adjacent >= h) continue;
+        const t = nx ? z - b.z0 : x - b.x0;
+        const vitre = b.mat === "glass";
+        for (let y = 4; y + 1 < h; y += 3) {
+          if (y <= adjacent) continue;
+          if (!this.baieOsm(b, x, z, nx, nz, y)) continue;
+          const allume = ALEA(b.seed + Math.floor(t / b.travee), Math.floor(y / 3)) > .64;
+          const largeur = vitre ? .92 : .76;
+          lot.put(allume ? "glassLit" : "glassDark", x + .5 + nx * .51,
+            NIVEAU + y + 1, z + .5 + nz * .51,
+            nx ? .06 : largeur, 1.78, nz ? .06 : largeur);
+        }
+      }
+    }
+  }
   facadeOsm(lot, b, x, z, nx, nz, h, premier) {
     const t = nx ? z - b.z0 : x - b.x0;
-    const baie = ((t % b.travee) + b.travee) % b.travee;
     const verre = b.mat === "glass", loft = b.architecture === "loft";
-    const teinte = b.teinte;
+    const brownstone = b.architecture === "brownstone", artdeco = b.architecture === "artdeco";
+    const teinte = b.teinte, cadre = verre ? "metal" : "trim";
     const ex = x + .5 + nx * .49, ez = z + .5 + nz * .49;
-    const piece = (mat, y, largeur, haut, profondeur, recul = 0, couleur = 1) =>
-      lot.put(mat, ex + nx * recul, NIVEAU + y, ez + nz * recul,
-        nx ? profondeur : largeur, haut, nz ? profondeur : largeur, "box", 0, couleur);
+    // u suit le mur ; recul est la profondeur normale au mur. Les tableaux,
+    // vitres et fonds de pièce occupent trois plans DISTINCTS dans l'espace.
+    const piece = (mat, y, largeur, haut, profondeur, recul = 0, couleur = 1, u = 0) =>
+      lot.put(mat, ex + nx * recul + (nz ? u : 0), NIVEAU + y,
+        ez + nz * recul + (nx ? u : 0), nx ? profondeur : largeur,
+        haut, nz ? profondeur : largeur, "box", 0, couleur);
     for (let yy = premier; yy <= h; yy++) {
       if (!this.present(x, NIVEAU + yy, z)) continue;
       const etage = yy % 3;
-      const boutique = b.enseigne && yy < 3 && baie !== 0;
-      const fenetre = yy >= 4 && yy < h - 1 && etage !== 0 &&
-        (verre || (baie >= 1 && baie < b.travee - (loft ? 0 : 1)) || (b.travee === 2 && baie === 1));
-      if (PHOTO_NY && yy >= 4 && yy < h) {
-        piece(loinDe(b), yy + .5, 1, 1, .94, -.45, teinte);
-      } else if (fenetre || boutique) {
+      const baie = this.baieOsm(b, x, z, nx, nz, yy);
+      const boutique = baie && b.enseigne && yy < 3;
+      const fenetre = baie && yy >= 4 && yy < h && etage !== 0;
+      if (fenetre || boutique) {
         const allume = !boutique && ALEA(b.seed + Math.floor(t / b.travee), Math.floor(yy / 3)) > .64;
-        piece(allume ? "glassLit" : verre ? "glass" : "glassDark", yy + .5, .98, .98, .12, -.17);
-        // Meneaux aux bords de la travée, pas une grille de carrés d'un mètre.
-        if (verre || baie === 1)
-          lot.put(loft ? "trim" : "metal", ex - (nz ? .46 : 0), NIVEAU + yy + .5,
-            ez - (nx ? .46 : 0), nx ? .35 : .065, 1, nz ? .35 : .065);
+        const largeur = verre || boutique || loft ? .91 : .76;
+        const interieur = .22 + ALEA(b.seed + t, Math.floor(yy / 3)) * .18;
+        // Fond de pièce à 78 cm, vitre à 30 cm : la parallaxe se voit en marchant.
+        piece(allume ? "glassLit" : "white", yy + .5, .98, .98, .045, -.78,
+          allume ? [.78,.69,.53] : [interieur, interieur * .91, interieur * .80]);
+        piece("windowGlass", yy + .5, largeur, .96, .035, -.30);
+        // Tableaux de maçonnerie, appuis saillants et vrais châssis.
+        for (const signe of [-1, 1]) {
+          piece(cadre, yy + .5, (1 - largeur) / 2, 1, .68, -.16, teinte,
+            signe * (largeur / 2 + (1 - largeur) / 4));
+          piece(verre ? "metal" : "wood", yy + .5, .035, .98, .08, -.26, 1,
+            signe * (largeur / 2 - .025));
+        }
+        // Un rideau étroit derrière certaines vitres, pas peint sur le verre.
+        if (!verre && !boutique && b.seed % 3 !== 0)
+          piece("white", yy + .5, largeur * .19, .94, .035, -.56,
+            [.65,.61,.52], -largeur * .34);
         if (etage === 1 || boutique && yy === 0)
-          piece(loft ? "trim" : "metal", yy + .04, 1.04, .1, .38, .02);
-        if (etage === 2) piece(loft ? "trim" : "metal", yy + .96, 1.04, .1, .38, .02);
+          piece(cadre, yy + .035, 1.12, .11, .72, .02, teinte);
+        if (etage === 2 || boutique && yy === 2) {
+          piece(cadre, yy + .96, 1.12, .14, .64, -.02, teinte);
+          if (brownstone) {
+            piece("trim", yy + 1.10, 1.22, .13, .40, .12, teinte);
+            piece("trim", yy + 1.20, .92, .09, .32, .16, teinte);
+          }
+        }
+        if (etage === 1 && !boutique)
+          piece(verre ? "metal" : "wood", yy + .98, largeur, .045, .08, -.26);
+        if (loft || boutique)
+          piece("metal", yy + .5, .035, .98, .09, -.25);
+        // Balconnet en ferronnerie : une balustrade en saillie, sans faux
+        // plancher sur lequel le joueur pourrait croire pouvoir marcher.
+        if (fenetre && etage === 1 && yy < 15 && b.seed % 3 === 1 &&
+            ["brownstone", "residentiel"].includes(b.architecture)) {
+          for (const y of [.08, .92]) piece("metal", yy + y, 1.08, .045, .045, .27);
+          for (const u of [-.48,-.24,0,.24,.48])
+            piece("metal", yy + .5, .032, .84, .035, .27, 1, u);
+          for (const u of [-.5,.5]) piece("metal", yy + .92, .035, .045, .56, .01, 1, u);
+        }
       } else {
         piece(b.mat, yy + .5, 1, 1, .94, -.45, teinte);
-        // Les tours Art déco ont des nervures ; les lofts, des pilastres.
-        if ((b.architecture === "artdeco" || loft) && baie === 0 && yy > 2)
-          piece("trim", yy + .5, loft ? .18 : .12, 1, .18, .09, teinte);
+        if ((artdeco || loft) && t % b.travee === 0 && yy > 2) {
+          piece("trim", yy + .5, loft ? .24 : .18, 1, .28, .08, teinte);
+          if (artdeco) for (const u of [-.12, .12])
+            piece("trim", yy + .5, .045, 1, .34, .11, teinte, u);
+        }
       }
-      if (yy === h || yy === 3 || (b.architecture === "loft" && yy % 3 === 0))
-        piece("trim", yy + .92, 1.06, yy === h ? .24 : .12, .28, .07, teinte);
+      if (yy === h) {
+        // Trois profils superposés : une corniche possède un dessous et une ombre.
+        piece("trim", yy + .67, 1.08, .13, .34, .06, teinte);
+        piece("trim", yy + .82, 1.18, .14, .56, .15, teinte);
+        piece("trim", yy + .96, 1.24, .13, .74, .22, teinte);
+      } else if (yy === 3 || loft && etage === 0) {
+        piece("trim", yy + .92, 1.08, .13, .38, .08, teinte);
+      }
     }
   }
   detailsOsm(lot, b) {
@@ -933,9 +1010,18 @@ export class ManhattanRenderer {
       }
       // Un escalier de secours étroit à l'échelle des humains, accroché au mur.
       if (largeur >= 5 && ["tenement", "cour", "loft"].includes(b.architecture)) {
-        const fx = b.x0 + i + 1.5;
-        for (let y = 6; y < sommet(b, Math.floor(fx), z) - 2; y += 3) {
-          if (!this.present(Math.floor(fx), NIVEAU + y, z)) continue;
+        // Le palier dessert une vraie baie, jamais un angle devenu plein ni
+        // la partie étroite d'une tour au-dessus des ailes basses.
+        let colonne = null;
+        for (let c = b.x0 + i + 1; c < b.x0 + fin - 1; c++) {
+          if (this.baieOsm(b, c, z, 0, 1, 7)) {
+            colonne = c; break;
+          }
+        }
+        const fx = colonne + .5;
+        for (let y = 6; colonne !== null && y < sommet(b, colonne, z) - 2; y += 3) {
+          if (!this.baieOsm(b, colonne, z, 0, 1, y + 1)) break;
+          if (!this.present(colonne, NIVEAU + y, z) || !this.present(colonne, NIVEAU + y + 1, z)) continue;
           lot.put("metal", fx, NIVEAU + y, z + 1.45, 1.6, .08, .9);
           lot.put("metal", fx, NIVEAU + y + .9, z + 1.85, 1.6, .05, .05);
           for (const dx of [-.72, -.36, 0, .36, .72])
@@ -2039,7 +2125,7 @@ export class ManhattanRenderer {
       m.emissiveIntensity = night * 0.8;
     this.mats.glow.emissiveIntensity = 0.6 + night * 3;
     this.signage.material.emissiveIntensity = 0.12 + night * 0.95;
-    for (const m of [this.mats.glass, this.mats.glassDark])
+    for (const m of [this.mats.glass, this.mats.glassDark, this.mats.windowGlass])
       m.envMapIntensity = 0.7 - day * 0.1 - night * 0.4;
     this.mats.asphalt.roughness = weather === "rain" ? 0.37 : 0.94;
     const dpr = Math.min(window.devicePixelRatio || 1, budget.dpr);

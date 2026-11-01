@@ -1,5 +1,51 @@
 # Ce qui est en cours
 
+## Façades en relief de Manhattan (v585) — validation du 1er novembre
+
+- [ ] `npm test -- --tranche=4/17` : fumée verte (144 modules), huit contrats
+  d'architecture verts, puis **un échec** de `manhattan.js` en 10 min 42 s :
+  « les deux clients restent sans erreur de jeu », PeerJS `Aborting!` / `ID is
+  taken`. Les échanges de blocs, les avatars, les sauvegardes et la PWA passent,
+  ainsi que le nouveau contrôle de profondeur des fenêtres. Ce message est déjà
+  répertorié ci-dessous dans les portails v375 et v518 ; `src/net.js` et le banc
+  sont identiques à `origin/main` 7cb7a4b. Il n'est ni filtré ni transformé en
+  succès. Le rapport de cette passe est `docs/manhattan-osm-validation.md`.
+- [x] Après recalage des travées sur les pans de mur : **Manhattan verte en
+  10 min 34 s**, huit contrats d’architecture verts et aucun défaut JavaScript
+  ou WebGL. La passe précédente et son intermittence PeerJS restent consignées.
+
+- [ ] **Passe complémentaire v585 (`npm test`, après reprise de main).** La
+  fumée et `carte.js` passent (carte : 4 min 05 s). `manhattan.js` échoue en
+  9 min 54 s sur `tests/manhattan.js:1103` : l’invité ne reçoit pas le bloc de
+  l’hôte dans les 30 s. Tous les contrôles locaux de géométrie, collision,
+  destruction, conduite et sauvegarde atteints auparavant passent ; les
+  contrôles suivants du partage et du hors ligne ne sont pas atteints dans
+  cette passe. Ce symptôme est décrit dans le relevé v245–v246 plus bas
+  (« bloc de l’hôte jamais reçu par l’invité »), mais cette occurrence reste
+  rouge. `src/net.js`, `tests/banc.js` et ce scénario sont inchangés par la
+  v585 ; la passe verte de 10 min 34 s reste une mesure antérieure distincte.
+  `maj.js` signale les deux témoins du loader déjà mesurés des deux côtés en
+  v518 : compteur de fichiers absent et disparition du loader avant la fin
+  de la préparation. Un troisième témoin a trouvé une puce v585 trop longue :
+  corrigée à huit mots. Le portail a été arrêté avant cette correction, puis
+  les deux suites restantes (`maj.js`, `monte.js`) reprises séquentiellement
+  par leurs tranches 3/17 et 1/17. Les captures JPEG et leurs mesures élargissent
+  l’aiguillage documentaire à tout le portail ; elles ne changent pas les
+  quatre gardiens sélectionnés pour le code au début de cette passe.
+  Les verdicts complets sont consignés dans la revue.
+- [ ] **Fidélité visuelle encore insuffisante à l’échelle du quartier.** La
+  v585 apporte des embrasures et des éléments saillants réels, mais les contours
+  diagonaux restent en escalier. Dans Greenwich Village, les petits pans
+  successifs gardent beaucoup de murs aveugles et fragmentent les corniches.
+  Reprendre les contours visibles et leur implantation de baies sans modifier
+  les sauvegardes ni créer de désaccord avec la collision. Les défauts de
+  feuillage et d’horizon 40–41 restent ouverts. Voir la galerie actuelle dans
+  `docs/manhattan-osm-validation.md` ; ce résultat n’est pas présenté comme
+  photoréaliste ni équivalent à un GTA récent.
+- [ ] **Performance sur appareil réel à mesurer.** Les captures et les tests
+  tournent sur Chromium/SwiftShader. Ils ne démontrent ni la cadence, ni la
+  mémoire GPU, ni la fluidité des transitions de détail sur iPhone/iPad physique.
+
 ## La Lucid Air Sapphire (v584) — ce qui reste
 
 - [ ] **POUR MAX, SUR LA TABLETTE : la Lucid Air Sapphire au volant et à l'arrêt.**
@@ -69,6 +115,7 @@
   être encore en cours à la fusion : les quatre tranches complètes du code
   fonctionnel ont été examinées, les vérifications ciblées de la passe finale
   sont inscrites dans `docs/manhattan-osm-validation.md`.
+
 
 ## Dix voitures de tous les jours (v581) — ce qui reste, déclaré
 

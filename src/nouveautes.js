@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 585,
+    titre: 'New York prend du relief',
+    puces: [
+      'Des fenêtres en retrait et des rebords détaillés',
+      'Brique, pierre et bois se voient de près',
+      'Le soir, la lumière brille derrière les vitres',
+    ],
+  },
+  {
     v: 584,
     titre: 'La Lucid Air Sapphire arrive',
     puces: [

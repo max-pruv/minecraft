@@ -181,6 +181,8 @@ parallel (two slices: about 55 minutes each).
 Manhattan’s building shapes now use a compact atlas derived from MENUDQ2’s
 [Manhattan OSM Complete Model](docs/manhattan-osm.md) (CC BY 4.0), adapted to
 playable parcels with varied courtyards, setbacks, heights and street façades.
+Recessed glazing, window surrounds, cornices and ironwork use physical geometry;
+world-scale brick, stone and wood textures supply surface detail.
 
 Every pull request to `main` also runs the full suite on GitHub Actions
 (`.github/workflows/portail.yml`): four slices on four machines at once, each

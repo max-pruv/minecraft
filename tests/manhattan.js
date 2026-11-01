@@ -610,6 +610,13 @@ function verifier(nom, ok, detail = "") {
       arret > facadeCible.depart + .1 && Math.abs(arret - (facadeCible.mur - .3)) < .08,
       `arrêt à ${arret} blocs de l'origine — ${JSON.stringify(facadeCible)}, ${figee} images immobiles`,
     );
+    const relief = await p.evaluate(require('./relief-manhattan.cjs'));
+    verifier(
+      "les fenêtres ont un vitrage, un fond en retrait et des tableaux en relief dans le maillage affiché",
+      relief.immeubles >= 4 && relief.photos === 0 && relief.baies >= 4 &&
+        relief.profondeurMin > .3 && relief.reliefMin > .5,
+      JSON.stringify(relief),
+    );
     const hit = await p.evaluate(async () => {
       const { raycastBlocks } = await import("/src/player.js");
       const THREE = await import("three");
