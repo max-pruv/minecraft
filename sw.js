@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v586';
+const CACHE_VERSION = 'web-minecraft-v587';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -27,12 +27,16 @@ const isStaticAsset = (url) =>
   || url.includes('/vendor/polices/') || url.includes('/vendor/avions/')
   // les modèles et photos de New York (v565) : immuables, téléchargés à la
   // première visite de Manhattan, jamais avant
-  || url.includes('/vendor/newyork/');
+  || url.includes('/vendor/newyork/')
+  // les matériaux scannés de la couche HD (v586) : leur nom porte leur version
+  || url.includes('/vendor/materiaux/');
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
 // les avions déposés (v563) : immuables, comme les corps et la flotte
 const AVIONS = ['airbus-a320', 'airbus-a321', 'chasseur-f35', 'jet-prive'].map((n) => `./vendor/avions/${n}.glb`);
+// les matériaux scannés de la couche HD (v586, matierehd.js : `SCANNES_HD`)
+const MATERIAUX = ['.json', '-couleur.jpg', '-normales.png'].map((s) => `./vendor/materiaux/scannes-v1${s}`);
 
 const ASSETS = [
   './',
@@ -233,7 +237,7 @@ self.addEventListener('install', (event) => {
   // première demande.
   caches.open(STATIC_CACHE).then(async (cache) => {
     // Les polices d'abord : l'accueil les attend, les corps non (v245).
-    for (const u of [...POLICES, ...HUMAINS, ...AVIONS]) {
+    for (const u of [...POLICES, ...MATERIAUX, ...HUMAINS, ...AVIONS]) {
       if (await cache.match(u)) continue;
       await cache.add(u).catch(() => {});
     }

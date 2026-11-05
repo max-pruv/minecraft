@@ -552,6 +552,18 @@ const PEINTRES = {
   },
 };
 
+// Une tuile peinte seule, sans document (v586) : le script des matériaux
+// scannés (`scripts/materiaux-scannes.mjs`) y mesure la moyenne de chaque
+// tuile qu'il remplace, pour que le scan garde la couleur moyenne du peintre
+// (les teintes de `teinteDuMur` et le relais proche/loin en dépendent).
+export function peindreTuileHD(nom) {
+  const fn = PEINTRES[nom];
+  if (!fn) throw new Error(`pas de peintre pour la tuile HD ${nom}`);
+  const img = new Uint8ClampedArray(PX_HD * PX_HD * 4);
+  peintre(img, fn);
+  return img;
+}
+
 // --- l'atlas ------------------------------------------------------------------------
 
 export function atlasHD() {
@@ -612,27 +624,139 @@ function environnementHD(renderer) {
 
 // --- le matériau ---------------------------------------------------------------------
 
-export function materiauHD(renderer) {
+// --- les matériaux scannés (v586) -------------------------------------------------------
+//
+// Des scans PBR sous licence CC0 (Poly Haven, ambientCG), assemblés hors ligne
+// par `scripts/materiaux-scannes.mjs` dans deux images de la taille de l'atlas
+// (couleur ; normale + rugosité) et une fiche qui dit où chaque tuile est
+// rangée. Trois règles.
+//
+// - LES TAMPONS NE BOUGENT PAS. Le mailleur écrit toujours le rectangle de la
+//   tuile peinte (`rectHD`) ; c'est le shader qui le REMAPPE vers la région du
+//   scan (`remapHD`, un vec4 par case : origine, taille, et combien de blocs le
+//   scan couvre). Une case sans remap (w nul) garde sa tuile peinte, et le
+//   rectangle `NEUTRE` des UV absolues (arbres, ferronneries) n'est jamais
+//   remappé. L'empreinte des 490 morceaux ne peut donc pas changer : la
+//   preuve est la construction, et `?scannes=0` rejoue l'atlas peint.
+// - AUCUN PROGRAMME NE NAÎT À L'ARRIVÉE DES IMAGES. Le matériau naît avec sa
+//   carte de normales (plate, à la taille finale) et ses uniformes ; les images
+//   arrivent DANS les toiles existantes (`needsUpdate`), le remap dans un
+//   uniforme. La clé compilée à l'accueil (v541) est la clé du jeu.
+// - LE PALIER BAS NE PAIE RIEN DE PLUS. La couleur scannée remplace la peinture
+//   dans la même toile (même mémoire) ; la carte de normales, elle, coûte une
+//   texture de 1 024 pixels (≈ 5,6 Mo avec ses mipmaps) et n'existe que si la
+//   portée HD est non nulle (`normales`). Sans elle, le programme n'a pas de
+//   carte de normales du tout.
+export const SCANNES_HD = './vendor/materiaux/scannes-v1';
+const N_REMAP = TUILES_HD.length;
+
+function toile(taille, remplir) {
+  const c = document.createElement('canvas');
+  c.width = c.height = taille;
+  const ctx = c.getContext('2d');
+  if (remplir) { ctx.fillStyle = remplir; ctx.fillRect(0, 0, taille, taille); }
+  return c;
+}
+
+function image(url) {
+  return new Promise((ok, ko) => {
+    const im = new Image();
+    im.onload = () => ok(im);
+    im.onerror = () => ko(new Error(`image ${url}`));
+    im.src = url;
+  });
+}
+
+// Le remap d'une région de la fiche, dans la convention de `rectHD` (origine en
+// bas à gauche, une marge d'un demi-texel), et l'index de la case d'origine.
+export function remapDeRegion(r, taille, nom) {
+  const i = TUILES_HD.indexOf(nom);
+  if (i < 0 || i >= N_REMAP) return null;
+  const marge = 0.5 / taille;
+  return { i, rect: [r.x / taille + marge, 1 - (r.y + r.taille) / taille + marge, r.taille / taille - 2 * marge, r.blocs] };
+}
+
+async function chargerScannes(etat, materiau, uniforms, toileCouleur, toileNormales) {
+  try {
+    const fiche = await (await fetch(`${SCANNES_HD}.json`)).json();
+    const [couleur, normales] = await Promise.all([
+      image(`${SCANNES_HD}-couleur.jpg`),
+      toileNormales ? image(`${SCANNES_HD}-normales.png`) : null,
+    ]);
+    const ctx = toileCouleur.getContext('2d');
+    const k = toileCouleur.width / fiche.taille;
+    for (const r of fiche.regions) {
+      ctx.clearRect(r.x * k, r.y * k, r.taille * k, r.taille * k);
+      ctx.drawImage(couleur, r.x, r.y, r.taille, r.taille, r.x * k, r.y * k, r.taille * k, r.taille * k);
+    }
+    materiau.map.needsUpdate = true;
+    if (toileNormales) {
+      toileNormales.getContext('2d').drawImage(normales, 0, 0, toileNormales.width, toileNormales.height);
+      materiau.normalMap.needsUpdate = true;
+    }
+    for (const r of fiche.regions) {
+      const rm = remapDeRegion(r, fiche.taille, r.tuile);
+      if (rm) uniforms.remapHD.value[rm.i].set(...rm.rect);
+    }
+    etat.tuiles = fiche.regions.map((r) => r.tuile);
+    etat.statut = 'charge';
+  } catch (e) {
+    etat.statut = 'echec';
+    etat.erreur = String(e && e.message || e);
+    console.warn('matériaux scannés', e);
+  }
+}
+
+export function materiauHD(renderer, options = {}) {
+  const { normales = false, scannes = false } = options;
   const { texture, canvas } = atlasHD();
-  const uniforms = { nuitHD: { value: 0 } };
+  const remap = Array.from({ length: N_REMAP }, () => new THREE.Vector4(0, 0, 0, 0));
+  const uniforms = { nuitHD: { value: 0 }, remapHD: { value: remap } };
+  // La carte de normales naît plate (128, 128 : la normale du sommet ; 128 en
+  // bleu : la rugosité du sommet ×1) et À SA TAILLE FINALE : l'image arrivée se
+  // dessine dedans, sans réallouer la texture.
+  let toileNormales = null, carteNormales = null;
+  if (normales) {
+    toileNormales = toile(canvas.width, 'rgb(128,128,128)');
+    carteNormales = new THREE.CanvasTexture(toileNormales);
+    carteNormales.colorSpace = THREE.NoColorSpace;
+    carteNormales.magFilter = THREE.LinearFilter;
+    carteNormales.minFilter = THREE.LinearMipmapLinearFilter;
+    carteNormales.anisotropy = 4;
+    carteNormales.wrapS = carteNormales.wrapT = THREE.ClampToEdgeWrapping;
+  }
   const materiau = new THREE.MeshStandardMaterial({
     map: texture, vertexColors: true, alphaTest: 0.5,
     roughness: 1, metalness: 1,        // multipliés par la matière de chaque sommet
     envMap: environnementHD(renderer), envMapIntensity: 0.8,
+    normalMap: carteNormales,
   });
   materiau.onBeforeCompile = (shader) => {
     shader.uniforms.nuitHD = uniforms.nuitHD;
+    shader.uniforms.remapHD = uniforms.remapHD;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>
         attribute vec4 tuile;
         attribute vec2 matiere;
         attribute float lueur;
+        uniform vec4 remapHD[${N_REMAP}];
         varying vec4 vTuile;
         varying highp vec2 vUvTuile;
+        varying float vEchelle;
         varying vec2 vMatiere;
         varying float vLueur;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
+        // le remap des scans (v586) : la case d'origine de la tuile, sa région
+        // scannée si elle en a une. NEUTRE (z = 1) n'est jamais remappé.
         vTuile = tuile;
+        vEchelle = 1.0;
+        if (tuile.z < 0.5) {
+          int iHD = (${COLS_HD - 1} - int(floor(tuile.y * ${COLS_HD}.0))) * ${COLS_HD} + int(floor(tuile.x * ${COLS_HD}.0));
+          if (iHD >= 0 && iHD < ${N_REMAP}) {
+            vec4 rHD = remapHD[iHD];
+            if (rHD.w > 0.0) { vTuile = vec4(rHD.xy, rHD.z, rHD.z); vEchelle = rHD.w; }
+          }
+        }
         vUvTuile = uv;
         vMatiere = matiere;
         vLueur = lueur;`);
@@ -641,6 +765,7 @@ export function materiauHD(renderer) {
         uniform float nuitHD;
         varying vec4 vTuile;
         varying highp vec2 vUvTuile;
+        varying float vEchelle;
         varying vec2 vMatiere;
         varying float vLueur;`)
       .replace('#include <map_fragment>', `
@@ -650,20 +775,46 @@ export function materiauHD(renderer) {
         // moyenne de l'atlas à chaque bloc, le quadrillage vu sur les captures
         // aériennes. On lui donne les dérivées de l'UV NON replié, à l'échelle
         // de la tuile : le mip est alors celui de la texture continue.
-        vec2 uvHD = vTuile.xy + fract(vUvTuile) * vTuile.zw;
+        // Un scan couvre vEchelle blocs (1 pour une tuile peinte).
+        highp vec2 uvE = vUvTuile / vEchelle;
+        vec2 uvHD = vTuile.xy + fract(uvE) * vTuile.zw;
         #if __VERSION__ >= 300
-          vec4 texelHD = textureGrad(map, uvHD, dFdx(vUvTuile) * vTuile.zw, dFdy(vUvTuile) * vTuile.zw);
+          vec2 gxHD = dFdx(uvE) * vTuile.zw, gyHD = dFdy(uvE) * vTuile.zw;
+          vec4 texelHD = textureGrad(map, uvHD, gxHD, gyHD);
         #else
           vec4 texelHD = texture2D(map, uvHD);
         #endif
-        diffuseColor *= texelHD;`)
-      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = vMatiere.x;')
+        diffuseColor *= texelHD;
+        #ifdef USE_NORMALMAP
+          // la normale du scan (R, G) et sa rugosité relative (B), même UV
+          #if __VERSION__ >= 300
+            vec4 nrmHD = textureGrad(normalMap, uvHD, gxHD, gyHD);
+          #else
+            vec4 nrmHD = texture2D(normalMap, uvHD);
+          #endif
+        #endif`)
+      .replace('#include <roughnessmap_fragment>', `
+        float roughnessFactor = vMatiere.x;
+        #ifdef USE_NORMALMAP
+          roughnessFactor = clamp(roughnessFactor * nrmHD.b * 2.0, 0.04, 1.0);
+        #endif`)
+      .replace('#include <normal_fragment_maps>', `
+        #ifdef USE_NORMALMAP_TANGENTSPACE
+          vec3 mapN = vec3(nrmHD.xy * 2.0 - 1.0, 0.0);
+          mapN.xy *= normalScale;
+          mapN.z = sqrt(max(0.0, 1.0 - dot(mapN.xy, mapN.xy)));
+          normal = normalize(tbn * mapN);
+        #endif`)
       .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = vMatiere.y;')
       .replace('#include <emissivemap_fragment>', `
         totalEmissiveRadiance = vec3(1.0, 0.84, 0.58) * vLueur * nuitHD * 1.4;`);
   };
   materiau.customProgramCacheKey = () => 'paris-hd';
-  return { materiau, uniforms, atlas: canvas, profondeur: profondeurHD(materiau) };
+  const etat = { statut: scannes ? 'attente' : 'eteint', normales: !!normales, tuiles: [] };
+  // pour les témoins : les uniformes du remap (non énumérables, l'état se recopie)
+  Object.defineProperty(etat, 'uniformes', { value: uniforms, enumerable: false });
+  if (scannes) chargerScannes(etat, materiau, uniforms, canvas, toileNormales);
+  return { materiau, uniforms, atlas: canvas, profondeur: profondeurHD(materiau), scannes: etat };
 }
 
 // L'OMBRE DE LA COUCHE (v572). La passe d'ombre de three dessine chaque
