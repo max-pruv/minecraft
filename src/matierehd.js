@@ -552,7 +552,7 @@ const PEINTRES = {
   },
 };
 
-// Une tuile peinte seule, sans document (v586) : le script des matériaux
+// Une tuile peinte seule, sans document (v587) : le script des matériaux
 // scannés (`scripts/materiaux-scannes.mjs`) y mesure la moyenne de chaque
 // tuile qu'il remplace, pour que le scan garde la couleur moyenne du peintre
 // (les teintes de `teinteDuMur` et le relais proche/loin en dépendent).
@@ -624,7 +624,7 @@ function environnementHD(renderer) {
 
 // --- le matériau ---------------------------------------------------------------------
 
-// --- les matériaux scannés (v586) -------------------------------------------------------
+// --- les matériaux scannés (v587) -------------------------------------------------------
 //
 // Des scans PBR sous licence CC0 (Poly Haven, ambientCG), assemblés hors ligne
 // par `scripts/materiaux-scannes.mjs` dans deux images de la taille de l'atlas
@@ -746,7 +746,7 @@ export function materiauHD(renderer, options = {}) {
         varying vec2 vMatiere;
         varying float vLueur;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
-        // le remap des scans (v586) : la case d'origine de la tuile, sa région
+        // le remap des scans (v587) : la case d'origine de la tuile, sa région
         // scannée si elle en a une. NEUTRE (z = 1) n'est jamais remappé.
         vTuile = tuile;
         vEchelle = 1.0;

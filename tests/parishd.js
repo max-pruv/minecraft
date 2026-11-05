@@ -1665,7 +1665,7 @@ function verifier(nom, ok, detail = '') {
         `${progs ? progs.length : 0} programme(s) dessinant la tour, ${neuvesN.length} né(s) après l'accueil ${JSON.stringify(neuvesN.map((k) => k.slice(0, 80)))}`);
     }
 
-    // ── LES MATÉRIAUX SCANNÉS (v586) ─────────────────────────────────────────
+    // ── LES MATÉRIAUX SCANNÉS (v587) ─────────────────────────────────────────
     //
     // Des scans CC0 posés SUR l'atlas peint (matierehd.js, `remapHD`) : le
     // banc rend en logiciel, où ils sont coupés comme la couche — on les force.

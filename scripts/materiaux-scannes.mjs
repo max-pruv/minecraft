@@ -1,4 +1,4 @@
-// LES MATÉRIAUX SCANNÉS DE LA COUCHE HD (v586) — script reproductible.
+// LES MATÉRIAUX SCANNÉS DE LA COUCHE HD (v587) — script reproductible.
 //
 // Télécharge des matériaux PBR photographiés sous licence CC0 (Poly Haven,
 // ambientCG), les met à l'échelle du monde (un bloc ≈ 1,1 m : un étage fait
