@@ -663,7 +663,7 @@ export class Player {
     this._chocImage = false;
     const etaitAuSol = this.onGround;
     this.onGround = false;
-    const avantX = this.pos.x, avantZ = this.pos.z;
+    const avantX = this.pos.x, avantY = this.pos.y, avantZ = this.pos.z;
     // ON FREINE DEVANT UN PIÉTON, ON NE L'ATTEND PAS AU CONTACT. À cinquante
     // blocs par seconde, s'arrêter pile au pied de quelqu'un est un pilé qu'on
     // ne verrait dans aucune voiture : on regarde à la distance d'arrêt (plus
@@ -783,7 +783,7 @@ export class Player {
     const n = Math.max(1, Math.ceil(Math.abs(dy) / MAX_STEP));
     for (let i = 0; i < n; i++) this.sweepAxis(1, dy / n);
     if (!this.verticaleVoiture(vyAvant, avantX, avantZ, dt))
-      this.contactSolContinu(etaitAuSol, Math.hypot(this.pos.x - avantX, this.pos.z - avantZ), false);
+      this.contactSolContinu(etaitAuSol, Math.hypot(this.pos.x - avantX, this.pos.z - avantZ), false, avantY);
     // UNE VOITURE BLOQUÉE N'ANNONCE PLUS DE VITESSE (v272) — filet : si le
     // sol continu ou une boîte a mangé le pas sans qu'un choc ne l'ait dit, on
     // ramène la vitesse à ce que la voiture a FAIT. Seulement quand elle est
@@ -1325,7 +1325,7 @@ export class Player {
       const pas = Math.max(1, Math.ceil(vol.length() / MAX_STEP));
       const vx0 = this.vel.x, vz0 = this.vel.z;
       const etaitAuSolAvion = this.onGround;
-      const avantXa = this.pos.x, avantZa = this.pos.z;
+      const avantXa = this.pos.x, avantYa = this.pos.y, avantZa = this.pos.z;
       this.onGround = false;
       for (let i = 0; i < pas; i++) {
         this.sweepAxis(0, vol.x / pas);
@@ -1333,7 +1333,7 @@ export class Player {
         this.sweepAxis(2, vol.z / pas);
       }
       const vyAvant = this.vel.y;
-      this.contactSolContinu(etaitAuSolAvion, Math.hypot(this.pos.x - avantXa, this.pos.z - avantZa), etat === 'vol' || etat === 'decollage');
+      this.contactSolContinu(etaitAuSolAvion, Math.hypot(this.pos.x - avantXa, this.pos.z - avantZa), etat === 'vol' || etat === 'decollage', avantYa);
       // UNE COLLISION EN VOL CASSE L'AVION (aviation) : un mur, une colline,
       // un arbre qui arrêtent l'appareil en l'air.
       if (!auSol && v > 8 && ((vx0 !== 0 && this.vel.x === 0) || (vz0 !== 0 && this.vel.z === 0))) {
@@ -1605,13 +1605,13 @@ export class Player {
     const steps = Math.max(1, Math.ceil(move.length() / MAX_STEP));
     const etaitAuSol = this.onGround;
     this.onGround = false;
-    const avantX = this.pos.x, avantZ = this.pos.z;
+    const avantX = this.pos.x, avantY = this.pos.y, avantZ = this.pos.z;
     for (let i = 0; i < steps; i++) {
       this.sweepAxis(0, move.x / steps);
       this.sweepAxis(1, move.y / steps);
       this.sweepAxis(2, move.z / steps);
     }
-    this.contactSolContinu(etaitAuSol, Math.hypot(this.pos.x - avantX, this.pos.z - avantZ), this.flying);
+    this.contactSolContinu(etaitAuSol, Math.hypot(this.pos.x - avantX, this.pos.z - avantZ), this.flying, avantY);
     this.syncCamera();
   }
 
@@ -1624,10 +1624,10 @@ export class Player {
   // les balayages voxel, on demande à `world.accrocherAuSol` où est la
   // surface — la MÊME triangulation que le mailleur dessine — et l'on s'y pose.
   // Le voxel garde tout le reste : murs, dalles, blocs posés, villes.
-  contactSolContinu(etaitAuSol, pasH, vole) {
+  contactSolContinu(etaitAuSol, pasH, vole, yAvant) {
     if (!this.world.accrocherAuSol) return;
     const r = this.world.accrocherAuSol(this.pos, this.vel, {
-      etaitAuSol, pasH, half: this.gabarit / 2, hauteur: PLAYER_HEIGHT, vole,
+      etaitAuSol, pasH, half: this.gabarit / 2, hauteur: PLAYER_HEIGHT, vole, yAvant,
     });
     if (r && r.auSol) this.onGround = true;
   }
