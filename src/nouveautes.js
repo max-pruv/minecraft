@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 9999,
+    titre: 'Chaque moteur a sa voix',
+    puces: [
+      'Les avions de ligne ne crachent plus de feu',
+      'Le chasseur et le Concorde, seulement pleins gaz',
+      'Une électrique siffle, un V8 gronde',
+      'On entend les rapports passer',
+    ],
+  },
+  {
     v: 586,
     titre: 'Plein de voitures différentes',
     puces: [

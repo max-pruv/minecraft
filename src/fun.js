@@ -23,7 +23,8 @@ import { toast } from './bandeau.js';
 import { PLACES, PARK, WATER_LEVEL } from './world.js';
 import { monumentBati } from './monuments.js';
 import { garagesDe, garageAutour, inscrireGarage, garer, sortir, planDePose } from './garages.js';
-import { allureDe, feuxArriere } from './vehicules.js';
+import { allureDe, feuxArriere, sonDe } from './vehicules.js';
+import { rechauffeDe } from './avions.js';
 import { moteurDemarre, moteurRegime, moteurCoupe, radioDemarre, radioCoupe, klaxonTenir } from './sons.js';
 import { creerDegats } from './degats3d.js';
 import { sensationsAuVolant, sensationsAPied, reposerVoiture } from './sensations.js';
@@ -321,7 +322,10 @@ export function initFun(ctx) {
     // la recette, `radio` allume une station. Rien n'est écrit ici sur ce
     // qui a un moteur — un cheval n'en a pas, et il suffit que sa fiche se
     // taise. Même discipline que `montable` et `vole`.
-    if (a.def.moteur) moteurDemarre(a.def.moteur);
+    // LE CARACTÈRE DU MOTEUR (vXXX) vient aussi de la fiche : celle du MODÈLE
+    // pour une voiture (`son` de FLOTTE, sinon sa classe), celle de l'appareil
+    // pour un avion (`son` d'AVIONS_GLB, ou du modèle sculpté).
+    if (a.def.moteur) moteurDemarre(a.def.moteur, caractereMoteur(a));
     if (a.def.radio) radioDemarre();
     // Monter ne s'annonce plus (v504, Max) : le bouton dit « Descendre ».
     emojiBurst([a.def.emoji, '💨'], 8);
@@ -1202,6 +1206,11 @@ export function initFun(ctx) {
   // L'ALLURE D'UNE MONTURE (v260) : une voiture roule à l'allure de la CLASSE
   // de son modèle (`allureDe`, vehicules.js — citadine, berline, SUV, GT,
   // sportive, hypercar) ; toute autre bête garde l'allure de sa fiche.
+  function caractereMoteur(a) {
+    const ud = (a.mesh && a.mesh.userData) || {};
+    if (a.def.key === 'voiture' && ud.flotte) return sonDe(ud.flotte);
+    return ud.sonMoteur || a.def.son || null;
+  }
   function allureMonture(a) {
     const flotte = a.mesh && a.mesh.userData ? a.mesh.userData.flotte : null;
     if (a.def.key === 'voiture' && flotte) return allureDe(flotte, a.def.allure || 3.4);
@@ -1356,7 +1365,10 @@ export function initFun(ctx) {
         : etat === 'atterrissage' ? Math.min(1, (p.approche || max) / max)
         : etat === 'freinage' ? 0 : Math.min(1, v / max);
       const poussee = player.gaz != null ? player.gaz : assistee;
-      moteurRegime(poussee);
+      // LA RÉCHAUFFE (vXXX) : seulement sur un appareil qui en a une, et
+      // seulement à fort régime — une règle, deux lecteurs (flamme et son)
+      const rechauffe = a.mesh.userData.rechauffe ? rechauffeDe(poussee) : 0;
+      moteurRegime(poussee, null, rechauffe);
       // LES FEUX DE NAVIGATION (v533) : allumés aux commandes, l'éclat blanc
       // de la queue clignote — un éclat bref, une fois par seconde.
       const nav = a.mesh.userData.feuxNav;
@@ -1366,13 +1378,16 @@ export function initFun(ctx) {
         // à peine visibles de jour, un point vif dans son halo la nuit (v565)
         if (nav.regler) nav.regler(nuitDehors());
       }
+      // UNE FLAMME, C'EST LA POSTCOMBUSTION (vXXX) : un avion de ligne n'a pas
+      // de maillage de flamme du tout, un chasseur ou le Concorde ne l'allume
+      // qu'au-delà du seuil de réchauffe, et elle s'allonge jusqu'à pleins gaz.
       const tuyeres = a.mesh.userData.tuyeres;
       if (tuyeres && tuyeres.length) {
-        const allumee = poussee > 0.02 || v > 0.5;
+        const allumee = rechauffe > 0;
         const vacille = 0.92 + 0.08 * Math.sin(a.animTime * 41);
         for (const f of tuyeres) {
           f.visible = allumee;
-          f.scale.z = allumee ? Math.max(0.05, (1.5 + 8.5 * poussee) * f.userData.rayon * vacille) : 0.001;
+          f.scale.z = allumee ? Math.max(0.05, (2 + 8 * rechauffe) * f.userData.rayon * vacille) : 0.001;
         }
       }
     } else if (a.def.moteur !== 'voiture' && a.def.moteur !== 'moto' && (a.mesh.rotation.z || a.mesh.rotation.x)) {

@@ -1,5 +1,19 @@
 # Ce qui est en cours
 
+## Chaque moteur a sa voix, la flamme est une réchauffe (vXXX) — dettes
+
+- [ ] **On n'entend pas le moteur d'un ami.** Aucun son d'ami ne joue de
+  moteur (seulement son klaxon, v549). Le caractère se déduirait de ce que la
+  position emporte déjà (`p.v.f` : modèle de flotte ou variante d'avion) avec
+  `sonDe` / `AVIONS_GLB.son`, placé et atténué comme `klaxonAmi` — mais une
+  boucle de moteur par ami coûte un graphe audio par ami : à mesurer.
+- [ ] **Les recettes se jugent à l'oreille, sur la tablette.** Le banc juge
+  l'ÉCART entre modèles (bandes, centroïdes, `sonde-moteurs.cjs`), jamais le
+  plaisir. Max : écouter une citadine, un V8 (Camaro), un V12 (Victor), une
+  électrique (Lucid Gravity), puis un A320, le jet, le chasseur pleins gaz.
+- [ ] Les voitures de la rue et la police n'ont pas de moteur audible (comme
+  avant) ; seule la monture de l'enfant joue une recette.
+
 ## Façades en relief de Manhattan (v585) — validation du 1er novembre
 
 - [ ] `npm test -- --tranche=4/17` : fumée verte (144 modules), huit contrats

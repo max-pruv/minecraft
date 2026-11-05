@@ -11,6 +11,7 @@
 //     cd tests && npm install && npm run monte
 
 const { mesurerSaison } = require('./sonde-saison-ciel.cjs');
+const { mesurerMoteurs, juger: jugerMoteurs } = require('./sonde-moteurs.cjs');
 const { Banc, dormir, souffler } = require('./banc.js');
 const { passage: passageRendre, juger: jugerRendre } = require('./sonde-rendre-convois.cjs');
 const { mesurer: mesurerRegard, mesurerAttente } = require('./sonde-voitures-persistantes.cjs');
@@ -7774,19 +7775,21 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && capAvion.rendu && !capAvion.rendu.affiche,
       `${capAvion.err || ''} à pied ${JSON.stringify(capAvion.aPied)} · rendu ${JSON.stringify(capAvion.rendu)}`);
 
-    // LES FLAMMES DES RÉACTEURS (v264).
+    // LES FLAMMES DES RÉACTEURS (v264), ET SEULEMENT LA RÉCHAUFFE (vXXX).
     //
     // Max, capture du chasseur en vol : « voir les flammes sortir du réacteur
-    // quand l'avion se déplace ». Une flamme par tuyère — deux pour l'avion
-    // de ligne, quatre pour le Concorde, une pour le chasseur — dont la
-    // longueur suit la MANETTE : rien à l'arrêt moteurs coupés, longue à
-    // pleins gaz, plus courte quand on réduit.
+    // quand l'avion se déplace ». Puis, en vXXX : « il y a des avions normaux
+    // qui ne crachent pas de feu. Aujourd'hui tous les avions crachent du feu,
+    // ça n'a pas de sens. » Une flamme visible est une POSTCOMBUSTION : une par
+    // tuyère sur le chasseur et le Concorde, AUCUNE sur l'avion de ligne, et
+    // elle ne s'allume qu'au-delà du seuil de réchauffe — éteinte à l'arrêt et
+    // à mi-gaz, longue à pleins gaz, plus courte juste au-dessus du seuil.
     //
     // On lit CE QUI EST DESSINÉ : les maillages de flamme du modèle
     // (`userData.tuyeres`, visibles ou non, et leur longueur rendue). Le
     // compte se lit sur les trois fabriques sans page ; le reste se monte
-    // PAR LE BOUTON sur une piste, comme le trajet de la v261, parce que la
-    // flamme est réglée par `fun.js` sur la monture dessinée.
+    // PAR LE BOUTON sur une piste, dans le CHASSEUR, comme le trajet de la
+    // v261, parce que la flamme est réglée par `fun.js` sur la monture dessinée.
     const flammes = await tab.evaluate(async () => {
       const g = window.__game;
       const { BLOCK } = await import('./src/blocks.js');
@@ -7837,7 +7840,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       for (let e = 0; e < 6 && !!(g.fun.montureConduite && g.fun.montureConduite()); e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.4); }
       for (const b of [...g.animalManager.animals]) g.animalManager.scene.remove(b.mesh);
       g.animalManager.animals.length = 0;
-      const avion = g.animalManager.invoquer('avionligne', x0 + 3, z0);
+      const avion = g.animalManager.invoquer('chasseur', x0 + 3, z0);
       if (!avion) return { err: 'aucun avion posé', comptes };
       await tenirSecondes(0.5);
       for (let e = 0; e < 8 && !g.player.pilote; e++) { document.getElementById('ride-btn').click(); await tenirSecondes(0.5); }
@@ -7849,11 +7852,13 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
       let t = 0, vol = null;
       while (t < 20 && !vol) { await tenirSecondes(0.2); t += 0.2; if (g.player.avionEtat === 'vol') vol = { t: +t.toFixed(1), v: +(g.player.vitesseAvion || 0).toFixed(1), flammes: lire() }; }
-      // la manette : pleins gaz, puis réduits
+      // la manette : pleins gaz, juste au-dessus du seuil de réchauffe, à mi-gaz
       g.player.gaz = 1; await tenirSecondes(0.4);
       const pleinsGaz = lire();
-      g.player.gaz = 0.2; await tenirSecondes(0.4);
+      g.player.gaz = 0.85; await tenirSecondes(0.4);
       const reduits = lire();
+      g.player.gaz = 0.5; await tenirSecondes(0.4);
+      const miGaz = lire();
       // on redescend : les flammes s'éteignent avec le mode pilote
       g.player.pos.set(x0 + 40, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
       g.player.avionEtat = 'sol'; g.player.avionEnVol = false; g.player.vitesseAvion = 0; g.player.gaz = null;
@@ -7864,21 +7869,22 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       for (const [x, y, z] of dalle) g.world.setBlock(x, y, z, 0);
       g.player.pos.copy(sauve); g.player.yaw = yaw0; g.player.vel.set(0, 0, 0); g.player.flying = false;
       g.player.avionEtat = undefined; g.player.gaz = null;
-      return { comptes, arret, vol, pleinsGaz, reduits, descendu };
+      return { comptes, arret, vol, pleinsGaz, reduits, miGaz, descendu };
     });
     const toutes = (l, f) => Array.isArray(l) && l.length > 0 && l.every(f);
-    verifier('chaque réacteur a sa tuyère : deux sur l\'avion de ligne, quatre sur le Concorde, une sur le chasseur',
-      !flammes.err && flammes.comptes && flammes.comptes.avionligne === 2 && flammes.comptes.concorde === 4 && flammes.comptes.chasseur === 1,
+    verifier('une flamme par tuyère sur le chasseur et le Concorde, AUCUNE sur l\'avion de ligne — un avion de ligne n\'a pas de réchauffe',
+      !flammes.err && flammes.comptes && flammes.comptes.avionligne === 0 && flammes.comptes.concorde === 4 && flammes.comptes.chasseur === 1,
       `${flammes.err || ''} ${JSON.stringify(flammes.comptes)}`);
-    verifier('à l\'arrêt moteurs coupés, aucune flamme ; en vol, une flamme derrière chaque tuyère',
-      !flammes.err && flammes.arret && flammes.arret.flammes.length === 2 && flammes.arret.flammes.every((f) => !f.visible)
-        && !!flammes.vol && toutes(flammes.vol.flammes, (f) => f.visible && f.long > 0.5),
-      `${flammes.err || ''} arrêt ${JSON.stringify(flammes.arret)} · vol ${JSON.stringify(flammes.vol)}`);
-    verifier('la flamme suit la manette — plus longue à pleins gaz, plus courte réduite — et s\'éteint quand on descend',
+    verifier('à l\'arrêt moteurs coupés, aucune flamme ; pleins gaz, une flamme derrière chaque tuyère du chasseur',
+      !flammes.err && flammes.arret && flammes.arret.flammes.length === 1 && flammes.arret.flammes.every((f) => !f.visible)
+        && toutes(flammes.pleinsGaz, (f) => f.visible && f.long > 0.5),
+      `${flammes.err || ''} arrêt ${JSON.stringify(flammes.arret)} · pleins gaz ${JSON.stringify(flammes.pleinsGaz)} · vol ${JSON.stringify(flammes.vol)}`);
+    verifier('la réchauffe ne s\'allume qu\'à fort régime — longue pleins gaz, plus courte au seuil, éteinte à mi-gaz — et s\'éteint quand on descend',
       !flammes.err && toutes(flammes.pleinsGaz, (f) => f.visible) && toutes(flammes.reduits, (f) => f.visible)
         && flammes.pleinsGaz[0].long > flammes.reduits[0].long * 1.8
+        && toutes(flammes.miGaz, (f) => !f.visible)
         && flammes.descendu && !flammes.descendu.auVolant && toutes(flammes.descendu.flammes, (f) => !f.visible),
-      `${flammes.err || ''} pleins gaz ${JSON.stringify(flammes.pleinsGaz)} · réduits ${JSON.stringify(flammes.reduits)} · descendu ${JSON.stringify(flammes.descendu)}`);
+      `${flammes.err || ''} pleins gaz ${JSON.stringify(flammes.pleinsGaz)} · seuil ${JSON.stringify(flammes.reduits)} · mi-gaz ${JSON.stringify(flammes.miGaz)} · descendu ${JSON.stringify(flammes.descendu)}`);
 
     // UNE VOITURE QUI NE SUIT PAS LE MANIFESTE EST QUAND MÊME POSÉE SUR SES
     // ROUES (v230).
@@ -8273,6 +8279,26 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     verifier('et en descendant, le silence revient',
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
+
+    // UN MOTEUR PAR MODÈLE, UNE FLAMME SEULEMENT AVEC LA RÉCHAUFFE (vXXX).
+    // Max : « il y a des voitures qui font des bruits beaucoup plus sportifs…
+    // idem pour les avions », et « tous les avions crachent du feu, ça n'a pas
+    // de sens ». Le passage vit dans `sonde-moteurs.cjs` (une copie de sonde
+    // finit par diverger du témoin, v400) : on monte PAR LE BOUTON dans des
+    // modèles tirés de la flotte, et l'on lit la SORTIE dans des bandes (v268,
+    // v543). Sur l'ancien code, une seule recette de voiture et une de réacteur
+    // rendent le même spectre : chaque écart entre modèles est rouge.
+    const moteurs = await mesurerMoteurs(tab);
+    const vm = moteurs && !moteurs.err ? jugerMoteurs(moteurs) : {};
+    const detailMoteurs = (cles) => `${moteurs.err || ''} ${JSON.stringify(Object.fromEntries(cles.map((k) => [k, moteurs[k]])))}`;
+    verifier('une électrique ne gronde pas — elle siffle, quand un V8 gronde',
+      !!vm.electrique, detailMoteurs(['electrique', 'v8']));
+    verifier('un V12 hurle plus haut qu\'un V8, et une sportive fait entendre ses passages de rapport',
+      !!vm.v12 && !!vm.passages, detailMoteurs(['v12', 'v8', 'citadine', 'passages']));
+    verifier('un chasseur rugit dans le grave, un avion de ligne siffle, un jet d\'affaires siffle plus aigu',
+      !!vm.chasseur && !!vm.affaires, detailMoteurs(['chasseur', 'concorde', 'ligne', 'affaires']));
+    verifier('pas de flamme sur un avion de ligne ni un jet ; la réchauffe du chasseur et du Concorde s\'allume pleins gaz, pas à mi-gaz',
+      !!vm.fabriques && !!vm.flammes, detailMoteurs(['fabriques', 'chasseur', 'concorde', 'ligne', 'affaires']));
 
     // LA CONDUITE À LA GTA (v543). Max : « améliore la conduite pour qu'elle
     // ressemble à GTA — comment elle réagit à l'environnement, aux autres
@@ -9675,7 +9701,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         // alors les tuyères), et l'on lit les CLÉS (v363). Chauffe désarmée,
         // deux clés neuves (`sonde-flamme-chauffe.cjs`).
         const avantFlamme = cles(), tuyeres = a.mesh.userData.tuyeres || [];
-        g.player.gaz = 0.4;
+        // pleins gaz : la flamme est une réchauffe, elle ne s'allume qu'au-delà
+        // du seuil (vXXX)
+        g.player.gaz = 1;
         await images(6);
         res.flamme = { tuyeres: tuyeres.length, allumees: tuyeres.filter((f) => f.visible).length,
           cles: [...cles()].filter((k) => !avantFlamme.has(k)).map((k) => k.slice(0, 24)) };

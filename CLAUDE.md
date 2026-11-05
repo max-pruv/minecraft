@@ -10861,6 +10861,47 @@ l'avion se déplace ». Trois règles.
   cent de gaz à l'arrêt, et éteinte à la descente par `fun.js` — la monture
   quittée n'est plus mise à jour, elle garderait sa dernière flamme.
 
+## Une flamme est une réchauffe, et chaque moteur a sa voix (vXXX)
+
+Max : « il y a des avions normaux qui ne crachent pas de feu », et « il y a
+des voitures qui font des bruits beaucoup plus sportifs… idem pour les
+avions ». **Cette décision remplace la troisième règle de la v264** : la
+flamme ne suit plus toute la manette. Cinq règles.
+
+- **UNE FLAMME VISIBLE EST UNE POSTCOMBUSTION, ET LA FICHE LE DIT.**
+  `a.rechauffe` (modèle sculpté) ou `rechauffe: true` (`AVIONS_GLB`) : seuls
+  le chasseur et le Concorde ont des maillages de flamme ; un avion de ligne,
+  un jet d'affaires n'en ont AUCUN (`userData.tuyeres` vide). Les tuyères
+  restent mesurées pour tous. Jamais une liste dans `fun.js`.
+- **LA RÉCHAUFFE NE S'ALLUME QU'À FORT RÉGIME, ET UNE SEULE RÈGLE LA LIT
+  DEUX FOIS.** `rechauffeDe(poussee)` (avions.js, pure) rend 0 jusqu'à
+  `SEUIL_RECHAUFFE` (0,75) puis monte à 1 pleins gaz ; `fun.js` en fait la
+  longueur de la flamme ET le rugissement du moteur (`moteurRegime(…,
+  rechauffe)`). C'est la poussée unique de la v268, un cran plus loin.
+- **LE CARACTÈRE D'UN MOTEUR VIT DANS LA FICHE DU MODÈLE.** `son` de FLOTTE,
+  sinon la classe (`SON_DE_CLASSE`, `sonDe`, vehicules.js) ; `son`
+  d'`AVIONS_GLB` ou `a.son` du modèle sculpté (`userData.sonMoteur`). `fun.js`
+  le passe à `moteurDemarre(type, caractere)` ; `sons.js` a une recette par
+  caractère (citadine, berline, suv, diesel, v8, sportive, v12, w16,
+  electrique, moto ; ligne, affaires, chasseur, concorde), toutes
+  synthétisées, un seul contexte (v268). Un caractère inconnu retombe sur la
+  recette du type : un modèle neuf sans `son` sonne comme avant.
+- **UNE ÉLECTRIQUE N'A PAS DE RAPPORTS.** Son onduleur suit la VITESSE
+  (`allure` de `voitureSons`, passée par sensations.js), pas le régime des
+  rapports, qui retombe à chaque passage. Les moteurs `passage: true`
+  (sportive, v8, v12, w16, moto) se coupent un dixième de seconde quand le
+  régime retombe d'un coup : on entend la boîte monter.
+- **LE TÉMOIN LIT LE SPECTRE, MODÈLE CONTRE MODÈLE.** `sonde-moteurs.cjs`
+  (lue par `monte.js`) monte PAR LE BOUTON, suspend la physique, pose la
+  vitesse ou la manette, coupe la radio, et compare des bandes (grave
+  40–320 Hz, aigu 1 500–6 000) et des centroïdes entre modèles — jamais un
+  niveau absolu, qu'un banc sans haut-parleur rend arbitraire. Sur l'ancien
+  code, deux recettes identiques rendent le même spectre : chaque écart rougit.
+
+Ce qui reste, déclaré dans `TASKS.md` : on n'entend pas le moteur d'un ami
+(aucun son d'ami ne joue de moteur, seulement son klaxon, v549) ; les
+recettes se jugent à l'oreille sur la tablette, le banc ne juge que l'écart.
+
 ## Le cadran de cap : la ville visée au loin (v263)
 
 Max : « un cadran de pilote en avion : la ville visée au loin ». Aux
