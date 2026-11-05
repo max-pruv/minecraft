@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 586,
+    titre: 'On ne passe plus sous le sol',
+    puces: [
+      'En vol, on peut descendre très vite',
+      'On s\'arrête toujours sur l\'herbe',
+      'Coincé dessous ? On remonte tout seul',
+    ],
+  },
+  {
     v: 585,
     titre: 'New York prend du relief',
     puces: [

@@ -15519,6 +15519,23 @@ Deux dettes des arbres, une mesure. Deux règles.
   `solid`, mesuré ; le maillage reste dans le bruit, 5,0 contre 4,9 ms), et un morceau du bord du disque coûte un ou deux appels de dessin
   au lieu d'un ; l'intérieur, rien.
 
+## On ne passe plus sous le sol (v586) — sous la bande, on demande d'où l'on vient
+
+Max, en vol, en piquant : « on passe sous le sol ». La boîte ignore les deux
+cubes que la surface remplace (`SOUS_SURFACE`) et s'arrêtait sur le troisième,
+à `cote − 2` ; la surface passe jusqu'à un demi-bloc au-dessus de la cote, et
+les pieds tombaient SOUS la bande, où la règle du tunnel (v297) les laissait.
+Une règle. **SOUS LA BANDE, `accrocherAuSol` NE LAISSE QUE CE QUI N'A PAS
+TRAVERSÉ LA SURFACE ET N'EST ENTOURÉ QUE DE VIDE** : `yAvant` (la hauteur au
+début de l'image, passée par le joueur à pied, en vol, au volant et en avion)
+au-dessus de la surface, ou un cube de la bande dans le corps
+(`corpsDansLaBande`), et l'on remonte. Un enfant dans un tunnel ou une grotte
+n'y était pas et n'est entouré que d'air. Le témoin (`sonde-plongee-vol.cjs`,
+lu par `plafond.js`) pique 150 fois en croisière à trois cadences et repose
+vingt enfants coincés : 4 sous le sol et 0 repris sur `origin/main`, 0 et 20
+ici. Un puits ouvert vers une grotte (colonnes sans surface) se traverse
+toujours : c'est le voxel qui décide là.
+
 ## Le bouleau sur la surface (v576) — un bloc d'arbre neuf se déclare au sol continu
 
 Une règle. `DESSUS_NATUREL` (solcontinu.js) dit ce qui peut vivre AU-DESSUS
