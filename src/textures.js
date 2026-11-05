@@ -1,6 +1,7 @@
 // Procedurally generated 16x16 pixel-art texture atlas — no image assets needed.
 
 import * as THREE from 'three';
+import { RENDU_WEBGPU, tuilage } from './rendu-webgpu.js';
 import { TILE, DECOR_ITEMS, CITY_TILE_START, VILLANDRY_TILE, ARCHI_TILE, ROUTE_TILE_START, METRO_TILE } from './blocks.js';
 
 import { TILE_PX, ATLAS_COLS, ATLAS_ROWS, tileUV, tileRect } from './tuiles.js';
@@ -1199,6 +1200,9 @@ export function createAtlas() {
 // `onde` ajoute au passage le clapot de la surface de l'eau — les deux
 // modifications partagent le même point d'accroche, qui est unique par matériau.
 export function activerTuilage(material, { onde = false } = {}) {
+  // Sous `?rendu=webgpu`, le greffon GLSL ci-dessous est ignoré : sa version en
+  // nœuds vit dans rendu-webgpu.js (chantier WebGPU), même repli, même onde.
+  if (RENDU_WEBGPU && tuilage(material, { onde })) return;
   if (onde) material.userData.temps = { value: 0 };
   material.onBeforeCompile = (shader) => {
     if (onde) shader.uniforms.temps = material.userData.temps;

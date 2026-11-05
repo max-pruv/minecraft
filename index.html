@@ -2976,8 +2976,19 @@
     </div>
   </div>
   <script src="./vendor/peerjs.min.js"></script>
-  <script type="importmap">
-    { "imports": { "three": "./vendor/three.module.min.js" } }
+  <script>
+    // L'IMPORT MAP SUIT L'ADRESSE (chantier WebGPU). Par défaut, three r160 et
+    // le rendu WebGL, comme toujours. Avec `?rendu=webgpu`, three r187 (build
+    // WebGPU, vendor/three-webgpu/) : le jeu importe `three` sans rien savoir,
+    // et `src/rendu-webgpu.js` crée le rendu. Un import map écrit pendant
+    // l'analyse de la page, AVANT le premier module, vaut un import map statique.
+    (function () {
+      var webgpu = /[?&]rendu=webgpu(&|$)/.test(location.search);
+      var imports = webgpu
+        ? { 'three': './vendor/three-webgpu/three.webgpu.min.js', 'three/webgpu': './vendor/three-webgpu/three.webgpu.min.js', 'three/tsl': './vendor/three-webgpu/three.tsl.min.js' }
+        : { 'three': './vendor/three.module.min.js' };
+      document.write('<script type="importmap">' + JSON.stringify({ imports: imports }) + '<\/script>');
+    })();
   </script>
   <script type="module" src="./src/main.js"></script>
   <script>

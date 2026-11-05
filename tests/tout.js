@@ -359,6 +359,8 @@ const GARDIENS = {
   'src/tuiles.js': SUITES,
   'src/maillage-worker.js': ['monte.js', 'plafond.js', 'carte.js', 'manhattan.js', 'parishd.js'],
   'src/textures.js': SUITES,
+  // importé par textures.js (donc par tout) : l'union des gardiens de ses clients
+  'src/rendu-webgpu.js': SUITES,
   'src/sky.js': ['carte.js', 'monte.js', 'manhattan.js'],
   'src/effects.js': ['monte.js', 'carte.js'],
   'src/props.js': ['monte.js', 'carte.js'],

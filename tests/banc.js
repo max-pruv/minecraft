@@ -277,7 +277,11 @@ class Banc {
     this.pairs = await servirLesPairs(this.portPairs);
     this.navigateur = await chromium.launch({
       executablePath: exe,
-      args: ['--no-sandbox', '--use-gl=angle', `--use-angle=${process.env.CHROMIUM_ANGLE || 'swiftshader'}`,
+      // `BANC_ARGS` ajoute des drapeaux (la sonde WebGPU : `--enable-unsafe-webgpu
+      // --enable-features=WebGPU,Vulkan --ignore-gpu-blocklist`, mesurés
+      // nécessaires et suffisants pour un adaptateur SwiftShader en headless).
+      args: [...(process.env.BANC_ARGS ? process.env.BANC_ARGS.split(/\s+/).filter(Boolean) : []),
+        '--no-sandbox', '--use-gl=angle', `--use-angle=${process.env.CHROMIUM_ANGLE || 'swiftshader'}`,
         // Une caméra et un micro simulés, toujours présents et toujours
         // autorisés. Sans eux, le chemin vidéo n'était éprouvé nulle part :
         // c'est précisément là qu'un carré noir a pu passer inaperçu.

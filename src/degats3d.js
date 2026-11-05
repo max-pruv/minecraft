@@ -30,6 +30,7 @@
 //    l'enfant À CÔTÉ de la voiture, debout, et le jeu le dit.
 
 import * as THREE from 'three';
+import { RENDU_WEBGPU, alphaParInstance as alphaParInstanceWebGPU } from './rendu-webgpu.js';
 import { toast } from './bandeau.js';
 import * as D from './degats.js';
 
@@ -62,6 +63,7 @@ function lesRessources() {
   // ce petit greffon multiplie dans le fragment. Une clé de programme FIXE :
   // la chauffe compile exactement ce que le feu dessinera.
   const alphaParInstance = (m) => {
+    if (RENDU_WEBGPU && alphaParInstanceWebGPU(m)) { m.userData.partagee = true; return m; }   // en nœuds (chantier WebGPU)
     m.onBeforeCompile = (sh) => {
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nattribute float aAlpha;\nvarying float vAlpha;')

@@ -24,6 +24,7 @@
 //      fumée. Et elle ne lit la physique qu'en lecture.
 
 import * as THREE from 'three';
+import { RENDU_WEBGPU, alphaParInstance } from './rendu-webgpu.js';
 
 const PARAMS = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
 // `?traces=0` les coupe, pour mesurer (jamais un réglage de la famille).
@@ -55,6 +56,7 @@ function lesRessources() {
   if (ressources) return ressources;
   const mat = new THREE.MeshBasicMaterial({ color: 0x141416, transparent: true, depthWrite: false,
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  if (RENDU_WEBGPU && alphaParInstance(mat)) { mat.userData.partagee = true; ressources = { mat }; return ressources; }   // en nœuds (chantier WebGPU)
   mat.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float aAlpha;\nvarying float vAlpha;')
