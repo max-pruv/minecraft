@@ -9,7 +9,7 @@ export const NOUVEAUTES = [
     v: 587,
     titre: 'Chaque moteur a sa voix',
     puces: [
-      'Les avions de ligne ne crachent plus de feu',
+      'Plus de feu aux avions de ligne',
       'Le chasseur et le Concorde, seulement pleins gaz',
       'Une électrique siffle, un V8 gronde',
       'On entend les rapports passer',

@@ -50,6 +50,10 @@ allumées pleins gaz. Les sept sont rouges sur `origin/main` (une seule
 recette : les spectres se recouvrent, deux tuyères allumées sur l'A320) et
 verts ici. Les trois témoins de flamme d'avant ont été repointés sur la règle
 neuve (le chasseur, la réchauffe), le contrat des avions déposés aussi.
+Et le portail a trouvé ce que les sept ne voyaient pas : les moteurs aigus
+chantaient dans la bande des pneus, et le frein à main ne crissait plus assez
+fort sur une sportive, un W16 ou un V12 (×4,7 à ×6 pour une barre à ×10).
+La bande est réservée au moteur près : ×24 à ×600 sur les cinq caractères.
 
 ---
 

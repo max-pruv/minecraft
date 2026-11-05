@@ -231,6 +231,18 @@ export function moteurDemarre(type = 'voiture', caractere = null) {
   const sortie = c.createGain();
   sortie.gain.value = r.volume == null ? 1 : r.volume;
   sortie.connect(sortieAudio());
+  // LA BANDE DES PNEUS EST RÉSERVÉE (v587). Le crissement vit entre 2,5 et
+  // 3,4 kHz ; un turbo, un V12 ou un onduleur y chantaient aussi, et le frein
+  // à main tiré tout droit ne ressortait plus du moteur (mesuré, modèle
+  // imposé : sportive ×6, W16 ×5,7, V12 ×4,7 contre ×26 pour un V8, barre
+  // ×10). Sur ce qui roule, le moteur seul passe par un creux de −24 dB
+  // centré sur trois kilohertz ; les pneus et la route n'y passent pas.
+  let corps = sortie;
+  if (SUR_ROUES(type)) {
+    corps = c.createBiquadFilter();
+    corps.type = 'peaking'; corps.frequency.value = 2900; corps.Q.value = 1.0; corps.gain.value = -24;
+    corps.connect(sortie);
+  }
   const source = c.createBufferSource();
   source.buffer = tamponDeBruit(c);
   source.loop = true;
@@ -245,7 +257,7 @@ export function moteurDemarre(type = 'voiture', caractere = null) {
   // garde pas son souffle pendant que ses harmoniques s'éteignent.
   const toux = c.createGain();
   toux.gain.value = 1;
-  toux.connect(sortie);
+  toux.connect(corps);
   source.connect(filtre).connect(gainS).connect(toux);
   source.start();
 
@@ -274,7 +286,7 @@ export function moteurDemarre(type = 'voiture', caractere = null) {
   if (r.siffle) {
     siffle = c.createOscillator(); siffle.type = 'triangle'; siffle.frequency.value = r.sb || 1200;
     gainSif = c.createGain(); gainSif.gain.value = 0.0001;
-    siffle.connect(gainSif).connect(sortie);
+    siffle.connect(gainSif).connect(corps);
     siffle.start();
   }
   // LA POSTCOMBUSTION (v587) : un rugissement grave et rêche — du bruit passé

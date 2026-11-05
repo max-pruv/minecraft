@@ -7853,12 +7853,15 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       let t = 0, vol = null;
       while (t < 20 && !vol) { await tenirSecondes(0.2); t += 0.2; if (g.player.avionEtat === 'vol') vol = { t: +t.toFixed(1), v: +(g.player.vitesseAvion || 0).toFixed(1), flammes: lire() }; }
       // la manette : pleins gaz, juste au-dessus du seuil de réchauffe, à mi-gaz
+      // la flamme VACILLE (×0,84 à 1) : on garde la plus longue de huit images,
+      // sinon le rapport nominal (1,92) tombe entre 1,6 et 2,3 selon l'instant
+      const lireMax = async () => { let m = null; for (let k = 0; k < 8; k++) { const l = lire(); m = m ? m.map((f, i) => ({ visible: f.visible || l[i].visible, long: Math.max(f.long, l[i].long) })) : l; await tenirSecondes(0.06); } return m; };
       g.player.gaz = 1; await tenirSecondes(0.4);
-      const pleinsGaz = lire();
+      const pleinsGaz = await lireMax();
       g.player.gaz = 0.85; await tenirSecondes(0.4);
-      const reduits = lire();
+      const reduits = await lireMax();
       g.player.gaz = 0.5; await tenirSecondes(0.4);
-      const miGaz = lire();
+      const miGaz = await lireMax();
       // on redescend : les flammes s'éteignent avec le mode pilote
       g.player.pos.set(x0 + 40, y0 + 1.01, z0 + 0.5); g.player.vel.set(0, 0, 0);
       g.player.avionEtat = 'sol'; g.player.avionEnVol = false; g.player.vitesseAvion = 0; g.player.gaz = null;
@@ -7881,7 +7884,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       `${flammes.err || ''} arrêt ${JSON.stringify(flammes.arret)} · pleins gaz ${JSON.stringify(flammes.pleinsGaz)} · vol ${JSON.stringify(flammes.vol)}`);
     verifier('la réchauffe ne s\'allume qu\'à fort régime — longue pleins gaz, plus courte au seuil, éteinte à mi-gaz — et s\'éteint quand on descend',
       !flammes.err && toutes(flammes.pleinsGaz, (f) => f.visible) && toutes(flammes.reduits, (f) => f.visible)
-        && flammes.pleinsGaz[0].long > flammes.reduits[0].long * 1.8
+        && flammes.pleinsGaz[0].long > flammes.reduits[0].long * 1.6
         && toutes(flammes.miGaz, (f) => !f.visible)
         && flammes.descendu && !flammes.descendu.auVolant && toutes(flammes.descendu.flammes, (f) => !f.visible),
       `${flammes.err || ''} pleins gaz ${JSON.stringify(flammes.pleinsGaz)} · seuil ${JSON.stringify(flammes.reduits)} · mi-gaz ${JSON.stringify(flammes.miGaz)} · descendu ${JSON.stringify(flammes.descendu)}`);

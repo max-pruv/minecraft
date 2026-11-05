@@ -10866,7 +10866,7 @@ l'avion se déplace ». Trois règles.
 Max : « il y a des avions normaux qui ne crachent pas de feu », et « il y a
 des voitures qui font des bruits beaucoup plus sportifs… idem pour les
 avions ». **Cette décision remplace la troisième règle de la v264** : la
-flamme ne suit plus toute la manette. Cinq règles.
+flamme ne suit plus toute la manette. Six règles.
 
 - **UNE FLAMME VISIBLE EST UNE POSTCOMBUSTION, ET LA FICHE LE DIT.**
   `a.rechauffe` (modèle sculpté) ou `rechauffe: true` (`AVIONS_GLB`) : seuls
@@ -10897,6 +10897,15 @@ flamme ne suit plus toute la manette. Cinq règles.
   40–320 Hz, aigu 1 500–6 000) et des centroïdes entre modèles — jamais un
   niveau absolu, qu'un banc sans haut-parleur rend arbitraire. Sur l'ancien
   code, deux recettes identiques rendent le même spectre : chaque écart rougit.
+- **LA BANDE DES PNEUS EST RÉSERVÉE.** Le crissement vit entre 2,5 et 3,4 kHz ;
+  un turbo, un V12 ou un onduleur y chantaient aussi, et le frein à main tiré
+  tout droit ne ressortait plus (portail GitHub : ×6,3 pour une barre à ×10,
+  un modèle de la flotte TIRÉ AU HASARD ; mesuré modèle imposé, sportive ×6,
+  W16 ×5,7, V12 ×4,7, V8 ×26). Sur ce qui roule, le moteur seul passe par un
+  creux de −24 dB centré sur 2,9 kHz ; pneus et route n'y passent pas (×24 à
+  ×600 ensuite). Un son neuf de voiture se mesure contre la bande des pneus,
+  et **un témoin qui tire un modèle au hasard ne voit une régression de
+  caractère qu'une fois sur N** : on le rejoue modèle par modèle.
 
 Ce qui reste, déclaré dans `TASKS.md` : on n'entend pas le moteur d'un ami
 (aucun son d'ami ne joue de moteur, seulement son klaxon, v549) ; les
