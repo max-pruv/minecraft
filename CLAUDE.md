@@ -1055,6 +1055,14 @@ mipmaps, quelle que soit sa taille sur le disque. Six règles.
   avec le transcodeur que le JEU sert (`vendor/basis`, three r160). Les photos
   recuites de New York passent ainsi en UASTC (l'Empire en ETC1S : 23 dB). Le
   journal du script imprime chaque texture ; la RDO est un non-résultat mesuré.
+- **LA QUALITÉ PASSE AVANT LE POIDS DES FICHIERS (décision de Max, novembre
+  2026 : « Always quality first »).** Devant un codec qui dégrade une image
+  visible (l'Empire en ETC1S, 23 dB), on garde le plus fidèle et l'on paie le
+  téléchargement : +11,7 Mo pour New York, acceptés. Ce qui reste une
+  contrainte, c'est la STABILITÉ sur l'appareil — une page qu'iOS tue ne montre
+  plus rien — donc la mémoire en carte graphique (v580), jamais les octets
+  transférés. Un gain de poids qui coûte de la qualité visible se propose à
+  Max, il ne se livre pas.
 - **LE TRANSCODEUR SE BRANCHE SUR LE RENDERER, AVANT TOUT MODÈLE.**
   `brancherKTX2(renderer)` (main.js, juste après sa création) ; `urlModele`
   rend la version KTX2 seulement s'il est branché, `chargeurModeles()` est le

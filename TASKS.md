@@ -6,10 +6,6 @@
   par pixel) ; l'estimation iPhone (ETC2 RGB, un demi-octet) vient du script.
   Relire `journal_appareil` (`gpu.texMo`) après une session dans Paris, avec et
   sans `?ktx2=0`.
-- **New York : +11,7 Mo transférés** (brotli q4) à la première visite, parce que
-  ses trois photos recuites de 2 048² passent en UASTC (ETC1S : 23 dB sur
-  l'Empire). Pistes : un ETC1S à codebook plus large, ou des images de 1 024
-  pour le `-loin` seulement. Décision de Max si le poids gêne.
 - **Niveaux de détail des voitures de la rue** : non faits. Après les textures,
   la géométrie de la flotte (88 Mo pour la rue entière au banc) est le poste
   suivant ; une version `-loin` décimée au-delà d'une distance à mesurer.
