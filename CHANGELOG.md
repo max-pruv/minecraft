@@ -20,6 +20,38 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v588 — Les feux de toutes les voitures ont la forme de leur optique
+
+**Pourquoi.** Max : « les phares des voitures font des ronds très génériques
+et ne respectent pas la forme réelle du phare ». Mesuré sur les 41 modèles de
+la flotte : les phares copiaient déjà l'optique sur 26 modèles (v569), mais
+quinze n'avaient AUCUNE optique reconnue à l'avant (les dix génériques, dont le
+maillage s'appelle « Optics », et cinq livrées peintes : la voiture et le SUV
+de police, le taxi Mondeo, la Divo, l'Alpine) ; et sur toute la flotte, les
+feux stop étaient deux disques rouges, le recul deux petits disques blancs, la
+détresse quatre rectangles orange — six formes génériques par voiture.
+
+**Ce que ça change.** Tout feu allumé est désormais une copie des triangles de
+l'optique du modèle, posée à fleur de sa carrosserie : les phares, les feux
+stop (le bloc arrière en rouge), le feu de recul (sa part blanche, ou la part
+du bloc la plus proche de l'axe), les feux de détresse (les clignotants nommés,
+à défaut les blocs optiques eux-mêmes, en ambre). Pour une livrée peinte d'un
+seul tenant, le jeu lit la couleur de la texture sous chaque triangle : la
+voiture de police allume ses vrais phares et ses vrais feux arrière — et
+seulement un morceau d'un seul tenant, sur le côté, plus petit que le bouclier :
+ni le lettrage « POLICE » du coffre, ni l'écusson du SUV, ni la livrée blanche
+de l'Alpine. Un modèle dont l'optique ne se reconnaît pas n'a pas de lueur
+plutôt qu'une forme inventée : le taxi Mondeo et la Divo, l'avant de l'Alpine
+et du SUV de police (déclarés). Aucune lampe, aucun programme neuf (la matière
+de la flamme).
+
+**Ce qui le prouve.** Un témoin neuf sous node dans `degats.js` : zéro disque
+et zéro rectangle sur les 41 modèles (six par modèle sur l'ancien code), chaque
+lueur arrière et de détresse sur la tôle et à son bout, et les dix génériques
+ont leurs phares (zéro avant) ; le témoin des feux de détresse du navigateur
+lit des copies d'optique sur la tôle au lieu de lentilles. Planche de captures
+de nuit avant/après (trois quarts, face, dos) dans la PR.
+
 ## v587 — Chaque moteur a sa voix, et la flamme est une réchauffe
 
 **Pourquoi.** Max : « il y a des avions normaux qui ne crachent pas de feu.

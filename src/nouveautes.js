@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 588,
+    titre: 'Les phares ont leur vraie forme',
+    puces: [
+      'Chaque phare brille comme sur la vraie voiture',
+      'Les feux rouges s\'allument en freinant',
+      'Plus aucun rond collé sur la carrosserie',
+    ],
+  },
+  {
     v: 587,
     titre: 'Chaque moteur a sa voix',
     puces: [
