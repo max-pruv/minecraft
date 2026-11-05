@@ -7,7 +7,7 @@
 export const NOUVEAUTES = [
   {
     v: 586,
-    titre: 'On ne passe plus sous le sol',
+    titre: 'Plus de chute sous le sol',
     puces: [
       'En vol, on peut descendre très vite',
       'On s\'arrête toujours sur l\'herbe',
