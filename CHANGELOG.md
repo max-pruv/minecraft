@@ -20,6 +20,41 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v586 — Chaque endroit a ses voitures
+
+**Pourquoi.** À New York, Max ne voyait que deux voitures : le taxi jaune et une
+berline noire. La règle de tirage enfermait Manhattan dans les deux modèles
+marqués « New York », pendant que la moindre ville engendrée tirait dans toute
+la flotte. Et la route tirait exactement comme la rue : pas plus de 4×4 ni de
+pick-up à la campagne qu'en plein centre de Paris.
+
+**Ce que ça change.** Chaque circulation tire désormais dans un mélange propre à
+son milieu : Manhattan, une ville, ou la route entre deux villes, en Amérique du
+Nord, en Europe ou ailleurs. Manhattan roule avec une trentaine de modèles, dont
+un taxi jaune sur trois ; les villes européennes ont surtout des citadines et des
+berlines, les villes américaines des SUV et des pick-up ; les routes ont plus de
+4×4, de pick-up et de grandes routières, surtout en Amérique. Le taxi jaune ne
+roule qu'à New York, et le taxi Mondeo jamais en Amérique. Les voitures de
+New York prennent aussi leurs couleurs, comme partout ailleurs (le taxi jaune et
+la berline noire gardent la leur). Deux autoroutes ne tirent plus la même file de
+modèles.
+
+**Ce qui le prouve.** Trois témoins dans `carteMonde.js`, rouges sur l'ancien code
+(qui ne connaît pas l'endroit) : la rue de Manhattan tire au moins vingt-cinq
+modèles avec 20 à 40 % de taxis jaunes ; chaque milieu tire plus de vingt modèles,
+sans voiture de service, et la même règle sur deux tablettes ; la route
+d'Amérique a au moins 40 % de SUV et de pick-up. Le témoin des utilitaires de la
+v438 reste vert (17 % dans Paris), et `carteMonde.js` entière est verte (198
+témoins). Dans le jeu, les dix-huit convois de Manhattan portent 222 voitures de
+33 modèles, dont 23 % de taxis jaunes (deux modèles avant). Le coût, mesuré par
+`tests/sonde-cout-flotte.mjs` : Manhattan 59 344 → 58 989 triangles et 30,5 →
+30,8 maillages par voiture (les deux modèles fabriqués d'avant pesaient déjà
+autant) ; Paris 60 230 → 45 532 triangles, Houston → 53 012, la route d'Europe →
+55 938. Le prix : Manhattan télécharge maintenant les fichiers de la flotte à la
+première rencontre, comme les autres villes.
+
+---
+
 ## v585 — Les façades de Manhattan prennent du relief
 
 **Pourquoi.** Les photos de façades de la v583 restent plates quand on les

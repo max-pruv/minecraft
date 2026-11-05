@@ -1146,6 +1146,36 @@ paramétriques) sont partis de `FLOTTE` et de `vendor/voitures/`. Deux règles.
   `origin/main`) : +17 % d'appels par voiture visible. Toute livraison qui
   change la composition de la flotte publie cette moyenne avant et après.
 
+## Chaque endroit a ses voitures (v586) — un tirage se fait dans le mélange du milieu
+
+Max : « à New York, je ne vois qu'un taxi et une voiture noire… à la campagne
+des 4×4, des pick-up… et ça s'applique sur toutes les villes et tous les
+endroits ». Trois règles.
+
+- **UN MODÈLE MARQUÉ POUR UN LIEU S'AJOUTE AU MÉLANGE, IL NE LE REMPLACE PAS.**
+  `choixFlotte` filtrait Manhattan sur `ville: 'ny'` : deux modèles pour la
+  ville la plus variée, trente-sept pour la moindre ville engendrée, et aucun
+  témoin ne comptait les modèles d'un lieu. Le tirage se fait désormais dans
+  `MELANGES` (vehicules.js) : la part de chaque CLASSE par milieu, partagée
+  entre ses modèles ; ce qui a une identité de lieu est une case à part (le
+  taxi jaune à Manhattan, le taxi Mondeo — `taxi: true` — hors d'Amérique, la
+  fourgonnette et le pickup fabriqués en ville, que le témoin de la v438 lit).
+  Un modèle neuf entre dans le mélange par sa `classe`, sans une ligne de plus.
+- **LE MILIEU SE CALCULE UNE FOIS, À LA NAISSANCE DU CONVOI** (`milieuDe` : le
+  lieu — `ny`, `ville`, `route` — par `ville` et `voie`, la région par
+  `cielDe` sur le premier point du tracé). Il porte un `sel` tiré de la route et
+  de la ville de départ : toutes les autoroutes naissent sous la graine 41, et
+  changer la graine aurait changé l'allure du conducteur, donc la grille
+  partagée (v305). Le tirage reste une fonction de `n` et du milieu.
+- **UN RANG DE FILE NE SE TIRE PAS PAR UN PAS IRRATIONNEL.** Les voitures d'une
+  file sont `n`, `n + 17`, `n + 34` : `frac(17 φ)` vaut 0,507, et une voiture
+  sur deux serait retombée sur le modèle de l'avant-dernière. On mélange des
+  entiers (`melanger`, 32 bits, le même sur toute tablette).
+
+Toute livraison qui change un mélange rejoue `tests/sonde-cout-flotte.mjs` et
+publie la moyenne des triangles et des maillages par voiture, avant et après
+(la règle de la v579).
+
 ## Les dix-huit voitures déposées (v566) — un paquet se mesure, il ne se lit pas
 
 Max a déposé dix-huit paquets Sketchfab de facture différente.

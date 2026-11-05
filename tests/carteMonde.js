@@ -3926,6 +3926,57 @@ const VRAIES_KM = [
         f.modeles === 2 && f.part >= 0.15 && f.pointesUniques && ms.length === 2
           && ms.every((x) => x.roues === 4 && Math.abs(x.sol) < 0.02 && x.long > 4.2 && x.long < 5.1 && x.larg < 2.4 && x.maillages <= 20),
         JSON.stringify(f));
+      // ---- LA FLOTTE SUIT L'ENDROIT (v586) -------------------------------
+      // Max : « à New York, je ne vois qu'un taxi et une voiture noire… à la
+      // campagne des 4×4, des pick-up, à New York de tout — et ça s'applique
+      // sur toutes les villes et tous les endroits ». Sur l'ancien code,
+      // Manhattan tirait DEUX modèles et la route tirait comme la rue ; il n'y
+      // a pas de `milieuDe`, et le témoin le dit au lieu de s'effondrer.
+    }
+    const diversite = await tab.evaluate(async () => {
+      const ve = await import('./src/vehicules.js');
+      if (!ve.milieuDe) {
+        const ny = new Set(); for (let i = 0; i < 400; i++) ny.add(ve.choixFlotte(i * 17 + 99, 'ny').fichier);
+        return { absent: 'pas de milieuDe : la flotte ne connaît pas l\'endroit', modelesNY: ny.size };
+      }
+      const lieux = { ny: { ville: 'ny', voie: 'avenue' }, paris: { ville: 'paris' }, houston: { ville: 'houston' }, tokyo: { ville: 'tokyo' },
+        routeEurope: { ville: 'paris', voie: 'autoroute' }, routeAmerique: { ville: 'dallas', voie: 'autoroute' }, routeMonde: { ville: 'saopaulo', voie: 'autoroute' } };
+      const out = {};
+      for (const [nom, o] of Object.entries(lieux)) {
+        const m = ve.milieuDe(o), modeles = new Set(), classes = {}; let taxiNY = 0, horsRue = 0, ny = 0; const N = 600;
+        for (let i = 0; i < N; i++) {
+          const e = ve.choixFlotte(i * 17 + 1234, o.ville, m);
+          modeles.add(e.fichier); classes[e.classe] = (classes[e.classe] || 0) + 1 / N;
+          if (e.fichier === 'ny-crown-victoria') taxiNY++;
+          if (e.ville === 'ny') ny++;
+          if (e.horsRue || e.police) horsRue++;
+        }
+        for (const k in classes) classes[k] = +classes[k].toFixed(3);
+        // la même règle partout : deux tirages identiques (v305)
+        const pur = Array.from({ length: 50 }, (_, i) => ve.choixFlotte(i * 17 + 7, o.ville, m).fichier).join()
+          === Array.from({ length: 50 }, (_, i) => ve.choixFlotte(i * 17 + 7, o.ville, ve.milieuDe(o)).fichier).join();
+        out[nom] = { milieu: m.cle, modeles: modeles.size, classes, taxiNY: +(taxiNY / N).toFixed(3), ny, horsRue, pur };
+      }
+      return out;
+    });
+    {
+      const d = diversite, c = (n, k) => (d[n] && d[n].classes[k]) || 0;
+      verifier('la rue de Manhattan roule de tout : une trentaine de modèles, un tiers de taxis jaunes, et le taxi jaune ne roule qu\'à Manhattan',
+        !d.absent && d.ny.milieu === 'ny' && d.ny.modeles >= 25 && d.ny.taxiNY >= 0.2 && d.ny.taxiNY <= 0.4
+          && Object.entries(d).every(([k, v]) => k === 'ny' || v.ny === 0),
+        JSON.stringify(d.absent ? d : d.ny));
+      verifier('partout, la flotte suit l\'endroit : chaque ville et chaque route tire dans plus de vingt modèles, jamais une voiture de service, et la même règle sur deux tablettes',
+        !d.absent && Object.values(d).every((v) => v.modeles >= 20 && v.horsRue === 0 && v.pur)
+          && d.houston.milieu === 'ville-amerique' && d.paris.milieu === 'ville-europe' && d.tokyo.milieu === 'ville-monde'
+          && d.routeAmerique.milieu === 'route-amerique',
+        JSON.stringify(d.absent ? d : Object.fromEntries(Object.entries(d).map(([k, v]) => [k, `${v.milieu} · ${v.modeles} modèles`]))));
+      verifier('à la campagne, des 4×4 et des pickups ; en ville européenne, des citadines',
+        !d.absent && c('routeAmerique', 'suv') + c('routeAmerique', 'pickup') >= 0.4
+          && c('routeAmerique', 'pickup') > 2 * c('paris', 'pickup')
+          && c('routeEurope', 'suv') > c('paris', 'suv') && c('paris', 'citadine') >= 0.2 && c('paris', 'citadine') > c('routeEurope', 'citadine'),
+        JSON.stringify(d.absent ? d : { routeAmerique: d.routeAmerique.classes, paris: d.paris.classes, routeEurope: d.routeEurope.classes }));
+    }
+    {
       const j = paliersC.jeu;
       verifier('chaque voiture a son conducteur : les voisines d\'une file s\'écartent de leur grille, dans la borne, et la règle se refait à l\'identique (v305)',
         !!j && paliersC.paris.convois >= 6 && j.jouent * 2 >= paliersC.paris.convois && j.purs === paliersC.paris.convois
