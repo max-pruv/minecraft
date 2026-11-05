@@ -63,8 +63,8 @@ const PRISES = process.env.PRISES ? JSON.parse(process.env.PRISES) : [
   // au repos : la fenêtre la plus immobile de la prise (`immobile`)
   // (mesuré : 137_28 « normal wait » a les poings sur les hanches, 140_06
   // « idle » les jambes écartées à 35° — écartées)
-  { nom: "attente", fichier: "82_08", sujet: "82", fps: 15, immobile: true, duree: 5.5 },
-  { nom: "attente2", fichier: "111_28", sujet: "111", fps: 15, immobile: true, duree: 9 },
+  { nom: "attente", fichier: "82_08", sujet: "82", fps: 30, immobile: true, duree: 5.5 },
+  { nom: "attente2", fichier: "111_28", sujet: "111", fps: 30, immobile: true, duree: 9 },
   // ÉCARTÉES APRÈS CAPTURE (le jeu les rendait fausses, vu en vitrine) :
   // 40_10 « regarder autour » (tronc rejeté en arrière, bras écartés),
   // 79_36 « téléphone » et 18_08 « parler » (bras levés, corps penchés) ;

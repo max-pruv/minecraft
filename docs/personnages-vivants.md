@@ -66,7 +66,7 @@ Mesuré dans une rue de Paris (`tests/sonde-cout-capture.cjs`, ordre alterné,
 11 µs avec la marche dessinée, soit environ 1 ms de fil principal par
 seconde. La cadence d'animation baisse déjà avec la distance (`main.js` :
 chaque image sous 35 blocs, 15 Hz sous 80, 10 Hz au-delà, rien au-delà de
-140 ni pour un personnage invisible, `presence.js`). Le fichier pèse 52 Ko et
+140 ni pour un personnage invisible, `presence.js`). Le fichier pèse 87 Ko (toutes les prises à 30 images par seconde : la qualité d’abord) et
 vit dans le cache immuable (`sw.js`, `HUMAINS`) ; une nouvelle version prend
 un nom neuf (`mouvements-v2.bin`). Aucun programme de rendu neuf : les corps
 étaient déjà des maillages à squelette.
