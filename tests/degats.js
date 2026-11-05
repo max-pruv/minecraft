@@ -44,6 +44,23 @@ function verifier(nom, ok, detail = '') {
       `export async function resolve(s, c, n) { return s === 'three' ? { url: ${JSON.stringify(trois)}, shortCircuit: true } : n(s, c); }`));
     const { temoinsPorsche911 } = await import('./porsche-911.mjs');
     for (const [nom, ok, detail] of await temoinsPorsche911()) verifier(nom, ok, detail);
+    // LES TEXTURES KTX2 (v586) : chaque fichier comprimé est son original,
+    // sommet pour sommet et matériau pour matériau ; et tout modèle chargé qui
+    // porte une image a sa version comprimée.
+    {
+      const K = await import('./ktx2.mjs');
+      for (const [nom, ok, detail] of K.temoinsKTX2()) verifier(nom, ok, detail);
+      const V = await import('../src/vehicules.js');
+      const fs = require('fs'), pth = require('path');
+      const charges = V.FLOTTE.filter((e) => !e.fabrique).map((e) => 'voitures/' + (e.asset || e.fichier));
+      charges.push('voitures/moto-police.glb');
+      for (const d of ['avions', 'newyork']) {
+        for (const f of fs.readdirSync(pth.resolve(__dirname, '../vendor', d))) if (f.endsWith('.glb') && !f.endsWith('-ktx2.glb')) charges.push(d + '/' + f);
+      }
+      const oublies = K.couvertureKTX2(charges);
+      verifier('tout modèle chargé qui porte une image (flotte, moto, avions, New York) a sa version KTX2 — un paquet neuf passe par le script',
+        oublies.length === 0 && charges.length > 40, JSON.stringify({ charges: charges.length, oublies }));
+    }
     // LES LUMIÈRES POSÉES SUR TOUTE LA FLOTTE (v550), sous node, modèle par
     // modèle : phares, feux de détresse, feux stop — sur la tôle et à leur
     // coin. Le taxi jaune posait ses phares et ses feux avant au pied du
@@ -287,6 +304,47 @@ function verifier(nom, ok, detail = '') {
     const tab = await banc.jouerSeul('Dégâts', { rr: 2, pret: true });
     const erreurs = [];
     tab.on('pageerror', (e) => erreurs.push(String(e.message || e)));
+
+    // LES TEXTURES KTX2 DANS LE JEU (v586). Le transcodeur est branché, une
+    // voiture de la flotte arrive par son fichier `-ktx2.glb`, ses cartes sont
+    // des textures comprimées qui pèsent ce que portent leurs niveaux, et la
+    // dessiner ne compile AUCUN programme que l'original n'aurait pas compilé :
+    // on rend d'abord l'original (chargé à la main, sans transcodeur), on note
+    // les clés, puis la version KTX2. La MC12 : sa livrée Red Bull est la plus
+    // lourde image de la flotte (1 024², 37 Mo en RGBA avant).
+    const kt = await tab.evaluate(async () => {
+      const g = window.__game, THREE = await import('three');
+      const V = await import('./src/vehicules.js');
+      const J = await import('./src/journal.js');
+      const K = await import('./src/ktx2.js');
+      const { GLTFLoader } = await import('./vendor/GLTFLoader.js');
+      const e = V.FLOTTE.find((f) => f.fichier === 'maserati-mc12-gt1.glb');
+      const orig = (await new GLTFLoader().loadAsync('./vendor/voitures/maserati-mc12-gt1.glb')).scene;
+      const proto = await V.chargerVoitureFlotte(e);
+      const url = performance.getEntriesByType('resource').map((r) => r.name).filter((n) => /maserati-mc12/.test(n));
+      const cartes = [];
+      proto.traverse((o) => { if (o.isMesh) for (const m of [].concat(o.material)) for (const k of ['map', 'normalMap', 'emissiveMap']) if (m[k]) cartes.push(m[k]); });
+      const rendre = (o) => {
+        const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(), new THREE.DirectionalLight());
+        const c = o.clone(true); sc.add(c);
+        const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 100); cam.position.set(4, 2, 4); cam.lookAt(0, 0.5, 0);
+        g.renderer.render(sc, cam);
+        sc.remove(c);
+      };
+      rendre(orig);
+      const avant = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
+      rendre(proto);
+      const neuves = g.renderer.info.programs.map((q) => q.cacheKey).filter((k) => !avant.has(k)).length;
+      const mo = J.estimerMemoire([orig]).texMo, mk = J.estimerMemoire([proto]).texMo;
+      return { branche: K.ktx2Branche(), url: url.map((u) => u.split('/').pop()), cartes: cartes.length,
+        comprimees: cartes.filter((t) => t.isCompressedTexture).length, neuves,
+        texOrigMo: +mo.toFixed(1), texKtx2Mo: +mk.toFixed(1) };
+    }).catch((e) => ({ err: String(e).slice(0, 300) }));
+    verifier('KTX2 (v586) : le transcodeur est branché, la voiture arrive par son fichier comprimé, et ses cartes sont des textures comprimées',
+      !kt.err && kt.branche && kt.url.includes('maserati-mc12-gt1-ktx2.glb') && kt.cartes > 3 && kt.comprimees === kt.cartes,
+      JSON.stringify(kt));
+    verifier('… qui pèsent au moins trois fois moins en carte graphique, et ne compilent aucun programme que l\'original n\'a pas compilé',
+      !kt.err && kt.neuves === 0 && kt.texKtx2Mo > 0 && kt.texKtx2Mo * 3 < kt.texOrigMo, JSON.stringify(kt));
 
     // LA 911 RECONSTRUITE AU VOLANT (v545). Un modèle neuf passe les contrats de
     // la flotte que les autres témoins supposent sur un tirage : posée au sol

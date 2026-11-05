@@ -18,6 +18,7 @@ import { Atelier } from './modeles.js';
 import { liberer, partagerTout } from './liberer.js';
 import { profilVitesse, grilleDuProfil, rapprocher, allureDevant, passeAOrange, FREIN, FREIN_URGENCE, ALLURE_VOIE, allureDuConducteur } from './circulation.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { chargeurModeles, urlModele } from './ktx2.js';
 import { CLASSES, MARCHE, sEnfonce } from './conduite.js';
 import { flammeDeChauffe, matiereAdditive } from './avions.js';
 
@@ -639,16 +640,24 @@ function partageDesTextures(parser) {
     name: 'grandtour_textures_partagees',
     loadTexture(index) {
       const def = parser.json.textures[index];
-      const image = def && parser.json.images[def.source];
-      // une texture étendue (basisu, webp) ou une image hors du fichier suit le
+      if (!def) return null;
+      // UNE TEXTURE KTX2 SE PARTAGE AUSSI (v586). Ses octets sont dans
+      // l'extension, et c'est le transcodeur du jeu qui la lit ; sans lui
+      // branché, on laisse le chargeur dire ce qu'il en pense.
+      const basisu = def.extensions && def.extensions.KHR_texture_basisu;
+      const ktx2 = basisu && parser.options.ktx2Loader;
+      if (basisu && !ktx2) return null;
+      const source = ktx2 ? basisu.source : def.source;
+      const image = parser.json.images[source];
+      // une autre texture étendue (webp) ou une image hors du fichier suit le
       // chemin du chargeur, tel quel
-      if (!image || def.extensions || image.bufferView === undefined) return null;
+      if (!image || (def.extensions && !ktx2) || image.bufferView === undefined) return null;
       const sampler = JSON.stringify((parser.json.samplers || [])[def.sampler] || {});
       return parser.getDependency('bufferView', image.bufferView).then((tampon) => {
         const cle = empreinteOctets(tampon) + '|' + (image.mimeType || '') + '|' + sampler;
         let p = TEXTURES_FLOTTE.get(cle);
         if (!p) {
-          p = parser.loadTextureImage(index, def.source, parser.textureLoader)
+          p = parser.loadTextureImage(index, source, ktx2 || parser.textureLoader)
             .then((t) => { if (t) { t.userData.partagee = true; } return t; });
           TEXTURES_FLOTTE.set(cle, p);
         }
@@ -798,7 +807,7 @@ export function chargerVoitureFlotte(entree) {
     protosPrets.set(entree.fichier, modele);
     const p=Promise.resolve(modele);chargementsFlotte.set(entree.fichier,p);return p;
   }
-  const chargement = new GLTFLoader().register(partageDesTextures).loadAsync('./vendor/voitures/' + fichierCharge(entree))
+  const chargement = chargeurModeles(partageDesTextures).loadAsync(urlModele('./vendor/voitures/' + fichierCharge(entree)))
     .then((gltf) => {
       const cadre = new THREE.Group();
       // On remet le modèle au manifeste AVANT de l'accrocher : la rotation et

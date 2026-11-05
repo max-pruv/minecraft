@@ -1,5 +1,24 @@
 # Ce qui est en cours
 
+## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
+
+- **Mesurer sur l'iPhone et l'iPad.** Le banc lit l'ASTC et le BC7 (un octet
+  par pixel) ; l'estimation iPhone (ETC2 RGB, un demi-octet) vient du script.
+  Relire `journal_appareil` (`gpu.texMo`) après une session dans Paris, avec et
+  sans `?ktx2=0`.
+- **New York : +11,7 Mo transférés** (brotli q4) à la première visite, parce que
+  ses trois photos recuites de 2 048² passent en UASTC (ETC1S : 23 dB sur
+  l'Empire). Pistes : un ETC1S à codebook plus large, ou des images de 1 024
+  pour le `-loin` seulement. Décision de Max si le poids gêne.
+- **Niveaux de détail des voitures de la rue** : non faits. Après les textures,
+  la géométrie de la flotte (88 Mo pour la rue entière au banc) est le poste
+  suivant ; une version `-loin` décimée au-delà d'une distance à mesurer.
+- **Géométrie comprimée (EXT_meshopt_compression)** : les fichiers KTX2 gardent
+  leurs accesseurs bruts pour que la preuve « au sommet près » soit triviale ;
+  un codec sans perte réduirait le transfert de la flotte (72 Mo).
+- **Le vieux `vendor/voiture.glb` et les corps humains** (chantier 5) ne sont
+  pas convertis.
+
 ## Façades en relief de Manhattan (v585) — validation du 1er novembre
 
 - [ ] `npm test -- --tranche=4/17` : fumée verte (144 modules), huit contrats

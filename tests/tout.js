@@ -344,6 +344,10 @@ const GARDIENS = {
   'src/police.js': ['monte.js'],
   'src/patrouille.js': ['monte.js', 'reseau.js'],   // l'escorte d'un ami (police-réseau)
   'src/moto.js': ['monte.js'],
+  // les textures KTX2 des modèles déposés (v586) : les gardiens de ceux qui
+  // les chargent, et degats.js, qui vérifie les fichiers produits
+  'src/ktx2.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js', 'degats.js', 'carte.js'],
+  'src/ktx2-liste.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js', 'degats.js', 'carte.js'],
   'vendor/voitures/police-car.glb': ['monte.js', 'degats.js'],
   'vendor/voitures/moto-police.glb': ['monte.js'],
   'vendor/humains/policier.glb': ['monte.js'],

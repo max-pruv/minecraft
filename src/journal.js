@@ -393,6 +393,13 @@ export function estimerMemoire(racines) {
     const src = t.source || t.image;
     if (!src || sources.has(src)) return;
     sources.add(src);
+    // UNE TEXTURE COMPRIMÉE (KTX2, v586) PÈSE CE QUE PORTENT SES NIVEAUX : un
+    // demi-octet à un octet par pixel, mipmaps comprises, et non quatre. La
+    // compter en RGBA cacherait exactement ce que la compression rend.
+    if (t.isCompressedTexture && t.mipmaps && t.mipmaps.length) {
+      for (const m of t.mipmaps) octetsTex += (m && m.data && m.data.byteLength) || 0;
+      return;
+    }
     const img = t.source ? t.source.data : t.image;
     const mip = t.generateMipmaps === false && !(t.mipmaps && t.mipmaps.length) ? 1 : 4 / 3;
     octetsTex += Math.round(octetsImage(img) * mip);

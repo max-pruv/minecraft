@@ -20,6 +20,33 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## (numéro fixé à la fusion) — Les textures des modèles tiennent quatre à six fois moins de place
+
+**Pourquoi.** iOS ferme la page vers 500 Mo de géométrie et de textures (v580),
+et toutes les images des modèles déposés — voitures, police, moto, avions, New
+York — se décodaient en RGBA : 487 Mo de textures si tout est chargé, 309 Mo
+pour la seule flotte de la rue. C'est la place qui manque aux modèles plus
+beaux que le chantier « réalisme » veut ajouter.
+
+**Ce que ça change.** Les quarante modèles déposés qui portent des images
+arrivent avec des textures KTX2, transcodées pour la carte graphique (ETC2 ou
+ASTC sur l'iPhone et l'iPad). Mesuré au banc : la flotte de la rue passe de 309
+à 78 Mo de textures, tous les modèles de 487 à 128 Mo ; l'iPhone, qui reçoit
+l'ETC1S en ETC2 RGB, en garde environ 80 au lieu de 480. Rien ne change à
+l'écran ni sous les roues : même géométrie au sommet près, mêmes matériaux.
+Les fichiers d'avant restent (`?ktx2=0` les rend, pour comparer). Le prix :
+New York pèse 11,7 Mo de plus à télécharger à la première visite (ses photos
+recuites ne supportent pas l'ETC1S et passent en UASTC) ; la flotte, 2,6 Mo.
+
+**Ce qui le prouve.** Six témoins : sous node (`tests/ktx2.mjs`, lu par
+`degats.js`), chaque fichier comprimé est son original accesseur pour
+accesseur (5 221 accesseurs), nœud pour nœud, carte pour carte, avec les mêmes
+signatures de programme, et tout modèle chargé à image a sa version ; dans le
+jeu, la MC12 arrive par son fichier KTX2 avec des textures comprimées, trois
+fois plus légères, sans un programme neuf. La qualité de chaque texture est
+mesurée par le script (33 dB au moins, 37 à 50 en général), et les captures
+iPhone et iPad, de jour et de nuit, avec et sans KTX2, sont dans la PR.
+
 ## v585 — Les façades de Manhattan prennent du relief
 
 **Pourquoi.** Les photos de façades de la v583 restent plates quand on les

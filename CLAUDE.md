@@ -1034,6 +1034,48 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les textures en KTX2 (v586) — une image se mesure en carte graphique, pas sur le disque
+
+iOS ferme la page vers 500 Mo de géométrie et de textures (v580), et une image
+JPEG ou PNG se DÉCODE en RGBA : quatre octets par pixel plus un tiers de
+mipmaps, quelle que soit sa taille sur le disque. Six règles.
+
+- **UN MODÈLE DÉPOSÉ A SA VERSION KTX2, ET ELLE EST L'ORIGINAL AU SOMMET PRÈS.**
+  `scripts/compresser-textures-ktx2.mjs` écrit `<nom>-ktx2.glb` à côté du
+  fichier que le jeu charge (`asset || fichier`, v545) : URL neuve, original
+  gardé (une tablette restée en arrière le demande ; `?ktx2=0` le rend). Il ne
+  change que les images ; le script et `tests/ktx2.mjs` (lu par `degats.js`)
+  comparent chaque accesseur octet pour octet, les nœuds, les cartes par rôle
+  et les signatures de programme (v246). Un paquet neuf passe par le script :
+  le témoin de couverture rougit sur tout modèle chargé qui porte une image et
+  n'est pas dans `src/ktx2-liste.js`.
+- **LE CODEC SE CHOISIT PAR RÔLE ET SE JUGE AU DÉCIBEL.** Normales en UASTC
+  (linéaire, préréglage normal, zstd) ; couleurs (sRGB) et données (linéaire)
+  en ETC1S, et UASTC si l'ETC1S rend moins de 33 dB contre l'original, mesuré
+  avec le transcodeur que le JEU sert (`vendor/basis`, three r160). Les photos
+  recuites de New York passent ainsi en UASTC (l'Empire en ETC1S : 23 dB). Le
+  journal du script imprime chaque texture ; la RDO est un non-résultat mesuré.
+- **LE TRANSCODEUR SE BRANCHE SUR LE RENDERER, AVANT TOUT MODÈLE.**
+  `brancherKTX2(renderer)` (main.js, juste après sa création) ; `urlModele`
+  rend la version KTX2 seulement s'il est branché, `chargeurModeles()` est le
+  GLTFLoader de tous les modèles déposés (flotte, moto, avions, New York).
+  Sous node, rien n'est branché : les sondes chargent les originaux, tels
+  quels. Deux fils de transcodage au plus (chacun a son tas wasm).
+- **UNE EXTENSION QUI DOIT VOIR UNE TEXTURE AVANT LE CHARGEUR PASSE DEVANT LUI.**
+  `register` ajoute après les extensions intégrées, et `KHR_texture_basisu`
+  aurait décodé chaque texture pour son seul fichier : le partage de la flotte
+  (v413) est mis EN TÊTE (`chargeurModeles(partageDesTextures)`) et reconnaît
+  une texture KTX2 à ses octets, comme une image.
+- **UNE TEXTURE COMPRIMÉE PÈSE SES NIVEAUX.** `estimerMemoire` (journal.js)
+  somme les mipmaps d'une `CompressedTexture` au lieu de la compter en RGBA :
+  sans cela le journal de bord ne verrait jamais ce que la compression rend.
+- **CE QUE LE BANC MESURE N'EST PAS CE QUE L'IPHONE REÇOIT.** SwiftShader lit
+  l'ASTC et le BC7 (un octet par pixel) ; une puce Apple reçoit l'ETC1S opaque
+  en ETC2 RGB (un demi-octet). Le banc donne donc la borne haute du gain
+  (×4) ; le script imprime l'estimation iPhone (×6). Les modules du chargeur
+  sont dans `ASSETS` (cache de version) : un module importé au démarrage qui
+  manque hors ligne arrêterait tout le jeu.
+
 ## Un avion garé est un obstacle (v580) — une forme qui n'est pas un rectangle se mesure en silhouette, et l'enfoncement se compte en cases
 
 Deux dettes, une seule chose : la voiture traversait un avion au poste (v534),
