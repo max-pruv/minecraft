@@ -90,7 +90,9 @@ function caler(r) {
   // peut alors tomber sur une géométrie déjà rendue. On la lance sans
   // l'attendre et l'on avale son échec — la chauffe est un confort, pas un
   // verdict, et c'est un blocage déclaré du plan (docs/webgpu.md).
-  r.compile = (scene, camera, cible) => { r.compileAsync(scene, camera, cible).catch(() => {}); };
+  // (`compile` est un accesseur en lecture seule sur le prototype du rendu :
+  // on le redéfinit sur l'instance.)
+  Object.defineProperty(r, 'compile', { configurable: true, value: (scene, camera, cible) => { r.compileAsync(scene, camera, cible).catch(() => {}); } });
   // `renderer.info.programs` : la liste des programmes compilés, lue par la
   // chauffe (`prog` du journal, `?diag=1`) et par les témoins qui comparent des
   // clés. Sous WebGPU ce sont les PIPELINES de rendu, dans le cache du rendu.
@@ -110,7 +112,7 @@ function caler(r) {
   // rend en logiciel ; `etatRendu().logiciel` le dit désormais. On rend un
   // objet muet pour que l'ancien chemin ne jette pas.
   const ctx = r.getContext;
-  r.getContext = () => { try { const c = ctx && ctx.call(r); if (c && c.getExtension) return c; } catch { /* dos WebGPU */ } return { getExtension: () => null, getParameter: () => '' }; };
+  Object.defineProperty(r, 'getContext', { configurable: true, value: () => { try { const c = ctx && ctx.call(r); if (c && c.getExtension) return c; } catch { /* dos WebGPU */ } return { getExtension: () => null, getParameter: () => '' }; } });
   // `forceContextLoss` (les portraits) n'existe pas.
   if (!r.forceContextLoss) r.forceContextLoss = () => {};
 }
