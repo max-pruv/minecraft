@@ -15452,6 +15452,38 @@ Suivi dans la liste de tâches de la session. Les gros morceaux en cours :
 - Intérieurs visitables, guides dans les villes, notifications push.
 
 
+### Les personnages vivants — une capture de mouvement se recible par corps, et se juge en capture
+
+Marche, marche lente, course et deux attentes viennent de la base CMU,
+converties hors ligne (`scripts/convertir-mouvements.mjs`, rejouable) en un
+fichier immuable (`vendor/humains/mouvements-v1.bin`), reciblées au
+chargement par `src/mouvements.js`, jouées par `animerHumain` (un
+`AnimationMixer` par personne). Détail : `docs/personnages-vivants.md`. Cinq
+règles.
+
+- **ON RECIBLE DANS LE MONDE, PAR CORPS, JAMAIS PAR ROTATIONS LOCALES.** Les
+  neuf squelettes Rocketbox n'ont pas la même pose de repos (onze degrés
+  d'écart entre deux mains) : copier des quaternions locaux tordrait les
+  poignets. Le fichier porte l'écart au repos dans le monde ; un clip par
+  corps et par prise, partagé par toutes les personnes de ce corps.
+- **L'ALIGNEMENT DES DIRECTIONS NE VAUT QUE POUR LES MEMBRES.** Aligner le cou
+  Rocketbox (penché de dix-neuf degrés, comme un vrai cou) sur celui de la
+  capture rejetait toutes les têtes en arrière — vu en vitrine.
+- **LES PIEDS SE POSENT PAR LA CINÉMATIQUE DES JAMBES, SUR LE PARENT DU
+  BASSIN.** « Bip01 » n'est pas un os du squelette mais un nœud : la piste de
+  hauteur va sur `Pelvis.parent`, sinon elle ne joue rien (les corps
+  flottaient).
+- **UNE PRISE SE JUGE EN CAPTURE DANS LE MOTEUR, JAMAIS SUR SON TITRE.** « Looking
+  around » (sujet 77) est accroupi, « normal wait » a les poings sur les
+  hanches ; et sur cinq attentes essayées, trois rendaient des poses fausses
+  (bras levés, tronc rejeté) : retirées, déclarées. `DIAG=1` du script
+  imprime les angles qui trient avant la vitrine.
+- **UN FICHIER DE MOUVEMENTS EST IMMUABLE ET SE VERSIONNE PAR SON NOM** (cache
+  statique, comme les corps) : une retouche prend `mouvements-v2.bin`. Le coût
+  se mesure par `tests/sonde-cout-capture.cjs` (17 µs par appel contre 11 en
+  marche dessinée, Paris) ; `reglageCapture.actif` à faux rend la marche
+  dessinée, qui reste le repli tant que le fichier n'est pas là.
+
 ### Présence et anatomies v241
 
 Max a signalé des voitures et personnages trop rudimentaires et des personnes
