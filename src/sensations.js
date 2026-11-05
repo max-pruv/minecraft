@@ -562,7 +562,7 @@ export function sensationsAuVolant(a, player, dt) {
   const ev = player.etatVoiture || {};
   voitureSons({
     regime, charge, crissement: a.sens.crisse, roulement,
-    // la vitesse rapportée à la pointe : l'onduleur d'une électrique la suit (vXXX)
+    // la vitesse rapportée à la pointe : l'onduleur d'une électrique la suit (v587)
     allure: Math.min(1, Math.abs(m.v) / (m.vmax || 1)),
     sante: typeof ev.moteur === 'number' ? ev.moteur : 1,
     panne: !!ev.enPanne, feu: !!ev.enFeu,

@@ -125,7 +125,7 @@ export function appelEnCours(oui) {
   const vieux = ctx;
   ctx = null; maitre = null; bruitTampon = null;   // un tampon vit à la fréquence de son contexte
   vieux.close().catch(() => {});
-  if (typeMoteur) moteurDemarre(typeMoteur, caractere);   // le même moteur, pas un moteur générique (vXXX)
+  if (typeMoteur) moteurDemarre(typeMoteur, caractere);   // le même moteur, pas un moteur générique (v587)
   if (station >= 0) radioDemarre(station);
   // Hors d'un geste de l'enfant (après l'autorisation du micro), iOS peut
   // créer le contexte endormi : le premier contact avec l'écran le réveille.
@@ -144,7 +144,7 @@ export function generationAudio() { return generation; }
 // harmoniques franches et peu de souffle ; un réacteur, l'inverse : presque
 // tout est du souffle, plus un sifflement aigu de compresseur.
 //
-// UN CARACTÈRE PAR MOTEUR (vXXX). Max : « il y a des voitures qui font des
+// UN CARACTÈRE PAR MOTEUR (v587). Max : « il y a des voitures qui font des
 // bruits beaucoup plus sportifs… idem pour les avions, entre un avion de
 // chasse, un avion de ligne ». Le caractère vit dans la FICHE (FLOTTE `son`,
 // la classe sinon ; `AVIONS_GLB` `son`, ou le modèle sculpté) et `fun.js` le
@@ -253,7 +253,7 @@ export function moteurDemarre(type = 'voiture', caractere = null) {
   const osc2 = c.createOscillator(); osc2.type = 'sawtooth'; osc2.frequency.value = r.base * r.harmo;
   const gainH = c.createGain(); gainH.gain.value = 0.0001;
   const doux = c.createBiquadFilter(); doux.type = 'lowpass'; doux.frequency.value = r.doux || 1400;
-  // LA TRÉPIDATION (vXXX) : les harmoniques passent par un gain que module
+  // LA TRÉPIDATION (v587) : les harmoniques passent par un gain que module
   // un oscillateur lent — à la moitié de la fondamentale pour le roulement
   // d'un V8 ou d'un bicylindre, au double pour le claquement d'un diesel.
   let trepid = null;
@@ -277,7 +277,7 @@ export function moteurDemarre(type = 'voiture', caractere = null) {
     siffle.connect(gainSif).connect(sortie);
     siffle.start();
   }
-  // LA POSTCOMBUSTION (vXXX) : un rugissement grave et rêche — du bruit passé
+  // LA POSTCOMBUSTION (v587) : un rugissement grave et rêche — du bruit passé
   // bas — qui ne s'ouvre qu'avec la réchauffe (`rechauffeDe`, avions.js).
   let rech = null;
   if (r.rechauffe) {
@@ -340,12 +340,12 @@ export function moteurDemarre(type = 'voiture', caractere = null) {
 //   feu         le crépitement des flammes
 //   roulement   0..1, le grondement de la route sous les roues (v543) —
 //               déjà mis à l'échelle de la vitesse par celui qui appelle
-//   allure      0..1, la vitesse rapportée à la pointe (vXXX) : une
+//   allure      0..1, la vitesse rapportée à la pointe (v587) : une
 //               électrique n'a pas de rapports, son onduleur suit la vitesse
 export function voitureSons({ regime = 0, charge = 0, crissement = 0, sante = 1, panne = false, feu = false, roulement = 0, allure = null } = {}) {
   if (!moteur || !ctx) return;
   const t = ctx.currentTime;
-  // ON ENTEND PASSER LES RAPPORTS (vXXX) sur un moteur qui le mérite
+  // ON ENTEND PASSER LES RAPPORTS (v587) sur un moteur qui le mérite
   // (`passage`) : le régime retombe d'un coup quand la boîte monte, et le
   // moteur se coupe un dixième de seconde — le « blam » d'une sportive.
   if (moteur.r.passage && moteur.regPrec - regime > 0.25 && t >= moteur.prochainPassage && !moteur.enPanne) {

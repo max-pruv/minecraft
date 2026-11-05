@@ -1,4 +1,4 @@
-// UN MOTEUR PAR MODÈLE, ET UNE FLAMME SEULEMENT AVEC LA RÉCHAUFFE (vXXX).
+// UN MOTEUR PAR MODÈLE, ET UNE FLAMME SEULEMENT AVEC LA RÉCHAUFFE (v587).
 //
 // Max : « il y a des avions normaux qui ne crachent pas de feu », et « il y a
 // des voitures qui font des bruits beaucoup plus sportifs… idem pour les

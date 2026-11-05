@@ -322,7 +322,7 @@ export function initFun(ctx) {
     // la recette, `radio` allume une station. Rien n'est écrit ici sur ce
     // qui a un moteur — un cheval n'en a pas, et il suffit que sa fiche se
     // taise. Même discipline que `montable` et `vole`.
-    // LE CARACTÈRE DU MOTEUR (vXXX) vient aussi de la fiche : celle du MODÈLE
+    // LE CARACTÈRE DU MOTEUR (v587) vient aussi de la fiche : celle du MODÈLE
     // pour une voiture (`son` de FLOTTE, sinon sa classe), celle de l'appareil
     // pour un avion (`son` d'AVIONS_GLB, ou du modèle sculpté).
     if (a.def.moteur) moteurDemarre(a.def.moteur, caractereMoteur(a));
@@ -1365,7 +1365,7 @@ export function initFun(ctx) {
         : etat === 'atterrissage' ? Math.min(1, (p.approche || max) / max)
         : etat === 'freinage' ? 0 : Math.min(1, v / max);
       const poussee = player.gaz != null ? player.gaz : assistee;
-      // LA RÉCHAUFFE (vXXX) : seulement sur un appareil qui en a une, et
+      // LA RÉCHAUFFE (v587) : seulement sur un appareil qui en a une, et
       // seulement à fort régime — une règle, deux lecteurs (flamme et son)
       const rechauffe = a.mesh.userData.rechauffe ? rechauffeDe(poussee) : 0;
       moteurRegime(poussee, null, rechauffe);
@@ -1378,7 +1378,7 @@ export function initFun(ctx) {
         // à peine visibles de jour, un point vif dans son halo la nuit (v565)
         if (nav.regler) nav.regler(nuitDehors());
       }
-      // UNE FLAMME, C'EST LA POSTCOMBUSTION (vXXX) : un avion de ligne n'a pas
+      // UNE FLAMME, C'EST LA POSTCOMBUSTION (v587) : un avion de ligne n'a pas
       // de maillage de flamme du tout, un chasseur ou le Concorde ne l'allume
       // qu'au-delà du seuil de réchauffe, et elle s'allonge jusqu'à pleins gaz.
       const tuyeres = a.mesh.userData.tuyeres;

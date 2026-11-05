@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-## Chaque moteur a sa voix, la flamme est une réchauffe (vXXX) — dettes
+## Chaque moteur a sa voix, la flamme est une réchauffe (v587) — dettes
 
 - [ ] **On n'entend pas le moteur d'un ami.** Aucun son d'ami ne joue de
   moteur (seulement son klaxon, v549). Le caractère se déduirait de ce que la

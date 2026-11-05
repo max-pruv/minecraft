@@ -664,7 +664,7 @@ export const VU_VOITURE = 45;
 
 export const DEMI_LONG_VOITURE = 2.2;
 export const DEMI_LARG_VOITURE = 1.13;
-// LE SON D'UN MODÈLE (vXXX). Max : « il y a des voitures qui font des bruits
+// LE SON D'UN MODÈLE (v587). Max : « il y a des voitures qui font des bruits
 // beaucoup plus sportifs ». Un moteur s'entend par son CARACTÈRE — le
 // nombre et la disposition des cylindres, ou pas de cylindre du tout — et ce
 // caractère est une propriété du modèle, comme sa classe : il vit dans la

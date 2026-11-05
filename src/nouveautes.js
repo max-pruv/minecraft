@@ -6,7 +6,7 @@
 
 export const NOUVEAUTES = [
   {
-    v: 9999,
+    v: 587,
     titre: 'Chaque moteur a sa voix',
     puces: [
       'Les avions de ligne ne crachent plus de feu',

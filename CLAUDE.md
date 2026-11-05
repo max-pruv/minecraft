@@ -10861,7 +10861,7 @@ l'avion se déplace ». Trois règles.
   cent de gaz à l'arrêt, et éteinte à la descente par `fun.js` — la monture
   quittée n'est plus mise à jour, elle garderait sa dernière flamme.
 
-## Une flamme est une réchauffe, et chaque moteur a sa voix (vXXX)
+## Une flamme est une réchauffe, et chaque moteur a sa voix (v587)
 
 Max : « il y a des avions normaux qui ne crachent pas de feu », et « il y a
 des voitures qui font des bruits beaucoup plus sportifs… idem pour les

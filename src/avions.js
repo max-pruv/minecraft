@@ -379,7 +379,7 @@ function feuxNavigation(g, memo = null) {
   nav.regler(0);
   return nav;
 }
-// LA RÉCHAUFFE (vXXX). Max : « il y a des avions normaux qui ne crachent pas
+// LA RÉCHAUFFE (v587). Max : « il y a des avions normaux qui ne crachent pas
 // de feu. Aujourd'hui tous les avions crachent du feu, ça n'a pas de sens. »
 // Une flamme visible derrière un réacteur, c'est la POSTCOMBUSTION : du
 // carburant qu'on brûle une seconde fois dans la tuyère d'un chasseur ou du
@@ -448,7 +448,7 @@ function fini(a, zPrincipal = 0, porte = null) {
   // une flamme par tuyère déclarée, enfant de la racine
   // les feux de navigation se mesurent AVANT les flammes, qui dépassent la queue
   g.userData.feuxNav = feuxNavigation(g);
-  // une flamme par tuyère, et seulement si l'appareil a une réchauffe (vXXX)
+  // une flamme par tuyère, et seulement si l'appareil a une réchauffe (v587)
   g.userData.rechauffe = !!a.rechauffe;
   g.userData.tuyeres = a.rechauffe ? (a.tuyeres || []).map((t) => { const f = flamme(t); g.add(f); return f; }) : [];
   if (a.son) g.userData.sonMoteur = a.son;
@@ -470,7 +470,7 @@ function fini(a, zPrincipal = 0, porte = null) {
 // découle.
 export function avionDeLigneSculpte() {
   const a = new Atelier();
-  a.son = 'ligne';      // des turbosoufflantes : pas de réchauffe (vXXX)
+  a.son = 'ligne';      // des turbosoufflantes : pas de réchauffe (v587)
   const L = GABARITS_AVION.avionligne.long;      // 16
   const k = L / 37.6;                            // 0,426 bloc par mètre
   const rayon = 4.0 / 2 * k;                     // 0,85
@@ -540,7 +540,7 @@ export function avionDeLigneSculpte() {
 export function concorde() {
   const a = new Atelier();
   // quatre Olympus 593 à réchauffe, allumée au décollage et au passage du mur
-  // du son (vXXX) ; le grondement d'un turboréacteur pur, sans soufflante
+  // du son (v587) ; le grondement d'un turboréacteur pur, sans soufflante
   a.rechauffe = true;
   a.son = 'concorde';
   const L = GABARITS_AVION.concorde.long;        // 20
@@ -599,7 +599,7 @@ export function concorde() {
 // fuselage soit large par rapport à sa longueur (2,0 m pour 15,3).
 export function avionDeChasseSculpte() {
   const a = new Atelier();
-  a.rechauffe = true;   // la postcombustion d'un chasseur (vXXX)
+  a.rechauffe = true;   // la postcombustion d'un chasseur (v587)
   a.son = 'chasseur';
   const L = GABARITS_AVION.chasseur.long;        // 10
   const k = L / 15.3;                            // 0,654
@@ -734,9 +734,9 @@ export function accesAvion(porte) {
 //     son rayon, son bout arrière), jamais écrites à l'œil ;
 //   - `trainPrincipal` : le z de l'essieu principal, autour duquel le nez se
 //     lève (le pivot du nœud, lu dans le fichier) ;
-//   - `rechauffe` (vXXX) : seul un appareil à postcombustion porte des
+//   - `rechauffe` (v587) : seul un appareil à postcombustion porte des
 //     flammes — les tuyères restent MESURÉES pour tous, la flamme non ;
-//   - `son` (vXXX) : le caractère du moteur (`sons.js`), par modèle.
+//   - `son` (v587) : le caractère du moteur (`sons.js`), par modèle.
 // Les sièges des passagers vivent dans la fiche de l'espèce (montures.js) et
 // valent pour le modèle sculpté comme pour le modèle déposé : mesurés au
 // rayon sur les deux (axe du fuselage 1,62 et 1,55, plafond 2,51 et 2,35).

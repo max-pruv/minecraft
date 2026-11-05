@@ -7775,10 +7775,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && capAvion.rendu && !capAvion.rendu.affiche,
       `${capAvion.err || ''} à pied ${JSON.stringify(capAvion.aPied)} · rendu ${JSON.stringify(capAvion.rendu)}`);
 
-    // LES FLAMMES DES RÉACTEURS (v264), ET SEULEMENT LA RÉCHAUFFE (vXXX).
+    // LES FLAMMES DES RÉACTEURS (v264), ET SEULEMENT LA RÉCHAUFFE (v587).
     //
     // Max, capture du chasseur en vol : « voir les flammes sortir du réacteur
-    // quand l'avion se déplace ». Puis, en vXXX : « il y a des avions normaux
+    // quand l'avion se déplace ». Puis, en v587 : « il y a des avions normaux
     // qui ne crachent pas de feu. Aujourd'hui tous les avions crachent du feu,
     // ça n'a pas de sens. » Une flamme visible est une POSTCOMBUSTION : une par
     // tuyère sur le chasseur et le Concorde, AUCUNE sur l'avion de ligne, et
@@ -8280,7 +8280,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       !sons.err && sons.descendu && sons.apresDescente < sons.auRalenti / 4,
       `${sons.err || ''} ${JSON.stringify(sons)}`);
 
-    // UN MOTEUR PAR MODÈLE, UNE FLAMME SEULEMENT AVEC LA RÉCHAUFFE (vXXX).
+    // UN MOTEUR PAR MODÈLE, UNE FLAMME SEULEMENT AVEC LA RÉCHAUFFE (v587).
     // Max : « il y a des voitures qui font des bruits beaucoup plus sportifs…
     // idem pour les avions », et « tous les avions crachent du feu, ça n'a pas
     // de sens ». Le passage vit dans `sonde-moteurs.cjs` (une copie de sonde
@@ -9702,7 +9702,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         // deux clés neuves (`sonde-flamme-chauffe.cjs`).
         const avantFlamme = cles(), tuyeres = a.mesh.userData.tuyeres || [];
         // pleins gaz : la flamme est une réchauffe, elle ne s'allume qu'au-delà
-        // du seuil (vXXX)
+        // du seuil (v587)
         g.player.gaz = 1;
         await images(6);
         res.flamme = { tuyeres: tuyeres.length, allumees: tuyeres.filter((f) => f.visible).length,
