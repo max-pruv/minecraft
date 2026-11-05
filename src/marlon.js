@@ -360,7 +360,7 @@ export class BaseNPC {
       this.sursaut -= dtReel;
       // 0 → 1 → 0 sur la durée du sursaut : les bras montent, un petit saut
       const a = Math.sin(Math.PI * Math.min(1, 1 - Math.max(0, this.sursaut) / DUREE_SURSAUT));
-      if (this.mesh.userData.rig) animerHumain(this.mesh, this.animTime, 0, { cuisses: 0, genoux: 0.25 * a, bras: -1.6 * a, coudes: -1.2 * a });
+      if (this.mesh.userData.rig) animerHumain(this.mesh, this.animTime, 0, { cuisses: 0, genoux: 0.25 * a, bras: -1.6 * a, coudes: -1.2 * a, surcouche: true });
       else { arms[0].rotation.x = arms[1].rotation.x = -2.4 * a; }
       this.mesh.position.y += 0.14 * a;
     }

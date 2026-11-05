@@ -73,6 +73,7 @@ const SUITES = [
 // enfant est ici, et la table doit grandir avec le code.
 const GARDIENS = {
   'src/humains.js': ['realisme.js', 'monte.js', 'reglages.js', 'reseau.js', 'visio.js', 'manhattan.js'],
+  'src/mouvements.js': ['realisme.js', 'monte.js', 'reglages.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'src/presence.js': ['realisme.js', 'monte.js', 'manhattan.js'],
   'vendor/SkeletonUtils.js': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
   'vendor/humains/homme-denim.glb': ['realisme.js', 'monte.js', 'reseau.js', 'visio.js', 'manhattan.js'],
