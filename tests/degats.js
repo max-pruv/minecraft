@@ -44,7 +44,7 @@ function verifier(nom, ok, detail = '') {
       `export async function resolve(s, c, n) { return s === 'three' ? { url: ${JSON.stringify(trois)}, shortCircuit: true } : n(s, c); }`));
     const { temoinsPorsche911 } = await import('./porsche-911.mjs');
     for (const [nom, ok, detail] of await temoinsPorsche911()) verifier(nom, ok, detail);
-    // LES TEXTURES KTX2 (v586) : chaque fichier comprimé est son original,
+    // LES TEXTURES KTX2 (v590) : chaque fichier comprimé est son original,
     // sommet pour sommet et matériau pour matériau ; et tout modèle chargé qui
     // porte une image a sa version comprimée.
     {
@@ -71,7 +71,7 @@ function verifier(nom, ok, detail = '') {
     const F = await import('./sonde-feux-flotte.mjs');
     const p = await F.empoisonner();
     verifier('une voiture abîmée (échelle en pleine animation, un feu détaché) mesurée la première ne fait pas la règle du modèle : la DB11 neuve qui suit a ses feux sur sa tôle',
-      p.detOk && p.stopOk && p.phOk && p.otees > 0, JSON.stringify(p));
+      p.detOk && p.arriereOk && p.phOk && p.otees > 0, JSON.stringify(p));
     // CE QUE LA RUE REPEINT, UN MATÉRIAU LE PORTE (v579). La rue tirait une
     // teinte pour la Revuelto (laque `Paint_Arancio`) et la Divo (matériaux
     // sans nom) : `userData.peinture` l'annonçait, l'ami la recevait, et
@@ -140,8 +140,8 @@ function verifier(nom, ok, detail = '') {
       }
     }
     const flotte = await F.mesurerFlotte();
-    const ko = flotte.filter((x) => !(x.phOk && x.detOk && x.stopOk));
-    verifier(`les phares, les feux de détresse et les feux stop des ${flotte.length} modèles de la flotte (taxis et utilitaires fabriqués compris) sont sur la tôle, à leur coin`,
+    const ko = flotte.filter((x) => !(x.phOk && x.detOk));
+    verifier(`les phares et les coins des feux des ${flotte.length} modèles de la flotte (taxis et utilitaires fabriqués compris) sont sur la tôle, à leur coin`,
       flotte.length >= 30 && ko.length === 0, JSON.stringify(ko.slice(0, 3)));
     // LES PHARES ÉPOUSENT L'OPTIQUE DU MODÈLE (v569). Max : « la vraie 911 a
     // une barre lumineuse, et le jeu vient créer des phares ronds par-dessus ».
@@ -157,6 +157,20 @@ function verifier(nom, ok, detail = '') {
     verifier(`de nuit, les phares des ${flotte.length} modèles s'allument dans la forme de leur propre optique — aucun disque plaqué, chaque lueur sur la tôle et au nez — et la 911 allume sa signature`,
       koLueur.length === 0 && p911.rang === 1 && p911.triangles > 100 && avecLueur >= 25,
       JSON.stringify({ ko: koLueur.slice(0, 3).map((x) => ({ f: x.f, disques: x.disques, tole: x.surToleLueur, horsNez: x.horsNez })), p911: { rang: p911.rang, tri: p911.triangles }, avecLueur }));
+    // TOUT FEU ALLUMÉ SUIT LA FORME DE SON OPTIQUE (v587). Max : « les phares
+    // des voitures font des ronds très génériques ». Les feux stop étaient
+    // deux disques, le recul deux petits disques, la détresse quatre
+    // rectangles : sur l'ancien code, `disques` vaut six par modèle. Ici, les
+    // feux stop, de recul et les clignotants sont des copies de triangles de
+    // l'optique, sur la tôle et à leur bout ; les dix génériques (un
+    // maillage « Optics » que la règle ne nommait pas) ont enfin des phares.
+    const koAr = flotte.filter((x) => !x.arriereOk);
+    const avecStop = flotte.filter((x) => x.stops > 0).length, avecCligno = flotte.filter((x) => x.cligno > 0).length;
+    const disquesTotal = flotte.reduce((n, x) => n + (x.disques || 0), 0);
+    const gen = flotte.filter((x) => /^generique-/.test(x.f));
+    verifier(`les feux stop, de recul et de détresse des ${flotte.length} modèles s'allument dans la forme de leur optique — zéro disque, zéro rectangle, chaque lueur sur la tôle et à son bout — et les génériques ont leurs phares`,
+      koAr.length === 0 && disquesTotal === 0 && avecStop >= 33 && avecCligno >= 33 && gen.length >= 10 && gen.every((x) => x.lueurs > 0 && x.stops > 0),
+      JSON.stringify({ ko: koAr.slice(0, 3).map((x) => ({ f: x.f, ar: x.surToleArriere, horsAr: x.horsArriere, cl: x.surToleCligno, horsCl: x.horsCligno })), disquesTotal, avecStop, avecCligno, gen: gen.map((x) => [x.lueurs, x.stops]) }));
   } catch (e) {
     verifier('911 : les témoins du modèle reconstruit se chargent sous node', false, String(e && e.message || e).slice(0, 200));
   }
@@ -305,7 +319,7 @@ function verifier(nom, ok, detail = '') {
     const erreurs = [];
     tab.on('pageerror', (e) => erreurs.push(String(e.message || e)));
 
-    // LES TEXTURES KTX2 DANS LE JEU (v586). Le transcodeur est branché, une
+    // LES TEXTURES KTX2 DANS LE JEU (v590). Le transcodeur est branché, une
     // voiture de la flotte arrive par son fichier `-ktx2.glb`, ses cartes sont
     // des textures comprimées qui pèsent ce que portent leurs niveaux, et la
     // dessiner ne compile AUCUN programme que l'original n'aurait pas compilé :
@@ -336,12 +350,18 @@ function verifier(nom, ok, detail = '') {
       rendre(proto);
       const neuves = g.renderer.info.programs.map((q) => q.cacheKey).filter((k) => !avant.has(k)).length;
       const mo = J.estimerMemoire([orig]).texMo, mk = J.estimerMemoire([proto]).texMo;
-      return { branche: K.ktx2Branche(), url: url.map((u) => u.split('/').pop()), cartes: cartes.length,
+      // le journal des ressources du navigateur s'arrête à 250 entrées (il
+      // était plein au portail GitHub : `url` vide) ; l'adresse que le
+      // chargeur demande se lit alors dans la règle du jeu, et les cartes
+      // comprimées disent qu'elle a bien été servie
+      const plein = performance.getEntriesByType('resource').length >= 250;
+      return { branche: K.ktx2Branche(), url: url.map((u) => u.split('/').pop()), plein,
+        voulue: K.urlModele('./vendor/voitures/maserati-mc12-gt1.glb').split('/').pop(), cartes: cartes.length,
         comprimees: cartes.filter((t) => t.isCompressedTexture).length, neuves,
         texOrigMo: +mo.toFixed(1), texKtx2Mo: +mk.toFixed(1) };
     }).catch((e) => ({ err: String(e).slice(0, 300) }));
-    verifier('KTX2 (v586) : le transcodeur est branché, la voiture arrive par son fichier comprimé, et ses cartes sont des textures comprimées',
-      !kt.err && kt.branche && kt.url.includes('maserati-mc12-gt1-ktx2.glb') && kt.cartes > 3 && kt.comprimees === kt.cartes,
+    verifier('KTX2 (v590) : le transcodeur est branché, la voiture arrive par son fichier comprimé, et ses cartes sont des textures comprimées',
+      !kt.err && kt.branche && (kt.url.includes('maserati-mc12-gt1-ktx2.glb') || (kt.plein && !kt.url.length && kt.voulue === 'maserati-mc12-gt1-ktx2.glb')) && kt.cartes > 3 && kt.comprimees === kt.cartes,
       JSON.stringify(kt));
     verifier('… qui pèsent au moins trois fois moins en carte graphique, et ne compilent aucun programme que l\'original n\'a pas compilé',
       !kt.err && kt.neuves === 0 && kt.texKtx2Mo > 0 && kt.texKtx2Mo * 3 < kt.texOrigMo, JSON.stringify(kt));
@@ -1290,8 +1310,10 @@ function verifier(nom, ok, detail = '') {
       // la Revuelto adaptée (v546) : un modèle d'une autre facture, chargé
       // par son `asset` — ses feux se mesurent comme ceux des autres ; la SF90
       // XX (v561) aussi, et la MC12 GT1 (v559), dont les feux vivent dans un
-      // export Sketchfab
-      const modeles = ['tesla-model-y.glb', 'porsche-911-gt3-rs.glb', 'aston-martin-db11.glb', 'bugatti-divo.glb', 'rolls-royce-ghost.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb', 'lamborghini-revuelto.glb', 'ferrari-sf90.glb', 'maserati-mc12-gt1.glb'];
+      // export Sketchfab. La Divo n'y est plus (v587) : son optique ne se
+      // reconnaît pas, elle n'a pas de lueur (déclaré) — la Chiron Stealth
+      // tient la place de l'hypercar
+      const modeles = ['tesla-model-y.glb', 'porsche-911-gt3-rs.glb', 'aston-martin-db11.glb', 'bugatti-chiron-stealth.glb', 'rolls-royce-ghost.glb', 'fourgonnette', 'ny-crown-victoria', 'lucid-gravity.glb', 'lamborghini-revuelto.glb', 'ferrari-sf90.glb', 'maserati-mc12-gt1.glb'];
       const rc = new THREE.Raycaster(); rc.layers.enableAll();
       const avantCles = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
       const res = [];
@@ -1309,14 +1331,27 @@ function verifier(nom, ok, detail = '') {
         V.feuxDeDetresse(m, true);
         const gr = m.userData.detresse;
         m.updateMatrixWorld(true);
-        const corps = []; m.traverse((o) => { if (o.isMesh && o.name !== 'detresse-lentille') corps.push(o); });
-        const ecarts = [];
+        const corps = []; m.traverse((o) => { if (o.isMesh && !(gr && gr.children.includes(o))) corps.push(o); });
+        // chaque feu est une COPIE de l'optique (v587) : on tire, depuis un
+        // triangle sur dix, un rayon le long de sa normale ; il retrouve la
+        // tôle à quelques centièmes. Plus aucun rectangle de 0,26 × 0,11.
+        const ecarts = [], formes = [];
+        const A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3(), N = new THREE.Vector3(), T = new THREE.Vector3();
         for (const l of gr ? gr.children : []) {
-          const p = new THREE.Vector3().setFromMatrixPosition(l.matrixWorld);
-          const n = new THREE.Vector3(0, 0, 1).transformDirection(l.matrixWorld);
-          rc.set(p.clone().addScaledVector(n, 1), n.clone().negate()); rc.far = 3;
-          const h = rc.intersectObjects(corps, false)[0];
-          ecarts.push(h ? +(1 - h.distance).toFixed(3) : null);   // > 0 : devant la tôle
+          formes.push(l.geometry.type);
+          const pos = l.geometry.attributes.position, nt = pos.count / 3, pas = Math.max(1, Math.floor(nt / 10));
+          let sur = 0, n = 0;
+          for (let i = 0; i < nt; i += pas) {
+            A.fromBufferAttribute(pos, 3 * i).applyMatrix4(l.matrixWorld); B.fromBufferAttribute(pos, 3 * i + 1).applyMatrix4(l.matrixWorld); C.fromBufferAttribute(pos, 3 * i + 2).applyMatrix4(l.matrixWorld);
+            N.subVectors(B, A).cross(T.subVectors(C, A)); if (N.lengthSq() < 1e-14) continue; N.normalize(); n++;
+            const centre = A.clone().add(B).add(C).divideScalar(3);
+            for (const sg of [1, -1]) {
+              const d = N.clone().multiplyScalar(sg);
+              rc.set(centre.clone().addScaledVector(d, 0.3), d.clone().negate()); rc.far = 0.6;
+              if (rc.intersectObjects(corps, false).some((x) => Math.abs(x.distance - 0.3) < 0.03)) { sur++; break; }
+            }
+          }
+          ecarts.push(n ? +(sur / n).toFixed(2) : 0);
         }
         // le clignotement : on le lit sur une seconde et demie
         const vus = new Set();
@@ -1324,13 +1359,13 @@ function verifier(nom, ok, detail = '') {
         gr.visible = true;
         g.renderer.render(g.scene, cam);
         g.scene.remove(m);
-        res.push({ f, n: gr ? gr.children.length : 0, ecarts, clignote: vus.size === 2 });
+        res.push({ f, n: gr ? gr.children.length : 0, ecarts, formes: [...new Set(formes)], clignote: vus.size === 2 });
       }
       const neuves = g.renderer.info.programs.map((q) => q.cacheKey).filter((k) => !avantCles.has(k));
       return { res, attendus: modeles.length, neuves: neuves.length };
     });
-    const surLaTole = (r) => !r.err && r.n === 4 && r.ecarts.every((e) => e !== null && e > -0.02 && e < 0.06) && r.clignote;
-    verifier('les feux de détresse se posent SUR la carrosserie, aux quatre coins, du plus petit modèle au plus grand, et ils clignotent — sans compiler un programme',
+    const surLaTole = (r) => !r.err && r.n >= 2 && r.formes.every((t) => !/Plane|Circle|Sphere/.test(t)) && r.ecarts.every((e) => e >= 0.9) && r.clignote;
+    verifier('les feux de détresse sont la copie des optiques du modèle (plus un rectangle), SUR sa carrosserie, du plus petit modèle au plus grand, et ils clignotent — sans compiler un programme',
       !detresse.err && detresse.res.length === detresse.attendus && detresse.res.every(surLaTole) && detresse.neuves === 0,
       JSON.stringify(detresse));
 

@@ -5103,7 +5103,7 @@ const VRAIES_KM = [
         const dedans = (ud.tuyeres || []).every((f) => f.position.x >= b.min.x && f.position.x <= b.max.x
           && f.position.y >= b.min.y && f.position.y <= b.max.y && f.position.z >= b.min.z - 0.3 && f.position.z <= b.max.z + 0.3);
         out[cle] = { variante: ud.variante, train: (ud.train || []).length,
-          ouvrant: !!(ud.porte && m[ud.porte.ouvrant]), tuyeres: (ud.tuyeres || []).length, attendues: def.tuyeres.length,
+          ouvrant: !!(ud.porte && m[ud.porte.ouvrant]), tuyeres: (ud.tuyeres || []).length, attendues: def.rechauffe ? def.tuyeres.length : 0,
           dedans, feux: !!ud.feuxNav,
           // des sièges propres (le jet, v565) : portés par le modèle, et DANS
           // sa boîte (le crâne, 0,71 au-dessus des hanches, sous le toit)
@@ -5134,11 +5134,13 @@ const VRAIES_KM = [
       }
       return out;
     })();
-    verifier('les avions déposés tiennent le contrat du jeu — train, porte, flammes dans la tuyère, feux, sièges, fichiers propres, le jet dans la rangée des aéroports civils',
+    verifier('les avions déposés tiennent le contrat du jeu — train, porte, flammes dans la tuyère (réchauffe seulement), feux, sièges, fichiers propres, le jet dans la rangée des aéroports civils',
       !contrat.absent && !fichiersAvions.absent && Object.keys(contrat).length === 4
         && Object.entries(contrat).every(([c, r]) => r.variante === c && r.train === 3 && r.ouvrant && r.tuyeres === r.attendues && r.dedans && r.feux && r.sieges)
         && contrat.jet && contrat.jet.poste === true
-        && Object.values(fichiersAvions).every((f) => f.racine && f.yeux === 0 && f.extensions.length === 0 && f.tris <= 40000)
+        && Object.entries(fichiersAvions).every(([n, f]) => f.racine && f.yeux === 0 && f.tris <= 40000
+          // seule extension permise : les textures KTX2 de la version -ktx2 (v590)
+          && f.extensions.every((e) => /-ktx2\.glb$/.test(n) && e === 'KHR_texture_basisu'))
         && fichiersAvions['airbus-a321.glb'] && fichiersAvions['airbus-a321.glb'].train === 3
         && fichiersAvions['chasseur-f35.glb'] && fichiersAvions['chasseur-f35.glb'].train === 3 && fichiersAvions['chasseur-f35.glb'].verriere,
       JSON.stringify({ contrat, fichiersAvions }));

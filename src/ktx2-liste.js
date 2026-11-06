@@ -1,4 +1,4 @@
-// LES MODÈLES DÉPOSÉS DONT LES TEXTURES EXISTENT AUSSI EN KTX2 (mémoire, v586).
+// LES MODÈLES DÉPOSÉS DONT LES TEXTURES EXISTENT AUSSI EN KTX2 (mémoire, v590).
 //
 // Sans import : le script hors ligne (`scripts/compresser-textures-ktx2.mjs`),
 // le jeu (`ktx2.js`) et les témoins sous node lisent la MÊME liste. Chaque

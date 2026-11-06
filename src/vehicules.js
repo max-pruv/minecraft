@@ -22,6 +22,7 @@ import { MONDES, cielDe } from './mondes.js';
 import { chargeurModeles, urlModele } from './ktx2.js';
 import { CLASSES, MARCHE, sEnfonce } from './conduite.js';
 import { flammeDeChauffe, matiereAdditive } from './avions.js';
+import { optiquesDe, sourceIntacte, sourcesDe, lueurDe } from './optiques.js';
 
 // --- les reflets --------------------------------------------------------------
 //
@@ -539,26 +540,26 @@ export const FLOTTE = [
   // (`voitureNeuve`, repli du vœu).
   // `portiere: false` (v366) : sans habitacle, la portière ouverte ne montre que
   // du noir ; un modèle qui casse vaut moins qu'un modèle qui s'en passe.
-  { fichier: 'bugatti-chiron-stealth.glb', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false, portiere: false },
+  { fichier: 'bugatti-chiron-stealth.glb', son: 'w16', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false, portiere: false },
   // La SF90 XX Stradale de Ddiaz Design (CC-BY-4.0, vendor/voitures/LICENSE.md),
   // posée au manifeste par scripts/ferrari-sf90-xx.py, remplace à l'affichage
   // l'ancienne SF90 : même identifiant pour les garages et le réseau, URL neuve
   // (`asset`) pour le cache. Portières non séparées dans le modèle : `portiere:
   // false` (v366), comme la Revuelto.
-  { fichier: 'ferrari-sf90.glb', asset: 'ferrari-sf90-xx.glb', classe: 'sportive', nom: 'Ferrari SF90 XX Stradale', portiere: false },
+  { fichier: 'ferrari-sf90.glb', son: 'v8', asset: 'ferrari-sf90-xx.glb', classe: 'sportive', nom: 'Ferrari SF90 XX Stradale', portiere: false },
   // L'identifiant des sauvegardes reste stable ; l'URL neuve renouvelle le
   // modèle dans STATIC_CACHE sans retélécharger toute la flotte. Adaptation
   // CC-BY-4.0 du modèle de BRO (vendor/voitures/LICENSE.md) : portières non
   // séparées, donc `portiere: false` (v366) plutôt qu'un découpage au hasard.
-  { fichier: 'lamborghini-revuelto.glb', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', laque: 'jamais', portiere: false },
-  { fichier: 'lucid-gravity.glb', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
+  { fichier: 'lamborghini-revuelto.glb', son: 'v12', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', laque: 'jamais', portiere: false },
+  { fichier: 'lucid-gravity.glb', son: 'electrique', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
   // LA MC12 GT1 RED BULL (v559), adaptation CC-BY-4.0 du modèle de Dave Love
   // (vendor/voitures/LICENSE.md, `scripts/convertir-mc12.py`). Sa livrée EST
   // sa laque : la rue ne la repeint jamais (`laque: 'jamais'`, comme la
   // fourgonnette). Ses portes s'ouvrent en élytre et ne sont pas séparées dans
   // le modèle : `portiere: false` (v366), plutôt qu'une portière classique
   // découpée dans la tôle d'une voiture qui n'en a pas.
-  { fichier: 'maserati-mc12-gt1.glb', classe: 'hypercar', nom: 'Maserati MC12 GT1 Red Bull', laque: 'jamais', portiere: false },
+  { fichier: 'maserati-mc12-gt1.glb', son: 'v12', classe: 'hypercar', nom: 'Maserati MC12 GT1 Red Bull', laque: 'jamais', portiere: false },
   // LA 911 RECONSTRUITE (v545) : `fichier` reste l'IDENTIFIANT (garages,
   // réseau, couleur de la rue) ; `asset` est le fichier CHARGÉ. Une URL neuve
   // renouvelle le modèle dans STATIC_CACHE, où une URL connue ne se
@@ -570,22 +571,22 @@ export const FLOTTE = [
   // `portiere: false`, comme la Chiron Stealth. La Model Y est la voiture que
   // fabrique la Giga-usine (`usine: true`, lu par la chaîne et le garagiste) ;
   // les livrées de course et le taxi ne se repeignent pas (`laque: 'jamais'`).
-  { fichier: 'tesla-model-y.glb', classe: 'suv', nom: 'Tesla Model Y', usine: true, habitacle: false, portiere: false },
-  { fichier: 'tesla-cybertruck.glb', classe: 'pickup', nom: 'Tesla Cybertruck', habitacle: false, portiere: false },
-  { fichier: 'aston-martin-victor.glb', classe: 'hypercar', nom: 'Aston Martin Victor', habitacle: false, portiere: false },
-  { fichier: 'aston-martin-db11.glb', classe: 'gt', nom: 'Aston Martin DB11', habitacle: false, portiere: false },
-  { fichier: 'alpine-a110-gt4.glb', classe: 'sportive', nom: 'Alpine A110 GT4', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'bentley-mulliner-batur.glb', classe: 'gt', nom: 'Bentley Mulliner Batur', habitacle: false, portiere: false },
-  { fichier: 'rolls-royce-ghost.glb', classe: 'berline', nom: 'Rolls-Royce Ghost', habitacle: false, portiere: false },
-  { fichier: 'gmc-hummer-ev.glb', classe: 'suv', nom: 'GMC Hummer EV', habitacle: false, portiere: false },
-  { fichier: 'chevrolet-camaro-ss-1967.glb', classe: 'gt', nom: 'Chevrolet Camaro SS 1967', habitacle: false, portiere: false },
-  { fichier: 'cadillac-escalade-esv.glb', classe: 'suv', nom: 'Cadillac Escalade ESV', habitacle: false, portiere: false },
+  { fichier: 'tesla-model-y.glb', son: 'electrique', classe: 'suv', nom: 'Tesla Model Y', usine: true, habitacle: false, portiere: false },
+  { fichier: 'tesla-cybertruck.glb', son: 'electrique', classe: 'pickup', nom: 'Tesla Cybertruck', habitacle: false, portiere: false },
+  { fichier: 'aston-martin-victor.glb', son: 'v12', classe: 'hypercar', nom: 'Aston Martin Victor', habitacle: false, portiere: false },
+  { fichier: 'aston-martin-db11.glb', son: 'v12', classe: 'gt', nom: 'Aston Martin DB11', habitacle: false, portiere: false },
+  { fichier: 'alpine-a110-gt4.glb', son: 'sportive', classe: 'sportive', nom: 'Alpine A110 GT4', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'bentley-mulliner-batur.glb', son: 'v12', classe: 'gt', nom: 'Bentley Mulliner Batur', habitacle: false, portiere: false },
+  { fichier: 'rolls-royce-ghost.glb', son: 'v12', classe: 'berline', nom: 'Rolls-Royce Ghost', habitacle: false, portiere: false },
+  { fichier: 'gmc-hummer-ev.glb', son: 'electrique', classe: 'suv', nom: 'GMC Hummer EV', habitacle: false, portiere: false },
+  { fichier: 'chevrolet-camaro-ss-1967.glb', son: 'v8', classe: 'gt', nom: 'Chevrolet Camaro SS 1967', habitacle: false, portiere: false },
+  { fichier: 'cadillac-escalade-esv.glb', son: 'v8', classe: 'suv', nom: 'Cadillac Escalade ESV', habitacle: false, portiere: false },
   { fichier: 'renault-fuego.glb', classe: 'citadine', nom: 'Renault Fuego', habitacle: false, portiere: false },
-  { fichier: 'porsche-cayenne-turbo-gt.glb', classe: 'suv', nom: 'Porsche Cayenne Turbo GT', habitacle: false, portiere: false },
-  { fichier: 'abt-audi-rs6-r.glb', classe: 'gt', nom: 'ABT Audi RS6-R', habitacle: false, portiere: false },
+  { fichier: 'porsche-cayenne-turbo-gt.glb', son: 'v8', classe: 'suv', nom: 'Porsche Cayenne Turbo GT', habitacle: false, portiere: false },
+  { fichier: 'abt-audi-rs6-r.glb', son: 'v8', classe: 'gt', nom: 'ABT Audi RS6-R', habitacle: false, portiere: false },
   { fichier: 'porsche-992-gt3-r.glb', classe: 'sportive', nom: 'Porsche 911 GT3 R (992)', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'bugatti-divo.glb', classe: 'hypercar', nom: 'Bugatti Divo', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'ford-f150-raptor-r.glb', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false, portiere: false },
+  { fichier: 'bugatti-divo.glb', son: 'w16', classe: 'hypercar', nom: 'Bugatti Divo', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'ford-f150-raptor-r.glb', son: 'v8', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false, portiere: false },
   { fichier: 'ford-mondeo-taxi.glb', classe: 'berline', taxi: true, nom: 'Ford Mondeo · taxi', laque: 'jamais', habitacle: false, portiere: false },
   // LES DIX VOITURES DE TOUS LES JOURS (v581) : le « Generic passenger car
   // pack » de Comrade1280 (CC-BY-4.0, vendor/voitures/LICENSE.md), dix
@@ -611,7 +612,7 @@ export const FLOTTE = [
   // (`laque: 'jamais'`), et ses 1 234 ch la rangent avec les sportives. Ses
   // sièges sont MESURÉS sur son assise (`sonde-captures-lucid.cjs`) : à la place
   // commune de la fiche `voiture`, l'enfant était assis dans le dossier.
-  { fichier: 'lucid-air-sapphire.glb', classe: 'sportive', nom: 'Lucid Air Sapphire', laque: 'jamais',
+  { fichier: 'lucid-air-sapphire.glb', son: 'electrique', classe: 'sportive', nom: 'Lucid Air Sapphire', laque: 'jamais',
     siege: { x: -0.37, y: 0.43, z: -0.02 },
     sieges: [{ x: 0.37, y: 0.43, z: -0.02 }, { x: -0.37, y: 0.5, z: 0.82 }, { x: 0.37, y: 0.5, z: 0.82 }] },
   // LA VOITURE DE POLICE (v553) : la Ford Crown Victoria Police Interceptor
@@ -665,6 +666,23 @@ export const VU_VOITURE = 45;
 
 export const DEMI_LONG_VOITURE = 2.2;
 export const DEMI_LARG_VOITURE = 1.13;
+// LE SON D'UN MODÈLE (v587). Max : « il y a des voitures qui font des bruits
+// beaucoup plus sportifs ». Un moteur s'entend par son CARACTÈRE — le
+// nombre et la disposition des cylindres, ou pas de cylindre du tout — et ce
+// caractère est une propriété du modèle, comme sa classe : il vit dans la
+// fiche de FLOTTE (`son`), et sinon il se déduit de la classe. `sons.js` a une
+// recette par caractère (synthétisée, rien de téléchargé) ; une électrique
+// (`son: 'electrique'`) ne fait presque rien qu'un sifflement d'onduleur.
+export const SON_DE_CLASSE = {
+  citadine: 'citadine', berline: 'berline', suv: 'suv', utilitaire: 'diesel',
+  pickup: 'v8', gt: 'v8', sportive: 'sportive', hypercar: 'v12',
+};
+export function sonDe(fichier) {
+  if (fichier === 'voiture.glb') return 'w16';   // le Chiron d'artiste historique
+  const e = FLOTTE.find((f) => f.fichier === fichier);
+  if (!e) return null;
+  return e.son || SON_DE_CLASSE[e.classe] || null;
+}
 export function classeDe(fichier) {
   const e = FLOTTE.find((f) => f.fichier === fichier);
   return e ? e.classe || null : null;
@@ -733,7 +751,7 @@ function partageDesTextures(parser) {
     loadTexture(index) {
       const def = parser.json.textures[index];
       if (!def) return null;
-      // UNE TEXTURE KTX2 SE PARTAGE AUSSI (v586). Ses octets sont dans
+      // UNE TEXTURE KTX2 SE PARTAGE AUSSI (v590). Ses octets sont dans
       // l'extension, et c'est le transcodeur du jeu qui la lit ; sans lui
       // branché, on laisse le chargeur dire ce qu'il en pense.
       const basisu = def.extensions && def.extensions.KHR_texture_basisu;
@@ -936,6 +954,7 @@ export function chargerVoitureFlotte(entree) {
       const rayon = boite ? (boite.max.y - boite.min.y) / 2 : 0;
       porteur.userData.rayonRoue = rayon > 0.1 ? rayon : 0.34;
       porteur.userData.forme = forme;      // « manifeste » ou « mesuré » : le témoin le lit
+      eclaircirLeMetal(porteur);
       // LE PROTOTYPE EST À TOUTE LA FLOTTE (v495). Chaque voiture du modèle en
       // est un clone (`clone(true)` partage géométries et matériaux) : rendre
       // au pilote ce qu'une voiture qui s'en va porte ne doit jamais toucher
@@ -950,6 +969,43 @@ export function chargerVoitureFlotte(entree) {
     }).catch(() => null);
   chargementsFlotte.set(entree.fichier, chargement);
   return chargement;
+}
+
+// UN MÉTAL SANS REFLET EST NOIR (v589). Max : « des voitures toutes noires,
+// très sombres ». Un matériau standard ne renvoie la lumière des lampes qu'en
+// proportion de (1 − métal) ; le reste, il le prend à son reflet. Or seule la
+// laque (`EST_PEINTURE`) reçoit la sonde cubique : un pneu, une jante, une
+// livrée ou une carrosserie mal nommée, à métal 0,9 ou 1, sortait noir de jour
+// comme de nuit (le Raptor à 9,9 sur 255 en plein jour, mesuré par
+// `sonde-voitures-sombres.cjs`). On borne le métal de ce qui n'a pas de
+// reflet : un uniforme, aucune clé de programme neuve (v246). Le prototype
+// porte la règle, ses clones aussi. `reglageMetal.actif` à faux rend la v588.
+export const METAL_SANS_REFLET = 0.3;
+export const NOIR_MIN = 0.035;   // linéaire
+export const reglageMetal = { actif: true };
+export function eclaircirLeMetal(racine) {
+  if (!reglageMetal.actif) return 0;
+  let n = 0;
+  racine.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!m || !m.isMeshStandardMaterial || m.envMap || m.transparent) continue;
+      if ((m.metalness ?? 0) > METAL_SANS_REFLET) { m.metalness = METAL_SANS_REFLET; n++; }
+    }
+    // ET UN NOIR DE PAQUET N'EST PAS UN NOIR DE VOITURE. Une laque à 0,003
+    // (la Victor), un bas de caisse à 0 : plus noir que du charbon, aucune
+    // lampe n'en tire une forme. Une vraie laque noire renvoie 3 à 5 % : une
+    // couleur unie (sans carte) remonte à `NOIR_MIN` en gardant sa teinte.
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!m || !m.isMeshStandardMaterial || m.map || m.transparent || !m.color) continue;
+      const l = 0.2126 * m.color.r + 0.7152 * m.color.g + 0.0722 * m.color.b;
+      if (l >= NOIR_MIN) continue;
+      if (l < 1e-4) m.color.setRGB(NOIR_MIN, NOIR_MIN, NOIR_MIN);
+      else m.color.multiplyScalar(NOIR_MIN / l);
+      n++;
+    }
+  });
+  return n;
 }
 
 const VU = 150;                 // au-delà, le convoi s'efface et se fige
@@ -2475,8 +2531,10 @@ const _rc = new THREE.Raycaster(); _rc.layers.enableAll();
 let geoDetresse = null, matDetresse = null;
 function materielDetresse() {
   if (!geoDetresse) {
+    // la géométrie ne sert qu'à la chauffe : un feu se dessine par la copie
+    // de son optique (v587), dans la matière de la flamme
     geoDetresse = new THREE.PlaneGeometry(0.26, 0.11); geoDetresse.userData.partagee = true;
-    matDetresse = new THREE.MeshBasicMaterial({ color: 0xffa21a, toneMapped: false }); matDetresse.userData.partagee = true;
+    matDetresse = matiereAdditive(0xffa21a, 0.95); matDetresse.userData.partagee = true;
   }
 }
 // Les quatre poses { x, y, z, nx, ny, nz } dans le repère de la voiture `m`
@@ -2586,41 +2644,47 @@ function poserLentille(meshes, boite, sx, sz, x0, y0) {
 // Éclairée ou non : allumée une demi-seconde sur un peu plus d'une seconde,
 // le rythme d'un vrai feu de détresse (environ quatre-vingt-dix par minute).
 export const detresseAllumee = (t = performance.now()) => (t % 700) < 380;
+// LES FEUX DE DÉTRESSE ET LES FEUX STOP SUIVENT LE DESSIN DE L'OPTIQUE
+// (v587). Max : « les phares des voitures font des ronds très génériques et
+// ne respectent pas la forme réelle du phare ». Les feux stop étaient deux
+// disques, le recul deux petits disques, la détresse quatre rectangles : ils
+// sont désormais, comme les phares (v569), une COPIE des triangles de
+// l'optique du modèle (`optiques.js`) — le feu arrière en rouge, sa part
+// blanche pour le recul, les clignotants (ou à défaut les blocs optiques
+// eux-mêmes) en ambre. `matiereAdditive` partout : aucun programme neuf.
+// Un modèle dont l'optique ne se reconnaît pas n'a pas de lueur : on ne
+// dessine pas une forme qu'on ne connaît pas.
+const propreDe = (m) => { const cle = m.userData && m.userData.flotte && m.userData.roues ? m.userData.flotte : null; return cle ? surLePrototype(m, cle) : null; };
+function poserLueurs(g, m, sens, matiere, nom, rangee) {
+  for (const cote of optiquesDe(m, sens, propreDe(m)).cotes) {
+    const l = lueurDe(cote, matiere, nom);
+    l.userData.sources = sourcesDe(m, cote);
+    l.userData.sens = cote.sens || null;
+    g.add(l); if (rangee) rangee.push(l);
+  }
+}
+const intactes = (l, m) => l.userData.sources.every((s) => sourceIntacte(s, m));
 export function feuxDeDetresse(m, allumes) {
   let g = m.userData.detresse;
   if (!allumes) { if (g) g.visible = false; return; }
-  // la coque d'attente puis le modèle : les poses se refont quand il arrive
+  // la coque d'attente puis le modèle : les feux se refont quand il arrive
   const cle = m.userData.roues ? 'modele' : 'attente';
   if (g && g.userData.cle !== cle) { m.remove(g); g = null; }
   if (!g) {
     materielDetresse();
     g = new THREE.Group(); g.name = 'detresse'; g.userData.cle = cle;
-    for (const p of posesDetresse(m)) {
-      const f = new THREE.Mesh(geoDetresse, matDetresse);
-      f.name = 'detresse-lentille';
-      f.position.set(p.x, p.y, p.z);
-      f.lookAt(p.x + p.nx, p.y + p.ny, p.z + p.nz);
-      g.add(f);
-    }
+    poserLueurs(g, m, 'clignotant', matDetresse, 'detresse-lueur');
     m.add(g); m.userData.detresse = g;
   }
   g.visible = detresseAllumee();
+  if (g.visible) for (const l of g.children) l.visible = intactes(l, m);
 }
-// LES FEUX STOP ET DE RECUL (v543). Max : « jusqu'au design des voitures ».
-// Une voiture qui freine s'allume en rouge à l'arrière, une qui recule en
-// blanc : c'est ce qu'on lit sur une voiture devant soi, et rien dans le jeu
-// ne le disait. Les lentilles se posent sur les DEUX poses arrière de
-// `posesDetresse` — mesurées sur le modèle, jamais écrites (v230) —, le feu
-// stop un peu plus grand par-dessus, le feu de recul plus petit vers l'axe.
-// `matiereAdditive` (avions.js), la matière des phares et de la flamme :
-// même clé de programme, chauffée à l'accueil (v491), rien ne compile au
-// premier freinage. Pour la voiture de l'enfant (fun.js) comme pour celles
-// de la rue (`montrer`) : le même geste, les mêmes lentilles.
-let geoStop = null, geoRecul = null, matStop = null, matRecul = null;
+// LES FEUX STOP ET DE RECUL (v543, v587). Une voiture qui freine s'allume en
+// rouge à l'arrière, une qui recule en blanc. Pour la voiture de l'enfant
+// (fun.js) comme pour celles de la rue (`montrer`) : le même geste.
+let matStop = null, matRecul = null;
 function materielArriere() {
-  if (geoStop) return;
-  geoStop = new THREE.CircleGeometry(0.15, 14); geoStop.userData.partagee = true;
-  geoRecul = new THREE.CircleGeometry(0.085, 12); geoRecul.userData.partagee = true;
+  if (matStop) return;
   matStop = matiereAdditive(0xff2a18, 0.95); matStop.userData.partagee = true;
   matRecul = matiereAdditive(0xfff4e0, 0.95); matRecul.userData.partagee = true;
 }
@@ -2633,25 +2697,15 @@ export function feuxArriere(m, { frein = false, recul = false } = {}) {
     materielArriere();
     g = new THREE.Group(); g.name = 'feux-arriere'; g.userData.cle = cle;
     g.userData.stops = []; g.userData.reculs = [];
-    const poses = posesDetresse(m).filter((p) => p.nz > 0.3);
-    for (const p of poses) {
-      const stop = new THREE.Mesh(geoStop, matStop);
-      stop.name = 'feu-stop';
-      stop.position.set(p.x, p.y, p.z);
-      stop.lookAt(p.x + p.nx, p.y + p.ny, p.z + p.nz);
-      g.add(stop); g.userData.stops.push(stop);
-      const r = new THREE.Mesh(geoRecul, matRecul);
-      r.name = 'feu-recul';
-      // vers l'axe, un peu plus bas : à côté du feu stop, pas dessus
-      r.position.set(p.x - Math.sign(p.x || 1) * 0.2, p.y - 0.06, p.z + 0.004);
-      r.lookAt(r.position.x + p.nx, r.position.y + p.ny, r.position.z + p.nz);
-      g.add(r); g.userData.reculs.push(r);
-    }
+    poserLueurs(g, m, 'arriere', matStop, 'feu-stop', g.userData.stops);
+    // le recul se dessine par-dessus le rouge quand les deux se recouvrent
+    poserLueurs(g, m, 'recul', matRecul, 'feu-recul', g.userData.reculs);
+    for (const r of g.userData.reculs) r.renderOrder = 0;
     m.add(g); m.userData.feuxArriere = g;
   }
   g.visible = true;
-  for (const f of g.userData.stops) f.visible = !!frein;
-  for (const f of g.userData.reculs) f.visible = !!recul;
+  for (const f of g.userData.stops) f.visible = !!frein && intactes(f, m);
+  for (const f of g.userData.reculs) f.visible = !!recul && intactes(f, m);
   return g;
 }
 // LE FEU DE DÉTRESSE QUE L'AMI A ALLUMÉ (v519). Un choc de la rue reçu par le

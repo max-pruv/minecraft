@@ -1,4 +1,4 @@
-// LES FICHIERS AUX TEXTURES KTX2 (v586), JUGÉS SOUS NODE CONTRE LEURS ORIGINAUX.
+// LES FICHIERS AUX TEXTURES KTX2 (v590), JUGÉS SOUS NODE CONTRE LEURS ORIGINAUX.
 //
 // `scripts/compresser-textures-ktx2.mjs` produit `<nom>-ktx2.glb` à côté de
 // chaque modèle déposé. Ce que le jeu mesure sur un modèle (roues, feux,
@@ -38,11 +38,19 @@ function octetsAccesseur({ j, bin }, i) {
   return out;
 }
 
+// La DISPOSITION compte aussi (v590) : un accesseur entrelacé devient dans
+// three une InterleavedBufferAttribute, que les dégâts (degats3d.js) et la
+// découpe des portières ne clonent pas comme un attribut simple. Les octets
+// utiles égaux ne suffisent pas : le premier jet du script entrelaçait tout.
+function entrelace({ j }, i) {
+  const a = j.accessors[i], v = a.bufferView !== undefined ? j.bufferViews[a.bufferView] : null;
+  return !!(v && v.byteStride && v.byteStride !== COMPOSANTES[a.type] * OCTETS[a.componentType]);
+}
 function geometrie(g) {
   const h = [];
   for (const m of g.j.meshes || []) {
     for (const p of m.primitives || []) {
-      for (const [sem, i] of Object.entries(p.attributes).sort()) h.push(m.name + '/' + sem + ':' + hash(octetsAccesseur(g, i)));
+      for (const [sem, i] of Object.entries(p.attributes).sort()) h.push(m.name + '/' + sem + ':' + hash(octetsAccesseur(g, i)) + (entrelace(g, i) ? '~entrelacé' : ''));
       if (p.indices !== undefined) h.push(m.name + '/idx:' + hash(octetsAccesseur(g, p.indices)));
       h.push(m.name + '/mat:' + (p.material !== undefined ? (g.j.materials[p.material].name || p.material) : '-'));
     }
@@ -94,7 +102,7 @@ export function temoinsKTX2() {
   t.push(['chaque modèle déposé à textures a sa version KTX2, qui exige l\'extension et ne garde aucune image JPEG ni PNG',
     !manquants.length && !pasRequis.length && !imagesBrutes.length,
     JSON.stringify({ modeles: MODELES_KTX2.length, manquants, pasRequis, imagesBrutes })]);
-  t.push(['la version KTX2 est l\'original sommet pour sommet : chaque accesseur de chaque primitive, octet pour octet, et les mêmes nœuds',
+  t.push(['la version KTX2 est l\'original sommet pour sommet : chaque accesseur de chaque primitive, octet pour octet et disposé de même (entrelacé ou non), et les mêmes nœuds',
     !manquants.length && !geoDiff.length && !noeudsDiff.length && accesseurs > 1000,
     JSON.stringify({ accesseurs, geoDiff, noeudsDiff })]);
   t.push(['et matériau pour matériau : les mêmes cartes aux mêmes rôles, donc les mêmes signatures de programme (v246) — aucune clé neuve à chauffer',

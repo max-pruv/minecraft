@@ -83,6 +83,32 @@ Crédit CC BY 4.0, provenance et limites : `docs/manhattan-osm.md`.
 - Un arrêt de collision se mesure sur des images de jeu distinctes : trois
   lectures identiques entre deux images lentes ne prouvent pas un arrêt.
 
+## Les décors sombres (v589) — une nuit de ville se règle comme la nuit du monde, et un métal sans reflet est noir
+
+Max, capture d'iPad à Flushing Meadows : « des décors très noirs, des voitures
+toutes noires ». Trois règles.
+
+- **UN RENDU QUI A SES PROPRES LAMPES GARDE LES PLANCHERS DU MONDE.** Manhattan
+  et ses banlieues règlent ciel et lune eux-mêmes (`manhattan-render.js`) ; leurs
+  planchers de nuit valaient 0,46 et 0,12 quand le monde est à 1,7 et 0,45
+  (v249) : entrer dans le plan, c'était tomber dans une nuit quatre fois plus
+  noire. `NUIT_NY` (1,05 et 0,32, le jour inchangé) ; `reglageNuitNY.avant()`
+  rend la v588. Le jour où une autre ville gagne ses lampes, ses planchers se
+  mesurent contre ceux du monde, en pixels, ombres forcées.
+- **UN MÉTAL SANS REFLET EST NOIR, ET LA FLOTTE N'A DE REFLET QUE SUR SA LAQUE.**
+  Un matériau standard ne renvoie les lampes qu'en proportion de (1 − métal) ;
+  seule la laque (`EST_PEINTURE`) reçoit la sonde cubique. `eclaircirLeMetal`
+  (vehicules.js), au chargement du prototype, borne le métal de tout le reste à
+  `METAL_SANS_REFLET` (0,3) et remonte une couleur unie sous `NOIR_MIN` (3,5 %
+  linéaire, le noir d'une vraie laque) en gardant sa teinte. Des uniformes,
+  aucune clé de programme neuve (v246). `reglageMetal.actif` à faux rend la
+  v588. Un paquet neuf se passe à `sonde-voitures-sombres.cjs` (luminance de
+  jour, de nuit du monde et de nuit de New York, et la part de métal nu).
+- **UNE SONDE DE LUMIÈRE QUI REND DANS UNE CIBLE NE VOIT PAS ACES.** three
+  n'applique la correspondance tonale qu'à l'écran : les chiffres de
+  `sonde-voitures-sombres.cjs` classent les modèles, ils ne sont pas ceux de
+  l'écran. Le témoin du mur gris rend, lui, à l'écran et lit dans la même tâche.
+
 ## Un témoin de terrasse isole son obstacle (v583)
 
 Le témoin de `parishd.js` essaie un autre emplacement si une voiture de la rue
@@ -1034,7 +1060,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les textures en KTX2 (v586) — une image se mesure en carte graphique, pas sur le disque
+## Les textures en KTX2 (v590) — une image se mesure en carte graphique, pas sur le disque
 
 iOS ferme la page vers 500 Mo de géométrie et de textures (v580), et une image
 JPEG ou PNG se DÉCODE en RGBA : quatre octets par pixel plus un tiers de
@@ -1823,8 +1849,48 @@ leur optique allumée, 19 autres une optique nommée. Quatre règles.
   normale, rien hors du nez. Un modèle neuf passe par elle ; une capture de
   nuit (`sonde-captures-phares.cjs`) montre si le dessin se lit.
 
-Ce qui reste, déclaré dans `TASKS.md` : les feux stop, de recul et de
-détresse sont encore des lentilles génériques posées par `posesDetresse`.
+*(Depuis la v588 les feux stop, de recul et de détresse suivent la même
+règle — voir ci-dessous.)*
+
+## Tout feu suit son optique (v588) — une règle, quatre feux, et une texture se lit avant de s'allumer
+
+Max : « les phares font des ronds très génériques ». Mesuré sur la flotte :
+quinze modèles sans phare reconnu, et partout six formes génériques par voiture
+(deux disques rouges, deux blancs, quatre rectangles orange). Cinq règles.
+
+- **UNE SEULE RÈGLE POUR TOUS LES FEUX.** `optiques.js` (`optiquesDe(m, sens,
+  propre)`, sens `avant` · `arriere` · `recul` · `clignotant`) choisit,
+  copie et partage ; `phares.js` et `vehicules.js` (`feuxArriere`,
+  `feuxDeDetresse`) ne font que poser ce qu'elle rend, en `matiereAdditive`.
+  Les rangs : émissif (1), nommé (2), verre nommé (3), couleur de la texture
+  (4, au navigateur seulement : un canevas lit le pixel au centre UV de chaque
+  triangle ; sous node, pas de pixels, donc pas de rang 4). Le recul : un
+  maillage nommé, sinon la part blanche du bloc arrière, sinon le tiers du bloc
+  le plus proche de l'axe. Les clignotants : les optiques ambre NOMMÉES, sinon
+  les blocs avant et arrière en ambre — jamais une optique lue à la couleur.
+  `posesDetresse` reste (le placement des phares, les témoins), plus aucun
+  disque ni rectangle n'est posé.
+- **UNE TEXTURE SE LIT, ELLE NE S'ALLUME PAS TELLE QUELLE.** Un triangle de
+  rang 4 est entier dans sa zone et regarde son bout ; la couleur retenue ne
+  couvre pas plus du tiers du maillage (sinon c'est la peinture : le taxi
+  jaune) ; les maillages « détails » passent avant la livrée ; et côté par
+  côté, on ne garde que le plus grand morceau d'un seul tenant (triangles qui
+  se touchent par un sommet, `amas`), s'il porte la moitié de la surface, compte
+  quatre triangles, n'est pas au milieu (l'écusson du SUV, « POLICE » sur le
+  coffre) et ne prend pas tout le bouclier (la livrée blanche de l'Alpine).
+  Chacune de ces gardes est née d'une capture, pas d'un témoin : les règles de
+  rang 4 se jugent sur la planche de `sonde-captures-phares.cjs` (trois
+  quarts, face, dos).
+- **CE QU'ON NE RECONNAÎT PAS N'A PAS DE LUEUR.** Taxi Mondeo, Divo, avant de
+  l'Alpine et du SUV de police : aucun feu plutôt qu'une forme inventée, le
+  pinceau sur la route suffit. Déclaré, avec la piste (un relevé des optiques
+  à la main dans la fiche de FLOTTE).
+- **SOUS NODE, ZÉRO DISQUE ; AU NAVIGATEUR, LA TÔLE.** `sonde-feux-flotte.mjs`
+  compte les disques (zéro sur les 41), retrouve chaque lueur arrière et de
+  détresse sur la tôle et à son bout ; le témoin des feux de détresse de
+  `degats.js` lit des copies, pas des lentilles, sur la tôle.
+- **UNE LUEUR S'ÉTEINT AVEC SA SOURCE** (`sourceIntacte`, partagé) : feu stop,
+  recul et détresse comme les phares (v569).
 
 ## Les feux se mesurent sur le prototype (v550) — une règle par modèle ne se mesure jamais sur une voiture
 
@@ -10910,6 +10976,56 @@ l'avion se déplace ». Trois règles.
   touché, la vitesse rapportée à la pointe sinon ; éteinte sous deux pour
   cent de gaz à l'arrêt, et éteinte à la descente par `fun.js` — la monture
   quittée n'est plus mise à jour, elle garderait sa dernière flamme.
+
+## Une flamme est une réchauffe, et chaque moteur a sa voix (v587)
+
+Max : « il y a des avions normaux qui ne crachent pas de feu », et « il y a
+des voitures qui font des bruits beaucoup plus sportifs… idem pour les
+avions ». **Cette décision remplace la troisième règle de la v264** : la
+flamme ne suit plus toute la manette. Six règles.
+
+- **UNE FLAMME VISIBLE EST UNE POSTCOMBUSTION, ET LA FICHE LE DIT.**
+  `a.rechauffe` (modèle sculpté) ou `rechauffe: true` (`AVIONS_GLB`) : seuls
+  le chasseur et le Concorde ont des maillages de flamme ; un avion de ligne,
+  un jet d'affaires n'en ont AUCUN (`userData.tuyeres` vide). Les tuyères
+  restent mesurées pour tous. Jamais une liste dans `fun.js`.
+- **LA RÉCHAUFFE NE S'ALLUME QU'À FORT RÉGIME, ET UNE SEULE RÈGLE LA LIT
+  DEUX FOIS.** `rechauffeDe(poussee)` (avions.js, pure) rend 0 jusqu'à
+  `SEUIL_RECHAUFFE` (0,75) puis monte à 1 pleins gaz ; `fun.js` en fait la
+  longueur de la flamme ET le rugissement du moteur (`moteurRegime(…,
+  rechauffe)`). C'est la poussée unique de la v268, un cran plus loin.
+- **LE CARACTÈRE D'UN MOTEUR VIT DANS LA FICHE DU MODÈLE.** `son` de FLOTTE,
+  sinon la classe (`SON_DE_CLASSE`, `sonDe`, vehicules.js) ; `son`
+  d'`AVIONS_GLB` ou `a.son` du modèle sculpté (`userData.sonMoteur`). `fun.js`
+  le passe à `moteurDemarre(type, caractere)` ; `sons.js` a une recette par
+  caractère (citadine, berline, suv, diesel, v8, sportive, v12, w16,
+  electrique, moto ; ligne, affaires, chasseur, concorde), toutes
+  synthétisées, un seul contexte (v268). Un caractère inconnu retombe sur la
+  recette du type : un modèle neuf sans `son` sonne comme avant.
+- **UNE ÉLECTRIQUE N'A PAS DE RAPPORTS.** Son onduleur suit la VITESSE
+  (`allure` de `voitureSons`, passée par sensations.js), pas le régime des
+  rapports, qui retombe à chaque passage. Les moteurs `passage: true`
+  (sportive, v8, v12, w16, moto) se coupent un dixième de seconde quand le
+  régime retombe d'un coup : on entend la boîte monter.
+- **LE TÉMOIN LIT LE SPECTRE, MODÈLE CONTRE MODÈLE.** `sonde-moteurs.cjs`
+  (lue par `monte.js`) monte PAR LE BOUTON, suspend la physique, pose la
+  vitesse ou la manette, coupe la radio, et compare des bandes (grave
+  40–320 Hz, aigu 1 500–6 000) et des centroïdes entre modèles — jamais un
+  niveau absolu, qu'un banc sans haut-parleur rend arbitraire. Sur l'ancien
+  code, deux recettes identiques rendent le même spectre : chaque écart rougit.
+- **LA BANDE DES PNEUS EST RÉSERVÉE.** Le crissement vit entre 2,5 et 3,4 kHz ;
+  un turbo, un V12 ou un onduleur y chantaient aussi, et le frein à main tiré
+  tout droit ne ressortait plus (portail GitHub : ×6,3 pour une barre à ×10,
+  un modèle de la flotte TIRÉ AU HASARD ; mesuré modèle imposé, sportive ×6,
+  W16 ×5,7, V12 ×4,7, V8 ×26). Sur ce qui roule, le moteur seul passe par un
+  creux de −24 dB centré sur 2,9 kHz ; pneus et route n'y passent pas (×24 à
+  ×600 ensuite). Un son neuf de voiture se mesure contre la bande des pneus,
+  et **un témoin qui tire un modèle au hasard ne voit une régression de
+  caractère qu'une fois sur N** : on le rejoue modèle par modèle.
+
+Ce qui reste, déclaré dans `TASKS.md` : on n'entend pas le moteur d'un ami
+(aucun son d'ami ne joue de moteur, seulement son klaxon, v549) ; les
+recettes se jugent à l'oreille sur la tablette, le banc ne juge que l'écart.
 
 ## Le cadran de cap : la ville visée au loin (v263)
 

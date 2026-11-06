@@ -20,13 +20,16 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## (numéro fixé à la fusion) — Les textures des modèles tiennent quatre à six fois moins de place
+## v590 — Les textures des modèles tiennent quatre à six fois moins de place
 
 **Pourquoi.** iOS ferme la page vers 500 Mo de géométrie et de textures (v580),
 et toutes les images des modèles déposés — voitures, police, moto, avions, New
 York — se décodaient en RGBA : 487 Mo de textures si tout est chargé, 309 Mo
-pour la seule flotte de la rue. C'est la place qui manque aux modèles plus
-beaux que le chantier « réalisme » veut ajouter.
+pour la seule flotte de la rue. Le journal de bord de l'iPhone de Max l'a
+dit : quinze plantages à Paris de la v580 à la v586, la dernière session à
+551 Mo dont 279 de textures — et `mondeMo` ne borne que la géométrie. C'est
+aussi la place qui manque aux modèles plus beaux que le chantier « réalisme »
+veut ajouter.
 
 **Ce que ça change.** Les quarante modèles déposés qui portent des images
 arrivent avec des textures KTX2, transcodées pour la carte graphique (ETC2 ou
@@ -46,6 +49,109 @@ jeu, la MC12 arrive par son fichier KTX2 avec des textures comprimées, trois
 fois plus légères, sans un programme neuf. La qualité de chaque texture est
 mesurée par le script (33 dB au moins, 37 à 50 en général), et les captures
 iPhone et iPad, de jour et de nuit, avec et sans KTX2, sont dans la PR.
+
+---
+
+## v589 — New York et les voitures ne sont plus noires la nuit
+
+**Pourquoi.** Max, capture d'iPad à Flushing Meadows à la tombée de la nuit :
+« des décors très noirs, des voitures toutes noires, très sombres, pas très
+fini ». Mesuré : la nuit de New York et de ses banlieues avait ses propres
+lampes, quatre fois plus faibles que celles du reste du monde (ciel 0,46 et
+lune 0,12 contre 1,7 et 0,45, v249). Et dans la flotte, seule la laque
+reçoit les reflets : un pneu, une jante, une livrée ou une carrosserie mal
+nommée à métal 0,9 ou 1 ne renvoyait presque rien — le Raptor sortait à 9,9
+sur 255 en plein jour, la Victor à 1 la nuit. Quelques laques étaient plus
+noires que du charbon (0,003).
+
+**Ce que ça change.** À New York, la nuit garde une lueur de ciel et de lune
+proche du reste du monde : façades, trottoirs et voitures se lisent ; le jour
+ne change pas. Les voitures gardent leur forme jour et nuit : le métal sans
+reflet est borné à 0,3 et une couleur unie ne descend plus sous 3,5 % — un
+noir de vraie laque. Aucun programme de shader neuf.
+
+**Ce qui le prouve.** Trois témoins dans `manhattan.js`, qui lisent des
+pixels : un mur gris rendu par la vraie scène de New York à minuit (17 contre
+5 aux planchers d'avant, les deux bras dans la même tâche, une fois les lampes
+de nuit posées — lu 800 ms après l'heure, il voyait encore celles du jour), aucune
+voiture avec du métal sans reflet, et les trois plus noires de la v588 qui se
+lisent sous les lampes de nuit. Rouges sur `origin/main`. Deux sondes
+(`sonde-decors-sombres.cjs`, `sonde-voitures-sombres.cjs`) et les captures
+avant/après de Queens et Flushing, au crépuscule et à minuit, dans la PR. La
+plaque d'asphalte à bord en escalier de la capture ne se reproduit pas au
+banc : déclarée dans `TASKS.md`.
+
+---
+
+## v588 — Les feux de toutes les voitures ont la forme de leur optique
+
+**Pourquoi.** Max : « les phares des voitures font des ronds très génériques
+et ne respectent pas la forme réelle du phare ». Mesuré sur les 41 modèles de
+la flotte : les phares copiaient déjà l'optique sur 26 modèles (v569), mais
+quinze n'avaient AUCUNE optique reconnue à l'avant (les dix génériques, dont le
+maillage s'appelle « Optics », et cinq livrées peintes : la voiture et le SUV
+de police, le taxi Mondeo, la Divo, l'Alpine) ; et sur toute la flotte, les
+feux stop étaient deux disques rouges, le recul deux petits disques blancs, la
+détresse quatre rectangles orange — six formes génériques par voiture.
+
+**Ce que ça change.** Tout feu allumé est désormais une copie des triangles de
+l'optique du modèle, posée à fleur de sa carrosserie : les phares, les feux
+stop (le bloc arrière en rouge), le feu de recul (sa part blanche, ou la part
+du bloc la plus proche de l'axe), les feux de détresse (les clignotants nommés,
+à défaut les blocs optiques eux-mêmes, en ambre). Pour une livrée peinte d'un
+seul tenant, le jeu lit la couleur de la texture sous chaque triangle : la
+voiture de police allume ses vrais phares et ses vrais feux arrière — et
+seulement un morceau d'un seul tenant, sur le côté, plus petit que le bouclier :
+ni le lettrage « POLICE » du coffre, ni l'écusson du SUV, ni la livrée blanche
+de l'Alpine. Un modèle dont l'optique ne se reconnaît pas n'a pas de lueur
+plutôt qu'une forme inventée : le taxi Mondeo et la Divo, l'avant de l'Alpine
+et du SUV de police (déclarés). Aucune lampe, aucun programme neuf (la matière
+de la flamme).
+
+**Ce qui le prouve.** Un témoin neuf sous node dans `degats.js` : zéro disque
+et zéro rectangle sur les 41 modèles (six par modèle sur l'ancien code), chaque
+lueur arrière et de détresse sur la tôle et à son bout, et les dix génériques
+ont leurs phares (zéro avant) ; le témoin des feux de détresse du navigateur
+lit des copies d'optique sur la tôle au lieu de lentilles. Planche de captures
+de nuit avant/après (trois quarts, face, dos) dans la PR.
+
+## v587 — Chaque moteur a sa voix, et la flamme est une réchauffe
+
+**Pourquoi.** Max : « il y a des avions normaux qui ne crachent pas de feu.
+Aujourd'hui tous les avions crachent du feu, ça n'a pas de sens. » Et « il y
+a des voitures qui font des bruits beaucoup plus sportifs… idem pour les
+avions, entre un avion de chasse, un avion de ligne ». Le jeu n'avait qu'un
+son de voiture et un son de réacteur, et une flamme derrière tout réacteur
+dès que l'avion bougeait.
+
+**Ce que ça change.** Un avion de ligne (A320, A321) et le jet d'affaires ne
+crachent plus de flamme ; le chasseur et le Concorde allument leur
+postcombustion seulement pleins gaz (au-delà des trois quarts de manette), et
+elle rugit. Chaque voiture a la voix de son moteur, lue dans sa fiche : une
+électrique (Lucid, Tesla, Hummer EV) siffle sans gronder, un V8 (Camaro, RS6,
+Raptor) gronde et roule, un V12 (Victor, DB11, MC12) hurle, une sportive fait
+entendre ses passages de rapport, une citadine ronronne, un utilitaire claque
+comme un diesel. Un avion de ligne souffle et siffle, un jet siffle plus
+aigu, un chasseur rugit dans le grave. Tout est synthétisé, rien de téléchargé.
+
+**Ce qui le prouve.** Sept témoins neufs dans `monte.js`, par
+`sonde-moteurs.cjs` : on monte PAR LE BOUTON dans des modèles de la flotte,
+et l'on lit la SORTIE audio dans des bandes. Électrique contre V8 : grave
+−70,6 contre −40,9 dB. V12 contre V8 : centroïde 479 contre 234 Hz. Jet
+contre A320 : sifflement centré à 4 557 contre 2 266 Hz. Chasseur contre
+avion de ligne : 13 dB de grave au-dessus de l'aigu, contre −5. Flammes :
+zéro sur l'A320, l'A321 et le jet, éteintes à mi-gaz sur le chasseur,
+allumées pleins gaz. Les sept sont rouges sur `origin/main` (une seule
+recette : les spectres se recouvrent, deux tuyères allumées sur l'A320) et
+verts ici. Les trois témoins de flamme d'avant ont été repointés sur la règle
+neuve (le chasseur, la réchauffe), le contrat des avions déposés aussi.
+Et le portail a trouvé ce que les sept ne voyaient pas : les moteurs aigus
+chantaient dans la bande des pneus, et le frein à main ne crissait plus assez
+fort sur une sportive, un W16 ou un V12 (×4,7 à ×6 pour une barre à ×10).
+La bande est réservée au moteur près : ×24 à ×600 sur les cinq caractères.
+
+---
+
 ## v586 — Chaque endroit a ses voitures
 
 **Pourquoi.** À New York, Max ne voyait que deux voitures : le taxi jaune et une

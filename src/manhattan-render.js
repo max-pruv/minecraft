@@ -247,6 +247,11 @@ function disposeGroup(group) {
   });
 }
 
+// Les planchers de nuit de New York (v589), mesurés en pixels par
+// `tests/sonde-decors-sombres.cjs` ; `reglageNuitNY` les rend à la v588.
+export const NUIT_NY = { ciel: 1.05, lune: 0.32 };
+export const reglageNuitNY = { avant: () => { NUIT_NY.ciel = 0.46; NUIT_NY.lune = 0.12; } };
+
 export class ManhattanRenderer {
   constructor({
     scene,
@@ -2098,9 +2103,15 @@ export class ManhattanRenderer {
     const horsVille = dansLaVille ? 1 : Math.min(1, 620 / budget.far);
     this.scene.fog.near = budget.far * 0.45 * horsVille;
     this.scene.fog.far = budget.far * horsVille;
-    this.sunLight.intensity = 0.12 + day * 2.4;
+    // LA NUIT DE NEW YORK N'EST PLUS QUATRE FOIS PLUS NOIRE QUE LE MONDE (v589).
+    // Max, capture d'iPad à Flushing Meadows : « des décors très noirs, des
+    // voitures toutes noires ». Ses planchers valaient 0,46 (ciel) et 0,12
+    // (lune) quand le reste du monde est à 1,7 et 0,45 (v249) : entrer dans
+    // les banlieues, c'était passer dans une nuit quatre fois plus sombre.
+    // Le jour (day = 1) ne bouge pas : 2,52 et 1,71, comme avant.
+    this.sunLight.intensity = NUIT_NY.lune + day * (2.52 - NUIT_NY.lune);
     this.sunLight.color.set(day > 0.5 ? 0xffead1 : 0x86a5db);
-    this.hemiLight.intensity = 0.46 + day * 1.25;
+    this.hemiLight.intensity = NUIT_NY.ciel + day * (1.71 - NUIT_NY.ciel);
     this.hemiLight.color.set(day > 0.5 ? 0xcbdde4 : 0x7395b8);
     this.hemiLight.groundColor.set(0x57534b);
     this.sunLight.target.position.set(actual.x, NIVEAU + 10, actual.z);

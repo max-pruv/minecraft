@@ -355,7 +355,7 @@ const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-// Les textures KTX2 des modèles déposés (v586) : le transcodeur demande au
+// Les textures KTX2 des modèles déposés (v590) : le transcodeur demande au
 // renderer ce que la carte lit, et il doit être branché avant tout modèle.
 brancherKTX2(renderer);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));

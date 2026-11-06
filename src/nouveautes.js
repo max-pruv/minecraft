@@ -6,6 +6,43 @@
 
 export const NOUVEAUTES = [
   {
+    v: 590,
+    titre: 'Le jeu tient mieux sur iPhone',
+    puces: [
+      'Les voitures prennent bien moins de mémoire',
+      'Les avions et New York aussi',
+      'Elles restent aussi belles qu’avant',
+    ],
+  },
+  {
+    v: 589,
+    titre: 'La nuit n\'est plus toute noire',
+    puces: [
+      'New York se voit mieux la nuit',
+      'Les voitures gardent leur forme le soir',
+      'Plus de voitures toutes noires',
+    ],
+  },
+  {
+    v: 588,
+    titre: 'Les phares ont leur vraie forme',
+    puces: [
+      'Chaque phare brille comme sur la vraie voiture',
+      'Les feux rouges s\'allument en freinant',
+      'Plus aucun rond collé sur la carrosserie',
+    ],
+  },
+  {
+    v: 587,
+    titre: 'Chaque moteur a sa voix',
+    puces: [
+      'Plus de feu aux avions de ligne',
+      'Le chasseur et le Concorde, seulement pleins gaz',
+      'Une électrique siffle, un V8 gronde',
+      'On entend les rapports passer',
+    ],
+  },
+  {
     v: 586,
     titre: 'Plein de voitures différentes',
     puces: [

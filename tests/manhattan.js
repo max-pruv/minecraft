@@ -48,6 +48,88 @@ function verifier(nom, ok, detail = "") {
         NY,
       ),
     );
+    // LES DÉCORS SOMBRES (v589). Max, capture d'iPad à Flushing Meadows : « des
+    // décors très noirs, des voitures toutes noires ». On lit des PIXELS (v247) :
+    // un cube gris posé à trente blocs au-dessus du joueur (hors de portée des
+    // lampes de rue, qui portent dix-neuf blocs), rendu par la vraie scène de New
+    // York à minuit, dans la même tâche que readPixels. Sur la v588 les planchers
+    // de nuit de New York valaient 0,46 et 0,12 : quatre fois sous le monde.
+    const nuitNY = await p.evaluate(async () => {
+      const THREE = await import("three");
+      const g = __game, dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+      window.__setDayTime(0.75);
+      const t0 = performance.now();
+      // On attend le FAIT DU MONDE, pas une durée (v270, v291) : New York active,
+      // et SES lampes à leur plancher de nuit. Au portail, à 0,4 image par
+      // seconde, 800 ms après l'heure posée les lampes n'avaient pas tourné.
+      const V = () => g.villeRealiste;
+      const nuit = () => V()?.active && V().hemiLight && V().hemiLight.intensity < 1.3;
+      while (performance.now() - t0 < 60000 && !nuit()) await dodo(200);
+      let prec = -1;
+      while (performance.now() - t0 < 60000) {
+        const i = V()?.hemiLight?.intensity ?? -1;
+        if (Math.abs(i - prec) < 1e-3) break;
+        prec = i; await dodo(600);
+      }
+      const cam = g.camera, cube = new THREE.Mesh(
+        new THREE.BoxGeometry(3, 3, 3),
+        new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 1, metalness: 0 }),
+      );
+      const ou = cam.position.clone().add(new THREE.Vector3(0, 30, 0));
+      cube.position.copy(ou).add(new THREE.Vector3(0, 0, -6));
+      cube.layers.enableAll();
+      g.scene.add(cube);
+      const avant = { p: cam.position.clone(), q: cam.quaternion.clone() };
+      cam.position.copy(ou); cam.lookAt(cube.position); cam.updateMatrixWorld();
+      const gl = g.renderer.getContext();
+      const lire = () => {
+        g.renderer.render(g.scene, cam);
+        const px = new Uint8Array(4);
+        gl.readPixels(Math.floor(gl.drawingBufferWidth / 2), Math.floor(gl.drawingBufferHeight / 2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        return Math.round(0.2126 * px[0] + 0.7152 * px[1] + 0.0722 * px[2]);
+      };
+      // Deux bras dans la MÊME tâche : les lampes telles que le jeu les pose,
+      // puis aux planchers de la v588 (0,46 et 0,12), rendues à la main. Sur
+      // l'ancien code les deux bras sont égaux ; la grandeur est leur RAPPORT,
+      // pas un nombre absolu (mon premier jet lisait 49 avec les lampes de jour).
+      const h = V().hemiLight, s0 = V().sunLight, ih = h.intensity, is = s0.intensity;
+      const l = lire();
+      h.intensity = 0.46; s0.intensity = 0.12;
+      const lAvant = lire();
+      h.intensity = ih; s0.intensity = is;
+      cam.position.copy(avant.p); cam.quaternion.copy(avant.q);
+      g.scene.remove(cube); cube.geometry.dispose(); cube.material.dispose();
+      window.__setDayTime(0.3);
+      return {
+        actif: !!V()?.active, l, lAvant,
+        hemi: +(V()?.hemiLight?.intensity ?? -1).toFixed(3), lune: +(V()?.sunLight?.intensity ?? -1).toFixed(3), luneY: +(V()?.sunLight?.position?.y ?? 0).toFixed(1), camY: Math.round(ou.y),
+        ms: Math.round(performance.now() - t0),
+      };
+    });
+    verifier(
+      "à minuit à New York, un mur gris se lit (planchers de nuit du monde, v589)",
+      // Mesuré : 17 contre 5 aux planchers de la v588. Rapport à 1,6 (bien sous
+      // les 3,4 mesurés), et un plancher absolu pour qu'un mur noir ne passe pas.
+      nuitNY.actif && nuitNY.l >= 10 && nuitNY.l >= 1.6 * nuitNY.lAvant,
+      JSON.stringify(nuitNY),
+    );
+    // Les voitures : chaque modèle de la flotte rendu seul sous les lampes de nuit
+    // de New York (`sonde-voitures-sombres.cjs`). Aucune pièce en métal sans
+    // reflet, et les trois plus noires de la v588 se lisent.
+    const { mesurer: mesurerVoitures } = require("./sonde-voitures-sombres.cjs");
+    const voit = await mesurerVoitures(p, {
+      fichiers: ["ford-f150-raptor-r.glb", "aston-martin-victor.glb", "ford-mondeo-taxi.glb", "police-suv.glb"],
+    });
+    verifier(
+      "aucune voiture ne garde de métal sans reflet, noir sous les lampes (v589)",
+      voit.length === 4 && voit.every((v) => v.metalNu === 0),
+      JSON.stringify(voit),
+    );
+    verifier(
+      "les voitures les plus noires se lisent la nuit à New York (v589)",
+      voit.every((v) => (v.nuitNY ?? 0) > 3.5),
+      JSON.stringify(voit.map((v) => [v.fichier, v.nuitNY])),
+    );
     const preuves = await p.evaluate(async () => {
       const { World, CHUNK, HEIGHT } = await import("/src/world.js");
       const {
