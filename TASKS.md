@@ -1,5 +1,50 @@
 # Ce qui est en cours
 
+## Rendu WebGPU (chantier réalisme 3) — prototype `?rendu=webgpu`, ce qui reste
+
+Étude et prototype dans `docs/webgpu.md` (inventaire, version locale, mesures,
+plan en huit étapes). Le rendu par défaut ne change pas. Déclaré, dans l'ordre
+du plan :
+
+- [ ] **Mettre three à jour (r160 → r187) sans changer de rendu** : un seul
+  cœur, les trois chargeurs de `vendor/` (`GLTFLoader`, `BufferGeometryUtils`,
+  `SkeletonUtils`) repris de r187. Le prototype fait tourner les chargeurs
+  r160 sur le cœur r187 sans les avoir éprouvés sur toute la flotte.
+- [ ] **La chauffe en `await compileAsync`, une compilation à la fois.** La
+  cale `compile()` du prototype met les dix-sept appels en file et retire
+  l'état de précompilation après chacun ; une chauffe écrite pour un rendu
+  asynchrone attendrait chaque compilation dans la chaîne `pas` AVANT de
+  disposer ses géométries d'essai, et le témoin des clés de `maj.js` lirait
+  des pipelines.
+- [ ] **Manhattan n'est pas portée** (`manhattan-materiaux.js` : triplanaire,
+  bump, émissif ; `skyDome` ; l'environnement) : New York sous `?rendu=webgpu`
+  est en matériaux classiques sans ses greffons.
+- [ ] **L'ombre des façades HD n'est pas découpée sous WebGPU** : le rendu de
+  nœuds n'a pas `customDepthMaterial` (v572) ; à écrire en `castShadowNode`.
+- [ ] **Les portraits sont vides sous WebGPU** : `makeCharPortraits` ouvre un
+  second `WebGLRenderer` et lit `toDataURL` ; en asynchrone, dans une cible.
+- [ ] **Douze témoins lisent WebGL** : dix par `renderer.info.programs` et des
+  clés GLSL (`physical`, `shadowMapEnabled`, `envMap`), deux par
+  `properties.get(m).programs` (`monte.js:9748`, `parishd.js:1651`). Sous
+  WebGPU la cale rend des clés de pipelines ; les comparaisons sont à repointer.
+- [ ] **La cadence n'a jamais été mesurée sur un appareil.** Le banc rend en
+  logiciel des deux côtés (SwiftShader : 2 i/s sous les trois rendus). Pour
+  Max, sur l'iPhone : `?rendu=webgpu&diag=1` dans le Marais, puis la même
+  adresse sans `rendu=` — lire « i/s médiane », « pire image », « appels »,
+  « pipelines », et la ligne `rendu webgpu · dos … · adaptateur …`. Un
+  `dos webgl2` dit que Safari n'a pas donné d'adaptateur.
+- [ ] **Le repli de l'iPad de six ans** : sans `navigator.gpu`, le même
+  `WebGPURenderer` tourne sur son dos WebGL2 (`?dos=webgl` l'éprouve), dont le
+  coût n'est pas celui de l'ancien `WebGLRenderer`. À lire dans le journal de
+  bord (`journal_appareil`, dos par appareil) avant de retirer `?rendu=webgl`.
+- [ ] **L'atlas en `NearestFilter` est lu au texel (`textureLoad`) sans mip** :
+  à juger en capture bloc par bloc sur la tablette ; `LinearFilter` rendrait
+  les mips et changerait l'aspect de près.
+- [ ] **`PCFSoftShadowMap` n'existe plus** : `manhattan-render.js` le demande,
+  r187 prend PCF avec un avertissement.
+- [ ] **Les reflets de carrosserie** (`CubeRenderTarget`, une face par image)
+  tournent au banc ; non éprouvés sur l'iPad face par face.
+
 ## Chaque moteur a sa voix, la flamme est une réchauffe (v587) — dettes
 
 - [ ] **On n'entend pas le moteur d'un ami.** Aucun son d'ami ne joue de

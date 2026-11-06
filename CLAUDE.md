@@ -92,6 +92,52 @@ voiture rencontrée à 2,63 blocs produisaient un faux échec. Le verdict reste
 strict : franchir la terrasse cassée ou s'arrêter devant la terrasse intacte.
 Ne pas abaisser les distances pour faire passer une interférence de trafic.
 
+## Le rendu WebGPU à l'essai (v588) — un rendu qui change de règles se mesure avant d'être cru
+
+Chantier réalisme 3 : étude, prototype derrière `?rendu=webgpu`, plan dans
+`docs/webgpu.md`. Le rendu par défaut est la ligne d'avant au bit près
+(`RENDU_WEBGPU ? await creerRenderer(…) : new THREE.WebGLRenderer(…)`). Six règles.
+
+- **DEUX THREE DANS LE DÉPÔT, UN SEUL `import 'three'`.** `index.html` écrit
+  l'import map pendant l'analyse d'après l'adresse : `three` → r160 par défaut,
+  → `vendor/three-webgpu/` (r187, cache IMMUABLE, jamais installé d'office) sous
+  `?rendu=webgpu`. Aucun module du jeu ne sait lequel il importe ; seul
+  `rendu-webgpu.js` importe `three/tsl`, dynamiquement. Le worker de maillage
+  n'importe ni l'un ni l'autre (v251, revérifié).
+- **UN GREFFON GLSL A SON JUMEAU TSL, BRANCHÉ PAR LA MÊME CONDITION DANS LE
+  FICHIER D'ORIGINE.** `tuilage`, `matiereHD`, `domeDegrade`,
+  `alphaParInstance` (rendu-webgpu.js) : un `if (RENDU_WEBGPU)` dans
+  `textures.js`, `matierehd.js`, `sky.js`, `degats3d.js`, `traces.js`, qui
+  gardent leur GLSL. Un greffon qu'on ne porte pas est IGNORÉ EN SILENCE par le
+  rendu de nœuds (pas d'erreur, un matériau sans son effet) : Manhattan et
+  l'ombre HD le sont, déclarés.
+- **UNE COMPILATION ASYNCHRONE LANCÉE SANS ATTENDRE N'EST PAS UNE CHAUFFE.**
+  `compileAsync` pose un état de précompilation (la cible devient le tampon
+  interne) et le retire à la fin ; si elle jette entre les deux, le canvas garde
+  sa dernière image pendant que le rendu dessine 700 appels par image sans une
+  erreur. Les compilations se font une à la fois, chacune retire son état en
+  sortant, et le rendu se fait hors de l'état pendant une compilation en vol.
+  Le plan en fait son étape 2 : la chaîne `pas` attend chaque compilation.
+- **LES COMPTEURS SE CALENT AVANT D'ÊTRE LUS.** Sous WebGPU `info.render.calls`
+  compte les `render()`, `drawCalls` les dessins, et la boucle interne de three
+  remet tout à zéro à son propre tick (`info.autoReset`) entre notre rendu et la
+  lecture du diagnostic : `?diag=1` disait « 0 appels · 0k tri » sur 650
+  dessins. Un chiffre lu sur un rendu neuf se vérifie contre ce que la sonde a
+  compté elle-même.
+- **UN CANVAS QUI DESSINE N'EST PAS UN CANVAS QUI PRÉSENTE.** Dessins, images
+  par seconde et zéro erreur étaient tous là sur un canvas figé — et 59 i/s en
+  logiciel était le SIGNE (rien n'attendait la présentation). Un témoin de rendu
+  lit l'image présentée : la couleur du ciel quand on regarde en l'air, celle du
+  sol quand on le regarde, après « Jouer », reflets allumés.
+- **LE BANC MESURE EN LOGICIEL DES DEUX CÔTÉS.** `sonde-rendu-webgpu.cjs`
+  (isolée, `BANC_ARGS` pour Dawn/SwiftShader) rend 2 i/s sous les trois rendus :
+  ce qui se transpose à l'iPhone, ce sont les appels (≈ 650, identiques), les
+  pipelines (61–63 contre 104–116 programmes), les textures (92 contre 124–133),
+  le tas, l'ouverture ; les durées d'image, jamais. La cadence se lit sur
+  l'appareil, avec `?rendu=webgpu&diag=1`, et la ligne de diagnostic nomme le
+  dos réel (`webgpu` ou `webgl2`) et l'adaptateur : on ne mesure pas WebGL en
+  croyant mesurer WebGPU.
+
 ## Invariants non négociables
 
 1. **Le sol ne bouge jamais.** Les blocs des enfants sont repérés par

@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 588,
+    titre: 'Un moteur d\'image à l\'essai',
+    puces: [
+      'Rien ne change pour toi aujourd\'hui',
+      'Un nouveau rendu se teste derrière un réglage',
+      'Pour un jeu plus beau et plus rapide',
+    ],
+  },
+  {
     v: 587,
     titre: 'Chaque moteur a sa voix',
     puces: [
