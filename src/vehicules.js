@@ -538,26 +538,26 @@ export const FLOTTE = [
   // (`voitureNeuve`, repli du vœu).
   // `portiere: false` (v366) : sans habitacle, la portière ouverte ne montre que
   // du noir ; un modèle qui casse vaut moins qu'un modèle qui s'en passe.
-  { fichier: 'bugatti-chiron-stealth.glb', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false, portiere: false },
+  { fichier: 'bugatti-chiron-stealth.glb', son: 'w16', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false, portiere: false },
   // La SF90 XX Stradale de Ddiaz Design (CC-BY-4.0, vendor/voitures/LICENSE.md),
   // posée au manifeste par scripts/ferrari-sf90-xx.py, remplace à l'affichage
   // l'ancienne SF90 : même identifiant pour les garages et le réseau, URL neuve
   // (`asset`) pour le cache. Portières non séparées dans le modèle : `portiere:
   // false` (v366), comme la Revuelto.
-  { fichier: 'ferrari-sf90.glb', asset: 'ferrari-sf90-xx.glb', classe: 'sportive', nom: 'Ferrari SF90 XX Stradale', portiere: false },
+  { fichier: 'ferrari-sf90.glb', son: 'v8', asset: 'ferrari-sf90-xx.glb', classe: 'sportive', nom: 'Ferrari SF90 XX Stradale', portiere: false },
   // L'identifiant des sauvegardes reste stable ; l'URL neuve renouvelle le
   // modèle dans STATIC_CACHE sans retélécharger toute la flotte. Adaptation
   // CC-BY-4.0 du modèle de BRO (vendor/voitures/LICENSE.md) : portières non
   // séparées, donc `portiere: false` (v366) plutôt qu'un découpage au hasard.
-  { fichier: 'lamborghini-revuelto.glb', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', laque: 'jamais', portiere: false },
-  { fichier: 'lucid-gravity.glb', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
+  { fichier: 'lamborghini-revuelto.glb', son: 'v12', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', laque: 'jamais', portiere: false },
+  { fichier: 'lucid-gravity.glb', son: 'electrique', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
   // LA MC12 GT1 RED BULL (v559), adaptation CC-BY-4.0 du modèle de Dave Love
   // (vendor/voitures/LICENSE.md, `scripts/convertir-mc12.py`). Sa livrée EST
   // sa laque : la rue ne la repeint jamais (`laque: 'jamais'`, comme la
   // fourgonnette). Ses portes s'ouvrent en élytre et ne sont pas séparées dans
   // le modèle : `portiere: false` (v366), plutôt qu'une portière classique
   // découpée dans la tôle d'une voiture qui n'en a pas.
-  { fichier: 'maserati-mc12-gt1.glb', classe: 'hypercar', nom: 'Maserati MC12 GT1 Red Bull', laque: 'jamais', portiere: false },
+  { fichier: 'maserati-mc12-gt1.glb', son: 'v12', classe: 'hypercar', nom: 'Maserati MC12 GT1 Red Bull', laque: 'jamais', portiere: false },
   // LA 911 RECONSTRUITE (v545) : `fichier` reste l'IDENTIFIANT (garages,
   // réseau, couleur de la rue) ; `asset` est le fichier CHARGÉ. Une URL neuve
   // renouvelle le modèle dans STATIC_CACHE, où une URL connue ne se
@@ -569,22 +569,22 @@ export const FLOTTE = [
   // `portiere: false`, comme la Chiron Stealth. La Model Y est la voiture que
   // fabrique la Giga-usine (`usine: true`, lu par la chaîne et le garagiste) ;
   // les livrées de course et le taxi ne se repeignent pas (`laque: 'jamais'`).
-  { fichier: 'tesla-model-y.glb', classe: 'suv', nom: 'Tesla Model Y', usine: true, habitacle: false, portiere: false },
-  { fichier: 'tesla-cybertruck.glb', classe: 'pickup', nom: 'Tesla Cybertruck', habitacle: false, portiere: false },
-  { fichier: 'aston-martin-victor.glb', classe: 'hypercar', nom: 'Aston Martin Victor', habitacle: false, portiere: false },
-  { fichier: 'aston-martin-db11.glb', classe: 'gt', nom: 'Aston Martin DB11', habitacle: false, portiere: false },
-  { fichier: 'alpine-a110-gt4.glb', classe: 'sportive', nom: 'Alpine A110 GT4', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'bentley-mulliner-batur.glb', classe: 'gt', nom: 'Bentley Mulliner Batur', habitacle: false, portiere: false },
-  { fichier: 'rolls-royce-ghost.glb', classe: 'berline', nom: 'Rolls-Royce Ghost', habitacle: false, portiere: false },
-  { fichier: 'gmc-hummer-ev.glb', classe: 'suv', nom: 'GMC Hummer EV', habitacle: false, portiere: false },
-  { fichier: 'chevrolet-camaro-ss-1967.glb', classe: 'gt', nom: 'Chevrolet Camaro SS 1967', habitacle: false, portiere: false },
-  { fichier: 'cadillac-escalade-esv.glb', classe: 'suv', nom: 'Cadillac Escalade ESV', habitacle: false, portiere: false },
+  { fichier: 'tesla-model-y.glb', son: 'electrique', classe: 'suv', nom: 'Tesla Model Y', usine: true, habitacle: false, portiere: false },
+  { fichier: 'tesla-cybertruck.glb', son: 'electrique', classe: 'pickup', nom: 'Tesla Cybertruck', habitacle: false, portiere: false },
+  { fichier: 'aston-martin-victor.glb', son: 'v12', classe: 'hypercar', nom: 'Aston Martin Victor', habitacle: false, portiere: false },
+  { fichier: 'aston-martin-db11.glb', son: 'v12', classe: 'gt', nom: 'Aston Martin DB11', habitacle: false, portiere: false },
+  { fichier: 'alpine-a110-gt4.glb', son: 'sportive', classe: 'sportive', nom: 'Alpine A110 GT4', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'bentley-mulliner-batur.glb', son: 'v12', classe: 'gt', nom: 'Bentley Mulliner Batur', habitacle: false, portiere: false },
+  { fichier: 'rolls-royce-ghost.glb', son: 'v12', classe: 'berline', nom: 'Rolls-Royce Ghost', habitacle: false, portiere: false },
+  { fichier: 'gmc-hummer-ev.glb', son: 'electrique', classe: 'suv', nom: 'GMC Hummer EV', habitacle: false, portiere: false },
+  { fichier: 'chevrolet-camaro-ss-1967.glb', son: 'v8', classe: 'gt', nom: 'Chevrolet Camaro SS 1967', habitacle: false, portiere: false },
+  { fichier: 'cadillac-escalade-esv.glb', son: 'v8', classe: 'suv', nom: 'Cadillac Escalade ESV', habitacle: false, portiere: false },
   { fichier: 'renault-fuego.glb', classe: 'citadine', nom: 'Renault Fuego', habitacle: false, portiere: false },
-  { fichier: 'porsche-cayenne-turbo-gt.glb', classe: 'suv', nom: 'Porsche Cayenne Turbo GT', habitacle: false, portiere: false },
-  { fichier: 'abt-audi-rs6-r.glb', classe: 'gt', nom: 'ABT Audi RS6-R', habitacle: false, portiere: false },
+  { fichier: 'porsche-cayenne-turbo-gt.glb', son: 'v8', classe: 'suv', nom: 'Porsche Cayenne Turbo GT', habitacle: false, portiere: false },
+  { fichier: 'abt-audi-rs6-r.glb', son: 'v8', classe: 'gt', nom: 'ABT Audi RS6-R', habitacle: false, portiere: false },
   { fichier: 'porsche-992-gt3-r.glb', classe: 'sportive', nom: 'Porsche 911 GT3 R (992)', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'bugatti-divo.glb', classe: 'hypercar', nom: 'Bugatti Divo', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'ford-f150-raptor-r.glb', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false, portiere: false },
+  { fichier: 'bugatti-divo.glb', son: 'w16', classe: 'hypercar', nom: 'Bugatti Divo', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'ford-f150-raptor-r.glb', son: 'v8', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false, portiere: false },
   { fichier: 'ford-mondeo-taxi.glb', classe: 'berline', taxi: true, nom: 'Ford Mondeo · taxi', laque: 'jamais', habitacle: false, portiere: false },
   // LES DIX VOITURES DE TOUS LES JOURS (v581) : le « Generic passenger car
   // pack » de Comrade1280 (CC-BY-4.0, vendor/voitures/LICENSE.md), dix
@@ -610,7 +610,7 @@ export const FLOTTE = [
   // (`laque: 'jamais'`), et ses 1 234 ch la rangent avec les sportives. Ses
   // sièges sont MESURÉS sur son assise (`sonde-captures-lucid.cjs`) : à la place
   // commune de la fiche `voiture`, l'enfant était assis dans le dossier.
-  { fichier: 'lucid-air-sapphire.glb', classe: 'sportive', nom: 'Lucid Air Sapphire', laque: 'jamais',
+  { fichier: 'lucid-air-sapphire.glb', son: 'electrique', classe: 'sportive', nom: 'Lucid Air Sapphire', laque: 'jamais',
     siege: { x: -0.37, y: 0.43, z: -0.02 },
     sieges: [{ x: 0.37, y: 0.43, z: -0.02 }, { x: -0.37, y: 0.5, z: 0.82 }, { x: 0.37, y: 0.5, z: 0.82 }] },
   // LA VOITURE DE POLICE (v553) : la Ford Crown Victoria Police Interceptor
@@ -664,6 +664,23 @@ export const VU_VOITURE = 45;
 
 export const DEMI_LONG_VOITURE = 2.2;
 export const DEMI_LARG_VOITURE = 1.13;
+// LE SON D'UN MODÈLE (v587). Max : « il y a des voitures qui font des bruits
+// beaucoup plus sportifs ». Un moteur s'entend par son CARACTÈRE — le
+// nombre et la disposition des cylindres, ou pas de cylindre du tout — et ce
+// caractère est une propriété du modèle, comme sa classe : il vit dans la
+// fiche de FLOTTE (`son`), et sinon il se déduit de la classe. `sons.js` a une
+// recette par caractère (synthétisée, rien de téléchargé) ; une électrique
+// (`son: 'electrique'`) ne fait presque rien qu'un sifflement d'onduleur.
+export const SON_DE_CLASSE = {
+  citadine: 'citadine', berline: 'berline', suv: 'suv', utilitaire: 'diesel',
+  pickup: 'v8', gt: 'v8', sportive: 'sportive', hypercar: 'v12',
+};
+export function sonDe(fichier) {
+  if (fichier === 'voiture.glb') return 'w16';   // le Chiron d'artiste historique
+  const e = FLOTTE.find((f) => f.fichier === fichier);
+  if (!e) return null;
+  return e.son || SON_DE_CLASSE[e.classe] || null;
+}
 export function classeDe(fichier) {
   const e = FLOTTE.find((f) => f.fichier === fichier);
   return e ? e.classe || null : null;

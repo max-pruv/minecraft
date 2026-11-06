@@ -20,6 +20,43 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v587 — Chaque moteur a sa voix, et la flamme est une réchauffe
+
+**Pourquoi.** Max : « il y a des avions normaux qui ne crachent pas de feu.
+Aujourd'hui tous les avions crachent du feu, ça n'a pas de sens. » Et « il y
+a des voitures qui font des bruits beaucoup plus sportifs… idem pour les
+avions, entre un avion de chasse, un avion de ligne ». Le jeu n'avait qu'un
+son de voiture et un son de réacteur, et une flamme derrière tout réacteur
+dès que l'avion bougeait.
+
+**Ce que ça change.** Un avion de ligne (A320, A321) et le jet d'affaires ne
+crachent plus de flamme ; le chasseur et le Concorde allument leur
+postcombustion seulement pleins gaz (au-delà des trois quarts de manette), et
+elle rugit. Chaque voiture a la voix de son moteur, lue dans sa fiche : une
+électrique (Lucid, Tesla, Hummer EV) siffle sans gronder, un V8 (Camaro, RS6,
+Raptor) gronde et roule, un V12 (Victor, DB11, MC12) hurle, une sportive fait
+entendre ses passages de rapport, une citadine ronronne, un utilitaire claque
+comme un diesel. Un avion de ligne souffle et siffle, un jet siffle plus
+aigu, un chasseur rugit dans le grave. Tout est synthétisé, rien de téléchargé.
+
+**Ce qui le prouve.** Sept témoins neufs dans `monte.js`, par
+`sonde-moteurs.cjs` : on monte PAR LE BOUTON dans des modèles de la flotte,
+et l'on lit la SORTIE audio dans des bandes. Électrique contre V8 : grave
+−70,6 contre −40,9 dB. V12 contre V8 : centroïde 479 contre 234 Hz. Jet
+contre A320 : sifflement centré à 4 557 contre 2 266 Hz. Chasseur contre
+avion de ligne : 13 dB de grave au-dessus de l'aigu, contre −5. Flammes :
+zéro sur l'A320, l'A321 et le jet, éteintes à mi-gaz sur le chasseur,
+allumées pleins gaz. Les sept sont rouges sur `origin/main` (une seule
+recette : les spectres se recouvrent, deux tuyères allumées sur l'A320) et
+verts ici. Les trois témoins de flamme d'avant ont été repointés sur la règle
+neuve (le chasseur, la réchauffe), le contrat des avions déposés aussi.
+Et le portail a trouvé ce que les sept ne voyaient pas : les moteurs aigus
+chantaient dans la bande des pneus, et le frein à main ne crissait plus assez
+fort sur une sportive, un W16 ou un V12 (×4,7 à ×6 pour une barre à ×10).
+La bande est réservée au moteur près : ×24 à ×600 sur les cinq caractères.
+
+---
+
 ## v586 — Chaque endroit a ses voitures
 
 **Pourquoi.** À New York, Max ne voyait que deux voitures : le taxi jaune et une
