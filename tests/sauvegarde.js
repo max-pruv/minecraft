@@ -434,6 +434,46 @@ const BLOCS = 40000;
       copieFFaite, fonduD.absent ? 'pas de fondu doux'
         : `${fonduD.copie} · ${Date.now() - departCopieF} ms`);
 
+    // ET PAR LA CARTE ×3 (v588), EN DERNIER. Une maison posée à Tokyo sur la
+    // carte d'avant (0,1875 km par bloc), reçue d'une tablette restée sur la
+    // v587 : la fusion la pose à la nouvelle adresse de Tokyo, d'un seul
+    // tenant, sans fantôme à l'ancienne ; la position suit ; et le document
+    // du nuage a été mis à l'abri avant, sur son propre document.
+    const x3D = await tab.evaluate(async () => {
+      const ps = window.__game.profileSync;
+      const W = await import('./src/world.js');
+      const m = await import('./src/mondes.js');
+      if (!W.migrerCarteX3 || !m.MONDES.terreV4 || !ps.mettreALAbriAvantCarteX3) return { absent: true };
+      const A = m.positionDe('tokyo', 'terreV4'), N = m.positionDe('tokyo');
+      const t = W.DATE_CARTE_X3 - 86400000;
+      const blocs = {};
+      for (let dx = 0; dx < 5; dx++) for (let dz = 0; dz < 5; dz++) blocs[`${A.x + 4 + dx},40,${A.z + 4 + dz}`] = [11, t];
+      const local = ps.snapshot();
+      const remote = { ...JSON.parse(JSON.stringify(local)), edits: { local: blocs },
+        pos: { 13579: { x: A.x + 6.5, y: 41, z: A.z + 6.5, yaw: 0, pitch: 0, t } } };
+      ps.copieCarteX3 = null;      // comme une tablette qui vient de s'ouvrir
+      const copie = await ps.mettreALAbriAvantCarteX3(ps.getName(), remote);
+      const r = ps.merge(local, remote);
+      const e = (r.state.edits || {}).local || {};
+      const nos = Object.keys(e).filter((k) => e[k][0] === 11).map((k) => k.split(',').map(Number));
+      const p = (r.state.pos || {})[13579] || {};
+      return { copie, n: nos.length,
+        vieux: nos.filter(([x, , z]) => x >= A.x + 4 && x < A.x + 9 && z >= A.z + 4 && z < A.z + 9).length,
+        neuf: nos.filter(([x, , z]) => x >= N.x + 4 && x < N.x + 9 && z >= N.z + 4 && z < N.z + 9).length,
+        ys: [...new Set(nos.map(([, y]) => y))],
+        pos: [p.x - N.x, p.z - N.z].join() };
+    });
+    verifier('carte ×3 : une maison de Tokyo d\'avant reçue du nuage arrive à la nouvelle adresse de Tokyo, d\'un seul tenant, sans fantôme',
+      !x3D.absent && x3D.n === 25 && x3D.neuf === 25 && x3D.vieux === 0 && x3D.ys.length === 1 && x3D.pos === '6.5,6.5',
+      x3D.absent ? 'la marche 8 → 9 n\'existe pas' : JSON.stringify(x3D));
+    const departCopieX3 = Date.now();
+    const copieX3Faite = !x3D.absent && await jusqua(async () => {
+      const a = nuage.etatDe('Marlon~avant-carte-x3');
+      return !!(a && (a.editsz || a.edits) && a.carteX3 === 1);
+    }, 60000);
+    verifier('carte ×3 : et le document du nuage a été mis à l\'abri avant, sur son propre document',
+      copieX3Faite, x3D.absent ? 'la marche 8 → 9 n\'existe pas' : `${x3D.copie} · ${Date.now() - departCopieX3} ms`);
+
     // CE QUI VIENT DU NUAGE PASSE PAR LA MIGRATION DE CARTE AVANT LA FUSION.
     //
     // La fusion est une union. Une tablette restée sur la v240 republie les

@@ -2171,6 +2171,96 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       : `${chezLesEnfants.n} colonnes · ${chezLesEnfants.total} déplacée(s)`
         + (chezLesEnfants.total ? ` · ${JSON.stringify(chezLesEnfants.bouge)}` : ''));
 
+  // LA CARTE ×3 (v588) : ON NE PEUT PAS BORNER LA CASSE, ALORS ON PROUVE LE
+  // SOL SOUS LES ENFANTS. La projection passe de 0,1875 à 0,0625 km par bloc :
+  // le relief se réécrit partout où la projection décide de la géographie, et
+  // les deux empreintes du haut de ce fichier changent. Ce qui garde
+  // l'invariant 1, c'est la règle de v199 et v242 : la carte d'avant est figée
+  // (`MONDES.terreV4`, et le monde entier qu'on y voyait, `CONF_V587`), et le
+  // sol autour du point d'apparition et sous Paris est IDENTIQUE, colonne par
+  // colonne, entre les deux — le relief brut ET le monde avec ses villes.
+  // Aucune mise à jour de valeur ne peut satisfaire ce témoin.
+  const carteX3 = await (async () => {
+    const W = await import('../src/world.js');
+    const M = await import('../src/mondes.js');
+    if (!M.MONDES.terreV4 || !W.CONF_V587) return { absent: true };
+    const P = M.positionDe('paris', 'terreV3');
+    const avant = new W.World({ v587: true }), apres = new W.World();
+    const bouge = [];
+    let n = 0, relief = 0, monde = 0;
+    for (const [nom, cx, cz, r] of [['apparition', 0, 0, 90], ['Paris', P.x, P.z, 200]]) {
+      for (let dx = -r; dx <= r; dx += 7) for (let dz = -r; dz <= r; dz += 7) {
+        const x = Math.round(cx + dx), z = Math.round(cz + dz);
+        n++;
+        const a = W.hauteurBase(x, z, 'terreV4'), b = W.hauteurBase(x, z, 'terre');
+        const ma = avant.terrainHeight(x, z), mb = apres.terrainHeight(x, z);
+        if (a !== b) { relief++; bouge.push({ ou: nom, x, z, avant: a, apres: b }); }
+        if (ma !== mb) { monde++; bouge.push({ ou: nom + ' (monde)', x, z, avant: ma, apres: mb }); }
+      }
+    }
+    return { n, relief, monde, bouge: bouge.slice(0, 5),
+      kmAvant: M.MONDES.terreV4.projection.kmParBloc, kmApres: M.MONDES.terre.projection.kmParBloc };
+  })();
+  verifier('carte ×3 : le sol n\'a pas bougé d\'un bloc autour du départ ni sous Paris (carte d\'avant figée contre carte neuve)',
+    !carteX3.absent && carteX3.n > 3000 && carteX3.relief === 0 && carteX3.monde === 0 && carteX3.kmApres < carteX3.kmAvant,
+    carteX3.absent ? 'la carte d\'avant la carte ×3 n\'est pas gardée'
+      : `${carteX3.n} colonnes · relief ${carteX3.relief} · monde ${carteX3.monde} déplacée(s) · ${carteX3.kmAvant} → ${carteX3.kmApres} km/bloc`
+        + (carteX3.bouge.length ? ` · ${JSON.stringify(carteX3.bouge)}` : ''));
+
+  // LA MARCHE 8 → 9 (v588) : chaque bloc suit sa ville. Pure, sur un document
+  // fabriqué tel que la v587 l'écrirait — c'est ce que le nuage lui donnera.
+  // New York (rectangle du plan) et Tokyo (disque du registre) partent du
+  // déplacement de leur ville, une maison d'un seul tenant ; Paris, le départ
+  // et les trois sanctuaires ne bougent pas ; un bloc posé après la date
+  // reste ; une marque d'import de Manhattan suit son origine ; la position
+  // et la fiche d'un garage suivent ; repasser la marche ne change rien.
+  const marcheX3 = await (async () => {
+    const W = await import('../src/world.js');
+    const M = await import('../src/mondes.js');
+    if (!W.migrerCarteX3 || !M.MONDES.terreV4) return { absent: true };
+    const t = W.DATE_CARTE_X3 - 86400000;
+    const nyA = M.positionDe('ny', 'terreV4'), ny = M.positionDe('ny');
+    const toA = M.positionDe('tokyo', 'terreV4'), to = M.positionDe('tokyo');
+    const P = M.positionDe('paris');
+    const doc = {
+      [`${nyA.x + 10},40,${nyA.z - 500}`]: [3, t, 1],
+      [`${nyA.x + 10},60,${nyA.z - 500}`]: [3, W.DATE_CARTE_X3 + 1000],
+      [`${P.x + 20},40,${P.z + 10}`]: [5, t],
+      '10,40,10': [6, t], '26,40,-14': [6, t], '-34,40,40': [6, t], [`${MAISON_X},${SOL_MAISON + 1},${MAISON_Z}`]: [6, t],
+      '@manhattan-v240:1,2,3': [3, t, nyA.x, nyA.z],
+    };
+    for (let dx = 0; dx < 7; dx++) for (let dz = 0; dz < 7; dz++) doc[`${toA.x + 3 + dx},40,${toA.z + 3 + dz}`] = [4, t];
+    const r1 = W.migrerCarteX3(doc), r2 = W.migrerCarteX3(r1.carte);
+    const c = r1.carte, cles = Object.keys(c);
+    const at = (x, z) => cles.filter((k) => { const [a, , b] = k.split(',').map(Number); return a === x && b === z; });
+    const nyNeuf = at(nyA.x + 10 + ny.x - nyA.x, nyA.z - 500 + ny.z - nyA.z);
+    const toits = cles.filter((k) => { const [a, , b] = k.split(',').map(Number);
+      return a >= to.x + 3 && a < to.x + 10 && b >= to.z + 3 && b < to.z + 10; });
+    const ys = new Set(toits.map((k) => k.split(',')[1]));
+    const pos = W.migrerPositionsCarteX3({ 24680: { x: toA.x + 5.5, y: 41, z: toA.z + 5.5, yaw: 0, pitch: 0, t } }).pos[24680];
+    const gar = { local: { a: { x: toA.x + 6, y: 40, z: toA.z + 6, l: 7, p: 7, places: [], voiture: null, t } } };
+    const g = W.suivreGaragesCarteX3(gar, { local: doc }).garages;
+    const f = g && Object.values(g.local || {})[0];
+    return {
+      deplaces: r1.deplaces,
+      ny: nyNeuf.length === 1 && !c[`${nyA.x + 10},40,${nyA.z - 500}`] && !!c[`${nyA.x + 10},60,${nyA.z - 500}`],
+      tokyo: toits.length === 49 && ys.size === 1,
+      fixes: [`${P.x + 20},40,${P.z + 10}`, '10,40,10', '26,40,-14', '-34,40,40', `${MAISON_X},${SOL_MAISON + 1},${MAISON_Z}`]
+        .every((k) => c[k] && c[k][1] === t),
+      marque: c['@manhattan-v240:1,2,3'] && [c['@manhattan-v240:1,2,3'][2] - ny.x, c['@manhattan-v240:1,2,3'][3] - ny.z].join(),
+      pos: pos && [pos.x - to.x, pos.z - to.z].join(),
+      garage: f && [f.x - to.x, f.z - to.z].join(),
+      idempotent: r2.deplaces === 0 && Object.keys(r2.carte).sort().join('|') === cles.sort().join('|'),
+      bouge: (nyA.x !== ny.x || nyA.z !== ny.z) && (toA.x !== to.x || toA.z !== to.z),
+    };
+  })();
+  verifier('carte ×3 : un bloc de New York ou de Tokyo d\'avant suit sa ville, d\'un seul tenant ; Paris, le départ et les sanctuaires restent',
+    !marcheX3.absent && marcheX3.bouge && marcheX3.ny && marcheX3.tokyo && marcheX3.fixes,
+    marcheX3.absent ? 'la marche 8 → 9 n\'existe pas' : JSON.stringify(marcheX3));
+  verifier('carte ×3 : la marque d\'import, la position et la fiche du garage suivent ; repasser la marche ne change rien',
+    !marcheX3.absent && marcheX3.marque === '0,0' && marcheX3.pos === '5.5,5.5' && marcheX3.garage === '6,6' && marcheX3.idempotent,
+    marcheX3.absent ? 'la marche 8 → 9 n\'existe pas' : JSON.stringify(marcheX3));
+
   // LES BLOCS SUIVENT LEUR VILLE (v242).
   //
   // La migration de v199 ne déplaçait les blocs qu'en hauteur : une maison
@@ -2188,8 +2278,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const M = await import('../src/mondes.js');
     const { BORNES } = await import('../src/manhattan-plan.js');
     if (!W.migrerBlocsCarte3 || !M.MONDES.terreV2) return { absent: true };
-    const nyA = M.positionDe('ny', 'terreV2'), ny = M.positionDe('ny');
-    const liA = M.positionDe('lille', 'terreV2'), li = M.positionDe('lille');
+    const nyA = M.positionDe('ny', 'terreV2'), ny = M.positionDe('ny', M.MONDES.terreV3 ? 'terreV3' : 'terre');
+    const liA = M.positionDe('lille', 'terreV2'), li = M.positionDe('lille', M.MONDES.terreV3 ? 'terreV3' : 'terre');
     const t = Date.UTC(2026, 7, 1);
     const doc = { local: {
       [`${nyA.x + 10},40,${nyA.z - 500}`]: [3, t, 1],       // Manhattan, ancienne origine
@@ -3205,7 +3295,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       W.migrerLesBlocs(() => tout, (x) => { tout = x; });
       const gs = JSON.parse(memoire.get('web-minecraft-garages-v1')).local;
       const f = Object.values(gs).find((x) => x.voiture);
-      stock = { ou: f && [f.x, f.y, f.z], version: memoire.get('web-minecraft-carte-v1'), n: Object.keys(gs).length };
+      stock = { ou: f && [f.x, f.y, f.z], version: memoire.get('web-minecraft-carte-v1'), attendu: String(W.CARTE_VERSION), n: Object.keys(gs).length };
     } finally { if (avantLS === undefined) delete globalThis.localStorage; else globalThis.localStorage = avantLS; }
     return { av: lue(avant), or: lue(orph), deux: deux.garages === avant.garages && deux.deplacees === 0,
       vide: seuls.garages === undefined, c3: [Object.keys(c3a.garages.local)[0], Object.keys(c3o.garages.local)[0], c3a.deplacees], stock };
@@ -3221,7 +3311,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('🅿️ et un garage de Rome suit la carte 3 ; et l\'appareil qui a migré sans la fiche la retrouve à la migration de stockage',
     !garagesCarte.absent && garagesCarte.c3[2] >= 1 && garagesCarte.c3[0] === garagesCarte.c3[1] && garagesCarte.c3[0] !== 'a'
       && garagesCarte.stock && garagesCarte.stock.ou && garagesCarte.stock.ou.join() === garagesCarte.av.ou.join()
-      && garagesCarte.stock.version === '8' && garagesCarte.stock.n === 2,
+      && garagesCarte.stock.version === garagesCarte.stock.attendu && garagesCarte.stock.n === 2,
     garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ c3: garagesCarte.c3, stock: garagesCarte.stock }));
 
   // --- LONDRES À LA RÈGLE DU KIT (v339) : la ville d'avant reste sous ce ----
