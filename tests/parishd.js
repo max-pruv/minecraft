@@ -1801,10 +1801,28 @@ function verifier(nom, ok, detail = '') {
       verifier('à l\'arrivée dans Paris la nuit, aucun matériau éclairé ne se recompile pour la cible : les programmes ont été chauffés avec elle',
         eclairees.length === 0 && neuvesParis.length <= 2,
         `${neuvesParis.length} clé(s) neuve(s) en ${Math.round((Date.now() - t0) / 1000)} s (${porteurs.join(', ') || 'porteur inconnu'}) : ${neuvesParis.map((k) => k.slice(0, 40)).join(' | ')}`);
+      // LE BLOOM SE MESURE SUR LA VILLE CHARGÉE, JAMAIS À SON ARRIVÉE. Huit
+      // secondes après le saut, 14 morceaux à façades installés : 1,8 % de pixels
+      // éclaircis — le rouge du portail ; la ville chargée (49 morceaux à façades,
+      // 42 Mo), 2,8 à 3,3 %, stable sur trois minutes, le MÊME chiffre sur le
+      // commit de la livraison (`sonde-bloom-charge`, deux arbres). On attend
+      // donc le FAIT du monde — le compte de morceaux à façades qui ne bouge plus
+      // sur trois relevés — borné à 60 s, la durée dans le message (v291), et la
+      // barre se pose à la moitié de la mesure (v237) : 1,5 %.
+      const charge = await lumi.evaluate(async () => {
+        const g = __game; const compte = () => [...g.chunkMeshes.values()].filter((e) => e.facades).length;
+        let der = -1, stable = 0; const t0 = performance.now();
+        while (performance.now() - t0 < 60000) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const n = compte(); stable = n === der ? stable + 1 : 0; der = n;
+          if (stable >= 3 && n > 0) break;
+        }
+        return { facades: der, stable, ms: Math.round(performance.now() - t0) };
+      });
       const bloom = await PX.bloomLaNuit(lumi);
-      verifier('la nuit à Paris, le bloom ajoute de la lumière autour de ce qui émet et n\'en retire nulle part',
-        bloom.eclaircis > bloom.pixels * 0.02 && bloom.assombris <= bloom.pixels * 0.0005 && bloom.moyenne > 0,
-        `${bloom.eclaircis} pixels éclaircis (${(bloom.part * 100).toFixed(2)} %), ${bloom.assombris} assombris, +${bloom.moyenne.toFixed(2)} de luminance moyenne sur ${bloom.pixels}`);
+      verifier('la nuit à Paris chargé, le bloom ajoute de la lumière autour de ce qui émet et n\'en retire nulle part',
+        bloom.eclaircis > bloom.pixels * 0.015 && bloom.assombris <= bloom.pixels * 0.0005 && bloom.moyenne > 0,
+        `${bloom.eclaircis} pixels éclaircis (${(bloom.part * 100).toFixed(2)} %), ${bloom.assombris} assombris, +${bloom.moyenne.toFixed(2)} de luminance moyenne sur ${bloom.pixels} · ${charge.facades} morceau(x) à façades, stable ${charge.stable} relevé(s), en ${charge.ms} ms`);
       // le jour, en dernier : la parité rend une image par l'ANCIEN chemin, qui
       // compile les variantes d'écran — des clés neuves, voulues ici
       await lumi.evaluate(() => window.__setDayTime(0.42));

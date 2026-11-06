@@ -79,6 +79,12 @@ soleil et la bande d'horizon dans le dôme. Six règles.
   tâche : deux rendus à deux images comparent le mouvement de la rue, pas le
   réglage (mon premier témoin du bloom comptait 23 % de pixels « assombris »
   — des voitures qui avaient avancé).
+  **Et il mesure la ville CHARGÉE, jamais son arrivée** : huit secondes après
+  le saut, 14 morceaux à façades rendent 1,8 % de pixels éclaircis ; chargée,
+  2,8 à 3,3 %, stable, le même chiffre sur le commit de la livraison. Le
+  témoin attend le compte de morceaux à façades qui ne bouge plus (v291), et
+  sa barre est la moitié de la mesure (v237). Le journal disait « 7,8 % » :
+  un chiffre qu'aucun état ne rend ; on écrit la mesure, pas le souvenir.
 - **L'EXPOSITION DU JEU SE PORTE DANS LE DÉVELOPPEMENT.** Les matériaux ne
   l'appliquent plus (pas de correspondance tonale vers une cible) :
   `etalonner` multiplie par `renderer.toneMappingExposure`, ce qui garde la

@@ -44,7 +44,9 @@ règlent pour mesurer, et `?diag=1` dit ce que ça coûte sur l'appareil.
 règle du niveau (logiciel, palier, adresse), aucun programme qui naît à la
 nuit tombée ni à l'arrivée dans Paris sous le post-traitement (la chauffe
 compile avec la cible posée), le bloom qui ajoute de la lumière la nuit sans en
-retirer nulle part (7,8 % des pixels éclaircis, zéro assombri), et la parité de
+retirer nulle part (environ 3 % des pixels éclaircis une fois la ville
+chargée — 1,8 % à l'arrivée, ce qui a fait rougir le témoin une fois —, zéro
+assombri), et la parité de
 jour avec l'ancien chemin (luminance à 1 % près). Revue d'écran avant et après
 sur Paris, la tour Eiffel, la campagne, le vol libre et Manhattan, iPhone et
 iPad, jour et nuit, dans la PR.
