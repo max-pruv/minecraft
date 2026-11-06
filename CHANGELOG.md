@@ -20,13 +20,16 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## (numéro fixé à la fusion) — Les textures des modèles tiennent quatre à six fois moins de place
+## v587 — Les textures des modèles tiennent quatre à six fois moins de place
 
 **Pourquoi.** iOS ferme la page vers 500 Mo de géométrie et de textures (v580),
 et toutes les images des modèles déposés — voitures, police, moto, avions, New
 York — se décodaient en RGBA : 487 Mo de textures si tout est chargé, 309 Mo
-pour la seule flotte de la rue. C'est la place qui manque aux modèles plus
-beaux que le chantier « réalisme » veut ajouter.
+pour la seule flotte de la rue. Le journal de bord de l'iPhone de Max l'a
+dit : quinze plantages à Paris de la v580 à la v586, la dernière session à
+551 Mo dont 279 de textures — et `mondeMo` ne borne que la géométrie. C'est
+aussi la place qui manque aux modèles plus beaux que le chantier « réalisme »
+veut ajouter.
 
 **Ce que ça change.** Les quarante modèles déposés qui portent des images
 arrivent avec des textures KTX2, transcodées pour la carte graphique (ETC2 ou

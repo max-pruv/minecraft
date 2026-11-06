@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v586';
+const CACHE_VERSION = 'web-minecraft-v587';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -32,7 +32,7 @@ const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemis
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
 // les avions déposés (v563) : immuables, comme les corps et la flotte
-// et leurs versions aux textures KTX2 (v586), celles que le jeu charge quand le
+// et leurs versions aux textures KTX2 (v587), celles que le jeu charge quand le
 // transcodeur est branché ; les originaux restent pour `?ktx2=0`
 const AVIONS = ['airbus-a320', 'airbus-a321', 'chasseur-f35', 'jet-prive']
   .flatMap((n) => [`./vendor/avions/${n}.glb`, `./vendor/avions/${n}-ktx2.glb`]);
@@ -195,7 +195,7 @@ const ASSETS = [
   './vendor/GLTFLoader.js',
   './vendor/BufferGeometryUtils.js',
   './vendor/voiture.glb',
-  // Les textures KTX2 des modèles déposés (v586) : le chargeur et le
+  // Les textures KTX2 des modèles déposés (v587) : le chargeur et le
   // transcodeur Basis de three r160. Importés au démarrage, donc dans le cache
   // de la version — un module qui manque hors ligne arrêterait tout le jeu.
   './src/ktx2.js',

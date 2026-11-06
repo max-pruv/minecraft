@@ -1,4 +1,4 @@
-# Chargeur et transcodeur KTX2 (v586)
+# Chargeur et transcodeur KTX2 (v587)
 
 Recopiés sans modification de **three.js r160** (`examples/jsm/`), la version de
 `vendor/three.module.min.js`. Seuls les chemins d'import de `KTX2Loader.js` ont

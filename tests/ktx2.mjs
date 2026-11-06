@@ -1,4 +1,4 @@
-// LES FICHIERS AUX TEXTURES KTX2 (v586), JUGÉS SOUS NODE CONTRE LEURS ORIGINAUX.
+// LES FICHIERS AUX TEXTURES KTX2 (v587), JUGÉS SOUS NODE CONTRE LEURS ORIGINAUX.
 //
 // `scripts/compresser-textures-ktx2.mjs` produit `<nom>-ktx2.glb` à côté de
 // chaque modèle déposé. Ce que le jeu mesure sur un modèle (roues, feux,

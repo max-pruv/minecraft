@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 587,
+    titre: 'Le jeu tient mieux sur iPhone',
+    puces: [
+      'Les voitures prennent bien moins de mémoire',
+      'Les avions et New York aussi',
+      'Elles restent aussi belles qu’avant',
+    ],
+  },
+  {
     v: 586,
     titre: 'Plein de voitures différentes',
     puces: [

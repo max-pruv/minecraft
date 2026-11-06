@@ -733,7 +733,7 @@ function partageDesTextures(parser) {
     loadTexture(index) {
       const def = parser.json.textures[index];
       if (!def) return null;
-      // UNE TEXTURE KTX2 SE PARTAGE AUSSI (v586). Ses octets sont dans
+      // UNE TEXTURE KTX2 SE PARTAGE AUSSI (v587). Ses octets sont dans
       // l'extension, et c'est le transcodeur du jeu qui la lit ; sans lui
       // branché, on laisse le chargeur dire ce qu'il en pense.
       const basisu = def.extensions && def.extensions.KHR_texture_basisu;

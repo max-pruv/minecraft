@@ -1034,7 +1034,7 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
-## Les textures en KTX2 (v586) — une image se mesure en carte graphique, pas sur le disque
+## Les textures en KTX2 (v587) — une image se mesure en carte graphique, pas sur le disque
 
 iOS ferme la page vers 500 Mo de géométrie et de textures (v580), et une image
 JPEG ou PNG se DÉCODE en RGBA : quatre octets par pixel plus un tiers de
