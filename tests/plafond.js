@@ -1558,13 +1558,19 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // seize, du Berliner Dom au palais d'Hiver.
     {
       const CIg = EM && EM.CIELS ? EM.CIELS : {};
-      const avant = new Map(W.CONF_V308.reperes.map((l) => [`${l.name}@${l.x},${l.z}`, l]));
+      // Le monde d'avant vit sur la carte d'avant (carte ×3, v588) : un repère
+      // s'y retrouve par son nom DANS SA VILLE, pas par ses coordonnées.
+      const VFg = await import('../src/villesmonde-v531.js').catch(() => null);
+      const villesAv = [...(W.CONF_V308.villes || W.CITIES).map((c) => ({ nom: c.name, x: c.x, z: c.z, r: c.r })),
+        ...((VFg && VFg.VILLES_MONDE) || VILLES_MONDE).map((f) => ({ nom: f.ancre.nom, x: f.ancre.x, z: f.ancre.z, r: f.rayon }))];
+      const villeAv = (x, z) => villesAv.find((q) => Math.hypot(x - q.x, z - q.z) < q.r);
+      const avant = new Map(W.CONF_V308.reperes.map((l) => [`${l.name}@${(villeAv(l.x, l.z) || {}).nom}`, l]));
       const gabaritDe = (f) => f.gabarit || (/6 \+ r, 0, OR/.test(String(f)) ? 'dome'
         : /poser\(1, 5, 0, OR\)/.test(String(f)) ? 'palaisLong' : null);
       const tours = [], vus = [];
       for (const lm of reperes) {
         const v = villeDe(lm.x, lm.z);
-        const a = avant.get(`${lm.name}@${lm.x},${lm.z}`);
+        const a = v && avant.get(`${lm.name}@${v.nom}`);
         if (!v || !a || !gabaritDe(a.build)) continue;
         let h = 0;
         const base = new Set(), couches = new Map(), pied = [1e9, -1e9, 1e9, -1e9];
@@ -3284,7 +3290,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     for (let dx = 0; dx < 7; dx++) for (let dz = 0; dz < 7; dz++) c3[`${ro.x + 3 + dx},40,${ro.z + 3 + dz}`] = [4, t3];
     const g3 = { local: { a: { x: ro.x + 6, y: 40, z: ro.z + 6, l: 7, p: 7, places: [], voiture: null, t: 0 } } };
     const c3a = W.migrerChaineCarte({ local: c3 }, g3);
-    const c3o = W.migrerChaineCarte(W.migrerChaineCarte({ local: c3 }).edits, g3);
+    // l'orpheline : les blocs déjà passés par la carte 3, la fiche non (la
+    // carte ×3 les emmène ensuite ensemble ; une fiche orpheline de DEUX
+    // marches n'est pas suivie — dette déclarée, docs/carte-x3-A.md)
+    const c3o = W.migrerChaineCarte(W.migrerBlocsCarte3({ local: c3 }).tout, g3);
     // 4. le stockage
     const memoire = new Map([['web-minecraft-carte-v1', '7'], ['web-minecraft-garages-v1', JSON.stringify(garages)]]);
     const avantLS = globalThis.localStorage;
@@ -3511,11 +3520,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       if (Math.abs(hOut - hIn) / 15 > 1) raides++;
     }
     if (!W.migrerFonduDoux || !VM.FONDU_PORTEE) return { absent: true, raides, rayons };
-    const v8 = new W.World({ v308: true }), nf = new W.World();
+    // Ce qu'on juge ici, c'est le monde de la v309 contre celui de la v308 :
+    // depuis la carte ×3 (v588), tous deux vivent sur la carte d'avant, aux
+    // adresses que les fiches figées leur donnent (`villesmonde-v531.js`), et
+    // le monde de la production d'alors est `CONF_V587`.
+    const VF = await import('../src/villesmonde-v531.js');
+    const VILLES_AV = VF.VILLES_MONDE;
+    const v8 = new W.World({ v308: true }), nf = W.CONF_V587 ? new W.World({ v587: true }) : new W.World();
     // 2. le monde de la v308, contre la production
     const rel = [];
     for (const cle of ['salvador', 'jakarta', 'bari', 'busan', 'oslo']) {
-      const f = VILLES_MONDE.find((v) => v.cle === cle);
+      const f = VILLES_AV.find((v) => v.cle === cle);
       for (let x = Math.round(f.ancre.x - f.rayon - 80); x <= f.ancre.x + f.rayon + 80; x += 3)
         for (let z = Math.round(f.ancre.z - f.rayon - 80); z <= f.ancre.z + f.rayon + 80; z += 3) rel.push(v8.terrainHeight(x, z));
     }
@@ -3523,19 +3538,19 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // 3. seulement abaisser, seulement dans la couronne
     const fautes = [];
     let abaissees = 0, pire = 0;
-    for (const f of VILLES_MONDE) for (let k = 0; k < 90; k++) {
+    for (const f of VILLES_AV) for (let k = 0; k < 90; k++) {
       const a = k * 2.399, d = f.rayon - 30 + (k * 7) % (VM.FONDU_PORTEE + 60);
       const x = Math.round(f.ancre.x + Math.cos(a) * d), z = Math.round(f.ancre.z + Math.sin(a) * d);
       const h8 = v8.terrainHeight(x, z), h9 = nf.terrainHeight(x, z);
       if (h9 === h8) continue;
       abaissees++; pire = Math.max(pire, h8 - h9);
       const dd = Math.hypot(x - f.ancre.x, z - f.ancre.z);
-      if (h9 > h8 || h8 - h9 > 24 || !VM.aPorteeDuFondu(x, z) || VILLES_MONDE.some((g) => Math.hypot(x - g.ancre.x, z - g.ancre.z) <= g.rayon)) {
+      if (h9 > h8 || h8 - h9 > 24 || !VF.aPorteeDuFondu(x, z) || VILLES_AV.some((g) => Math.hypot(x - g.ancre.x, z - g.ancre.z) <= g.rayon)) {
         if (fautes.length < 4) fautes.push({ x, z, h8, h9, dd: Math.round(dd - f.rayon) });
       }
     }
     // 4. la marche 6 → 7, sur un document fabriqué
-    const sal = VILLES_MONDE.find((v) => v.cle === 'salvador');
+    const sal = VILLES_AV.find((v) => v.cle === 'salvador');
     let site = null;
     for (let k = 0; k < 64 && !site; k++) {
       const a = 2 * Math.PI * k / 64;

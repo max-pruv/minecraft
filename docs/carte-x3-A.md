@@ -68,27 +68,45 @@ aérodromes vivants ni aux villes engendrées (sessions B et C).
 
 ## Dettes déclarées
 
-1. **Les gardes de ville d'avant perdent leur effet dans une ville qui part.**
+1. **⚠️ LA PLUS SÉRIEUSE — les gardes de ville d'avant perdent leur effet dans
+   une ville qui part, et dix témoins de `plafond.js` le disent** (« à Londres /
+   Nice / San Francisco / Lille / Washington, une maison posée sur une ancienne
+   rue… », « …une cabane sur un ancien toit… » : `introuvable`). Les copies
+   figées vivent désormais à l'adresse d'avant (`terreV4`) ; la ville neuve à
+   l'adresse neuve ; le témoin cherche l'ancienne rue sous la ville neuve et ne
+   la trouve plus. Dans le jeu, c'est la même chose : la garde lit la ville
+   figée là où elle n'est plus. Et ce n'est pas réparable par une translation
+   seule, parce que :
+   **Les gardes de ville d'avant perdent leur effet dans une ville qui part.**
    `VILLES_FIGEES`, rues à la GTA, Paris v531, banlieues, Washington… jugent un
    bloc par sa date ; un bloc emmené par la marche prend `DATE_CARTE_X3`, donc il
    est vu « posé après » et la ville NEUVE est bâtie autour de lui. Paris ne bouge
    pas : ses gardes tiennent. Ailleurs, une maison d'enfant peut se retrouver
    devant une façade neuve. Le palier 2 (villes ×1,5) doit trancher : soit
    garder la date d'origine dans un champ, soit faire céder la ville neuve
-   (règle de la v306).
-2. **Les mondes figés lisent encore les routes, les trains et `entreesDe` vivants**
+   (règle de la v306). Pourquoi la carte 3 (v242) n'avait pas ce problème :
+   `DATE_CARTE_3` précédait toutes les `DATE_RUES_*` ; `DATE_CARTE_X3` les suit
+   toutes. Pistes mesurables : (a) garder la date d'origine dans un champ à part
+   de l'entrée (à vérifier contre `resserrer` et la fusion) et faire lire aux
+   gardes la ville figée TRANSLATÉE du déplacement de sa ville ; (b) la règle
+   de v306 — la ville neuve cède autour de tout bloc emmené par la marche
+   (date `DATE_CARTE_X3` exactement). (b) est dans la zone du palier 2.
+2. **Une fiche de garage orpheline de DEUX marches** (fiche d'avant la carte 3,
+   blocs déjà passés par la carte 3 ET la carte ×3) n'est pas retrouvée. Le
+   témoin de la carte 3 rejoue l'orpheline d'une seule marche.
+3. **Les mondes figés lisent encore les routes, les trains et `entreesDe` vivants**
    (routes.js, trains.js de la session C). Le relief est prouvé identique ; les
    ouvrages de voie, non : quand C retracera les routes, `CONF_V587` les verra à
    leur place neuve. Les marches n'en lisent que le relief.
-3. **`CONF_V587` garantit le relief, pas les pistes prolongées ni les aires**
+4. **`CONF_V587` garantit le relief, pas les pistes prolongées ni les aires**
    (tronçons exclus des repères figés) : ce sont des blocs posés, pas du sol.
-4. **Le relevé « toit → sol » de la v306 n'est pas appliqué** : à la carte ×3 une
+5. **Le relevé « toit → sol » de la v306 n'est pas appliqué** : à la carte ×3 une
    ville se TRANSLATE avec ses immeubles, un bloc perché garde son toit. Le
    palier 2 (immeubles qui changent de hauteur ou de place) devra le faire.
-5. **Dans une ville qui part, un écart de sol de plus de 24 blocs** entre l'ancien
+6. **Dans une ville qui part, un écart de sol de plus de 24 blocs** entre l'ancien
    et le nouveau site vaut zéro : la ville part à la même cote (un bloc
    au-dessus ou sous le sol neuf plutôt qu'abandonné en mer).
-6. **La destination d'un aérodrome lit `AEROPORTS` vivant** (session B) : si B
+7. **La destination d'un aérodrome lit `AEROPORTS` vivant** (session B) : si B
    déplace un aérodrome après la mesure, la marche le suit — c'est voulu, mais la
    marche est alors à rejouer contre la table finale avant la fusion.
-7. Le cache de relief de la marche (`reliefMemo`) suppose |z| < 131 072.
+8. Le cache de relief de la marche (`reliefMemo`) suppose |z| < 131 072.
