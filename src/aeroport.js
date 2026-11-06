@@ -143,7 +143,12 @@ export const DEMI_PISTE = Math.ceil(ENVERGURE_MAX / 2 + MARGE_AILE);
 // `profil` dit ce qu'on bâtit : 'roissy' garde l'aérogare en tambour de 1974
 // et ses satellites ; 'hub' est un grand aéroport à deux pistes ; 'ville' un
 // aéroport à une piste ; 'base' une base militaire — hangars, tour, abris.
-export const AEROPORTS = [
+//
+// LA TABLE DE LA CARTE D'AVANT ×3 (v242 → v587), FIGÉE POUR TOUJOURS. Les
+// mondes figés (`CONF_V587` et ses aînés) la lisent : un bloc posé avant la
+// carte ×3 se juge sur l'aérodrome où il a été posé. Elle ne se met JAMAIS à
+// jour, comme `MONDES.terreV4`. La table vivante est `AEROPORTS`, plus bas.
+export const AEROPORTS_V587_BRUTE = [
   // v242, LE MONDE ×2 : chaque aérodrome a d'abord GARDÉ son écart à sa ville
   // (la ville a bougé, il l'a suivie), puis la sonde a revérifié les cinq
   // promesses sur la carte neuve. Onze tiennent tels quels ; huit sont
@@ -199,8 +204,73 @@ const AVANT_V306 = {
 // porte Changi (`CONF_V308` lit `AEROPORTS`) : la marche 6 → 7 compare ce monde
 // à celui d'aujourd'hui, et doit n'y lire que le fondu doux, jamais l'île neuve.
 export const NES_APRES_V306 = new Set(['sin']);
-export const AEROPORTS_AVANT_V306 = AEROPORTS.filter((a) => !NES_APRES_V306.has(a.cle))
+export const AEROPORTS_AVANT_V306 = AEROPORTS_V587_BRUTE.filter((a) => !NES_APRES_V306.has(a.cle))
   .map((a) => (AVANT_V306[a.cle] ? { ...a, ...AVANT_V306[a.cle] } : a));
+
+// LA CARTE ×3 (v588) : LES VINGT AÉRODROMES REPOSÉS PAR SONDE.
+//
+// La carte passe de 0,1875 à 0,0625 km par bloc et les villes gardent leur
+// taille en blocs : chaque aérodrome a quitté sa ville de trois fois son
+// écart. On ne l'a pas reposé à la main. `tests/sonde-places-aeroports.mjs`
+// part de la VRAIE position de l'aéroport (sa latitude, sa longitude),
+// ramenée à sa ville sur la carte courante, et s'éloigne le long du vrai cap,
+// puis tourne de cinq en cinq degrés, jusqu'au premier emplacement qui tient
+// les promesses de la v223 — au sec, à douze blocs de toute ville, de tout
+// lieu, de tout repère, de tout autre aérodrome, de toute voie ferrée et de
+// toute gare, à quarante de ce que les enfants ont bâti, le relief du
+// disque pavé dans les bornes de l'ouvrage (`REMBLAI`, `DECAISSE`) — et une
+// sixième, neuve : CHAQUE PISTE PEUT ATTEINDRE SA CIBLE (`CIBLE_PISTE`) par ses
+// prolongements. La v448 avait mesuré les pistes APRÈS les emplacements, et sept
+// étaient restées courtes ; reposer vingt aérodromes est l'occasion de choisir
+// des sites où l'on se pose (à défaut, 85 % de la cible). Un degré
+// d'écart de cap vaut huit blocs de distance : le cap cède en dernier, mais il
+// cède.
+//
+// DEUX RÈGLES NEUVES. Les villes comptent À UNE FOIS ET DEMIE LEUR RAYON : le
+// palier 2 de la carte ×3 (décision de Max) les élargit d'autant, et un
+// aérodrome posé contre une ville d'aujourd'hui serait mangé par celle de
+// demain. Et New York compte avec son PLAN ENTIER (Manhattan, les dix
+// banlieues et leur talus, v583) : le vrai JFK est dans le Queens, c'est-à-dire
+// dans le plan — il part au sud-ouest, au-delà des banlieues.
+//
+// LES ROUTES NE SONT PAS DANS LA SONDE, et c'est déclaré : leurs points de
+// passage sont en blocs de l'ancienne carte, et la session des routes les
+// retrace. C'est à elles de contourner les aérodromes et leurs pistes
+// prolongées (`AEROPORTS`, `pistesDe`).
+//
+// `sol` est la médiane du relief naturel sous le disque, mesurée sur un monde
+// SANS aérodromes (le relief que la plate-forme aplanira). Changi, gagné sur
+// la mer (v486), a son sol fixé à cinq blocs au-dessus de l'eau (35) : la
+// médiane de son île (38) faisait des digues de prolongement trop hautes. Le commentaire de chaque ligne dit le vrai
+// cap et la vraie distance, puis ce que la sonde a retenu.
+export const AEROPORTS = [
+  { cle: 'cdg', nom: 'Aéroport Charles-de-Gaulle', ville: 'Paris', x: -63, z: -314, r: 92, sol: 36, profil: 'roissy' },  // vrai cap 40° → 25°, 356 → 700 blocs (Paris à une fois et demie, le quartier des enfants), eau 1,8 %
+  { cle: 'orly', nom: 'Paris–Orly', x: -429, z: 949, r: 62, sol: 33, profil: 'ville' },               // vrai cap 176° → 186°, 232 → 632 blocs (Paris à une fois et demie), eau 2,3 %
+  { cle: 'lhr', nom: 'Londres–Heathrow', x: -3596, z: -4438, r: 78, sol: 37, profil: 'hub' },         // vrai cap 260° — exact, 388 → 460 blocs (le vrai site est un vallon, +13/−16), eau 3 %
+  { cle: 'jfk', nom: 'New York–JFK', x: -60474, z: 15107, r: 84, sol: 39, profil: 'hub' },            // vrai cap 128° → 243°, 207 → 919 blocs : le Queens est dans le plan de New York et Long Island dans la mer
+  { cle: 'mad', nom: 'Madrid–Barajas', x: -6960, z: 15024, r: 78, sol: 38, profil: 'hub' },           // vrai cap 48° → 63°, 215 → 415 blocs, eau 1,1 %
+  { cle: 'bcn', nom: 'Barcelone–El Prat', x: -763, z: 13831, r: 66, sol: 36, profil: 'ville' },       // vrai cap 212° → 222°, 189 → 461 blocs, eau 5,9 %
+  { cle: 'ams', nom: 'Amsterdam–Schiphol', x: 2495, z: -5915, r: 74, sol: 37, profil: 'hub' },        // vrai cap 238° → 243°, 188 → 284 blocs, eau 5 %
+  { cle: 'fra', nom: 'Francfort', x: 7009, z: -1855, r: 74, sol: 34, profil: 'hub' },                 // vrai cap 227° → 222°, 192 → 240 blocs, eau 4,9 %
+  { cle: 'fco', nom: 'Rome–Fiumicino', x: 11207, z: 12506, r: 72, sol: 34, profil: 'ville' },         // vrai cap 239° → 279° (le vrai site est sur la mer), 352 → 432 blocs
+  { cle: 'hnd', nom: 'Tokyo–Haneda', x: 160540, z: 24004, r: 76, sol: 35, profil: 'hub' },            // vrai cap 176° → 191° (la baie), 234 → 370 blocs
+  { cle: 'dxb', nom: 'Dubaï', x: 63593, z: 40532, r: 80, sol: 34, profil: 'hub' },                    // vrai cap 52° → 47°, 140 → 2 572 blocs : le planisphère n'a pas la terre des Émirats, la plus proche est le Musandam (dette déclarée)
+  { cle: 'del', nom: 'Delhi–Indira-Gandhi', x: 87151, z: 36402, r: 70, sol: 37, profil: 'ville' },    // vrai cap 231° — exact, 164 → 300 blocs, eau 5,2 %
+  { cle: 'sfo', nom: 'San Francisco', x: -116224, z: 20504, r: 72, sol: 35, profil: 'ville' },        // vrai cap 170° — exact, 277 → 597 blocs (San Francisco à une fois et demie), eau 3,6 %
+  { cle: 'lax', nom: 'Los Angeles', x: -111722, z: 26827, r: 78, sol: 37, profil: 'hub' },            // vrai cap 224° — exact, 276 → 404 blocs, eau 2,3 %
+  { cle: 'ist', nom: 'Istanbul', x: 30705, z: 13667, r: 78, sol: 33, profil: 'hub' },                 // vrai cap 331° → 336°, 544 blocs — exact, eau 5,5 %
+  // CHANGI, TOUJOURS SUR SA TERRE GAGNÉE (v486) : la zone à terre de son repère
+  // fait son île. Les deux îles ne se touchent plus (Singapour compte à une fois
+  // et demie son rayon) : un bras de mer de trente-quatre blocs, qui se comble
+  // le jour où Singapour s'élargit (palier 2). Sol mesuré sur le monde qui porte
+  // la zone.
+  { cle: 'sin', nom: 'Singapour–Changi', x: 118754, z: 84679, r: 78, sol: 35, profil: 'hub' },       // vrai cap 51° — exact, 212 → 236 blocs
+  // Les bases militaires : c'est de là que partent les chasseurs.
+  { cle: 'bas-sd', nom: 'Base aérienne de Saint-Dizier', x: 2622, z: 712, r: 56, sol: 36, profil: 'base' },      // la vraie base, cap 97° de Paris, 3 008 blocs — exact, eau 0,7 %
+  { cle: 'bas-adw', nom: "Base aérienne d'Andrews", x: -63005, z: 18073, r: 56, sol: 42, profil: 'base' },      // Washington, cap 131° — exact, 263 blocs — exact (au vrai site, la piste n'aurait que la moitié de sa longueur)
+  { cle: 'bas-llv', nom: 'Base aérienne de Nellis', x: -107677, z: 22646, r: 56, sol: 37, profil: 'base' },     // à côté de Las Vegas, comme la vraie (elle était près de Los Angeles), cap 35°, 276 → 284 blocs
+  { cle: 'bas-ykt', nom: 'Base aérienne de Yokota', x: 160084, z: 23511, r: 56, sol: 37, profil: 'base' },      // Tokyo, cap 284° — exact, 504 → 544 blocs
+];
 
 // L'aéroport le plus proche d'un point, s'il est à portée.
 export function aeroportPres(x, z, portee = 140) {
@@ -388,7 +458,7 @@ export function amenagerHall(set, { u0, u1, D, h, versMonde, portes, allee, fonc
 // Les tronçons ne vivent que dans les repères du monde d'aujourd'hui : les
 // mondes figés (`LANDMARKS_V317`, donc `CONF_AVANT`, `CONF_V308`) gardent leurs
 // pistes d'avant, comme ils gardent leurs monuments.
-export const PROLONGEMENTS = {
+export const PROLONGEMENTS_V587 = {
   // Roissy n'a plus que DEUX pistes (v530) : les doublets de neuf blocs ne
   // tenaient pas élargis à l'envergure — voir `PISTES_ROISSY`.
   cdg: { 57: [185, 13], [-57]: [136, 62] },
@@ -414,11 +484,51 @@ export const PROLONGEMENTS = {
   'bas-llv': { 0: [64, 64] },
   'bas-ykt': { 0: [64, 64] },
 };
+// LA CARTE ×3 (v588) : remesurés par `tests/sonde-prolongements-aeroports.mjs`
+// sur les nouveaux emplacements. Même règle, mêmes bornes sur terre ; SUR LA
+// MER, le remblai descend d'`APPUI_PROLONGE` de plus (la digue de la v486 et de
+// la v530), et c'est ce qui donne à Barcelone, Changi et Andrews leur piste
+// entière ; seule Andrews reste courte d'un bloc (`PISTES_COURTES`). Les villes comptent à une fois et demie
+// leur rayon, comme pour les emplacements. Les routes n'y sont pas (elles se
+// retracent), c'est à elles de contourner les pistes.
+export const PROLONGEMENTS = {
+  cdg: { 57: [179, 5], [-57]: [92, 92] },
+  orly: { 0: [24, 132] },
+  lhr: { 0: [82, 82], 25: [87, 87] },
+  jfk: { 0: [138, 14], 25: [143, 19] },
+  mad: { 0: [82, 82], 25: [87, 87] },
+  bcn: { 0: [74, 74] },
+  ams: { 0: [151, 21], 25: [136, 48] },
+  fra: { 0: [86, 86], 25: [92, 92] },
+  fco: { 0: [124, 12] },
+  hnd: { 0: [84, 84], 25: [76, 102] },
+  dxb: { 0: [80, 80], 25: [85, 85] },
+  del: { 0: [110, 30] },
+  sfo: { 0: [68, 68] },
+  lax: { 0: [82, 82], 25: [87, 87] },
+  ist: { 0: [82, 82], 25: [87, 87] },
+  sin: { 0: [51, 113], 25: [18, 156] },
+  'bas-sd': { 0: [64, 64] },
+  'bas-adw': { 0: [0, 128] },
+  'bas-llv': { 0: [64, 64] },
+  'bas-ykt': { 0: [64, 64] },
+};
 // LA CIBLE, ET CE QUI N'Y ARRIVE PAS — déclaré ici avec l'obstacle mesuré, lu
 // par le témoin. Une piste plus courte que sa cible sans être nommée ici
 // rougit ; une piste nommée ici qui atteint sa cible rougit aussi.
 export const CIBLE_PISTE = { roissy: 300, hub: 300, ville: 260, base: 220 };
+// Carte ×3 (v588) : une seule. La sixième promesse de la sonde des
+// emplacements a choisi des sites où chaque piste atteint sa cible, au bloc
+// près que le témoin roule en moins sur un sens sans prolongement ; celles de la carte
+// d'avant restent écrites dans `PISTES_COURTES_V587`, pour mémoire.
 export const PISTES_COURTES = {
+  // 219 blocs pour 220 : à l'ouest Washington (à une fois et demie son rayon) ;
+  // un bloc de plus à l'est fait s'arrêter le chasseur du dernier poste de l'aire
+  // en roulant vers la piste (le guidage d'approche.js juge la place devant lui
+  // à un bloc près). Mesuré par la sonde de décollage, 421 sur 421 à 219.
+  'bas-adw': 'à l\'ouest Washington',
+};
+export const PISTES_COURTES_V587 = {
   lhr: 'à l\'ouest un vallon plus profond que le remblai, à l\'est Londres',
   bcn: 'la mer des deux côtés, plus profonde que le remblai',
   ams: 'à l\'ouest un polder trop bas, à l\'est une autoroute',
@@ -427,8 +537,13 @@ export const PISTES_COURTES = {
   sfo: 'à l\'ouest la baie, à l\'est une autoroute',
   lax: 'à l\'ouest un ravin, à l\'est Los Angeles',
 };
-export function prolongementDe(cle, z0) {
-  const t = PROLONGEMENTS[cle];
+// UN AÉRODROME PEUT PORTER SES TABLES (carte ×3) : ceux d'`AEROPORTS_V587`
+// portent les prolongements et les aires de la carte d'avant, que les mondes
+// figés relisent ; ceux d'`AEROPORTS` lisent les tables vivantes.
+const prolongementsDe = (a) => (a.prolongements !== undefined ? a.prolongements : PROLONGEMENTS[a.cle]);
+const airesDe = (a) => (a.aires !== undefined ? a.aires : AIRES[a.cle]);
+export function prolongementDe(cle, z0, a = null) {
+  const t = a ? prolongementsDe(a) : PROLONGEMENTS[cle];
   return (t && t[z0]) || [0, 0];
 }
 
@@ -445,7 +560,7 @@ export function pistesDe(a, avecProlongement = true) {
   return axes.map((z0) => {
     const bout = Math.floor(Math.sqrt(Math.max(0, rayon * rayon - (Math.abs(z0) + demi) ** 2)));
     const bord = Math.floor(Math.sqrt(Math.max(0, rayon * rayon - z0 * z0)));
-    const [o, e] = avecProlongement ? prolongementDe(a.cle, z0) : [0, 0];
+    const [o, e] = avecProlongement ? prolongementDe(a.cle, z0, a) : [0, 0];
     return { z0, demi, rayon, bout, ouest: o ? bord + o : bout, est: e ? bord + e : bout,
       roissy: a.profil === 'roissy' };
   });
@@ -479,7 +594,7 @@ const DEGAGE_CIME = 8;
 // — une digue, comme à Changi (v486) — et la tranchée de huit de plus : ni
 // dalle en porte-à-faux, ni talus au-dessus de la bande. Du BÉTON sous un sol
 // déjà plein ne se voit pas ; seul le relief creux se comble.
-const APPUI_PROLONGE = 16;
+export const APPUI_PROLONGE = 16;
 export function tronconsDePiste(a) {
   const out = [];
   for (const p of pistesDe(a)) {
@@ -508,32 +623,33 @@ export function tronconsDePiste(a) {
 // `batirTroncon` : la bande et ses deux bas-côtés, de `bout − 16` au bout
 // prolongé, hors du disque pavé. Pure ; un rejet par boîte d'abord, parce
 // qu'elle est appelée par colonne.
-let EMPRISES_TRONCONS = null;
-function empriseDesTroncons() {
-  if (EMPRISES_TRONCONS) return EMPRISES_TRONCONS;
-  EMPRISES_TRONCONS = [];
-  for (const a of AEROPORTS) for (const p of pistesDe(a)) for (const sens of [-1, 1]) {
+const EMPRISES_TRONCONS = new WeakMap();   // par table d'aérodromes : la vivante, ou une figée
+function empriseDesTroncons(aeroports = AEROPORTS) {
+  if (EMPRISES_TRONCONS.has(aeroports)) return EMPRISES_TRONCONS.get(aeroports);
+  const out = [];
+  EMPRISES_TRONCONS.set(aeroports, out);
+  for (const a of aeroports) for (const p of pistesDe(a)) for (const sens of [-1, 1]) {
     const fin = sens < 0 ? p.ouest : p.est;
     if (fin <= p.bout) continue;
     const d0 = p.bout - 16, xa = a.x + sens * d0, xb = a.x + sens * fin;
-    EMPRISES_TRONCONS.push({ ax: a.x, az: a.z, p, sens, d0, fin,
+    out.push({ ax: a.x, az: a.z, p, sens, d0, fin,
       x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: a.z + p.z0 - p.demi - 2, z1: a.z + p.z0 + p.demi + 2 });
   }
   // et les aires prolongées (v565) : leur tranchée vide autant que celle d'une piste
-  for (const a of AEROPORTS) {
-    const t = AIRES[a.cle];
+  for (const a of aeroports) {
+    const t = airesDe(a);
     if (!t) continue;
     bandesDuPlan(a.profil, a.r).forEach((b, k) => {
       const [lo, le] = t[k] || [0, 0];
       for (const [sens, L] of [[-1, lo], [1, le]]) {
         if (L <= 0) continue;
         const xa = a.x + sens * b.bordDisque, xb = a.x + sens * (b.bordDisque + L);
-        EMPRISES_TRONCONS.push({ ax: a.x, az: a.z, p: { rayon: b.rayon }, aire: true,
+        out.push({ ax: a.x, az: a.z, p: { rayon: b.rayon }, aire: true,
           x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: a.z + b.z0, z1: a.z + b.z1 });
       }
     });
   }
-  return EMPRISES_TRONCONS;
+  return out;
 }
 // LES AIRES PROLONGÉES (v565) — des repères de trente-deux blocs comme les
 // tronçons de piste, et marqués `piste` pour la même raison : ce sont des
@@ -543,7 +659,7 @@ function empriseDesTroncons() {
 // disque pavé ; le marquage tombe sous chaque appareil (`postesAerodrome`),
 // et une ligne de guidage longe le bas-côté de la piste.
 export function tronconsDAire(a) {
-  const t = AIRES[a.cle];
+  const t = airesDe(a);
   if (!t) return [];
   const postes = postesAerodrome(a).filter((q) => q.aire);
   const out = [];
@@ -590,8 +706,8 @@ function batirAire(poser, b, sens, mi, zc, d0, d1, postes) {
   }
 }
 
-export function videParUnTroncon(x, z) {
-  for (const e of empriseDesTroncons()) {
+export function videParUnTroncon(x, z, aeroports = AEROPORTS) {
+  for (const e of empriseDesTroncons(Array.isArray(aeroports) ? aeroports : AEROPORTS)) {
     if (x < e.x0 || x > e.x1 || z < e.z0 || z > e.z1) continue;
     if (e.aire && !reglageAires.actif) continue;
     const lx = x - e.ax, lz = z - e.az;
@@ -1438,7 +1554,7 @@ export function bandesAire(a) {
 // douze blocs, quarante de ce que les enfants ont bâti, bout de la piste) ;
 // le témoin de `carteMonde.js` refait la mesure et rougit si une aire
 // dépasse ce que la sonde rend.
-export const AIRES = {
+export const AIRES_V587 = {
   cdg: [[114, 40], [163, 0]],
   orly: [[35, 38], [76, 76]],
   lhr: [[61, 6], [16, 28]],
@@ -1460,9 +1576,42 @@ export const AIRES = {
   'bas-llv': [[38, 9], [5, 58]],
   'bas-ykt': [[9, 58], [58, 9]],
 };
+// LA CARTE ×3 (v588) : la sonde rejouée sur les nouveaux emplacements. ELLE
+// LIT ENCORE LES ROUTES DE L'ANCIENNE CARTE (leurs points de passage sont en
+// blocs, et elles se retracent) : Roissy, Orly, Heathrow et Yokota sont coupés
+// par une route qui n'est plus la bonne. Le jour où les routes sont retracées,
+// `plafond.js` rougit et l'on rejoue la sonde — c'est son rôle.
+export const AIRES = {
+  cdg: [[26, 70], [44, 0]],
+  orly: [[22, 51], [22, 68]],
+  lhr: [[77, 50], [94, 99]],
+  jfk: [[13, 9], [105, 27]],
+  mad: [[77, 54], [80, 64]],
+  bcn: [[71, 71], [71, 55]],
+  ams: [[83, 10], [150, 26]],
+  fra: [[82, 82], [106, 83]],
+  fco: [[120, 8], [109, 8]],
+  hnd: [[80, 80], [89, 88]],
+  dxb: [[75, 75], [95, 95]],
+  del: [[107, 27], [107, 27]],
+  sfo: [[21, 64], [64, 64]],
+  lax: [[77, 77], [99, 99]],
+  ist: [[77, 77], [99, 99]],
+  sin: [[23, 108], [30, 43]],
+  'bas-sd': [[58, 58], [58, 58]],
+  'bas-adw': [[0, 18], [0, 122]],
+  'bas-llv': [[58, 58], [10, 58]],
+  'bas-ykt': [[58, 37], [27, 42]],
+};
 // Désarmées, les aires rendent l'aérodrome d'avant au bloc près : c'est ce
 // qui prouve l'empreinte des 490 morceaux (jamais un réglage du jeu).
 export const reglageAires = { actif: true };
+
+// LA TABLE FIGÉE DE LA CARTE D'AVANT ×3, AVEC SES TABLES (v588) — prolongements
+// et aires mesurés sur cette carte-là. C'est ce que lit `CONF_V587` (world.js) :
+// ses tronçons de piste et d'aire se posent là où ils étaient. Jamais mise à jour.
+export const AEROPORTS_V587 = AEROPORTS_V587_BRUTE.map((a) => ({ ...a,
+  prolongements: PROLONGEMENTS_V587[a.cle] || null, aires: AIRES_V587[a.cle] || null }));
 
 const PASSAGE = 4;            // de quoi passer entre deux appareils garés
 
@@ -1634,7 +1783,7 @@ export function bordInterieur(b) {
 }
 export function postesAerodrome(a) {
   const out = postesAvion(a.profil, a.r);
-  const t = reglageAires.actif && AIRES[a.cle];
+  const t = reglageAires.actif && airesDe(a);
   if (!t) return out;
   const seq = modelesDeRangee(a.profil);
   let i = 3;
