@@ -1,5 +1,38 @@
 # Ce qui est en cours
 
+## La lumière et le post-traitement (v586) — ce qui reste, déclaré
+
+- [ ] **Le coût se mesure sur l'appareil, pas au banc.** Le banc rend en
+  logiciel ; `?diag=1` affiche `postfx niveau · msaa · cible · étages · passes ·
+  ms soumission`. À relever sur l'iPhone de Max et l'iPad : cadence médiane et
+  pire image avec `?postfx=1`, `?postfx=2`, `?postfx=0` dans Paris de nuit.
+  Si le niveau 2 (brume de hauteur, cinq étages de bloom) coûte plus de deux
+  millisecondes, il reste au palier haut seulement ; si le niveau 1 coûte sur
+  l'iPad moyen, `msaa` descend à 2 par `?msaa=2` avant de toucher au niveau.
+- [ ] **Pas de repli sans échantillons multiples.** La cible HDR porte
+  `samples` (MSAA) et une texture de profondeur ; three r160 résout la
+  profondeur. Si un appareil refuse (erreur GL à la première image), le
+  post-traitement doit tomber à `msaa 0` et un anticrénelage d'écran (FXAA)
+  prendre le relais — non écrit, pas mesuré nécessaire.
+- [ ] **Les étages suivants du chantier, écartés de cet incrément avec leur
+  raison :** l'occlusion ambiante à l'écran (demande les normales ou un rayon
+  de profondeur par pixel, trop cher sur mobile sans mesure), les ombres en
+  cascades (l'addon change la clé de TOUS les programmes et les lampes de rue
+  sont déjà au plafond de quatre), les sondes de lumière indirecte (l'hémisphère
+  est déjà une harmonique d'ordre 1 ; une sonde par ville est un chantier de
+  contenu). Chacun se mesure avant de s'écrire (v247 : la passe est le coût).
+- [ ] **Deux programmes naissent à l'arrivée dans Paris, avec ou sans
+  post-traitement** : le nom d'une station de métro (`nom-station`,
+  `MeshBasicMaterial` à carte, et sa variante de profondeur). Mesuré identique
+  sur `postfx=0` ; le témoin de la v586 le nomme et le tolère. La chauffe des
+  plaques (v529) ne couvre pas cette clé-là : à chauffer à l'accueil, hors de
+  cette zone.
+- [ ] **Un témoin qui lit des pixels de l'écran sous le post-traitement
+  repose l'écran d'abord** (`renderer.setRenderTarget(null)`) : la cible HDR
+  reste posée entre deux images. Aucun témoin du portail ne le fait avec
+  `?postfx=1` (le banc ne l'allume pas) ; le jour où une suite force
+  `postfx`, ses lectures de pixels passent par `sonde-postfx.cjs`.
+
 ## Façades en relief de Manhattan (v585) — validation du 1er novembre
 
 - [ ] `npm test -- --tranche=4/17` : fumée verte (144 modules), huit contrats

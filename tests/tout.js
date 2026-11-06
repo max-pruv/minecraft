@@ -360,6 +360,7 @@ const GARDIENS = {
   'src/maillage-worker.js': ['monte.js', 'plafond.js', 'carte.js', 'manhattan.js', 'parishd.js'],
   'src/textures.js': SUITES,
   'src/sky.js': ['carte.js', 'monte.js', 'manhattan.js'],
+  'src/postfx.js': ['parishd.js', 'monte.js'],   // le post-traitement (v586) : témoins de Paris la nuit et des clés de programme
   'src/effects.js': ['monte.js', 'carte.js'],
   'src/props.js': ['monte.js', 'carte.js'],
   'src/mobiliercasse.js': ['monte.js', 'plafond.js'],

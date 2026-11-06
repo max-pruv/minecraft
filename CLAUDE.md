@@ -36,6 +36,59 @@ modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérif
 les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
 ils ne constituent pas une exception pour les nouveaux rendus.
 
+## La lumière et le post-traitement (v586) — l'image se développe, et la cible reste posée
+
+Chantier « réalisme » 2 sur 5. `src/postfx.js` (isolé, pour le chantier
+WebGPU) compose l'image en HDR et la développe : exposition et balance selon
+l'heure, bloom de ce qui émet la nuit, lueur du soleil dans la part de
+brouillard, brume de hauteur, ACES en dernier ; `sky.js` porte la diffusion du
+soleil et la bande d'horizon dans le dôme. Six règles.
+
+- **LE NIVEAU VIENT DU PALIER, ET LE PALIER BAS NE PAIE RIEN.** `postfx` dans
+  la fiche (`palier.js`) : 0 · 1 · 2 ; `niveauDemande` coupe en rendu logiciel
+  comme les ombres (v247), suit le palier, cède à `?postfx=`. Au niveau 0 rien
+  n'est créé : `creerPostFx` rend un objet inerte dont `rendre` est
+  `renderer.render`, et la v585 est rendue au bit près. `?postfx=` et `?msaa=`
+  sont des paramètres FORÇANTS (v284) : une page qui les porte ne range pas de
+  palier.
+- **RENDRE VERS UNE CIBLE CHANGE LA CLÉ DE TOUT PROGRAMME, DONC LA CIBLE RESTE
+  POSÉE.** three retire la correspondance tonale et la conversion sRGB des
+  matériaux dès que la cible n'est pas l'écran : un programme compilé pour
+  l'écran et un programme compilé pour la cible sont deux clés. La chauffe de
+  l'accueil passe donc par `postfx.avecCible` (`pas`, `pasNY` de main.js), et
+  `postfx.rendre` REPOSE la cible après chaque image : ce qui compile entre deux
+  images — un prototype de la flotte qui arrive, la chauffe asynchrone des
+  fabriquées — compile pour la cible courante, c'est-à-dire la bonne. Les
+  étages du bloom se chauffent vers la cible, la composition vers l'écran
+  (`chauffer`) : chacun là où il se dessinera. Mesuré : zéro clé neuve à la nuit
+  tombée, zéro due au post-traitement à l'arrivée dans Paris.
+- **UN TÉMOIN QUI LIT L'ÉCRAN REPOSE L'ÉCRAN.** `gl.readPixels` lit le FBO
+  lié ; sous le post-traitement c'est la cible HDR. `sonde-postfx.cjs` fait
+  `renderer.setRenderTarget(null)` avant de lire, et compare deux réglages en
+  REDÉVELOPPANT la même image (`rendre(…, { sansScene: true })`) dans une seule
+  tâche : deux rendus à deux images comparent le mouvement de la rue, pas le
+  réglage (mon premier témoin du bloom comptait 23 % de pixels « assombris »
+  — des voitures qui avaient avancé).
+- **L'EXPOSITION DU JEU SE PORTE DANS LE DÉVELOPPEMENT.** Les matériaux ne
+  l'appliquent plus (pas de correspondance tonale vers une cible) :
+  `etalonner` multiplie par `renderer.toneMappingExposure`, ce qui garde la
+  parité de jour avec l'ancien chemin (luminance moyenne à 1 % près, témoin) et
+  suit Manhattan, qui règle la sienne.
+- **CE QUI ÉMET NE DÉBORDE DU SEUIL QUE SOUS LE POST-TRAITEMENT.** Les vitres
+  (`litMaterial`) et les lanternes (`reglerLueurDesLampes`, props.js) montent
+  au-dessus du blanc la nuit, seulement si `postfx.actif` : le seuil du bloom
+  (1,6 le jour → 1,0 la nuit : jamais sous le blanc, un mouton sous la lune brillait) les prend, bornées par une compression (une source quatre fois plus forte ne fait pas une tache quatre fois plus grande), ACES les ramène. Sans post-traitement
+  le facteur vaut 1, la v248 au bit près. Aucune lampe neuve (quatre pour tout
+  le jeu, v248), aucun matériau neuf hors des quatre quads du post-traitement.
+- **LE COÛT SE MESURE SUR L'APPAREIL.** Le banc rend en logiciel : ses
+  millisecondes ne se transposent pas (v247). `?diag=1` porte `postfx niveau ·
+  msaa · cible · étages · passes · ms soumission`, et `?bloom=`, `?expo=`,
+  `?lueur=`, `?brume=` sont des facteurs à régler en capture dans le jeu. Le
+  budget par milliseconde a décidé l'ordre : exposition et balance (gratuits
+  dans la composition), bloom (deux passes par étage, demi-résolution), brume
+  (une lecture de profondeur) ; SSAO, cascades et sondes sont déclarés, pas
+  écrits (`TASKS.md`).
+
 ## Manhattan : atlas OSM (v583) et façades en relief (v585)
 
 Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par

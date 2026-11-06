@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 586,
+    titre: 'La lumière devient vraie',
+    puces: [
+      'Les fenêtres et les lampes brillent la nuit',
+      'Le soleil se voit dans le ciel',
+      'Une brume douce au loin et le soir',
+    ],
+  },
+  {
     v: 585,
     titre: 'New York prend du relief',
     puces: [

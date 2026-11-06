@@ -109,6 +109,7 @@ const ASSETS = [
   './src/fluidite.js',
   './src/effects.js',
   './src/sky.js',
+  './src/postfx.js',
   './src/siege.js',
   './src/sons.js',
   './src/radio.js',

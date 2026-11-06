@@ -21,10 +21,25 @@ function box(w, h, d, color, x = 0, y = 0, z = 0) {
 // Ce qui ÉMET — la lanterne d'un réverbère, la lentille vive d'un feu — ne
 // s'éteint pas avec le jour : émissif, pour rester lisible à minuit maintenant
 // que le mobilier est éclairé comme le reste.
+// ET CE QUI ÉMET SE RETIENT (v586, le post-traitement) : la nuit, avec le bloom,
+// une lanterne doit DÉPASSER le seuil de ce qui éblouit pour que sa lueur
+// déborde du verre. Les matériaux des lampes sont partagés par toutes les
+// copies (`buildPropMesh` clone le modèle) : on les règle une fois pour la
+// ville entière, par `reglerLueurDesLampes`. Sans post-traitement, le facteur
+// vaut 1 et l'émissif est celui de la v248 au bit près.
+const LAMPES_EMISSIVES = [];
+const EMISSIF_LAMPE = 0.9;
 function lampe(w, h, d, color, x = 0, y = 0, z = 0) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.9 }));
+  const mat = new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: EMISSIF_LAMPE });
+  LAMPES_EMISSIVES.push(mat);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
   m.position.set(x, y, z);
   return m;
+}
+// `k` multiplie l'émissif de TOUTES les lampes du mobilier (lanternes,
+// lentilles) ; un uniforme change, aucun programme ne naît (v343).
+export function reglerLueurDesLampes(k = 1) {
+  for (const m of LAMPES_EMISSIVES) m.emissiveIntensity = EMISSIF_LAMPE * k;
 }
 
 function rgbToHex([r, g, b]) { return (r << 16) | (g << 8) | b; }
