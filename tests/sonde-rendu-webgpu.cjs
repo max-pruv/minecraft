@@ -14,7 +14,7 @@
 //
 // Le banc ne donne un adaptateur WebGPU qu'avec trois drapeaux (mesuré :
 // `webgpu-dispo2`, novembre 2026) ; `BANC_ARGS` les porte à Chromium.
-process.env.BANC_ARGS = process.env.BANC_ARGS || '--enable-unsafe-webgpu --enable-features=WebGPU,Vulkan --ignore-gpu-blocklist';
+process.env.BANC_ARGS = process.env.BANC_ARGS || '--enable-unsafe-webgpu --enable-features=WebGPU,Vulkan --use-vulkan=swiftshader --ignore-gpu-blocklist';
 const path = require('path');
 const fs = require('fs');
 const { Banc, souffler } = require('./banc.js');

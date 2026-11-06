@@ -66,13 +66,17 @@ async function adaptateur() {
 export async function creerRenderer(canvas, options = {}) {
   if (!RENDU_WEBGPU || !THREE.WebGPURenderer) return new THREE.WebGLRenderer({ canvas, ...options });
   if (!tsl) tsl = await import('three/tsl');
-  const a = await adaptateur();
+  // `?dos=webgl` force le dos WebGL2 du MÊME rendu r187 (les mêmes matériaux
+  // en nœuds, la même chauffe) : c'est ce que verra une tablette sans WebGPU,
+  // et c'est le bras que le banc compare au WebGPU réel.
+  const forceWebGL = /[?&]dos=webgl(&|$)/.test(location.search);
+  const a = forceWebGL ? null : await adaptateur();
   let device = null;
   if (a) { try { device = await a.requestDevice(); } catch (e) { etat.erreur = String(e && e.message || e); } }
   // Sans adaptateur, three retombe de lui-même sur son dos WebGL2 : le jeu
   // tourne, et `etat.dos` le dit — on ne mesure jamais WebGL en croyant
   // mesurer WebGPU.
-  const r = new THREE.WebGPURenderer({ canvas, ...options, ...(device ? { device } : {}) });
+  const r = new THREE.WebGPURenderer({ canvas, ...options, forceWebGL, ...(device ? { device } : {}) });
   await r.init();
   etat.dos = r.backend && r.backend.isWebGPUBackend ? 'webgpu' : 'webgl2';
   etat.nom = 'webgpu';
@@ -174,12 +178,14 @@ export function matiereHD(materiau, uniformes) {
 // HD) : la couleur ne dépend que de la hauteur de la direction. `uniforms`
 // garde la forme `{ zenith: { value: Color }, horizon: { value: Color } }` que
 // `sky.update` écrit à chaque image.
-export function domeDegrade({ zenith, horizon, sol = null, puissance = 0.65 }) {
+// `lisse: [a, b]` remplace la puissance par un smoothstep(a, b, h) — la
+// chambre de réflexion de Manhattan (manhattan-materiaux.js).
+export function domeDegrade({ zenith, horizon, sol = null, puissance = 0.65, lisse = null }) {
   if (!tsl || !THREE.NodeMaterial) return null;
   const t = tsl;
   const uZenith = t.uniform(new THREE.Color().copy(zenith)), uHorizon = t.uniform(new THREE.Color().copy(horizon));
   const h = t.normalize(t.positionLocal).y;
-  let couleur = t.mix(uHorizon, uZenith, t.pow(t.max(h, 0.0), puissance));
+  let couleur = t.mix(uHorizon, uZenith, lisse ? t.smoothstep(lisse[0], lisse[1], h) : t.pow(t.max(h, 0.0), puissance));
   if (sol) {
     const uSol = t.uniform(new THREE.Color().copy(sol));
     couleur = t.select(h.lessThan(0.0), t.mix(uHorizon, uSol, t.smoothstep(0.0, -0.3, h)), couleur);
