@@ -88,6 +88,18 @@ export function chargerHumains() {
     for (const cb of abonnes.splice(0)) {
       try { cb(); } catch (err) { console.warn("mise à niveau des corps :", err.message); }
     }
+    // LE RECIBLAGE SE FAIT ICI, UN CORPS PAR TÂCHE, JAMAIS DANS UNE IMAGE.
+    // Recibler les cinq prises d'un corps coûte quelques millisecondes (six
+    // mesurées au banc, davantage sur une tablette) : fait à la première
+    // animation d'une personne, il tombait dans l'image où elle apparaît, et
+    // le témoin de coût de realisme.js le payait dans sa moyenne.
+    await chargerMouvements();
+    if (mouvementsPrets()) {
+      for (const [cle, proto] of prototypes) {
+        clipsDuCorps(cle, proto);
+        await souffler();
+      }
+    }
   })();
   return chargement;
 }

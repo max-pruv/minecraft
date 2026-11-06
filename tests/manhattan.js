@@ -37,9 +37,17 @@ function verifier(nom, ok, detail = "") {
           __game.world.ctx === "local",
       ),
     );
-    await p.locator(".who-card.active").click();
-    await p.getByRole("button", { name: "Plus tard", exact: true }).click();
-    await p.locator("#play-btn").click();
+    // L'ACCUEIL DE MANHATTAN REND TROIS À CINQ IMAGES EN HUIT SECONDES AU
+    // BANC (rendu logiciel, sonde-accueil-ny.cjs) : `locator.click` attend deux
+    // images identiques et expire à trente secondes, sur main comme ailleurs
+    // (v427). On vérifie ce que l'enfant voit, puis on appuie par le document.
+    const appuyer = async (trouver, nom) => {
+      await p.waitForFunction(trouver, null, { timeout: 60000 });
+      await p.evaluate((f) => (0, eval)(f)().click(), `(${trouver})`);
+    };
+    await appuyer(() => { const b = document.querySelector(".who-card.active"); return b && b.offsetWidth > 0 && b; }, "carte");
+    await appuyer(() => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.offsetWidth > 0), "plus tard");
+    await appuyer(() => { const b = document.querySelector("#play-btn"); return b && !b.disabled && b.offsetWidth > 0 && b; }, "jouer");
     await p.waitForFunction(() => __game.running);
     verifier(
       "le voyage explicite place le joueur à New York en coordonnées terrestres",
