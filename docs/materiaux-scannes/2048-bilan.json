@@ -1,0 +1,142 @@
+{
+ "1024": {
+  "etat": {
+   "scans": {
+    "statut": "charge",
+    "normales": true,
+    "tuiles": [
+     "pierre",
+     "enduit",
+     "brique",
+     "bitume",
+     "trottoir",
+     "pave",
+     "pierre-lisse",
+     "cour",
+     "ecorce"
+    ],
+    "atlas": 1024,
+    "taille": 1024
+   },
+   "palier": {
+    "palier": "haut",
+    "source": "adresse",
+    "etendue": "auto",
+    "hd": 6,
+    "facadesMo": 128,
+    "rr": 16,
+    "file": 8,
+    "horizon": 848,
+    "loin": 2560,
+    "brouillard": 20480,
+    "planLointain": 20780,
+    "ombres": true,
+    "jet": 120,
+    "seRange": false
+   },
+   "normales": 1024
+  },
+  "lignes": [
+   {
+    "vue": "facade",
+    "x": -394,
+    "z": 394,
+    "morceaux": 14,
+    "s": 11,
+    "texMo": 184.5,
+    "geoMo": 64.4,
+    "total": 249
+   },
+   {
+    "vue": "facade-pres",
+    "x": -394,
+    "z": 394,
+    "morceaux": 51,
+    "s": 9,
+    "texMo": 203.1,
+    "geoMo": 105.3,
+    "total": 308
+   },
+   {
+    "vue": "chaussee",
+    "x": -394,
+    "z": 394,
+    "morceaux": 71,
+    "s": 5,
+    "texMo": 215.1,
+    "geoMo": 124.3,
+    "total": 339
+   }
+  ]
+ },
+ "2048": {
+  "etat": {
+   "scans": {
+    "statut": "charge",
+    "normales": true,
+    "tuiles": [
+     "pierre",
+     "enduit",
+     "brique",
+     "bitume",
+     "trottoir",
+     "pave",
+     "pierre-lisse",
+     "cour",
+     "ecorce"
+    ],
+    "atlas": 2048,
+    "taille": 2048
+   },
+   "palier": {
+    "palier": "haut",
+    "source": "adresse",
+    "etendue": "auto",
+    "hd": 6,
+    "facadesMo": 128,
+    "rr": 16,
+    "file": 8,
+    "horizon": 848,
+    "loin": 2560,
+    "brouillard": 20480,
+    "planLointain": 20780,
+    "ombres": true,
+    "jet": 120,
+    "seRange": false
+   },
+   "normales": 2048
+  },
+  "lignes": [
+   {
+    "vue": "facade",
+    "x": -394,
+    "z": 394,
+    "morceaux": 33,
+    "s": 21,
+    "texMo": 223.1,
+    "geoMo": 86.1,
+    "total": 309
+   },
+   {
+    "vue": "facade-pres",
+    "x": -394,
+    "z": 394,
+    "morceaux": 61,
+    "s": 7,
+    "texMo": 235.1,
+    "geoMo": 122.6,
+    "total": 358
+   },
+   {
+    "vue": "chaussee",
+    "x": -394,
+    "z": 394,
+    "morceaux": 81,
+    "s": 6,
+    "texMo": 282.4,
+    "geoMo": 151.5,
+    "total": 434
+   }
+  ]
+ }
+}
