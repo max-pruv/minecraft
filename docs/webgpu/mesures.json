@@ -1,0 +1,26 @@
+[
+  {
+    "rendu": "webgpu",
+    "passage": 0,
+    "ouvertureMs": 12165,
+    "x": -269,
+    "z": 332,
+    "y": 34,
+    "morceaux": 169,
+    "attente": 12944,
+    "images": 182,
+    "renduMs": 8.3,
+    "renduP90": 10.3,
+    "imageMs": 16,
+    "horsRenduMs": 8.1,
+    "appels": 643,
+    "ktri": 404,
+    "programmes": 58,
+    "geometries": 954,
+    "textures": 92,
+    "tasMo": 426,
+    "diag": "58 i/s médiane · pire image 76 ms · 642 appels · 0k tri · 58 prog\ngraphismes avance · dpr 1.00 (960×540) · ombres off · reflets ON · lampes ON\nrendu webgpu (three 187) · dos webgpu · google swiftshader · LOGICIEL · 58 pipelines\npalier pas encore mesuré · étendue auto · rr 6 · file 8 · hd 3 · arbres en cartes · horizon 320 · morceau 181 relevé(s), travail 373 — non rangé\nmorceaux 169 (81 avec façades HD) · corps 9/9 · programmes chauffés 41 · Mesure0 -269,333\njournal : 5 relevé(s), 0 erreur(s), plantages de suite 0 · carte graphique ≈ 387 Mo (textures 250 sur 154 source(s), géométries 137.2, 8.2 ms) · façades HD 79 morceau(x), 49 / 128 Mo, 0 rendu(s) au budget\nvisé : rien",
+    "erreurs": [],
+    "console": []
+  }
+]

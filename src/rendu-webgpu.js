@@ -119,6 +119,16 @@ function caler(r) {
   Object.defineProperty(r, 'getContext', { configurable: true, value: () => { try { const c = ctx && ctx.call(r); if (c && c.getExtension) return c; } catch { /* dos WebGPU */ } return { getExtension: () => null, getParameter: () => '' }; } });
   // `forceContextLoss` (les portraits) n'existe pas.
   if (!r.forceContextLoss) r.forceContextLoss = () => {};
+  // Les compteurs d'image. `WebGLRenderer` remet `info` à zéro au début de
+  // chaque `render()` ; r187 ne le fait que dans SA boucle d'animation
+  // (`setAnimationLoop`), que le jeu n'utilise pas : `triangles` et
+  // `drawCalls` s'y accumuleraient pour toujours, et `calls` y compte les
+  // appels à `render()`, pas les appels de dessin. On remet à zéro à chaque
+  // rendu, et `calls` dit les appels de dessin, comme avant (le journal de
+  // bord, `?diag=1` et les sondes le lisent sous ce nom).
+  const rendre = r.render.bind(r);
+  Object.defineProperty(r, 'render', { configurable: true, value: (scene, camera) => { r.info.reset(); return rendre(scene, camera); } });
+  Object.defineProperty(r.info.render, 'calls', { configurable: true, get() { return this.drawCalls; }, set() { /* three l'incrémente : on compte les dessins, pas les rendus */ } });
 }
 
 // --- les greffons TSL -------------------------------------------------------------

@@ -27,10 +27,15 @@ const DUREE_MS = Number(process.env.SONDE_DUREE || 15000);
 // `sonde-captures-paris.cjs` (`marais-km`).
 const VUE = { dx: 0.9, dz: -0.5, yaw: Math.PI / 2, pitch: 0.12, h: 1.6, heure: 0.42 };
 
+// Trois rendus : le WebGL de three r160 (la production), le WebGPU de r187, et le
+// dos WebGL2 de r187 (`?dos=webgl`) — le même graphe de nœuds sur WebGL2, ce que
+// recevrait un iPad sans WebGPU.
+const PARAMS = { webgl: '', webgpu: '&rendu=webgpu', webgl2: '&rendu=webgpu&dos=webgl' };
+
 async function ouvrir(banc, rendu, prenom) {
   const erreurs = [], console_ = [];
   const page = await banc.jouerSeul(prenom, { rr: 6, dpr: 1, viewport: { width: 960, height: 540 },
-    params: `&hd=3${rendu === 'webgpu' ? '&rendu=webgpu' : ''}&diag=1&reflets=1` });
+    params: `&hd=3${PARAMS[rendu]}&diag=1&reflets=1` });
   page.on('pageerror', (e) => erreurs.push(String(e.message).split('\n')[0]));
   page.on('console', (m) => { if (m.type() === 'error') console_.push(m.text().slice(0, 200)); });
   return { page, erreurs, console_ };
@@ -95,7 +100,7 @@ async function mesurer(page, duree) {
   await banc.ouvrir();
   const resultats = [];
   try {
-    const ordre = mode === 'fumee' ? ['webgpu'] : ['webgl', 'webgpu', 'webgpu', 'webgl'];
+    const ordre = mode === 'fumee' ? ['webgpu'] : ['webgl', 'webgpu', 'webgl2', 'webgl2', 'webgpu', 'webgl'];
     let i = 0;
     for (const rendu of ordre) {
       await souffler();
@@ -118,9 +123,9 @@ async function mesurer(page, duree) {
     if (mode !== 'fumee') {
       const par = (r) => resultats.filter((l) => l.rendu === r);
       const med = (a) => { const b = [...a].sort((p, q) => p - q); return b[Math.floor(b.length / 2)]; };
-      console.log('\n| grandeur | WebGL (r160) | WebGPU (r187) |\n| --- | --- | --- |');
+      console.log('\n| grandeur | WebGL (r160) | WebGPU (r187) | WebGL2 (r187, nœuds) |\n| --- | --- | --- | --- |');
       for (const k of ['appels', 'ktri', 'programmes', 'renduMs', 'renduP90', 'imageMs', 'horsRenduMs', 'geometries', 'textures', 'tasMo', 'ouvertureMs', 'morceaux']) {
-        console.log(`| ${k} | ${par('webgl').map((l) => l[k]).join(' · ')} | ${par('webgpu').map((l) => l[k]).join(' · ')} |`);
+        console.log(`| ${k} | ${par('webgl').map((l) => l[k]).join(' · ')} | ${par('webgpu').map((l) => l[k]).join(' · ')} | ${par('webgl2').map((l) => l[k]).join(' · ')} |`);
       }
     }
   } finally { await banc.fermer(); }
