@@ -399,8 +399,11 @@ const BLOCS = 40000;
       const ps = window.__game.profileSync;
       const W = await import('./src/world.js');
       if (!W.migrerBlocsFonduDoux || !ps.mettreALAbriAvantFonduDoux) return { absent: true };
-      const { VILLES_MONDE } = await import('./src/villesmonde.js');
-      const w8 = new W.World({ v308: true }), w9 = new W.World();
+      // Depuis la carte ×3 (v588), le fondu doux se joue sur la carte d'avant
+      // (fiches figées, monde de la production `CONF_V587`) ; la marche 8 → 9
+      // emmène ensuite la cabane avec Salvador, et c'est là qu'on la cherche.
+      const { VILLES_MONDE } = W.CONF_V587 ? await import('./src/villesmonde-v531.js') : await import('./src/villesmonde.js');
+      const w8 = new W.World({ v308: true }), w9 = W.CONF_V587 ? new W.World({ v587: true }) : new W.World();
       const f = VILLES_MONDE.find((v) => v.cle === 'salvador');
       let site = null;
       for (let k = 0; k < 64 && !site; k++) {
@@ -413,7 +416,9 @@ const BLOCS = 40000;
       }
       if (!site) return { absent: false, site: null };
       const t = W.DATE_FONDU_DOUX - 86400000;
-      const vieux = `${site.x},${site.g8 + 1},${site.z}`, neuf = `${site.x},${site.g9 + 1},${site.z}`;
+      const vieux = `${site.x},${site.g8 + 1},${site.z}`;
+      let neuf = `${site.x},${site.g9 + 1},${site.z}`;
+      if (W.migrerCarteX3) neuf = Object.keys(W.migrerCarteX3({ [neuf]: [9, W.DATE_FONDU_DOUX] }).carte)[0];
       const local = ps.snapshot();
       const remote = { ...JSON.parse(JSON.stringify(local)), edits: { local: { [vieux]: [9, t] } } };
       ps.copieFonduDoux = null;     // comme une tablette qui vient de s'ouvrir
@@ -498,7 +503,12 @@ const BLOCS = 40000;
       const e = (r.state.edits || {}).local || {};
       const p = (r.state.pos || {})[24680] || {};
       // La position garde sa demi-fraction : on compare au centième, sans arrondir.
-      return { vieux: !!e[vieux], neuf: e[neuf]?.[0] === 7, pos: Math.abs(p.x - (ny.x + 20.5)) < 0.01 && Math.abs(p.z - (ny.z - 400.5)) < 0.01, x: p.x, z: p.z };
+      // La carte ×3 (v588) pose le bloc sur le sol neuf de son site : sa
+      // colonne est celle de New York, sa hauteur suit le relief. On cherche
+      // donc le bloc dans SA colonne, et il doit y être seul.
+      const sept = Object.keys(e).filter((k) => e[k][0] === 7);
+      const colonne = (k) => { const [x, , z] = k.split(',').map(Number); return x === ny.x + 20 && z === ny.z - 400; };
+      return { vieux: !!e[vieux], neuf: e[neuf]?.[0] === 7 || (m.MONDES.terreV4 && sept.length === 1 && colonne(sept[0])), sept, pos: Math.abs(p.x - (ny.x + 20.5)) < 0.01 && Math.abs(p.z - (ny.z - 400.5)) < 0.01, x: p.x, z: p.z };
     });
     verifier('un bloc d\'avant le monde ×2 reçu du nuage arrive à la nouvelle adresse de sa ville, sans fantôme',
       !fantome.absent && fantome.neuf && !fantome.vieux,
