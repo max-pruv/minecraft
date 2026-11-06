@@ -48,8 +48,23 @@ Washington gardent les leurs.
 
 Et une porte déplacée retire des bancs : `surUneEntree` (villesmonde.js) écarte
 le mobilier sur tout le segment porte → ancre. Tōmei sortie de Tokyo à 150° :
-14 bancs dans la fenêtre du témoin pour une barre de 15 ; à 132° (l'angle
-d'avant), 17. On revient à l'angle d'avant quand le relief le permet.
+14 bancs dans la fenêtre du témoin pour une barre de 15. L'angle d'avant (132°)
+creusait plus de 9 blocs ; à −162°, 17 bancs et le déblai tient.
+
+## Trois défauts que seul le témoin du monde a vus
+
+- **Un talus creuse un tablier de ville.** L'A1 Centre sortait de Florence à
+  −3° ; son talus tombait sur les colonnes d'un pont de l'Arno (12 colonnes sans
+  sol, toutes `routeEn`). Sortie tournée de 6° (−9°) : zéro.
+- **Une rive se lit sur `TerreUrbaine`, pas sur `World`.** La porte de l'I-95 à
+  New York, translatée, était à 63 blocs de l'eau (barre 60) ; ma sonde sur
+  `new World()` rendait « pas d'eau du tout ». Rapprochée de 6 blocs vers l'île :
+  57, et toujours 34 blocs hors du rectangle (barre 22,4).
+- **Une sonde de routes qui ne construit pas de monde lit un autre profil.**
+  `routes.js` n'a de relief qu'une fois `brancherSol` appelé par un `World` ;
+  sans lui, `largeurA` rend l'emprise sans talus, et ma sonde des colonnes
+  volées rendait zéro là où le témoin en compte 56 (Autosole et A1 Nord à
+  Bologne). Toute sonde de routes commence par `new World()`.
 
 ## Ce que ces routes ne règlent pas, et à qui c'est
 
@@ -64,6 +79,16 @@ d'avant), 17. On revient à l'angle d'avant quand le relief le permet.
   déblai 1,5. Le déplacer demande une marche de migration (zone A). Laissé en
   place, déclaré.
 - Le village gaulois et la caserne tiennent leurs cinq promesses sur la carte ×3.
+- **L'I-95 Sud à Washington (déclaré, rouge de `carteMonde.js`).** La porte et
+  l'avenue (translatées) restent au sud, parce que l'avenue doit passer le pont
+  Sousa jusqu'à Pennsylvania Avenue SE. Sur la carte ×3, une crête de 44 à 48
+  (terrain, socle) borde la ville au sud et à l'est à moins de dix blocs du
+  bord ; seule la bande basse du fondu (z +97..+105 du centre) arrive à la porte
+  sous 9 de déblai. L'axe y longe le bord de la ville et son emprise mord 152
+  colonnes de Washington (x +37..+67, z +91..+96). Arriver par le sud comme
+  avant demande 13 blocs de déblai (balayé : 36 approches, toutes 13,2 à 13,7).
+  Le côté NORD de la boîte est bas (35 à 40) : une entrée nord demande une
+  avenue neuve qui rejoigne le pont Sousa — décision de plan, pas de tracé.
 
 ## Trains
 
@@ -77,8 +102,9 @@ de 400 pas la plus en tranchée/remblai, le plus long passage en mer.
 ## Raccords courts
 
 `RACCORDS_COURTS` remesurée par `sonde-rue-dense.cjs raccords` (ligne TABLE) :
-55 raccords, 11 qui gardent un demi-tour à la porte (53 blocs, barre 100). La
-barre « au plus 10 raccords » passe à 12 ; celle des blocs ne bouge pas.
+55 raccords, 11 qui gardent un demi-tour à la porte (57 blocs, barre 100). La
+barre « au plus 10 raccords » passe à 12 ; celle des blocs ne bouge pas. Les
+entrées de Montréal ne touchent plus d'anneau et sortent de la table.
 
 ## Empreinte des 490 morceaux
 
