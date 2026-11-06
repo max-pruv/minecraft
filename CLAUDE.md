@@ -62,6 +62,12 @@ soleil et la bande d'horizon dans le dôme. Six règles.
   étages du bloom se chauffent vers la cible, la composition vers l'écran
   (`chauffer`) : chacun là où il se dessinera. Mesuré : zéro clé neuve à la nuit
   tombée, zéro due au post-traitement à l'arrivée dans Paris.
+  **Et c'est la cible POSÉE qui garde, pas `avecCible`** : l'accueil rend le
+  monde avant que la chauffe ne commence, donc la cible est déjà là quand `pas`
+  tourne — `chauffe()` sans l'enveloppe laisse le témoin vert (vérifié). Le
+  désarmement qui le fait rougir est de rendre l'écran après chaque image :
+  19 clés neuves à Paris (corps, dépôts), 2 la nuit, cible absente. Un témoin de
+  clés se vérifie rouge sur ce désarmement-là, jamais sur l'enveloppe seule.
 - **UN TÉMOIN QUI LIT L'ÉCRAN REPOSE L'ÉCRAN.** `gl.readPixels` lit le FBO
   lié ; sous le post-traitement c'est la cible HDR. `sonde-postfx.cjs` fait
   `renderer.setRenderTarget(null)` avant de lire, et compare deux réglages en
