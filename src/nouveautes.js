@@ -6,12 +6,31 @@
 
 export const NOUVEAUTES = [
   {
-    v: 586,
+    v: 588,
     titre: 'La lumière devient vraie',
     puces: [
       'Les fenêtres et les lampes brillent la nuit',
       'Le soleil se voit dans le ciel',
       'Une brume douce au loin et le soir',
+    ],
+  },
+  {
+    v: 587,
+    titre: 'Chaque moteur a sa voix',
+    puces: [
+      'Plus de feu aux avions de ligne',
+      'Le chasseur et le Concorde, seulement pleins gaz',
+      'Une électrique siffle, un V8 gronde',
+      'On entend les rapports passer',
+    ],
+  },
+  {
+    v: 586,
+    titre: 'Plein de voitures différentes',
+    puces: [
+      'New York roule avec toutes les voitures',
+      'Un taxi jaune sur trois à New York',
+      'Des 4×4 et des pick-up sur les routes',
     ],
   },
   {

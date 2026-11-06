@@ -118,14 +118,14 @@ export function appelEnCours(oui) {
   if (oui === enAppel) return;
   enAppel = oui;
   if (!ctx) return;              // le contexte naîtra à la bonne fréquence au premier besoin
-  const typeMoteur = moteur ? moteur.type : null;
+  const typeMoteur = moteur ? moteur.type : null, caractere = moteur ? moteur.caractere : null;
   const station = radio ? radio.indice : -1;
   if (moteur) { arreterMoteur(moteur); moteur = null; }
   if (radio) { clearInterval(radio.minuteur); radio = null; }
   const vieux = ctx;
   ctx = null; maitre = null; bruitTampon = null;   // un tampon vit à la fréquence de son contexte
   vieux.close().catch(() => {});
-  if (typeMoteur) moteurDemarre(typeMoteur);
+  if (typeMoteur) moteurDemarre(typeMoteur, caractere);   // le même moteur, pas un moteur générique (v587)
   if (station >= 0) radioDemarre(station);
   // Hors d'un geste de l'enfant (après l'autorisation du micro), iOS peut
   // créer le contexte endormi : le premier contact avec l'écran le réveille.
@@ -143,14 +143,61 @@ export function generationAudio() { return generation; }
 // deux dents de scie dont la fréquence suit le régime. Une voiture a des
 // harmoniques franches et peu de souffle ; un réacteur, l'inverse : presque
 // tout est du souffle, plus un sifflement aigu de compresseur.
-const RECETTES = {
-  voiture: { base: 42, harmo: 2.02, gainH: 0.055, gainS: 0.020, filtre: 420, q: 1.2, siffle: 0 },
-  avion:   { base: 30, harmo: 2.51, gainH: 0.016, gainS: 0.075, filtre: 900, q: 0.7, siffle: 0.012 },
+//
+// UN CARACTÈRE PAR MOTEUR (v587). Max : « il y a des voitures qui font des
+// bruits beaucoup plus sportifs… idem pour les avions, entre un avion de
+// chasse, un avion de ligne ». Le caractère vit dans la FICHE (FLOTTE `son`,
+// la classe sinon ; `AVIONS_GLB` `son`, ou le modèle sculpté) et `fun.js` le
+// passe à `moteurDemarre`. Les champs d'une recette :
+//   base, harmo      la fondamentale au ralenti, et sa seconde harmonique
+//   monte            de combien le régime la multiplie (1,6 : une octave et demie)
+//   gainH, gainS     le poids des harmoniques et du souffle
+//   filtre, q        la bande du souffle
+//   doux             la coupure des harmoniques : grave et rond, ou haut perché
+//   trepid           le « glouglou » d'un V8 ou le claquement d'un diesel : les
+//                    harmoniques modulées à une fraction de la fondamentale
+//   siffle, sb, sm   un sifflement (turbo, soufflante, onduleur) de sb à sb+sm Hz
+//   rechauffe        le rugissement grave de la postcombustion (avions.js)
+//   passage          on entend passer les rapports : une coupure d'un dixième
+//   volume           tout le moteur (une électrique se tait presque)
+const RECETTE_VOITURE = { base: 42, harmo: 2.02, gainH: 0.055, gainS: 0.020, filtre: 420, q: 1.2, siffle: 0 };
+const RECETTE_AVION = { base: 30, harmo: 2.51, gainH: 0.016, gainS: 0.075, filtre: 900, q: 0.7, siffle: 0.012 };
+export const RECETTES = {
+  voiture: RECETTE_VOITURE,
+  avion: RECETTE_AVION,
   // LA MOTO (v562) : un bicylindre — une fondamentale plus haute et une
   // harmonique à la quinte (1,5) plutôt qu'à l'octave, ce qui fait le
   // « potato-potato » d'un V2 ; plus de dents que de souffle.
-  moto:    { base: 58, harmo: 1.5, gainH: 0.062, gainS: 0.016, filtre: 520, q: 1.5, siffle: 0 },
+  moto:    { base: 58, harmo: 1.5, gainH: 0.062, gainS: 0.016, filtre: 520, q: 1.5, siffle: 0, trepid: { k: 0.5, p: 0.35 }, passage: true },
+  // les voitures, du plus sage au plus sauvage
+  citadine:  { base: 52, harmo: 2.0, gainH: 0.042, gainS: 0.018, filtre: 560, q: 1.3, doux: 1700, monte: 1.8 },
+  berline:   RECETTE_VOITURE,
+  suv:       { base: 36, harmo: 2.0, gainH: 0.050, gainS: 0.024, filtre: 360, q: 1.1, doux: 1100, monte: 1.4 },
+  diesel:    { base: 30, harmo: 3.0, gainH: 0.055, gainS: 0.030, filtre: 300, q: 1.0, doux: 1000, monte: 1.0, trepid: { k: 2, p: 0.4 } },
+  // un V8 : grave, la quinte, et ce roulement irrégulier qu'on reconnaît
+  v8:        { base: 33, harmo: 1.5, gainH: 0.075, gainS: 0.018, filtre: 320, q: 1.2, doux: 900, monte: 1.8, trepid: { k: 0.5, p: 0.5 }, passage: true },
+  // un six à plat ou un quatre turbo de piste : haut perché, et le turbo siffle
+  sportive:  { base: 55, harmo: 2.0, gainH: 0.065, gainS: 0.020, filtre: 760, q: 1.4, doux: 2600, monte: 2.4, siffle: 0.006, sb: 2400, sm: 2600, passage: true },
+  // un V12 : lisse, très aigu à haut régime — un hurlement, pas un grondement
+  v12:       { base: 62, harmo: 2.0, gainH: 0.068, gainS: 0.016, filtre: 950, q: 1.4, doux: 3400, monte: 2.7, passage: true },
+  // un W16 à quatre turbos : la puissance d'un V12 avec le souffle d'un avion
+  w16:       { base: 48, harmo: 2.0, gainH: 0.07, gainS: 0.03, filtre: 700, q: 1.0, doux: 2800, monte: 2.3, siffle: 0.008, sb: 2200, sm: 3200, passage: true },
+  // UNE ÉLECTRIQUE NE GRONDE PAS : presque plus d'harmoniques ni de souffle,
+  // et un sifflement d'onduleur qui MONTE AVEC LA VITESSE (pas avec un
+  // régime : elle n'a pas de rapports, `allure` dans `voitureSons`).
+  electrique:{ base: 40, harmo: 2.0, gainH: 0.0025, gainS: 0.004, filtre: 600, q: 1.0, doux: 800, monte: 1.0, siffle: 0.022, sb: 700, sm: 5200, electrique: true },
+  // les avions : une turbosoufflante de ligne (souffle et sifflement de
+  // soufflante), un jet d'affaires plus léger et plus aigu, un chasseur et le
+  // Concorde qui rugissent, avec la postcombustion par-dessus
+  ligne:     { base: 30, harmo: 2.51, gainH: 0.012, gainS: 0.072, filtre: 760, q: 0.7, siffle: 0.016, sb: 1500, sm: 1800 },
+  affaires:  { base: 42, harmo: 2.5, gainH: 0.008, gainS: 0.045, filtre: 1250, q: 0.8, siffle: 0.022, sb: 2800, sm: 2600 },
+  chasseur:  { base: 26, harmo: 2.0, gainH: 0.032, gainS: 0.11, filtre: 420, q: 0.6, siffle: 0.004, sb: 1100, sm: 900, rechauffe: 0.22 },
+  concorde:  { base: 23, harmo: 2.2, gainH: 0.028, gainS: 0.12, filtre: 360, q: 0.6, siffle: 0.003, sb: 900, sm: 700, rechauffe: 0.24 },
 };
+// la recette d'un moteur : le caractère s'il est connu, sinon le type
+export function recetteDe(type, caractere) {
+  return RECETTES[caractere] || RECETTES[type] || RECETTES.voiture;
+}
 // ce qui roule sur des pneus a des pneus qui crissent et une route qui gronde
 const SUR_ROUES = (type) => type === 'voiture' || type === 'moto';
 
@@ -174,12 +221,28 @@ function tamponDeBruit(c) {
 
 let moteur = null;   // { type, source, filtre, gainS, osc1, osc2, gainH, siffle, gainSif }
 
-export function moteurDemarre(type = 'voiture') {
+export function moteurDemarre(type = 'voiture', caractere = null) {
   const c = contexteAudio();
   if (!c) return false;
   moteurCoupe();
-  const r = RECETTES[type] || RECETTES.voiture;
-  const sortie = sortieAudio();
+  const r = recetteDe(type, caractere);
+  // le volume du moteur entier passe par un robinet de plus : c'est lui
+  // qu'une électrique ferme presque
+  const sortie = c.createGain();
+  sortie.gain.value = r.volume == null ? 1 : r.volume;
+  sortie.connect(sortieAudio());
+  // LA BANDE DES PNEUS EST RÉSERVÉE (v587). Le crissement vit entre 2,5 et
+  // 3,4 kHz ; un turbo, un V12 ou un onduleur y chantaient aussi, et le frein
+  // à main tiré tout droit ne ressortait plus du moteur (mesuré, modèle
+  // imposé : sportive ×6, W16 ×5,7, V12 ×4,7 contre ×26 pour un V8, barre
+  // ×10). Sur ce qui roule, le moteur seul passe par un creux de −24 dB
+  // centré sur trois kilohertz ; les pneus et la route n'y passent pas.
+  let corps = sortie;
+  if (SUR_ROUES(type)) {
+    corps = c.createBiquadFilter();
+    corps.type = 'peaking'; corps.frequency.value = 2900; corps.Q.value = 1.0; corps.gain.value = -24;
+    corps.connect(sortie);
+  }
   const source = c.createBufferSource();
   source.buffer = tamponDeBruit(c);
   source.loop = true;
@@ -194,23 +257,48 @@ export function moteurDemarre(type = 'voiture') {
   // garde pas son souffle pendant que ses harmoniques s'éteignent.
   const toux = c.createGain();
   toux.gain.value = 1;
-  toux.connect(sortie);
+  toux.connect(corps);
   source.connect(filtre).connect(gainS).connect(toux);
   source.start();
 
   const osc1 = c.createOscillator(); osc1.type = 'sawtooth'; osc1.frequency.value = r.base;
   const osc2 = c.createOscillator(); osc2.type = 'sawtooth'; osc2.frequency.value = r.base * r.harmo;
   const gainH = c.createGain(); gainH.gain.value = 0.0001;
-  const doux = c.createBiquadFilter(); doux.type = 'lowpass'; doux.frequency.value = 1400;
-  osc1.connect(doux); osc2.connect(doux); doux.connect(gainH).connect(toux);
+  const doux = c.createBiquadFilter(); doux.type = 'lowpass'; doux.frequency.value = r.doux || 1400;
+  // LA TRÉPIDATION (v587) : les harmoniques passent par un gain que module
+  // un oscillateur lent — à la moitié de la fondamentale pour le roulement
+  // d'un V8 ou d'un bicylindre, au double pour le claquement d'un diesel.
+  let trepid = null;
+  if (r.trepid) {
+    const module = c.createGain(); module.gain.value = 1 - r.trepid.p / 2;
+    const lfo = c.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = r.base * r.trepid.k;
+    const prof = c.createGain(); prof.gain.value = r.trepid.p / 2;
+    lfo.connect(prof).connect(module.gain);
+    osc1.connect(doux); osc2.connect(doux); doux.connect(module).connect(gainH).connect(toux);
+    lfo.start();
+    trepid = { lfo };
+  } else {
+    osc1.connect(doux); osc2.connect(doux); doux.connect(gainH).connect(toux);
+  }
   osc1.start(); osc2.start();
 
   let siffle = null, gainSif = null;
   if (r.siffle) {
-    siffle = c.createOscillator(); siffle.type = 'triangle'; siffle.frequency.value = 1800;
+    siffle = c.createOscillator(); siffle.type = 'triangle'; siffle.frequency.value = r.sb || 1200;
     gainSif = c.createGain(); gainSif.gain.value = 0.0001;
-    siffle.connect(gainSif).connect(sortie);
+    siffle.connect(gainSif).connect(corps);
     siffle.start();
+  }
+  // LA POSTCOMBUSTION (v587) : un rugissement grave et rêche — du bruit passé
+  // bas — qui ne s'ouvre qu'avec la réchauffe (`rechauffeDe`, avions.js).
+  let rech = null;
+  if (r.rechauffe) {
+    const sr = c.createBufferSource(); sr.buffer = tamponDeBruit(c); sr.loop = true;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 280; lp.Q.value = 0.8;
+    const gr = c.createGain(); gr.gain.value = 0.0001;
+    sr.connect(lp).connect(gr).connect(sortie);
+    sr.start();
+    rech = { sr, gain: gr };
   }
   // LES PNEUS (v401), montés UNE fois avec le moteur d'une voiture et
   // silencieux tant qu'ils ne glissent pas : un souffle serré autour de trois
@@ -245,8 +333,8 @@ export function moteurDemarre(type = 'voiture') {
     sr.start();
     roulement = { sr, lp, gain: gr };
   }
-  moteur = { type, r, source, filtre, gainS, osc1, osc2, gainH, siffle, gainSif, toux, pneus, roulement,
-    prochaineToux: 0, feu: null };
+  moteur = { type, caractere: RECETTES[caractere] ? caractere : type, r, sortie, source, filtre, gainS, osc1, osc2, gainH, siffle, gainSif, toux, pneus, roulement,
+    trepid, rech, prochaineToux: 0, feu: null, regPrec: 0, prochainPassage: 0 };
   moteurRegime(0);
   return true;
 }
@@ -264,10 +352,24 @@ export function moteurDemarre(type = 'voiture') {
 //   feu         le crépitement des flammes
 //   roulement   0..1, le grondement de la route sous les roues (v543) —
 //               déjà mis à l'échelle de la vitesse par celui qui appelle
-export function voitureSons({ regime = 0, charge = 0, crissement = 0, sante = 1, panne = false, feu = false, roulement = 0 } = {}) {
+//   allure      0..1, la vitesse rapportée à la pointe (v587) : une
+//               électrique n'a pas de rapports, son onduleur suit la vitesse
+export function voitureSons({ regime = 0, charge = 0, crissement = 0, sante = 1, panne = false, feu = false, roulement = 0, allure = null } = {}) {
   if (!moteur || !ctx) return;
-  moteurRegime(regime, charge);
   const t = ctx.currentTime;
+  // ON ENTEND PASSER LES RAPPORTS (v587) sur un moteur qui le mérite
+  // (`passage`) : le régime retombe d'un coup quand la boîte monte, et le
+  // moteur se coupe un dixième de seconde — le « blam » d'une sportive.
+  if (moteur.r.passage && moteur.regPrec - regime > 0.25 && t >= moteur.prochainPassage && !moteur.enPanne) {
+    const g = moteur.toux.gain;
+    g.setValueAtTime(1, t + 0.01);
+    g.linearRampToValueAtTime(0.2, t + 0.05);
+    g.linearRampToValueAtTime(1, t + 0.16);
+    moteur.prochainPassage = t + 0.3;
+    moteur.passages = (moteur.passages || 0) + 1;
+  }
+  moteur.regPrec = regime;
+  moteurRegime(moteur.r.electrique && allure != null ? allure : regime, charge);
   if (moteur.pneus) moteur.pneus.gain.gain.setTargetAtTime(0.0001 + 0.11 * Math.max(0, Math.min(1, crissement)), t, 0.05);
   if (moteur.roulement) {
     const r = Math.max(0, Math.min(1, roulement));
@@ -363,7 +465,7 @@ export function bruitDeChoc(force = 0.5) {
 // `regime` va de 0 (moteur au ralenti) à 1 (pleins gaz). Tout se fait par
 // `setTargetAtTime` : l'interpolation vit dans le fil audio, et appeler cette
 // fonction à chaque image ne coûte rien au fil principal.
-export function moteurRegime(regime, charge = null) {
+export function moteurRegime(regime, charge = null, rechauffe = 0) {
   if (!moteur || !ctx) return;
   const g = Math.max(0, Math.min(1, regime));
   // LA CHARGE (v401) : un moteur qui tire gronde, un moteur sur sa lancée
@@ -373,20 +475,24 @@ export function moteurRegime(regime, charge = null) {
   const r = moteur.r;
   // Le régime monte la fondamentale d'une octave et demie, pas plus : au-delà
   // ce n'est plus un moteur, c'est une sirène.
-  const f = r.base * (1 + 1.6 * g);
+  const f = r.base * (1 + (r.monte == null ? 1.6 : r.monte) * g);
   moteur.osc1.frequency.setTargetAtTime(f, t, k);
+  if (moteur.trepid) moteur.trepid.lfo.frequency.setTargetAtTime(f * r.trepid.k, t, k);
   moteur.osc2.frequency.setTargetAtTime(f * r.harmo, t, k);
   moteur.gainH.gain.setTargetAtTime(r.gainH * (ch == null ? 0.35 + 0.65 * g : 0.3 + 0.45 * g + 0.45 * ch), t, k);
   moteur.filtre.frequency.setTargetAtTime(r.filtre * (1 + 1.1 * g), t, k);
   moteur.gainS.gain.setTargetAtTime(r.gainS * (0.4 + 0.6 * g), t, k);
   if (moteur.siffle) {
-    moteur.siffle.frequency.setTargetAtTime(1200 + 1800 * g, t, k);
-    moteur.gainSif.gain.setTargetAtTime(r.siffle * g * g, t, k);
+    moteur.siffle.frequency.setTargetAtTime((r.sb || 1200) + (r.sm == null ? 1800 : r.sm) * g, t, k);
+    // l'onduleur d'une électrique s'entend dès qu'elle roule, pas seulement
+    // à pleine charge
+    moteur.gainSif.gain.setTargetAtTime(r.siffle * (r.electrique ? Math.min(1, g * 3) * (0.4 + 0.6 * g) : g * g), t, k);
   }
+  if (moteur.rech) moteur.rech.gain.gain.setTargetAtTime(0.0001 + r.rechauffe * Math.max(0, Math.min(1, rechauffe || 0)), t, 0.12);
 }
 
 function arreterMoteur(m) {
-  for (const n of [m.source, m.osc1, m.osc2, m.siffle,
+  for (const n of [m.source, m.osc1, m.osc2, m.siffle, m.trepid && m.trepid.lfo, m.rech && m.rech.sr,
     m.pneus && m.pneus.sp, m.pneus && m.pneus.sif, m.pneus && m.pneus.trem, m.roulement && m.roulement.sr,
     m.feu && m.feu.s, m.feu && m.feu.sg]) {
     if (n) { try { n.stop(); } catch { /* déjà arrêté */ } }
@@ -403,6 +509,7 @@ export function moteurCoupe() {
   moteur = null;
   if (m.pneus) m.pneus.gain.gain.setTargetAtTime(0.0001, t, 0.06);
   if (m.roulement) m.roulement.gain.gain.setTargetAtTime(0.0001, t, 0.06);
+  if (m.rech) m.rech.gain.gain.setTargetAtTime(0.0001, t, 0.06);
   if (m.feu) { m.feu.g.gain.cancelScheduledValues(t); m.feu.g.gain.setTargetAtTime(0.0001, t, 0.06); m.feu.gg.gain.setTargetAtTime(0.0001, t, 0.06); }
   setTimeout(() => arreterMoteur(m), 400);
 }
@@ -708,7 +815,7 @@ export function klaxonAmi(de, oui, { distance = 10, pan = 0, ton = 1 } = {}) {
 export function etatSon() {
   return {
     contexte: ctx ? ctx.state : null, actif, appel: enAppel, generation,
-    moteur: moteur ? moteur.type : null,
+    moteur: moteur ? moteur.type : null, caractere: moteur ? moteur.caractere : null, passages: moteur ? moteur.passages || 0 : 0,
     radio: radio ? radio.station.nom : null,
     titre: radio ? titreEnCours(radio.station, radio.morceau) : null,
     klaxon: klaxonTenu(), klaxonGain: klaxon ? +klaxon.gain.gain.value.toFixed(4) : null, klaxonsRue, klaxonsAmis: klaxonsAmiJoues, klaxonsAmisTenus: klaxonsAmis.size,

@@ -1735,14 +1735,14 @@ function verifier(nom, ok, detail = '') {
       verifier('le programme d\'ombre de la couche HD est chauffé à l\'accueil : aucun ne naît quand Paris arrive',
         avantO.length >= 1 && neuvesO.length === 0, `${avantO.length} avant d'entrer, ${neuvesO.length} neuve(s) en jeu`);
     }
-    // ── LA LUMIÈRE ET LE POST-TRAITEMENT (v586) ───────────────────────────────
+    // ── LA LUMIÈRE ET LE POST-TRAITEMENT (v588) ───────────────────────────────
     //
     // L'image se compose en HDR puis se développe (postfx.js) ; le niveau vient
     // du palier, le palier bas ne paie rien, le rendu logiciel le coupe. Ce
     // qui se garde ici : (1) la règle pure du palier ; (2) sous le post-
     // traitement, AUCUN programme ne naît en jeu — ni à la nuit tombée, ni à
     // l'arrivée dans Paris —, parce que la chauffe compile avec la cible posée
-    // (v586) ; (3) le bloom ajoute de la lumière la nuit, autour de ce qui
+    // (v588) ; (3) le bloom ajoute de la lumière la nuit, autour de ce qui
     // émet, et n'en retire nulle part ; (4) de jour, le développement rend la
     // luminosité de l'ancien chemin (ACES, exposition 1,05) : rien ne délave.
     {
@@ -1784,7 +1784,7 @@ function verifier(nom, ok, detail = '') {
       // lampadaires, ses voitures — et aucun programme ne doit naître pour le
       // post-traitement. Deux clés naissent à Paris AVEC OU SANS post-traitement
       // (`basic` et `depth` avec une carte, mesurées identiques sur `postfx=0`,
-      // v586) : ce n'est pas la cible qui les fait naître, et on les nomme.
+      // v588) : ce n'est pas la cible qui les fait naître, et on les nomme.
       const avantParis = await PX.cles(lumi);
       await lumi.evaluate((P) => { const j = __game.player; j.pos.set(P.x + 20, 45, P.z + 20); j.yaw = 0.5; j.pitch = -0.2; j.syncCamera(); }, (await import('../src/mondes.js')).positionDe('paris'));
       const t0 = Date.now();

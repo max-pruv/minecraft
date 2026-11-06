@@ -499,7 +499,7 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 // fausse devenait une bande noire. La vraie taille est posée par
 // ajusterLaVue(), juste en dessous, une fois la caméra créée.
 renderer.setSize(window.innerWidth, window.innerHeight, false);
-// ── LE POST-TRAITEMENT (v586) ────────────────────────────────────────────────
+// ── LE POST-TRAITEMENT (v588) ────────────────────────────────────────────────
 //
 // L'image se compose en HDR puis se développe (postfx.js) : exposition et
 // balance selon l'heure, bloom de ce qui émet la nuit, lueur du soleil dans la
@@ -8140,7 +8140,7 @@ mapModal.addEventListener('click', (e) => {
   if (e.target === mapModal) fermerCarte();
 });
 
-// L'IMAGE SE REND PAR LE POST-TRAITEMENT QUAND IL EST ACTIF (v586), droit sur
+// L'IMAGE SE REND PAR LE POST-TRAITEMENT QUAND IL EST ACTIF (v588), droit sur
 // l'écran sinon. Tout ce qui rend l'image passe ici — la boucle, `renderNow`
 // des témoins — pour qu'une seule chaîne existe.
 function etatLumiere() {
@@ -8167,7 +8167,7 @@ let dayTime = DAY_LENGTH * 0.3; // start mid-morning
 // lampes de rue (v248), pas `daylight` brut, qui ne tombe jamais sous 0,08.
 let nuitDehors = 0;
 
-// CE QUE L'HEURE FAIT À LA LUMIÈRE, publié pour le post-traitement (v586) :
+// CE QUE L'HEURE FAIT À LA LUMIÈRE, publié pour le post-traitement (v588) :
 // la part de jour, la part de nuit, le soleil au ras de l'horizon.
 const lumiereDuMoment = { jour: 1, nuit: 0, rasant: 0, soleilHaut: true, pluie: 0 };
 function updateSky(dt) {
@@ -8218,7 +8218,7 @@ function updateSky(dt) {
     Math.max(lightColor.b, LUMIERE_FENETRE.b * 0.92),
   );
   // SOUS LE POST-TRAITEMENT, CE QUI ÉMET DÉPASSE LE SEUIL DU BLOOM LA NUIT
-  // (v586) : les vitres et les lanternes montent au-delà du blanc, la
+  // (v588) : les vitres et les lanternes montent au-delà du blanc, la
   // correspondance tonale les ramène, et l'excédent devient leur lueur. Sans
   // post-traitement le facteur vaut 1 : la v585 au bit près.
   if (postfx.actif) {
@@ -8907,7 +8907,7 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
-    // LE POST-TRAITEMENT SE MESURE SUR L'APPAREIL (v586) : le banc rend en
+    // LE POST-TRAITEMENT SE MESURE SUR L'APPAREIL (v588) : le banc rend en
     // logiciel et ne peut rien dire de son prix. Niveau, échantillons, cible,
     // étages de bloom, passes, et les millisecondes de soumission par image.
     + ((c) => (c.actif
@@ -9547,7 +9547,7 @@ requestAnimationFrame(() => {
     renderer.compile(ici, camera, scene);
   };
   const pas = () => {
-    // avec la cible du post-traitement posée (v586) : c'est pour elle que les
+    // avec la cible du post-traitement posée (v588) : c'est pour elle que les
     // programmes se compilent, puisque c'est dans elle que l'image se dessine
     if (postfx.avecCible(chauffe)) { requestAnimationFrame(pas); return; }
     postfx.avecCible(() => {

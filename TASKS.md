@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-## La lumière et le post-traitement (v586) — ce qui reste, déclaré
+## La lumière et le post-traitement (v588) — ce qui reste, déclaré
 
 - [ ] **Le coût se mesure sur l'appareil, pas au banc.** Le banc rend en
   logiciel ; `?diag=1` affiche `postfx niveau · msaa · cible · étages · passes ·
@@ -24,7 +24,7 @@
 - [ ] **Deux programmes naissent à l'arrivée dans Paris, avec ou sans
   post-traitement** : le nom d'une station de métro (`nom-station`,
   `MeshBasicMaterial` à carte, et sa variante de profondeur). Mesuré identique
-  sur `postfx=0` ; le témoin de la v586 le nomme et le tolère. La chauffe des
+  sur `postfx=0` ; le témoin de la v588 le nomme et le tolère. La chauffe des
   plaques (v529) ne couvre pas cette clé-là : à chauffer à l'accueil, hors de
   cette zone.
 - [ ] **Un témoin qui lit des pixels de l'écran sous le post-traitement
@@ -32,6 +32,20 @@
   reste posée entre deux images. Aucun témoin du portail ne le fait avec
   `?postfx=1` (le banc ne l'allume pas) ; le jour où une suite force
   `postfx`, ses lectures de pixels passent par `sonde-postfx.cjs`.
+
+## Chaque moteur a sa voix, la flamme est une réchauffe (v587) — dettes
+
+- [ ] **On n'entend pas le moteur d'un ami.** Aucun son d'ami ne joue de
+  moteur (seulement son klaxon, v549). Le caractère se déduirait de ce que la
+  position emporte déjà (`p.v.f` : modèle de flotte ou variante d'avion) avec
+  `sonDe` / `AVIONS_GLB.son`, placé et atténué comme `klaxonAmi` — mais une
+  boucle de moteur par ami coûte un graphe audio par ami : à mesurer.
+- [ ] **Les recettes se jugent à l'oreille, sur la tablette.** Le banc juge
+  l'ÉCART entre modèles (bandes, centroïdes, `sonde-moteurs.cjs`), jamais le
+  plaisir. Max : écouter une citadine, un V8 (Camaro), un V12 (Victor), une
+  électrique (Lucid Gravity), puis un A320, le jet, le chasseur pleins gaz.
+- [ ] Les voitures de la rue et la police n'ont pas de moteur audible (comme
+  avant) ; seule la monture de l'enfant joue une recette.
 
 ## Façades en relief de Manhattan (v585) — validation du 1er novembre
 
