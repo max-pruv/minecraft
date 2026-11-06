@@ -12,6 +12,24 @@ function verifier(nom, ok, detail = "") {
   console.log(`${ok ? "✅" : "❌"} ${nom}${detail ? " — " + detail : ""}`);
   if (!ok) echecs.push(nom);
 }
+// L'ACCUEIL DE MANHATTAN REND TROIS À CINQ IMAGES EN HUIT SECONDES AU BANC
+// (rendu logiciel, sonde-accueil-ny.cjs) : `locator.click` attend deux images
+// identiques et expire à trente secondes, sur main comme ailleurs (v427). On
+// vérifie ce que l'enfant voit, puis on appuie par le document. Et l'on joue
+// comme l'enfant qui lit l'accueil : quand la chauffe de New York est finie
+// (v319) — l'ancien clic l'attendait sans le dire ; appuyer tout de suite
+// faisait compiler les banlieues en y entrant (75 clés avant, 118 après).
+async function entrerDansLeJeu(p) {
+  const appuyer = async (trouver) => {
+    await p.waitForFunction(trouver, null, { timeout: 60000 });
+    await p.evaluate((f) => (0, eval)(f)().click(), `(${trouver})`);
+  };
+  await appuyer(() => { const b = document.querySelector(".who-card.active"); return b && b.offsetWidth > 0 && b; });
+  await appuyer(() => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.offsetWidth > 0));
+  await p.waitForFunction(() => !window.__chauffeNY || window.__chauffeNY().finie, null, { timeout: 150000 })
+    .catch(() => {});
+  await appuyer(() => { const b = document.querySelector("#play-btn"); return b && !b.disabled && b.offsetWidth > 0 && b; });
+}
 (async () => {
   const banc = new Banc({ portJeu: 8359, portPairs: 9359 });
   await banc.ouvrir();
@@ -37,23 +55,7 @@ function verifier(nom, ok, detail = "") {
           __game.world.ctx === "local",
       ),
     );
-    // L'ACCUEIL DE MANHATTAN REND TROIS À CINQ IMAGES EN HUIT SECONDES AU
-    // BANC (rendu logiciel, sonde-accueil-ny.cjs) : `locator.click` attend deux
-    // images identiques et expire à trente secondes, sur main comme ailleurs
-    // (v427). On vérifie ce que l'enfant voit, puis on appuie par le document.
-    const appuyer = async (trouver, nom) => {
-      await p.waitForFunction(trouver, null, { timeout: 60000 });
-      await p.evaluate((f) => (0, eval)(f)().click(), `(${trouver})`);
-    };
-    await appuyer(() => { const b = document.querySelector(".who-card.active"); return b && b.offsetWidth > 0 && b; }, "carte");
-    await appuyer(() => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.offsetWidth > 0), "plus tard");
-    // Et l'on joue comme l'enfant qui lit l'accueil : quand la chauffe de New
-    // York est finie (v319). L'ancien clic attendait des images stables, donc
-    // cette chauffe sans le dire ; appuyer tout de suite faisait compiler les
-    // banlieues en y entrant (75 clés avant, 118 après).
-    await p.waitForFunction(() => !window.__chauffeNY || window.__chauffeNY().finie, null, { timeout: 150000 })
-      .catch(() => {});
-    await appuyer(() => { const b = document.querySelector("#play-btn"); return b && !b.disabled && b.offsetWidth > 0 && b; }, "jouer");
+    await entrerDansLeJeu(p);
     await p.waitForFunction(() => __game.running);
     verifier(
       "le voyage explicite place le joueur à New York en coordonnées terrestres",
@@ -1121,11 +1123,7 @@ function verifier(nom, ok, detail = "") {
     // Première reprise cloud : une collision oblige tout le chantier ancien
     // à changer d'emplacement. La position doit arriver auprès de ses blocs.
     const reprise = await banc.joueur("TerreReprise", { rr: 2, tactile: true });
-    await reprise.locator(".who-card.active").click();
-    await reprise
-      .getByRole("button", { name: "Plus tard", exact: true })
-      .click();
-    await reprise.locator("#play-btn").click();
+    await entrerDansLeJeu(reprise);
     await reprise.waitForFunction(() => __game.running);
     const positionImportee = await reprise.evaluate(async () => {
       const { ORIGINE_MANHATTAN: o } = await import("/src/manhattan-world.js");
@@ -1256,11 +1254,7 @@ function verifier(nom, ok, detail = "") {
     await offline.waitForFunction(() => window.__game?.villeRealiste, null, {
       timeout: 90000,
     });
-    await offline.locator(".who-card.active").click();
-    await offline
-      .getByRole("button", { name: "Plus tard", exact: true })
-      .click();
-    await offline.locator("#play-btn").click();
+    await entrerDansLeJeu(offline);
     await offline.waitForFunction(() => __game.running, null, {
       timeout: 30000,
     });
