@@ -29,7 +29,10 @@ const isStaticAsset = (url) =>
   // première visite de Manhattan, jamais avant
   || url.includes('/vendor/newyork/');
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
-  'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`)
+  'femme-chemise', 'femme-manteau', 'garcon', 'fille']
+  // et leurs versions aux textures KTX2, celles que le jeu charge quand le
+  // transcodeur est branché ; les originaux restent pour `?ktx2=0`
+  .flatMap((n) => [`./vendor/humains/${n}.glb`, `./vendor/humains/${n}-ktx2.glb`])
   // les mouvements de capture (personnages vivants) : un fichier immuable, versionné par son nom
   .concat(['./vendor/humains/mouvements-v1.bin']);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);

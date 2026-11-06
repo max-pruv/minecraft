@@ -33,7 +33,7 @@
 // la tablette du conducteur qui décide, et ses étoiles tombées à zéro garent
 // l'escorte ici. Une tablette restée sur l'ancienne version ignore `w`.
 import * as THREE from 'three';
-import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { chargeurModeles, urlModele } from './ktx2.js';
 import { partagerTout, liberer } from './liberer.js';
 import { matiereAdditive } from './avions.js';
 import { FLOTTE, chargerVoitureFlotte } from './vehicules.js';
@@ -120,7 +120,7 @@ let chargementAgent = null, protoAgent = null;
 function chargerAgent() {
   if (typeof document === 'undefined') return null;
   if (chargementAgent) return chargementAgent;
-  chargementAgent = new GLTFLoader().loadAsync('./vendor/humains/policier.glb').then((gltf) => {
+  chargementAgent = chargeurModeles().loadAsync(urlModele('./vendor/humains/policier.glb')).then((gltf) => {
     const g = new THREE.Group();
     g.add(gltf.scene);
     partagerTout(g);

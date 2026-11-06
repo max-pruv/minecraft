@@ -2,7 +2,7 @@
 // La conversion conserve les poids de peau et les articulations. Une seule
 // copie des textures/géométries, un squelette indépendant pour chaque personne.
 import * as THREE from "three";
-import { GLTFLoader } from "../vendor/GLTFLoader.js";
+import { chargeurModeles, urlModele } from "./ktx2.js";
 import { clone } from "../vendor/SkeletonUtils.js";
 import { partager, partagerTout } from "./liberer.js";
 import { chargerMouvements, mouvementsPrets, clipsDuCorps, attitudeDe, priseDAllure } from "./mouvements.js";
@@ -61,13 +61,17 @@ export function chargerHumains() {
     charges = true;
     return (chargement = Promise.resolve());
   }
-  const loader = new GLTFLoader();
+  // Le chargeur des modèles déposés : quand le transcodeur est branché
+  // (main.js, juste après le renderer), les corps viennent de leur version aux
+  // textures KTX2 (`<nom>-ktx2.glb`, même squelette octet pour octet) ; sinon,
+  // et avec `?ktx2=0`, des fichiers d'origine.
+  const loader = chargeurModeles();
   const base = new URL("../vendor/humains/", import.meta.url).href;
   // les mouvements de capture (128 Ko) partent avec les corps
   chargerMouvements();
   // le réseau travaille en parallèle, l'analyse se fait dans l'ordre
   const tampons = noms.map((nom) =>
-    fetch(`${base}${nom}.glb`).then((r) =>
+    fetch(urlModele(`${base}${nom}.glb`)).then((r) =>
       r.ok ? r.arrayBuffer() : Promise.reject(new Error(`HTTP ${r.status}`)),
     ),
   );

@@ -129,17 +129,25 @@ async function encoder(image, role, uastc) {
 
 function empreinteAccesseurs(doc) {
   // L'empreinte de chaque accesseur de chaque primitive, dans l'ordre : c'est
-  // ce qui prouve que la géométrie n'a pas bougé d'un octet.
+  // ce qui prouve que la géométrie n'a pas bougé d'un octet. Pour un maillage
+  // à squelette (les corps), on ajoute TOUS les accesseurs du fichier — poids,
+  // indices d'os, matrices de liaison, clés d'animation — et la pose de chaque
+  // nœud : un os déplacé d'un cheveu ne se voit pas sur la géométrie.
+  const empreinte = (a) => createHash('sha1').update(Buffer.from(a.getArray().buffer, a.getArray().byteOffset, a.getArray().byteLength)).digest('hex');
   const h = [];
   for (const m of doc.getRoot().listMeshes()) {
     for (const p of m.listPrimitives()) {
-      for (const s of p.listSemantics()) {
-        const a = p.getAttribute(s);
-        h.push(m.getName() + '/' + s + ':' + createHash('sha1').update(Buffer.from(a.getArray().buffer, a.getArray().byteOffset, a.getArray().byteLength)).digest('hex'));
-      }
+      for (const s of p.listSemantics()) h.push(m.getName() + '/' + s + ':' + empreinte(p.getAttribute(s)));
       const i = p.getIndices();
-      if (i) h.push(m.getName() + '/idx:' + createHash('sha1').update(Buffer.from(i.getArray().buffer, i.getArray().byteOffset, i.getArray().byteLength)).digest('hex'));
+      if (i) h.push(m.getName() + '/idx:' + empreinte(i));
     }
+  }
+  const racine = doc.getRoot();
+  if (racine.listSkins().length || racine.listAnimations().length) {
+    racine.listAccessors().forEach((a, k) => h.push('acc' + k + ':' + a.getType() + ':' + empreinte(a)));
+    for (const s of racine.listSkins()) h.push('skin:' + s.getName() + ':' + s.listJoints().map((j) => j.getName()).join(','));
+    for (const n of racine.listNodes()) h.push('node:' + n.getName() + ':' + [...n.getTranslation(), ...n.getRotation(), ...n.getScale()].join(','));
+    for (const an of racine.listAnimations()) h.push('anim:' + an.getName() + ':' + an.listChannels().map((c) => (c.getTargetNode() ? c.getTargetNode().getName() : '') + '.' + c.getTargetPath()).join(','));
   }
   return h;
 }
@@ -166,6 +174,83 @@ function originalEntrelace(fichier) {
   });
 }
 
+// ---- réécriture d'un GLB à la main (maillages à squelette) ----------------
+function lireGLB(fichier) {
+  const b = fs.readFileSync(fichier);
+  if (b.readUInt32LE(0) !== 0x46546c67) throw new Error(fichier + ' : pas un GLB');
+  let o = 12, json = null, bin = null;
+  while (o < b.length) {
+    const n = b.readUInt32LE(o), type = b.readUInt32LE(o + 4);
+    const c = b.subarray(o + 8, o + 8 + n);
+    if (type === 0x4e4f534a) json = JSON.parse(c.toString('utf8'));
+    else if (type === 0x004e4942) bin = c;
+    o += 8 + n;
+  }
+  return { json, bin };
+}
+const vueDe = (bin, v) => bin.subarray(v.byteOffset || 0, (v.byteOffset || 0) + v.byteLength);
+const bourrer = (n) => (4 - (n % 4)) % 4;
+
+function reecrireGLB(entree, sortie, remplacements) {
+  const { json, bin } = lireGLB(entree);
+  const nouveau = new Map();             // bufferView d'image → octets KTX2
+  for (const img of json.images || []) {
+    if (img.bufferView === undefined) throw new Error(entree + ' : image hors du binaire');
+    const octets = vueDe(bin, json.bufferViews[img.bufferView]);
+    const r = remplacements.find(([orig]) => orig.equals(octets));
+    if (!r) throw new Error(entree + ' : image sans remplaçant');
+    nouveau.set(img.bufferView, r[1]);
+    img.mimeType = 'image/ktx2';
+  }
+  for (const t of json.textures || []) {
+    if (t.source === undefined) continue;
+    t.extensions = { ...(t.extensions || {}), KHR_texture_basisu: { source: t.source } };
+    delete t.source;
+  }
+  for (const k of ['extensionsUsed', 'extensionsRequired']) {
+    json[k] = [...new Set([...(json[k] || []), 'KHR_texture_basisu'])];
+  }
+  // le binaire, vue par vue, dans l'ordre d'origine
+  const morceaux = [];
+  let off = 0;
+  json.bufferViews.forEach((v, i) => {
+    const octets = nouveau.get(i) || vueDe(bin, v);
+    const pad = bourrer(off);
+    if (pad) { morceaux.push(Buffer.alloc(pad)); off += pad; }
+    v.byteOffset = off;
+    v.byteLength = octets.length;
+    morceaux.push(Buffer.from(octets));
+    off += octets.length;
+  });
+  const binaire = Buffer.concat(morceaux);
+  const binPad = Buffer.concat([binaire, Buffer.alloc(bourrer(binaire.length))]);
+  json.buffers[0].byteLength = binaire.length;
+  let texte = Buffer.from(JSON.stringify(json), 'utf8');
+  texte = Buffer.concat([texte, Buffer.alloc(bourrer(texte.length), 0x20)]);
+  const entete = Buffer.alloc(12);
+  entete.writeUInt32LE(0x46546c67, 0); entete.writeUInt32LE(2, 4);
+  entete.writeUInt32LE(12 + 8 + texte.length + 8 + binPad.length, 8);
+  const ch = (n, type) => { const c = Buffer.alloc(8); c.writeUInt32LE(n, 0); c.writeUInt32LE(type, 4); return c; };
+  fs.writeFileSync(sortie, Buffer.concat([entete, ch(texte.length, 0x4e4f534a), texte, ch(binPad.length, 0x004e4942), binPad]));
+}
+
+// Ce qui doit être identique au caractère près : nœuds (poses des os), peaux,
+// maillages, accesseurs (sauf le décalage de leur vue), animations, scènes ;
+// et les octets de chaque vue qui n'est pas une image.
+function verifierSquelette(entree, sortie) {
+  const a = lireGLB(entree), b = lireGLB(sortie);
+  for (const k of ['nodes', 'skins', 'meshes', 'accessors', 'animations', 'scenes', 'scene', 'materials', 'samplers']) {
+    if (JSON.stringify(a.json[k]) !== JSON.stringify(b.json[k])) throw new Error(sortie + ' : ' + k + ' a changé');
+  }
+  const images = new Set((a.json.images || []).map((i) => i.bufferView));
+  a.json.bufferViews.forEach((v, i) => {
+    if (images.has(i)) return;
+    const w = b.json.bufferViews[i];
+    if (v.byteStride !== w.byteStride || v.target !== w.target) throw new Error(sortie + ' : vue ' + i + ' a changé');
+    if (!vueDe(a.bin, v).equals(vueDe(b.bin, w))) throw new Error(sortie + ' : octets de la vue ' + i + ' changés');
+  });
+}
+
 async function convertir(dossier, fichier) {
   const entree = path.join(racine, 'vendor', dossier, fichier);
   // LA DISPOSITION DE L'ORIGINAL (v590) : gltf-transform entrelace les
@@ -179,6 +264,7 @@ async function convertir(dossier, fichier) {
   const doc = await io.read(entree);
   const avant = empreinteAccesseurs(doc);
   const lignes = [];
+  const remplacements = [];
   let px = 0, gpuAvant = 0, gpuApres = 0;
   for (const t of doc.getRoot().listTextures()) {
     const mime = t.getMimeType();
@@ -206,13 +292,26 @@ async function convertir(dossier, fichier) {
     gpuAvant += n * 4 * 4 / 3;
     gpuApres += n * (uastc || alpha ? 1 : 0.5) * 4 / 3;
     lignes.push(`  ${String(t.getName() || '#' + lignes.length).slice(0, 28).padEnd(28)} ${orig.width}×${orig.height} ${role.padEnd(7)} ${(uastc ? 'UASTC' : 'ETC1S').padEnd(5)}${alpha ? '+α' : '  '} ${(image.byteLength / 1024).toFixed(0).padStart(5)} → ${(ktx.byteLength / 1024).toFixed(0).padStart(5)} Ko  ${q.toFixed(1)} dB${etc1s !== null ? ` (ETC1S ${etc1s.toFixed(1)} dB)` : ''}`);
+    remplacements.push([Buffer.from(image), Buffer.from(ktx)]);
     t.setImage(ktx);
     t.setMimeType('image/ktx2');
   }
   if (lignes.length) doc.createExtension(KHRTextureBasisu).setRequired(true);
   const apres = empreinteAccesseurs(doc);
   if (avant.join() !== apres.join()) throw new Error(fichier + ' : la géométrie a changé');
-  await io.write(sortie, doc);
+  const squelette = doc.getRoot().listSkins().length > 0;
+  if (squelette) {
+    // Un maillage à squelette ne repasse PAS par l'écrivain de gltf-transform :
+    // il arrondit à 1 les échelles d'os qui en sont à un millionième près
+    // (82 os sur 85 d'un corps Rocketbox). On réécrit le GLB à la main : seules
+    // les images changent, le JSON des nœuds, des peaux, des accesseurs et des
+    // animations est recopié tel quel, et chaque bufferView qui n'est pas une
+    // image garde ses octets.
+    reecrireGLB(entree, sortie, remplacements);
+    verifierSquelette(entree, sortie);
+  } else {
+    await io.write(sortie, doc);
+  }
   // relu depuis le disque : la géométrie écrite est celle de l'original
   const relu = empreinteAccesseurs(await io.read(sortie));
   if (relu.join() !== avant.join()) throw new Error(fichier + ' : la géométrie relue diffère');
