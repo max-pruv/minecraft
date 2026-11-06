@@ -34,8 +34,9 @@ d'exposition la nuit, une lumière chaude quand le soleil rase, froide la nuit),
 les vitres, les lanternes, les feux et les phares débordent d'une lueur la
 nuit, le soleil se lit dans la brume du lointain, une brume de hauteur se dépose
 dans les vallées au crépuscule, et le ciel porte la diffusion de son soleil et
-une bande claire à l'horizon. Le palier décide : rien au palier bas, un niveau
-au palier moyen, deux au palier haut ; le rendu logiciel le coupe comme les
+une bande claire à l'horizon. Le palier décide du post-traitement : rien au
+palier bas (le dôme qui diffuse, lui, est à tout palier : un dessin, rien à
+payer), un niveau au palier moyen, deux au palier haut ; le rendu logiciel le coupe comme les
 ombres. `?postfx=0|1|2` force, `?bloom=`, `?expo=`, `?lueur=`, `?brume=`
 règlent pour mesurer, et `?diag=1` dit ce que ça coûte sur l'appareil.
 

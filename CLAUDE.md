@@ -48,7 +48,11 @@ soleil et la bande d'horizon dans le dôme. Six règles.
   la fiche (`palier.js`) : 0 · 1 · 2 ; `niveauDemande` coupe en rendu logiciel
   comme les ombres (v247), suit le palier, cède à `?postfx=`. Au niveau 0 rien
   n'est créé : `creerPostFx` rend un objet inerte dont `rendre` est
-  `renderer.render`, et la v585 est rendue au bit près. `?postfx=` et `?msaa=`
+  `renderer.render` : la chaîne de rendu est celle de la v585. Ce qui change à
+  TOUT palier, c'est le dôme du ciel (`sky.js` : diffusion du soleil, bande
+  d'horizon) — un dessin, le même programme, aucune cible, donc rien à payer ;
+  et c'est pour cela qu'une capture `postfx=0` de cette branche n'est pas une
+  capture de la v585. `?postfx=` et `?msaa=`
   sont des paramètres FORÇANTS (v284) : une page qui les porte ne range pas de
   palier.
 - **RENDRE VERS UNE CIBLE CHANGE LA CLÉ DE TOUT PROGRAMME, DONC LA CIBLE RESTE

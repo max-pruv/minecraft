@@ -16,7 +16,8 @@
 //
 // 1. LE PALIER BAS NE PAIE RIEN. Sans post-traitement (`niveau` 0, le rendu
 //    logiciel du banc, `?postfx=0`), `rendre` appelle `renderer.render` tel
-//    quel : même cible, mêmes programmes, même image que la v585 au bit près.
+//    quel : même cible, mêmes programmes que la v585 ; seul le dôme du ciel
+//    (sky.js) diffuse à tout palier, un dessin, rien à payer.
 //    Rien ici n'est jamais créé tant que `actif` est faux.
 // 2. AUCUN PROGRAMME NE NAÎT EN JEU. Rendre vers une cible change la CLÉ de
 //    tout programme de la scène (plus de correspondance tonale ni de conversion
