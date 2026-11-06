@@ -393,7 +393,7 @@ export function estimerMemoire(racines) {
     const src = t.source || t.image;
     if (!src || sources.has(src)) return;
     sources.add(src);
-    // UNE TEXTURE COMPRIMÉE (KTX2, v587) PÈSE CE QUE PORTENT SES NIVEAUX : un
+    // UNE TEXTURE COMPRIMÉE (KTX2, v588) PÈSE CE QUE PORTENT SES NIVEAUX : un
     // demi-octet à un octet par pixel, mipmaps comprises, et non quatre. La
     // compter en RGBA cacherait exactement ce que la compression rend.
     if (t.isCompressedTexture && t.mipmaps && t.mipmaps.length) {

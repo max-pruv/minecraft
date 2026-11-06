@@ -1,4 +1,4 @@
-// CE QUE LES TEXTURES KTX2 RENDENT EN MÉMOIRE (v587), modèle par modèle.
+// CE QUE LES TEXTURES KTX2 RENDENT EN MÉMOIRE (v588), modèle par modèle.
 // Usage : node tests/sonde-memoire-ktx2.cjs
 //
 // Deux pages, la même chose : chaque modèle déposé de la liste

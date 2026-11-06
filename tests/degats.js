@@ -44,7 +44,7 @@ function verifier(nom, ok, detail = '') {
       `export async function resolve(s, c, n) { return s === 'three' ? { url: ${JSON.stringify(trois)}, shortCircuit: true } : n(s, c); }`));
     const { temoinsPorsche911 } = await import('./porsche-911.mjs');
     for (const [nom, ok, detail] of await temoinsPorsche911()) verifier(nom, ok, detail);
-    // LES TEXTURES KTX2 (v587) : chaque fichier comprimé est son original,
+    // LES TEXTURES KTX2 (v588) : chaque fichier comprimé est son original,
     // sommet pour sommet et matériau pour matériau ; et tout modèle chargé qui
     // porte une image a sa version comprimée.
     {
@@ -305,7 +305,7 @@ function verifier(nom, ok, detail = '') {
     const erreurs = [];
     tab.on('pageerror', (e) => erreurs.push(String(e.message || e)));
 
-    // LES TEXTURES KTX2 DANS LE JEU (v587). Le transcodeur est branché, une
+    // LES TEXTURES KTX2 DANS LE JEU (v588). Le transcodeur est branché, une
     // voiture de la flotte arrive par son fichier `-ktx2.glb`, ses cartes sont
     // des textures comprimées qui pèsent ce que portent leurs niveaux, et la
     // dessiner ne compile AUCUN programme que l'original n'aurait pas compilé :
@@ -340,7 +340,7 @@ function verifier(nom, ok, detail = '') {
         comprimees: cartes.filter((t) => t.isCompressedTexture).length, neuves,
         texOrigMo: +mo.toFixed(1), texKtx2Mo: +mk.toFixed(1) };
     }).catch((e) => ({ err: String(e).slice(0, 300) }));
-    verifier('KTX2 (v587) : le transcodeur est branché, la voiture arrive par son fichier comprimé, et ses cartes sont des textures comprimées',
+    verifier('KTX2 (v588) : le transcodeur est branché, la voiture arrive par son fichier comprimé, et ses cartes sont des textures comprimées',
       !kt.err && kt.branche && kt.url.includes('maserati-mc12-gt1-ktx2.glb') && kt.cartes > 3 && kt.comprimees === kt.cartes,
       JSON.stringify(kt));
     verifier('… qui pèsent au moins trois fois moins en carte graphique, et ne compilent aucun programme que l\'original n\'a pas compilé',

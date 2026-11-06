@@ -1,4 +1,4 @@
-// LE CHARGEUR DES MODÈLES DÉPOSÉS, AVEC LEURS TEXTURES KTX2 (mémoire, v587).
+// LE CHARGEUR DES MODÈLES DÉPOSÉS, AVEC LEURS TEXTURES KTX2 (mémoire, v588).
 //
 // Une image JPEG ou PNG se décode en RGBA dans la carte graphique : quatre
 // octets par pixel, un tiers de plus pour les mipmaps. Une texture KTX2

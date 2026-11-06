@@ -379,6 +379,26 @@ function feuxNavigation(g, memo = null) {
   nav.regler(0);
   return nav;
 }
+// LA RÉCHAUFFE (v587). Max : « il y a des avions normaux qui ne crachent pas
+// de feu. Aujourd'hui tous les avions crachent du feu, ça n'a pas de sens. »
+// Une flamme visible derrière un réacteur, c'est la POSTCOMBUSTION : du
+// carburant qu'on brûle une seconde fois dans la tuyère d'un chasseur ou du
+// Concorde, à fort régime. Un avion de ligne ou un jet d'affaires n'en a
+// pas — ses gaz sortent transparents. Ce qui a une réchauffe le DIT là où le
+// modèle s'écrit (`a.rechauffe` pour un modèle sculpté, `rechauffe: true`
+// dans `AVIONS_GLB`), jamais dans une liste de `fun.js` : un appareil sans
+// réchauffe n'a pas de maillage de flamme du tout.
+//
+// Et la réchauffe ne s'allume qu'à FORT RÉGIME : au-delà de
+// `SEUIL_RECHAUFFE` de manette. `rechauffeDe(poussee)` rend la part de
+// réchauffe, de 0 au seuil à 1 pleins gaz ; la flamme (fun.js) et le
+// rugissement (sons.js) lisent la MÊME fonction, comme la poussée (v268).
+export const SEUIL_RECHAUFFE = 0.75;
+export function rechauffeDe(poussee) {
+  const p = Number(poussee) || 0;
+  return p <= SEUIL_RECHAUFFE ? 0 : Math.min(1, (p - SEUIL_RECHAUFFE) / (1 - SEUIL_RECHAUFFE));
+}
+
 function flamme(t) {
   const groupe = new THREE.Group();
   groupe.position.set(t.x, t.y, t.z);
@@ -428,7 +448,10 @@ function fini(a, zPrincipal = 0, porte = null) {
   // une flamme par tuyère déclarée, enfant de la racine
   // les feux de navigation se mesurent AVANT les flammes, qui dépassent la queue
   g.userData.feuxNav = feuxNavigation(g);
-  g.userData.tuyeres = (a.tuyeres || []).map((t) => { const f = flamme(t); g.add(f); return f; });
+  // une flamme par tuyère, et seulement si l'appareil a une réchauffe (v587)
+  g.userData.rechauffe = !!a.rechauffe;
+  g.userData.tuyeres = a.rechauffe ? (a.tuyeres || []).map((t) => { const f = flamme(t); g.add(f); return f; }) : [];
+  if (a.son) g.userData.sonMoteur = a.son;
   // `legs` doit exister même vide : la boucle de monte la parcourt pour faire
   // balancer les pattes, et un avion n'en a pas. Même contrat que la voiture.
   g.userData.legs = [];
@@ -447,6 +470,7 @@ function fini(a, zPrincipal = 0, porte = null) {
 // découle.
 export function avionDeLigneSculpte() {
   const a = new Atelier();
+  a.son = 'ligne';      // des turbosoufflantes : pas de réchauffe (v587)
   const L = GABARITS_AVION.avionligne.long;      // 16
   const k = L / 37.6;                            // 0,426 bloc par mètre
   const rayon = 4.0 / 2 * k;                     // 0,85
@@ -515,6 +539,10 @@ export function avionDeLigneSculpte() {
 // 1,7 pour seize. On ne l'épaissit pas pour qu'il « se voie mieux ».
 export function concorde() {
   const a = new Atelier();
+  // quatre Olympus 593 à réchauffe, allumée au décollage et au passage du mur
+  // du son (v587) ; le grondement d'un turboréacteur pur, sans soufflante
+  a.rechauffe = true;
+  a.son = 'concorde';
   const L = GABARITS_AVION.concorde.long;        // 20
   const k = L / 61.7;                            // 0,324
   const rayon = 2.9 / 2 * k;                     // 0,47
@@ -571,6 +599,8 @@ export function concorde() {
 // fuselage soit large par rapport à sa longueur (2,0 m pour 15,3).
 export function avionDeChasseSculpte() {
   const a = new Atelier();
+  a.rechauffe = true;   // la postcombustion d'un chasseur (v587)
+  a.son = 'chasseur';
   const L = GABARITS_AVION.chasseur.long;        // 10
   const k = L / 15.3;                            // 0,654
   const rayon = 2.0 / 2 * k;                     // 0,65
@@ -703,13 +733,16 @@ export function accesAvion(porte) {
 //   - `tuyeres` : MESURÉES sur le modèle par le convertisseur (la nacelle,
 //     son rayon, son bout arrière), jamais écrites à l'œil ;
 //   - `trainPrincipal` : le z de l'essieu principal, autour duquel le nez se
-//     lève (le pivot du nœud, lu dans le fichier).
+//     lève (le pivot du nœud, lu dans le fichier) ;
+//   - `rechauffe` (v587) : seul un appareil à postcombustion porte des
+//     flammes — les tuyères restent MESURÉES pour tous, la flamme non ;
+//   - `son` (v587) : le caractère du moteur (`sons.js`), par modèle.
 // Les sièges des passagers vivent dans la fiche de l'espèce (montures.js) et
 // valent pour le modèle sculpté comme pour le modèle déposé : mesurés au
 // rayon sur les deux (axe du fuselage 1,62 et 1,55, plafond 2,51 et 2,35).
 export const AVIONS_GLB = {
   a320: {
-    espece: 'avionligne', fichier: 'airbus-a320.glb', nom: 'A320',
+    espece: 'avionligne', fichier: 'airbus-a320.glb', nom: 'A320', son: 'ligne',
     trainAtelier: { nez: { z: -5.85, r: 0.2 }, principal: { x: 1.61, r: 0.26 }, zPrincipal: -0.48, ventre: 0.76 },
     trainPrincipal: -0.48,
     tuyeres: [{ x: -2.443, y: 0.696, z: -0.75, rayon: 0.278 }, { x: 2.443, y: 0.696, z: -0.75, rayon: 0.278 }],
@@ -720,7 +753,7 @@ export const AVIONS_GLB = {
       ouvrant: 'porte_avant', baie: 'porte_baie', cachee: true, axe: 'y', angle: -1.5 },
   },
   a321: {
-    espece: 'avionligne', fichier: 'airbus-a321.glb', nom: 'A321',
+    espece: 'avionligne', fichier: 'airbus-a321.glb', nom: 'A321', son: 'ligne',
     trainPrincipal: 0.287,
     tuyeres: [{ x: -2.104, y: 0.913, z: 0.417, rayon: 0.312 }, { x: 2.109, y: 0.904, z: 0.311, rayon: 0.306 }],
     panneau: { x: -0.77, y: 1.55, z: -6.5 },
@@ -728,7 +761,7 @@ export const AVIONS_GLB = {
       ouvrant: 'porte_avant', baie: 'porte_baie', cachee: true, axe: 'y', angle: -1.5 },
   },
   f35: {
-    espece: 'chasseur', fichier: 'chasseur-f35.glb', nom: 'F-35',
+    espece: 'chasseur', fichier: 'chasseur-f35.glb', nom: 'F-35', son: 'chasseur', rechauffe: true,
     trainPrincipal: 1.443,
     tuyeres: [{ x: 0, y: 1.24, z: 3.986, rayon: 0.367 }],
     // l'échelle devant la verrière, qui bascule vers l'avant : son pivot est
@@ -745,7 +778,7 @@ export const AVIONS_GLB = {
   // avion de ligne (axe 1,08, rayon 0,65, mesurés par le convertisseur) :
   // il porte ses SIÈGES, qui remplacent ceux de l'espèce pour cet appareil.
   jet: {
-    espece: 'avionligne', fichier: 'jet-prive.glb', nom: 'Jet privé', long: 13,
+    espece: 'avionligne', fichier: 'jet-prive.glb', nom: 'Jet privé', long: 13, son: 'affaires',
     trainAtelier: { nez: { z: -5.2, r: 0.15 }, principal: { x: 0.92, r: 0.2 }, zPrincipal: 0.65, ventre: 0.47 },
     trainPrincipal: 0.65,
     tuyeres: [{ x: -0.99, y: 1.57, z: 3.109, rayon: 0.2 }, { x: 0.99, y: 1.571, z: 3.109, rayon: 0.199 }],
@@ -836,7 +869,9 @@ function depuisModele(cle) {
   if (def.sieges) g.userData.sieges = def.sieges.map((q) => ({ ...q }));
   if (!feuxMemo.has(cle)) feuxMemo.set(cle, {});
   g.userData.feuxNav = feuxNavigation(g, feuxMemo.get(cle));
-  g.userData.tuyeres = def.tuyeres.map((t) => { const f = flamme(t); g.add(f); return f; });
+  g.userData.rechauffe = !!def.rechauffe;
+  g.userData.tuyeres = def.rechauffe ? def.tuyeres.map((t) => { const f = flamme(t); g.add(f); return f; }) : [];
+  g.userData.sonMoteur = def.son || null;
   g.userData.legs = [];
   g.userData.train = ['train_nez', 'train_gauche', 'train_droit'].map((n) => m[n]).filter(Boolean);
   g.userData.trainPrincipal = def.trainPrincipal;
