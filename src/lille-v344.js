@@ -70,7 +70,7 @@ const ACIER = uni(24);
 // LE RAYON VIENT DU REGISTRE (`mondes.js`), jamais d'un littéral ici : c'est le
 // piège de San Francisco, dont le `r: 66` masquait la valeur de la carte, et
 // Lille portait le même `r: 46` jusqu'à sa remise à l'échelle.
-export const LILLE = positionDe('lille');
+export const LILLE = positionDe('lille', 'terreV4');
 
 export const BLOCS_PAR_KM = 32;
 // Le plan d'auteur a été relevé à seize blocs par kilomètre ; tout ce qui y

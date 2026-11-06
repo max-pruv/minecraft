@@ -67,7 +67,7 @@ const COUR = BLOCK.COBBLE;       // les pavés du fond des cours
 // (`r: 55`) et il masquait celui de `mondes.js` : la ville a triplé dans le
 // registre et paris.js a continué de croire à son ancien disque — tout ce qui
 // dépassait cinquante-cinq blocs n'était ni bâti ni pavé.
-export const PARIS = positionDe('paris');
+export const PARIS = positionDe('paris', 'terreV4');
 
 // L'ÉCHELLE, ET SA REFONTE.
 //

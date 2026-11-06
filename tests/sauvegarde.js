@@ -399,8 +399,11 @@ const BLOCS = 40000;
       const ps = window.__game.profileSync;
       const W = await import('./src/world.js');
       if (!W.migrerBlocsFonduDoux || !ps.mettreALAbriAvantFonduDoux) return { absent: true };
-      const { VILLES_MONDE } = await import('./src/villesmonde.js');
-      const w8 = new W.World({ v308: true }), w9 = new W.World();
+      // Depuis la carte ×3 (v588), le fondu doux se joue sur la carte d'avant
+      // (fiches figées, monde de la production `CONF_V587`) ; la marche 8 → 9
+      // emmène ensuite la cabane avec Salvador, et c'est là qu'on la cherche.
+      const { VILLES_MONDE } = W.CONF_V587 ? await import('./src/villesmonde-v531.js') : await import('./src/villesmonde.js');
+      const w8 = new W.World({ v308: true }), w9 = W.CONF_V587 ? new W.World({ v587: true }) : new W.World();
       const f = VILLES_MONDE.find((v) => v.cle === 'salvador');
       let site = null;
       for (let k = 0; k < 64 && !site; k++) {
@@ -413,7 +416,9 @@ const BLOCS = 40000;
       }
       if (!site) return { absent: false, site: null };
       const t = W.DATE_FONDU_DOUX - 86400000;
-      const vieux = `${site.x},${site.g8 + 1},${site.z}`, neuf = `${site.x},${site.g9 + 1},${site.z}`;
+      const vieux = `${site.x},${site.g8 + 1},${site.z}`;
+      let neuf = `${site.x},${site.g9 + 1},${site.z}`;
+      if (W.migrerCarteX3) neuf = Object.keys(W.migrerCarteX3({ [neuf]: [9, W.DATE_FONDU_DOUX] }).carte)[0];
       const local = ps.snapshot();
       const remote = { ...JSON.parse(JSON.stringify(local)), edits: { local: { [vieux]: [9, t] } } };
       ps.copieFonduDoux = null;     // comme une tablette qui vient de s'ouvrir
@@ -433,6 +438,46 @@ const BLOCS = 40000;
     verifier('et le document du nuage a été mis à l\'abri avant le fondu doux, sur son propre document',
       copieFFaite, fonduD.absent ? 'pas de fondu doux'
         : `${fonduD.copie} · ${Date.now() - departCopieF} ms`);
+
+    // ET PAR LA CARTE ×3 (v588), EN DERNIER. Une maison posée à Tokyo sur la
+    // carte d'avant (0,1875 km par bloc), reçue d'une tablette restée sur la
+    // v587 : la fusion la pose à la nouvelle adresse de Tokyo, d'un seul
+    // tenant, sans fantôme à l'ancienne ; la position suit ; et le document
+    // du nuage a été mis à l'abri avant, sur son propre document.
+    const x3D = await tab.evaluate(async () => {
+      const ps = window.__game.profileSync;
+      const W = await import('./src/world.js');
+      const m = await import('./src/mondes.js');
+      if (!W.migrerCarteX3 || !m.MONDES.terreV4 || !ps.mettreALAbriAvantCarteX3) return { absent: true };
+      const A = m.positionDe('tokyo', 'terreV4'), N = m.positionDe('tokyo');
+      const t = W.DATE_CARTE_X3 - 86400000;
+      const blocs = {};
+      for (let dx = 0; dx < 5; dx++) for (let dz = 0; dz < 5; dz++) blocs[`${A.x + 4 + dx},40,${A.z + 4 + dz}`] = [11, t];
+      const local = ps.snapshot();
+      const remote = { ...JSON.parse(JSON.stringify(local)), edits: { local: blocs },
+        pos: { 13579: { x: A.x + 6.5, y: 41, z: A.z + 6.5, yaw: 0, pitch: 0, t } } };
+      ps.copieCarteX3 = null;      // comme une tablette qui vient de s'ouvrir
+      const copie = await ps.mettreALAbriAvantCarteX3(ps.getName(), remote);
+      const r = ps.merge(local, remote);
+      const e = (r.state.edits || {}).local || {};
+      const nos = Object.keys(e).filter((k) => e[k][0] === 11).map((k) => k.split(',').map(Number));
+      const p = (r.state.pos || {})[13579] || {};
+      return { copie, n: nos.length,
+        vieux: nos.filter(([x, , z]) => x >= A.x + 4 && x < A.x + 9 && z >= A.z + 4 && z < A.z + 9).length,
+        neuf: nos.filter(([x, , z]) => x >= N.x + 4 && x < N.x + 9 && z >= N.z + 4 && z < N.z + 9).length,
+        ys: [...new Set(nos.map(([, y]) => y))],
+        pos: [p.x - N.x, p.z - N.z].join() };
+    });
+    verifier('carte ×3 : une maison de Tokyo d\'avant reçue du nuage arrive à la nouvelle adresse de Tokyo, d\'un seul tenant, sans fantôme',
+      !x3D.absent && x3D.n === 25 && x3D.neuf === 25 && x3D.vieux === 0 && x3D.ys.length === 1 && x3D.pos === '6.5,6.5',
+      x3D.absent ? 'la marche 8 → 9 n\'existe pas' : JSON.stringify(x3D));
+    const departCopieX3 = Date.now();
+    const copieX3Faite = !x3D.absent && await jusqua(async () => {
+      const a = nuage.etatDe('Marlon~avant-carte-x3');
+      return !!(a && (a.editsz || a.edits) && a.carteX3 === 1);
+    }, 60000);
+    verifier('carte ×3 : et le document du nuage a été mis à l\'abri avant, sur son propre document',
+      copieX3Faite, x3D.absent ? 'la marche 8 → 9 n\'existe pas' : `${x3D.copie} · ${Date.now() - departCopieX3} ms`);
 
     // CE QUI VIENT DU NUAGE PASSE PAR LA MIGRATION DE CARTE AVANT LA FUSION.
     //
@@ -458,7 +503,12 @@ const BLOCS = 40000;
       const e = (r.state.edits || {}).local || {};
       const p = (r.state.pos || {})[24680] || {};
       // La position garde sa demi-fraction : on compare au centième, sans arrondir.
-      return { vieux: !!e[vieux], neuf: e[neuf]?.[0] === 7, pos: Math.abs(p.x - (ny.x + 20.5)) < 0.01 && Math.abs(p.z - (ny.z - 400.5)) < 0.01, x: p.x, z: p.z };
+      // La carte ×3 (v588) pose le bloc sur le sol neuf de son site : sa
+      // colonne est celle de New York, sa hauteur suit le relief. On cherche
+      // donc le bloc dans SA colonne, et il doit y être seul.
+      const sept = Object.keys(e).filter((k) => e[k][0] === 7);
+      const colonne = (k) => { const [x, , z] = k.split(',').map(Number); return x === ny.x + 20 && z === ny.z - 400; };
+      return { vieux: !!e[vieux], neuf: e[neuf]?.[0] === 7 || (m.MONDES.terreV4 && sept.length === 1 && colonne(sept[0])), sept, pos: Math.abs(p.x - (ny.x + 20.5)) < 0.01 && Math.abs(p.z - (ny.z - 400.5)) < 0.01, x: p.x, z: p.z };
     });
     verifier('un bloc d\'avant le monde ×2 reçu du nuage arrive à la nouvelle adresse de sa ville, sans fantôme',
       !fantome.absent && fantome.neuf && !fantome.vieux,
