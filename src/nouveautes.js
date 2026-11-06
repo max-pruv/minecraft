@@ -6,6 +6,14 @@
 
 export const NOUVEAUTES = [
   {
+    v: 588,
+    titre: 'Plus de plantage en ville',
+    puces: [
+      'Moins de mémoire pour les voitures',
+      'Sur le téléphone et la tablette',
+    ],
+  },
+  {
     v: 587,
     titre: 'Chaque moteur a sa voix',
     puces: [

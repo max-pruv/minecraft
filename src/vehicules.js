@@ -743,6 +743,42 @@ function empreinteOctets(tampon) {
   for (let i = 0; i < o.length; i++) h = Math.imul(h ^ o[i], 0x01000193);
   return o.length + ':' + (h >>> 0).toString(36);
 }
+// LES IMAGES DE LA FLOTTE, RÉDUITES SUR UN APPAREIL TACTILE (v588).
+//
+// Max : « le jeu plante » (iPhone, « Loin », v585 à v587). Le journal de bord :
+// zéro erreur, et dans chaque ville la mémoire des TEXTURES qui grimpe de 98 à
+// 390 Mo en une minute (Birmingham, Paris, Lyon), à côté d'une géométrie que la
+// v580 borne à 224 Mo. La v586 met dans chaque rue le mélange de toutes les
+// classes : une ville charge presque toute la flotte, et ses images pèsent
+// 410 Mo en 1 024 et 2 048 pixels (mesuré dans les fichiers, mipmaps
+// comprises). Une voiture se voit à quarante-cinq blocs au plus, sur un écran
+// de quatre cents points : 512 pixels suffisent, et coûtent quatre à seize
+// fois moins. Réduite UNE fois, au chargement, dans un canevas : l'image
+// décodée d'origine part au ramasse-miettes (ou `close()`). Sur un ordinateur
+// rien ne change ; `?texvoiture=` force la borne (0 : désarmé), pour mesurer.
+const TEX_ADRESSE = ADRESSE_FLOTTE && ADRESSE_FLOTTE.get('texvoiture');
+export const TEX_FLOTTE_MAX = TEX_ADRESSE !== null && TEX_ADRESSE !== undefined
+  ? (Number(TEX_ADRESSE) || 0)
+  : (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 512 : 0);
+export function reduireImage(t, max = TEX_FLOTTE_MAX) {
+  const img = t && t.image;
+  if (!max || !img || typeof document === 'undefined') return t;
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  if (!(w > max || h > max)) return t;
+  const k = max / Math.max(w, h);
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * k));
+  c.height = Math.max(1, Math.round(h * k));
+  const ctx = c.getContext('2d');
+  if (!ctx) return t;
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  if (typeof img.close === 'function') img.close();
+  t.image = c;
+  t.needsUpdate = true;
+  t.userData.reduite = [w, h];
+  return t;
+}
+
 function partageDesTextures(parser) {
   return {
     name: 'grandtour_textures_partagees',
@@ -758,7 +794,7 @@ function partageDesTextures(parser) {
         let p = TEXTURES_FLOTTE.get(cle);
         if (!p) {
           p = parser.loadTextureImage(index, def.source, parser.textureLoader)
-            .then((t) => { if (t) { t.userData.partagee = true; } return t; });
+            .then((t) => { if (t) { reduireImage(t); t.userData.partagee = true; } return t; });
           TEXTURES_FLOTTE.set(cle, p);
         }
         return p;
@@ -913,6 +949,15 @@ export function chargerVoitureFlotte(entree) {
       // On remet le modèle au manifeste AVANT de l'accrocher : la rotation et
       // la pose au sol se calculent dans son propre repère.
       const forme = normaliserVoiture(gltf.scene);
+      // Les images que le partage ne voit pas (une texture étendue, comme celle
+      // de la Revuelto adaptée) se réduisent ici ; une image déjà réduite ne
+      // bouge plus (sa taille est sous la borne).
+      if (TEX_FLOTTE_MAX) gltf.scene.traverse((o) => {
+        if (!o.isMesh || !o.material) return;
+        for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+          for (const k in m) { const v = m[k]; if (v && v.isTexture) reduireImage(v); }
+        }
+      });
       cadre.add(gltf.scene);
       cadre.rotation.y = Math.PI;                      // +Z nez (contrat) → -z jeu
       const porteur = new THREE.Group();

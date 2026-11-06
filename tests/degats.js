@@ -284,6 +284,38 @@ function verifier(nom, ok, detail = '') {
   const banc = new Banc({ portJeu: 8417, portPairs: 9417 });
   await banc.ouvrir();
   try {
+    // LES IMAGES DE LA FLOTTE TIENNENT DANS 512 PIXELS SUR UN APPAREIL TACTILE
+    // (v588). Le journal de bord de l'iPhone : iOS ferme la page quand la rue
+    // d'une ville a chargé la flotte, ses textures à 350–450 Mo. Le banc n'est
+    // pas tactile : il force la borne par l'adresse (`texvoiture=512`), charge
+    // les modèles aux plus grandes images (la police à 2 048, la MC12, la
+    // Revuelto adaptée et sa texture étendue) et deux génériques, et lit la
+    // taille de CHAQUE image portée — et que le partage tient toujours.
+    {
+      const pt = await banc.jouerSeul('Images', { rr: 2, pret: true, params: '&texvoiture=512' });
+      const r = await pt.evaluate(async () => {
+        const V = await import('./src/vehicules.js');
+        const res = { borne: V.TEX_FLOTTE_MAX, modeles: [], partage: null };
+        const cartes = (proto) => { const t = new Set(); proto.traverse((o) => { if (!o.isMesh || !o.material) return; for (const m of [].concat(o.material)) for (const k in m) if (m[k] && m[k].isTexture) t.add(m[k]); }); return [...t]; };
+        for (const f of ['police-car.glb', 'maserati-mc12-gt1.glb', 'lamborghini-revuelto.glb', 'generique-berline.glb', 'generique-citadine.glb']) {
+          const e = V.FLOTTE.find((x) => x.fichier === f);
+          const p = e ? await V.chargerVoitureFlotte(e) : null;
+          if (!p) { res.modeles.push({ f, err: 'absent' }); continue; }
+          const ts = cartes(p);
+          const dims = ts.map((t) => { const i = t.image || {}; return Math.max(i.naturalWidth || i.width || 0, i.naturalHeight || i.height || 0); });
+          res.modeles.push({ f, n: ts.length, max: Math.max(0, ...dims), reduites: ts.filter((t) => t.userData.reduite).length, ts });
+        }
+        const b = res.modeles.find((m) => m.f === 'generique-berline.glb'), c = res.modeles.find((m) => m.f === 'generique-citadine.glb');
+        res.partage = !!(b && c && b.ts && c.ts && b.ts.some((t) => c.ts.includes(t)));
+        for (const m of res.modeles) delete m.ts;
+        return res;
+      });
+      verifier('sur un appareil tactile, aucune image de la flotte ne dépasse 512 pixels (police à 2 048, MC12, Revuelto et sa texture étendue), et les génériques partagent toujours les leurs',
+        r.borne === 512 && r.modeles.every((m) => !m.err && m.n > 0 && m.max > 0 && m.max <= 512) && r.modeles.some((m) => m.reduites > 0) && r.partage,
+        JSON.stringify(r));
+      await pt.close();
+    }
+
     const tab = await banc.jouerSeul('Dégâts', { rr: 2, pret: true });
     const erreurs = [];
     tab.on('pageerror', (e) => erreurs.push(String(e.message || e)));

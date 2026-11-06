@@ -8056,6 +8056,24 @@ la scène à 390–490 Mo de géométrie. Deux règles.
   journal (survécu sous ~480 Mo au total, mort au-delà de ~500), jamais sur le
   banc, qui a de la mémoire à revendre (v236).
 
+## Les images de la flotte se réduisent sur un appareil tactile (v588) — un budget de géométrie ne borne pas des images
+
+Max : « le jeu plante » (iPhone, « Loin », v585 à v587). Deux règles.
+
+- **QUAND UN BUDGET EST POSÉ, ON CHERCHE CE QU'IL NE COMPTE PAS.** La v580 a
+  borné la géométrie (`mondeMo`) ; le journal a montré, en ville, les
+  TEXTURES de 98 à 390–450 Mo en une minute, `gpu.texMo` à côté de `geoMo`.
+  La v586 a mis toutes les classes dans chaque rue : une ville charge presque
+  toute la flotte, 410 Mo d'images en 1 024 et 2 048. Toute livraison qui
+  change la composition de la flotte publie aussi ses images (la règle de la
+  v579, pour les octets d'images).
+- **UNE IMAGE DE VOITURE SE RÉDUIT UNE FOIS, AU CHARGEMENT, ET SUR L'APPAREIL
+  QUI EN A BESOIN.** `reduireImage` (vehicules.js) dessine dans un canevas de
+  512 pixels au plus (`TEX_FLOTTE_MAX`, `(pointer: coarse)`), dans le partage
+  des textures (v413) et sur le modèle entier (une texture étendue y échappe).
+  Un ordinateur garde les images d'origine ; `?texvoiture=` force (0 :
+  désarmé). Le témoin lit la taille de chaque image portée, partage compris.
+
 ## Le journal de bord se taille côté serveur (v479) — une purge efface par liste d'autorisation
 
 Deux règles.

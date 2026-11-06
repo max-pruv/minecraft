@@ -20,6 +20,34 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v588 — Le jeu ne plante plus en ville sur l'iPhone
+
+**Pourquoi.** Max : « le jeu plante ». Le journal de bord de son iPhone
+(étendue « Loin ») : deux plantages en une minute chacun cette nuit sur la
+v587, onze sur la v585, et toujours le même dessin — zéro erreur, la page
+tuée par iOS dès qu'on roule dans une ville (Birmingham, Paris, Lyon). Ce qui
+grimpait, c'est la mémoire des IMAGES : 98 Mo au départ, 390 à 450 Mo une
+minute plus tard, à côté d'une géométrie que la v580 borne déjà. Depuis la
+v586, chaque rue mélange toutes les classes de voitures : une ville charge
+presque toute la flotte, et ses images pèsent 410 Mo en 1 024 et 2 048
+pixels (mesuré dans les fichiers).
+
+**Ce que ça change.** Sur une tablette ou un téléphone, les images des
+voitures sont réduites à 512 pixels au chargement : quatre à seize fois moins
+de mémoire, pour une voiture qu'on voit à quarante-cinq blocs au plus sur un
+petit écran. Les quatre modèles les plus lourds passent de 102 à 32 Mo. Rien
+ne change sur un ordinateur. `?texvoiture=` force la borne (0 la désarme),
+pour mesurer sur l'appareil.
+
+**Ce qui le prouve.** Un témoin dans `degats.js` charge la police (2 048), la
+MC12, la Revuelto adaptée (dont une texture étendue que le partage ne voit
+pas) et deux génériques sous la borne : aucune image au-dessus de 512, et le
+partage des génériques tient. Rouge sur l'ancien code (2 048 et 1 024
+pixels, `sonde-tex-flotte.cjs`). Ce qui reste à voir se voit sur l'iPhone :
+le journal de bord dira la mémoire des images en ville (`gpu.texMo`).
+
+---
+
 ## v587 — Chaque moteur a sa voix, et la flamme est une réchauffe
 
 **Pourquoi.** Max : « il y a des avions normaux qui ne crachent pas de feu.
