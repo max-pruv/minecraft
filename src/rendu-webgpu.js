@@ -146,6 +146,12 @@ function caler(r) {
   // en coin), et remettre à zéro à chaque rendu laissait le dernier — souvent
   // vide — dans `?diag=1` (« 0 appels »). Les compteurs sont ceux de l'image
   // entière, comme ceux que le journal de bord relève.
+  // ET LA BOUCLE INTERNE DE THREE LES REMET À ZÉRO À CHAQUE TICK : le premier
+  // `render()` démarre `_animation`, dont le rAF fait `info.reset()` quand
+  // `info.autoReset` est vrai — entre notre rendu et la lecture du diagnostic
+  // de l'image suivante (« 0 appels · 0k tri » sur la tablette, mesuré). On
+  // garde la main sur la remise à zéro.
+  r.info.autoReset = false;
   const rendre = r.render.bind(r);
   let imageNeuve = true;
   const tic = () => { imageNeuve = true; requestAnimationFrame(tic); };
