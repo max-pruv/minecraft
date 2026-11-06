@@ -12,7 +12,7 @@ export const NOUVEAUTES = [
       'Les immeubles de Paris sont plus hauts',
       'Les vitrines dépassent les passants',
       'Les portes cochères font trois mètres',
-      'Tes cabanes sur les toits ont suivi',
+      'Tes constructions sur les toits ont suivi',
     ],
   },
   {
