@@ -426,7 +426,14 @@ const MM_ECART = 2.2;
 // 9fc2d321…, la constante de la v555, au bit près ; et le creusement de toute
 // l'emprise du métro, comparé colonne par colonne à `origin/main`, ne change
 // rien à moins de trois blocs du sol (10 921 colonnes changées, toutes dessous).
-const EMPREINTE_MORCEAUX_V357 = 'ed369fdb3743a2f970a00313be3299bde394dc529c9cbe686235ded95cbe8db4';
+// Carte ×3 (chantier carte-x3) : DÉCLARÉE, pas prouvée désarmée. Le socle
+// (mondes.js, 0,0625 km/bloc) l'a déjà changée seul (ed369fdb… → b9586e29…,
+// mesuré sur la branche du socle) : les neuf lieux tombent sur un autre relief.
+// Les vingt-neuf tracés retracés (routes.js, session C) la mènent à a388c6ed….
+// Il n'y a plus d'ancien code où « désarmer » rendrait la constante : les
+// routes d'avant sont en blocs de l'ancienne carte. Se remesure à la fusion
+// des autres chantiers (A, B) si l'un d'eux touche les neuf lieux.
+const EMPREINTE_MORCEAUX_V357 = 'a388c6ed1be1c3fdb620ce144b5def179782fdc7bb49277517adfbed2e6ce45e';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -1010,8 +1017,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('rue : un raccord d\'autoroute ne roule pas dans la voie d\'un anneau — il s\'arrête avant, il ne reste que des demi-tours',
       // les rues à la GTA élargissent les anneaux jusqu'aux portes : mesuré, 7
       // raccords et 26 blocs sur la v531, 9 et 41 ici (Québec rejoint ceux qui
-      // font demi-tour à la porte, Boston à cinq blocs) ; la barre de blocs ne bouge pas
-      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 10,
+      // font demi-tour à la porte, Boston à cinq blocs) ; la barre de blocs ne bouge pas.
+      // Carte ×3 (tracés retracés) : 11 raccords et 57 blocs, tous des demi-tours
+      // de porte — la barre de blocs tient, celle des raccords suit d'un cran.
+      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 12,
       b ? JSON.stringify({ raccords: b.raccords, touches: b.touches, blocs: b.blocs, pires: b.pires }) : `sonde : ${err}`);
     verifier('rue : la table des raccords courts est celle que la règle rend aujourd\'hui (un anneau qui bouge la fait remesurer)',
       !!b && b.ecarts.length === 0, b ? JSON.stringify(b.ecarts) : `sonde : ${err}`);
