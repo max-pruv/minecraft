@@ -97,6 +97,7 @@ const VITRES = new Set([
   // même baie s'allument ENSEMBLE — le tirage se fait sur le bloc de base de
   // la baie (`yBaie`), sinon une fenêtre serait éclairée à moitié
   ARCHI.VITRINE_BAS, ARCHI.VITRINE_MI, ARCHI.ENTRESOL_BAS, ARCHI.ENTRESOL_HAUT, ARCHI.ETAGE_MI, ARCHI.ETAGE_HAUT,
+  ARCHI.VITRINE_MI2,   // le second bloc du vitrage (v587) ; l'enseigne au-dessus n'est pas une vitre
 ]);
 // `vitreAllumee` vit dans `facadeshd.js` depuis la v287 : la couche HD et la
 // tuile plate doivent allumer la MÊME fenêtre.

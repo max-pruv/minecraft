@@ -1869,14 +1869,16 @@ const position = (p) => p.evaluate(() => ({
           // La base d'un immeuble n'est pas toujours à la même hauteur : le
           // terrain de Paris monte vers la Butte. On la CHERCHE.
           const sol = w.terrainHeight(x, z);
+          // Depuis la v587 le premier rang (dy 1) est un socle enterré, et la
+          // devanture commence au rang 2 : pile[i] est le bloc du rang i + 1.
           let y0 = null;
-          for (let d = -1; d <= 2 && y0 === null; d++) {
+          for (let d = -1; d <= 3 && y0 === null; d++) {
             const b = w.getBlock(x, sol + d, z);
-            if (b === A.VITRINE_BAS || b === A.PORTE_BAS) y0 = sol + d - 1;
+            if (b === A.VITRINE_BAS || b === A.PORTE_BAS) y0 = sol + d - 2;
           }
           if (y0 === null) continue;
           const pile = [];
-          for (let y = y0 + 1; y <= y0 + 24; y++) pile.push(w.getBlock(x, y, z));
+          for (let y = y0 + 1; y <= y0 + 26; y++) pile.push(w.getBlock(x, y, z));
           piles++;
           for (const id of pile) compte[id] = (compte[id] || 0) + 1;
           // La règle : entresol juste au-dessus, étage noble encore au-dessus,
@@ -1887,9 +1889,10 @@ const position = (p) => p.evaluate(() => ({
           // c'est ainsi qu'un immeuble se construit, et l'oublier faisait
           // passer un tiers des colonnes pour fautives.
           const corniche = pile.includes(A.CORNICHE);
-          // pile[i] est le bloc à y0 + 1 + i : l'entresol commence au rang `rdc`,
-          // le premier étage noble au rang `rdc + ent`
-          const registre = pile[rdc] === A.ENTRESOL_BAS && pile[rdc + ent - 1] === A.ENTRESOL_HAUT && pile[rdc + ent] === A.NOBLE_BAS;
+          // pile[i] est le bloc du rang i + 1 : l'entresol occupe les rangs
+          // `rdc + 1` à `rdc + ent` (allège, bas, haut), le premier étage noble
+          // commence au rang `rdc + ent + 1`
+          const registre = pile[rdc + ent - 2] === A.ENTRESOL_BAS && pile[rdc + ent - 1] === A.ENTRESOL_HAUT && pile[rdc + ent] === A.NOBLE_BAS;
           const chaine = pile[rdc] === A.CHAINAGE && pile[rdc + ent] === A.CHAINAGE;
           if (corniche && (registre || chaine)) correctes++;
           if (corniche && registre) rythmees++;

@@ -31,6 +31,7 @@
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
+import { ECHELLE_VILLE, ECHELLE_V586, hauteurFacade } from './echelle-ville.js';
 import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit, chainerVoies, VOIE_CIRCUIT } from './voies.js';
 import { positionDe } from './mondes.js';
 import { entreesDe } from './routes.js';
@@ -1447,9 +1448,20 @@ function autourDUnSocle(u, v) {
 // deviennent plus bas que les immeubles voisins, ce qui est mesuré et déclaré
 // dans TASKS.md — les remettre à l'échelle est une livraison à part, avec ses
 // modèles HD.
-export const BLOCS_PAR_ETAGE = 3;   // un étage courant : 3,2 m
-export const HAUT_RDC = 3;          // le rez-de-chaussée commerçant, à haut plafond
-export const HAUT_ENTRESOL = 2;     // l'entresol, coincé sous l'étage noble
+// L'ÉCHELLE SE LIT DANS LA TABLE PARTAGÉE (v587, `echelle-ville.js`), jamais
+// ici : le bâtisseur et les témoins lisent la même. `HAUT_RDC` compte le rang
+// enterré (`socle`) : le bâtisseur écrit son premier rang à la cote du
+// trottoir, donc le rez-de-chaussée VISIBLE fait `ECHELLE_VILLE.rdc` blocs.
+export const BLOCS_PAR_ETAGE = ECHELLE_VILLE.etage;                      // un étage courant : 3 m
+export const HAUT_RDC = ECHELLE_VILLE.socle + ECHELLE_VILLE.rdc;         // le socle enterré et le rez-de-chaussée commerçant (4 m visibles)
+export const HAUT_ENTRESOL = ECHELLE_VILLE.entresol;                     // l'entresol : allège, baie, haut de baie
+// LE DÉSARMEMENT (pour l'empreinte des 490 morceaux, v352) : à faux, le
+// bâtisseur rend la façade de la v586 au bloc près — le premier rang de
+// devanture au ras du trottoir, deux rangs d'entresol — et `gabaritParis` les
+// hauteurs d'alors. Jamais un réglage du jeu ; `sommetV586` ne lit pas ce
+// drapeau, parce que la marche de migration lit TOUJOURS la façade d'avant.
+export const reglageEchelleParis = { actif: true };
+const echelleParis = () => (reglageEchelleParis.actif ? ECHELLE_VILLE : ECHELLE_V586);
 
 // Le gabarit d'une colonne de lot, tel que le bâtisseur le lit — publié pour
 // la migration des blocs des enfants (`releverToitsParis`, world.js), qui doit
@@ -1460,6 +1472,9 @@ export const HAUT_ENTRESOL = 2;     // l'entresol, coincé sous l'étage noble
 //   sommet    le dernier bloc que le bâtisseur écrit dans la colonne (dy, où
 //             dy = 1 est le bloc de surface) — le faîte, ou la souche de cheminée
 //   ancien    le même sommet avant la v301
+//   sommetV586  le sommet d'avant l'échelle des villes (v587) : la façade a
+//             monté de `CROISSANCE_PARIS` rangs, la même pour toute colonne —
+//             c'est ce que lit la marche `releverEchelleParis` (world.js)
 export function gabaritParis(x, z) {
   const u = x - PARIS.x, v = z - PARIS.z;
   const f = formeParis(u, v);
@@ -1474,11 +1489,13 @@ export function gabaritParis(x, z) {
   const prof = Math.max(0, Math.min(2, Math.round(f.d - f.t.face)));
   const toit = dedans ? 3 : 1 + prof;
   const cheminee = !dedans && tirageParis(f.ai, f.bi, 612) > 0.45 && (face & 7) === 3 ? 2 : 0;
-  const facade = HAUT_RDC + HAUT_ENTRESOL + Math.max(0, bh - 2) * BLOCS_PAR_ETAGE;
+  const facade = hauteurFacade(bh, echelleParis());
+  const sommet = facade + 1 + toit + cheminee;
   return {
     bh, dedans, face, angle, prof, facade, ancienne: bh,
-    sommet: facade + 1 + toit + cheminee,
+    sommet,
     ancien: bh + 1 + toit + cheminee,
+    sommetV586: hauteurFacade(bh, ECHELLE_V586) + 1 + toit + cheminee,
   };
 }
 
@@ -1504,16 +1521,43 @@ export function batirColonneParis(x, z, poser) {
     // son haut, l'allège sous elle. Le registre d'un niveau s'écrit donc en
     // bandes, dans l'ordre où l'on lève la tête.
     let y = 1;
+    const E = echelleParis();
+    if (!reglageEchelleParis.actif) {
+      // La façade de la v586, au bloc près — pour l'empreinte des 490 morceaux.
+      const cochere = (face & 7) === 2;
+      poser(y++, cochere ? ARCHI.PORTE_BAS : ARCHI.VITRINE_BAS);
+      poser(y++, cochere ? ARCHI.PORTE_HAUT : ARCHI.VITRINE_MI);
+      poser(y++, ARCHI.VITRINE_HAUT);
+      poser(y++, ARCHI.ENTRESOL_BAS);
+      poser(y++, ARCHI.ENTRESOL_HAUT);
+    } else {
+    // LE PREMIER RANG EST AU RAS DU TROTTOIR (v587) : `world.js` écrit `dy = 1`
+    // à la cote du trottoir, et une bande de façade posée là ne se voit pas —
+    // mesuré : le rez-de-chaussée « de trois blocs » n'en montrait que deux, une
+    // vitrine faisait la hauteur d'un passant. Ce rang est un SOCLE de pierre ;
+    // la façade commence au-dessus, et ses hauteurs sont celles de la table.
+    for (let k = 0; k < E.socle; k++) poser(y++, BLOCK.STONEBRICK);
     // Le rez-de-chaussée : une porte cochère par immeuble, le reste en
     // devantures. Une rue où chaque travée serait une boutique n'existe nulle
-    // part. Le bandeau d'enseigne couronne l'une et l'autre.
+    // part. Le bandeau d'enseigne couronne l'une et l'autre — quatre blocs
+    // visibles (réel 3,5 à 4,5 m), la porte trois sous le bandeau.
     const cochere = (face & 7) === 2;
-    poser(y++, cochere ? ARCHI.PORTE_BAS : ARCHI.VITRINE_BAS);
-    poser(y++, cochere ? ARCHI.PORTE_HAUT : ARCHI.VITRINE_MI);
-    poser(y++, ARCHI.VITRINE_HAUT);
-    // L'entresol, sur deux blocs.
+    if (cochere) {
+      poser(y++, ARCHI.PORTE_BAS);
+      for (let k = 1; k < E.porte - 1; k++) poser(y++, ARCHI.PORTE_MI);
+      poser(y++, ARCHI.PORTE_HAUT);
+      for (let k = E.porte; k < E.rdc - 1; k++) poser(y++, ARCHI.CHAINAGE);
+    } else {
+      poser(y++, ARCHI.VITRINE_BAS);
+      poser(y++, ARCHI.VITRINE_MI);
+      for (let k = 2; k < E.rdc - 1; k++) poser(y++, ARCHI.VITRINE_MI2);
+    }
+    poser(y++, ARCHI.ENSEIGNE);
+    // L'entresol : l'allège, puis la petite baie sur deux blocs.
+    for (let k = 0; k < E.entresol - 2; k++) poser(y++, ARCHI.ENTRESOL_ALLEGE);
     poser(y++, ARCHI.ENTRESOL_BAS);
     poser(y++, ARCHI.ENTRESOL_HAUT);
+    }
     // Les étages : le premier au-dessus de l'entresol et le dernier sont
     // NOBLES — les deux balcons filants — et chaque étage se lit allège,
     // baie, linteau.
@@ -1527,7 +1571,7 @@ export function batirColonneParis(x, z, poser) {
     // L'angle prime sur le registre : la pierre de taille monte d'un seul
     // tenant, du dessus des devantures à la corniche. C'est ainsi que ça se
     // construit — et c'est sur le premier chaînage que se pose la plaque de rue.
-    if (angle) for (let yy = HAUT_RDC + 1; yy <= facade; yy++) poser(yy, ARCHI.CHAINAGE);
+    if (angle) for (let yy = E.socle + E.rdc + 1; yy <= facade; yy++) poser(yy, ARCHI.CHAINAGE);
     poser(facade + 1, ARCHI.CORNICHE);
   }
 

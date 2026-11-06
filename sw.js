@@ -78,6 +78,7 @@ const ASSETS = [
   './src/new-york-quartiers-donnees.js',
   './src/pole.js',
   './src/paris.js',
+  './src/echelle-ville.js',
   './src/paris-v302.js',
   './src/londres-v332.js',
   './src/nice-v340.js',

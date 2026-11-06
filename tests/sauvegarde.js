@@ -434,6 +434,50 @@ const BLOCS = 40000;
       copieFFaite, fonduD.absent ? 'pas de fondu doux'
         : `${fonduD.copie} · ${Date.now() - departCopieF} ms`);
 
+    // ET PAR L'ÉCHELLE DES VILLES (v587), EN DERNIER : un document tel que la
+    // v586 l'écrirait porte une cabane sur un toit de Paris d'alors ; la
+    // fusion la rend trois rangs plus haut, sur le toit neuf, une fois, datée
+    // de sa marche — et le nuage a été mis à l'abri avant, sur son propre
+    // document.
+    const echelle = await tab.evaluate(async () => {
+      const ps = window.__game.profileSync;
+      const W = await import('./src/world.js');
+      const P = await import('./src/paris.js');
+      if (!W.releverBlocsEchelleParis || !ps.mettreALAbriAvantEchelle || !W.DATE_ECHELLE_PARIS) return { absent: true };
+      const w = new W.World();
+      let col = null;
+      for (let dx = -60; dx < 60 && !col; dx++) for (let dz = -60; dz < 60 && !col; dz++) {
+        const x = P.PARIS.x + dx, z = P.PARIS.z + dz;
+        if (P.solParis(x, z) !== null || !P.lotParisLibre(x, z)) continue;
+        const g = P.gabaritParis(x, z);
+        if (!g.dedans && !g.angle && g.bh === 6) col = { x, z, g };
+      }
+      const { x, z, g } = col;
+      const h = w.terrainHeight(x, z);
+      const toitAncien = h + g.sommetV586 - 1, monte = g.sommet - g.sommetV586;
+      const cabane = `${x},${toitAncien + 1},${z}`, haut = `${x},${toitAncien + 1 + monte},${z}`;
+      const t = W.DATE_ECHELLE_PARIS - 86400000;
+      const local = ps.snapshot();
+      const remote = { ...JSON.parse(JSON.stringify(local)), edits: { local: { [cabane]: [8, t] } } };
+      ps.copieEchelle = null;   // comme une tablette qui vient de s'ouvrir
+      const copie = await ps.mettreALAbriAvantEchelle(ps.getName(), remote);
+      const r = ps.merge(local, remote);
+      const e = (r.state.edits || {}).local || {};
+      const cabanes = Object.entries(e).filter(([, v]) => v && v[0] === 8).map(([k]) => k);
+      return { copie, monte, ancienne: !!e[cabane], neuve: cabanes.length === 1 && cabanes[0] === haut && e[haut][1] === W.DATE_ECHELLE_PARIS, ou: cabanes };
+    });
+    verifier('une cabane sur un toit de Paris de la v586 reçue du nuage revient par la fusion trois rangs plus haut, sur le toit neuf, une fois',
+      !echelle.absent && echelle.neuve && !echelle.ancienne && echelle.monte === 3,
+      echelle.absent ? 'l\'échelle des villes n\'existe pas' : JSON.stringify(echelle));
+    const departCopieE = Date.now();
+    const copieEFaite = !echelle.absent && await jusqua(async () => {
+      const a = nuage.etatDe('Marlon~avant-echelle-paris');
+      return !!(a && (a.editsz || a.edits) && a.echelle === 1);
+    }, 60000);
+    verifier('et le document du nuage a été mis à l\'abri avant l\'échelle des villes, sur son propre document',
+      copieEFaite, echelle.absent ? 'l\'échelle des villes n\'existe pas'
+        : `${echelle.copie} · ${Date.now() - departCopieE} ms`);
+
     // CE QUI VIENT DU NUAGE PASSE PAR LA MIGRATION DE CARTE AVANT LA FUSION.
     //
     // La fusion est une union. Une tablette restée sur la v240 republie les

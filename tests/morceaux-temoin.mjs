@@ -71,6 +71,11 @@ export async function empreinteMorceaux(src) {
   // rend la constante d'avant (l'ancien code n'a pas l'interrupteur).
   const Sc = await import(src + '/solcontinu.js');
   if (Sc.reglageSolContinu) Sc.reglageSolContinu.bouleau = false;
+  // L'ÉCHELLE DES VILLES (v587) : un contenu neuf — la façade de Paris monte
+  // de trois rangs. Désarmée, la branche rend la façade de la v586 au bloc
+  // près, donc la constante d'avant (l'ancien code n'a pas l'interrupteur).
+  const Pa = await import(src + '/paris.js');
+  if (Pa.reglageEchelleParis) Pa.reglageEchelleParis.actif = false;
   try { return await empreinteDesMorceaux({ World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu }); } finally {
     if (VMm.reglageMobilier) VMm.reglageMobilier.recul = recul;
     if (T.rivesCreusees) T.rivesCreusees(true);
@@ -78,6 +83,7 @@ export async function empreinteMorceaux(src) {
     if (Ae.reglageAires) Ae.reglageAires.actif = true;
     if (Pm.reglageNuitEiffel) Pm.reglageNuitEiffel.lueur = true;
     if (Sc.reglageSolContinu) Sc.reglageSolContinu.bouleau = true;
+    if (Pa.reglageEchelleParis) Pa.reglageEchelleParis.actif = true;
   }
 }
 

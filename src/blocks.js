@@ -413,12 +413,26 @@ export const ARCHI = {
   ETAGE_MI: 646,       // le bas de la baie et son garde-corps
   ETAGE_HAUT: 647,     // le haut de la baie, le linteau et le bandeau
   NOBLE_BAS: 648,      // le balcon filant de l'étage noble
+  // L'ÉCHELLE DES VILLES (v587, `echelle-ville.js`). Le premier rang d'une
+  // façade est au ras du trottoir : le rez-de-chaussée de trois bandes n'en
+  // montrait que deux, et une vitrine faisait la hauteur d'un passant. Le
+  // rez-de-chaussée visible fait quatre blocs, la porte cochère trois,
+  // l'entresol trois : il manquait quatre bandes. Elles sont NEUVES, et les
+  // anciennes gardent leur dessin : la ville figée sous ce qu'un enfant a
+  // bâti (`paris-v531.js`) les empile encore comme avant, et redessiner
+  // `VITRINE_HAUT` y aurait mis l'enseigne à hauteur de tête. Les ids suivent
+  // ceux du métro (650 à 663), les tuiles aussi (`ARCHI_ECHELLE_TILE_START`).
+  VITRINE_MI2: 664,    // le vitrage de la devanture, second bloc (2 à 3 m)
+  ENSEIGNE: 665,       // le haut du vitrage, le bandeau d'enseigne et le store (3 à 4 m)
+  PORTE_MI: 666,       // le milieu des vantaux de la porte cochère (1 à 2 m)
+  ENTRESOL_ALLEGE: 667, // l'allège pleine sous la baie de l'entresol
 };
 // Les bandes de l'étage, pour ceux qui doivent les reconnaître ensemble : le
 // mailleur (une bande de baie s'allume la nuit avec sa jumelle), la couche HD.
 export const ARCHI_BANDES = new Set([
   ARCHI.VITRINE_BAS, ARCHI.VITRINE_MI, ARCHI.VITRINE_HAUT, ARCHI.PORTE_BAS, ARCHI.PORTE_HAUT,
   ARCHI.ENTRESOL_BAS, ARCHI.ENTRESOL_HAUT, ARCHI.ETAGE_BAS, ARCHI.ETAGE_MI, ARCHI.ETAGE_HAUT, ARCHI.NOBLE_BAS,
+  ARCHI.VITRINE_MI2, ARCHI.ENSEIGNE, ARCHI.PORTE_MI, ARCHI.ENTRESOL_ALLEGE,
 ]);
 
 const ARCHI_NOMS = {
@@ -451,6 +465,10 @@ const ARCHI_NOMS = {
   ETAGE_MI: 'Étage haussmannien (baie)',
   ETAGE_HAUT: 'Étage haussmannien (linteau)',
   NOBLE_BAS: 'Étage noble (balcon)',
+  VITRINE_MI2: 'Devanture (vitrage, haut)',
+  ENSEIGNE: 'Devanture (bandeau d’enseigne)',
+  PORTE_MI: 'Porte cochère (milieu des vantaux)',
+  ENTRESOL_ALLEGE: 'Entresol (allège)',
 };
 
 // L'ordre de cet objet fixe l'ordre des tuiles : le premier bloc prend la
@@ -462,8 +480,16 @@ export const ARCHI_TILE = {};
 // de route, et une chaussée deviendrait une devanture.
 export const ARCHI_BANDES_TILE_START = 381;
 const ARCHI_PREMIERES = 18;
+// Les onze bandes de la v301 prennent 381..391 ; les tuiles du métro (v529)
+// sont juste derrière, en 392..404. Les quatre bandes de l'échelle (v587)
+// prennent donc une TROISIÈME plage, après le métro : insérer avant décalerait
+// les tuiles du métro, et un carreau deviendrait une enseigne.
+export const ARCHI_ECHELLE_TILE_START = 405;
+const ARCHI_BANDES_V301 = 11;
 Object.keys(ARCHI).forEach((nom, i) => {
-  ARCHI_TILE[nom] = i < ARCHI_PREMIERES ? ARCHI_TILE_START + i : ARCHI_BANDES_TILE_START + (i - ARCHI_PREMIERES);
+  ARCHI_TILE[nom] = i < ARCHI_PREMIERES ? ARCHI_TILE_START + i
+    : i < ARCHI_PREMIERES + ARCHI_BANDES_V301 ? ARCHI_BANDES_TILE_START + (i - ARCHI_PREMIERES)
+      : ARCHI_ECHELLE_TILE_START + (i - ARCHI_PREMIERES - ARCHI_BANDES_V301);
 });
 
 for (const [nom, id] of Object.entries(ARCHI)) {

@@ -180,7 +180,14 @@ function verifier(nom, ok, detail = '') {
       const g = col ? col.g : null;
       const attendu = [];
       if (g) {
-        attendu.push(null, ids[1] === ARCHI.PORTE_BAS ? ARCHI.PORTE_BAS : ARCHI.VITRINE_BAS, ids[1] === ARCHI.PORTE_BAS ? ARCHI.PORTE_HAUT : ARCHI.VITRINE_MI, ARCHI.VITRINE_HAUT, ARCHI.ENTRESOL_BAS, ARCHI.ENTRESOL_HAUT);
+        // L'ÉCHELLE DES VILLES (v587) : un socle enterré au ras du trottoir,
+        // trois rangs de devanture (ou de porte cochère), le bandeau d'enseigne,
+        // trois rangs d'entresol — la façade lit la table `echelle-ville.js`
+        const { BLOCK: B } = await import('../src/blocks.js');
+        const porte = ids[2] === ARCHI.PORTE_BAS;
+        attendu.push(null, B.STONEBRICK,
+          porte ? ARCHI.PORTE_BAS : ARCHI.VITRINE_BAS, porte ? ARCHI.PORTE_MI : ARCHI.VITRINE_MI, porte ? ARCHI.PORTE_HAUT : ARCHI.VITRINE_MI2,
+          ARCHI.ENSEIGNE, ARCHI.ENTRESOL_ALLEGE, ARCHI.ENTRESOL_BAS, ARCHI.ENTRESOL_HAUT);
         const n = g.bh - 2;
         for (let k = 0; k < n; k++) attendu.push((k === 0 || k === n - 1) ? ARCHI.NOBLE_BAS : ARCHI.ETAGE_BAS, ARCHI.ETAGE_MI, ARCHI.ETAGE_HAUT);
         attendu.push(ARCHI.CORNICHE);
@@ -189,6 +196,28 @@ function verifier(nom, ok, detail = '') {
       verifier('un étage de Paris fait trois blocs : la façade se lit en bandes, devanture, entresol, étages nobles et courants, corniche',
         facadeOk && g.facade === P.HAUT_RDC + P.HAUT_ENTRESOL + (g.bh - 2) * P.BLOCS_PAR_ETAGE && P.BLOCS_PAR_ETAGE === 3 && g.facade >= 14,
         col ? `colonne (${col.x}, ${col.z}), ${g.bh} niveaux, façade ${g.facade} blocs (avant : ${g.ancienne}), corniche à ${g.facade + 1}` : 'aucune colonne de façade trouvée');
+      // ET CE QUE LA COUCHE HD DESSINE EST À L'ÉCHELLE D'UN PASSANT (v587). On
+      // relève, dans les tampons que la tablette dessine, la hauteur au-dessus
+      // du trottoir du vitrage, de l'enseigne, du store et du bois de la porte
+      // cochère (`sonde-echelle-paris.mjs`, la mesure qui a trouvé le défaut), et
+      // l'on la compare aux fourchettes réelles de la table : sur la v586, le
+      // vitrage finissait à 1,35 m, l'enseigne à 1,70 et la porte à 0,84.
+      const E = await import('../src/echelle-ville.js').catch(() => null);
+      const { mesurerParis } = await import('./sonde-echelle-paris.mjs');
+      const mes = await mesurerParis('../src');
+      const v = mes.hd.vitrine || {}, po = mes.hd.porte || {};
+      const dans = (x, [a, b]) => Number.isFinite(x) && x >= a - 0.3 && x <= b + 0.3;
+      // (le verre et la menuiserie d'une colonne vont jusqu'aux baies des étages :
+      // on lit ce qui n'appartient qu'au rez-de-chaussée — l'enseigne, le store,
+      // le bois de la porte — et la corniche, le haut de la pierre lisse)
+      const hd = {
+        enseigne: v.enseigne && v.enseigne.haut, store: v.store && v.store.bas,
+        porte: po.bois && po.bois.haut, corniche: v['pierre-lisse'] && v['pierre-lisse'].haut, faite: v.zinc && v.zinc.haut,
+      };
+      verifier('l\'enseigne, le store et la porte cochère sont à la hauteur d\'un passant, lus dans la couche HD contre la table d\'échelle',
+        !!E && dans(hd.enseigne, E.REEL.enseigne) && dans(hd.store, E.REEL.store)
+          && dans(hd.porte, E.REEL.porteCochere) && dans(hd.corniche, E.REEL.corniche),
+        E ? JSON.stringify(hd) : 'la table d\'échelle des villes n\'existe pas');
       // ET LE HAUT D'UNE BAIE S'ALLUME AVEC SON BAS. Le tirage des vitres est par
       // bloc ; sans `yBaie`, une baie de deux blocs serait éclairée à moitié une
       // fois sur deux. On compte, sur le morceau, les baies où le tirage naïf

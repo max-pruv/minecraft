@@ -1849,7 +1849,7 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // la date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
 // l'emporte sur sa copie d'avant. C'est la règle du receveur qui cède :
 // l'ancienne version ne peut pas apprendre la règle neuve.
-export const CARTE_VERSION = 8;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309) ; 8 : les fiches des garages suivent leurs blocs (v487)
+export const CARTE_VERSION = 9;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309) ; 8 : les fiches des garages suivent leurs blocs (v487) ; 9 : les façades de Paris à l'échelle (v587)
 const CLE_CARTE = 'web-minecraft-carte-v1';
 const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
 // L'heure de la refonte ×2. Un bloc daté d'avant a été posé sur la carte de
@@ -2759,6 +2759,153 @@ export function releverPositionsParis(pos) {
   return { pos: out, deplaces };
 }
 
+// L'ÉCHELLE DES VILLES (v587) — ce qu'un enfant avait bâti sur un toit monte
+// avec la façade, encore une fois.
+//
+// Max, trois captures à pied : les passants paraissaient grands, parce que le
+// premier rang de toute façade était écrit à la cote du trottoir (enterré) et
+// que le rez-de-chaussée n'en montrait que deux blocs. Le bâtisseur de Paris
+// lit désormais la table d'échelle (`echelle-ville.js`) : socle enterré, quatre
+// blocs de rez-de-chaussée visibles, trois d'entresol — la façade monte de
+// `CROISSANCE_PARIS` rangs (trois), la MÊME pour toute colonne de lot, et la
+// corniche avec elle. Le relief ne bouge pas (invariant 1) ; ce sont les
+// immeubles qui montent, et une cabane posée sur un toit de la v586 serait
+// enfermée dans le comble neuf.
+//
+// LA RÈGLE est celle du relevé des toits (v301), sur le monde d'aujourd'hui :
+// un bloc posé avant `DATE_ECHELLE_PARIS`, dans le disque de Paris, sur une
+// colonne de LOT où le bâtisseur d'aujourd'hui écrit un immeuble, et AU-DESSUS
+// du dernier bloc que le bâtisseur de la v586 écrivait dans cette colonne,
+// monte de `CROISSANCE_PARIS`. Un bloc dans la rue, un bloc collé à une façade
+// sous l'ancien toit, un bloc hors de Paris, un bloc posé après la date : rien
+// ne bouge. Un bloc déplacé prend la date de la marche (idempotence, et il
+// l'emporte sur sa copie d'avant dans une fusion).
+//
+// ET DEUX FAMILLES DE COLONNES N'ONT PAS D'IMMEUBLE QUI MONTE — elles se
+// lisent dans le journal lui-même, parce que la marche est pure :
+//   · la ville CÈDE (v306) : les colonnes (et leurs huit voisines) d'un bloc
+//     d'avant `DATE_PARIS_DOUBLE` n'ont qu'une cour pavée, pas d'immeuble ;
+//   · la ville FIGÉE (v544) : les colonnes (et leurs huit voisines) d'un bloc
+//     d'avant `DATE_RUES_GTA` gardent le Paris de la v531, dont le bâtisseur
+//     ne change pas d'un bloc.
+// Une tour bâtie dans une cour cédée, une cabane sur un toit de la v531 : rien
+// ne bouge, et un témoin de `plafond.js` le garde.
+//
+// LA TRAME QU'ELLE LIT EST CELLE DE `paris.js` D'AUJOURD'HUI, et cela fait
+// règle : `gabaritParis` publie le sommet d'avant (`sommetV586`) depuis la même
+// trame, parce que seules les HAUTEURS ont changé. Le jour où la trame de
+// Paris change (rues, lots), `paris.js` se fige d'abord (comme `paris-v302.js`
+// pour le relevé des toits), et c'est la copie que cette marche lit.
+//
+// Pure, appliquée au stockage une fois (la marche 8 → 9) et à chaque document
+// reçu du nuage, EN DERNIER dans la chaîne : elle juge sur le monde
+// d'aujourd'hui, où Paris doublé et le fondu doux ont déjà posé ce qu'ils
+// emmènent. La copie d'avant se prend sur le nuage, une fois, seulement si la
+// marche a quelque chose à déplacer (`mettreALAbriAvantEchelle`, sync.js). La
+// date est celle de la FUSION, relue avant de fusionner (v309) : une date en
+// avance déplacerait deux fois ce qu'un enfant pose sur le Paris neuf.
+export const DATE_ECHELLE_PARIS = Date.UTC(2026, 10, 7, 12, 0, 0);
+let mondeDuReliefNeuf = null;
+const reliefNeufDe = (x, z) => (mondeDuReliefNeuf || (mondeDuReliefNeuf = new World())).terrainHeight(x, z);
+const gabaritsEchelle = new Map();     // x * 262144 + z -> { ancien, monte } d'une colonne de lot d'aujourd'hui, ou null
+function releveEchelleDe(x, z) {
+  const cle = cleColonneParis(x, z);
+  let g = gabaritsEchelle.get(cle);
+  if (g !== undefined) return g;
+  g = null;
+  const P = PARIS;
+  if (Math.hypot(x - P.x, z - P.z) <= P.r && solParis(x, z) === null && lotParisLibre(x, z)) {
+    const gb = gabaritParis(x, z);
+    // le bâtisseur écrit à h + dy − 1 : le dernier bloc de la v586 est à h + sommetV586 − 1
+    g = { ancien: reliefNeufDe(x, z) + gb.sommetV586 - 1, monte: gb.sommet - gb.sommetV586 };
+  }
+  if (gabaritsEchelle.size > 200000) gabaritsEchelle.clear();
+  gabaritsEchelle.set(cle, g);
+  return g;
+}
+// Les colonnes où le bâtisseur d'aujourd'hui n'écrit PAS l'immeuble qui a
+// monté : la ville cède (v306), la ville figée (v544). Lues dans la carte,
+// comme `indexerMonumentsTouches` les lit dans le journal.
+function colonnesSansEchelle(map) {
+  const ens = new Set();
+  const P = PARIS, R2 = (P.r + 2) * (P.r + 2);
+  for (const k in map || {}) {
+    const e = map[k];
+    if (!Array.isArray(e) || k.charCodeAt(0) === 64) continue;
+    const t = num(e[1]);
+    if (!(t <= DATE_RUES_GTA)) continue;          // DATE_PARIS_DOUBLE < DATE_RUES_GTA : une seule borne
+    const c1 = k.indexOf(','), c2 = k.indexOf(',', c1 + 1);
+    if (c1 < 0 || c2 < 0) continue;
+    const x = +k.slice(0, c1), z = +k.slice(c2 + 1);
+    if (x !== x || z !== z) continue;
+    if ((x - P.x) * (x - P.x) + (z - P.z) * (z - P.z) > R2) continue;
+    marquerParisCede(ens, x, z);
+  }
+  return ens;
+}
+
+// Sur UNE carte de blocs. Pure : rend une carte neuve et le bilan ; la carte
+// est rendue telle quelle, sans copie, quand rien ne monte.
+export function releverEchelleParis(map) {
+  const P = PARIS, R = P.r;
+  let deplaces = 0;
+  let neuf = null, sans = null;
+  const poser = (k, e) => {
+    const p = neuf[k];
+    if (!p || num(e[1]) > num(p[1]) || (num(e[1]) === num(p[1]) && e[0] > p[0])) neuf[k] = e;
+  };
+  for (const k in map || {}) {
+    const e = map[k];
+    if (!Array.isArray(e) || k.charCodeAt(0) === 64 || !(num(e[1]) < DATE_ECHELLE_PARIS)) continue;
+    const c1 = k.indexOf(','), c2 = k.indexOf(',', c1 + 1);
+    if (c1 < 0 || c2 < 0) continue;
+    const x = +k.slice(0, c1), y = +k.slice(c1 + 1, c2), z = +k.slice(c2 + 1);
+    if (x !== x || y !== y || z !== z) continue;
+    if (x - P.x > R || P.x - x > R || z - P.z > R || P.z - z > R) continue;
+    const g = releveEchelleDe(x, z);
+    if (!g || y <= g.ancien) continue;
+    if (!sans) sans = colonnesSansEchelle(map);
+    if (sans.has(cleColonneParis(x, z))) continue;
+    if (!neuf) { neuf = {}; for (const kk in map) neuf[kk] = map[kk]; }
+    delete neuf[k];
+    poser(`${x},${y + g.monte},${z}`, [e[0], DATE_ECHELLE_PARIS, ...e.slice(2)]);
+    deplaces++;
+  }
+  return { carte: neuf || map || {}, deplaces };
+}
+
+// Toutes les cartes d'un document { contexte: carte } — les archives (« : »)
+// ont leur propre repère et ne sont jamais touchées.
+export function releverBlocsEchelleParis(tout) {
+  const out = {};
+  let deplaces = 0;
+  for (const [ctx, map] of Object.entries(tout || {})) {
+    if (ctx.includes(':') || !map || typeof map !== 'object' || Array.isArray(map)) { out[ctx] = map; continue; }
+    const r = releverEchelleParis(map);
+    out[ctx] = r.carte; deplaces += r.deplaces;
+  }
+  return { tout: out, deplaces };
+}
+
+// Et la position où l'enfant s'était arrêté : endormi sur un toit de Paris, il
+// se réveille sur le toit neuf. Les colonnes sans immeuble se lisent dans les
+// blocs du même contexte (`edits`), quand on les a.
+export function releverPositionsEchelle(pos, edits = null) {
+  const out = {};
+  let deplaces = 0;
+  for (const [ctx, p] of Object.entries(pos || {})) {
+    out[ctx] = p;
+    if (ctx.includes(':') || !p || ![p.x, p.y, p.z].every(Number.isFinite) || !(num(p.t) < DATE_ECHELLE_PARIS)) continue;
+    const x = Math.floor(p.x), z = Math.floor(p.z);
+    const g = releveEchelleDe(x, z);
+    if (!g || p.y <= g.ancien + 1) continue;
+    if (edits && edits[ctx] && colonnesSansEchelle(edits[ctx]).has(cleColonneParis(x, z))) continue;
+    out[ctx] = { ...p, y: p.y + g.monte, t: DATE_ECHELLE_PARIS };
+    deplaces++;
+  }
+  return { pos: out, deplaces };
+}
+
 // LA FICHE D'UN GARAGE SUIT SES BLOCS (v487).
 //
 // Un garage est une ligne de sauvegarde rangée par POSITION (`garages.js`) :
@@ -2981,6 +3128,18 @@ export function suivreGaragesFonduDoux(garages, edits) {
   return suivreGaragesDoc(garages, edits, DATE_FONDU_DOUX, null,
     enGroupes(DATE_FONDU_DOUX, planFonduDoux, (cx, cz) => [[cx, cz]], dest, aPorteeDuFondu));
 }
+// Un garage sur un toit de Paris (v587) : colonnaire, comme le relevé des
+// toits ; les colonnes sans immeuble se lisent dans la carte du contexte.
+export function suivreGaragesEchelle(garages, edits) {
+  return suivreGaragesDoc(garages, edits, DATE_ECHELLE_PARIS, null, (map) => {
+    const sans = colonnesSansEchelle(map);
+    return colonnaire(DATE_ECHELLE_PARIS, (g) => {
+      const x = Math.floor(g.x), z = Math.floor(g.z);
+      const r = releveEchelleDe(x, z);
+      return r && g.y > r.ancien && !sans.has(cleColonneParis(x, z)) ? { dx: 0, dy: r.monte, dz: 0 } : null;
+    });
+  });
+}
 
 // LA CHAÎNE ENTIÈRE, sur un document reçu ou sur le stockage : les blocs et
 // les garages ensemble, chaque marche des garages jugée sur les blocs tels
@@ -2998,7 +3157,10 @@ export function migrerChaineCarte(edits, garages) {
   const g4 = suivreGaragesParisDouble(g2.garages, e3);
   const e5 = migrerBlocsFonduDoux(e4).tout;
   const g5 = suivreGaragesFonduDoux(g4.garages, e4);
-  return { edits: e5, garages: g5.garages, deplacees: g1.deplacees + g2.deplacees + g4.deplacees + g5.deplacees };
+  // 8 → 9 : les façades de Paris à l'échelle (v587), en dernier — elle juge sur le monde d'aujourd'hui
+  const e6 = releverBlocsEchelleParis(e5).tout;
+  const g6 = suivreGaragesEchelle(g5.garages, e5);
+  return { edits: e6, garages: g6.garages, deplacees: g1.deplacees + g2.deplacees + g4.deplacees + g5.deplacees + g6.deplacees };
 }
 
 // La migration du STOCKAGE DE L'APPAREIL, une fois par version de carte.
@@ -3070,6 +3232,12 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   g = suivreGaragesFonduDoux(garages, tout); garages = g.garages;
   const fd = migrerBlocsFonduDoux(tout);
   tout = fd.tout; deplaces += fd.deplaces; laisses += fd.laisses;
+  // 8 → 9 : les façades de Paris à l'échelle (v587), en dernier — elle juge
+  // sur le monde d'aujourd'hui, où les marches d'avant ont posé ce qu'elles
+  // emmènent (voir `releverEchelleParis`).
+  g = suivreGaragesEchelle(garages, tout); garages = g.garages;
+  const re = releverBlocsEchelleParis(tout);
+  tout = re.tout; deplaces += re.deplaces;
   ecrire(tout);
   if (garages !== garagesLus) {
     try { localStorage.setItem(CLE_GARAGES, JSON.stringify(garages)); } catch { /* ignore */ }
@@ -3079,7 +3247,8 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
     const q = releverPositionsParis(p.pos);
     const r = migrerPositionsParisDouble(q.pos);
     const f = migrerPositionsFonduDoux(r.pos);
-    if (p.deplaces || q.deplaces || r.deplaces || f.deplaces) ecrirePos(f.pos);
+    const e = releverPositionsEchelle(f.pos, tout);
+    if (p.deplaces || q.deplaces || r.deplaces || f.deplaces || e.deplaces) ecrirePos(e.pos);
   }
   try { localStorage.setItem(CLE_CARTE, String(CARTE_VERSION)); } catch { /* ignore */ }
   return { deplaces, laisses, intacts, retires };

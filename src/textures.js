@@ -301,6 +301,45 @@ const peintresArchi = {
     for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, 8, y, 34, 24, 18);
     for (const [cx, cy] of [[5, 4], [11, 4], [5, 11], [11, 11]]) px(ctx, ox, oy, cx, cy, 168, 132, 62);
   },
+  // LES BANDES DE L'ÉCHELLE (v587). Le rez-de-chaussée visible fait quatre
+  // blocs : soubassement et bas du vitrage, vitrage, VITRAGE ENCORE, puis le
+  // haut du vitrage sous le bandeau d'enseigne et le store. La porte cochère
+  // en fait trois sous le même bandeau. L'entresol porte une allège pleine
+  // sous sa baie. Les tuiles d'avant ne changent pas d'un pixel : la ville
+  // figée (`paris-v531.js`) les empile encore comme en v301.
+  [ARCHI_TILE.VITRINE_MI2](ctx, ox, oy) {
+    const rng = mulberry32(7031);
+    noisyFill(ctx, ox, oy, [206, 197, 176], 5, rng);
+    for (let y = 0; y < TILE_PX; y++) for (let x = 1; x <= 14; x++) px(ctx, ox, oy, x, y, ...VITRE_CLAIRE);
+    for (const x of [0, 7, 15]) for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, x, y, 62, 44, 34);
+  },
+  [ARCHI_TILE.ENSEIGNE](ctx, ox, oy) {
+    const rng = mulberry32(7032);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let x = 0; x < TILE_PX; x++) {
+      const rouge = (x >> 1) & 1;
+      for (let y = 3; y <= 6; y++) px(ctx, ox, oy, x, y, rouge ? 150 : 226, rouge ? 44 : 216, rouge ? 44 : 200);   // le store, replié
+      px(ctx, ox, oy, x, 7, 62, 44, 34);
+      for (let y = 8; y <= 12; y++) px(ctx, ox, oy, x, y, 44, 40, 44);                                            // le bandeau d'enseigne
+      if (x % 3 === 1) px(ctx, ox, oy, x, 10, 168, 132, 62);                                                      // ses lettres dorées
+      px(ctx, ox, oy, x, 13, 62, 44, 34);
+      // le haut du vitrage, qui file depuis la bande du dessous
+      for (let y = 14; y < TILE_PX; y++) px(ctx, ox, oy, x, y, ...((x === 0 || x === 7 || x === 15) ? [62, 44, 34] : VITRE_CLAIRE));
+    }
+  },
+  [ARCHI_TILE.PORTE_MI](ctx, ox, oy) {
+    const rng = mulberry32(7033);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let y = 0; y < TILE_PX; y++) for (let x = 3; x <= 12; x++) px(ctx, ox, oy, x, y, 52, 38, 30);
+    for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, 8, y, 34, 24, 18);
+    for (const [cx, cy] of [[5, 3], [11, 3], [5, 12], [11, 12]]) px(ctx, ox, oy, cx, cy, 168, 132, 62);   // les panneaux moulurés
+  },
+  [ARCHI_TILE.ENTRESOL_ALLEGE](ctx, ox, oy) {
+    const rng = mulberry32(7034);
+    pierreDeTaille(ctx, ox, oy, rng);
+    for (let x = 0; x < TILE_PX; x++) { px(ctx, ox, oy, x, 0, 244, 238, 222); px(ctx, ox, oy, x, 1, 210, 202, 182); }   // l'appui
+    for (let x = 0; x < TILE_PX; x++) px(ctx, ox, oy, x, 15, 238, 231, 212);   // l'assise sur le commerce
+  },
   [ARCHI_TILE.PORTE_HAUT](ctx, ox, oy) {
     const rng = mulberry32(7030);
     pierreDeTaille(ctx, ox, oy, rng);
