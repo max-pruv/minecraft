@@ -21,6 +21,7 @@ import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { MONDES, cielDe } from './mondes.js';
 import { CLASSES, MARCHE, sEnfonce } from './conduite.js';
 import { flammeDeChauffe, matiereAdditive } from './avions.js';
+import { optiquesDe, sourceIntacte, sourcesDe, lueurDe } from './optiques.js';
 
 // --- les reflets --------------------------------------------------------------
 //
@@ -2483,8 +2484,10 @@ const _rc = new THREE.Raycaster(); _rc.layers.enableAll();
 let geoDetresse = null, matDetresse = null;
 function materielDetresse() {
   if (!geoDetresse) {
+    // la géométrie ne sert qu'à la chauffe : un feu se dessine par la copie
+    // de son optique (v587), dans la matière de la flamme
     geoDetresse = new THREE.PlaneGeometry(0.26, 0.11); geoDetresse.userData.partagee = true;
-    matDetresse = new THREE.MeshBasicMaterial({ color: 0xffa21a, toneMapped: false }); matDetresse.userData.partagee = true;
+    matDetresse = matiereAdditive(0xffa21a, 0.95); matDetresse.userData.partagee = true;
   }
 }
 // Les quatre poses { x, y, z, nx, ny, nz } dans le repère de la voiture `m`
@@ -2594,41 +2597,47 @@ function poserLentille(meshes, boite, sx, sz, x0, y0) {
 // Éclairée ou non : allumée une demi-seconde sur un peu plus d'une seconde,
 // le rythme d'un vrai feu de détresse (environ quatre-vingt-dix par minute).
 export const detresseAllumee = (t = performance.now()) => (t % 700) < 380;
+// LES FEUX DE DÉTRESSE ET LES FEUX STOP SUIVENT LE DESSIN DE L'OPTIQUE
+// (v587). Max : « les phares des voitures font des ronds très génériques et
+// ne respectent pas la forme réelle du phare ». Les feux stop étaient deux
+// disques, le recul deux petits disques, la détresse quatre rectangles : ils
+// sont désormais, comme les phares (v569), une COPIE des triangles de
+// l'optique du modèle (`optiques.js`) — le feu arrière en rouge, sa part
+// blanche pour le recul, les clignotants (ou à défaut les blocs optiques
+// eux-mêmes) en ambre. `matiereAdditive` partout : aucun programme neuf.
+// Un modèle dont l'optique ne se reconnaît pas n'a pas de lueur : on ne
+// dessine pas une forme qu'on ne connaît pas.
+const propreDe = (m) => { const cle = m.userData && m.userData.flotte && m.userData.roues ? m.userData.flotte : null; return cle ? surLePrototype(m, cle) : null; };
+function poserLueurs(g, m, sens, matiere, nom, rangee) {
+  for (const cote of optiquesDe(m, sens, propreDe(m)).cotes) {
+    const l = lueurDe(cote, matiere, nom);
+    l.userData.sources = sourcesDe(m, cote);
+    l.userData.sens = cote.sens || null;
+    g.add(l); if (rangee) rangee.push(l);
+  }
+}
+const intactes = (l, m) => l.userData.sources.every((s) => sourceIntacte(s, m));
 export function feuxDeDetresse(m, allumes) {
   let g = m.userData.detresse;
   if (!allumes) { if (g) g.visible = false; return; }
-  // la coque d'attente puis le modèle : les poses se refont quand il arrive
+  // la coque d'attente puis le modèle : les feux se refont quand il arrive
   const cle = m.userData.roues ? 'modele' : 'attente';
   if (g && g.userData.cle !== cle) { m.remove(g); g = null; }
   if (!g) {
     materielDetresse();
     g = new THREE.Group(); g.name = 'detresse'; g.userData.cle = cle;
-    for (const p of posesDetresse(m)) {
-      const f = new THREE.Mesh(geoDetresse, matDetresse);
-      f.name = 'detresse-lentille';
-      f.position.set(p.x, p.y, p.z);
-      f.lookAt(p.x + p.nx, p.y + p.ny, p.z + p.nz);
-      g.add(f);
-    }
+    poserLueurs(g, m, 'clignotant', matDetresse, 'detresse-lueur');
     m.add(g); m.userData.detresse = g;
   }
   g.visible = detresseAllumee();
+  if (g.visible) for (const l of g.children) l.visible = intactes(l, m);
 }
-// LES FEUX STOP ET DE RECUL (v543). Max : « jusqu'au design des voitures ».
-// Une voiture qui freine s'allume en rouge à l'arrière, une qui recule en
-// blanc : c'est ce qu'on lit sur une voiture devant soi, et rien dans le jeu
-// ne le disait. Les lentilles se posent sur les DEUX poses arrière de
-// `posesDetresse` — mesurées sur le modèle, jamais écrites (v230) —, le feu
-// stop un peu plus grand par-dessus, le feu de recul plus petit vers l'axe.
-// `matiereAdditive` (avions.js), la matière des phares et de la flamme :
-// même clé de programme, chauffée à l'accueil (v491), rien ne compile au
-// premier freinage. Pour la voiture de l'enfant (fun.js) comme pour celles
-// de la rue (`montrer`) : le même geste, les mêmes lentilles.
-let geoStop = null, geoRecul = null, matStop = null, matRecul = null;
+// LES FEUX STOP ET DE RECUL (v543, v587). Une voiture qui freine s'allume en
+// rouge à l'arrière, une qui recule en blanc. Pour la voiture de l'enfant
+// (fun.js) comme pour celles de la rue (`montrer`) : le même geste.
+let matStop = null, matRecul = null;
 function materielArriere() {
-  if (geoStop) return;
-  geoStop = new THREE.CircleGeometry(0.15, 14); geoStop.userData.partagee = true;
-  geoRecul = new THREE.CircleGeometry(0.085, 12); geoRecul.userData.partagee = true;
+  if (matStop) return;
   matStop = matiereAdditive(0xff2a18, 0.95); matStop.userData.partagee = true;
   matRecul = matiereAdditive(0xfff4e0, 0.95); matRecul.userData.partagee = true;
 }
@@ -2641,25 +2650,15 @@ export function feuxArriere(m, { frein = false, recul = false } = {}) {
     materielArriere();
     g = new THREE.Group(); g.name = 'feux-arriere'; g.userData.cle = cle;
     g.userData.stops = []; g.userData.reculs = [];
-    const poses = posesDetresse(m).filter((p) => p.nz > 0.3);
-    for (const p of poses) {
-      const stop = new THREE.Mesh(geoStop, matStop);
-      stop.name = 'feu-stop';
-      stop.position.set(p.x, p.y, p.z);
-      stop.lookAt(p.x + p.nx, p.y + p.ny, p.z + p.nz);
-      g.add(stop); g.userData.stops.push(stop);
-      const r = new THREE.Mesh(geoRecul, matRecul);
-      r.name = 'feu-recul';
-      // vers l'axe, un peu plus bas : à côté du feu stop, pas dessus
-      r.position.set(p.x - Math.sign(p.x || 1) * 0.2, p.y - 0.06, p.z + 0.004);
-      r.lookAt(r.position.x + p.nx, r.position.y + p.ny, r.position.z + p.nz);
-      g.add(r); g.userData.reculs.push(r);
-    }
+    poserLueurs(g, m, 'arriere', matStop, 'feu-stop', g.userData.stops);
+    // le recul se dessine par-dessus le rouge quand les deux se recouvrent
+    poserLueurs(g, m, 'recul', matRecul, 'feu-recul', g.userData.reculs);
+    for (const r of g.userData.reculs) r.renderOrder = 0;
     m.add(g); m.userData.feuxArriere = g;
   }
   g.visible = true;
-  for (const f of g.userData.stops) f.visible = !!frein;
-  for (const f of g.userData.reculs) f.visible = !!recul;
+  for (const f of g.userData.stops) f.visible = !!frein && intactes(f, m);
+  for (const f of g.userData.reculs) f.visible = !!recul && intactes(f, m);
   return g;
 }
 // LE FEU DE DÉTRESSE QUE L'AMI A ALLUMÉ (v519). Un choc de la rue reçu par le

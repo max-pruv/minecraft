@@ -1773,8 +1773,48 @@ leur optique allumée, 19 autres une optique nommée. Quatre règles.
   normale, rien hors du nez. Un modèle neuf passe par elle ; une capture de
   nuit (`sonde-captures-phares.cjs`) montre si le dessin se lit.
 
-Ce qui reste, déclaré dans `TASKS.md` : les feux stop, de recul et de
-détresse sont encore des lentilles génériques posées par `posesDetresse`.
+*(Depuis la v588 les feux stop, de recul et de détresse suivent la même
+règle — voir ci-dessous.)*
+
+## Tout feu suit son optique (v588) — une règle, quatre feux, et une texture se lit avant de s'allumer
+
+Max : « les phares font des ronds très génériques ». Mesuré sur la flotte :
+quinze modèles sans phare reconnu, et partout six formes génériques par voiture
+(deux disques rouges, deux blancs, quatre rectangles orange). Cinq règles.
+
+- **UNE SEULE RÈGLE POUR TOUS LES FEUX.** `optiques.js` (`optiquesDe(m, sens,
+  propre)`, sens `avant` · `arriere` · `recul` · `clignotant`) choisit,
+  copie et partage ; `phares.js` et `vehicules.js` (`feuxArriere`,
+  `feuxDeDetresse`) ne font que poser ce qu'elle rend, en `matiereAdditive`.
+  Les rangs : émissif (1), nommé (2), verre nommé (3), couleur de la texture
+  (4, au navigateur seulement : un canevas lit le pixel au centre UV de chaque
+  triangle ; sous node, pas de pixels, donc pas de rang 4). Le recul : un
+  maillage nommé, sinon la part blanche du bloc arrière, sinon le tiers du bloc
+  le plus proche de l'axe. Les clignotants : les optiques ambre NOMMÉES, sinon
+  les blocs avant et arrière en ambre — jamais une optique lue à la couleur.
+  `posesDetresse` reste (le placement des phares, les témoins), plus aucun
+  disque ni rectangle n'est posé.
+- **UNE TEXTURE SE LIT, ELLE NE S'ALLUME PAS TELLE QUELLE.** Un triangle de
+  rang 4 est entier dans sa zone et regarde son bout ; la couleur retenue ne
+  couvre pas plus du tiers du maillage (sinon c'est la peinture : le taxi
+  jaune) ; les maillages « détails » passent avant la livrée ; et côté par
+  côté, on ne garde que le plus grand morceau d'un seul tenant (triangles qui
+  se touchent par un sommet, `amas`), s'il porte la moitié de la surface, compte
+  quatre triangles, n'est pas au milieu (l'écusson du SUV, « POLICE » sur le
+  coffre) et ne prend pas tout le bouclier (la livrée blanche de l'Alpine).
+  Chacune de ces gardes est née d'une capture, pas d'un témoin : les règles de
+  rang 4 se jugent sur la planche de `sonde-captures-phares.cjs` (trois
+  quarts, face, dos).
+- **CE QU'ON NE RECONNAÎT PAS N'A PAS DE LUEUR.** Taxi Mondeo, Divo, avant de
+  l'Alpine et du SUV de police : aucun feu plutôt qu'une forme inventée, le
+  pinceau sur la route suffit. Déclaré, avec la piste (un relevé des optiques
+  à la main dans la fiche de FLOTTE).
+- **SOUS NODE, ZÉRO DISQUE ; AU NAVIGATEUR, LA TÔLE.** `sonde-feux-flotte.mjs`
+  compte les disques (zéro sur les 41), retrouve chaque lueur arrière et de
+  détresse sur la tôle et à son bout ; le témoin des feux de détresse de
+  `degats.js` lit des copies, pas des lentilles, sur la tôle.
+- **UNE LUEUR S'ÉTEINT AVEC SA SOURCE** (`sourceIntacte`, partagé) : feu stop,
+  recul et détresse comme les phares (v569).
 
 ## Les feux se mesurent sur le prototype (v550) — une règle par modèle ne se mesure jamais sur une voiture
 

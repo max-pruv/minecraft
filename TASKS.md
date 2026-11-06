@@ -345,10 +345,12 @@
   bugatti-divo : matériaux muets). De nuit, ils n'ont plus de rond plaqué,
   seulement le pinceau sur la route. Remède possible : découper l'optique dans
   le convertisseur (`convertir-flotte.mjs`), un matériau `Headlight` à part.
-- [ ] Les feux stop, de recul et de détresse restent des lentilles génériques
-  (`feuxArriere`, `posesDetresse`) : même principe à appliquer à l'arrière
-  (copier l'optique arrière en rouge au freinage), mais il touche la rue
-  (`montrer`) — une livraison à elle.
+- [x] Les feux stop, de recul et de détresse copient l'optique du modèle
+  (v588, `optiques.js`). Reste sans aucune lueur, parce que rien ne se
+  reconnaît : taxi Mondeo et Divo (tous feux), avant de l'Alpine et du SUV de
+  police ; et la voiture de police n'a pas de détresse (ses optiques ne se
+  lisent qu'à la texture). Piste : déclarer l'optique dans la fiche de FLOTTE
+  (un maillage, une boîte UV), plutôt que d'élargir la lecture des textures.
 - [ ] **Rouges du portail de la v569 : aucun de la livraison.** `degats.js`
   verte (les deux témoins neufs compris), `maj.js` « le loader dit combien de
   fichiers » et « le loader ne s'efface… » (déclarés, v559), `monte.js` cinq

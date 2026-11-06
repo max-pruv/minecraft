@@ -55,11 +55,16 @@ const MODELES = (args.find((a) => a.startsWith('--modeles=')) || '--modeles=pors
         a.yaw = 0.6; a.mesh.position.copy(a.pos); a.mesh.rotation.y = a.yaw + Math.PI; a.mesh.updateMatrixWorld(true);
         const ph = P.allumerPhares(a.mesh, 1);
         window.__voiture = a;
+        // les feux arrière et de détresse aussi (v587) : de dos, ils se voient
+        const V = await import('./src/vehicules.js');
+        const fa = V.feuxArriere ? V.feuxArriere(a.mesh, { frein: true, recul: true }) : null;
+        if (V.feuxDeDetresse) { V.feuxDeDetresse(a.mesh, true); if (a.mesh.userData.detresse) { a.mesh.userData.detresse.visible = true; } }
+        window.__arriere = { stops: fa ? fa.userData.stops.length : 0, reculs: fa ? fa.userData.reculs.length : 0, cligno: a.mesh.userData.detresse ? a.mesh.userData.detresse.children.length : 0 };
         return { flotte: a.mesh.userData.flotte, lueurs: ph ? ph.userData.lueurs.length : 0, rang: ph ? ph.userData.rang : null,
           visibles: ph ? ph.userData.lueurs.map((l) => l.visible && ph.visible) : null, sources: ph ? ph.userData.lueurs.map((l) => (l.userData.sources || []).length) : null,
-          tri: ph ? ph.userData.lueurs.map((l) => l.geometry.attributes.position.count / 3) : null };
+          tri: ph ? ph.userData.lueurs.map((l) => l.geometry.attributes.position.count / 3) : null, arriere: window.__arriere };
       }, fichier);
-      for (const [nom, av, cote, h, pitch] of [['troisquarts', 6.2, 3.6, 1.4, -0.16], ['face', 6.0, 0, 1.0, -0.06]]) {
+      for (const [nom, av, cote, h, pitch] of [['troisquarts', 6.2, 3.6, 1.4, -0.16], ['face', 6.0, 0, 1.0, -0.06], ['dos', -6.4, 2.4, 1.2, -0.08]]) {
         const pose = await tab.evaluate(async ([av, cote, h, pitch, sp, et]) => {
           const g = window.__game, THREE = await import('three'), P = await import('./src/phares.js');
           const a = window.__voiture, { y0 } = window.__dalle;
@@ -74,6 +79,7 @@ const MODELES = (args.find((a) => a.startsWith('--modeles=')) || '--modeles=pors
           g.player.yaw = Math.atan2(-(c.x - oeil.x), -(c.z - oeil.z));
           g.player.pitch = pitch;
           const ph = P.allumerPhares(a.mesh, 1);
+          if (a.mesh.userData.detresse) a.mesh.userData.detresse.visible = true;
           if (sp && ph) for (const l of ph.userData.lueurs) { l.material.depthTest = false; l.material.color.set(0xff00ff); }
           if (et) P.eteindrePhares(a.mesh);
           return { car: [c.x, c.y, c.z].map(Math.round), joueur: [g.player.pos.x, g.player.pos.y].map(Math.round), dans: g.animalManager.animals.includes(a), parent: !!a.mesh.parent };
