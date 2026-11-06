@@ -10,7 +10,7 @@ export const NOUVEAUTES = [
     titre: 'Paris en vraie pierre',
     puces: [
       'Pierre, brique et pavés photographiés en vrai',
-      'Les joints et le grain se voient de près',
+      'Joints et grain se voient de près',
       'Les platanes ont une vraie écorce',
     ],
   },
