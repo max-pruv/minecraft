@@ -6,7 +6,7 @@ import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { echelleDe, etirerBatisseur } from './echelle-monuments.js';
 import { carrefoursDeVoies } from './voies.js';
 import { idGarage, CLE_GARAGES } from './garages.js';
-import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste, tronconsDAire, videParUnTroncon } from './aeroport.js';
+import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste, tronconsDAire, videParUnTroncon, AEROPORTS_V587 } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
 } from './usine.js';
@@ -97,7 +97,6 @@ import * as NICE_V531 from './nice-v531.js';
 import * as SF_V531 from './sanfrancisco-v531.js';
 import * as LILLE_V531 from './lille-v531.js';
 import * as VM_V531 from './villesmonde-v531.js';
-import { AEROPORTS_V587, AEROPORTS_AVANT_V306_FIGES } from './aeroports-v587.js';
 import { VILLES_V587, LIEUX_V587, REPERES_V587 } from './monde-v587.js';
 import { dansZones as dansZonesNY, TALUS as TALUS_NY } from './new-york-banlieues.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans, PAS_PILE, EP_TABLIER, EMPRISE } from './trains.js';
@@ -1647,7 +1646,7 @@ export const CITIES = [
 // LA CARTE ×3 (chantier « carte ×3 », session A). Tout ce qui suit décrit des
 // mondes d'AVANT la carte ×3 : ils lisent la carte d'avant (`terreV4`, figée
 // dans mondes.js) et les villes, les lieux, les repères et les aérodromes À LEUR
-// PLACE D'AVANT, figés dans `monde-v587.js` et `aeroports-v587.js` — jamais les
+// PLACE D'AVANT, figés dans `monde-v587.js` et `AEROPORTS_V587` (aeroport.js) — jamais les
 // positions d'aujourd'hui. Un lieu se retrouve par son NOM, dans l'ordre : un
 // lieu né après la v587 n'existe pas dans ces mondes-là, un lieu retiré non plus.
 function figerParNom(liste, figes, nomDe) {
@@ -1703,7 +1702,7 @@ const PLACES_AVANT = PLACES_V587.map((p) => (p.name === GAULOIS.name ? { ...p, .
   : p.name === 'Caserne & Commissariat' ? { ...p, x: VILLE_AVANT.x, z: VILLE_AVANT.z + 14 } : p));
 const NOMS_MONUMENTS_PARIS = new Set(['Tour Eiffel', 'Arc de Triomphe', 'Pyramide du Louvre', 'Panthéon',
   'Invalides', 'Opéra', 'Montparnasse', 'Bastille', 'Moulin Rouge', 'Sacré-Cœur', 'Notre-Dame']);
-const AEROPORT_AVANT = new Map(AEROPORTS_AVANT_V306_FIGES.map((a) => [a.nom, a]));
+const AEROPORT_AVANT = new Map(AEROPORTS_AVANT_V306.map((a) => [a.nom, a]));
 // Les aérodromes nés après la v306 (Changi, v486) ne sont pas dans ce monde-là.
 const NES_APRES_V306_NOMS = new Set(AEROPORTS_V587.filter((a) => NES_APRES_V306.has(a.cle)).map((a) => a.nom));
 function repereAvant(lm) {
@@ -1748,10 +1747,13 @@ const AVANT_X3 = {
   volcan: VOLCANO_V587, places: PLACES_V587, hauteurParis: PARIS_V531.hauteurParis,
   decalage: DECALAGE_V587, hauteurs: HAUTEURS_V587,
 };
-export const CONF_V587 = { ...CONF_NEUF, ...AVANT_X3, cle: 'v587', reperes: reperesV587(LANDMARKS.filter((lm) => !lm.piste)) };
+// Ses pistes prolongées et ses aires sont celles de la v587, aux places d'avant
+// (`AEROPORTS_V587` porte ses tables, aeroport.js).
+export const CONF_V587 = { ...CONF_NEUF, ...AVANT_X3, cle: 'v587', reperes: reperesV587(LANDMARKS.filter((lm) => !lm.piste))
+  .concat(AEROPORTS_V587.flatMap(tronconsDePiste), AEROPORTS_V587.flatMap(tronconsDAire)) };
 export const CONF_V308 = { ...CONF_NEUF, ...AVANT_X3, cle: 'v308', reperes: reperesV587(LANDMARKS_V317), fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false, metroMonde: false, voiesJardinsParis: false, clairieres: false, pistesDegagees: false };
 export const CONF_AVANT = {
-  cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306_FIGES, gaulois: GAULOIS_AVANT,
+  cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
   volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: reperesV587(LANDMARKS_V317).filter((lm) => !NES_APRES_V306_NOMS.has(lm.name)).map(repereAvant),
   hauteurParis: PARIS_V302.hauteurParis, parisAvant: true, fonduDoux: false, villesAvant: true,
   monde: 'terreV4', decalage: DECALAGE_V587, hauteurs: HAUTEURS_V587,
@@ -2461,7 +2463,7 @@ const SITES_DEMENAGES = (() => {
   const l = [{ cle: 'paris', dilate: true, x0: PARIS_AVANT_POS.x, z0: PARIS_AVANT_POS.z, r: PARIS_AVANT_POS.r, x1: PARIS_V587.x, z1: PARIS_V587.z }];
   // les aérodromes de la v306 à la v587, figés (carte ×3) : la marche 5 → 6
   // emmène un bloc là où était son aérodrome AVANT la carte ×3
-  for (const a of AEROPORTS_AVANT_V306_FIGES) {
+  for (const a of AEROPORTS_AVANT_V306) {
     const b = AEROPORTS_V587.find((q) => q.cle === a.cle);
     if (b && (b.x !== a.x || b.z !== a.z)) l.push({ cle: a.cle, x0: a.x, z0: a.z, r: a.r + 8, x1: b.x, z1: b.z });
   }
@@ -4105,7 +4107,7 @@ export class World {
     if (tirage >= DENSITE_MAX) return null;
     // ni dans l'emprise qu'une piste prolongée vide (v548) : la tranchée y
     // efface le tronc, et la couronne qui débordait restait en l'air
-    if (this.conf.pistesDegagees && videParUnTroncon(x, z)
+    if (this.conf.pistesDegagees && videParUnTroncon(x, z, this.conf.aeroports)
       && !this.morceauxAvantPistes.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)))) return null;
     let cl = cm !== undefined ? cm : this.climat(x, z);
     const avantClimat = cl && cl !== 'desert' && this.morceauxAvantClimat.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)));

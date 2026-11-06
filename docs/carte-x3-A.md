@@ -11,10 +11,11 @@ aérodromes vivants ni aux villes engendrées (sessions B et C).
   Mesuré contre `origin/main` (938b396) : les hauteurs de chaque copie sont
   identiques à celles de la production (218 089 points par ville bâtie à la main,
   7 176 062 pour les villes engendrées).
-- **`src/aeroports-v587.js`** : `AEROPORTS_V587`, la table des vingt aérodromes de
-  la production recopiée littéralement, et les sites d'avant la v306
-  (`AEROPORTS_AVANT_V306_FIGES`). Quand la session B exportera `AEROPORTS_V587`
-  depuis `aeroport.js`, ce fichier peut céder sa place — en vérifiant l'égalité.
+- **Les aérodromes d'avant** viennent de la session B (`AEROPORTS_V587`,
+  `AEROPORTS_AVANT_V306`, aeroport.js, avec leurs prolongements et leurs aires
+  de la v587) ; ma copie provisoire `aeroports-v587.js` est retirée après avoir
+  vérifié l'égalité des deux tables. `CONF_V587` porte les tronçons de piste et
+  d'aire d'avant, et `videParUnTroncon` y juge sur sa propre table.
 - **`src/monde-v587.js`** : les villes bâties à la main (7), les lieux de la carte
   (615) et les repères (287) de la production, positions absolues relevées sur
   `origin/main`. C'est ce qui fige la géographie d'avant sans dépendre des
@@ -61,7 +62,7 @@ aérodromes vivants ni aux villes engendrées (sessions B et C).
 
 ## Ce que la fusion finale doit faire (pas fait ici, à dessein)
 
-- `sw.js` : ajouter `src/aeroports-v587.js` et `src/monde-v587.js` à `ASSETS`,
+- `sw.js` : ajouter `src/monde-v587.js` à `ASSETS`,
   monter `CACHE_VERSION`.
 - Relire `DATE_CARTE_X3` à l'heure de la fusion (v309) : une date en avance
   déplacerait deux fois ce qu'un enfant pose sur la carte neuve.
@@ -98,15 +99,13 @@ aérodromes vivants ni aux villes engendrées (sessions B et C).
    (routes.js, trains.js de la session C). Le relief est prouvé identique ; les
    ouvrages de voie, non : quand C retracera les routes, `CONF_V587` les verra à
    leur place neuve. Les marches n'en lisent que le relief.
-4. **`CONF_V587` garantit le relief, pas les pistes prolongées ni les aires**
-   (tronçons exclus des repères figés) : ce sont des blocs posés, pas du sol.
-5. **Le relevé « toit → sol » de la v306 n'est pas appliqué** : à la carte ×3 une
+4. **Le relevé « toit → sol » de la v306 n'est pas appliqué** : à la carte ×3 une
    ville se TRANSLATE avec ses immeubles, un bloc perché garde son toit. Le
    palier 2 (immeubles qui changent de hauteur ou de place) devra le faire.
-6. **Dans une ville qui part, un écart de sol de plus de 24 blocs** entre l'ancien
+5. **Dans une ville qui part, un écart de sol de plus de 24 blocs** entre l'ancien
    et le nouveau site vaut zéro : la ville part à la même cote (un bloc
    au-dessus ou sous le sol neuf plutôt qu'abandonné en mer).
-7. **La destination d'un aérodrome lit `AEROPORTS` vivant** (session B) : si B
+6. **La destination d'un aérodrome lit `AEROPORTS` vivant** (session B) : si B
    déplace un aérodrome après la mesure, la marche le suit — c'est voulu, mais la
    marche est alors à rejouer contre la table finale avant la fusion.
-8. Le cache de relief de la marche (`reliefMemo`) suppose |z| < 131 072.
+7. Le cache de relief de la marche (`reliefMemo`) suppose |z| < 131 072.
