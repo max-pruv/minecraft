@@ -2,6 +2,16 @@
 
 ## La lumière et le post-traitement (v588) — ce qui reste, déclaré
 
+- [ ] **Le jour de la fusion de la PR #600, après le go de Max seulement :**
+  squash avec un `commit_message` explicite écrit d'après l'entrée du journal,
+  sans identifiant ni nom de modèle ni ligne d'attribution qui en porte un (le
+  commit d7c4adf de la branche en porte un dans son message, non amendable
+  d'ici) ; relire le message du commit sur `main` ; puis supprimer la branche.
+  `CACHE_VERSION` se monte juste avant, après rebase, au numéro lu sur `main`.
+- [ ] **Défaut 45 de la revue d'écran** : en vol face au soleil bas, la brume
+  de hauteur du niveau 2 voile le lointain jusqu'à effacer collines et Seine.
+  À juger sur l'iPhone (`?brume=0.5` contre 1) ; si confirmé, l'atténuer dans
+  l'axe du soleil ou la borner par la distance au sol (`src/postfx.js`).
 - [ ] **Le coût se mesure sur l'appareil, pas au banc.** Le banc rend en
   logiciel ; `?diag=1` affiche `postfx niveau · msaa · cible · étages · passes ·
   ms soumission`. À relever sur l'iPhone de Max et l'iPad : cadence médiane et
