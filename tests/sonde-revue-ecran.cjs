@@ -569,6 +569,20 @@ const ETATS = [
     await attendreMonde(tab, 15000);
     return { ...r, etat: await tab.evaluate(() => window.__game.player.avionEtat) };
   } },
+  // v587 : la flamme est une réchauffe — le chasseur pleins gaz la montre,
+  // l'avion de ligne pleins gaz n'en a aucune
+  ...[['avion-rechauffe', 'chasseur'], ['avion-ligne-pleins-gaz', 'avionligne']].map(([nom, espece]) => ({ nom, async prep(tab, ctx) {
+    await poserEt(tab, { x: ctx.depart.x, z: ctx.depart.z, yaw: ctx.depart.yaw });
+    const r = await monterEnAvion(tab, espece);
+    await tab.evaluate(() => {
+      const P = window.__game.player;
+      P.pos.y += 40; P.gaz = 1; P.vitesseAvion = P.pilote ? P.pilote.max : 0;
+      P.avionEnVol = true; P.avionEtat = 'vol'; P.trainVoulu = false;
+    });
+    await attendreMonde(tab, 15000);
+    await dormir(1500);
+    return { ...r, flammes: await tab.evaluate(() => { let n = 0, t = 0; window.__game.scene.traverse((o) => { for (const f of o.userData?.tuyeres || []) { t++; if (f.visible) n++; } }); return { visibles: n, maillages: t }; }) };
+  } })),
   // v582 : l'avion à son toit (1 500 en « Loin », ~380 en « Normal ») — ce
   // que le brouillard laisse voir du sol, et le bout du paysage lointain caché
   { nom: 'avion-haut', async prep(tab, ctx) {
