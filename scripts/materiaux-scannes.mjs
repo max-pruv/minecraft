@@ -51,7 +51,12 @@ register('data:text/javascript,' + encodeURIComponent(
 const { peindreTuileHD } = await import(pathToFileURL(path.join(RACINE, 'src', 'matierehd.js')).href);
 const { TUILES_HD, COLS_HD, PX_HD } = await import(pathToFileURL(path.join(RACINE, 'src', 'facadeshd.js')).href);
 
-const TAILLE = COLS_HD * PX_HD;           // 1 024
+// Deux tailles (v588) : 1 024, celle de l'atlas peint (paliers moyen et bas),
+// et 2 048 pour le palier haut — « quality first », décision de Max : les mêmes
+// régions, deux fois plus de pixels (256 au mètre sur une façade au lieu de
+// 128). Les fichiers de 1 024 gardent leur nom, au bit près.
+const TAILLES = [COLS_HD * PX_HD, 2 * COLS_HD * PX_HD];
+const suffixe = (taille) => (taille === COLS_HD * PX_HD ? '' : `-${taille}`);
 const BLOC_M = 1.1;                       // un bloc, à l'échelle d'une personne
 
 // Les matériaux. `region` : un numéro de 0 à 7 (2 × 2 cases dans les rangées
@@ -168,78 +173,81 @@ function moyennePeinte(nom) {
 
 // --- l'assemblage ------------------------------------------------------------------
 
-function regionDe(m) {
+function regionDe(m, px) {
   if (m.region === 'place') {
     const i = TUILES_HD.indexOf(m.tuile);
     if (i < 0) throw new Error(`tuile inconnue ${m.tuile}`);
-    return { x: (i % COLS_HD) * PX_HD, y: Math.floor(i / COLS_HD) * PX_HD, taille: PX_HD };
+    return { x: (i % COLS_HD) * px, y: Math.floor(i / COLS_HD) * px, taille: px };
   }
   const premiereLibre = Math.ceil(TUILES_HD.length / COLS_HD);          // la rangée 4
   const col = 2 * (m.region % (COLS_HD / 2)), row = premiereLibre + 2 * Math.floor(m.region / (COLS_HD / 2));
   if (row + 2 > COLS_HD) throw new Error(`région ${m.region} hors de l'atlas`);
-  return { x: col * PX_HD, y: row * PX_HD, taille: 2 * PX_HD };
+  return { x: col * px, y: row * px, taille: 2 * px };
 }
 
-const couleur = Buffer.alloc(TAILLE * TAILLE * 3);
-const normales = Buffer.alloc(TAILLE * TAILLE * 3, 128);   // plat, rugosité ×1
-const fiche = { version: VERSION, taille: TAILLE, blocM: BLOC_M, regions: [] };
 const credits = [];
+for (const TAILLE of TAILLES) {
+  const couleur = Buffer.alloc(TAILLE * TAILLE * 3);
+  const normales = Buffer.alloc(TAILLE * TAILLE * 3, 128);   // plat, rugosité ×1
+  const fiche = { version: VERSION, taille: TAILLE, blocM: BLOC_M, regions: [] };
 
-for (const m of MATERIAUX) {
-  const src = await sources(m);
-  const { x, y, taille: S } = regionDe(m);
-  const alb = await reduire(src.couleur, S, 3);
-  const ao = src.ao ? await reduire(src.ao, S, 1) : null;
-  const nrm = await reduire(src.normale, S, 3);
-  const rug = src.rugosite ? await reduire(src.rugosite, S, 1) : null;
+  for (const m of MATERIAUX) {
+    const src = await sources(m);
+    const { x, y, taille: S } = regionDe(m, TAILLE / COLS_HD);
+    const alb = await reduire(src.couleur, S, 3);
+    const ao = src.ao ? await reduire(src.ao, S, 1) : null;
+    const nrm = await reduire(src.normale, S, 3);
+    const rug = src.rugosite ? await reduire(src.rugosite, S, 1) : null;
 
-  // couleur : linéaire, occlusion, puis la moyenne du peintre
-  const lin = new Float32Array(S * S * 3);
-  const somme = [0, 0, 0];
-  for (let i = 0; i < S * S; i++) {
-    const occ = ao ? Math.pow(ao[i], m.ao) : 1;
-    for (let k = 0; k < 3; k++) { lin[i * 3 + k] = versLin(alb[i * 3 + k]) * occ; somme[k] += lin[i * 3 + k]; }
+    // couleur : linéaire, occlusion, puis la moyenne du peintre
+    const lin = new Float32Array(S * S * 3);
+    const somme = [0, 0, 0];
+    for (let i = 0; i < S * S; i++) {
+      const occ = ao ? Math.pow(ao[i], m.ao) : 1;
+      for (let k = 0; k < 3; k++) { lin[i * 3 + k] = versLin(alb[i * 3 + k]) * occ; somme[k] += lin[i * 3 + k]; }
+    }
+    // les grandes taches retirées, puis l'écart à la moyenne resserré
+    const moyAvant = somme.map((v) => v / (S * S));
+    const bas = flouPeriodique(lin, S, 3, Math.max(2, Math.round(S / 16)));
+    for (let i = 0; i < S * S; i++) for (let k = 0; k < 3; k++) {
+      const j = i * 3 + k;
+      let v = lin[j] * (1 - m.aplanir + m.aplanir * moyAvant[k] / Math.max(1e-4, bas[j]));
+      v = moyAvant[k] + (v - moyAvant[k]) * m.contraste;
+      lin[j] = Math.max(0, v);
+    }
+    somme.fill(0);
+    for (let i = 0; i < S * S; i++) for (let k = 0; k < 3; k++) somme[k] += lin[i * 3 + k];
+    const cible = moyennePeinte(m.tuile);
+    const gain = somme.map((v, k) => cible[k] / (v / (S * S)));
+    let rugMoy = 0;
+    if (rug) { for (let i = 0; i < S * S; i++) rugMoy += rug[i]; rugMoy /= S * S; }
+    for (let py = 0; py < S; py++) for (let px = 0; px < S; px++) {
+      const i = py * S + px, o = ((y + py) * TAILLE + (x + px)) * 3;
+      for (let k = 0; k < 3; k++) couleur[o + k] = Math.round(255 * versSrgb(Math.min(1, lin[i * 3 + k] * gain[k])));
+      // la normale : x, y renormalisés (la réduction raccourcit les vecteurs)
+      let nx = nrm[i * 3] * 2 - 1, ny = nrm[i * 3 + 1] * 2 - 1, nz = nrm[i * 3 + 2] * 2 - 1;
+      const l = Math.hypot(nx, ny, Math.max(0.05, nz)) || 1;
+      nx /= l; ny /= l;
+      normales[o] = Math.round((nx * 0.5 + 0.5) * 255);
+      normales[o + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+      const r = rug ? Math.max(0.5, Math.min(1.5, rug[i] / rugMoy)) : 1;
+      normales[o + 2] = Math.round(r * 127.5);
+    }
+    fiche.regions.push({ tuile: m.tuile, x, y, taille: S, blocs: +(m.metres / BLOC_M).toFixed(4) });
+    if (TAILLE === TAILLES[0]) credits.push({ ...m, page: src.page });
+    console.log(`${String(TAILLE).padEnd(5)} ${m.tuile.padEnd(13)} ← ${m.id.padEnd(22)} ${S} px, ${(m.metres / BLOC_M).toFixed(2)} blocs, gain ${gain.map((g) => g.toFixed(2)).join(' ')}`);
   }
-  // les grandes taches retirées, puis l'écart à la moyenne resserré
-  const moyAvant = somme.map((v) => v / (S * S));
-  const bas = flouPeriodique(lin, S, 3, Math.max(2, Math.round(S / 16)));
-  for (let i = 0; i < S * S; i++) for (let k = 0; k < 3; k++) {
-    const j = i * 3 + k;
-    let v = lin[j] * (1 - m.aplanir + m.aplanir * moyAvant[k] / Math.max(1e-4, bas[j]));
-    v = moyAvant[k] + (v - moyAvant[k]) * m.contraste;
-    lin[j] = Math.max(0, v);
+
+  fs.mkdirSync(SORTIE, { recursive: true });
+  await sharp(couleur, { raw: { width: TAILLE, height: TAILLE, channels: 3 } }).jpeg({ quality: 90, chromaSubsampling: '4:4:4' })
+    .toFile(path.join(SORTIE, `scannes-${VERSION}${suffixe(TAILLE)}-couleur.jpg`));
+  await sharp(normales, { raw: { width: TAILLE, height: TAILLE, channels: 3 } }).png({ compressionLevel: 9 })
+    .toFile(path.join(SORTIE, `scannes-${VERSION}${suffixe(TAILLE)}-normales.png`));
+  fs.writeFileSync(path.join(SORTIE, `scannes-${VERSION}${suffixe(TAILLE)}.json`), JSON.stringify(fiche, null, 1) + '\n');
+  for (const f of [`scannes-${VERSION}${suffixe(TAILLE)}-couleur.jpg`, `scannes-${VERSION}${suffixe(TAILLE)}-normales.png`]) {
+    console.log(f, (fs.statSync(path.join(SORTIE, f)).size / 1024).toFixed(0), 'Ko');
   }
-  somme.fill(0);
-  for (let i = 0; i < S * S; i++) for (let k = 0; k < 3; k++) somme[k] += lin[i * 3 + k];
-  const cible = moyennePeinte(m.tuile);
-  const gain = somme.map((v, k) => cible[k] / (v / (S * S)));
-  let rugMoy = 0;
-  if (rug) { for (let i = 0; i < S * S; i++) rugMoy += rug[i]; rugMoy /= S * S; }
-  for (let py = 0; py < S; py++) for (let px = 0; px < S; px++) {
-    const i = py * S + px, o = ((y + py) * TAILLE + (x + px)) * 3;
-    for (let k = 0; k < 3; k++) couleur[o + k] = Math.round(255 * versSrgb(Math.min(1, lin[i * 3 + k] * gain[k])));
-    // la normale : x, y renormalisés (la réduction raccourcit les vecteurs)
-    let nx = nrm[i * 3] * 2 - 1, ny = nrm[i * 3 + 1] * 2 - 1, nz = nrm[i * 3 + 2] * 2 - 1;
-    const l = Math.hypot(nx, ny, Math.max(0.05, nz)) || 1;
-    nx /= l; ny /= l;
-    normales[o] = Math.round((nx * 0.5 + 0.5) * 255);
-    normales[o + 1] = Math.round((ny * 0.5 + 0.5) * 255);
-    const r = rug ? Math.max(0.5, Math.min(1.5, rug[i] / rugMoy)) : 1;
-    normales[o + 2] = Math.round(r * 127.5);
-  }
-  fiche.regions.push({ tuile: m.tuile, x, y, taille: S, blocs: +(m.metres / BLOC_M).toFixed(4) });
-  credits.push({ ...m, page: src.page });
-  console.log(`${m.tuile.padEnd(13)} ← ${m.id.padEnd(22)} ${S} px, ${(m.metres / BLOC_M).toFixed(2)} blocs, gain ${gain.map((g) => g.toFixed(2)).join(' ')}`);
 }
 
-fs.mkdirSync(SORTIE, { recursive: true });
-await sharp(couleur, { raw: { width: TAILLE, height: TAILLE, channels: 3 } }).jpeg({ quality: 90, chromaSubsampling: '4:4:4' })
-  .toFile(path.join(SORTIE, `scannes-${VERSION}-couleur.jpg`));
-await sharp(normales, { raw: { width: TAILLE, height: TAILLE, channels: 3 } }).png({ compressionLevel: 9 })
-  .toFile(path.join(SORTIE, `scannes-${VERSION}-normales.png`));
-fs.writeFileSync(path.join(SORTIE, `scannes-${VERSION}.json`), JSON.stringify(fiche, null, 1) + '\n');
-for (const f of [`scannes-${VERSION}-couleur.jpg`, `scannes-${VERSION}-normales.png`]) {
-  console.log(f, (fs.statSync(path.join(SORTIE, f)).size / 1024).toFixed(0), 'Ko');
-}
 console.log('\nCrédits (à recopier dans vendor/materiaux/LICENSE.md) :');
 for (const c of credits) console.log(`- ${c.tuile} : ${c.id} — ${c.page} (${c.metres} m) — ${c.pourquoi}`);

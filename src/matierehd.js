@@ -566,7 +566,10 @@ export function peindreTuileHD(nom) {
 
 // --- l'atlas ------------------------------------------------------------------------
 
-export function atlasHD() {
+// `taille` (v588) : l'atlas du palier haut fait 2 048 pixels pour recevoir les
+// scans à deux fois la finesse. Les tuiles peintes restent peintes à PX_HD puis
+// agrandies (bilinéaire) : elles se lisent comme avant, seuls les scans gagnent.
+export function atlasHD(taille = COLS_HD * PX_HD) {
   const c = document.createElement('canvas');
   c.width = c.height = COLS_HD * PX_HD;
   const ctx = c.getContext('2d');
@@ -577,14 +580,22 @@ export function atlasHD() {
     peintre(img.data, fn);
     ctx.putImageData(img, (i % COLS_HD) * PX_HD, Math.floor(i / COLS_HD) * PX_HD);
   });
-  const t = new THREE.CanvasTexture(c);
+  let toileAtlas = c;
+  if (taille !== c.width) {
+    toileAtlas = document.createElement('canvas');
+    toileAtlas.width = toileAtlas.height = taille;
+    const g = toileAtlas.getContext('2d');
+    g.imageSmoothingEnabled = true;
+    g.drawImage(c, 0, 0, taille, taille);
+  }
+  const t = new THREE.CanvasTexture(toileAtlas);
   t.colorSpace = THREE.SRGBColorSpace;
   t.magFilter = THREE.LinearFilter;
   t.minFilter = THREE.LinearMipmapLinearFilter;
   t.generateMipmaps = true;
   t.anisotropy = 4;
   t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
-  return { texture: t, canvas: c };
+  return { texture: t, canvas: toileAtlas };
 }
 
 // --- l'environnement : un ciel préfiltré une fois ---------------------------------------
@@ -647,7 +658,17 @@ function environnementHD(renderer) {
 //   texture de 1 024 pixels (≈ 5,6 Mo avec ses mipmaps) et n'existe que si la
 //   portée HD est non nulle (`normales`). Sans elle, le programme n'a pas de
 //   carte de normales du tout.
+//
+// Au palier haut (v588, « quality first », décision de Max) l'atlas et la carte
+// de normales font 2 048 pixels et lisent `scannes-v1-2048` : les mêmes régions
+// à deux fois la finesse (256 pixels au mètre sur une façade). Le prix se compte
+// en mémoire de textures : deux fois 22,4 Mo avec les mipmaps, au lieu de deux
+// fois 5,6 — seulement là où l'appareil a choisi « Loin ». Si ces fichiers
+// manquent (hors ligne avant leur premier téléchargement), on prend ceux de
+// 1 024, dessinés agrandis : le jeu ne perd jamais ses scans pour autant.
 export const SCANNES_HD = './vendor/materiaux/scannes-v1';
+export const TAILLE_SCANNES_HAUTE = 2 * COLS_HD * PX_HD;
+const baseScannes = (taille) => (taille === COLS_HD * PX_HD ? SCANNES_HD : `${SCANNES_HD}-${taille}`);
 const N_REMAP = TUILES_HD.length;
 
 function toile(taille, remplir) {
@@ -676,13 +697,26 @@ export function remapDeRegion(r, taille, nom) {
   return { i, rect: [r.x / taille + marge, 1 - (r.y + r.taille) / taille + marge, r.taille / taille - 2 * marge, r.blocs] };
 }
 
+async function lireScannes(base, normales) {
+  const r = await fetch(`${base}.json`);
+  if (!r.ok) throw new Error(`fiche ${base} : ${r.status}`);
+  const fiche = await r.json();
+  const [couleur, carte] = await Promise.all([image(`${base}-couleur.jpg`), normales ? image(`${base}-normales.png`) : null]);
+  return { fiche, couleur, normales: carte };
+}
+
 async function chargerScannes(etat, materiau, uniforms, toileCouleur, toileNormales) {
   try {
-    const fiche = await (await fetch(`${SCANNES_HD}.json`)).json();
-    const [couleur, normales] = await Promise.all([
-      image(`${SCANNES_HD}-couleur.jpg`),
-      toileNormales ? image(`${SCANNES_HD}-normales.png`) : null,
-    ]);
+    let lu;
+    try {
+      lu = await lireScannes(baseScannes(toileCouleur.width), !!toileNormales);
+    } catch (e) {
+      if (toileCouleur.width === COLS_HD * PX_HD) throw e;
+      etat.repli = String(e && e.message || e);
+      lu = await lireScannes(SCANNES_HD, !!toileNormales);
+    }
+    const { fiche, couleur, normales } = lu;
+    etat.taille = fiche.taille;
     const ctx = toileCouleur.getContext('2d');
     const k = toileCouleur.width / fiche.taille;
     for (const r of fiche.regions) {
@@ -708,8 +742,8 @@ async function chargerScannes(etat, materiau, uniforms, toileCouleur, toileNorma
 }
 
 export function materiauHD(renderer, options = {}) {
-  const { normales = false, scannes = false } = options;
-  const { texture, canvas } = atlasHD();
+  const { normales = false, scannes = false, taille = COLS_HD * PX_HD } = options;
+  const { texture, canvas } = atlasHD(taille);
   const remap = Array.from({ length: N_REMAP }, () => new THREE.Vector4(0, 0, 0, 0));
   const uniforms = { nuitHD: { value: 0 }, remapHD: { value: remap } };
   // La carte de normales naît plate (128, 128 : la normale du sommet ; 128 en
@@ -810,7 +844,7 @@ export function materiauHD(renderer, options = {}) {
         totalEmissiveRadiance = vec3(1.0, 0.84, 0.58) * vLueur * nuitHD * 1.4;`);
   };
   materiau.customProgramCacheKey = () => 'paris-hd';
-  const etat = { statut: scannes ? 'attente' : 'eteint', normales: !!normales, tuiles: [] };
+  const etat = { statut: scannes ? 'attente' : 'eteint', normales: !!normales, tuiles: [], atlas: canvas.width };
   // pour les témoins : les uniformes du remap (non énumérables, l'état se recopie)
   Object.defineProperty(etat, 'uniformes', { value: uniforms, enumerable: false });
   if (scannes) chargerScannes(etat, materiau, uniforms, canvas, toileNormales);

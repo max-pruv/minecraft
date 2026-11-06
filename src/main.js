@@ -33,7 +33,7 @@ import { guidage, arriveEntre, nomDestination, rotationContinue, repereMinicarte
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, optionsMetro, HORAIRE_METRO, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
-import { materiauHD, geometrieHD } from './matierehd.js';
+import { materiauHD, geometrieHD, TAILLE_SCANNES_HAUTE } from './matierehd.js';
 import { DIRECTIONS_VOISINS } from './arbreshd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
@@ -723,8 +723,13 @@ const OMBRE_HD = new URLSearchParams(location.search).get('ombrehd') !== '0';
 // couche ; `?scannes=0` rejoue l'atlas peint, `?scannes=1` force.
 const SCANNES_DEMANDES = new URLSearchParams(location.search).get('scannes');
 const SCANNES = SCANNES_DEMANDES === '1' || (SCANNES_DEMANDES !== '0' && !renduLogiciel());
+// Au palier haut (« Loin », v588), les scans à 2 048 pixels : deux fois la
+// finesse pour ≈ 33 Mo de textures de plus, et seulement là. `?scannes2k=0`
+// rejoue le 1 024, `?scannes2k=1` le force (captures, mesures).
+const SCANNES_2K_DEMANDES = new URLSearchParams(location.search).get('scannes2k');
+const SCANNES_2K = SCANNES && RAYON_HD > 0 && (SCANNES_2K_DEMANDES === '1' || (SCANNES_2K_DEMANDES !== '0' && !!PALIER && PALIER.nom === 'haut'));
 function materiauDeParis() {
-  if (!hd) hd = materiauHD(renderer, { normales: SCANNES && RAYON_HD > 0, scannes: SCANNES });
+  if (!hd) hd = materiauHD(renderer, { normales: SCANNES && RAYON_HD > 0, scannes: SCANNES, ...(SCANNES_2K ? { taille: TAILLE_SCANNES_HAUTE } : {}) });
   return hd.materiau;
 }
 // ET LA COUCHE SE CHAUFFE À L'ACCUEIL (v541). Son matériau naissait au premier

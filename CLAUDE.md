@@ -67,6 +67,24 @@ Cinq règles.
   `sonde-captures-scannes.cjs` photographie chaque vue scans posés / atlas
   peint dans la MÊME page, par l'uniforme.
 
+## Les scans à 2 048 pixels (v588) — la finesse se paie au palier qui l'a choisie
+
+Max : « quality first ». Trois règles.
+
+- **LA FINESSE EST UNE TAILLE D'ATLAS, PAS UN PROGRAMME.** Au palier haut
+  (`PALIER.nom === 'haut'`, donc « Loin » choisi), `materiauHD(…, { taille:
+  2048 })` : l'atlas peint s'agrandit (bilinéaire), la carte de normales naît à
+  2 048, et les fichiers `scannes-v1-2048` portent les mêmes régions à deux fois
+  la finesse. La taille d'une texture n'entre pas dans la clé : la chauffe de
+  l'accueil reste juste. `?scannes2k=0|1` force, pour mesurer.
+- **LE MÊME SCRIPT FAIT LES DEUX TAILLES, ET LA PREMIÈRE AU BIT PRÈS.**
+  `scripts/materiaux-scannes.mjs` boucle sur 1 024 et 2 048 ; les fichiers
+  `scannes-v1` ressortent identiques (empreintes vérifiées). Une retouche du
+  2 048 seul prend quand même un nom neuf.
+- **LES FICHIERS DU PALIER HAUT NE SE PRÉCHARGENT PAS POUR TOUS.** Ils entrent
+  au cache immuable à leur premier usage ; s'ils manquent (hors ligne), la
+  couche lit ceux de 1 024 agrandis (`etat.repli`) — jamais l'atlas peint.
+
 ## Manhattan : atlas OSM (v583) et façades en relief (v585)
 
 Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par

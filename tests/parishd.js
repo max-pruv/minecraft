@@ -1780,6 +1780,46 @@ function verifier(nom, ok, detail = '') {
           r.differents > r.pixels * 0.3 && r.neuves === 0, `${r.differents}/${r.pixels} pixels changés, ${r.neuves} programme(s) neuf(s)`);
       }
 
+      // LE PALIER HAUT (v588, « quality first ») : l'atlas et la carte de
+      // normales à 2 048 pixels, les scans de `scannes-v1-2048` (les mêmes
+      // régions, deux fois plus de pixels), les mêmes moyennes. Hors du palier
+      // haut, 1 024 : la page d'au-dessus n'a pas de palier.
+      await souffler();
+      const s2 = await banc.jouerSeul('Scannette2k', { rr: 4, params: '&hd=2&scannes=1&scannes2k=1', pret: true });
+      const r2 = await s2.evaluate(async () => {
+        const g = window.__game;
+        if (!('scannesHD' in g)) return { absent: true };
+        const t0 = performance.now();
+        while (performance.now() - t0 < 30000 && (!g.scannesHD || g.scannesHD.statut === 'attente')) await new Promise((ok) => setTimeout(ok, 250));
+        const etat = g.scannesHD ? { ...g.scannesHD } : null;
+        if (!etat || etat.statut !== 'charge') return { etat };
+        const { peindreTuileHD } = await import('./src/matierehd.js');
+        const f1 = await (await fetch('./vendor/materiaux/scannes-v1.json')).json();
+        const f2 = await (await fetch('./vendor/materiaux/scannes-v1-2048.json')).json();
+        const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        const ctx = g.atlasHD.getContext('2d');
+        const ecarts = {};
+        for (const rg of f2.regions) {
+          const d = ctx.getImageData(rg.x, rg.y, rg.taille, rg.taille).data;
+          const p = peindreTuileHD(rg.tuile);
+          const moy = (a) => { const s = [0, 0, 0]; let n = 0; for (let i = 0; i < a.length; i += 4) { if (a[i + 3] < 128) continue; for (let c = 0; c < 3; c++) s[c] += lin(a[i + c] / 255); n++; } return s.map((v) => v / n); };
+          const a = moy(d), b = moy(p);
+          ecarts[rg.tuile] = +Math.max(...a.map((v, c) => Math.abs(v / b[c] - 1))).toFixed(3);
+        }
+        const memesRegions = f1.regions.length === f2.regions.length && f1.regions.every((a, i) => {
+          const b = f2.regions[i]; return a.tuile === b.tuile && b.x === 2 * a.x && b.y === 2 * a.y && b.taille === 2 * a.taille && a.blocs === b.blocs;
+        });
+        const m = g.materiauHD;
+        return { etat, ecarts, memesRegions, atlas: g.atlasHD.width, normales: m.normalMap ? m.normalMap.image.width : 0,
+          remaps: g.scannesHD.uniformes.remapHD.value.filter((v) => v.w > 0).length };
+      });
+      await s2.close();
+      verifier('au palier haut, les scans à 2 048 pixels : atlas, carte de normales, mêmes régions et mêmes moyennes (à 5 %)',
+        !r2.absent && r2.etat && r2.etat.statut === 'charge' && r2.etat.taille === 2048 && r2.atlas === 2048 && r2.normales === 2048
+          && r2.memesRegions && r2.ecarts && Math.max(...Object.values(r2.ecarts)) <= 0.05 && r2.remaps === (fiche ? fiche.regions.length : -1)
+          && r.etat && r.etat.atlas === 1024,
+        JSON.stringify({ etat: r2.etat, atlas: r2.atlas, normales: r2.normales, memesRegions: r2.memesRegions, ecarts: r2.ecarts, remaps: r2.remaps, horsHaut: r.etat && r.etat.atlas }));
+
       // le palier bas : la couleur scannée, pas de carte de normales ; et
       // `?scannes=0` rejoue l'atlas peint
       for (const [nom, params, attendu] of [['Basile', '&hd=0&arbres=1&scannes=1', 'charge'], ['Paulin', '&hd=2&scannes=0', 'eteint']]) {
