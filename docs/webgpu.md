@@ -230,6 +230,16 @@ asynchrone, rien de ce qui suit ne se mesure sur le portail.
 
 ### 5.2 Les risques, chacun avec sa mesure
 
+Règle de Max pour tout le programme réalisme, transmise par la session
+coordinatrice : **« Always quality first »**. Quand une option vise la qualité
+d'image et l'autre la légèreté, on prend la qualité, tant que le jeu reste
+stable et jouable sur l'iPhone et l'iPad. Pour ce plan : l'atlas repasse en
+`LinearFilter` avec ses mips plutôt que de rester au texel (le lointain propre
+vaut plus qu'un pixel de près) ; l'ombre HD se découpe en `shadowNode` au lieu
+d'être laissée pleine ; le repli WebGL2 ne rogne aucun greffon ; et une
+mesure de cadence sur l'appareil tranche, jamais une estimation de banc.
+
+
 - **Safari.** WebGPU est dans Safari 26 (iOS 26) ; l'iPhone de Max y est, l'iPad
   de la famille (six ans, v296) n'y sera jamais. Le repli WebGL2 du
   `WebGPURenderer` n'est pas « l'ancien rendu » : c'est le rendu de nœuds sur
