@@ -34,9 +34,29 @@ Mesures et méthode dans `docs/echelle-villes.md` ; la table est
 - [ ] **La trame de Paris n'est pas figée pour cette marche** :
   `releveEchelleDe` lit `gabaritParis` d'aujourd'hui, juste tant que la trame
   ne bouge pas (règle de la v303 : le prochain retramage fige `paris.js`).
-- [ ] Un bloc posé sur un toit de Paris par une tablette restée sur la v587
+- [ ] Un bloc posé sur un toit de Paris par une tablette restée sur la v588
   après la date sera laissé à l'ancienne hauteur (le prix de toute marche
   datée, v242).
+- [ ] **Portail GitHub de la PR #607 (run 42147675330), tranches 2/4 et 3/4
+  rouges, aucune par cette livraison** — chaque rouge démonté par la règle de
+  la v195 (rejoué SEUL des deux côtés) ou par la même tranche d'une PR sans ce
+  code. Tranche 2/4, `reseau.js` : la fluidité des amis (direct, nuage), le
+  passager, l'hôte sans courtier — tous déclarés plus bas, et rouges à
+  l'identique sur les tranches 2/4 des PR #609, #597 et des phares. Tranche
+  3/4, `maj.js` : les deux témoins du loader (dettes v559) et le badge du
+  journal ({premiere 589, servie 588} : structurel tant que `CACHE_VERSION`
+  n'est pas monté, par consigne). `carte.js` : « le fond de carte entier se
+  rend vite, même à froid » 489 ms pour 400 au portail (462 sur la tranche 3/4
+  de la PR #597), 236 ms seul sur la branche et 339 sur `origin/main` v588 —
+  la charge du portail, déjà déclarée (v450) ; et **« minicarte (820 × 1180) :
+  sous le menu ☰ elle reste… sous laquelle elle se cache »** rend
+  `cachee: false` au portail, vert seul des deux côtés (123 ✅ sur
+  `origin/main`, 121 ✅ sur la branche). Le témoin lit la visibilité de la
+  minicarte 500 ms FIXES après le toucher qui ouvre la carte du monde
+  (`tests/carte.js`, famille de la v270) : sur un runner chargé, la classe
+  `carte-ouverte` n'est pas encore posée. Remède tout trouvé : attendre
+  `__carte.ouverte` ET l'état, borné, la durée au message. Le diff de la
+  livraison ne touche ni `main.js`, ni `index.html`, ni la minicarte.
 
 ## Chaque moteur a sa voix, la flamme est une réchauffe (v587) — dettes
 
