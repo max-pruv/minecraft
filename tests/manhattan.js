@@ -371,6 +371,56 @@ function verifier(nom, ok, detail = "") {
       !quartiers.err && quartiers.touche && quartiers.lieux === 5,
       JSON.stringify(quartiers),
     );
+    // ---- LES PHOTOS DE NEW YORK SE RENDENT LOIN DE NEW YORK (chantier mémoire)
+    // Loin du plan, les trois photos recuites (Empire, Liberté, atlas des
+    // quartiers) quittent le matériau, qui reprend sa carte d'attente ; au retour,
+    // elles se relisent et se reposent, SANS clé de programme neuve (v246) : la
+    // carte d'attente est celle de la naissance. On lit les clés, pas leur compte.
+    const photosNY = await p.evaluate(async () => {
+      try {
+        const ny = await import("/src/new-york-modeles.js");
+        const P = await import("/src/manhattan-plan.js");
+        const { ORIGINE_MANHATTAN: O } = await import("/src/manhattan-world.js");
+        if (typeof ny.etatTexturesNY !== "function") return { err: "pas de etatTexturesNY" };
+        const g = __game, v = g.villeRealiste;
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const cles = () => new Set(g.renderer.info.programs.map((q) => q.cacheKey));
+        const mats = { empire: ny.materiauNY("empire"), liberte: ny.materiauNY("liberte"), quartiers: ny.materiauQuartiers() };
+        const enAttente = () => Object.values(mats).every((m) => m.map === m.userData.attente.map);
+        const b = P.BATIMENTS.find((a) => a.quartier === "brooklyn" && a.modele === "cinema");
+        const avant = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, vol: g.player.flying };
+        const clesDebut = cles();
+        g.player.flying = true;
+        let cible = [O.x - 4000, P.SOL + 40, O.z];
+        const pose = setInterval(() => { g.player.pos.set(...cible); g.player.vel.set(0, 0, 0); }, 40);
+        const t0 = performance.now();
+        while (performance.now() - t0 < 30000 && (ny.etatTexturesNY().garde || !enAttente())) await dodo(250);
+        const loin = { ...ny.etatTexturesNY(), attente: enAttente(), ms: Math.round(performance.now() - t0) };
+        cible = [O.x + b.x0 - 14, P.SOL + 4, O.z + b.z0 - 14];
+        const t1 = performance.now();
+        while (performance.now() - t1 < 60000 && Object.keys(ny.etatTexturesNY().tenues).length < 3) await dodo(250);
+        await dodo(3000);
+        const pres = { ...ny.etatTexturesNY(), attente: enAttente(), actif: v.active, ms: Math.round(performance.now() - t1) };
+        // la clé du programme que chaque matériau photo utilise au retour : déjà
+        // compilée avant le départ (la chauffe de l'accueil), donc pas neuve
+        const cleDe = (m) => { const q = g.renderer.properties.get(m).currentProgram; return q && q.cacheKey; };
+        const auRetour = Object.values(mats).map(cleDe);
+        const neuves = auRetour.filter((k) => k && !clesDebut.has(k)).length;
+        const dessinees = auRetour.filter(Boolean).length;
+        clearInterval(pose);
+        g.player.pos.set(avant.x, avant.y, avant.z);
+        g.player.flying = avant.vol;
+        return { loin, pres, neuves, dessinees };
+      } catch (err) {
+        return { err: String((err && err.stack) || err) };
+      }
+    });
+    verifier(
+      "loin de New York, ses photos quittent le matériau ; au retour elles reviennent sans compiler de programme",
+      !photosNY.err && !photosNY.loin.garde && photosNY.loin.attente && Object.keys(photosNY.loin.tenues).length === 0 &&
+        photosNY.pres.garde && !photosNY.pres.attente && Object.keys(photosNY.pres.tenues).length === 3 && photosNY.dessinees > 0 && photosNY.neuves === 0,
+      JSON.stringify(photosNY),
+    );
     // ---- LES MODÈLES DE MAX (v565) ----------------------------------------
     // L'Empire State et la statue arrivent après le démarrage (un modèle absent
     // n'empêche jamais New York d'exister). Une fois là, les cubes de la statue

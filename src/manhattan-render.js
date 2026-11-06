@@ -50,9 +50,15 @@ import {
   maillageNY,
   materiauQuartiers,
   chargerQuartiers,
+  garderTexturesNY,
 } from "./new-york-modeles.js";
 
 const NIVEAU = SOL + 1;
+// Distances au plan (blocs) où les photos de New York se gardent et se rendent.
+// 1 000 : deux fois la portée de la zone active (500, les banlieues), et au-delà
+// du brouillard du monde ; à 120 b/s, l'avion le plus rapide met huit secondes à
+// la franchir, de quoi relire trois fichiers depuis le cache.
+export const GARDE_TEXTURES = 1000, RENDRE_TEXTURES = 1300;
 // Les matériaux du sol du plan, proche et lointain.
 const MAT_SOL = {
   road: "asphalt",
@@ -2052,6 +2058,13 @@ export class ManhattanRenderer {
       }
     }
     this.majStatueNY();
+    // Les photos de New York ne se gardent qu'autour de New York (chantier
+    // mémoire) : tenues à moins de GARDE_TEXTURES du plan, rendues au-delà de
+    // RENDRE_TEXTURES — l'écart évite de relire un fichier à chaque pas sur la
+    // limite, et la garde précède de loin la zone où la ville se dessine.
+    const pres = (m) => dansManhattan(actual.x, actual.z, m) || dansBanlieue(actual.x, actual.z, m) || dansBoiteLiberte(actual.x, actual.z, m);
+    if (pres(GARDE_TEXTURES)) garderTexturesNY(true);
+    else if (!pres(RENDRE_TEXTURES)) garderTexturesNY(false);
     if (!active) return;
     if (this.lastFrame) {
       this.frames.push(now - this.lastFrame);
