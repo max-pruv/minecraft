@@ -4726,7 +4726,15 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         }
         return haut - bas >= 8;
       };
-      for (let k = 300; k < 700; k++) {
+      // LA FENÊTRE SE CHERCHE (carte ×3) : écrite en dur (k 300 à 700), elle
+      // ne tombait plus sur les tranchées quand la ligne a triplé. On prend
+      // les quatre cents pas où le profil s'écarte le plus du relief.
+      let k0 = 300;
+      {
+        const ec = []; for (let k = 0; k < L; k++) ec.push(Math.abs(T.coteContinue(seg, k / L) - (w.terrainHeight(Math.round(seg.x0 + ux * k), Math.round(seg.z0 + uz * k)) + 1)) >= 2 ? 1 : 0);
+        let best = -1; for (let k = 0; k + 400 < L; k += 20) { let s = 0; for (let j = k; j < k + 400; j++) s += ec[j]; if (s > best) { best = s; k0 = k; } }
+      }
+      for (let k = k0; k < k0 + 400; k++) {
         const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
         pas++;
         if (continu) {
@@ -4788,7 +4796,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const L = seg.longueur, ux = (seg.x1 - seg.x0) / L, uz = (seg.z1 - seg.z0) / L, nx = -uz, nz = ux;
       const neuf = !!(T.viaducs && T.surViaduc);
       let colonnes = 0, eau = 0, digue = 0, piles = 0, pas = 0, sansTablier = 0, sansContact = 0, ecartContact = 0, bas = Infinity;
-      for (let k = 290; k < 530; k++) {
+      // LA MANCHE SE CHERCHE (carte ×3) : la plus longue suite de mer sous
+      // l'axe, jamais une fenêtre écrite en dur qui ne suit pas l'échelle.
+      let m0 = 290, m1 = 530;
+      { let run = 0, st = 0, br = 0; for (let k = 0; k < L; k++) { if (w.terrainHeight(Math.round(seg.x0 + ux * k), Math.round(seg.z0 + uz * k)) < 30) { if (!run) st = k; run++; if (run > br) { br = run; m0 = st; m1 = st + run; } } else run = 0; } }
+      for (let k = m0; k < m1; k++) {
         const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
         if (w.terrainHeight(Math.round(ax), Math.round(az)) >= 30) continue;   // un îlot : pas la mer
         pas++;
