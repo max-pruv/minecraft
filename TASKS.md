@@ -14,6 +14,39 @@
   un codec sans perte réduirait le transfert de la flotte (72 Mo).
 - **Le vieux `vendor/voiture.glb` et les corps humains** (chantier 5) ne sont
   pas convertis.
+- [ ] **Rouges du portail de la v590, tous déjà déclarés, aucun de la
+  livraison.** Le seul défaut de la livraison (fichiers `-ktx2.glb` aux
+  attributs entrelacés : `degats.js`, portières et dégâts) est corrigé en
+  8e7c18b, et son témoin (`tests/ktx2.mjs`) garde la disposition. Le reste :
+  - `reseau.js`, rejouée SEULE sur la branche, deux passages : le premier
+    rend le trio « à trois, chacun voit les deux autres »
+    (`[["Alice"],["Marlon"],[]]`), ses dépendants, les trois témoins du
+    passager dans l'avion d'un ami (`vuAvion: null`) et le banc qui lâche sur
+    `null.peer` (reseau.js:616) — mot pour mot la famille rejouée seule sur
+    `origin/main` v575 (déclarée sous « Un avion garé est un obstacle »). Le
+    second passage rend la trio verte et la famille « veille sans retour /
+    reprise / départ de l'hôte » rouge, déclarée elle aussi (1 sur 2 de
+    chaque côté en v536), plus « pas par bonds » et l'hôte sans courtier,
+    déclarés. `origin/main` v587 rejouée seule, deux passages : 1 rouge
+    chacun (« par paquets », l'heure de l'envoi relayée : déclarés). La
+    branche rougit donc plus souvent, et l'on a vérifié que ce n'est pas le
+    transcodeur : rejouée avec `SANS_KTX2` forcé, elle rend 92 verts et deux
+    rouges (« pas par bonds », l'hôte sans courtier), la trio et la veille
+    vertes — les rouges vont et viennent avec ET sans KTX2. Même tableau au
+    portail GitHub (tranche 2/4, sept rouges de ces familles). La livraison
+    ne touche ni `net.js`, ni `sync.js`, ni `relaisnuage.js`.
+  - `maj.js` (trois rouges des loaders au premier portail) : verte rejouée
+    seule sur la branche et sur `origin/main`, puis verte au portail GitHub de
+    8e7c18b.
+  - `monte.js` : huit rouges en local, quinze au portail GitHub (tranche
+    1/4), tous des familles déclarées (Moscou ×2, mémoire des voitures de
+    Rome, chevauchements au même point, rue vide, plongée à quai, recul
+    contre une voiture, flâneur, feu, Rome en biais, radio, Saint-Dizier,
+    traces de pneus, caisse de travers).
+  - `carte.js` « le fond de carte entier se rend vite, même à froid » :
+    472 ms au portail GitHub pour 400, la dette déclarée sous la v450 ;
+    rejouée seule sur la branche : 186 ms, vert.
+
 ## La nuit de New York et les voitures noires (v589) — dettes
 
 - [ ] **La plaque d'asphalte à bord en escalier (v589, déclarée).** Capture d'iPad
