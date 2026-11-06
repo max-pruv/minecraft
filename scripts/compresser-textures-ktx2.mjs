@@ -41,7 +41,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
-import { NodeIO } from '@gltf-transform/core';
+import { NodeIO, VertexLayout } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRTextureBasisu } from '@gltf-transform/extensions';
 import { encodeToKTX2 } from 'ktx2-encoder';
 
@@ -157,9 +157,24 @@ function roleDe(texture, doc) {
   return [...roles][0] || 'couleur';
 }
 
+function originalEntrelace(fichier) {
+  const o = fs.readFileSync(fichier), j = JSON.parse(o.subarray(20, 20 + o.readUInt32LE(12)).toString('utf8'));
+  const n = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT2: 4, MAT3: 9, MAT4: 16 }, b = { 5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 };
+  return (j.accessors || []).some((a) => {
+    const v = a.bufferView !== undefined ? j.bufferViews[a.bufferView] : null;
+    return v && v.byteStride && v.byteStride !== n[a.type] * b[a.componentType];
+  });
+}
+
 async function convertir(dossier, fichier) {
-  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
   const entree = path.join(racine, 'vendor', dossier, fichier);
+  // LA DISPOSITION DE L'ORIGINAL (v588) : gltf-transform entrelace les
+  // attributs par défaut, et three en ferait des InterleavedBufferAttribute
+  // que les dégâts et la découpe des portières ne clonent pas comme un
+  // attribut simple. On écrit comme l'original : entrelacé seulement s'il
+  // l'était (le F-35, le jet, la Chiron Stealth, la Lucid Gravity).
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
+    .setVertexLayout(originalEntrelace(entree) ? VertexLayout.INTERLEAVED : VertexLayout.SEPARATE);
   const sortie = path.join(racine, 'vendor', dossier, nomKTX2(fichier));
   const doc = await io.read(entree);
   const avant = empreinteAccesseurs(doc);

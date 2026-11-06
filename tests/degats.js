@@ -336,12 +336,18 @@ function verifier(nom, ok, detail = '') {
       rendre(proto);
       const neuves = g.renderer.info.programs.map((q) => q.cacheKey).filter((k) => !avant.has(k)).length;
       const mo = J.estimerMemoire([orig]).texMo, mk = J.estimerMemoire([proto]).texMo;
-      return { branche: K.ktx2Branche(), url: url.map((u) => u.split('/').pop()), cartes: cartes.length,
+      // le journal des ressources du navigateur s'arrête à 250 entrées (il
+      // était plein au portail GitHub : `url` vide) ; l'adresse que le
+      // chargeur demande se lit alors dans la règle du jeu, et les cartes
+      // comprimées disent qu'elle a bien été servie
+      const plein = performance.getEntriesByType('resource').length >= 250;
+      return { branche: K.ktx2Branche(), url: url.map((u) => u.split('/').pop()), plein,
+        voulue: K.urlModele('./vendor/voitures/maserati-mc12-gt1.glb').split('/').pop(), cartes: cartes.length,
         comprimees: cartes.filter((t) => t.isCompressedTexture).length, neuves,
         texOrigMo: +mo.toFixed(1), texKtx2Mo: +mk.toFixed(1) };
     }).catch((e) => ({ err: String(e).slice(0, 300) }));
     verifier('KTX2 (v588) : le transcodeur est branché, la voiture arrive par son fichier comprimé, et ses cartes sont des textures comprimées',
-      !kt.err && kt.branche && kt.url.includes('maserati-mc12-gt1-ktx2.glb') && kt.cartes > 3 && kt.comprimees === kt.cartes,
+      !kt.err && kt.branche && (kt.url.includes('maserati-mc12-gt1-ktx2.glb') || (kt.plein && !kt.url.length && kt.voulue === 'maserati-mc12-gt1-ktx2.glb')) && kt.cartes > 3 && kt.comprimees === kt.cartes,
       JSON.stringify(kt));
     verifier('… qui pèsent au moins trois fois moins en carte graphique, et ne compilent aucun programme que l\'original n\'a pas compilé',
       !kt.err && kt.neuves === 0 && kt.texKtx2Mo > 0 && kt.texKtx2Mo * 3 < kt.texOrigMo, JSON.stringify(kt));
