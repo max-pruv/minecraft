@@ -87,6 +87,18 @@ yeux. Cinq règles.
   (b05196a5… → 0332dd4c…) et se prouve de la même façon. `sommetV586` ne lit jamais
   le drapeau : la marche a besoin de l'ancien sommet quel que soit le réglage.
   Le coût se mesure et se déclare (façades HD de Paris +9 %, sous `hdMo`).
+- **UNE PRÉVERSION NE MIGRE PAS.** Chaque PR a une préversion Vercel, que
+  Max essaie sur son iPhone, et elle parle au MÊME nuage que la production :
+  y entrer avec le profil de Marlon y aurait relevé ses toits dans son
+  document du nuage AVANT la validation, et une marche datée ne se rejoue
+  pas. `MIGRATION_ECHELLE.permise` (world.js) tombe à faux sur un hôte qui
+  finit par `.vercel.app` sans être `minecraft-fam.vercel.app`
+  (`preversion`, pure) : la marche 8 → 9 est l'identité (blocs, positions,
+  garages), le stockage de l'appareil reste en carte 8
+  (`CARTE_AVANT_ECHELLE`) et la copie d'avant ne part pas. La production,
+  le banc (127.0.0.1) et node migrent. Toute marche de migration à venir se
+  pose la question de la préversion le jour où elle naît ; sur une
+  préversion on joue avec un prénom de test, jamais celui d'un enfant.
 
 Et un témoin de couche HD qui lit « le verre » d'une colonne lit le verre de
 TOUS les étages : ce qui n'appartient qu'au rez-de-chaussée (l'enseigne, le

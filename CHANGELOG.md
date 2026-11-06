@@ -40,7 +40,9 @@ chaises de terrasse arrivent à mi-vitrine. Ce qu'un enfant a bâti sur un toit
 ou contre une façade de Paris monte de trois blocs avec l'immeuble, d'un seul
 tenant, et une copie d'avant est prise sur le nuage ; une colonne où il avait
 bâti avant les rues à la GTA garde sa ville figée telle quelle. Le relief ne
-bouge pas d'un bloc. Les autres villes (Rome, Tokyo, Nice, Lille, Londres,
+bouge pas d'un bloc. Une préversion Vercel de la PR ne migre rien et n'écrit
+rien au nuage : on peut l'essayer avec un prénom de test sans toucher aux
+profils des enfants. Les autres villes (Rome, Tokyo, Nice, Lille, Londres,
 Washington, San Francisco) sont mesurées et déclarées dans `TASKS.md` : leur
 rez-de-chaussée montre un ou deux mètres, elles suivront la même table.
 
@@ -50,7 +52,8 @@ la marche 8 → 9 monte une cabane de toit de trois blocs et laisse intacts une
 façade, la rue, un bloc d'après la date, un bloc hors de Paris, une marque de
 Manhattan, une archive, une colonne cédée et une colonne figée, deux fois de
 suite (idempotente), positions et garages compris, par la chaîne entière ; la
-fiche d'un garage suit ses murs. `sauvegarde.js` : la copie d'avant
+fiche d'un garage suit ses murs ; sur une adresse de préversion la marche est
+l'identité et la copie ne part pas. `sauvegarde.js` : la copie d'avant
 (`~avant-echelle-paris`) existe sur le nuage et la cabane reçue du nuage monte.
 `parishd.js` : la colonne type et la couche HD lues contre `REEL` (enseigne
 3,14–3,56, store 3,14, porte 2,84, corniche 20). `carte.js` : le registre

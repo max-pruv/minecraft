@@ -7,7 +7,10 @@ Mesures et méthode dans `docs/echelle-villes.md` ; la table est
 
 - [ ] **POUR MAX, SUR LA TABLETTE** : à pied dans Paris devant une terrasse,
   de jour et de nuit, puis du ciel — les captures de `docs/echelle-villes/`
-  sont celles du banc. La PR n'est pas fusionnée avant ce regard.
+  sont celles du banc. La PR n'est pas fusionnée avant ce regard. Sur la
+  préversion Vercel de la PR, entrer avec un PRÉNOM DE TEST : elle ne migre
+  rien (garde `preversion`, world.js), mais elle lit et écrit le nuage de la
+  production pour tout le reste.
 - [ ] **À LA FUSION : relire `DATE_ECHELLE_PARIS` (world.js)** à l'heure de la
   fusion (règle de la v309) — la date écrite est un brouillon.
 - [ ] **Les villes engendrées (`villesmonde.js`, 262 villes)** : rang 1
