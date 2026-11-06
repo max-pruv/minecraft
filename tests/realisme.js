@@ -663,6 +663,8 @@ async function appuyer(p, sel, texte) {
     const pieds = await v.evaluate(async () => {
       const P = await import("/src/personnages.js"), H = await import("/src/humains.js"), M = await import("/src/mouvements.js");
       const THREE = await import("three");
+      // les corps et les mouvements arrivent après l'accueil : on les attend
+      await H.chargerHumains(); await M.chargerMouvements();
       const res = {};
       for (const modele of ["homme-chemise", "femme-tailleur", "homme-costume"]) {
         const g = P.construireHumain({ tenue: "passant", modeleHumain: modele });
@@ -696,7 +698,8 @@ async function appuyer(p, sel, texte) {
     // son squelette). Lire les clés de toute la rue au fil de l'horloge est un
     // tirage : les passants qui arrivent apportent les leurs, capture ou non.
     const programmes = await v.evaluate(async () => {
-      const P = await import("/src/personnages.js"), H = await import("/src/humains.js");
+      const P = await import("/src/personnages.js"), H = await import("/src/humains.js"), M = await import("/src/mouvements.js");
+      await H.chargerHumains(); await M.chargerMouvements();
       const g = window.__game, cam = g.camera;
       const h = P.construireHumain({ tenue: "passant", modeleHumain: "homme-costume" });
       const d = cam.getWorldDirection(new (cam.position.constructor)());
