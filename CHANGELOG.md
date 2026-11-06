@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v586 — En vol, on ne passe plus sous le sol
+## v588 — En vol, on ne passe plus sous le sol
 
 **Pourquoi.** Max, captures d'iPad : en volant et en descendant très vite, le
 personnage passait sous le sol — on voyait le dessous des collines, puis la
@@ -40,6 +40,78 @@ vrai joueur dans le vrai monde) : 150 descentes en croisière à trois cadences,
 zéro sous la surface (4 sur `origin/main`), et vingt enfants coincés dessous,
 vingt repris (0 sur `origin/main`). Le témoin du tunnel sous une colonne
 naturelle reste vert.
+
+---
+
+## v587 — Chaque moteur a sa voix, et la flamme est une réchauffe
+
+**Pourquoi.** Max : « il y a des avions normaux qui ne crachent pas de feu.
+Aujourd'hui tous les avions crachent du feu, ça n'a pas de sens. » Et « il y
+a des voitures qui font des bruits beaucoup plus sportifs… idem pour les
+avions, entre un avion de chasse, un avion de ligne ». Le jeu n'avait qu'un
+son de voiture et un son de réacteur, et une flamme derrière tout réacteur
+dès que l'avion bougeait.
+
+**Ce que ça change.** Un avion de ligne (A320, A321) et le jet d'affaires ne
+crachent plus de flamme ; le chasseur et le Concorde allument leur
+postcombustion seulement pleins gaz (au-delà des trois quarts de manette), et
+elle rugit. Chaque voiture a la voix de son moteur, lue dans sa fiche : une
+électrique (Lucid, Tesla, Hummer EV) siffle sans gronder, un V8 (Camaro, RS6,
+Raptor) gronde et roule, un V12 (Victor, DB11, MC12) hurle, une sportive fait
+entendre ses passages de rapport, une citadine ronronne, un utilitaire claque
+comme un diesel. Un avion de ligne souffle et siffle, un jet siffle plus
+aigu, un chasseur rugit dans le grave. Tout est synthétisé, rien de téléchargé.
+
+**Ce qui le prouve.** Sept témoins neufs dans `monte.js`, par
+`sonde-moteurs.cjs` : on monte PAR LE BOUTON dans des modèles de la flotte,
+et l'on lit la SORTIE audio dans des bandes. Électrique contre V8 : grave
+−70,6 contre −40,9 dB. V12 contre V8 : centroïde 479 contre 234 Hz. Jet
+contre A320 : sifflement centré à 4 557 contre 2 266 Hz. Chasseur contre
+avion de ligne : 13 dB de grave au-dessus de l'aigu, contre −5. Flammes :
+zéro sur l'A320, l'A321 et le jet, éteintes à mi-gaz sur le chasseur,
+allumées pleins gaz. Les sept sont rouges sur `origin/main` (une seule
+recette : les spectres se recouvrent, deux tuyères allumées sur l'A320) et
+verts ici. Les trois témoins de flamme d'avant ont été repointés sur la règle
+neuve (le chasseur, la réchauffe), le contrat des avions déposés aussi.
+Et le portail a trouvé ce que les sept ne voyaient pas : les moteurs aigus
+chantaient dans la bande des pneus, et le frein à main ne crissait plus assez
+fort sur une sportive, un W16 ou un V12 (×4,7 à ×6 pour une barre à ×10).
+La bande est réservée au moteur près : ×24 à ×600 sur les cinq caractères.
+
+---
+
+## v586 — Chaque endroit a ses voitures
+
+**Pourquoi.** À New York, Max ne voyait que deux voitures : le taxi jaune et une
+berline noire. La règle de tirage enfermait Manhattan dans les deux modèles
+marqués « New York », pendant que la moindre ville engendrée tirait dans toute
+la flotte. Et la route tirait exactement comme la rue : pas plus de 4×4 ni de
+pick-up à la campagne qu'en plein centre de Paris.
+
+**Ce que ça change.** Chaque circulation tire désormais dans un mélange propre à
+son milieu : Manhattan, une ville, ou la route entre deux villes, en Amérique du
+Nord, en Europe ou ailleurs. Manhattan roule avec une trentaine de modèles, dont
+un taxi jaune sur trois ; les villes européennes ont surtout des citadines et des
+berlines, les villes américaines des SUV et des pick-up ; les routes ont plus de
+4×4, de pick-up et de grandes routières, surtout en Amérique. Le taxi jaune ne
+roule qu'à New York, et le taxi Mondeo jamais en Amérique. Les voitures de
+New York prennent aussi leurs couleurs, comme partout ailleurs (le taxi jaune et
+la berline noire gardent la leur). Deux autoroutes ne tirent plus la même file de
+modèles.
+
+**Ce qui le prouve.** Trois témoins dans `carteMonde.js`, rouges sur l'ancien code
+(qui ne connaît pas l'endroit) : la rue de Manhattan tire au moins vingt-cinq
+modèles avec 20 à 40 % de taxis jaunes ; chaque milieu tire plus de vingt modèles,
+sans voiture de service, et la même règle sur deux tablettes ; la route
+d'Amérique a au moins 40 % de SUV et de pick-up. Le témoin des utilitaires de la
+v438 reste vert (17 % dans Paris), et `carteMonde.js` entière est verte (198
+témoins). Dans le jeu, les dix-huit convois de Manhattan portent 222 voitures de
+33 modèles, dont 23 % de taxis jaunes (deux modèles avant). Le coût, mesuré par
+`tests/sonde-cout-flotte.mjs` : Manhattan 59 344 → 58 989 triangles et 30,5 →
+30,8 maillages par voiture (les deux modèles fabriqués d'avant pesaient déjà
+autant) ; Paris 60 230 → 45 532 triangles, Houston → 53 012, la route d'Europe →
+55 938. Le prix : Manhattan télécharge maintenant les fichiers de la flotte à la
+première rencontre, comme les autres villes.
 
 ---
 
