@@ -6,6 +6,15 @@
 
 export const NOUVEAUTES = [
   {
+    v: 589,
+    titre: 'La nuit n\'est plus toute noire',
+    puces: [
+      'New York se voit mieux la nuit',
+      'Les voitures gardent leur forme le soir',
+      'Plus de voitures toutes noires',
+    ],
+  },
+  {
     v: 588,
     titre: 'Les phares ont leur vraie forme',
     puces: [

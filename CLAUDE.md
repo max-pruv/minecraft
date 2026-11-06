@@ -83,6 +83,32 @@ Crédit CC BY 4.0, provenance et limites : `docs/manhattan-osm.md`.
 - Un arrêt de collision se mesure sur des images de jeu distinctes : trois
   lectures identiques entre deux images lentes ne prouvent pas un arrêt.
 
+## Les décors sombres (v589) — une nuit de ville se règle comme la nuit du monde, et un métal sans reflet est noir
+
+Max, capture d'iPad à Flushing Meadows : « des décors très noirs, des voitures
+toutes noires ». Trois règles.
+
+- **UN RENDU QUI A SES PROPRES LAMPES GARDE LES PLANCHERS DU MONDE.** Manhattan
+  et ses banlieues règlent ciel et lune eux-mêmes (`manhattan-render.js`) ; leurs
+  planchers de nuit valaient 0,46 et 0,12 quand le monde est à 1,7 et 0,45
+  (v249) : entrer dans le plan, c'était tomber dans une nuit quatre fois plus
+  noire. `NUIT_NY` (1,05 et 0,32, le jour inchangé) ; `reglageNuitNY.avant()`
+  rend la v588. Le jour où une autre ville gagne ses lampes, ses planchers se
+  mesurent contre ceux du monde, en pixels, ombres forcées.
+- **UN MÉTAL SANS REFLET EST NOIR, ET LA FLOTTE N'A DE REFLET QUE SUR SA LAQUE.**
+  Un matériau standard ne renvoie les lampes qu'en proportion de (1 − métal) ;
+  seule la laque (`EST_PEINTURE`) reçoit la sonde cubique. `eclaircirLeMetal`
+  (vehicules.js), au chargement du prototype, borne le métal de tout le reste à
+  `METAL_SANS_REFLET` (0,3) et remonte une couleur unie sous `NOIR_MIN` (3,5 %
+  linéaire, le noir d'une vraie laque) en gardant sa teinte. Des uniformes,
+  aucune clé de programme neuve (v246). `reglageMetal.actif` à faux rend la
+  v588. Un paquet neuf se passe à `sonde-voitures-sombres.cjs` (luminance de
+  jour, de nuit du monde et de nuit de New York, et la part de métal nu).
+- **UNE SONDE DE LUMIÈRE QUI REND DANS UNE CIBLE NE VOIT PAS ACES.** three
+  n'applique la correspondance tonale qu'à l'écran : les chiffres de
+  `sonde-voitures-sombres.cjs` classent les modèles, ils ne sont pas ceux de
+  l'écran. Le témoin du mur gris rend, lui, à l'écran et lit dans la même tâche.
+
 ## Un témoin de terrasse isole son obstacle (v583)
 
 Le témoin de `parishd.js` essaie un autre emplacement si une voiture de la rue

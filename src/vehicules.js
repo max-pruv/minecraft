@@ -945,6 +945,7 @@ export function chargerVoitureFlotte(entree) {
       const rayon = boite ? (boite.max.y - boite.min.y) / 2 : 0;
       porteur.userData.rayonRoue = rayon > 0.1 ? rayon : 0.34;
       porteur.userData.forme = forme;      // « manifeste » ou « mesuré » : le témoin le lit
+      eclaircirLeMetal(porteur);
       // LE PROTOTYPE EST À TOUTE LA FLOTTE (v495). Chaque voiture du modèle en
       // est un clone (`clone(true)` partage géométries et matériaux) : rendre
       // au pilote ce qu'une voiture qui s'en va porte ne doit jamais toucher
@@ -959,6 +960,43 @@ export function chargerVoitureFlotte(entree) {
     }).catch(() => null);
   chargementsFlotte.set(entree.fichier, chargement);
   return chargement;
+}
+
+// UN MÉTAL SANS REFLET EST NOIR (v589). Max : « des voitures toutes noires,
+// très sombres ». Un matériau standard ne renvoie la lumière des lampes qu'en
+// proportion de (1 − métal) ; le reste, il le prend à son reflet. Or seule la
+// laque (`EST_PEINTURE`) reçoit la sonde cubique : un pneu, une jante, une
+// livrée ou une carrosserie mal nommée, à métal 0,9 ou 1, sortait noir de jour
+// comme de nuit (le Raptor à 9,9 sur 255 en plein jour, mesuré par
+// `sonde-voitures-sombres.cjs`). On borne le métal de ce qui n'a pas de
+// reflet : un uniforme, aucune clé de programme neuve (v246). Le prototype
+// porte la règle, ses clones aussi. `reglageMetal.actif` à faux rend la v588.
+export const METAL_SANS_REFLET = 0.3;
+export const NOIR_MIN = 0.035;   // linéaire
+export const reglageMetal = { actif: true };
+export function eclaircirLeMetal(racine) {
+  if (!reglageMetal.actif) return 0;
+  let n = 0;
+  racine.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!m || !m.isMeshStandardMaterial || m.envMap || m.transparent) continue;
+      if ((m.metalness ?? 0) > METAL_SANS_REFLET) { m.metalness = METAL_SANS_REFLET; n++; }
+    }
+    // ET UN NOIR DE PAQUET N'EST PAS UN NOIR DE VOITURE. Une laque à 0,003
+    // (la Victor), un bas de caisse à 0 : plus noir que du charbon, aucune
+    // lampe n'en tire une forme. Une vraie laque noire renvoie 3 à 5 % : une
+    // couleur unie (sans carte) remonte à `NOIR_MIN` en gardant sa teinte.
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!m || !m.isMeshStandardMaterial || m.map || m.transparent || !m.color) continue;
+      const l = 0.2126 * m.color.r + 0.7152 * m.color.g + 0.0722 * m.color.b;
+      if (l >= NOIR_MIN) continue;
+      if (l < 1e-4) m.color.setRGB(NOIR_MIN, NOIR_MIN, NOIR_MIN);
+      else m.color.multiplyScalar(NOIR_MIN / l);
+      n++;
+    }
+  });
+  return n;
 }
 
 const VU = 150;                 // au-delà, le convoi s'efface et se fige
