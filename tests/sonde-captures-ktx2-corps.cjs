@@ -26,7 +26,10 @@ async function bras(banc, nom, params, ecran) {
     window.__corpsCaptures = noms.map((n, i) => {
       const enfant = n === 'fille';
       const c = H.construireCorpsRealiste({ modeleHumain: enfant ? undefined : n, tenue: enfant ? 'enfant' : 'passant', genre: enfant ? 'femme' : 'homme', coupe: enfant ? 'long' : 'court' });
-      c.position.set(base.x + (i - 1.5) * 1.6, base.y - 1.6, base.z - 6);
+      // Posé SUR le sol de sa colonne : le joueur vole, sa cote ne dit rien du
+      // sol (un premier jet enterrait les pieds de 2,6 blocs).
+      const x = base.x + (i - 1.5) * 1.6, z = base.z - 6;
+      c.position.set(x, g.world.sommetColonne(Math.floor(x), Math.floor(z)) + 1, z);
       g.scene.add(c);
       return { nom: n, c };
     });
@@ -46,10 +49,16 @@ async function bras(banc, nom, params, ecran) {
       for (const { nom, c } of window.__corpsCaptures) {
         c.updateMatrixWorld(true);
         const devant = new THREE.Vector3(0, 0, -1).applyQuaternion(c.getWorldQuaternion(new THREE.Quaternion()));
-        for (const [plan, motif, recul, haut] of [['visage', /Head$/, 0.55, 0.06], ['main', /R_Hand$/, 0.42, 0], ['torse', /Spine2$/, 1.15, 0]]) {
+        // La main se filme avec l'avant-bras (à 42 cm la caméra traversait la
+        // manche) ; le corps entier et les pieds montrent la pose et le contact.
+        for (const [plan, motif, recul, haut] of [['visage', /Head$/, 0.55, 0.06], ['main', /R_Hand$/, 0.75, 0.02], ['torse', /Spine2$/, 1.15, 0], ['pied', /R_Foot$/, 0.9, 0.12], ['entier', /Spine$/, 3.6, 0]]) {
           const b = os(c, motif); if (!b) continue;
           const cible = b.getWorldPosition(new THREE.Vector3()); cible.y += haut;
-          const lat = plan === 'main' ? new THREE.Vector3(-devant.z, 0, devant.x).multiplyScalar(-0.25) : new THREE.Vector3();
+          // Pour la main : la caméra s'écarte du côté de la main (mesuré depuis
+          // le centre du corps), pour la voir de trois quarts, hors de la hanche.
+          let lat = new THREE.Vector3();
+          if (plan === 'main') { const centre = c.getWorldPosition(new THREE.Vector3()); lat = cible.clone().sub(centre).setY(0).normalize().multiplyScalar(0.35); }
+          if (plan === 'pied') lat.set(0, 0.35, 0);
           cam.position.copy(cible).addScaledVector(devant, recul).add(lat);
           cam.lookAt(cible);
           r.render(g.scene, cam);
