@@ -17,7 +17,7 @@
 import { fusionnerGarages } from './garages.js';
 import { migrerBlocsCarte3, migrerPositionsCarte3, menagerBlocsCielParis, releverBlocsToitsParis, releverPositionsParis,
   migrerBlocsParisDouble, migrerPositionsParisDouble, migrerBlocsFonduDoux, migrerPositionsFonduDoux, migrerChaineCarte,
-  releverBlocsEchelleParis, releverPositionsEchelle } from './world.js';
+  releverBlocsEchelleParis, releverPositionsEchelle, MIGRATION_ECHELLE } from './world.js';
 
 const STATE_TS = '_t'; // when the pushing device last wrote this document
 
@@ -595,6 +595,7 @@ export class ProfileSync {
   // QUE LA CHAÎNE D'AVANT LE REND (la marche est la dernière) : une cabane
   // d'avant Paris doublé n'est sur un toit d'aujourd'hui qu'une fois emmenée.
   async mettreALAbriAvantEchelle(nom, remote) {
+    if (!MIGRATION_ECHELLE.permise) return 'préversion';    // elle ne migre pas, elle ne copie pas (world.js)
     if (this.copieEchelle || !remote || !this.cloud.configured) return this.copieEchelle || 'rien';
     const edits = remote.edits;
     if (!edits || typeof edits !== 'object' || !Object.keys(edits).length) return 'rien à sauver';

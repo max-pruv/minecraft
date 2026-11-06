@@ -2846,7 +2846,23 @@ function colonnesSansEchelle(map) {
 
 // Sur UNE carte de blocs. Pure : rend une carte neuve et le bilan ; la carte
 // est rendue telle quelle, sans copie, quand rien ne monte.
+// LA PRÉVERSION NE MIGRE PAS (v588). Chaque PR a une préversion Vercel, que
+// Max essaie sur son iPhone, et elle parle au MÊME nuage que la production :
+// y entrer avec le profil de Marlon ou d'Alice appliquerait cette marche à
+// leurs documents du nuage AVANT que la livraison soit validée — et une marche
+// datée ne se rejoue pas. Sur une préversion, la marche 8 → 9 est l'identité,
+// la copie d'avant ne s'écrit pas, et le stockage de l'appareil reste en
+// carte 8 : rien n'est marqué fait qui ne l'est pas. La production, le banc
+// (127.0.0.1) et node migrent. `preversion` est la règle, pure, pour le témoin.
+export const MIGRATION_ECHELLE = { permise: true };
+export const CARTE_AVANT_ECHELLE = 8;
+export function preversion(hote) {
+  return /\.vercel\.app$/.test(hote || '') && hote !== 'minecraft-fam.vercel.app';
+}
+if (typeof location !== 'undefined' && preversion(location.hostname)) MIGRATION_ECHELLE.permise = false;
+
 export function releverEchelleParis(map) {
+  if (!MIGRATION_ECHELLE.permise) return { carte: map, deplaces: 0 };
   const P = PARIS, R = P.r;
   let deplaces = 0;
   let neuf = null, sans = null;
@@ -2891,6 +2907,7 @@ export function releverBlocsEchelleParis(tout) {
 // se réveille sur le toit neuf. Les colonnes sans immeuble se lisent dans les
 // blocs du même contexte (`edits`), quand on les a.
 export function releverPositionsEchelle(pos, edits = null) {
+  if (!MIGRATION_ECHELLE.permise) return { pos, deplaces: 0 };
   const out = {};
   let deplaces = 0;
   for (const [ctx, p] of Object.entries(pos || {})) {
@@ -3131,6 +3148,7 @@ export function suivreGaragesFonduDoux(garages, edits) {
 // Un garage sur un toit de Paris (v588) : colonnaire, comme le relevé des
 // toits ; les colonnes sans immeuble se lisent dans la carte du contexte.
 export function suivreGaragesEchelle(garages, edits) {
+  if (!MIGRATION_ECHELLE.permise) return { garages, deplacees: 0 };
   return suivreGaragesDoc(garages, edits, DATE_ECHELLE_PARIS, null, (map) => {
     const sans = colonnesSansEchelle(map);
     return colonnaire(DATE_ECHELLE_PARIS, (g) => {
@@ -3168,7 +3186,9 @@ export function migrerChaineCarte(edits, garages) {
 export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   let version = 0;
   try { version = Number(localStorage.getItem(CLE_CARTE)) || 0; } catch { /* ignore */ }
-  if (version >= CARTE_VERSION) return null;
+  // une préversion ne marque jamais faite la marche qu'elle ne joue pas
+  const cible = MIGRATION_ECHELLE.permise ? CARTE_VERSION : Math.min(CARTE_VERSION, CARTE_AVANT_ECHELLE);
+  if (version >= cible) return null;
   let tout = lire() || {};
   let deplaces = 0, laisses = 0, intacts = 0, retires = 0;
 
@@ -3250,7 +3270,7 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
     const e = releverPositionsEchelle(f.pos, tout);
     if (p.deplaces || q.deplaces || r.deplaces || f.deplaces || e.deplaces) ecrirePos(e.pos);
   }
-  try { localStorage.setItem(CLE_CARTE, String(CARTE_VERSION)); } catch { /* ignore */ }
+  try { localStorage.setItem(CLE_CARTE, String(cible)); } catch { /* ignore */ }
   return { deplaces, laisses, intacts, retires };
 }
 

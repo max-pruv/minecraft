@@ -3248,6 +3248,43 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       && echelle.idempotent && echelle.cede && echelle.figee && echelle.pos && echelle.garage,
     echelle.absent ? 'la table d\'échelle des villes n\'existe pas' : JSON.stringify(echelle));
 
+  // ET LA PRÉVERSION NE MIGRE PAS (v588) : une préversion Vercel parle au
+  // nuage de la production ; sur elle la marche 8 → 9 est l'identité, pour
+  // les blocs, les positions et les garages, et le stockage reste en carte 8.
+  const garde = await (async () => {
+    const W = await import('../src/world.js');
+    if (!W.MIGRATION_ECHELLE || !W.preversion) return { absent: true };
+    const hotes = {
+      prev: W.preversion('minecraft-fam-git-claude-echel-c3b2f2-maxpruvost-4441s-projects.vercel.app'),
+      prod: W.preversion('minecraft-fam.vercel.app'), banc: W.preversion('127.0.0.1'), node: W.preversion(undefined),
+    };
+    const { PARIS, solParis, lotParisLibre, gabaritParis } = await import('../src/paris.js');
+    let col = null;
+    for (let r = 2; r < 60 && !col; r++) for (let a = 0; a < 16 && !col; a++) {
+      const x = Math.round(PARIS.x + r * Math.cos(a)), z = Math.round(PARIS.z + r * Math.sin(a));
+      if (solParis(x, z) === null && lotParisLibre(x, z) && !gabaritParis(x, z).dedans) col = { x, z };
+    }
+    const g = W.releveEchelleDe(col.x, col.z);
+    const t = W.DATE_ECHELLE_PARIS - 86400000;
+    const doc = { local: { [`${col.x},${g.ancien + 1},${col.z}`]: [5, t] } };
+    const pos = { local: { x: col.x + 0.5, y: g.ancien + 2, z: col.z + 0.5, t } };
+    const garages = { g1: { x: col.x, y: g.ancien + 1, z: col.z, l: 2, p: 2 } };
+    W.MIGRATION_ECHELLE.permise = false;
+    let res;
+    try {
+      const c = W.migrerChaineCarte(doc, garages);
+      const ps = W.releverPositionsEchelle(pos, doc);
+      res = { blocsIntacts: JSON.stringify(c.edits) === JSON.stringify(doc), garagesMemes: c.garages === garages, posMeme: ps.pos === pos };
+    } finally { W.MIGRATION_ECHELLE.permise = true; }
+    const c2 = W.migrerChaineCarte(doc, garages);
+    res.permiseMonte = Object.keys(c2.edits.local)[0] === `${col.x},${g.ancien + 1 + g.monte},${col.z}`;
+    return { ...hotes, ...res, carteAvant: W.CARTE_AVANT_ECHELLE, carte: W.CARTE_VERSION };
+  })();
+  verifier('une préversion Vercel ne migre pas : la marche 8 → 9 y est l\'identité (blocs, positions, garages) et la production, le banc et node migrent',
+    !garde.absent && garde.prev && !garde.prod && !garde.banc && !garde.node
+      && garde.blocsIntacts && garde.garagesMemes && garde.posMeme && garde.permiseMonte && garde.carteAvant === 8 && garde.carte === 9,
+    JSON.stringify(garde));
+
   // --- LA FICHE D'UN GARAGE SUIT SES BLOCS (v487) ------------------------
   //
   // Un garage est rangé par POSITION (`garages.js`). Les marches de la carte
