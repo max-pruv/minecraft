@@ -20,6 +20,37 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v589 — New York et les voitures ne sont plus noires la nuit
+
+**Pourquoi.** Max, capture d'iPad à Flushing Meadows à la tombée de la nuit :
+« des décors très noirs, des voitures toutes noires, très sombres, pas très
+fini ». Mesuré : la nuit de New York et de ses banlieues avait ses propres
+lampes, quatre fois plus faibles que celles du reste du monde (ciel 0,46 et
+lune 0,12 contre 1,7 et 0,45, v249). Et dans la flotte, seule la laque
+reçoit les reflets : un pneu, une jante, une livrée ou une carrosserie mal
+nommée à métal 0,9 ou 1 ne renvoyait presque rien — le Raptor sortait à 9,9
+sur 255 en plein jour, la Victor à 1 la nuit. Quelques laques étaient plus
+noires que du charbon (0,003).
+
+**Ce que ça change.** À New York, la nuit garde une lueur de ciel et de lune
+proche du reste du monde : façades, trottoirs et voitures se lisent ; le jour
+ne change pas. Les voitures gardent leur forme jour et nuit : le métal sans
+reflet est borné à 0,3 et une couleur unie ne descend plus sous 3,5 % — un
+noir de vraie laque. Aucun programme de shader neuf.
+
+**Ce qui le prouve.** Trois témoins dans `manhattan.js`, qui lisent des
+pixels : un mur gris rendu par la vraie scène de New York à minuit (17 contre
+5 aux planchers d'avant, les deux bras dans la même tâche, une fois les lampes
+de nuit posées — lu 800 ms après l'heure, il voyait encore celles du jour), aucune
+voiture avec du métal sans reflet, et les trois plus noires de la v588 qui se
+lisent sous les lampes de nuit. Rouges sur `origin/main`. Deux sondes
+(`sonde-decors-sombres.cjs`, `sonde-voitures-sombres.cjs`) et les captures
+avant/après de Queens et Flushing, au crépuscule et à minuit, dans la PR. La
+plaque d'asphalte à bord en escalier de la capture ne se reproduit pas au
+banc : déclarée dans `TASKS.md`.
+
+---
+
 ## v588 — Les feux de toutes les voitures ont la forme de leur optique
 
 **Pourquoi.** Max : « les phares des voitures font des ronds très génériques
