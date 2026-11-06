@@ -1,5 +1,40 @@
 # Ce qui est en cours
 
+## Paris à l'échelle d'un passant (v588) — lots suivants et dettes
+
+Mesures et méthode dans `docs/echelle-villes.md` ; la table est
+`src/echelle-ville.js`, que tout bâtisseur et tout témoin lisent.
+
+- [ ] **POUR MAX, SUR LA TABLETTE** : à pied dans Paris devant une terrasse,
+  de jour et de nuit, puis du ciel — les captures de `docs/echelle-villes/`
+  sont celles du banc. La PR n'est pas fusionnée avant ce regard.
+- [ ] **À LA FUSION : relire `DATE_ECHELLE_PARIS` (world.js)** à l'heure de la
+  fusion (règle de la v309) — la date écrite est un brouillon.
+- [ ] **Les villes engendrées (`villesmonde.js`, 262 villes)** : rang 1
+  enterré, RDC visible 2 m. Passer par la table (socle + 4 rangs de RDC) avec
+  une marche de migration des toits datée, comme Paris — et une copie d'avant.
+  Même lecture (`sonde-echelle-paris.mjs` à adapter à `batirColonneVillesMonde`).
+- [ ] **Nice, Lille, San Francisco** : étages de DEUX blocs (Uni / ETAGE
+  alternés), RDC visible 1 m. Étages 2 → 3 et RDC à la table : le bâti double
+  presque de hauteur, migration propre à chaque ville (toits), ville figée
+  `*-v531.js` inchangée.
+- [ ] **Londres** : mêmes blocs ARCHI, RDC visible 2 m ; socle + RDC, migration.
+- [ ] **Washington** : maisons de 7 rangs pour trois niveaux (RDC 1 m) ; les
+  musées (15 blocs) sont justes. Manhattan : à mesurer au rendu (modèles et
+  façades procédurales OSM).
+- [ ] **Le store banne ne se voit pas sur la terrasse** des captures : la
+  tuile `store` est mesurée à 3,14 (une ligne, `bas = haut`) — vérifier le
+  registre `store` de `facadeshd.js` au-dessus d'une vitrine de 4 rangs.
+- [ ] **Plaques de rue à 4,5 m** (allège de l'entresol) : un mètre trop haut
+  (réel 2,5–3,5). Réverbère de `props.js` à ≈ 3,0 m (réel 3,5–4,5) et colonne
+  Morris à 2,8 m (réel ≈ 4) : un peu petits, à remonter avec leur témoin.
+- [ ] **La trame de Paris n'est pas figée pour cette marche** :
+  `releveEchelleDe` lit `gabaritParis` d'aujourd'hui, juste tant que la trame
+  ne bouge pas (règle de la v303 : le prochain retramage fige `paris.js`).
+- [ ] Un bloc posé sur un toit de Paris par une tablette restée sur la v587
+  après la date sera laissé à l'ancienne hauteur (le prix de toute marche
+  datée, v242).
+
 ## Chaque moteur a sa voix, la flamme est une réchauffe (v587) — dettes
 
 - [ ] **On n'entend pas le moteur d'un ami.** Aucun son d'ami ne joue de
