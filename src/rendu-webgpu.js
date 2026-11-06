@@ -96,7 +96,22 @@ function caler(r) {
   // verdict, et c'est un blocage déclaré du plan (docs/webgpu.md).
   // (`compile` est un accesseur en lecture seule sur le prototype du rendu :
   // on le redéfinit sur l'instance.)
-  Object.defineProperty(r, 'compile', { configurable: true, value: (scene, camera, cible) => { r.compileAsync(scene, camera, cible).catch(() => {}); } });
+  // ET UNE COMPILATION ASYNCHRONE QUI ÉCHOUE LAISSE LE RENDU DANS SA CIBLE
+  // D'ÉCRAN HORS CANVAS. `compileAsync` pose sur le rendu, le temps de son
+  // travail, l'état de précompilation (`_beginPreCompile` : la cible devient le
+  // tampon d'image interne, `_callDepth` monte) et le retire à la fin
+  // (`_finishPreCompile`). Si elle jette entre les deux — une géométrie d'essai
+  // déjà disposée, un matériau refusé —, rien ne le retire : toute image
+  // suivante se rend dans le tampon interne et le canvas garde sa dernière image.
+  // Mesuré au banc : canvas figé dès « Jouer », 700 dessins par image, zéro
+  // erreur (la cible `Mr 640x360` posée par `_finishPreCompile`, sonde
+  // `cible-webgpu.cjs`). Les compilations se font donc une à la fois, et l'état
+  // se retire après chacune, qu'elle ait abouti ou non.
+  let fileCompile = Promise.resolve();
+  const retirerEtat = () => { try { if (r._precompilationState) r._finishPreCompile(); } catch { /* rien à retirer */ } };
+  Object.defineProperty(r, 'compile', { configurable: true, value: (scene, camera, cible) => {
+    fileCompile = fileCompile.then(() => r.compileAsync(scene, camera, cible)).catch((e) => { etat.compileEchecs = (etat.compileEchecs || 0) + 1; etat.compileErreur = String(e && e.message || e).slice(0, 160); }).then(retirerEtat);
+  } });
   // `renderer.info.programs` : la liste des programmes compilés, lue par la
   // chauffe (`prog` du journal, `?diag=1`) et par les témoins qui comparent des
   // clés. Sous WebGPU ce sont les PIPELINES de rendu, dans le cache du rendu.
@@ -126,8 +141,26 @@ function caler(r) {
   // appels à `render()`, pas les appels de dessin. On remet à zéro à chaque
   // rendu, et `calls` dit les appels de dessin, comme avant (le journal de
   // bord, `?diag=1` et les sondes le lisent sous ce nom).
+  // Et la remise à zéro se fait UNE fois par image, au premier rendu : le jeu
+  // rend plusieurs fois par image (la scène, une face des reflets, la minicarte
+  // en coin), et remettre à zéro à chaque rendu laissait le dernier — souvent
+  // vide — dans `?diag=1` (« 0 appels »). Les compteurs sont ceux de l'image
+  // entière, comme ceux que le journal de bord relève.
   const rendre = r.render.bind(r);
-  Object.defineProperty(r, 'render', { configurable: true, value: (scene, camera) => { r.info.reset(); return rendre(scene, camera); } });
+  let imageNeuve = true;
+  const tic = () => { imageNeuve = true; requestAnimationFrame(tic); };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(tic);
+  // `writable` : une sonde enveloppe `renderer.render` pour le chronométrer.
+  // Et pendant une compilation en vol (elle attend entre deux objets), l'image
+  // du jeu se rend hors de l'état de précompilation, comme three le fait
+  // lui-même à chaque pause de sa boucle : sinon cette image part dans le
+  // tampon interne et le canvas saute une image.
+  Object.defineProperty(r, 'render', { configurable: true, writable: true, value: (scene, camera) => {
+    if (imageNeuve) { r.info.reset(); imageNeuve = false; }
+    const enVol = r._precompilationState;
+    if (enVol) r._finishPreCompile();
+    try { return rendre(scene, camera); } finally { if (enVol) r._beginPreCompile(enVol); }
+  } });
   Object.defineProperty(r.info.render, 'calls', { configurable: true, get() { return this.drawCalls; }, set() { /* three l'incrémente : on compte les dessins, pas les rendus */ } });
 }
 

@@ -128,5 +128,5 @@ async function mesurer(page, duree) {
         console.log(`| ${k} | ${par('webgl').map((l) => l[k]).join(' · ')} | ${par('webgpu').map((l) => l[k]).join(' · ')} | ${par('webgl2').map((l) => l[k]).join(' · ')} |`);
       }
     }
-  } finally { await banc.fermer(); }
+  } finally { await banc.fermer(); setTimeout(() => process.exit(0), 500); } // le serveur et le courtier restent ouverts sinon
 })();
