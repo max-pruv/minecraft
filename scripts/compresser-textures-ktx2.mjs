@@ -168,7 +168,7 @@ function originalEntrelace(fichier) {
 
 async function convertir(dossier, fichier) {
   const entree = path.join(racine, 'vendor', dossier, fichier);
-  // LA DISPOSITION DE L'ORIGINAL (v588) : gltf-transform entrelace les
+  // LA DISPOSITION DE L'ORIGINAL (v590) : gltf-transform entrelace les
   // attributs par défaut, et three en ferait des InterleavedBufferAttribute
   // que les dégâts et la découpe des portières ne clonent pas comme un
   // attribut simple. On écrit comme l'original : entrelacé seulement s'il

@@ -352,6 +352,7 @@ const GARDIENS = {
   'vendor/voitures/moto-police.glb': ['monte.js'],
   'vendor/humains/policier.glb': ['monte.js'],
   'src/phares.js': ['monte.js', 'degats.js'],
+  'src/optiques.js': ['monte.js', 'degats.js', 'reseau.js'],   // la forme de chaque feu (v587)
   'src/sensations.js': ['monte.js', 'reglages.js', 'reseau.js'],
   'src/traces.js': ['monte.js', 'reglages.js', 'reseau.js'],
   // les effets de saison en vraies formes (v505) : le témoin des cubes du ciel

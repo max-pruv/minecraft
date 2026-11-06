@@ -1,4 +1,4 @@
-// LES FICHIERS AUX TEXTURES KTX2 (v588), JUGÉS SOUS NODE CONTRE LEURS ORIGINAUX.
+// LES FICHIERS AUX TEXTURES KTX2 (v590), JUGÉS SOUS NODE CONTRE LEURS ORIGINAUX.
 //
 // `scripts/compresser-textures-ktx2.mjs` produit `<nom>-ktx2.glb` à côté de
 // chaque modèle déposé. Ce que le jeu mesure sur un modèle (roues, feux,
@@ -38,7 +38,7 @@ function octetsAccesseur({ j, bin }, i) {
   return out;
 }
 
-// La DISPOSITION compte aussi (v588) : un accesseur entrelacé devient dans
+// La DISPOSITION compte aussi (v590) : un accesseur entrelacé devient dans
 // three une InterleavedBufferAttribute, que les dégâts (degats3d.js) et la
 // découpe des portières ne clonent pas comme un attribut simple. Les octets
 // utiles égaux ne suffisent pas : le premier jet du script entrelaçait tout.

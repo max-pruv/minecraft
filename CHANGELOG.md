@@ -20,7 +20,7 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v588 — Les textures des modèles tiennent quatre à six fois moins de place
+## v590 — Les textures des modèles tiennent quatre à six fois moins de place
 
 **Pourquoi.** iOS ferme la page vers 500 Mo de géométrie et de textures (v580),
 et toutes les images des modèles déposés — voitures, police, moto, avions, New
@@ -51,6 +51,69 @@ mesurée par le script (33 dB au moins, 37 à 50 en général), et les captures
 iPhone et iPad, de jour et de nuit, avec et sans KTX2, sont dans la PR.
 
 ---
+
+## v589 — New York et les voitures ne sont plus noires la nuit
+
+**Pourquoi.** Max, capture d'iPad à Flushing Meadows à la tombée de la nuit :
+« des décors très noirs, des voitures toutes noires, très sombres, pas très
+fini ». Mesuré : la nuit de New York et de ses banlieues avait ses propres
+lampes, quatre fois plus faibles que celles du reste du monde (ciel 0,46 et
+lune 0,12 contre 1,7 et 0,45, v249). Et dans la flotte, seule la laque
+reçoit les reflets : un pneu, une jante, une livrée ou une carrosserie mal
+nommée à métal 0,9 ou 1 ne renvoyait presque rien — le Raptor sortait à 9,9
+sur 255 en plein jour, la Victor à 1 la nuit. Quelques laques étaient plus
+noires que du charbon (0,003).
+
+**Ce que ça change.** À New York, la nuit garde une lueur de ciel et de lune
+proche du reste du monde : façades, trottoirs et voitures se lisent ; le jour
+ne change pas. Les voitures gardent leur forme jour et nuit : le métal sans
+reflet est borné à 0,3 et une couleur unie ne descend plus sous 3,5 % — un
+noir de vraie laque. Aucun programme de shader neuf.
+
+**Ce qui le prouve.** Trois témoins dans `manhattan.js`, qui lisent des
+pixels : un mur gris rendu par la vraie scène de New York à minuit (17 contre
+5 aux planchers d'avant, les deux bras dans la même tâche, une fois les lampes
+de nuit posées — lu 800 ms après l'heure, il voyait encore celles du jour), aucune
+voiture avec du métal sans reflet, et les trois plus noires de la v588 qui se
+lisent sous les lampes de nuit. Rouges sur `origin/main`. Deux sondes
+(`sonde-decors-sombres.cjs`, `sonde-voitures-sombres.cjs`) et les captures
+avant/après de Queens et Flushing, au crépuscule et à minuit, dans la PR. La
+plaque d'asphalte à bord en escalier de la capture ne se reproduit pas au
+banc : déclarée dans `TASKS.md`.
+
+---
+
+## v588 — Les feux de toutes les voitures ont la forme de leur optique
+
+**Pourquoi.** Max : « les phares des voitures font des ronds très génériques
+et ne respectent pas la forme réelle du phare ». Mesuré sur les 41 modèles de
+la flotte : les phares copiaient déjà l'optique sur 26 modèles (v569), mais
+quinze n'avaient AUCUNE optique reconnue à l'avant (les dix génériques, dont le
+maillage s'appelle « Optics », et cinq livrées peintes : la voiture et le SUV
+de police, le taxi Mondeo, la Divo, l'Alpine) ; et sur toute la flotte, les
+feux stop étaient deux disques rouges, le recul deux petits disques blancs, la
+détresse quatre rectangles orange — six formes génériques par voiture.
+
+**Ce que ça change.** Tout feu allumé est désormais une copie des triangles de
+l'optique du modèle, posée à fleur de sa carrosserie : les phares, les feux
+stop (le bloc arrière en rouge), le feu de recul (sa part blanche, ou la part
+du bloc la plus proche de l'axe), les feux de détresse (les clignotants nommés,
+à défaut les blocs optiques eux-mêmes, en ambre). Pour une livrée peinte d'un
+seul tenant, le jeu lit la couleur de la texture sous chaque triangle : la
+voiture de police allume ses vrais phares et ses vrais feux arrière — et
+seulement un morceau d'un seul tenant, sur le côté, plus petit que le bouclier :
+ni le lettrage « POLICE » du coffre, ni l'écusson du SUV, ni la livrée blanche
+de l'Alpine. Un modèle dont l'optique ne se reconnaît pas n'a pas de lueur
+plutôt qu'une forme inventée : le taxi Mondeo et la Divo, l'avant de l'Alpine
+et du SUV de police (déclarés). Aucune lampe, aucun programme neuf (la matière
+de la flamme).
+
+**Ce qui le prouve.** Un témoin neuf sous node dans `degats.js` : zéro disque
+et zéro rectangle sur les 41 modèles (six par modèle sur l'ancien code), chaque
+lueur arrière et de détresse sur la tôle et à son bout, et les dix génériques
+ont leurs phares (zéro avant) ; le témoin des feux de détresse du navigateur
+lit des copies d'optique sur la tôle au lieu de lentilles. Planche de captures
+de nuit avant/après (trois quarts, face, dos) dans la PR.
 
 ## v587 — Chaque moteur a sa voix, et la flamme est une réchauffe
 
