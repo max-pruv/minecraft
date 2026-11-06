@@ -371,7 +371,7 @@ export class ProfileSync {
     // donc faite d'un seul tenant (`migrerChaineCarte`, world.js).
     const chaine = migrerChaineCarte(normalizeEdits(remote.edits), remote.garages);
     const editsRecus = chaine.edits;
-    // … ET PAR L'ÉCHELLE DES VILLES (v587), EN DERNIER : les façades de Paris
+    // … ET PAR L'ÉCHELLE DES VILLES (v588), EN DERNIER : les façades de Paris
     // ont monté de trois rangs, ce qui dormait sur un toit monte avec.
     const posRecues = releverPositionsEchelle(migrerPositionsFonduDoux(migrerPositionsParisDouble(releverPositionsParis(migrerPositionsCarte3(remote.pos).pos).pos).pos).pos, editsRecus).pos;
     out.pos = filtrerParMonde(mergePos(local.pos, posRecues), vivant);
@@ -589,7 +589,7 @@ export class ProfileSync {
     } catch { return 'échec'; }             // réessayé à la lecture suivante
   }
 
-  // LA COPIE D'AVANT L'ÉCHELLE DES VILLES (v587) — même forme : sur le document
+  // LA COPIE D'AVANT L'ÉCHELLE DES VILLES (v588) — même forme : sur le document
   // du nuage tel qu'il est, une fois, sur son propre document, et seulement si
   // la marche 8 → 9 a quelque chose à monter. Elle se juge sur le document TEL
   // QUE LA CHAÎNE D'AVANT LE REND (la marche est la dernière) : une cabane

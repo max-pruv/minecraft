@@ -71,7 +71,7 @@ export async function empreinteMorceaux(src) {
   // rend la constante d'avant (l'ancien code n'a pas l'interrupteur).
   const Sc = await import(src + '/solcontinu.js');
   if (Sc.reglageSolContinu) Sc.reglageSolContinu.bouleau = false;
-  // L'ÉCHELLE DES VILLES (v587) : un contenu neuf — la façade de Paris monte
+  // L'ÉCHELLE DES VILLES (v588) : un contenu neuf — la façade de Paris monte
   // de trois rangs. Désarmée, la branche rend la façade de la v586 au bloc
   // près, donc la constante d'avant (l'ancien code n'a pas l'interrupteur).
   const Pa = await import(src + '/paris.js');

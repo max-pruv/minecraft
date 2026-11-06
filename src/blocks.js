@@ -413,7 +413,7 @@ export const ARCHI = {
   ETAGE_MI: 646,       // le bas de la baie et son garde-corps
   ETAGE_HAUT: 647,     // le haut de la baie, le linteau et le bandeau
   NOBLE_BAS: 648,      // le balcon filant de l'étage noble
-  // L'ÉCHELLE DES VILLES (v587, `echelle-ville.js`). Le premier rang d'une
+  // L'ÉCHELLE DES VILLES (v588, `echelle-ville.js`). Le premier rang d'une
   // façade est au ras du trottoir : le rez-de-chaussée de trois bandes n'en
   // montrait que deux, et une vitrine faisait la hauteur d'un passant. Le
   // rez-de-chaussée visible fait quatre blocs, la porte cochère trois,
@@ -481,7 +481,7 @@ export const ARCHI_TILE = {};
 export const ARCHI_BANDES_TILE_START = 381;
 const ARCHI_PREMIERES = 18;
 // Les onze bandes de la v301 prennent 381..391 ; les tuiles du métro (v529)
-// sont juste derrière, en 392..404. Les quatre bandes de l'échelle (v587)
+// sont juste derrière, en 392..404. Les quatre bandes de l'échelle (v588)
 // prennent donc une TROISIÈME plage, après le métro : insérer avant décalerait
 // les tuiles du métro, et un carreau deviendrait une enseigne.
 export const ARCHI_ECHELLE_TILE_START = 405;

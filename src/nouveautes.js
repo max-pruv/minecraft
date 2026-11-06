@@ -6,6 +6,16 @@
 
 export const NOUVEAUTES = [
   {
+    v: 589,
+    titre: 'Paris à la bonne taille',
+    puces: [
+      'Les immeubles de Paris sont plus hauts',
+      'Les vitrines dépassent les passants',
+      'Les portes cochères font trois mètres',
+      'Tes cabanes sur les toits ont suivi',
+    ],
+  },
+  {
     v: 588,
     titre: 'Les phares ont leur vraie forme',
     puces: [

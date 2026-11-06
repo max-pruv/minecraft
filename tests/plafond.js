@@ -3139,7 +3139,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
 
-  // --- L'ÉCHELLE DES VILLES (v587) : le rez-de-chaussée fait quatre blocs, ---
+  // --- L'ÉCHELLE DES VILLES (v588) : le rez-de-chaussée fait quatre blocs, ---
   // --- la façade monte de trois rangs, et ce qu'on a bâti dessus monte avec ---
   //
   // Mesuré avant une ligne (`sonde-echelle-paris.mjs`) : le premier rang de
@@ -3322,7 +3322,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('🅿️ et un garage de Rome suit la carte 3 ; et l\'appareil qui a migré sans la fiche la retrouve à la migration de stockage',
     !garagesCarte.absent && garagesCarte.c3[2] >= 1 && garagesCarte.c3[0] === garagesCarte.c3[1] && garagesCarte.c3[0] !== 'a'
       && garagesCarte.stock && garagesCarte.stock.ou && garagesCarte.stock.ou.join() === garagesCarte.av.ou.join()
-      && garagesCarte.stock.version === String(garagesCarte.version) && garagesCarte.stock.n === 2,   // la version de la carte se LIT (9 depuis l'échelle des villes, v587)
+      && garagesCarte.stock.version === String(garagesCarte.version) && garagesCarte.stock.n === 2,   // la version de la carte se LIT (9 depuis l'échelle des villes, v588)
     garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ c3: garagesCarte.c3, stock: garagesCarte.stock }));
 
   // --- LONDRES À LA RÈGLE DU KIT (v339) : la ville d'avant reste sous ce ----
