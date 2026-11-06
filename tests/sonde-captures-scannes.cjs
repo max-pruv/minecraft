@@ -1,4 +1,4 @@
-// LES MATÉRIAUX SCANNÉS (v587) — avant / après, dans la MÊME page.
+// LES MATÉRIAUX SCANNÉS (v588) — avant / après, dans la MÊME page.
 //
 // Le remap des scans est un uniforme (matierehd.js) : à zéro, la couche dessine
 // l'atlas peint d'avant, au pixel près (la carte de normales y est plate). On

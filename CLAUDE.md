@@ -36,7 +36,7 @@ modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérif
 les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
 ils ne constituent pas une exception pour les nouveaux rendus.
 
-## Les matériaux scannés (v587) — un scan remplace une tuile par le shader, jamais par les tampons
+## Les matériaux scannés (v588) — un scan remplace une tuile par le shader, jamais par les tampons
 
 Chantier réalisme 1. `scripts/materiaux-scannes.mjs` (rejouable, sources CC0
 dans `vendor/materiaux/LICENSE.md`) produit `vendor/materiaux/scannes-v1*` :
@@ -10913,6 +10913,56 @@ l'avion se déplace ». Trois règles.
   touché, la vitesse rapportée à la pointe sinon ; éteinte sous deux pour
   cent de gaz à l'arrêt, et éteinte à la descente par `fun.js` — la monture
   quittée n'est plus mise à jour, elle garderait sa dernière flamme.
+
+## Une flamme est une réchauffe, et chaque moteur a sa voix (v587)
+
+Max : « il y a des avions normaux qui ne crachent pas de feu », et « il y a
+des voitures qui font des bruits beaucoup plus sportifs… idem pour les
+avions ». **Cette décision remplace la troisième règle de la v264** : la
+flamme ne suit plus toute la manette. Six règles.
+
+- **UNE FLAMME VISIBLE EST UNE POSTCOMBUSTION, ET LA FICHE LE DIT.**
+  `a.rechauffe` (modèle sculpté) ou `rechauffe: true` (`AVIONS_GLB`) : seuls
+  le chasseur et le Concorde ont des maillages de flamme ; un avion de ligne,
+  un jet d'affaires n'en ont AUCUN (`userData.tuyeres` vide). Les tuyères
+  restent mesurées pour tous. Jamais une liste dans `fun.js`.
+- **LA RÉCHAUFFE NE S'ALLUME QU'À FORT RÉGIME, ET UNE SEULE RÈGLE LA LIT
+  DEUX FOIS.** `rechauffeDe(poussee)` (avions.js, pure) rend 0 jusqu'à
+  `SEUIL_RECHAUFFE` (0,75) puis monte à 1 pleins gaz ; `fun.js` en fait la
+  longueur de la flamme ET le rugissement du moteur (`moteurRegime(…,
+  rechauffe)`). C'est la poussée unique de la v268, un cran plus loin.
+- **LE CARACTÈRE D'UN MOTEUR VIT DANS LA FICHE DU MODÈLE.** `son` de FLOTTE,
+  sinon la classe (`SON_DE_CLASSE`, `sonDe`, vehicules.js) ; `son`
+  d'`AVIONS_GLB` ou `a.son` du modèle sculpté (`userData.sonMoteur`). `fun.js`
+  le passe à `moteurDemarre(type, caractere)` ; `sons.js` a une recette par
+  caractère (citadine, berline, suv, diesel, v8, sportive, v12, w16,
+  electrique, moto ; ligne, affaires, chasseur, concorde), toutes
+  synthétisées, un seul contexte (v268). Un caractère inconnu retombe sur la
+  recette du type : un modèle neuf sans `son` sonne comme avant.
+- **UNE ÉLECTRIQUE N'A PAS DE RAPPORTS.** Son onduleur suit la VITESSE
+  (`allure` de `voitureSons`, passée par sensations.js), pas le régime des
+  rapports, qui retombe à chaque passage. Les moteurs `passage: true`
+  (sportive, v8, v12, w16, moto) se coupent un dixième de seconde quand le
+  régime retombe d'un coup : on entend la boîte monter.
+- **LE TÉMOIN LIT LE SPECTRE, MODÈLE CONTRE MODÈLE.** `sonde-moteurs.cjs`
+  (lue par `monte.js`) monte PAR LE BOUTON, suspend la physique, pose la
+  vitesse ou la manette, coupe la radio, et compare des bandes (grave
+  40–320 Hz, aigu 1 500–6 000) et des centroïdes entre modèles — jamais un
+  niveau absolu, qu'un banc sans haut-parleur rend arbitraire. Sur l'ancien
+  code, deux recettes identiques rendent le même spectre : chaque écart rougit.
+- **LA BANDE DES PNEUS EST RÉSERVÉE.** Le crissement vit entre 2,5 et 3,4 kHz ;
+  un turbo, un V12 ou un onduleur y chantaient aussi, et le frein à main tiré
+  tout droit ne ressortait plus (portail GitHub : ×6,3 pour une barre à ×10,
+  un modèle de la flotte TIRÉ AU HASARD ; mesuré modèle imposé, sportive ×6,
+  W16 ×5,7, V12 ×4,7, V8 ×26). Sur ce qui roule, le moteur seul passe par un
+  creux de −24 dB centré sur 2,9 kHz ; pneus et route n'y passent pas (×24 à
+  ×600 ensuite). Un son neuf de voiture se mesure contre la bande des pneus,
+  et **un témoin qui tire un modèle au hasard ne voit une régression de
+  caractère qu'une fois sur N** : on le rejoue modèle par modèle.
+
+Ce qui reste, déclaré dans `TASKS.md` : on n'entend pas le moteur d'un ami
+(aucun son d'ami ne joue de moteur, seulement son klaxon, v549) ; les
+recettes se jugent à l'oreille sur la tablette, le banc ne juge que l'écart.
 
 ## Le cadran de cap : la ville visée au loin (v263)
 
