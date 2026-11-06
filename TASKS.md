@@ -1,5 +1,38 @@
 # Ce qui est en cours
 
+## Les images de la flotte réduites sur tablette (v588) — dettes
+
+- [ ] **Vérifier sur l'iPhone de Max que le plantage en ville a cessé.** Le
+  journal de bord (`journal_appareil`) doit montrer `gpu.texMo` en ville sous
+  ≈ 150 Mo (390–450 avant), et plus de fin `plantage` sous « Loin » à Paris.
+- [ ] **Les rouges du portail GitHub Actions de la PR #604 (e61ce75), deux
+  passes.** La tranche 3 est verte. Tout le reste est rouge, sur des témoins
+  qui changent d'une passe à l'autre, et aucun n'est atteint par la v588 :
+  la réduction ne s'arme que sur une page tactile ou sous `?texvoiture=`.
+  Déjà déclarés ailleurs : le taxi de `manhattan.js` (3 s de jeu en 211 s,
+  vert à la seconde passe), la fluidité de l'ami et le passager
+  (`reseau.js`), Moscou ×2, les chevauchements, le flâneur, le passage peint,
+  la rue vide, « rendent leur mémoire » (Rome sans voitures), « deux
+  voisines », « au feu », la radio, les feuilles (`monte.js`). NEUFS, une
+  passe sur deux chacun :
+  - `monte.js` « une voiture qui dérape laisse des traces de pneus » : 0
+    trace au frein à main, la voiture `enLair` toute la phase (état laissé
+    par le témoin d'avant sur la page `tab`). Rejoué seul sur une page
+    tactile : 56 · 64 traces armé (`texvoiture=512`), 53 · 42 désarmé. Vert
+    à la seconde passe CI.
+  - `reseau.js` « la voiture qu'on prend dans la rue garde sa couleur » (
+    `prise: {auVolant: false}`) et les deux qui en dépendent (« l'attend… »,
+    « sur la carte de l'ami… » `assis: false`). Verts à la première passe.
+  - `degats.js` « foncer dans un mur » : élan pris (`vmax` 40,4), arrêt à 13
+    blocs de l'origine, avant le mur à 40, sans choc publié ; six témoins en
+    chaîne derrière (phares, vitres, moteur, « deux murs »). Page non
+    tactile. Rejouée seule : 68 ✅ / 0 ❌ trois fois. À démonter par une
+    sonde qui nomme ce qui arrête la voiture à x0 + 13 (un passant ? la
+    voiture `b` ? un bloc ?), pas par un rejeu.
+  - `manhattan.js` « les deux clients restent sans erreur de jeu » :
+    `PeerJS: ID "wmc-marlon-…" is taken` pendant la reprise d'une seconde
+    page — le courtier local tient encore l'identifiant de la page d'avant.
+
 ## Chaque moteur a sa voix, la flamme est une réchauffe (v587) — dettes
 
 - [ ] **On n'entend pas le moteur d'un ami.** Aucun son d'ami ne joue de
