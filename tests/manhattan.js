@@ -522,7 +522,11 @@ function verifier(nom, ok, detail = "") {
           for (let cx = Math.floor((O.x + I.x - 16) / 16); cx <= Math.floor((O.x + I.x + 16) / 16); cx++)
             tus += w.cubesTus?.(cx, cz)?.size || 0;
         const tri = (m) => (m?.index ? m.index.count / 3 : 0);
-        return { empire: [tri(e?.proche), tri(e?.loin)], liberte: [tri(l?.proche), tri(l?.loin)], carte: !!(e?.carte && l?.carte), tus };
+        // La photo vit sur le MATÉRIAU depuis que New York la rend loin du plan
+        // (chantier mémoire) : on lit la carte posée, pas un champ du modèle.
+        const posee = (n) => { const m = ny.materiauNY(n); return !!m.map && m.map !== m.userData.attente?.map; };
+        const carte = e?.carte !== undefined ? !!(e.carte && l?.carte) : posee('empire') && posee('liberte');
+        return { empire: [tri(e?.proche), tri(e?.loin)], liberte: [tri(l?.proche), tri(l?.loin)], carte, etat: ny.etatTexturesNY?.(), tus };
       } catch (err) {
         return { err: String(err && err.message || err) };
       }
