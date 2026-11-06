@@ -55,7 +55,9 @@ fiche d'un garage suit ses murs. `sauvegarde.js` : la copie d'avant
 `parishd.js` : la colonne type et la couche HD lues contre `REEL` (enseigne
 3,14–3,56, store 3,14, porte 2,84, corniche 20). `carte.js` : le registre
 des bandes. L'empreinte des 490 morceaux est identique des deux côtés,
-bâtisseur désarmé (`ed369fdb…`). Coût mesuré : façades HD de Paris +9 %
+bâtisseur désarmé (`ed369fdb…`) ; celle du journal fabriqué de quarante
+mille (v403), dont trois sites sont dans Paris, se relève (0332dd4c…) et rend
+la constante d'avant au bit près, bâtisseur désarmé. Coût mesuré : façades HD de Paris +9 %
 (45,8 Mo pour 49 morceaux), sous le budget. Les témoins neufs sont rouges sur
 `origin/main` (la table n'existe pas) et verts ici. Captures avant/après dans
 `docs/echelle-villes/`, à valider par Max avant fusion.

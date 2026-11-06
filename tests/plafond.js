@@ -343,7 +343,15 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // Les rues à la GTA : 540f2b43… → b05196a5…. Désarmées (MARGE_GTA à 0,4 dans
 // voirie.js, la recherche des bouches de métro d'avant), la branche rend
 // 540f2b43…, la constante de la v531, au bit près.
-const EMPREINTE_JOURNAL_V391 = 'b05196a5abe619bbc11c2ecffa2181a095e674b8e09cef3376f1fede37e387b8';
+// v588 : les façades de Paris à l'échelle d'un passant (trois des huit sites
+// du journal fabriqué sont dans le disque de Paris) : b05196a5… → 0332dd4c….
+// La preuve : le même code, le bâtisseur désarmé (`reglageEchelleParis.actif`
+// à faux), rend b05196a5…, la constante de la v544, au bit près — la marche
+// de migration ne touche pas ce chemin (aucun bloc du journal fabriqué n'est
+// daté d'avant `DATE_ECHELLE_PARIS` au-dessus d'un ancien toit de Paris… et
+// `empreinteJournal` n'appelle pas la chaîne : elle lit `installerEdits` et
+// `setBlock`, qui n'y passent pas).
+const EMPREINTE_JOURNAL_V391 = '0332dd4ce1b00b10024ff667450a6c54fbf79cbb3acbaaa45b58a25562146839';
 // v414 : les tabliers des villes engendrées s'allongent sous la voie (Rome est
 // dans les neuf lieux) : 1f385723… → 863d4203…. La preuve : le même code, les
 // allongements retirés de la liste des tabliers (`ext`), rend 1f385723…, la

@@ -82,7 +82,9 @@ yeux. Cinq règles.
 - **LE DÉSARMEMENT VIT DANS LE MODULE, ET L'EMPREINTE SE PROUVE AVEC.**
   `reglageEchelleParis.actif = false` rend la colonne v586 au bloc près (le
   témoin le lit), et c'est ainsi que `morceaux-temoin.mjs` relève l'empreinte
-  des 490 morceaux : `ed369fdb…` des deux côtés. `sommetV586` ne lit jamais
+  des 490 morceaux : `ed369fdb…` des deux côtés. L'empreinte du journal
+  fabriqué (v403) a trois de ses huit sites dans Paris : elle se relève
+  (b05196a5… → 0332dd4c…) et se prouve de la même façon. `sommetV586` ne lit jamais
   le drapeau : la marche a besoin de l'ancien sommet quel que soit le réglage.
   Le coût se mesure et se déclare (façades HD de Paris +9 %, sous `hdMo`).
 
