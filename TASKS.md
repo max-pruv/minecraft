@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-## Paris à l'échelle d'un passant (v588) — lots suivants et dettes
+## Paris à l'échelle d'un passant (v589) — lots suivants et dettes
 
 Mesures et méthode dans `docs/echelle-villes.md` ; la table est
 `src/echelle-ville.js`, que tout bâtisseur et tout témoin lisent.

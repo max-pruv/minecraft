@@ -1448,7 +1448,7 @@ function autourDUnSocle(u, v) {
 // deviennent plus bas que les immeubles voisins, ce qui est mesuré et déclaré
 // dans TASKS.md — les remettre à l'échelle est une livraison à part, avec ses
 // modèles HD.
-// L'ÉCHELLE SE LIT DANS LA TABLE PARTAGÉE (v588, `echelle-ville.js`), jamais
+// L'ÉCHELLE SE LIT DANS LA TABLE PARTAGÉE (v589, `echelle-ville.js`), jamais
 // ici : le bâtisseur et les témoins lisent la même. `HAUT_RDC` compte le rang
 // enterré (`socle`) : le bâtisseur écrit son premier rang à la cote du
 // trottoir, donc le rez-de-chaussée VISIBLE fait `ECHELLE_VILLE.rdc` blocs.
@@ -1472,7 +1472,7 @@ const echelleParis = () => (reglageEchelleParis.actif ? ECHELLE_VILLE : ECHELLE_
 //   sommet    le dernier bloc que le bâtisseur écrit dans la colonne (dy, où
 //             dy = 1 est le bloc de surface) — le faîte, ou la souche de cheminée
 //   ancien    le même sommet avant la v301
-//   sommetV586  le sommet d'avant l'échelle des villes (v588) : la façade a
+//   sommetV586  le sommet d'avant l'échelle des villes (v589) : la façade a
 //             monté de `CROISSANCE_PARIS` rangs, la même pour toute colonne —
 //             c'est ce que lit la marche `releverEchelleParis` (world.js)
 export function gabaritParis(x, z) {
@@ -1531,7 +1531,7 @@ export function batirColonneParis(x, z, poser) {
       poser(y++, ARCHI.ENTRESOL_BAS);
       poser(y++, ARCHI.ENTRESOL_HAUT);
     } else {
-    // LE PREMIER RANG EST AU RAS DU TROTTOIR (v588) : `world.js` écrit `dy = 1`
+    // LE PREMIER RANG EST AU RAS DU TROTTOIR (v589) : `world.js` écrit `dy = 1`
     // à la cote du trottoir, et une bande de façade posée là ne se voit pas —
     // mesuré : le rez-de-chaussée « de trois blocs » n'en montrait que deux, une
     // vitrine faisait la hauteur d'un passant. Ce rang est un SOCLE de pierre ;

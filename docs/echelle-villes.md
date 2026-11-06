@@ -1,4 +1,4 @@
-# L'échelle des villes — ce que Paris mesure, et ce qui était faux (v588)
+# L'échelle des villes — ce que Paris mesure, et ce qui était faux (v589)
 
 Max, trois captures d'iPhone à pied dans une rue de Paris : les passants
 paraissent grands par rapport aux immeubles — un adulte arrive presque en haut

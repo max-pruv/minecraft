@@ -1869,7 +1869,7 @@ const position = (p) => p.evaluate(() => ({
           // La base d'un immeuble n'est pas toujours à la même hauteur : le
           // terrain de Paris monte vers la Butte. On la CHERCHE.
           const sol = w.terrainHeight(x, z);
-          // Depuis la v588 le premier rang (dy 1) est un socle enterré, et la
+          // Depuis la v589 le premier rang (dy 1) est un socle enterré, et la
           // devanture commence au rang 2 : pile[i] est le bloc du rang i + 1.
           let y0 = null;
           for (let d = -1; d <= 3 && y0 === null; d++) {

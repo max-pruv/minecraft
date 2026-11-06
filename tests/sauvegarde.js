@@ -434,7 +434,7 @@ const BLOCS = 40000;
       copieFFaite, fonduD.absent ? 'pas de fondu doux'
         : `${fonduD.copie} · ${Date.now() - departCopieF} ms`);
 
-    // ET PAR L'ÉCHELLE DES VILLES (v588), EN DERNIER : un document tel que la
+    // ET PAR L'ÉCHELLE DES VILLES (v589), EN DERNIER : un document tel que la
     // v586 l'écrirait porte une cabane sur un toit de Paris d'alors ; la
     // fusion la rend trois rangs plus haut, sur le toit neuf, une fois, datée
     // de sa marche — et le nuage a été mis à l'abri avant, sur son propre

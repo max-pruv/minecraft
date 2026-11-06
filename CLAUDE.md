@@ -36,7 +36,7 @@ modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérif
 les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
 ils ne constituent pas une exception pour les nouveaux rendus.
 
-## Paris à l'échelle d'un passant (v588) — une table d'échelle, lue par les bâtisseurs ET les témoins
+## Paris à l'échelle d'un passant (v589) — une table d'échelle, lue par les bâtisseurs ET les témoins
 
 Max, trois captures d'iPhone : « les passants paraissent grands par rapport
 aux immeubles ». Mesuré avant une ligne (`docs/echelle-villes.md`) : les
