@@ -1814,7 +1814,7 @@ function verifier(nom, ok, detail = '') {
           remaps: g.scannesHD.uniformes.remapHD.value.filter((v) => v.w > 0).length };
       });
       await s2.close();
-      verifier('au palier haut, les scans à 2 048 pixels : atlas, carte de normales, mêmes régions et mêmes moyennes (à 5 %)',
+      verifier('sur demande (?scannes2k=1), les scans à 2 048 pixels : atlas, carte de normales, mêmes régions et mêmes moyennes (à 5 %)',
         !r2.absent && r2.etat && r2.etat.statut === 'charge' && r2.etat.taille === 2048 && r2.atlas === 2048 && r2.normales === 2048
           && r2.memesRegions && r2.ecarts && Math.max(...Object.values(r2.ecarts)) <= 0.05 && r2.remaps === (fiche ? fiche.regions.length : -1)
           && r.etat && r.etat.atlas === 1024,

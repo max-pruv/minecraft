@@ -727,7 +727,10 @@ const SCANNES = SCANNES_DEMANDES === '1' || (SCANNES_DEMANDES !== '0' && !renduL
 // finesse pour ≈ 33 Mo de textures de plus, et seulement là. `?scannes2k=0`
 // rejoue le 1 024, `?scannes2k=1` le force (captures, mesures).
 const SCANNES_2K_DEMANDES = new URLSearchParams(location.search).get('scannes2k');
-const SCANNES_2K = SCANNES && RAYON_HD > 0 && (SCANNES_2K_DEMANDES === '1' || (SCANNES_2K_DEMANDES !== '0' && !!PALIER && PALIER.nom === 'haut'));
+// Sur demande seulement (`?scannes2k=1`) : le journal de bord montre l'iPhone
+// de Max planter au palier haut à Paris AVANT les scans (textures 250 à 375 Mo,
+// total 420 à 700 Mo, v580 à v586) ; +34 Mo de textures n'y ont pas leur place.
+const SCANNES_2K = SCANNES && RAYON_HD > 0 && SCANNES_2K_DEMANDES === '1';
 function materiauDeParis() {
   if (!hd) hd = materiauHD(renderer, { normales: SCANNES && RAYON_HD > 0, scannes: SCANNES, ...(SCANNES_2K ? { taille: TAILLE_SCANNES_HAUTE } : {}) });
   return hd.materiau;
