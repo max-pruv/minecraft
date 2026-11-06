@@ -91,6 +91,13 @@ function portee(a, p, sens, O) {
   return { L, cause, bord };
 }
 
+// LA LONGUEUR QUE LE TÉMOIN ROULE (carteMonde.js) : un sens sans prolongement
+// s'arrête au bord pavé du disque, un bloc avant `bord` (Andrews : 219 pour
+// 220). Ajouter ce bloc à l'est faisait s'arrêter le chasseur du dernier poste
+// de l'aire en roulant vers la piste (le guidage d'approche.js juge la place
+// devant lui à un bloc près) : la piste reste à 219 et se déclare courte.
+const longueur = (bord, o, e) => 2 * bord + o + e - (o === 0 || e === 0 ? 1 : 0);
+
 // Les pistes d'un aérodrome (posé ou candidat), prolongées au mieux.
 export function prolongerPistes(a, aeroports = A.AEROPORTS) {
   const O = obstacles(a, aeroports);
@@ -103,7 +110,7 @@ export function prolongerPistes(a, aeroports = A.AEROPORTS) {
     let o = Math.ceil(besoin / 2), e = besoin - o;
     if (o > po.L) { e += o - po.L; o = po.L; }
     if (e > pe.L) { o = Math.min(po.L, o + e - pe.L); e = pe.L; }
-    out.push({ z0: p.z0, o, e, long: 2 * bord + o + e, cible, po, pe });
+    out.push({ z0: p.z0, o, e, long: longueur(bord, o, e), cible, po, pe });
   }
   return out;
 }
@@ -123,7 +130,7 @@ export function mesurerProlongements(ecrire = () => {}) {
       if (o > po.L) { e += o - po.L; o = po.L; }
       if (e > pe.L) { o = Math.min(po.L, o + e - pe.L); e = pe.L; }
       table[a.cle][p.z0] = [o, e];
-      const long = 2 * bord + o + e;
+      const long = longueur(bord, o, e);
       if (long < cible) courtes[a.cle] = `ouest ${po.cause}, est ${pe.cause}`;
       lignes.push(`z${p.z0} [${o}, ${e}] = ${long}/${cible} (ouest ≤ ${po.L} ${po.cause} · est ≤ ${pe.L} ${pe.cause})`);
     }

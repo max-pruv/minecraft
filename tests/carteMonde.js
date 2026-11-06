@@ -4351,10 +4351,14 @@ const VRAIES_KM = [
       } catch { A = []; }
       const w = g.world;
       const sortes = ['hub', 'ville', 'base'];
+      // 750 km (4 000 blocs de la carte à 0,1875) : une distance du monde réel
+      // se redemande à la projection, elle ne s'écrit pas en blocs (v242, carte ×3).
+      let portee = 4000;
+      try { const M = await import('./src/mondes.js'); portee = 750 / M.MONDES.terre.projection.kmParBloc; } catch {}
       const resultats = [];
       for (const sorte of sortes) {
         const a = A.find((q) => q.profil === sorte
-          && Math.hypot(q.x, q.z) < 4000);           // un qu'on peut atteindre sans traverser la carte
+          && Math.hypot(q.x, q.z) < portee);           // un qu'on peut atteindre sans traverser la carte
         if (!a) { resultats.push({ sorte, absent: true }); continue; }
         const sol = w.terrainHeight(a.x, a.z);
         // UN TÉMOIN QUI PORTE UNE COTE DE PLAN NE L'ÉCRIT PAS, IL LA DEMANDE

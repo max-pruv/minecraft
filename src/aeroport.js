@@ -488,7 +488,7 @@ export const PROLONGEMENTS_V587 = {
 // sur les nouveaux emplacements. Même règle, mêmes bornes sur terre ; SUR LA
 // MER, le remblai descend d'`APPUI_PROLONGE` de plus (la digue de la v486 et de
 // la v530), et c'est ce qui donne à Barcelone, Changi et Andrews leur piste
-// entière : `PISTES_COURTES` est vide. Les villes comptent à une fois et demie
+// entière ; seule Andrews reste courte d'un bloc (`PISTES_COURTES`). Les villes comptent à une fois et demie
 // leur rayon, comme pour les emplacements. Les routes n'y sont pas (elles se
 // retracent), c'est à elles de contourner les pistes.
 export const PROLONGEMENTS = {
@@ -517,10 +517,17 @@ export const PROLONGEMENTS = {
 // par le témoin. Une piste plus courte que sa cible sans être nommée ici
 // rougit ; une piste nommée ici qui atteint sa cible rougit aussi.
 export const CIBLE_PISTE = { roissy: 300, hub: 300, ville: 260, base: 220 };
-// Carte ×3 (v588) : AUCUNE. La sixième promesse de la sonde des emplacements
-// a choisi des sites où chaque piste atteint sa cible ; celles de la carte
+// Carte ×3 (v588) : une seule. La sixième promesse de la sonde des
+// emplacements a choisi des sites où chaque piste atteint sa cible, au bloc
+// près que le témoin roule en moins sur un sens sans prolongement ; celles de la carte
 // d'avant restent écrites dans `PISTES_COURTES_V587`, pour mémoire.
-export const PISTES_COURTES = {};
+export const PISTES_COURTES = {
+  // 219 blocs pour 220 : à l'ouest Washington (à une fois et demie son rayon) ;
+  // un bloc de plus à l'est fait s'arrêter le chasseur du dernier poste de l'aire
+  // en roulant vers la piste (le guidage d'approche.js juge la place devant lui
+  // à un bloc près). Mesuré par la sonde de décollage, 421 sur 421 à 219.
+  'bas-adw': 'à l\'ouest Washington',
+};
 export const PISTES_COURTES_V587 = {
   lhr: 'à l\'ouest un vallon plus profond que le remblai, à l\'est Londres',
   bcn: 'la mer des deux côtés, plus profonde que le remblai',

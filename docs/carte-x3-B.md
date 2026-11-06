@@ -23,7 +23,8 @@ Branche `claude/carte-x3-aeroports`, PR vers `claude/carte-x3`.
   (`CIBLE_PISTE`) une fois prolongée. Le cap réel cède en dernier : un degré
   d'écart coûte huit blocs de distance.
 - **`PROLONGEMENTS` remesurés** (`tests/sonde-prolongements-aeroports.mjs`) :
-  vingt sur vingt atteignent leur cible, `PISTES_COURTES = {}`.
+  dix-neuf sur vingt atteignent leur cible ; Andrews roule 219 blocs pour 220
+  (à l'ouest Washington) et se déclare dans `PISTES_COURTES`.
 - **`AIRES` remesurées** : égales à `mesurerAires()` (le témoin de `plafond.js`).
 - Sondes rejouées : `sonde-decollage-postes.cjs` 421 / 421 décollés ;
   `sonde-approche.cjs` 222 essais, zéro en faute ; `plafond.js` sans un rouge.
@@ -41,10 +42,15 @@ Branche `claude/carte-x3-aeroports`, PR vers `claude/carte-x3`.
    borne (`REMBLAI`) ; sous l'eau il descend d'`APPUI_PROLONGE` de plus, la
    règle de Changi (v486) et des prolongements (v530). Sans elle, Barcelone,
    Changi et Andrews restaient sous la barre de 189 blocs du témoin.
-4. **Un point fixe se cherche par itération.** Les prolongements lisent les
+4. **Un sens sans prolongement perd un bloc** au bord pavé du disque : la
+   sonde compte désormais comme le témoin. Allonger Andrews d'un bloc à l'est
+   faisait s'arrêter le chasseur du dernier poste en roulant (le guidage
+   d'`approche.js` juge la place à un bloc près) : la piste reste à 219,
+   déclarée. Dette pour la zone de l'approche.
+5. **Un point fixe se cherche par itération.** Les prolongements lisent les
    zones du monde, qui dépendent des emplacements ; on a rejoué sonde et
    tables jusqu'à zéro changement.
-5. **Changi a un sol fixé** (35, cinq au-dessus de l'eau) : la médiane de son
+6. **Changi a un sol fixé** (35, cinq au-dessus de l'eau) : la médiane de son
    île (38) faisait des digues trop hautes. Ses deux îles sont séparées d'un
    chenal de ~34 blocs que le palier 2 fermera.
 
