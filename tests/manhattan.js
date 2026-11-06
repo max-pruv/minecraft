@@ -47,6 +47,12 @@ function verifier(nom, ok, detail = "") {
     };
     await appuyer(() => { const b = document.querySelector(".who-card.active"); return b && b.offsetWidth > 0 && b; }, "carte");
     await appuyer(() => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.offsetWidth > 0), "plus tard");
+    // Et l'on joue comme l'enfant qui lit l'accueil : quand la chauffe de New
+    // York est finie (v319). L'ancien clic attendait des images stables, donc
+    // cette chauffe sans le dire ; appuyer tout de suite faisait compiler les
+    // banlieues en y entrant (75 clés avant, 118 après).
+    await p.waitForFunction(() => !window.__chauffeNY || window.__chauffeNY().finie, null, { timeout: 150000 })
+      .catch(() => {});
     await appuyer(() => { const b = document.querySelector("#play-btn"); return b && !b.disabled && b.offsetWidth > 0 && b; }, "jouer");
     await p.waitForFunction(() => __game.running);
     verifier(
