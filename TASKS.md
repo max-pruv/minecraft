@@ -45,6 +45,45 @@ du plan :
 - [ ] **Les reflets de carrosserie** (`CubeRenderTarget`, une face par image)
   tournent au banc ; non éprouvés sur l'iPad face par face.
 
+### Rouges du portail de la v588 (PR #609), mesurés des deux côtés
+
+- [ ] **Portail local (17 suites, 1 577 ✅, 10 ❌) et GitHub (run 42143763412,
+  tranche 3 verte, 1, 2 et 4 rouges) sur le commit 70ca620.** La branche
+  n'écrit rien sous WebGL : `tsl` n'est importé que dans `creerRenderer` sous
+  `?rendu=webgpu`, et chaque greffon (`tuilage`, `domeDegrade`,
+  `alphaParInstance`) rend faux ou nul sans lui — le code d'avant s'exécute
+  tel quel. Tous les rouges, sauf un, sont des dettes déjà déclarées plus bas :
+  `reseau.js` fluidité de l'ami ×2 (direct 0,70 et 0,77 de part juste, nuage
+  0,40 et 0,53), le passager (`roule` 7,6 à 9,0 pour un suivi de 3,9 à 5,9),
+  l'avion qui prend feu chez l'ami (`vehicule: false` à 1,8 s) ; `monte.js`
+  les deux chevauchements de voitures (taux 83,5 % et 6,7 % ici ; 84,5 % et
+  6,1 % sur GitHub), la rue vide, « rendent leur mémoire », la radio à
+  −49,4 dB pour −55 ; sur GitHub en plus le flâneur de Rome, le passage peint
+  de Rome, deux voisines, Moscou ×2, la sirène ; `degats.js` le dernier
+  enfoncement à 0 ms (local) et, sur GitHub seulement, les sept témoins des
+  murs (`murs: 0`, `chocsPhys: 0` : la voiture n'atteint aucun mur en 29 s sur
+  la machine GitHub, le tirage de cadence du v580). **Double mesure, rejouée
+  SEULE** : `degats.js` 67 ✅ / 0 ❌ sur la branche ET sur `origin/main` (v587,
+  arbre détaché), le dernier enfoncement à 0,2 ms des deux côtés.
+  `manhattan.js` meurt des deux côtés sur un clic que Playwright laisse
+  « waiting for scheduled navigations to finish » (la relance de page de la
+  synchronisation, v189/v196) : sur la branche à `tests/manhattan.js:40` au
+  portail (0 vert) et à la ligne 1163 seule (37 ✅, le chapitre hors ligne) ;
+  sur `origin/main` à la ligne 42 seule, après 1 ✅. Un passage de chaque côté
+  pour une intermittence : la distribution n'est pas établie (v269), mais
+  `main` meurt plus tôt que la branche sur le même geste.
+- [ ] **Le seul rouge NON déclaré : `manhattan.js` « les banlieues se dessinent
+  avec les modèles de Max, sans compiler de matière en y entrant »**, tranche
+  4/4 de GitHub : `clesAvant 115, clesApres 119`, le paquet arrivé en 49 s.
+  Quatre clés de programme neuves à l'entrée dans Brooklyn, sur une machine
+  lente. Non atteint en local (la suite meurt avant, des deux côtés). La
+  branche ne touche ni `new-york-modeles.js` ni `manhattan-materiaux.js` hors
+  de la branche WebGPU du dôme ; la preuve est structurelle, pas mesurée. À
+  rejouer seule sur `main` jusqu'à atteindre ce chapitre, et lire QUELLES clés
+  naissent (la case de la clé qui diffère, v319) : si c'est la matière des
+  quartiers (`materiauQuartiers`), la chauffe de New York ne la couvre pas sur
+  une machine où le paquet arrive après l'entrée.
+
 ## Chaque moteur a sa voix, la flamme est une réchauffe (v587) — dettes
 
 - [ ] **On n'entend pas le moteur d'un ami.** Aucun son d'ami ne joue de
