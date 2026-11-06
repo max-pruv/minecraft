@@ -4400,8 +4400,10 @@ export function createVehicules({ scene, player }) {
       // PROPRE de chaque voiture (`vLoc`, ce qu'elle fait vraiment, freinage
       // compris) et celles qui ont été heurtées par l'enfant
       voie: c.voie || null,
-      croisiere: c.profilCalcule ? Math.round(Math.max(...c.profilCalcule.vs) * 10) / 10 : null,
-      lente: c.profilCalcule ? Math.round(Math.min(...c.profilCalcule.vs) * 10) / 10 : null,
+      // Une boucle, pas `Math.max(...vs)` : le profil d'un train de la carte ×3
+      // a plus d'éléments que la pile n'accepte d'arguments.
+      croisiere: c.profilCalcule ? Math.round(c.profilCalcule.vs.reduce((a, v) => (v > a ? v : a), -Infinity) * 10) / 10 : null,
+      lente: c.profilCalcule ? Math.round(c.profilCalcule.vs.reduce((a, v) => (v < a ? v : a), Infinity) * 10) / 10 : null,
       vitesses: c.vLoc ? Array.from(c.vLoc).map((v, i) => Math.round((v >= 0 ? v : c.vGrilleDe(i)) * 100) / 100) : [],
       // l'allure que la grille donne à chaque voiture, là où elle est
       grille: c.vGrille ? Array.from(c.vGrille).map((v) => Math.round(v * 100) / 100) : [],
