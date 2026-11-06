@@ -42,7 +42,7 @@ self.onmessage = (e) => {
     monde.arbres = m.arbres || 0;   // les vrais arbres (v499), à portée du détail
     monde.mobilierCasse = new Set(m.mobilierCasse || []);   // le mobilier HD écrasé (v536)
     monde.sansSolContinu = !!m.sansSolContinu;
-    monde.installerEdits(m.edits, m.temps, m.ctx || 'local');
+    monde.installerEdits(m.edits, m.temps, m.ctx || 'local', m.origines);
     return;
   }
   if (m.type === 'bloc') {

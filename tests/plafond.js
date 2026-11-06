@@ -3349,7 +3349,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const L = N[ancre], t = W[date] - 86400000;
     const nf = new W.World();
     const av = new W.World({ v308: true });   // les villes d'avant le kit partout
-    const bat = (M, x, z, f) => (M[batir].length >= 4 ? M[batir](x, z, nf.terrainHeight(x, z), f) : M[batir](x, z, f));
+    // CARTE ×3 : la copie figée et le monde d'avant vivent à l'adresse de la
+    // carte d'avant (`terreV4`) ; la ville d'aujourd'hui a bougé d'un seul
+    // tenant. L'ancienne ville sous une colonne d'aujourd'hui se lit donc
+    // translatée de ce vecteur — ce que le jeu fait (`ecartFige`).
+    const dx = A[ancre] ? L.x - A[ancre].x : 0, dz = A[ancre] ? L.z - A[ancre].z : 0;
+    const a = (f) => (x, z) => f(x - dx, z - dz);
+    const solA = a(A[sol]), libreA = a(A[libre]);
+    const bat = (M, x, z, f) => {
+      const [bx, bz] = M === A ? [x - dx, z - dz] : [x, z];
+      return M[batir].length >= 4 ? M[batir](bx, bz, nf.terrainHeight(x, z), f) : M[batir](bx, bz, f);
+    };
     // une ancienne rue que la ville neuve bâtit, et un ancien lot qu'elle fait rue
     let rueBatie = null, lotRue = null;
     // cent vingt-huit directions : à Washington, les rues à la GTA ne laissent
@@ -3364,13 +3374,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // et rien n'y est posé par-dessus dans la ville d'avant — un monument se
       // pose APRÈS les colonnes (Lille, v368 : la Vieille Bourse à côté)
       const degage = () => croix((xx, zz) => {
-        const g = av.terrainHeight(xx, zz);
-        for (let y = g + 1; y <= g + 6; y++) if (av.getBlock(xx, y, zz) !== 0) return false;
+        const g = av.terrainHeight(xx - dx, zz - dz);
+        for (let y = g + 1; y <= g + 6; y++) if (av.getBlock(xx - dx, y, zz - dz) !== 0) return false;
         return true;
       });
-      if (!rueBatie && croix((xx, zz) => A[sol](xx, zz) === CITY_BLOCK.ASPHALT)
+      if (!rueBatie && croix((xx, zz) => solA(xx, zz) === CITY_BLOCK.ASPHALT)
         && N[libre](x, z) && mur() && degage()) rueBatie = [x, z];
-      if (!lotRue && voisin(A[libre]) && voisin((xx, zz) => N[sol](xx, zz) !== null)) lotRue = [x, z];
+      if (!lotRue && voisin(libreA) && voisin((xx, zz) => N[sol](xx, zz) !== null)) lotRue = [x, z];
     }
     if (!rueBatie || !lotRue) return { absent: false, introuvable: true, rueBatie, lotRue };
     const monde = (carte) => {
@@ -3404,8 +3414,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const toit = (() => { let y0 = gc; bat(A, cx, cz, (dy) => { y0 = Math.max(y0, gc + dy - 1); }); return y0; })();
     const wc = monde({ [`${cx},${toit + 1},${cz}`]: [8, t] });
     const porte = wc.getBlock(cx, toit, cz) !== 0;
-    return { absent: false, enferme, batiNeuf, porte, toit, gc, rueBatie, lotRue };
+    return { absent: false, enferme, batiNeuf, porte, toit, gc, rueBatie, lotRue, dx, dz };
   };
+  const figees = {};
   for (const [ville, args] of [
     ['Londres', ['DATE_RUES_LONDRES', 'londres-v332.js', 'londres.js', 'LONDRES', 'solLondres', 'lotLondresLibre', 'batirColonneLondres']],
     ['Nice', ['DATE_RUES_NICE', 'nice-v340.js', 'nice.js', 'NICE', 'solNice', 'lotNiceLibre', 'batirColonneNice']],
@@ -3413,13 +3424,71 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     ['Lille', ['DATE_RUES_LILLE', 'lille-v344.js', 'lille.js', 'LILLE', 'solLille', 'lotLilleLibre', 'batirColonneLille']],
     ['Washington', ['DATE_RUES_WASHINGTON', 'washington-v367.js', 'washington.js', 'WASHINGTON', 'solWashington', 'lotWashingtonLibre', 'batirColonneWashington']],
   ]) {
-    const r = await figee(...args);
+    const r = figees[ville] = await figee(...args);
     verifier(`à ${ville}, une maison posée sur une ancienne rue n'est pas enfermée dans un immeuble neuf`,
       !r.absent && !r.introuvable && r.enferme === 0 && r.batiNeuf > 0,
       r.absent ? `pas de date des rues de ${ville}` : JSON.stringify(r));
     verifier(`et une cabane posée sur un ancien toit de ${ville} garde son toit`,
       !r.absent && !r.introuvable && r.porte,
       r.absent ? `pas de date des rues de ${ville}` : JSON.stringify(r));
+  }
+
+  // --- CARTE ×3 : LA MAISON EMMENÉE RESTE DANS SON ANCIENNE RUE ---------------
+  //
+  // Une maison posée à Londres avant la v587, sur une rue d'avant le kit (v339)
+  // que la ville neuve bâtit, à l'adresse de la carte d'avant (`terreV4`). La
+  // marche 8 → 9 l'emmène avec Londres et lui donne la date de la carte ×3 ;
+  // sa date d'origine part en 4ᵉ élément de l'entrée. Reçue du nuage
+  // (`mergeEdits`), elle doit être à sa nouvelle adresse, et toujours dans
+  // l'ancienne rue : les gardes lisent la date d'origine, et le monde lit la
+  // ville figée translatée. Sans le 4ᵉ élément, la même maison est enfermée
+  // dans la façade neuve — c'est ce qui prouve que le champ porte la garde. Et
+  // le champ survit à l'export du journal. Rouge sur l'ancien code : la marche
+  // jette la date d'origine.
+  {
+    const W = await import('../src/world.js');
+    const r = figees.Londres;
+    let res = { absent: !W.DATE_CARTE_X3 || !W.migrerCarteX3 || !r || r.absent || r.introuvable };
+    if (!res.absent) {
+      const [nx, nz] = r.rueBatie, ax = nx - r.dx, az = nz - r.dz;
+      const vieux = new W.World({ v587: true }), nf = new W.World();
+      const ga = vieux.terrainHeight(ax, az), gn = nf.terrainHeight(nx, nz);
+      const tPose = W.DATE_RUES_LONDRES - 86400000;
+      const doc = {};
+      for (let dy = 1; dy <= 3; dy++) doc[`${ax},${ga + dy},${az}`] = [5, tPose, 0];
+      const m = W.migrerCarteX3(doc).carte;
+      // Reçue du nuage : la fusion l'écrit au journal, et la page se relance
+      // (v189) — c'est le journal rechargé (`loadEdits`) qui dessine le monde.
+      const lire = (carte) => {
+        const recu = new W.World();
+        recu.mergeEdits(carte);
+        const journal = JSON.stringify({ local: recu.exportEdits() });
+        const avantLS = globalThis.localStorage;
+        globalThis.localStorage = { getItem: (k) => (k === W.World.STORAGE_KEY ? journal : null), setItem() {}, removeItem() {} };
+        let w;
+        try { w = new W.World(); w.loadEdits(); } finally {
+          if (avantLS === undefined) delete globalThis.localStorage; else globalThis.localStorage = avantLS;
+        }
+        let enferme = 0, ici = 0;
+        for (let dy = 1; dy <= 3; dy++) if (w.getBlock(nx, gn + dy, nz) === 5) ici++;
+        for (const [ddx, ddz] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const g = Math.max(gn, nf.terrainHeight(nx + ddx, nz + ddz));
+          for (let y = g + 1; y <= gn + 6; y++) {
+            if (!(ddx === 0 && ddz === 0 && y <= gn + 3) && w.getBlock(nx + ddx, y, nz + ddz) !== 0) enferme++;
+          }
+        }
+        return { w, enferme, ici };
+      };
+      const avec = lire(m);
+      const sans = lire(Object.fromEntries(Object.entries(m).map(([k, e]) => [k, e.slice(0, 3)])));
+      const e0 = Object.values(m)[0];
+      const exp = Object.values(avec.w.exportEdits())[0];
+      res = { absent: false, ici: avec.ici, enferme: avec.enferme, sansOrigine: sans.enferme, entree: e0, export: exp,
+        date: e0 && e0[1] === W.DATE_CARTE_X3, origine: e0 && e0[3] === tPose, garde: exp && exp[3] === tPose };
+    }
+    verifier('carte ×3 : une maison posée sur une ancienne rue de Londres avant la v587, emmenée par la marche, est dans l\'ancienne rue à sa nouvelle adresse',
+      !res.absent && res.ici === 3 && res.enferme === 0 && res.sansOrigine > 0 && res.date && res.origine && res.garde,
+      res.absent ? 'la marche 8 → 9 ou la rue de Londres manque' : JSON.stringify(res));
   }
 
   // --- LA TRAME GÉNÉRIQUE QUITTE LONDRES (v447), SAUF SOUS CE QU'UN ENFANT --

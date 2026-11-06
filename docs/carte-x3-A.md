@@ -67,31 +67,52 @@ aérodromes vivants ni aux villes engendrées (sessions B et C).
 - Relire `DATE_CARTE_X3` à l'heure de la fusion (v309) : une date en avance
   déplacerait deux fois ce qu'un enfant pose sur la carte neuve.
 
+## Les gardes de ville d'avant suivent le bloc emmené (piste (a), faite ici)
+
+Une maison d'enfant entourée d'une façade neuve casse l'invariant 1 : ce n'était
+pas une dette qu'on pouvait laisser au palier 2.
+
+- **La marche garde la date d'origine en 4ᵉ élément** de l'entrée
+  (`[bloc, DATE_CARTE_X3, provenance, origine]`). La date courante reste
+  `DATE_CARTE_X3`, qui rend la marche idempotente. Le champ voyage par
+  `exportEdits` (World et TerreUrbaine), `loadEdits`, `mergeEdits` (World →
+  `setBlock(…, origine)`), `installerEdits(…, origines)` (le worker la reçoit
+  dans le message `edits`), la fusion de `sync.js` (qui garde l'entrée
+  entière) et `resserrer` (JSON). Un bloc réécrit perd son origine.
+- **Toute garde par date lit `origine ?? t`** : villes figées (v339–v370),
+  Paris cède, rues à la GTA, trame de Londres, jardins, métro de la boîte DC,
+  stations, tour Eiffel, climats, clairières, pistes (`setBlock`,
+  `indexerMonumentsTouches`) ; et à New York `DATE_OSM`, `DATE_BANLIEUES`,
+  `DATE_NY_MODELES` (`dateGarde`, manhattan-world.js).
+- **La ville figée se lit translatée du déplacement de sa ville**
+  (`ecartFige`, `ecartVilleX3` = `positionDe(cle) − positionDe(cle, 'terreV4')`,
+  le vecteur même de la marche) : Londres, Nice, Lille, San Francisco (v332–
+  v344 et v531), Washington (v367), et chaque ville engendrée de la v531 par
+  SON vecteur (`villeMondeEn`). Les mondes d'avant (`monde: 'terreV4'`) lisent
+  en place. Les feux d'une ville figée prennent l'ancre de la copie figée.
+- **TerreUrbaine indexe ses gardes au chargement** (`loadEdits` n'appelait pas
+  `indexerMonumentsTouches`) : sans cela le fil principal bâtissait la ville
+  neuve sous une maison que le worker dessinait dans l'ancienne.
+- Témoins (`plafond.js`) : les dix « une maison posée sur une ancienne rue… /
+  une cabane sur un ancien toit » repassent au vert (le témoin lit la copie
+  figée translatée, comme le jeu) — les cinq cabanes sont rouges sur l'ancien
+  code ; et « carte ×3 : une maison posée sur une ancienne rue de Londres
+  avant la v587, emmenée par la marche, est dans l'ancienne rue à sa nouvelle
+  adresse » (document de la v587 → marche → `mergeEdits` → journal rechargé),
+  qui exige aussi que la même maison SANS 4ᵉ élément soit enfermée — rouge sur
+  l'ancien code (15 blocs autour d'elle).
+
 ## Dettes déclarées
 
-1. **⚠️ LA PLUS SÉRIEUSE — les gardes de ville d'avant perdent leur effet dans
-   une ville qui part, et dix témoins de `plafond.js` le disent** (« à Londres /
-   Nice / San Francisco / Lille / Washington, une maison posée sur une ancienne
-   rue… », « …une cabane sur un ancien toit… » : `introuvable`). Les copies
-   figées vivent désormais à l'adresse d'avant (`terreV4`) ; la ville neuve à
-   l'adresse neuve ; le témoin cherche l'ancienne rue sous la ville neuve et ne
-   la trouve plus. Dans le jeu, c'est la même chose : la garde lit la ville
-   figée là où elle n'est plus. Et ce n'est pas réparable par une translation
-   seule, parce que :
-   **Les gardes de ville d'avant perdent leur effet dans une ville qui part.**
-   `VILLES_FIGEES`, rues à la GTA, Paris v531, banlieues, Washington… jugent un
-   bloc par sa date ; un bloc emmené par la marche prend `DATE_CARTE_X3`, donc il
-   est vu « posé après » et la ville NEUVE est bâtie autour de lui. Paris ne bouge
-   pas : ses gardes tiennent. Ailleurs, une maison d'enfant peut se retrouver
-   devant une façade neuve. Le palier 2 (villes ×1,5) doit trancher : soit
-   garder la date d'origine dans un champ, soit faire céder la ville neuve
-   (règle de la v306). Pourquoi la carte 3 (v242) n'avait pas ce problème :
-   `DATE_CARTE_3` précédait toutes les `DATE_RUES_*` ; `DATE_CARTE_X3` les suit
-   toutes. Pistes mesurables : (a) garder la date d'origine dans un champ à part
-   de l'entrée (à vérifier contre `resserrer` et la fusion) et faire lire aux
-   gardes la ville figée TRANSLATÉE du déplacement de sa ville ; (b) la règle
-   de v306 — la ville neuve cède autour de tout bloc emmené par la marche
-   (date `DATE_CARTE_X3` exactement). (b) est dans la zone du palier 2.
+1. **Ce que la ville figée translatée ne couvre pas encore** : les bouches du
+   métro de Rome de la v531 (`metromonde.js`, `surVilleV531`) se choisissent
+   contre la copie figée lue à l'adresse d'aujourd'hui ; les feux allumés par
+   `main.js` (lampes) se lisent dans la table de la copie figée, à l'adresse
+   d'avant ; à New York, une colonne protégée « d'avant les banlieues » garde
+   le relief de la Terre d'AUJOURD'HUI à sa nouvelle adresse, pas celui d'où
+   elle vient ; le diagnostic « posé à la main le … » (`?diag=1`) affiche la
+   date de la carte ×3.
+
 2. **Une fiche de garage orpheline de DEUX marches** (fiche d'avant la carte 3,
    blocs déjà passés par la carte 3 ET la carte ×3) n'est pas retrouvée. Le
    témoin de la carte 3 rejoue l'orpheline d'une seule marche.

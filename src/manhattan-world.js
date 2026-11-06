@@ -231,10 +231,22 @@ export class TerreUrbaine extends World {
       this.edits.set(k, e[0]);
       this.editTimes.set(k, e[1]);
       this.provenance.set(k, e[2] === 0 ? 0 : e[2] === 2 ? 2 : 1);
+      // la date d'origine d'un bloc emmené par la carte ×3 (world.js)
+      if (Number.isFinite(e[3])) this.editOrigines.set(k, e[3]);
     }
     this.cacheSol.clear();
+    // les gardes des villes d'avant (world.js) se refont avec le journal :
+    // sans elles, le fil principal bâtit la ville neuve sous une maison que
+    // le worker dessine dans l'ancienne, et l'enfant s'y cogne
+    this.indexerMonumentsTouches();
     this.refreshProtection();
     this.deciderModelesNY();
+  }
+  // La date que lisent les gardes : celle où l'enfant a posé le bloc, même
+  // s'il a été emmené depuis par la carte ×3 (`editOrigines`, world.js).
+  dateGarde(k) {
+    const o = this.editOrigines.get(k);
+    return o !== undefined ? o : (this.editTimes.get(k) || 0);
   }
   // LES IMMEUBLES TOUCHÉS (v583). Un modèle ne se troue pas : l'immeuble d'un
   // enfant qui y a posé ou creusé un bloc garde sa façade procédurale. On le sait
@@ -265,7 +277,7 @@ export class TerreUrbaine extends World {
     for (const k of this.edits.keys()) {
       const [x, , z] = k.split(",").map(Number),
         p = versManhattan(x, z),
-        avant = (this.editTimes.get(k) || 0) < DATE_NY_MODELES;
+        avant = this.dateGarde(k) < DATE_NY_MODELES;
       if (empire && p.x >= empire.x0 - 3 && p.x < empire.x1 + 3 && p.z >= empire.z0 - 3 && p.z < empire.z1 + 3) {
         if (avant) ancienE = true;
         if (p.x >= empire.x0 && p.x < empire.x1 && p.z >= empire.z0 && p.z < empire.z1) this.empireTouche = true;
@@ -318,8 +330,12 @@ export class TerreUrbaine extends World {
   }
   exportEdits() {
     const out = { ...this.importMarks };
-    for (const [k, id] of this.edits)
-      out[k] = [id, this.editTimes.get(k) || 0, this.provenance.get(k) || 0];
+    for (const [k, id] of this.edits) {
+      const o = this.editOrigines.get(k);
+      out[k] = o === undefined
+        ? [id, this.editTimes.get(k) || 0, this.provenance.get(k) || 0]
+        : [id, this.editTimes.get(k) || 0, this.provenance.get(k) || 0, o];
+    }
     return out;
   }
   mergeEdits(blocks) {
@@ -355,15 +371,16 @@ export class TerreUrbaine extends World {
     }
     const n = super.mergeEdits(normal);
     // un bloc d'avant les banlieues reçu du nuage : sa colonne garde son relief
+    const dateDe = (e) => (Number.isFinite(e[3]) ? e[3] : e[1]);
     for (const [k, e] of Object.entries(normal)) {
-      if (e[1] >= DATE_BANLIEUES) continue;
+      if (dateDe(e) >= DATE_BANLIEUES) continue;
       const [x, , z] = k.split(",").map(Number);
       if (dansBanlieue(x, z, TALUS + 2) && !this.protectedColumns.has(`${x},${z}`)) {
         terrainModifie = true;
         break;
       }
     }
-    if (n && Object.values(normal).some(e => e[1] < DATE_OSM)) terrainModifie = true;
+    if (n && Object.values(normal).some(e => dateDe(e) < DATE_OSM)) terrainModifie = true;
     if (n) this.marquerBatimentsTouches();
     if (terrainModifie) {
       this.refreshProtection();
@@ -389,8 +406,8 @@ export class TerreUrbaine extends World {
   // écarter les nouveaux immeubles qui le chevaucheraient. État propre au monde.
   restaurerImmeublesHistoriques() {
     this.immeublesHistoriques = new Set();
-    for (const [k, t] of this.editTimes) {
-      if (t >= DATE_OSM || !this.edits.has(k) || this.provenance.get(k)) continue;
+    for (const k of this.editTimes.keys()) {
+      if (this.dateGarde(k) >= DATE_OSM || !this.edits.has(k) || this.provenance.get(k)) continue;
       const [x, , z] = k.split(',').map(Number), p = versManhattan(x,z);
       if (!dansManhattan(x,z)) continue;
       for (const b of immeublesHistoriquesEn(p.x,p.z,2)) this.immeublesHistoriques.add(b.id);
@@ -415,8 +432,8 @@ export class TerreUrbaine extends World {
     // CE QU'UN ENFANT A BÂTI AVANT LES BANLIEUES (v583) GARDE SON SOL. Quelle que
     // soit sa provenance : sa colonne et une marge de deux blocs restent au relief
     // de la Terre, et le bâtiment qui y tomberait s'efface.
-    for (const [k, t] of this.editTimes) {
-      if (t >= DATE_BANLIEUES || !this.edits.has(k)) continue;
+    for (const k of this.editTimes.keys()) {
+      if (this.dateGarde(k) >= DATE_BANLIEUES || !this.edits.has(k)) continue;
       const [x, , z] = k.split(",").map(Number);
       if (!dansBanlieue(x, z, TALUS + 2)) continue;
       for (let dz = -2; dz <= 2; dz++)
