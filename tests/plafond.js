@@ -3253,7 +3253,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   // les blocs, les positions et les garages, et le stockage reste en carte 8.
   const garde = await (async () => {
     const W = await import('../src/world.js');
-    if (!W.MIGRATION_ECHELLE || !W.preversion) return { absent: true };
+    if (!W.MIGRATION_ECHELLE || !W.preversion || !W.releveEchelleDe) return { absent: true };
     const hotes = {
       prev: W.preversion('minecraft-fam-git-claude-echel-c3b2f2-maxpruvost-4441s-projects.vercel.app'),
       prod: W.preversion('minecraft-fam.vercel.app'), banc: W.preversion('127.0.0.1'), node: W.preversion(undefined),

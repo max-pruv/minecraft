@@ -2808,7 +2808,7 @@ export const DATE_ECHELLE_PARIS = Date.UTC(2026, 10, 7, 12, 0, 0);
 let mondeDuReliefNeuf = null;
 const reliefNeufDe = (x, z) => (mondeDuReliefNeuf || (mondeDuReliefNeuf = new World())).terrainHeight(x, z);
 const gabaritsEchelle = new Map();     // x * 262144 + z -> { ancien, monte } d'une colonne de lot d'aujourd'hui, ou null
-function releveEchelleDe(x, z) {
+export function releveEchelleDe(x, z) {
   const cle = cleColonneParis(x, z);
   let g = gabaritsEchelle.get(cle);
   if (g !== undefined) return g;
