@@ -107,7 +107,38 @@ du plan :
   Tranche 3/4 : `visio.js` « la radio parle plus bas pendant l'appel »
   (`avant 0,0000`, déclaré, vert rejoué seul) et `carte.js` le fond de carte à
   froid (411 ms pour 400, déclaré) ; `sauvegarde.js`, `hote.js`, `plafond.js`
-  et `maj.js` vertes.
+  et `maj.js` vertes. Ses tranches 1/4 et 4/4 ont été ANNULÉES à 14 h 05 par
+  le push de `1736477` (le `cancel-in-progress` du workflow a mis deux minutes
+  à les atteindre) : le run 80 les rejoue.
+  Run 80 (`1736477`, TASKS seul), tranche 3/4 : `maj.js` deux rouges du
+  loader de mise à jour — « le loader dit combien de fichiers sont rangés »
+  (textes vus sans le compte) et « le loader ne s'efface qu'une fois les corps
+  et les programmes prêts » (`humains: false`, programmes 34/41 à 6,9 s) —,
+  les deux déclarés intermittents (v559, table « ❌ 2 fois, ✅ 3 fois | ✅ 4
+  fois » plus bas), et VERTS au run 78 sur le même arbre une heure plus tôt :
+  le même témoin, deux verdicts, zéro ligne changée. `plafond.js` verte.
+  Portail local sur la fusion (`--malgre-fumee`) : `reseau.js` « pas par
+  paquets » (déclaré), `manhattan.js` morte au clic de la ligne 42 (déclaré),
+  `monte.js` six rouges dont cinq déclarés (deux voisines, piler au feu,
+  heurtée par l'enfant, rendent leur mémoire, « Atterrissage vers ») et UN
+  nouveau : « s'il ne peut pas atteindre le bord, il garde le bord pour poste »
+  rend `{ err: 'pas de chaussée' }` — la sonde du témoin n'a trouvé aucune
+  colonne de chaussée à moins de seize blocs du QUATRIÈME passant de Rome, au
+  niveau de ses pieds. C'est une absence de mesure (v272 : `null` n'est pas un
+  verdict), pas un fait du jeu. Double mesure (`sonde-bord-chaussee.cjs` du
+  brouillon : la recherche MÊME du témoin, rejouée pour tous les passants de
+  Rome, ville remplie, trois pages de suite par arbre) : branche `9f0a56f`
+  0 passant sans chaussée sur 15 · 15 · 15, `gens[3]` sur le trottoir 3/3 ;
+  `origin/main` v590 (`711ea4f`) 0 sur 15 · 15 · 15, `gens[3]` 3/3 — même
+  distribution des deux côtés, et le rouge ne se reproduit sur aucune page
+  neuve. Ce que le portail a vu est l'HÉRITAGE d'état de `monte.js` (v279) :
+  à ce point de la suite, les trois premiers passants viennent d'être posés
+  sur la chaussée par le témoin d'avant, l'enfant a bougé, et le quatrième
+  est là où le rapatriement l'a mis (une esplanade, du gazon) — seize blocs
+  sans chaussée à son niveau. Dette : le témoin cherche un passant QUI A une
+  chaussée à portée (parmi les dix-huit) au lieu de prendre le quatrième, et
+  publie lequel ; tant qu'il ne le fait pas, `{ err: 'pas de chaussée' }` est
+  une absence de mesure, pas un rouge du jeu.
 
 ## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
 
