@@ -14,7 +14,7 @@
 // d'attente d'un texel, et reçoit la texture du fichier quand elle arrive —
 // remplacer une carte par une autre ne change pas la clé.
 import * as THREE from 'three';
-import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { chargeurModeles, urlModele } from './ktx2.js';
 
 export const FICHIERS_NY = {
   empire: './vendor/newyork/empire-state.glb',
@@ -71,7 +71,7 @@ let promesseQuartiers = null;
 export function chargerQuartiers() {
   if (!PHOTO_NY) return null;
   if (!promesseQuartiers) {
-    promesseQuartiers = new GLTFLoader().loadAsync("./vendor/newyork/quartiers.glb").then((gltf) => {
+    promesseQuartiers = chargeurModeles().loadAsync(urlModele("./vendor/newyork/quartiers.glb")).then((gltf) => {
       const out = {}, m = materiauQuartiers();
       gltf.scene.traverse((o) => {
         if (!o.isMesh) return;
@@ -97,7 +97,7 @@ const charges = {}, prets = {};
 export function chargerModeleNY(nom) {
   if (!PHOTO_NY) return null;
   if (!charges[nom]) {
-    charges[nom] = new GLTFLoader().loadAsync(FICHIERS_NY[nom]).then((gltf) => {
+    charges[nom] = chargeurModeles().loadAsync(urlModele(FICHIERS_NY[nom])).then((gltf) => {
       const out = {};
       gltf.scene.traverse((o) => {
         if (!o.isMesh) return;

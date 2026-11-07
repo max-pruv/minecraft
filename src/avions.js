@@ -67,7 +67,7 @@ import { Atelier } from './modeles.js';
 // et l'on se retrouve avec un Concorde plus long que son poste. `aeroport.js`
 // ne tire aucune bibliothèque 3D, l'import est donc gratuit dans les deux sens.
 import { GABARITS_AVION } from './aeroport.js';
-import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { chargeurModeles, urlModele } from './ktx2.js';
 import { partagerTout } from './liberer.js';
 
 const BLANC = 0xf0f0ea;
@@ -816,7 +816,7 @@ export function avionsPrets() { return [...protosAvion.keys()]; }
 export function chargerAvionsDeposes() {
   if (chargementAvions || typeof document === 'undefined' || SANS_DEPOSES) return chargementAvions;
   chargementAvions = Promise.all(Object.entries(AVIONS_GLB).map(([cle, def]) =>
-    new GLTFLoader().loadAsync('./vendor/avions/' + def.fichier).then((gltf) => {
+    chargeurModeles().loadAsync(urlModele('./vendor/avions/' + def.fichier)).then((gltf) => {
       const racine = gltf.scene.getObjectByName('Avion') || gltf.scene;
       // le prototype est à toute la flotte : `liberer` ne rend jamais ce
       // qu'un avion qui s'en va tient de lui (v495)
