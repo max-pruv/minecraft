@@ -182,8 +182,9 @@ seule est un défaut du monde.
   centre), il lisait l'air au-dessus d'un cube plein. C'est la règle de la
   v539 (« quand une surface se lit ailleurs que le bloc, le bloc voyage avec
   elle ») appliquée au témoin : il lit désormais le coin, puis le centre, puis
-  le point. Mesuré : 392 → 1 sur la branche, et le témoin lu au coin reste à
-  zéro sur le code d'avant le correctif. Allonger les ouvrages d'un ou deux
+  le point. Mesuré : 392 → 1 sur la branche (le trou restant est le vrai, ci-dessous).
+  Le témoin lu au coin n'a pas été rejoué sur le socle (la sonde a expiré
+  pendant le portail) : `plafond.js` sur la base le dira. Allonger les ouvrages d'un ou deux
   pas (essayé : 0, 1, 2) ne fait que déplacer les trous d'un pont à l'autre —
   non-résultat, retiré.
 - **Un sommet de coude sur le joint (règle v428).** Le dernier trou était sur
