@@ -8,6 +8,11 @@ la même fusion.** Le numéro de version est celui de `CACHE_VERSION` dans
 `sw.js` — c'est lui qui décide si une tablette déjà installée reçoit la mise à
 jour, et c'est donc lui qui fait foi.
 
+**Une branche n'écrit pas ici directement** : elle dépose son entrée dans
+`livraisons/` (voir `livraisons/README.md`), et le workflow `Numérotation`
+l'insère en tête, avec son numéro, après la fusion. Plusieurs sessions peuvent
+ainsi livrer en parallèle sans se disputer un numéro.
+
 Chaque entrée dit trois choses, dans cet ordre :
 
 - **Pourquoi** — la panne vécue, ou le manque constaté. Pas la solution.

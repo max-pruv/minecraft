@@ -1,0 +1,74 @@
+# LA NUMÉROTATION SE FAIT APRÈS LA FUSION.
+#
+# Les branches ne touchent plus au numéro de version (sw.js, CHANGELOG.md,
+# src/nouveautes.js) : elles déposent un fichier dans `livraisons/`. À chaque
+# poussée sur `main`, ce workflow donne leur numéro aux livraisons en attente
+# (scripts/numeroter.mjs), commite et pousse sur `main`. Plusieurs sessions
+# peuvent donc fusionner en parallèle sans se disputer un numéro.
+#
+# Un commit poussé avec GITHUB_TOKEN ne relance aucun workflow : celui-ci ne se
+# déclenche donc pas lui-même, et l'on relance le déploiement Pages à la main.
+# Vercel, lui, déploie sur le webhook de la poussée comme pour tout commit.
+
+name: Numérotation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+# Deux fusions rapprochées : les numérotations passent l'une après l'autre,
+# jamais en même temps, et aucune n'est annulée.
+concurrency:
+  group: numerotation
+  cancel-in-progress: false
+
+jobs:
+  numeroter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Numéroter, commiter et pousser
+        id: num
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898+github-actions[bot]@users.noreply.github.com"
+          msg="$RUNNER_TEMP/message.txt"
+          for essai in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            node scripts/numeroter.mjs --appliquer > "$RUNNER_TEMP/resume.txt"
+            cat "$RUNNER_TEMP/resume.txt"
+            if [ -z "$(git status --porcelain)" ]; then
+              echo "pousse=non" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            { head -1 "$RUNNER_TEMP/resume.txt"; echo; echo "Numérotation automatique après fusion (scripts/numeroter.mjs)."; echo; tail -n +2 "$RUNNER_TEMP/resume.txt"; } > "$msg"
+            git add -A
+            git commit -F "$msg"
+            if git push origin HEAD:main; then
+              echo "pousse=oui" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            # Une autre fusion est passée entre-temps : on repart de main.
+            sleep $((essai * 3))
+          done
+          exit 1
+
+      - name: Relancer le déploiement Pages
+        if: steps.num.outputs.pousse == 'oui'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main

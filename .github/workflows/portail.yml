@@ -39,6 +39,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Les branches ne numérotent plus (livraisons/README.md) : une PR qui touche
+  # encore CACHE_VERSION, ou dont le fichier de livraison est mal formé, se
+  # voit ici en quelques secondes au lieu de se découvrir au conflit.
+  livraison:
+    name: livraison (numéro de version)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Pas de numéro écrit à la main
+        run: |
+          git fetch origin main
+          base="$(git show origin/main:sw.js | grep -o "CACHE_VERSION = '[^']*'")"
+          ici="$(grep -o "CACHE_VERSION = '[^']*'" sw.js)"
+          if [ "$base" != "$ici" ]; then
+            echo "::error file=sw.js::CACHE_VERSION a changé ($base → $ici). Les branches ne numérotent plus : dépose un fichier dans livraisons/ (voir livraisons/README.md)."
+            exit 1
+          fi
+      - name: Fichiers de livraison
+        run: node scripts/numeroter.mjs --verifier
+
   tranche:
     name: tranche ${{ matrix.tranche }}/4
     runs-on: ubuntu-latest
