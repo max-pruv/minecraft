@@ -29,7 +29,9 @@ const isStaticAsset = (url) =>
   // première visite de Manhattan, jamais avant
   || url.includes('/vendor/newyork/');
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
-  'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
+  'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`)
+  // les mouvements de capture (personnages vivants) : un fichier immuable, versionné par son nom
+  .concat(['./vendor/humains/mouvements-v1.bin']);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
 // les avions déposés (v563) : immuables, comme les corps et la flotte
 // et leurs versions aux textures KTX2 (v590), celles que le jeu charge quand le
@@ -143,7 +145,7 @@ const ASSETS = [
   './src/vehicules.js',
   './src/voiesdoubles.js',
   './src/raccords.js',
-  './src/presence.js', './src/humains.js', './vendor/SkeletonUtils.js',
+  './src/presence.js', './src/humains.js', './src/mouvements.js', './vendor/SkeletonUtils.js',
   './src/taxis.js',
   './src/utilitaires.js',
   './src/modeles.js',

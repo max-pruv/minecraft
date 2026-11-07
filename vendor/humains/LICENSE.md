@@ -37,3 +37,21 @@ Modifications (`scripts/convertir-police.mjs`) : matériaux
 « specular-glossiness » rendus en matériaux standard, hauteur 1,80 m, pieds à
 y = 0, face +Z, bras baissés, maillage simplifié et textures recompressées.
 Aucune forme ni texture inventée.
+
+---
+
+## Les mouvements de capture (`mouvements-v1.bin`, novembre 2026)
+
+Tirés de la **CMU Graphics Lab Motion Capture Database**
+(http://mocap.cs.cmu.edu), sujets 16 (marche, marche lente, course), 82 et
+111 (attentes). Conditions de la base, recopiées de sa page d'accueil :
+
+> The data used in this project was obtained from mocap.cs.cmu.edu.
+> The database was created with funding from NSF EIA-0196217.
+
+Ces données sont libres d'usage, y compris dans un produit vendu ; on ne peut
+pas revendre les données elles-mêmes, même converties. Le fichier n'est pas
+redistribué comme base de mouvements : il ne contient que les cinq prises
+retenues, reciblées hors ligne par `scripts/convertir-mouvements.mjs` (qui se
+rejoue sur les fichiers ASF/AMC d'origine, non versionnés), et ne sert qu'à
+animer les personnages du jeu.
