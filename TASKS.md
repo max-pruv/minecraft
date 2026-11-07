@@ -77,6 +77,7 @@
   électrique (Lucid Gravity), puis un A320, le jet, le chasseur pleins gaz.
 - [ ] Les voitures de la rue et la police n'ont pas de moteur audible (comme
   avant) ; seule la monture de l'enfant joue une recette.
+
 ## Les personnages vivants (capture de mouvement) — ce qui reste, déclaré
 
 - **Téléphoner, parler, regarder autour, s'asseoir** : les prises CMU 79_36,
