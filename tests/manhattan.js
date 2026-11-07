@@ -12,6 +12,26 @@ function verifier(nom, ok, detail = "") {
   console.log(`${ok ? "✅" : "❌"} ${nom}${detail ? " — " + detail : ""}`);
   if (!ok) echecs.push(nom);
 }
+// UN APPUI SUR UNE PAGE QUI REND MAL SE FAIT PAR LE DOCUMENT (v427).
+// `locator.click` attend deux images identiques : l'accueil de Manhattan
+// rend 0,25 à 0,5 image par seconde en rendu logiciel, et le même clic a
+// pris 11 s sur origin/main et 38 s sur la branche, au-delà des 30 s par
+// défaut — un tirage. On vérifie ce que l'enfant voit (visible, actif, à
+// découvert sous le doigt), puis on appuie.
+const appuyer = async (p, trouver, nom) => {
+  const t0 = Date.now();
+  await p.waitForFunction((src) => {
+    const el = new Function("return " + src)()();
+    if (!el || el.disabled) return false;
+    const b = el.getBoundingClientRect();
+    if (!b.width || !b.height || getComputedStyle(el).visibility !== "visible") return false;
+    const dessus = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+    if (!el.contains(dessus)) return false;
+    el.click();
+    return true;
+  }, trouver.toString(), { timeout: 90000, polling: 250 })
+    .catch((e) => { throw new Error(`${nom} jamais appuyable en ${Date.now() - t0} ms : ${e.message}`); });
+};
 (async () => {
   const banc = new Banc({ portJeu: 8359, portPairs: 9359 });
   await banc.ouvrir();
@@ -37,29 +57,9 @@ function verifier(nom, ok, detail = "") {
           __game.world.ctx === "local",
       ),
     );
-    // UN APPUI SUR UNE PAGE QUI REND MAL SE FAIT PAR LE DOCUMENT (v427).
-    // `locator.click` attend deux images identiques : l'accueil de Manhattan
-    // rend 0,25 à 0,5 image par seconde en rendu logiciel, et le même clic a
-    // pris 11 s sur origin/main et 38 s sur la branche, au-delà des 30 s par
-    // défaut — un tirage. On vérifie ce que l'enfant voit (visible, actif, à
-    // découvert sous le doigt), puis on appuie.
-    const appuyer = async (trouver, nom) => {
-      const t0 = Date.now();
-      await p.waitForFunction((src) => {
-        const el = new Function("return " + src)()();
-        if (!el || el.disabled) return false;
-        const b = el.getBoundingClientRect();
-        if (!b.width || !b.height || getComputedStyle(el).visibility !== "visible") return false;
-        const dessus = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
-        if (!el.contains(dessus)) return false;
-        el.click();
-        return true;
-      }, trouver.toString(), { timeout: 90000, polling: 250 })
-        .catch((e) => { throw new Error(`${nom} jamais appuyable en ${Date.now() - t0} ms : ${e.message}`); });
-    };
-    await appuyer(() => document.querySelector(".who-card.active"), "la carte de joueur");
-    await appuyer(() => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.getBoundingClientRect().width > 0), "« Plus tard »");
-    await appuyer(() => document.getElementById("play-btn"), "« Jouer »");
+    await appuyer(p, () => document.querySelector(".who-card.active"), "la carte de joueur");
+    await appuyer(p, () => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.getBoundingClientRect().width > 0), "« Plus tard »");
+    await appuyer(p, () => document.getElementById("play-btn"), "« Jouer »");
     await p.waitForFunction(() => __game.running);
     verifier(
       "le voyage explicite place le joueur à New York en coordonnées terrestres",
@@ -433,6 +433,9 @@ function verifier(nom, ok, detail = "") {
         const b = P.BATIMENTS.find((a) => a.quartier === "brooklyn" && a.modele === "cinema");
         const avant = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, vol: g.player.flying };
         const clesAvant = g.renderer.info.programs.length;
+        // Les programmes neufs se NOMMENT (v319) : un compte seul ne dit pas
+        // quelle matière a compilé, et ce rouge allait et venait sans cause.
+        const vus = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
         g.player.flying = true;
         const pose = setInterval(() => {
           g.player.pos.set(O.x + b.x0 - 14, P.SOL + 4, O.z + b.z0 - 14);
@@ -448,6 +451,8 @@ function verifier(nom, ok, detail = "") {
         await dodo(1500);
         const essaims = dessin ? dessin.children.filter((m) => m.material === v.mats.photoQuartiers).length : -1;
         const actif = v.active, clesApres = g.renderer.info.programs.length;
+        const neufs = g.renderer.info.programs.filter((q) => !vus.has(q.cacheKey))
+          .map((q) => `${q.name}:${String(q.cacheKey).slice(0, 90)}`);
         // un bloc posé dans l'immeuble : il retrouve sa façade procédurale
         const x = O.x + b.x0 + 1, y = P.SOL + 3, z = O.z + b.z0;
         w.setBlock(x, y, z, 0, Date.now());
@@ -456,7 +461,7 @@ function verifier(nom, ok, detail = "") {
         g.player.pos.set(avant.x, avant.y, avant.z);
         g.player.flying = avant.vol;
         const lieux = __carte.catalogueDesLieux().map((l) => l.c.name);
-        return { formes: Object.keys(formes || {}).length, essaims, actif, clesAvant, clesApres, touche,
+        return { formes: Object.keys(formes || {}).length, essaims, actif, clesAvant, clesApres, neufs, touche,
           lieux: ["Brooklyn", "The Bronx", "Queens", "Coney Island", "Staten Island"].filter((n) => lieux.includes(n)).length,
           attente: Math.round(performance.now() - t0) };
       } catch (err) {
@@ -1181,11 +1186,9 @@ function verifier(nom, ok, detail = "") {
     // Première reprise cloud : une collision oblige tout le chantier ancien
     // à changer d'emplacement. La position doit arriver auprès de ses blocs.
     const reprise = await banc.joueur("TerreReprise", { rr: 2, tactile: true });
-    await reprise.locator(".who-card.active").click();
-    await reprise
-      .getByRole("button", { name: "Plus tard", exact: true })
-      .click();
-    await reprise.locator("#play-btn").click();
+    await appuyer(reprise, () => document.querySelector(".who-card.active"), "la carte de joueur");
+    await appuyer(reprise, () => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.getBoundingClientRect().width > 0), "« Plus tard »");
+    await appuyer(reprise, () => document.getElementById("play-btn"), "« Jouer »");
     await reprise.waitForFunction(() => __game.running);
     const positionImportee = await reprise.evaluate(async () => {
       const { ORIGINE_MANHATTAN: o } = await import("/src/manhattan-world.js");
@@ -1316,11 +1319,9 @@ function verifier(nom, ok, detail = "") {
     await offline.waitForFunction(() => window.__game?.villeRealiste, null, {
       timeout: 90000,
     });
-    await offline.locator(".who-card.active").click();
-    await offline
-      .getByRole("button", { name: "Plus tard", exact: true })
-      .click();
-    await offline.locator("#play-btn").click();
+    await appuyer(offline, () => document.querySelector(".who-card.active"), "la carte de joueur");
+    await appuyer(offline, () => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.getBoundingClientRect().width > 0), "« Plus tard »");
+    await appuyer(offline, () => document.getElementById("play-btn"), "« Jouer »");
     await offline.waitForFunction(() => __game.running, null, {
       timeout: 30000,
     });
