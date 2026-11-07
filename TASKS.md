@@ -92,6 +92,12 @@ du plan :
   terrasse de café, `reseau.js` l'hôte sans courtier trouvé par un invité,
   `monte.js` « au feu… au lieu de piler », `manhattan.js` PeerJS « ID is
   taken » ; et `degats.js` verte.
+  Troisième passage GitHub, sur la fusion `0f5423d` (v591), tranche 4/4 :
+  `parishd.js` verte (la terrasse de café aussi), `degats.js` un seul rouge,
+  « deux murs pris à pleine vitesse » à `murs: 1` en 31 s (la famille des
+  murs du tirage de cadence, déclarée ci-dessus et à la v583 ; vert rejoué
+  seul 67/67), `manhattan.js` morte au clic « Jouer » de la ligne 42 après
+  1 ✅ — exactement le premier passage de `origin/main` seule.
 
 ## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
 
