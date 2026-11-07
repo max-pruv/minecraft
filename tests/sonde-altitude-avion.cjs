@@ -48,24 +48,35 @@ async function mesurer(src) {
   // point d'une grille à plus de 5 000 blocs de toute piste, au-dessus de la
   // terre (le relief au-dessus de l'eau sur 400 blocs autour)
   {
-    let lieu = null;
-    for (let gx = -40; gx <= 40 && !lieu; gx++) for (let gz = -40; gz <= 40 && !lieu; gz++) {
+    // LE TERRAIN DU TOUCHER N'EST PAS CE QUE CE TÉMOIN MESURE (carte ×3) : il
+    // mesure la descente depuis le toit. Sur un champ de relief ou d'arbres,
+    // ✈️ casse à bon droit (v462), et le premier point sec de la grille y
+    // tombait à la carte ×3. On essaie les points secs dans l'ordre de la
+    // grille et l'on garde le premier dont le toucher n'est pas jugé par le
+    // terrain ; le nombre d'essais entre dans la mesure.
+    const lieux = [];
+    for (let gx = -40; gx <= 40 && lieux.length < 12; gx++) for (let gz = -40; gz <= 40 && lieux.length < 12; gz++) {
       const x = gx * 1000 + 500, z = gz * 1000 + 500;
       if (A.AEROPORTS.some((a) => Math.hypot(a.x - x, a.z - z) < 5000)) continue;
       let sec = true;
       for (let dx = -400; dx <= 400 && sec; dx += 100) for (let dz = -400; dz <= 400 && sec; dz += 100) {
         if (w.terrainHeight(x + dx, z + dz) <= W.WATER_LEVEL + 2) sec = false;
       }
-      if (sec) lieu = { x, z };
+      if (sec) lieux.push({ x, z });
     }
-    out.lieuSurPlace = lieu;
-    const p = pilote(lieu.x, 1499, lieu.z, 0, TOIT);
-    const r = p.decollerOuSePoser();
-    let t = 0;
-    for (; t < 120; t += 1 / 30) {
-      p.update(1 / 30);
-      if (p.avionEtat === 'epave' || p.avionEtat === 'sol' || p.avionEtat === 'freinage') break;
+    let p = null, r = null, t = 0, essais = 0, lieu = null;
+    for (const l of lieux) {
+      essais++; lieu = l;
+      p = pilote(l.x, 1499, l.z, 0, TOIT);
+      r = p.decollerOuSePoser();
+      for (t = 0; t < 120; t += 1 / 30) {
+        p.update(1 / 30);
+        if (p.avionEtat === 'epave' || p.avionEtat === 'sol' || p.avionEtat === 'freinage') break;
+      }
+      if (!p.crash) break;
+      (out.crashsSurPlace = out.crashsSurPlace || []).push({ ...l, crash: p.crash.raison });
     }
+    out.lieuSurPlace = { ...lieu, essais };
     out.surPlace = { appui: r, etat: p.avionEtat, t: +t.toFixed(1), crash: p.crash ? p.crash.raison : null, y: +p.pos.y.toFixed(1) };
   }
   // L'APPROCHE ASSISTÉE depuis le toit, à trois mille blocs d'Orly

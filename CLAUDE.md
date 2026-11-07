@@ -184,6 +184,25 @@ Ne pas abaisser les distances pour faire passer une interférence de trafic.
    `plafond.js` compare le monde nu et `TerreUrbaine` dans le même code (zéro
    colonne hors de la zone). Voir « Les banlieues de New York (v583) ».
 
+   **Elle a servi une TREIZIÈME fois, en vNEXT, pour TRIPLER la carte** —
+   Max : « New York aujourd'hui mange Boston ». 0,1875 → 0,0625 km par bloc,
+   ancre sur Paris : comme en v199 et v242 la casse ne se BORNE pas, les deux
+   empreintes de `plafond.js` changent et sont déclarées. La preuve est le
+   témoin des 4 040 colonnes (17 265 mesurées, zéro déplacée), la carte d'avant
+   figée (`terreV4`) et le monde de la production figé (`CONF_V587`,
+   `monde-v587.js`), prouvé au bloc près sur 2 167 653 colonnes. La marche
+   8 → 9 (`migrerCarteX3`, `DATE_CARTE_X3` à relire à la fusion) fait suivre sa
+   ville à tout groupe de blocs d'avant ; copie d'avant sur le nuage
+   (`~avant-carte-x3`). Deux règles en sortent. **UN SITE DE TÉMOIN SE DEMANDE
+   À LA PROJECTION, IL NE S'ÉCRIT PAS EN BLOCS** : une fenêtre de tirage, un
+   point lat/lon, une forêt d'essai se multiplient par
+   `0.1875 / MONDES.terre.projection.kmParBloc`, et une recherche dichotomique
+   de longitude se borne à ±400 000 (au-delà, `cielDe` sature). **UNE EXCEPTION
+   À UNE BORNE D'OUVRAGE SE NOMME DANS UNE TABLE** : l'I-95 Sud entre à
+   Washington en tranchée de 13,7 blocs (`DEBLAIS_HORS_NORME`, routes.js,
+   décision de Max), et toute autre route garde `DEBLAI_MAX` au bit près. Le
+   détail : `docs/carte-x3*.md`.
+
    **Elle a servi une ONZIÈME fois, en v486, pour Changi** — et c'est la
    forme bornée, hors de la fenêtre d'empreinte : l'île de l'aérodrome est la
    zone à terre de son repère (`box + 30`), rien d'autre. Un témoin de

@@ -1,5 +1,37 @@
 # Ce qui est en cours
 
+## La carte ×3 (vNEXT) — ce qui reste, déclaré
+
+Le détail par session vit dans `docs/carte-x3-A.md` (mondes figés, migration),
+`docs/carte-x3-B.md` (aérodromes) et `docs/carte-x3-C.md` (routes, trains).
+
+- [ ] **Palier 2** : routes et villes ×1,5 (décision de Max), New York garde son
+  plan et seules ses rues s'élargissent ; la ville d'avant se fige sous ce que
+  les enfants ont bâti (la règle de la v303).
+- [ ] **La bouche de métro de Pentagon n'a plus de chemin.** `BOUCHES_METRO`
+  (washington.js) se choisit au chargement contre le relief de la ville
+  (`solDeWashington`) ; hors de `ZONE_WASHINGTON` le vrai relief de la carte ×3
+  diffère, et la bouche monte dans une colline. Déclarée par son nom dans le
+  témoin des stations (`plafond.js`, il rougit le jour où elle a de nouveau un
+  chemin). Remède : choisir les bouches hors zone contre `terrainHeight`.
+- [ ] **✈️ « se poser sur place » depuis le toit casse sur certains terrains** :
+  (−7 500, 27 500) relief, (5 500, 5 500) trop vite, (7 500, 4 500) bâti. La sonde
+  (`sonde-altitude-avion.cjs`) essaie les points secs dans l'ordre et garde le
+  premier qui ne casse pas (4 essais). « Trop vite » sur un champ plat est à
+  démonter : l'approche sur place depuis 1 500 blocs arrive-t-elle sous
+  `toucherMax` ?
+- [ ] **Dettes de la session A** (`docs/carte-x3-A.md`, 1 à 7) : ville figée
+  translatée incomplète (bouches de Rome v531, lampes, colonnes protégées de
+  New York, date du diagnostic) ; garage orphelin de deux marches ; mondes figés
+  qui lisent les routes et trains vivants ; relevé « toit → sol » non appliqué ;
+  écart de sol > 24 blocs ; destination d'aérodrome lue vivante ; `reliefMemo`
+  borné à |z| < 131 072.
+- [ ] **Dettes des sessions B et C** : Dubaï à 2 572 blocs de sa ville (pas de
+  terre des Émirats sur le planisphère) ; le volcan à 38 blocs de la ligne
+  Paris–Lyon (le déplacer demande une marche) ; coudes déclarés A109 44°,
+  Hansalinie 38°, A6 38°, M1 35° ; l'I-95 Sud en tranchée hors norme
+  (`DEBLAIS_HORS_NORME`, 13,7 sur ses 400 derniers blocs, décision de Max).
+
 ## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
 
 - **Mesurer sur l'iPhone et l'iPad.** Le banc lit l'ASTC et le BC7 (un octet

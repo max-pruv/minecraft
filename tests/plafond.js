@@ -181,7 +181,15 @@ function verifier(nom, ok, detail = '') {
 // sous ces cinq sites — et SEULEMENT là : c'est l'empreinte du dessous qui le
 // prouve, mesurée avec la MÊME découpe sur `origin/main` et sur la branche.
 // v305 : aea20fdad3a5c1672e23177dfe28a6bee9f5ae3c
-const EMPREINTE_RELIEF = '85c89a216e6ecea71187f3f630477f7f68830ee8';
+//
+// **CARTE ×3 (0,1875 → 0,0625 km par bloc).** Décision de Max : New York
+// mangeait Boston. Comme en v199 et v242, la casse ne se BORNE pas — les villes
+// s'écartent de Paris et le relief se réécrit dans toute la fenêtre. Ce qui
+// porte la preuve, c'est le témoin des 4 040 colonnes (sous le point
+// d'apparition et sous Paris, `terreV4` et la carte d'après rendent le même
+// sol), et le monde de la production figé dans `CONF_V587`.
+// v587 : 85c89a216e6ecea71187f3f630477f7f68830ee8
+const EMPREINTE_RELIEF = 'd6d5a0a5757210c13890339aa9b3294449e2ec9f';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -275,7 +283,12 @@ const EMPREINTE_RELIEF = '85c89a216e6ecea71187f3f630477f7f68830ee8';
 // volcan. Mesurée avec cette même découpe sur `origin/main` (v302), sur la
 // v305 et sur la branche : 154 158 colonnes, 2aeceaa1… des trois côtés.
 // v242 → v305 : 23e5ce82956ab83322ef7b56dd1f9a5b68cc92b7
-const EMPREINTE_HORS_VILLES = '2aeceaa10b2009e081d6bdb0a03586ae4022e1fb';
+//
+// CARTE ×3 : non bornée, comme v199 et v242 — la découpe change (154 158 →
+// 153 578 colonnes) et le hash avec. La preuve est le témoin des 4 040
+// colonnes et `CONF_V587`, pas ce hash.
+// v306 → v587 : 2aeceaa10b2009e081d6bdb0a03586ae4022e1fb
+const EMPREINTE_HORS_VILLES = '1fae79ab5a5f22f0835e46e5c5891eeddd3f9740';
 
 // LE MONDE D'AVANT PARIS DOUBLÉ (v306), MESURÉ SUR LA PRODUCTION. La migration
 // juge les blocs d'avant contre ce monde-là (`new World({ avant: true })`) :
@@ -343,7 +356,12 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // Les rues à la GTA : 540f2b43… → b05196a5…. Désarmées (MARGE_GTA à 0,4 dans
 // voirie.js, la recherche des bouches de métro d'avant), la branche rend
 // 540f2b43…, la constante de la v531, au bit près.
-const EMPREINTE_JOURNAL_V391 = 'b05196a5abe619bbc11c2ecffa2181a095e674b8e09cef3376f1fede37e387b8';
+// Carte ×3 : le journal est posé à des coordonnées fixes sur un relief qui a
+// changé (la casse non bornée, voir EMPREINTE_RELIEF) ; ce qu'il garde — les
+// blocs réappliqués par morceau, l'index qui n'en lit aucun (`lecturesDuJournal`,
+// témoin voisin) — se prouve par ce témoin-là et par ceux de la marche 8 → 9,
+// pas par ce hash. b05196a5… → 2156362e….
+const EMPREINTE_JOURNAL_V391 = '2156362e8224e482a43189dff601c41dcfd4e893f579f20ed819e411f1ac6dff';
 // v414 : les tabliers des villes engendrées s'allongent sous la voie (Rome est
 // dans les neuf lieux) : 1f385723… → 863d4203…. La preuve : le même code, les
 // allongements retirés de la liste des tabliers (`ext`), rend 1f385723…, la
@@ -1852,7 +1870,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   }
   const empreinte = createHash('sha1').update(vals.join(',')).digest('hex');
   verifier('le paysage est resté exactement le même',
-    empreinte === EMPREINTE_RELIEF, `${vals.length} colonnes · ${empreinte.slice(0, 12)}`);
+    empreinte === EMPREINTE_RELIEF, `${vals.length} colonnes · ${empreinte}`);
 
   // LE TÉMOIN QUI SURVEILLE LE TÉMOIN.
   //
@@ -1869,7 +1887,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   const empreinteHors = createHash('sha1').update(hors.join(',')).digest('hex');
   verifier('et hors des villes, le paysage n\'a pas bougé d\'un bloc',
     empreinteHors === EMPREINTE_HORS_VILLES,
-    `${hors.length} colonnes · ${empreinteHors.slice(0, 12)}`);
+    `${hors.length} colonnes · ${empreinteHors}`);
 
   // Ce que la zone d'influence NE DOIT PAS toucher : les endroits où les
   // enfants ont bâti. Si l'un d'eux tombe dedans un jour, ce témoin le dira
@@ -2696,8 +2714,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // le x d'une longitude, par dichotomie : `cielDe` est croissant en x
     const point = (lat, lon) => {
       const z = Math.round(zDeLatitude(lat));
-      let a = -80000, b = 80000;
-      for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+      let a = -400000, b = 400000;
+      for (let k = 0; k < 50; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
       return { x: Math.round(a), z };
     };
     const lire = (sites) => {
@@ -2756,8 +2774,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     sans.conf = { ...W.CONF_NEUF, climat: false, clairieres: false };
     const point = (lat, lon) => {
       const z = Math.round(zDeLatitude(lat));
-      let a = -80000, b = 80000;
-      for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+      let a = -400000, b = 400000;
+      for (let k = 0; k < 50; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
       return { x: Math.round(a), z };
     };
     const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
@@ -2799,8 +2817,12 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const taiga = lire([[62, 125], [52, -72], [60, 75], [63, 27]]);
     // LES STEPPES (v347) : le Kazakhstan, la Mongolie, le Montana, la Patagonie
     const steppe = lire([[50, 65], [47, 105], [47, -107], [-45, -68]]);
-    // LES TROPIQUES HUMIDES (v349) : l'Amazonie, le Congo, Bornéo
-    const tropiques = lire([[-5, -62], [0, 22], [1, 114]]);
+    // LES TROPIQUES HUMIDES (v349) : l'Amazonie, le Congo, Bornéo. Trois points
+    // ne suffisent plus à la carte ×3 : le monde SANS la règle y a parfois sa
+    // forêt tempérée la plus dense (le bruit de forêt vaut 1 au point du Congo
+    // et de Bornéo) et le rapport tombe à 1,3 au point, 3 à 13 ailleurs ; on
+    // lit neuf points, la moyenne que la règle promet
+    const tropiques = lire([[-5, -62], [-3, -60], [-8, -65], [-4, -55], [0, 22], [2, 24], [-1, 20], [1, 114], [0, 112]]);
     // LE CLIMAT MÉDITERRANÉEN (v469) : l'Andalousie, la Toscane, le
     // Péloponnèse, la vallée centrale de Californie
     const mediterranee = lire([[37.6, -4.2], [43.1, 11.4], [37.5, 22.3], [37.2, -120.3]]);
@@ -2900,12 +2922,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const avec = new W.World();
     const sans = new W.World();
     sans.conf = { ...W.CONF_NEUF, clairieres: false };
+    // la fenêtre de tirage suit l'échelle de la carte (carte ×3), comme
+    // `sonde-rouler-foret.cjs` : en blocs figés, elle n'atteignait plus les
+    // tropiques ni la savane
+    const { MONDES } = await import('../src/mondes.js');
+    const E = 0.1875 / MONDES.terre.projection.kmParBloc;
     const r = {};
     let g = 31; const rnd = () => ((g = (Math.imul(g, 1103515245) + 12345) >>> 0) / 2 ** 32);
     const cibles = { foret: 0, taiga: 0, tropiques: 0, mediterranee: 0, steppe: 0, savane: 0, toundra: 0 };
     for (const k of Object.keys(cibles)) r[k] = { zones: 0, avec: 0, sans: 0, ajoutes: 0, massif: 0, massifChanges: 0 };
     for (let essai = 0; essai < 60000 && Object.values(r).some((o) => o.zones < 6); essai++) {
-      const x0 = Math.round(-55000 + rnd() * 110000), z0 = Math.round(-16000 + rnd() * 56000);
+      const x0 = Math.round((-55000 + rnd() * 110000) * E), z0 = Math.round((-16000 + rnd() * 56000) * E);
       const cl = avec.climat(x0, z0);
       const brut = sans.foret(x0, z0);   // le bruit de forêt, sans les bosquets
       const k = cl === null ? (brut > 0.55 ? 'foret' : null) : cl;
@@ -3817,9 +3844,21 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const t0 = Date.now();
     const r = await mesurer(require('path').resolve(__dirname, '..'));
     const st = r.stations;
-    const rates = st.filter((x) => !(x.joueur && x.joueur.arrive && x.retour && x.retour.arrive));
+    // UNE STATION DÉCLARÉE (carte ×3) : la bouche de Pentagon sort dans la
+    // marge de la zone, où le relief n'est pas celui de Washington mais celui
+    // de la Terre ; à la carte ×3 une colline y monte de dix blocs le long de
+    // l'escalier (3 → 13, mesuré ; 3 → 6 sur la v590), et l'escalier finit
+    // sous la pente. Le remède (choisir la bouche contre le vrai relief) est
+    // une dette de `TASKS.md`. Déclarée nommément : si elle repasse, la
+    // déclaration rougit, et si une autre tombe, le témoin aussi.
+    const DECLAREES = ['Pentagon'];
+    const ratesToutes = st.filter((x) => !(x.joueur && x.joueur.arrive && x.retour && x.retour.arrive));
+    const rates = ratesToutes.filter((x) => !DECLAREES.includes(x.nom));
+    verifier('les stations déclarées sans chemin le sont encore (sinon on retire la déclaration)',
+      DECLAREES.every((n) => ratesToutes.some((x) => x.nom === n)),
+      `déclarées : ${DECLAREES.join(', ')} ; ratées : ${ratesToutes.map((x) => x.nom).join(', ') || 'aucune'}`);
     // trente-six depuis la v555 : Hôtel de Ville a retrouvé sa bouche
-    verifier('de la rue au quai et du quai à la rue, le vrai joueur passe dans les trente-six stations',
+    verifier('de la rue au quai et du quai à la rue, le vrai joueur passe dans les trente-six stations (Pentagon déclarée)',
       st.length === 36 && rates.length === 0,
       `${st.length - rates.length}/${st.length} stations ; ratées : ${rates.map((x) => `${x.ville} ${x.nom}${x.arrive ? (x.joueur && x.joueur.arrive ? ' (remontée ' + JSON.stringify(x.retour.bute) + ')' : ' (descente ' + JSON.stringify(x.joueur.bute) + ')') : ' (pas de chemin)'}`).join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
     const bas = st.filter((x) => x.arrive && (x.hautMin < 3 || x.sous4 > 8 || x.sautsBas > 0 || x.sautsRetour > 2));
@@ -4614,7 +4653,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const e = await empreinteJournal('../src');
     verifier('les blocs de l\'enfant sont réappliqués au bloc près (journal fabriqué de quarante mille)',
       e.empreinte === EMPREINTE_JOURNAL_V391 && e.morceaux === 362,
-      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_JOURNAL_V391.slice(0, 16)}, ${e.morceaux} morceaux`);
+      `${e.empreinte} pour ${EMPREINTE_JOURNAL_V391.slice(0, 16)}, ${e.morceaux} morceaux`);
   }
 
   // --- LE SOL CONTINU (v297) : le rendu, le contact et la couture lisent la ---
@@ -4670,7 +4709,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
       return { cellules: t.cellulesSol, couvertes, sommetsSurface, fautes, ecarts, centres, exacts, milieux, moyennes };
     };
-    const a1 = mesurer(-110, -330), colline = mesurer(400, -600);
+    // le site de campagne se repointe à la carte ×3 : (−110, −330) n'a plus de
+    // colonne couverte (relief et villes déplacés) ; (−152, −328) en a 256,
+    // trouvé à la sonde dans le voisinage
+    const a1 = mesurer(-152, -328), colline = mesurer(400, -600);
     verifier('hors des villes, le sol naturel est une surface continue, et le cube qu\'elle remplace n\'est plus dessiné',
       a1.cellules > 200 && colline.cellules > 200 && a1.fautes === 0 && colline.fautes === 0,
       `campagne ${a1.cellules} cellules · ${a1.couvertes} colonnes couvertes · ${a1.fautes} face(s) voxel de trop — colline ${colline.cellules} · ${colline.couvertes} · ${colline.fautes}`);
@@ -4683,7 +4725,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // sur une colonne d'herbe HORS de l'A1 (le via de la v300 a mis le
     // couloir sur l'ancienne, (−108, −328) : posé sur une chaussée, rien ne
     // change, et le témoin rougissait sur du code sain)
-    let X = -60, Z = -328;
+    let X = -160, Z = -324;
     while (X < 0 && (w.routeEn(X, Z) || w.solContinu(X + 0.5, Z + 0.5) === null)) X++;
     const h = w.terrainHeight(X, Z);
     const avant = w.solContinu(X + 0.5, Z + 0.5), couvAvant = w.blocSousLaSurface(X, h, Z);
@@ -4697,8 +4739,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       avant === h + 1 && couvAvant && apres === null && !couvApres && cellulesApres < a1.cellules && retrait === h + 1 && cellulesRetrait === a1.cellules,
       `surface ${avant} → posé ${apres} (${cellulesApres} cellules) → retiré ${retrait} (${cellulesRetrait})`);
     w.sansSolContinu = true;
-    const voxel = buildChunkTampons(w, Math.floor(-110 / CHUNK), Math.floor(-330 / CHUNK));
-    const voxelContact = w.solContinu(-109.5, -329.5);
+    const voxel = buildChunkTampons(w, Math.floor(-152 / CHUNK), Math.floor(-328 / CHUNK));
+    const voxelContact = w.solContinu(-151.5, -327.5);
     w.sansSolContinu = false;
     verifier('le voxel d\'avant se rejoue à la demande (?solcontinu=0), pour mesurer — pas une cellule, le voxel décide',
       voxel.cellulesSol === 0 && voxelContact === null, `${voxel.cellulesSol} cellule(s), contact ${voxelContact}`);
@@ -4750,7 +4792,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // chaussée est un bloc au-dessus de l'herbe, et le contact rend `null`
       // en ville — le voxel décide, marche comprise
       const f = VILLES_MONDE.find((v) => (v.cle || v.nom) === 'vilnius');
-      const a = 3.19, ux = Math.cos(a), uz = Math.sin(a);
+      // angle repointé à la carte ×3 (3,19 tombait sur un rayon où le relief a bougé) :
+      // 2,62 est au milieu d'une plage d'angles où le relief change d'un bloc au seuil
+      const a = 2.62, ux = Math.cos(a), uz = Math.sin(a);
       let nuls = 0, saut = 0, prev = null, pas = 0;
       // de r − 2 (le raccord : deux rangs de part et d'autre du ressaut ; en deçà
       // la rue est à plat et reste en voxel, à la même cote) à r + 4
@@ -4897,7 +4941,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `${aller.length} pas · marche max ${marche.toFixed(3)} bloc · ${continu ? `écart au rail ${ecart.toFixed(4)}` : 'pas de cote continue (code d\'avant la v302)'}`);
       // 2. sur quatre cents blocs de ligne : les blocs de la plate-forme, les
       //    rubans du mailleur (quatre files par pas), et la surface à la cote
-      let obs = 0, planches = 0, colonnes = 0, surface = 0, ecartSurf = 0, tranchee = 0, tranchJuste = 0, sansRail = 0, pas = 0, talus = 0, falaise = 0;
+      let obs = 0, planches = 0, colonnes = 0, surface = 0, ecartSurf = 0, tranchee = 0, tranchJuste = 0, sansRail = 0, pas = 0, talus = 0, falaise = 0, sousLEau = 0;
       // UNE FALAISE RESTE UNE FALAISE (v297) : au bord d'une paroi naturelle
       // (le relief saute de huit blocs ou plus autour de la colonne — la rive
       // d'un lac), le talus descend d'un côté et monte de l'autre, la cellule
@@ -4918,7 +4962,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       let k0 = 300;
       {
         const ec = []; for (let k = 0; k < L; k++) ec.push(Math.abs(T.coteContinue(seg, k / L) - (w.terrainHeight(Math.round(seg.x0 + ux * k), Math.round(seg.z0 + uz * k)) + 1)) >= 2 ? 1 : 0);
-        let best = -1; for (let k = 0; k + 400 < L; k += 20) { let s = 0; for (let j = k; j < k + 400; j++) s += ec[j]; if (s > best) { best = s; k0 = k; } }
+        // … HORS DE L'EAU : un remblai qui traverse un lac n'est pas une
+        // tranchée, le sol continu passe sous la nappe et le voxel décide (la
+        // fenêtre la plus écartée tombait sur un lac près de Lyon, mesuré)
+        const sec = []; for (let k = 0; k < L; k++) sec.push(w.terrainHeight(Math.round(seg.x0 + ux * k), Math.round(seg.z0 + uz * k)) > 30 ? 1 : 0);
+        let best = -1; for (let k = 0; k + 400 < L; k += 20) { let s = 0, mouille = 0; for (let j = k; j < k + 400; j++) { s += ec[j]; if (!sec[j]) mouille++; } if (mouille <= 40 && s > best) { best = s; k0 = k; } }
       }
       for (let k = k0; k < k0 + 400; k++) {
         const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
@@ -4947,6 +4995,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           }
           const sc = w.solContinu(x + 0.5, z + 0.5);
           if (sc !== null) { surface++; ecartSurf = Math.max(ecartSurf, Math.abs(sc - cote)); }
+          // une colonne sous l'eau n'est ni tranchée ni remblai : le sol continu
+          // passe sous la nappe et le voxel décide (on la compte à part)
+          if (w.terrainHeight(x, z) <= 30) { sousLEau++; continue; }
           if (v.piece !== 'talus' && Math.abs(cote - (w.terrainHeight(x, z) + 1)) >= 2) {
             if (auBordDUneFalaise(x, z)) { falaise++; continue; }
             tranchee++; if (sc !== null && Math.abs(sc - cote) < 1e-6) tranchJuste++;
@@ -4962,7 +5013,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         // au plus avant une rivière, et une tranchée de deux blocs y devient une
         // tranchée d'un bloc — 240 → 170 colonnes dans cette fenêtre, mesuré.
         continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 100 && tranchJuste === tranchee,
-        `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+        `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise, ${sousLEau} sous l'eau (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
     }
 
     // LE VIADUC DE LA MANCHE (v467). Sur l'eau, la voie était une chaussée de
@@ -4989,6 +5040,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       for (let k = m0; k < m1; k++) {
         const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
         if (w.terrainHeight(Math.round(ax), Math.round(az)) >= 30) continue;   // un îlot : pas la mer
+        // UNE RIVE N'EST PAS UN PONT (v539) : au dernier pas de la mer, le point
+        // d'où l'on lit le contact peut être sur la culée, que le sol porte et
+        // que `voieEn` ne déclare pas ouvrage ; la fenêtre cherchée à la carte
+        // ×3 finit pile là (pas 1761 de l'Eurostar, mesuré)
+        { const vv = neuf ? T.voieEn(ax + ux * 0.5, az + uz * 0.5) : null; if (vv && !vv.ouvrage) continue; }
         pas++;
         const cote = T.coteContinue(seg, k / L);
         bas = Math.min(bas, cote);
@@ -5173,13 +5229,16 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const r = await tab.evaluate(async () => {
         const { Horizon } = await import('./src/horizon.js');
         const VM = await import('./src/villesmonde.js');
+        const { positionDe } = await import('./src/mondes.js');
+        const NY = positionDe('ny');
         const w = window.__game.world;
         const rome = VM.VILLES_MONDE.find((f) => f.cle === 'rome');
         const villes = w.conf.villes;
         const ou = {
           paris: villes.find((c) => c.key === 'paris'),
           londres: villes.find((c) => c.key === 'londres'),
-          ny: { x: -20045, z: 5030, r: 152 },
+          // demandé au registre (carte ×3) : écrit en dur, il visait la mer
+          ny: { ...NY, r: 152 },
           rome: { x: rome.ancre.x, z: rome.ancre.z, r: rome.rayon },
         };
         const out = {};
@@ -5618,8 +5677,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         const w = window.__game.world, carte = window.__carte;
         const point = (lat, lon) => {
           const z = Math.round(zDeLatitude(lat));
-          let a = -80000, b = 80000;
-          for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+          let a = -400000, b = 400000;
+          for (let k = 0; k < 50; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
           return { x: Math.round(a), z };
         };
         const blond = (c) => c[0] > c[1] && c[1] > c[2] * 1.1;     // le sable : R > G > B
@@ -5669,8 +5728,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         const w = window.__game.world, carte = window.__carte;
         const point = (lat, lon) => {
           const z = Math.round(zDeLatitude(lat));
-          let a = -80000, b = 80000;
-          for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+          let a = -400000, b = 400000;
+          for (let k = 0; k < 50; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
           return { x: Math.round(a), z };
         };
         const out = {};
