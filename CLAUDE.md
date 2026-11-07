@@ -1127,6 +1127,12 @@ mipmaps, quelle que soit sa taille sur le disque. Six règles.
   (×4) ; le script imprime l'estimation iPhone (×6). Les modules du chargeur
   sont dans `ASSETS` (cache de version) : un module importé au démarrage qui
   manque hors ligne arrêterait tout le jeu.
+- **UNE TEXTURE QU'ON NE VOIT PAS SE REND (vNEXT).** Les photos recuites de
+  New York (Empire, Liberté, quartiers) ne sont tenues qu'à moins de 1 000
+  blocs du plan ; au-delà de 1 300, chaque matériau reprend sa carte
+  d'attente — celle de sa naissance, donc la même clé de programme — et
+  l'image est rendue (`garderTexturesNY`, `etatTexturesNY`). Un témoin lit la
+  photo SUR le matériau, jamais un champ du modèle.
 
 ## Un avion garé est un obstacle (v580) — une forme qui n'est pas un rectangle se mesure en silhouette, et l'enfoncement se compte en cases
 

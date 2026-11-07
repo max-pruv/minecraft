@@ -47,6 +47,27 @@
     472 ms au portail GitHub pour 400, la dette déclarée sous la v450 ;
     rejouée seule sur la branche : 186 ms, vert.
 
+## Les photos de New York loin du plan (claude/memoire-ny-textures) — rouges mesurés des deux côtés
+
+- [ ] **Les banlieues compilent DEUX programmes en y entrant, en production.**
+  Témoin de `manhattan.js` (« les banlieues se dessinent… sans compiler de
+  matière », barre : au plus un). Rejoué deux fois sur la branche et deux fois
+  sur `origin/main` v590 (même test) : 0, 2 / 1, 2 — et le témoin nomme
+  désormais les clés (v319) : `quartiers-new-york` (physical, sans carte
+  d'environnement) et une matière physique anonyme à carte cubique
+  (`306,1024`), IDENTIQUES des deux côtés. La matière des quartiers naît avec
+  la ville (v583) mais sa forme sans PMREM n'est pas chauffée. Zone : rendu de
+  Manhattan, hors de la livraison.
+- [ ] **« les deux clients restent sans erreur de jeu »** : `ERROR PeerJS …
+  ID "wmc-marlon-…" is taken` des deux côtés, même passage. Bruit du
+  courtier local quand une page se relance ; le filtre de `banc.js` n'écarte
+  que les erreurs de chargement.
+- `locator.click` sur l'accueil de Manhattan (0,25 à 0,5 image/s) prenait 11
+  à 38 s : un tirage. Réglé sur `main` par `entrerDansLeJeu` (appui par le
+  document, v427, ET attente de la chauffe de New York, v319), repris tel quel
+  à la fusion : ce second geste peut aussi rendre le témoin des banlieues
+  vert — à relire au portail suivant avant de rayer la ligne du dessus.
+
 ## La nuit de New York et les voitures noires (v589) — dettes
 
 - [ ] **La plaque d'asphalte à bord en escalier (v589, déclarée).** Capture d'iPad

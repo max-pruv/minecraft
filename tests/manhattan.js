@@ -429,6 +429,9 @@ async function entrerDansLeJeu(p) {
         const b = P.BATIMENTS.find((a) => a.quartier === "brooklyn" && a.modele === "cinema");
         const avant = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, vol: g.player.flying };
         const clesAvant = g.renderer.info.programs.length;
+        // Les programmes neufs se NOMMENT (v319) : un compte seul ne dit pas
+        // quelle matière a compilé, et ce rouge allait et venait sans cause.
+        const vus = new Set(g.renderer.info.programs.map((q) => q.cacheKey));
         g.player.flying = true;
         const pose = setInterval(() => {
           g.player.pos.set(O.x + b.x0 - 14, P.SOL + 4, O.z + b.z0 - 14);
@@ -444,6 +447,8 @@ async function entrerDansLeJeu(p) {
         await dodo(1500);
         const essaims = dessin ? dessin.children.filter((m) => m.material === v.mats.photoQuartiers).length : -1;
         const actif = v.active, clesApres = g.renderer.info.programs.length;
+        const neufs = g.renderer.info.programs.filter((q) => !vus.has(q.cacheKey))
+          .map((q) => `${q.name}:${String(q.cacheKey).slice(0, 90)}`);
         // un bloc posé dans l'immeuble : il retrouve sa façade procédurale
         const x = O.x + b.x0 + 1, y = P.SOL + 3, z = O.z + b.z0;
         w.setBlock(x, y, z, 0, Date.now());
@@ -452,7 +457,7 @@ async function entrerDansLeJeu(p) {
         g.player.pos.set(avant.x, avant.y, avant.z);
         g.player.flying = avant.vol;
         const lieux = __carte.catalogueDesLieux().map((l) => l.c.name);
-        return { formes: Object.keys(formes || {}).length, essaims, actif, clesAvant, clesApres, touche,
+        return { formes: Object.keys(formes || {}).length, essaims, actif, clesAvant, clesApres, neufs, touche,
           lieux: ["Brooklyn", "The Bronx", "Queens", "Coney Island", "Staten Island"].filter((n) => lieux.includes(n)).length,
           attente: Math.round(performance.now() - t0) };
       } catch (err) {
@@ -468,6 +473,56 @@ async function entrerDansLeJeu(p) {
       "un bloc posé dans un immeuble de modèle lui rend sa façade, et la carte connaît les quartiers",
       !quartiers.err && quartiers.touche && quartiers.lieux === 5,
       JSON.stringify(quartiers),
+    );
+    // ---- LES PHOTOS DE NEW YORK SE RENDENT LOIN DE NEW YORK (chantier mémoire)
+    // Loin du plan, les trois photos recuites (Empire, Liberté, atlas des
+    // quartiers) quittent le matériau, qui reprend sa carte d'attente ; au retour,
+    // elles se relisent et se reposent, SANS clé de programme neuve (v246) : la
+    // carte d'attente est celle de la naissance. On lit les clés, pas leur compte.
+    const photosNY = await p.evaluate(async () => {
+      try {
+        const ny = await import("/src/new-york-modeles.js");
+        const P = await import("/src/manhattan-plan.js");
+        const { ORIGINE_MANHATTAN: O } = await import("/src/manhattan-world.js");
+        if (typeof ny.etatTexturesNY !== "function") return { err: "pas de etatTexturesNY" };
+        const g = __game, v = g.villeRealiste;
+        const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const cles = () => new Set(g.renderer.info.programs.map((q) => q.cacheKey));
+        const mats = { empire: ny.materiauNY("empire"), liberte: ny.materiauNY("liberte"), quartiers: ny.materiauQuartiers() };
+        const enAttente = () => Object.values(mats).every((m) => m.map === m.userData.attente.map);
+        const b = P.BATIMENTS.find((a) => a.quartier === "brooklyn" && a.modele === "cinema");
+        const avant = { x: g.player.pos.x, y: g.player.pos.y, z: g.player.pos.z, vol: g.player.flying };
+        const clesDebut = cles();
+        g.player.flying = true;
+        let cible = [O.x - 4000, P.SOL + 40, O.z];
+        const pose = setInterval(() => { g.player.pos.set(...cible); g.player.vel.set(0, 0, 0); }, 40);
+        const t0 = performance.now();
+        while (performance.now() - t0 < 30000 && (ny.etatTexturesNY().garde || !enAttente())) await dodo(250);
+        const loin = { ...ny.etatTexturesNY(), attente: enAttente(), ms: Math.round(performance.now() - t0) };
+        cible = [O.x + b.x0 - 14, P.SOL + 4, O.z + b.z0 - 14];
+        const t1 = performance.now();
+        while (performance.now() - t1 < 60000 && Object.keys(ny.etatTexturesNY().tenues).length < 3) await dodo(250);
+        await dodo(3000);
+        const pres = { ...ny.etatTexturesNY(), attente: enAttente(), actif: v.active, ms: Math.round(performance.now() - t1) };
+        // la clé du programme que chaque matériau photo utilise au retour : déjà
+        // compilée avant le départ (la chauffe de l'accueil), donc pas neuve
+        const cleDe = (m) => { const q = g.renderer.properties.get(m).currentProgram; return q && q.cacheKey; };
+        const auRetour = Object.values(mats).map(cleDe);
+        const neuves = auRetour.filter((k) => k && !clesDebut.has(k)).length;
+        const dessinees = auRetour.filter(Boolean).length;
+        clearInterval(pose);
+        g.player.pos.set(avant.x, avant.y, avant.z);
+        g.player.flying = avant.vol;
+        return { loin, pres, neuves, dessinees };
+      } catch (err) {
+        return { err: String((err && err.stack) || err) };
+      }
+    });
+    verifier(
+      "loin de New York, ses photos quittent le matériau ; au retour elles reviennent sans compiler de programme",
+      !photosNY.err && !photosNY.loin.garde && photosNY.loin.attente && Object.keys(photosNY.loin.tenues).length === 0 &&
+        photosNY.pres.garde && !photosNY.pres.attente && Object.keys(photosNY.pres.tenues).length === 3 && photosNY.dessinees > 0 && photosNY.neuves === 0,
+      JSON.stringify(photosNY),
     );
     // ---- LES MODÈLES DE MAX (v565) ----------------------------------------
     // L'Empire State et la statue arrivent après le démarrage (un modèle absent
@@ -488,7 +543,11 @@ async function entrerDansLeJeu(p) {
           for (let cx = Math.floor((O.x + I.x - 16) / 16); cx <= Math.floor((O.x + I.x + 16) / 16); cx++)
             tus += w.cubesTus?.(cx, cz)?.size || 0;
         const tri = (m) => (m?.index ? m.index.count / 3 : 0);
-        return { empire: [tri(e?.proche), tri(e?.loin)], liberte: [tri(l?.proche), tri(l?.loin)], carte: !!(e?.carte && l?.carte), tus };
+        // La photo vit sur le MATÉRIAU depuis que New York la rend loin du plan
+        // (chantier mémoire) : on lit la carte posée, pas un champ du modèle.
+        const posee = (n) => { const m = ny.materiauNY(n); return !!m.map && m.map !== m.userData.attente?.map; };
+        const carte = e?.carte !== undefined ? !!(e.carte && l?.carte) : posee('empire') && posee('liberte');
+        return { empire: [tri(e?.proche), tri(e?.loin)], liberte: [tri(l?.proche), tri(l?.loin)], carte, etat: ny.etatTexturesNY?.(), tus };
       } catch (err) {
         return { err: String(err && err.message || err) };
       }

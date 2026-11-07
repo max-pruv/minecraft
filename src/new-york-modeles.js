@@ -40,6 +40,7 @@ export function materiauNY(nom) {
     roughness: 0.86, metalness: 0,
   });
   m.name = `photogrammetrie-${nom}`;
+  m.userData.attente = { map: attente, emissiveMap: attente };
   return (materiaux[nom] = m);
 }
 
@@ -64,6 +65,7 @@ export function materiauQuartiers() {
   // l'atlas est sombre sous ACES (vu en capture) : on l'éclaircit d'un quart
   matiereQuartiers.color.setRGB(1.28, 1.28, 1.28);
   matiereQuartiers.name = "quartiers-new-york";
+  matiereQuartiers.userData.attente = { map: attente, emissiveMap: noir };
   return matiereQuartiers;
 }
 let promesseQuartiers = null;
@@ -77,23 +79,79 @@ export function chargerQuartiers() {
         if (!o.isMesh) return;
         // GLTFLoader remplace les « - » d'un nom de nœud : on relit le maillage
         out[o.name.replace(/_loin$/, "-loin")] = o.geometry;
-        if (o.material.map) {
-          o.material.map.colorSpace = THREE.SRGBColorSpace;
-          o.material.map.anisotropy = 4;
-          m.map = o.material.map;
-        }
-        if (o.material.emissiveMap) {
-          o.material.emissiveMap.colorSpace = THREE.SRGBColorSpace;
-          m.emissiveMap = o.material.emissiveMap;
-        }
       });
+      poserCartes("quartiers", m, cartesDe(gltf));
       return out;
     }).catch((e) => { console.warn("quartiers de New York", e); return null; });
   }
   return promesseQuartiers;
 }
 
+// LES TEXTURES DE NEW YORK NE SE GARDENT QU'AUTOUR DE NEW YORK (chantier
+// mémoire). Les trois photos recuites (Empire, Liberté, atlas des quartiers)
+// se chargeaient au démarrage et restaient tenues partout : 69 Mo en RGBA,
+// 17 en KTX2, mesurés à Paris (sonde-textures-paris.cjs). Loin du plan, le
+// matériau reprend sa carte d'attente — la MÊME texture que celle de sa
+// naissance, donc la même clé de programme : rien ne se recompile au retour
+// (v246) — et l'image est rendue au pilote et au ramasse-miettes. Près du plan,
+// on relit le fichier (cache du service worker) et l'on repose ses cartes.
+// La géométrie reste : c'est le budget de `mondeMo`, pas celui-ci.
+let gardeNY = true;
 const charges = {}, prets = {};
+const cartesTenues = {};       // nom -> [textures posées]
+const relectures = {};         // nom -> promesse d'une relecture en cours
+const FICHIER_CARTES = { ...FICHIERS_NY, quartiers: './vendor/newyork/quartiers.glb' };
+function cartesDe(gltf) {
+  let map = null, emissiveMap = null;
+  gltf.scene.traverse((o) => {
+    if (!o.isMesh) return;
+    if (!map && o.material.map) map = o.material.map;
+    if (!emissiveMap && o.material.emissiveMap) emissiveMap = o.material.emissiveMap;
+  });
+  return { map, emissiveMap };
+}
+function poserCartes(nom, m, { map, emissiveMap }) {
+  const tex = [...new Set([map, emissiveMap].filter(Boolean))];
+  if (!gardeNY) { for (const t of tex) t.dispose(); return; }
+  if (map) { map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4; m.map = map; }
+  // les monuments s'éclairent par leur propre photo ; les quartiers ont la leur
+  if (nom === 'quartiers') { if (emissiveMap) { emissiveMap.colorSpace = THREE.SRGBColorSpace; m.emissiveMap = emissiveMap; } }
+  else if (map) m.emissiveMap = map;
+  cartesTenues[nom] = tex;
+}
+function materiauDe(nom) { return nom === 'quartiers' ? materiauQuartiers() : materiauNY(nom); }
+function rendreCartes(nom) {
+  const tex = cartesTenues[nom];
+  if (!tex) return;
+  const m = materiauDe(nom), a = m.userData.attente;
+  m.map = a.map; m.emissiveMap = a.emissiveMap;
+  for (const t of tex) t.dispose();
+  delete cartesTenues[nom];
+}
+function relireCartes(nom) {
+  if (cartesTenues[nom] || relectures[nom]) return;
+  relectures[nom] = chargeurModeles().loadAsync(urlModele(FICHIER_CARTES[nom])).then((gltf) => {
+    gltf.scene.traverse((o) => { if (o.isMesh) o.geometry.dispose(); });
+    poserCartes(nom, materiauDe(nom), cartesDe(gltf));
+  }).catch((e) => console.warn('cartes de New York', nom, e)).finally(() => { delete relectures[nom]; });
+}
+// Appelé par le rendu de Manhattan, avec hystérésis : vrai près du plan, faux
+// loin, rien entre les deux. Ne relit que ce qui avait déjà été chargé une fois.
+export function garderTexturesNY(garder) {
+  if (!PHOTO_NY || garder === gardeNY) return;
+  gardeNY = garder;
+  const promesses = { empire: charges.empire, liberte: charges.liberte, quartiers: promesseQuartiers };
+  for (const nom of Object.keys(FICHIER_CARTES)) {
+    if (!promesses[nom]) continue;
+    if (garder) promesses[nom].then((r) => { if (r && gardeNY) relireCartes(nom); });
+    else rendreCartes(nom);
+  }
+}
+// Pour les témoins : ce qui est tenu, nom par nom.
+export function etatTexturesNY() {
+  return { garde: gardeNY, tenues: Object.fromEntries(Object.entries(cartesTenues).map(([k, v]) => [k, v.length])) };
+}
+
 export function chargerModeleNY(nom) {
   if (!PHOTO_NY) return null;
   if (!charges[nom]) {
@@ -102,16 +160,8 @@ export function chargerModeleNY(nom) {
       gltf.scene.traverse((o) => {
         if (!o.isMesh) return;
         out[o.name] = o.geometry;
-        const carte = o.material.map;
-        if (carte && !out.carte) out.carte = carte;
       });
-      const m = materiauNY(nom);
-      if (out.carte) {
-        out.carte.colorSpace = THREE.SRGBColorSpace;
-        out.carte.anisotropy = 4;
-        m.map = out.carte;
-        m.emissiveMap = out.carte;
-      }
+      poserCartes(nom, materiauNY(nom), cartesDe(gltf));
       for (const cle of ['proche', 'loin']) if (out[cle]) {
         out[cle].computeVertexNormals();
         out[cle].computeBoundingSphere();
