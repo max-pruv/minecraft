@@ -1,4 +1,4 @@
-// LES MATÉRIAUX SCANNÉS DE LA COUCHE HD (v588) — script reproductible.
+// LES MATÉRIAUX SCANNÉS DE LA COUCHE HD (vNEXT) — script reproductible.
 //
 // Télécharge des matériaux PBR photographiés sous licence CC0 (Poly Haven,
 // ambientCG), les met à l'échelle du monde (un bloc ≈ 1,1 m : un étage fait
@@ -51,7 +51,7 @@ register('data:text/javascript,' + encodeURIComponent(
 const { peindreTuileHD } = await import(pathToFileURL(path.join(RACINE, 'src', 'matierehd.js')).href);
 const { TUILES_HD, COLS_HD, PX_HD } = await import(pathToFileURL(path.join(RACINE, 'src', 'facadeshd.js')).href);
 
-// Deux tailles (v588) : 1 024, celle de l'atlas peint (paliers moyen et bas),
+// Deux tailles (vNEXT) : 1 024, celle de l'atlas peint (paliers moyen et bas),
 // et 2 048 pour le palier haut — « quality first », décision de Max : les mêmes
 // régions, deux fois plus de pixels (256 au mètre sur une façade au lieu de
 // 128). Les fichiers de 1 024 gardent leur nom, au bit près.

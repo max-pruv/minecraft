@@ -1,4 +1,4 @@
-// LES SCANS À 2 048 PIXELS (v588) — mémoire et captures, au palier haut.
+// LES SCANS À 2 048 PIXELS (vNEXT) — mémoire et captures, au palier haut.
 //
 // Deux pages du palier « Loin » (`?palier=haut`), l'une après l'autre (jamais
 // deux ouvertes ensemble, v220), l'une avec les scans de 1 024 (`scannes2k=0`),

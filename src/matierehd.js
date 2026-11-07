@@ -552,7 +552,7 @@ const PEINTRES = {
   },
 };
 
-// Une tuile peinte seule, sans document (v588) : le script des matériaux
+// Une tuile peinte seule, sans document (vNEXT) : le script des matériaux
 // scannés (`scripts/materiaux-scannes.mjs`) y mesure la moyenne de chaque
 // tuile qu'il remplace, pour que le scan garde la couleur moyenne du peintre
 // (les teintes de `teinteDuMur` et le relais proche/loin en dépendent).
@@ -566,7 +566,7 @@ export function peindreTuileHD(nom) {
 
 // --- l'atlas ------------------------------------------------------------------------
 
-// `taille` (v588) : l'atlas du palier haut fait 2 048 pixels pour recevoir les
+// `taille` (vNEXT) : l'atlas du palier haut fait 2 048 pixels pour recevoir les
 // scans à deux fois la finesse. Les tuiles peintes restent peintes à PX_HD puis
 // agrandies (bilinéaire) : elles se lisent comme avant, seuls les scans gagnent.
 export function atlasHD(taille = COLS_HD * PX_HD) {
@@ -635,7 +635,7 @@ function environnementHD(renderer) {
 
 // --- le matériau ---------------------------------------------------------------------
 
-// --- les matériaux scannés (v588) -------------------------------------------------------
+// --- les matériaux scannés (vNEXT) -------------------------------------------------------
 //
 // Des scans PBR sous licence CC0 (Poly Haven, ambientCG), assemblés hors ligne
 // par `scripts/materiaux-scannes.mjs` dans deux images de la taille de l'atlas
@@ -659,7 +659,7 @@ function environnementHD(renderer) {
 //   portée HD est non nulle (`normales`). Sans elle, le programme n'a pas de
 //   carte de normales du tout.
 //
-// Au palier haut (v588, « quality first », décision de Max) l'atlas et la carte
+// Au palier haut (vNEXT, « quality first », décision de Max) l'atlas et la carte
 // de normales font 2 048 pixels et lisent `scannes-v1-2048` : les mêmes régions
 // à deux fois la finesse (256 pixels au mètre sur une façade). Le prix se compte
 // en mémoire de textures : deux fois 22,4 Mo avec les mipmaps, au lieu de deux
@@ -780,7 +780,7 @@ export function materiauHD(renderer, options = {}) {
         varying vec2 vMatiere;
         varying float vLueur;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
-        // le remap des scans (v588) : la case d'origine de la tuile, sa région
+        // le remap des scans (vNEXT) : la case d'origine de la tuile, sa région
         // scannée si elle en a une. NEUTRE (z = 1) n'est jamais remappé.
         vTuile = tuile;
         vEchelle = 1.0;

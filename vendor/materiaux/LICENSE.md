@@ -1,4 +1,4 @@
-# Matériaux scannés de la couche HD (v588)
+# Matériaux scannés de la couche HD (vNEXT)
 
 Tous les matériaux ci-dessous sont publiés sous licence **CC0 1.0 Universel**
 (domaine public) : ni attribution ni restriction requises. On les crédite quand

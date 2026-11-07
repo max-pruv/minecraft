@@ -91,6 +91,7 @@ import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './pa
 import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe, micOuvert } from './visio.js';
 import { initCommandes, ICONES } from './commandes.js';
 import { creerSuivi, recevoir, positionA } from './fluidite.js';
+import { brancherKTX2 } from './ktx2.js';
 
 // New York appartient à la Terre. Les anciennes adresses deviennent un lieu de départ.
 const VISITE_MANHATTAN = ['manhattan'].includes(new URLSearchParams(location.search).get('lieu')) || new URLSearchParams(location.search).get('carte') === 'manhattan';
@@ -354,6 +355,9 @@ const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+// Les textures KTX2 des modèles déposés (v590) : le transcodeur demande au
+// renderer ce que la carte lit, et il doit être branché avant tout modèle.
+brancherKTX2(renderer);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 // LE REGARD DE NEW YORK, PARTOUT (v247). Max : « regarde les améliorations
 // qu'il y a encore eu dans la ville de New York et reproduis-les sur
@@ -717,13 +721,13 @@ world.sansSolContinu = new URLSearchParams(location.search).get('solcontinu') ==
 // une PMREM) : la première fois qu'un morceau de Paris arrive avec du détail.
 let hd = null;
 const OMBRE_HD = new URLSearchParams(location.search).get('ombrehd') !== '0';
-// Les matériaux scannés (v586, matierehd.js) : la couleur partout où la couche
+// Les matériaux scannés (vNEXT, matierehd.js) : la couleur partout où la couche
 // se dessine, la carte de normales seulement si la portée HD est non nulle
 // (le palier bas ne paie pas sa texture). Coupés en rendu logiciel, comme la
 // couche ; `?scannes=0` rejoue l'atlas peint, `?scannes=1` force.
 const SCANNES_DEMANDES = new URLSearchParams(location.search).get('scannes');
 const SCANNES = SCANNES_DEMANDES === '1' || (SCANNES_DEMANDES !== '0' && !renduLogiciel());
-// Au palier haut (« Loin », v588), les scans à 2 048 pixels : deux fois la
+// Au palier haut (« Loin », vNEXT), les scans à 2 048 pixels : deux fois la
 // finesse pour ≈ 33 Mo de textures de plus, et seulement là. `?scannes2k=0`
 // rejoue le 1 024, `?scannes2k=1` le force (captures, mesures).
 const SCANNES_2K_DEMANDES = new URLSearchParams(location.search).get('scannes2k');

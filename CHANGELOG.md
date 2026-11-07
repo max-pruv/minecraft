@@ -8,6 +8,11 @@ la même fusion.** Le numéro de version est celui de `CACHE_VERSION` dans
 `sw.js` — c'est lui qui décide si une tablette déjà installée reçoit la mise à
 jour, et c'est donc lui qui fait foi.
 
+**Une branche n'écrit pas ici directement** : elle dépose son entrée dans
+`livraisons/` (voir `livraisons/README.md`), et le workflow `Numérotation`
+l'insère en tête, avec son numéro, après la fusion. Plusieurs sessions peuvent
+ainsi livrer en parallèle sans se disputer un numéro.
+
 Chaque entrée dit trois choses, dans cet ordre :
 
 - **Pourquoi** — la panne vécue, ou le manque constaté. Pas la solution.
@@ -20,32 +25,100 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v588 — Paris en vraie pierre
+## v590 — Les textures des modèles tiennent quatre à six fois moins de place
 
-**Pourquoi.** Les façades, les trottoirs et les pavés de Paris étaient des
-tuiles peintes en code : de près, un aplat propre sans grain, sans joint creux,
-sans relief à la lumière. Premier des cinq chantiers « réalisme » de Max.
+**Pourquoi.** iOS ferme la page vers 500 Mo de géométrie et de textures (v580),
+et toutes les images des modèles déposés — voitures, police, moto, avions, New
+York — se décodaient en RGBA : 487 Mo de textures si tout est chargé, 309 Mo
+pour la seule flotte de la rue. Le journal de bord de l'iPhone de Max l'a
+dit : quinze plantages à Paris de la v580 à la v586, la dernière session à
+551 Mo dont 279 de textures — et `mondeMo` ne borne que la géométrie. C'est
+aussi la place qui manque aux modèles plus beaux que le chantier « réalisme »
+veut ajouter.
 
-**Ce que ça change.** Neuf matières de Paris viennent de vrais scans sous
-licence CC0 (Poly Haven, ambientCG) : la pierre de taille en assises, l'enduit,
-la brique, le bitume, l'asphalte des trottoirs, les pavés de granit, la pierre
-lisse des encadrements, les pavés des cours et l'écorce des platanes. Chacune
-est posée à sa vraie taille (un bloc vaut 1,1 m) et gagne une carte de reliefs
-et de rugosité : les joints se creusent et accrochent la lumière rasante. Les
-teintes des quartiers ne changent pas : chaque scan est ramené à la couleur
-moyenne de la tuile qu'il remplace. Au palier bas, la couleur scannée seule
-(aucune passe de plus) ; en rendu logiciel, l'atlas d'avant.
+**Ce que ça change.** Les quarante modèles déposés qui portent des images
+arrivent avec des textures KTX2, transcodées pour la carte graphique (ETC2 ou
+ASTC sur l'iPhone et l'iPad). Mesuré au banc : la flotte de la rue passe de 309
+à 78 Mo de textures, tous les modèles de 487 à 128 Mo ; l'iPhone, qui reçoit
+l'ETC1S en ETC2 RGB, en garde environ 80 au lieu de 480. Rien ne change à
+l'écran ni sous les roues : même géométrie au sommet près, mêmes matériaux.
+Les fichiers d'avant restent (`?ktx2=0` les rend, pour comparer). Le prix :
+New York pèse 11,7 Mo de plus à télécharger à la première visite (ses photos
+recuites ne supportent pas l'ETC1S et passent en UASTC) ; la flotte, 2,6 Mo.
 
-**Ce qui le prouve.** Les témoins de `parishd.js` : la fiche et la licence de
-chaque tuile, des régions dans des cases libres, la moyenne de chaque scan à
-5 % de la tuile peinte, un rendu qui change pour plus de 30 % des pixels sans
-une seule clé de programme neuve, le palier bas sans carte de reliefs, et
-`?scannes=0` qui rend l'atlas d'avant. L'empreinte des 490 morceaux ne bouge
-pas : les tampons de la couche HD sont inchangés, le remap vit dans le shader.
-Prix : 972 Ko de fichiers (immuables, une fois), 5,6 Mo de mémoire graphique
-aux paliers moyen et haut, rien au palier bas.
+**Ce qui le prouve.** Six témoins : sous node (`tests/ktx2.mjs`, lu par
+`degats.js`), chaque fichier comprimé est son original accesseur pour
+accesseur (5 221 accesseurs), nœud pour nœud, carte pour carte, avec les mêmes
+signatures de programme, et tout modèle chargé à image a sa version ; dans le
+jeu, la MC12 arrive par son fichier KTX2 avec des textures comprimées, trois
+fois plus légères, sans un programme neuf. La qualité de chaque texture est
+mesurée par le script (33 dB au moins, 37 à 50 en général), et les captures
+iPhone et iPad, de jour et de nuit, avec et sans KTX2, sont dans la PR.
 
 ---
+
+## v589 — New York et les voitures ne sont plus noires la nuit
+
+**Pourquoi.** Max, capture d'iPad à Flushing Meadows à la tombée de la nuit :
+« des décors très noirs, des voitures toutes noires, très sombres, pas très
+fini ». Mesuré : la nuit de New York et de ses banlieues avait ses propres
+lampes, quatre fois plus faibles que celles du reste du monde (ciel 0,46 et
+lune 0,12 contre 1,7 et 0,45, v249). Et dans la flotte, seule la laque
+reçoit les reflets : un pneu, une jante, une livrée ou une carrosserie mal
+nommée à métal 0,9 ou 1 ne renvoyait presque rien — le Raptor sortait à 9,9
+sur 255 en plein jour, la Victor à 1 la nuit. Quelques laques étaient plus
+noires que du charbon (0,003).
+
+**Ce que ça change.** À New York, la nuit garde une lueur de ciel et de lune
+proche du reste du monde : façades, trottoirs et voitures se lisent ; le jour
+ne change pas. Les voitures gardent leur forme jour et nuit : le métal sans
+reflet est borné à 0,3 et une couleur unie ne descend plus sous 3,5 % — un
+noir de vraie laque. Aucun programme de shader neuf.
+
+**Ce qui le prouve.** Trois témoins dans `manhattan.js`, qui lisent des
+pixels : un mur gris rendu par la vraie scène de New York à minuit (17 contre
+5 aux planchers d'avant, les deux bras dans la même tâche, une fois les lampes
+de nuit posées — lu 800 ms après l'heure, il voyait encore celles du jour), aucune
+voiture avec du métal sans reflet, et les trois plus noires de la v588 qui se
+lisent sous les lampes de nuit. Rouges sur `origin/main`. Deux sondes
+(`sonde-decors-sombres.cjs`, `sonde-voitures-sombres.cjs`) et les captures
+avant/après de Queens et Flushing, au crépuscule et à minuit, dans la PR. La
+plaque d'asphalte à bord en escalier de la capture ne se reproduit pas au
+banc : déclarée dans `TASKS.md`.
+
+---
+
+## v588 — Les feux de toutes les voitures ont la forme de leur optique
+
+**Pourquoi.** Max : « les phares des voitures font des ronds très génériques
+et ne respectent pas la forme réelle du phare ». Mesuré sur les 41 modèles de
+la flotte : les phares copiaient déjà l'optique sur 26 modèles (v569), mais
+quinze n'avaient AUCUNE optique reconnue à l'avant (les dix génériques, dont le
+maillage s'appelle « Optics », et cinq livrées peintes : la voiture et le SUV
+de police, le taxi Mondeo, la Divo, l'Alpine) ; et sur toute la flotte, les
+feux stop étaient deux disques rouges, le recul deux petits disques blancs, la
+détresse quatre rectangles orange — six formes génériques par voiture.
+
+**Ce que ça change.** Tout feu allumé est désormais une copie des triangles de
+l'optique du modèle, posée à fleur de sa carrosserie : les phares, les feux
+stop (le bloc arrière en rouge), le feu de recul (sa part blanche, ou la part
+du bloc la plus proche de l'axe), les feux de détresse (les clignotants nommés,
+à défaut les blocs optiques eux-mêmes, en ambre). Pour une livrée peinte d'un
+seul tenant, le jeu lit la couleur de la texture sous chaque triangle : la
+voiture de police allume ses vrais phares et ses vrais feux arrière — et
+seulement un morceau d'un seul tenant, sur le côté, plus petit que le bouclier :
+ni le lettrage « POLICE » du coffre, ni l'écusson du SUV, ni la livrée blanche
+de l'Alpine. Un modèle dont l'optique ne se reconnaît pas n'a pas de lueur
+plutôt qu'une forme inventée : le taxi Mondeo et la Divo, l'avant de l'Alpine
+et du SUV de police (déclarés). Aucune lampe, aucun programme neuf (la matière
+de la flamme).
+
+**Ce qui le prouve.** Un témoin neuf sous node dans `degats.js` : zéro disque
+et zéro rectangle sur les 41 modèles (six par modèle sur l'ancien code), chaque
+lueur arrière et de détresse sur la tôle et à son bout, et les dix génériques
+ont leurs phares (zéro avant) ; le témoin des feux de détresse du navigateur
+lit des copies d'optique sur la tôle au lieu de lentilles. Planche de captures
+de nuit avant/après (trois quarts, face, dos) dans la PR.
 
 ## v587 — Chaque moteur a sa voix, et la flamme est une réchauffe
 

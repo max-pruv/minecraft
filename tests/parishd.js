@@ -1665,7 +1665,7 @@ function verifier(nom, ok, detail = '') {
         `${progs ? progs.length : 0} programme(s) dessinant la tour, ${neuvesN.length} né(s) après l'accueil ${JSON.stringify(neuvesN.map((k) => k.slice(0, 80)))}`);
     }
 
-    // ── LES MATÉRIAUX SCANNÉS (v588) ─────────────────────────────────────────
+    // ── LES MATÉRIAUX SCANNÉS (vNEXT) ─────────────────────────────────────────
     //
     // Des scans CC0 posés SUR l'atlas peint (matierehd.js, `remapHD`) : le
     // banc rend en logiciel, où ils sont coupés comme la couche — on les force.
@@ -1780,7 +1780,7 @@ function verifier(nom, ok, detail = '') {
           r.differents > r.pixels * 0.3 && r.neuves === 0, `${r.differents}/${r.pixels} pixels changés, ${r.neuves} programme(s) neuf(s)`);
       }
 
-      // LE PALIER HAUT (v588, « quality first ») : l'atlas et la carte de
+      // LE PALIER HAUT (vNEXT, « quality first ») : l'atlas et la carte de
       // normales à 2 048 pixels, les scans de `scannes-v1-2048` (les mêmes
       // régions, deux fois plus de pixels), les mêmes moyennes. Hors du palier
       // haut, 1 024 : la page d'au-dessus n'a pas de palier.

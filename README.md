@@ -133,8 +133,10 @@ rendering budgets, licensing and limitations.
   vault in Paris, brown pylons in Washington).
 - **Fully offline** — the game is an installable PWA: open it once online,
   add it to the home screen (iPhone/iPad: Share → Add to Home Screen), and it
-  runs entirely offline afterwards. When releasing changes, bump
-  `CACHE_VERSION` in `sw.js` so installed clients update.
+  runs entirely offline afterwards. Installed clients update when
+  `CACHE_VERSION` in `sw.js` changes; branches never set it themselves — they
+  add a file to `livraisons/` and the `Numérotation` workflow numbers the
+  release after the merge (see `livraisons/README.md`).
 - **Persistence** — your block edits and creature collection are saved to
   `localStorage` and restored on reload (terrain is deterministic, so only the
   diff is stored).
