@@ -21,6 +21,30 @@
 - [ ] **Les croisements avenue × avenue n'ont pas de passage** (décidé : pas
   de demi-passage) ; les passages d'avenue des autres villes bâties à la main
   n'existent pas (Londres, Nice, Lille n'ont pas de marquage HD).
+- [ ] **Portail GitHub de la PR #615 (sha 2ce2af2, run 42387081191) : quatre
+  tranches rouges, aucune par cette livraison.** Le diff ne touche que
+  `paris.js` (le marquage, du dessin dans le tampon `sol`), `voies.js`
+  (`couvertParVoie`), `plafond.js` et la sonde ; `solParis` est identique sur
+  les 549 081 colonnes du disque et l'empreinte des 490 morceaux est celle
+  d'avant, marquage désarmé. Tranche 3/4 : `maj.js`, les deux témoins du
+  loader (dettes v559). Tranche 4/4 : `degats.js` « le coût réel des dégâts »
+  (`dernierMs 0`, déclaré plus bas) et `manhattan.js` « le taxi roule avec les
+  contrôles tactiles » (3 s de jeu en 245 s de montre : la cadence du banc à
+  Manhattan, déclaré). Tranche 2/4 : `reseau.js`, la fluidité (1,5 image par
+  seconde chez l'observateur) et « la voiture qu'on prend dans la rue garde sa
+  couleur » (`auVolant false` après 243 s, déclaré v365/v369/v388) qui emporte
+  ses deux dépendants (carte de l'ami `assis false`, « arrive derrière »
+  `releves 0`) — la même tranche, rouge pour les mêmes quatre, sur la #607.
+  Tranche 1/4 : `monte.js`, seize rouges en 67 min pour 37 mesurées ; douze
+  sont rouges à l'identique sur les tranches 1/4 des PR #607, #606 (phares) et
+  #598 (KTX2), sans une ligne de cette branche (passages peints de Rome et de
+  Londres, passant lancé, deux voitures l'une dans l'autre, Moscou ×2, mémoire
+  des voitures de Rome, l'eau, la radio, les feux stop, les traces, la caisse
+  en dérapage) ; les quatre autres sont des intermittences de conduite
+  déclarées plus bas : « les pneus crissent » (`droit posees 0`), « le
+  personnage est assis » (`sousLeToit false`), « deux voisines d'un convoi »
+  (`minVrai 2,27`), « la caméra laisse la voiture glisser » (β 23°). La mesure
+  qui fait foi est le portail local de la branche, ci-dessous.
 
 ## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
 
