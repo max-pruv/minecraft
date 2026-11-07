@@ -20,6 +20,13 @@ Le détail par session vit dans `docs/carte-x3-A.md` (mondes figés, migration),
   premier qui ne casse pas (4 essais). « Trop vite » sur un champ plat est à
   démonter : l'approche sur place depuis 1 500 blocs arrive-t-elle sous
   `toucherMax` ?
+- [ ] **193 trains au lieu de 59.** Le nombre de trains d'une ligne est son tour
+  divisé par la demi-minute (v222) : les lignes triplent, les trains aussi, et
+  leur mise à jour coûte à chaque image (≈ 10 % du temps de `frame` à Zurich,
+  profil de 15 s). Elle mangeait le budget de fabrication de la rue — corrigé,
+  le budget ne compte plus que la fabrication (`fabrication.reste`,
+  vehicules.js). Reste : ne mettre à jour qu'un train à portée, comme une
+  voiture.
 - [ ] **Dettes de la session A** (`docs/carte-x3-A.md`, 1 à 7) : ville figée
   translatée incomplète (bouches de Rome v531, lampes, colonnes protégées de
   New York, date du diagnostic) ; garage orphelin de deux marches ; mondes figés

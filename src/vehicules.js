@@ -1017,11 +1017,15 @@ const VU = 150;                 // au-delà, le convoi s'efface et se fige
 // (v246) : un budget de fabrication par image, et une place hors budget reste
 // vide une image de plus. Sauf tout près de l'enfant (`FAB_PROCHE`) : une
 // voiture qu'il touche presque se fabrique toujours, sinon il la traverserait
-// sans la voir. `fin` vaut l'infini tant que personne n'a ouvert d'image —
+// sans la voir. `reste` vaut l'infini tant que personne n'a ouvert d'image —
 // un témoin sous node qui appelle `montrer` sans `update` fabrique tout.
+// LE BUDGET COMPTE LA FABRICATION, PAS LA MISE À JOUR DES CONVOIS (carte ×3) :
+// ouvert en tête d'`update`, il s'épuisait sur les trains avant d'atteindre
+// la rue — 193 trains sur la carte ×3 au lieu de 59, et les voitures de Zurich
+// ne naissaient plus (3 à 7 visibles contre 24 à 45, `carteMonde.js`).
 export const FAB_MS = 5;
 export const FAB_PROCHE = 18;
-const fabrication = { fin: Infinity, faites: 0, differees: 0 };
+const fabrication = { reste: Infinity, faites: 0, differees: 0 };
 
 // CE QUI QUITTE DURABLEMENT LE CHAMP SE REND (v495). Une voiture de convoi
 // naît à la demande (v235) et n'était jamais détruite : cachée au-delà de sa
@@ -2400,10 +2404,12 @@ class Convoi {
         else if (dejaLa && dejaLa.visible) dejaLa.visible = false;
         continue;
       }
-      if (!this.elements[i] && performance.now() > fabrication.fin
+      if (!this.elements[i] && fabrication.reste <= 0
         && (p.x - joueur.x) ** 2 + (p.z - joueur.z) ** 2 > FAB_PROCHE * FAB_PROCHE) { fabrication.differees++; continue; }
-      if (!this.elements[i]) fabrication.faites++;
+      const neuve = !this.elements[i], tFab = neuve ? performance.now() : 0;
+      if (neuve) fabrication.faites++;
       const m = this.element(i);
+      if (neuve) fabrication.reste -= performance.now() - tFab;
       m.position.set(p.x, p.y, p.z);
       // Le modèle est dessiné le nez vers -z ; le cap donne la direction de la
       // marche, il faut donc le retourner d'un demi-tour. Le cap est celui de
@@ -4091,7 +4097,7 @@ export function createVehicules({ scene, player }) {
       if (!w || player.pos.x < w.x0 || player.pos.x > w.x1 || player.pos.z < w.z0 || player.pos.z > w.z1) continue;
       c.voiesEnAttente = null; w.poser(); break;
     }
-    fabrication.fin = performance.now() + FAB_MS;
+    fabrication.reste = FAB_MS;
     for (const c of convois) c.update(dtReel, player.pos, horloge);
   }
   // LA VOITURE QUE L'ENFANT PERCUTE S'ARRÊTE (v372). La session de conduite
