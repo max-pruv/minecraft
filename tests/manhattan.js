@@ -37,9 +37,29 @@ function verifier(nom, ok, detail = "") {
           __game.world.ctx === "local",
       ),
     );
-    await p.locator(".who-card.active").click();
-    await p.getByRole("button", { name: "Plus tard", exact: true }).click();
-    await p.locator("#play-btn").click();
+    // UN APPUI SUR UNE PAGE QUI REND MAL SE FAIT PAR LE DOCUMENT (v427).
+    // `locator.click` attend deux images identiques : l'accueil de Manhattan
+    // rend 0,25 à 0,5 image par seconde en rendu logiciel, et le même clic a
+    // pris 11 s sur origin/main et 38 s sur la branche, au-delà des 30 s par
+    // défaut — un tirage. On vérifie ce que l'enfant voit (visible, actif, à
+    // découvert sous le doigt), puis on appuie.
+    const appuyer = async (trouver, nom) => {
+      const t0 = Date.now();
+      await p.waitForFunction((src) => {
+        const el = new Function("return " + src)()();
+        if (!el || el.disabled) return false;
+        const b = el.getBoundingClientRect();
+        if (!b.width || !b.height || getComputedStyle(el).visibility !== "visible") return false;
+        const dessus = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+        if (!el.contains(dessus)) return false;
+        el.click();
+        return true;
+      }, trouver.toString(), { timeout: 90000, polling: 250 })
+        .catch((e) => { throw new Error(`${nom} jamais appuyable en ${Date.now() - t0} ms : ${e.message}`); });
+    };
+    await appuyer(() => document.querySelector(".who-card.active"), "la carte de joueur");
+    await appuyer(() => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.getBoundingClientRect().width > 0), "« Plus tard »");
+    await appuyer(() => document.getElementById("play-btn"), "« Jouer »");
     await p.waitForFunction(() => __game.running);
     verifier(
       "le voyage explicite place le joueur à New York en coordonnées terrestres",
