@@ -2,6 +2,15 @@
 
 ## Les portières s'ouvrent pour de vrai (vNEXT) — ce qui reste
 
+- [ ] **Rouge intermittent de `carte.js`, déjà sur `main` : « la flèche du
+  GPS pointe vers la destination ».** Double mesure (v195, v269), `carte.js`
+  rejouée seule, en alternant : branche des portières rouge 3 fois sur 6,
+  `origin/main` (v590 puis b9a8136) rouge 2 fois sur 6, dont 2 sur 2 le
+  7 novembre. Même distribution des deux côtés : ce n'est pas la livraison.
+  Le témoin lit l'angle de la flèche après sa transition : à démonter par
+  une sonde qui imprime l'angle écrit et l'heure de la lecture. « Le fond de
+  carte entier se rend vite, même à froid » (501 ms pour une borne de 400)
+  n'est rouge qu'au portail GitHub : vert 12 fois sur 12 en local.
 - [ ] Les places arrière de la fiche `voiture` (montures.js) sont à z −0,75,
   c'est-à-dire DEVANT le conducteur (le nez est en −z) : un passager à
   l'arrière s'assied dans la planche. À remettre derrière (z ≈ +0,9, la
