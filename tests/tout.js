@@ -132,7 +132,7 @@ const GARDIENS = {
   'tests/porsche-911-textures.mjs': ['degats.js'],
   // les lumières de la flotte (v550), lues par degats.js sous node
   'tests/sonde-feux-flotte.mjs': ['degats.js'],
-  'tests/sonde-echelle-paris.mjs': ['parishd.js'],   // la mesure de l'échelle de Paris (v589), lue par parishd.js
+  'tests/sonde-echelle-paris.mjs': ['parishd.js'],   // la mesure de l'échelle de Paris (vNEXT), lue par parishd.js
   'tests/sonde-police.cjs': ['monte.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js', 'reglages.js'],
   'src/nouveautes.js': ['maj.js'],
@@ -294,7 +294,7 @@ const GARDIENS = {
   // Les villes bâties à la main : elles dessinent leur relief et leurs
   // destinations, exactement comme Nice et Londres, déjà listées.
   'src/paris.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js', 'parishd.js'],
-  'src/echelle-ville.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js', 'sauvegarde.js'],   // la table d'échelle des façades (v589) : lue par paris.js et par les migrations
+  'src/echelle-ville.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'parishd.js', 'sauvegarde.js'],   // la table d'échelle des façades (vNEXT) : lue par paris.js et par les migrations
   'src/paris-v302.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js', 'parishd.js', 'sauvegarde.js'],
   'src/voirie.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'metro.js', 'parishd.js'],
   'src/manhattan-plan.js': ['manhattan.js', 'plafond.js', 'carte.js', 'carteMonde.js'],
@@ -346,6 +346,10 @@ const GARDIENS = {
   'src/police.js': ['monte.js'],
   'src/patrouille.js': ['monte.js', 'reseau.js'],   // l'escorte d'un ami (police-réseau)
   'src/moto.js': ['monte.js'],
+  // les textures KTX2 des modèles déposés (v586) : les gardiens de ceux qui
+  // les chargent, et degats.js, qui vérifie les fichiers produits
+  'src/ktx2.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js', 'degats.js', 'carte.js'],
+  'src/ktx2-liste.js': ['monte.js', 'washington.js', 'metro.js', 'manhattan.js', 'carteMonde.js', 'reseau.js', 'degats.js', 'carte.js'],
   'vendor/voitures/police-car.glb': ['monte.js', 'degats.js'],
   'vendor/voitures/moto-police.glb': ['monte.js'],
   'vendor/humains/policier.glb': ['monte.js'],

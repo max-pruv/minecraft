@@ -1,4 +1,4 @@
-// CE QUE PARIS MESURE DANS LE JEU RENDU (chantier échelle, v589). Sous node :
+// CE QUE PARIS MESURE DANS LE JEU RENDU (chantier échelle, vNEXT). Sous node :
 // on maille en détail des morceaux de rue de Paris avec le mailleur du jeu
 // (`buildChunkTampons`, les tampons que la tablette dessine tels quels), et l'on
 // relève, colonne de façade par colonne de façade, la cote de chaque élément —
@@ -30,7 +30,7 @@ export async function mesurerParis(src = '../src') {
   }
   const parBh = {};
   for (const c of colonnes) parBh[c.g.bh] = (parBh[c.g.bh] || 0) + 1;
-  const typeVitrine = colonnes.find((c) => { const col = {}; batirColonneParis(c.x, c.z, (dy, id) => { col[dy] = id; }); return (col[1] === ARCHI.VITRINE_BAS || col[2] === ARCHI.VITRINE_BAS) && !c.g.angle && c.g.bh === 6; });   // le premier rang est le socle depuis la v589
+  const typeVitrine = colonnes.find((c) => { const col = {}; batirColonneParis(c.x, c.z, (dy, id) => { col[dy] = id; }); return (col[1] === ARCHI.VITRINE_BAS || col[2] === ARCHI.VITRINE_BAS) && !c.g.angle && c.g.bh === 6; });   // le premier rang est le socle depuis la vNEXT
   const typePorte = colonnes.find((c) => { const col = {}; batirColonneParis(c.x, c.z, (dy, id) => { col[dy] = id; }); return (col[1] === ARCHI.PORTE_BAS || col[2] === ARCHI.PORTE_BAS) && !c.g.angle && c.g.bh === 6; });
   const lire = (c) => { const col = []; batirColonneParis(c.x, c.z, (dy, id) => { col[dy] = nomBloc(id); }); return col.slice(1); };
   const voxel = {

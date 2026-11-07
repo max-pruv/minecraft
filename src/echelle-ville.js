@@ -1,4 +1,4 @@
-// L'ÉCHELLE DES VILLES (v589) — une table, lue par les bâtisseurs ET les témoins.
+// L'ÉCHELLE DES VILLES (vNEXT) — une table, lue par les bâtisseurs ET les témoins.
 //
 // Max, trois captures d'iPhone à pied dans une rue de Paris : un adulte arrive
 // presque en haut du rez-de-chaussée, les stores sont juste au-dessus des
@@ -48,7 +48,7 @@ export function facadeVisible(niveaux, e = ECHELLE_VILLE) {
   return (hauteurFacade(niveaux, e) - e.socle) * METRE_PAR_BLOC;
 }
 
-// DE COMBIEN UN IMMEUBLE DE PARIS A MONTÉ (v589) : la différence est la même
+// DE COMBIEN UN IMMEUBLE DE PARIS A MONTÉ (vNEXT) : la différence est la même
 // pour toute colonne de lot, quel que soit le nombre de niveaux — c'est ce qui
 // permet à la marche de migration (`releverEchelleParis`, world.js) de monter
 // une cabane bâtie sur un toit d'un seul tenant. Un RÉSULTAT, pas un chiffre

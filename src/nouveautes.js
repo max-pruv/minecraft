@@ -6,13 +6,21 @@
 
 export const NOUVEAUTES = [
   {
-    v: 589,
-    titre: 'Paris à la bonne taille',
+    v: 590,
+    titre: 'Le jeu tient mieux sur iPhone',
     puces: [
-      'Les immeubles de Paris sont plus hauts',
-      'Les vitrines dépassent les passants',
-      'Les portes cochères font trois mètres',
-      'Tes constructions sur les toits ont suivi',
+      'Les voitures prennent bien moins de mémoire',
+      'Les avions et New York aussi',
+      'Elles restent aussi belles qu’avant',
+    ],
+  },
+  {
+    v: 589,
+    titre: 'La nuit n\'est plus toute noire',
+    puces: [
+      'New York se voit mieux la nuit',
+      'Les voitures gardent leur forme le soir',
+      'Plus de voitures toutes noires',
     ],
   },
   {

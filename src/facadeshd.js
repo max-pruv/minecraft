@@ -163,7 +163,7 @@ export const FACADE_HD = new Set([
 // fenêtre serait éclairée à moitié. Le mailleur (la tuile plate) et la couche
 // (le relief) lisent la même règle.
 export function yBaie(id, y) {
-  // le second bloc du vitrage (v589) tire sur le soubassement, deux rangs plus bas
+  // le second bloc du vitrage (vNEXT) tire sur le soubassement, deux rangs plus bas
   if (id === ARCHI.VITRINE_MI2) return y - 2;
   return (id === ARCHI.ETAGE_HAUT || id === ARCHI.ENTRESOL_HAUT || id === ARCHI.VITRINE_MI) ? y - 1 : y;
 }
@@ -1028,7 +1028,7 @@ function vitrineHaut(f, r, allumee, st, bas) {
   }
 }
 
-// LES BANDES DE L'ÉCHELLE (v589, `echelle-ville.js`) : le rez-de-chaussée
+// LES BANDES DE L'ÉCHELLE (vNEXT, `echelle-ville.js`) : le rez-de-chaussée
 // visible fait quatre blocs, la porte cochère trois, l'entresol trois. Le haut
 // du vitrage s'arrête à dix centimètres du bas de la bande d'enseigne ; le
 // bandeau est à 3,1 m du trottoir et le store s'y attache (réel : 3 m). Les
@@ -1412,7 +1412,7 @@ export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR
     case ARCHI.VITRINE_HAUT: vitrineHaut(f, graine, allumee, st, bas); break;
     case ARCHI.PORTE_BAS: porteBas(f, st); break;
     case ARCHI.PORTE_HAUT: porteHaut(f, st); break;
-    // les bandes de l'échelle (v589)
+    // les bandes de l'échelle (vNEXT)
     case ARCHI.VITRINE_MI2: vitrineMi(f, allumee, st); break;
     case ARCHI.ENSEIGNE: enseigne(f, graine, allumee, st, bas); break;
     case ARCHI.PORTE_MI: porteMi(f, st); break;
@@ -1619,7 +1619,7 @@ export function terrasseHD(buf, x, y, z, wx, wz, vers) {
 // mesuré, zéro terrasse dans six quartiers sur cent quarante versions. Les
 // deux comptent, l'ancien bloc parce qu'un enfant a pu le poser.
 // `opts.vitrineSeule` rejoue la règle d'avant, pour l'empreinte (v421).
-// Depuis l'échelle des villes (v589) le premier rang est enterré et le bloc à
+// Depuis l'échelle des villes (vNEXT) le premier rang est enterré et le bloc à
 // un au-dessus du trottoir est le SOUBASSEMENT (`VITRINE_BAS`) ; la ville
 // figée garde le vitrage là. Les trois comptent.
 const DEVANTURES = new Set([ARCHI.VITRINE, ARCHI.VITRINE_MI, ARCHI.VITRINE_BAS]);

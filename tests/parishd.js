@@ -180,7 +180,7 @@ function verifier(nom, ok, detail = '') {
       const g = col ? col.g : null;
       const attendu = [];
       if (g) {
-        // L'ÉCHELLE DES VILLES (v589) : un socle enterré au ras du trottoir,
+        // L'ÉCHELLE DES VILLES (vNEXT) : un socle enterré au ras du trottoir,
         // trois rangs de devanture (ou de porte cochère), le bandeau d'enseigne,
         // trois rangs d'entresol — la façade lit la table `echelle-ville.js`
         const { BLOCK: B } = await import('../src/blocks.js');
@@ -196,7 +196,7 @@ function verifier(nom, ok, detail = '') {
       verifier('un étage de Paris fait trois blocs : la façade se lit en bandes, devanture, entresol, étages nobles et courants, corniche',
         facadeOk && g.facade === P.HAUT_RDC + P.HAUT_ENTRESOL + (g.bh - 2) * P.BLOCS_PAR_ETAGE && P.BLOCS_PAR_ETAGE === 3 && g.facade >= 14,
         col ? `colonne (${col.x}, ${col.z}), ${g.bh} niveaux, façade ${g.facade} blocs (avant : ${g.ancienne}), corniche à ${g.facade + 1}` : 'aucune colonne de façade trouvée');
-      // ET CE QUE LA COUCHE HD DESSINE EST À L'ÉCHELLE D'UN PASSANT (v589). On
+      // ET CE QUE LA COUCHE HD DESSINE EST À L'ÉCHELLE D'UN PASSANT (vNEXT). On
       // relève, dans les tampons que la tablette dessine, la hauteur au-dessus
       // du trottoir du vitrage, de l'enseigne, du store et du bois de la porte
       // cochère (`sonde-echelle-paris.mjs`, la mesure qui a trouvé le défaut), et

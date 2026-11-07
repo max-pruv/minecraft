@@ -8,6 +8,11 @@ la même fusion.** Le numéro de version est celui de `CACHE_VERSION` dans
 `sw.js` — c'est lui qui décide si une tablette déjà installée reçoit la mise à
 jour, et c'est donc lui qui fait foi.
 
+**Une branche n'écrit pas ici directement** : elle dépose son entrée dans
+`livraisons/` (voir `livraisons/README.md`), et le workflow `Numérotation`
+l'insère en tête, avec son numéro, après la fusion. Plusieurs sessions peuvent
+ainsi livrer en parallèle sans se disputer un numéro.
+
 Chaque entrée dit trois choses, dans cet ordre :
 
 - **Pourquoi** — la panne vécue, ou le manque constaté. Pas la solution.
@@ -20,50 +25,66 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
-## v589 — Paris à l'échelle d'un passant
+## v590 — Les textures des modèles tiennent quatre à six fois moins de place
 
-**Pourquoi.** Max, trois captures d'iPhone à pied dans une rue de Paris : un
-adulte arrive presque en haut du rez-de-chaussée, les stores sont juste
-au-dessus des têtes, une vitrine fait la hauteur d'un passant. Mesuré AVANT
-d'écrire une ligne (`docs/echelle-villes.md`) : les personnages (1,48 à
-1,76 m), l'œil (1,63), les voitures et le mobilier étaient à l'échelle ; le
-BÂTI ne l'était pas. Le bâtisseur écrit son premier rang au ras du trottoir,
-donc enterré : le rez-de-chaussée « de trois blocs » n'en montrait que deux,
-le vitrage s'arrêtait à 1,35 m, l'enseigne à 1,4 m, la porte cochère montrait
-84 cm de bois, et la corniche d'un immeuble de six niveaux était à 17 m.
+**Pourquoi.** iOS ferme la page vers 500 Mo de géométrie et de textures (v580),
+et toutes les images des modèles déposés — voitures, police, moto, avions, New
+York — se décodaient en RGBA : 487 Mo de textures si tout est chargé, 309 Mo
+pour la seule flotte de la rue. Le journal de bord de l'iPhone de Max l'a
+dit : quinze plantages à Paris de la v580 à la v586, la dernière session à
+551 Mo dont 279 de textures — et `mondeMo` ne borne que la géométrie. C'est
+aussi la place qui manque aux modèles plus beaux que le chantier « réalisme »
+veut ajouter.
 
-**Ce que ça change.** Dans Paris, un socle de pierre au ras du trottoir, un
-rez-de-chaussée de quatre mètres (trois de vitrage, un bandeau d'enseigne),
-une porte cochère de trois mètres, un entresol de trois mètres, la corniche
-à vingt — la règle de 1859. Les passants passent sous les enseignes, les
-chaises de terrasse arrivent à mi-vitrine. Ce qu'un enfant a bâti sur un toit
-ou contre une façade de Paris monte de trois blocs avec l'immeuble, d'un seul
-tenant, et une copie d'avant est prise sur le nuage ; une colonne où il avait
-bâti avant les rues à la GTA garde sa ville figée telle quelle. Le relief ne
-bouge pas d'un bloc. Une préversion Vercel de la PR ne migre rien et n'écrit
-rien au nuage : on peut l'essayer avec un prénom de test sans toucher aux
-profils des enfants. Les autres villes (Rome, Tokyo, Nice, Lille, Londres,
-Washington, San Francisco) sont mesurées et déclarées dans `TASKS.md` : leur
-rez-de-chaussée montre un ou deux mètres, elles suivront la même table.
+**Ce que ça change.** Les quarante modèles déposés qui portent des images
+arrivent avec des textures KTX2, transcodées pour la carte graphique (ETC2 ou
+ASTC sur l'iPhone et l'iPad). Mesuré au banc : la flotte de la rue passe de 309
+à 78 Mo de textures, tous les modèles de 487 à 128 Mo ; l'iPhone, qui reçoit
+l'ETC1S en ETC2 RGB, en garde environ 80 au lieu de 480. Rien ne change à
+l'écran ni sous les roues : même géométrie au sommet près, mêmes matériaux.
+Les fichiers d'avant restent (`?ktx2=0` les rend, pour comparer). Le prix :
+New York pèse 11,7 Mo de plus à télécharger à la première visite (ses photos
+recuites ne supportent pas l'ETC1S et passent en UASTC) ; la flotte, 2,6 Mo.
 
-**Ce qui le prouve.** Treize témoins neufs ou repointés. `plafond.js` : la
-colonne du monde lit la table d'échelle (socle, vitrage, enseigne, corniche),
-la marche 8 → 9 monte une cabane de toit de trois blocs et laisse intacts une
-façade, la rue, un bloc d'après la date, un bloc hors de Paris, une marque de
-Manhattan, une archive, une colonne cédée et une colonne figée, deux fois de
-suite (idempotente), positions et garages compris, par la chaîne entière ; la
-fiche d'un garage suit ses murs ; sur une adresse de préversion la marche est
-l'identité et la copie ne part pas. `sauvegarde.js` : la copie d'avant
-(`~avant-echelle-paris`) existe sur le nuage et la cabane reçue du nuage monte.
-`parishd.js` : la colonne type et la couche HD lues contre `REEL` (enseigne
-3,14–3,56, store 3,14, porte 2,84, corniche 20). `carte.js` : le registre
-des bandes. L'empreinte des 490 morceaux est identique des deux côtés,
-bâtisseur désarmé (`ed369fdb…`) ; celle du journal fabriqué de quarante
-mille (v403), dont trois sites sont dans Paris, se relève (0332dd4c…) et rend
-la constante d'avant au bit près, bâtisseur désarmé. Coût mesuré : façades HD de Paris +9 %
-(45,8 Mo pour 49 morceaux), sous le budget. Les témoins neufs sont rouges sur
-`origin/main` (la table n'existe pas) et verts ici. Captures avant/après dans
-`docs/echelle-villes/`, à valider par Max avant fusion.
+**Ce qui le prouve.** Six témoins : sous node (`tests/ktx2.mjs`, lu par
+`degats.js`), chaque fichier comprimé est son original accesseur pour
+accesseur (5 221 accesseurs), nœud pour nœud, carte pour carte, avec les mêmes
+signatures de programme, et tout modèle chargé à image a sa version ; dans le
+jeu, la MC12 arrive par son fichier KTX2 avec des textures comprimées, trois
+fois plus légères, sans un programme neuf. La qualité de chaque texture est
+mesurée par le script (33 dB au moins, 37 à 50 en général), et les captures
+iPhone et iPad, de jour et de nuit, avec et sans KTX2, sont dans la PR.
+
+---
+
+## v589 — New York et les voitures ne sont plus noires la nuit
+
+**Pourquoi.** Max, capture d'iPad à Flushing Meadows à la tombée de la nuit :
+« des décors très noirs, des voitures toutes noires, très sombres, pas très
+fini ». Mesuré : la nuit de New York et de ses banlieues avait ses propres
+lampes, quatre fois plus faibles que celles du reste du monde (ciel 0,46 et
+lune 0,12 contre 1,7 et 0,45, v249). Et dans la flotte, seule la laque
+reçoit les reflets : un pneu, une jante, une livrée ou une carrosserie mal
+nommée à métal 0,9 ou 1 ne renvoyait presque rien — le Raptor sortait à 9,9
+sur 255 en plein jour, la Victor à 1 la nuit. Quelques laques étaient plus
+noires que du charbon (0,003).
+
+**Ce que ça change.** À New York, la nuit garde une lueur de ciel et de lune
+proche du reste du monde : façades, trottoirs et voitures se lisent ; le jour
+ne change pas. Les voitures gardent leur forme jour et nuit : le métal sans
+reflet est borné à 0,3 et une couleur unie ne descend plus sous 3,5 % — un
+noir de vraie laque. Aucun programme de shader neuf.
+
+**Ce qui le prouve.** Trois témoins dans `manhattan.js`, qui lisent des
+pixels : un mur gris rendu par la vraie scène de New York à minuit (17 contre
+5 aux planchers d'avant, les deux bras dans la même tâche, une fois les lampes
+de nuit posées — lu 800 ms après l'heure, il voyait encore celles du jour), aucune
+voiture avec du métal sans reflet, et les trois plus noires de la v588 qui se
+lisent sous les lampes de nuit. Rouges sur `origin/main`. Deux sondes
+(`sonde-decors-sombres.cjs`, `sonde-voitures-sombres.cjs`) et les captures
+avant/après de Queens et Flushing, au crépuscule et à minuit, dans la PR. La
+plaque d'asphalte à bord en escalier de la capture ne se reproduit pas au
+banc : déclarée dans `TASKS.md`.
 
 ---
 

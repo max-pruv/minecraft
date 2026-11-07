@@ -301,7 +301,7 @@ const peintresArchi = {
     for (let y = 0; y < TILE_PX; y++) px(ctx, ox, oy, 8, y, 34, 24, 18);
     for (const [cx, cy] of [[5, 4], [11, 4], [5, 11], [11, 11]]) px(ctx, ox, oy, cx, cy, 168, 132, 62);
   },
-  // LES BANDES DE L'ÉCHELLE (v589). Le rez-de-chaussée visible fait quatre
+  // LES BANDES DE L'ÉCHELLE (vNEXT). Le rez-de-chaussée visible fait quatre
   // blocs : soubassement et bas du vitrage, vitrage, VITRAGE ENCORE, puis le
   // haut du vitrage sous le bandeau d'enseigne et le store. La porte cochère
   // en fait trois sous le même bandeau. L'entresol porte une allège pleine

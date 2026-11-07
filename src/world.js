@@ -1849,7 +1849,7 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // la date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
 // l'emporte sur sa copie d'avant. C'est la règle du receveur qui cède :
 // l'ancienne version ne peut pas apprendre la règle neuve.
-export const CARTE_VERSION = 9;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309) ; 8 : les fiches des garages suivent leurs blocs (v487) ; 9 : les façades de Paris à l'échelle (v589)
+export const CARTE_VERSION = 9;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309) ; 8 : les fiches des garages suivent leurs blocs (v487) ; 9 : les façades de Paris à l'échelle (vNEXT)
 const CLE_CARTE = 'web-minecraft-carte-v1';
 const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
 // L'heure de la refonte ×2. Un bloc daté d'avant a été posé sur la carte de
@@ -2759,7 +2759,7 @@ export function releverPositionsParis(pos) {
   return { pos: out, deplaces };
 }
 
-// L'ÉCHELLE DES VILLES (v589) — ce qu'un enfant avait bâti sur un toit monte
+// L'ÉCHELLE DES VILLES (vNEXT) — ce qu'un enfant avait bâti sur un toit monte
 // avec la façade, encore une fois.
 //
 // Max, trois captures à pied : les passants paraissaient grands, parce que le
@@ -2846,7 +2846,7 @@ function colonnesSansEchelle(map) {
 
 // Sur UNE carte de blocs. Pure : rend une carte neuve et le bilan ; la carte
 // est rendue telle quelle, sans copie, quand rien ne monte.
-// LA PRÉVERSION NE MIGRE PAS (v589). Chaque PR a une préversion Vercel, que
+// LA PRÉVERSION NE MIGRE PAS (vNEXT). Chaque PR a une préversion Vercel, que
 // Max essaie sur son iPhone, et elle parle au MÊME nuage que la production :
 // y entrer avec le profil de Marlon ou d'Alice appliquerait cette marche à
 // leurs documents du nuage AVANT que la livraison soit validée — et une marche
@@ -3145,7 +3145,7 @@ export function suivreGaragesFonduDoux(garages, edits) {
   return suivreGaragesDoc(garages, edits, DATE_FONDU_DOUX, null,
     enGroupes(DATE_FONDU_DOUX, planFonduDoux, (cx, cz) => [[cx, cz]], dest, aPorteeDuFondu));
 }
-// Un garage sur un toit de Paris (v589) : colonnaire, comme le relevé des
+// Un garage sur un toit de Paris (vNEXT) : colonnaire, comme le relevé des
 // toits ; les colonnes sans immeuble se lisent dans la carte du contexte.
 export function suivreGaragesEchelle(garages, edits) {
   if (!MIGRATION_ECHELLE.permise) return { garages, deplacees: 0 };
@@ -3175,7 +3175,7 @@ export function migrerChaineCarte(edits, garages) {
   const g4 = suivreGaragesParisDouble(g2.garages, e3);
   const e5 = migrerBlocsFonduDoux(e4).tout;
   const g5 = suivreGaragesFonduDoux(g4.garages, e4);
-  // 8 → 9 : les façades de Paris à l'échelle (v589), en dernier — elle juge sur le monde d'aujourd'hui
+  // 8 → 9 : les façades de Paris à l'échelle (vNEXT), en dernier — elle juge sur le monde d'aujourd'hui
   const e6 = releverBlocsEchelleParis(e5).tout;
   const g6 = suivreGaragesEchelle(g5.garages, e5);
   return { edits: e6, garages: g6.garages, deplacees: g1.deplacees + g2.deplacees + g4.deplacees + g5.deplacees + g6.deplacees };
@@ -3252,7 +3252,7 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   g = suivreGaragesFonduDoux(garages, tout); garages = g.garages;
   const fd = migrerBlocsFonduDoux(tout);
   tout = fd.tout; deplaces += fd.deplaces; laisses += fd.laisses;
-  // 8 → 9 : les façades de Paris à l'échelle (v589), en dernier — elle juge
+  // 8 → 9 : les façades de Paris à l'échelle (vNEXT), en dernier — elle juge
   // sur le monde d'aujourd'hui, où les marches d'avant ont posé ce qu'elles
   // emmènent (voir `releverEchelleParis`).
   g = suivreGaragesEchelle(garages, tout); garages = g.garages;

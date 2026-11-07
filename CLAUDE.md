@@ -36,7 +36,7 @@ modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérif
 les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
 ils ne constituent pas une exception pour les nouveaux rendus.
 
-## Paris à l'échelle d'un passant (v589) — une table d'échelle, lue par les bâtisseurs ET les témoins
+## Paris à l'échelle d'un passant (vNEXT) — une table d'échelle, lue par les bâtisseurs ET les témoins
 
 Max, trois captures d'iPhone : « les passants paraissent grands par rapport
 aux immeubles ». Mesuré avant une ligne (`docs/echelle-villes.md`) : les
@@ -151,6 +151,32 @@ Crédit CC BY 4.0, provenance et limites : `docs/manhattan-osm.md`.
   escalier, pas une fenêtre. Toutes les variantes suivent le cycle nocturne.
 - Un arrêt de collision se mesure sur des images de jeu distinctes : trois
   lectures identiques entre deux images lentes ne prouvent pas un arrêt.
+
+## Les décors sombres (v589) — une nuit de ville se règle comme la nuit du monde, et un métal sans reflet est noir
+
+Max, capture d'iPad à Flushing Meadows : « des décors très noirs, des voitures
+toutes noires ». Trois règles.
+
+- **UN RENDU QUI A SES PROPRES LAMPES GARDE LES PLANCHERS DU MONDE.** Manhattan
+  et ses banlieues règlent ciel et lune eux-mêmes (`manhattan-render.js`) ; leurs
+  planchers de nuit valaient 0,46 et 0,12 quand le monde est à 1,7 et 0,45
+  (v249) : entrer dans le plan, c'était tomber dans une nuit quatre fois plus
+  noire. `NUIT_NY` (1,05 et 0,32, le jour inchangé) ; `reglageNuitNY.avant()`
+  rend la v588. Le jour où une autre ville gagne ses lampes, ses planchers se
+  mesurent contre ceux du monde, en pixels, ombres forcées.
+- **UN MÉTAL SANS REFLET EST NOIR, ET LA FLOTTE N'A DE REFLET QUE SUR SA LAQUE.**
+  Un matériau standard ne renvoie les lampes qu'en proportion de (1 − métal) ;
+  seule la laque (`EST_PEINTURE`) reçoit la sonde cubique. `eclaircirLeMetal`
+  (vehicules.js), au chargement du prototype, borne le métal de tout le reste à
+  `METAL_SANS_REFLET` (0,3) et remonte une couleur unie sous `NOIR_MIN` (3,5 %
+  linéaire, le noir d'une vraie laque) en gardant sa teinte. Des uniformes,
+  aucune clé de programme neuve (v246). `reglageMetal.actif` à faux rend la
+  v588. Un paquet neuf se passe à `sonde-voitures-sombres.cjs` (luminance de
+  jour, de nuit du monde et de nuit de New York, et la part de métal nu).
+- **UNE SONDE DE LUMIÈRE QUI REND DANS UNE CIBLE NE VOIT PAS ACES.** three
+  n'applique la correspondance tonale qu'à l'écran : les chiffres de
+  `sonde-voitures-sombres.cjs` classent les modèles, ils ne sont pas ceux de
+  l'écran. Le témoin du mur gris rend, lui, à l'écran et lit dans la même tâche.
 
 ## Un témoin de terrasse isole son obstacle (v583)
 
@@ -377,9 +403,25 @@ une version qu'on ne saura pas déboguer.
    tant que `main` n'exige pas le contrôle — un rouge déjà déclaré ne bloque pas
    une fusion (v195) — et il ne remplace pas la revue d'écran (6 bis). Avant de
    fusionner, on attend ses quatre coches, ou on dit pourquoi pas.
-2. Bump de `CACHE_VERSION` dans `sw.js` à **chaque** livraison, sinon les
-   clients installés (PWA sur l'iPad) ne voient jamais la mise à jour. C'est ce
-   numéro qui fait foi partout ailleurs.
+2. **Une branche n'écrit JAMAIS de numéro de version** (décision de Max,
+   novembre 2026 : « c'est vraiment un truc bête »). Ni `CACHE_VERSION` dans
+   `sw.js`, ni la tête de `CHANGELOG.md`, ni la tête de `src/nouveautes.js` :
+   plusieurs sessions en parallèle y écrivaient toutes le même numéro, d'où un
+   conflit et une renumérotation à la main à chaque fusion. La livraison
+   dépose un fichier dans `livraisons/` (format dans `livraisons/README.md` :
+   titre et puces du journal du jeu, puis l'entrée du CHANGELOG sous
+   `## vNEXT — …`), et écrit `vNEXT` partout où elle citerait son numéro
+   (`CLAUDE.md`, `TASKS.md`). Après la fusion, le workflow `Numérotation`
+   (`scripts/numeroter.mjs`) donne le numéro suivant dans l'ordre d'arrivée
+   sur `main`, insère les deux entrées, monte `CACHE_VERSION`, remplace
+   `vNEXT` sur les lignes ajoutées par CETTE fusion, supprime le fichier et
+   pousse sur `main` — c'est ce commit que Vercel déploie. Le job `livraison`
+   du portail refuse une PR qui touche encore `CACHE_VERSION` ou dont le
+   fichier est mal formé (`node scripts/numeroter.mjs --verifier` en local).
+   Le numéro reste ce qui fait que les clients installés (PWA sur l'iPad)
+   reçoivent la mise à jour : une livraison qui change ce que le jeu sert
+   DOIT donc porter son fichier, sinon rien ne monte. Une date « relue à la
+   fusion » (`DATE_…`) reste à poser à la main avant la fusion.
 3. Tout fichier `src/*.js` **nouveau** doit être ajouté à la liste `ASSETS` de
    `sw.js`, sinon il manque hors ligne.
 
@@ -411,7 +453,8 @@ une version qu'on ne saura pas déboguer.
    dans le DIFF et non dans l'intention (`git diff --stat origin/main` nomme les
    fichiers), et chaque groupe de fichiers qui répond à une demande différente
    veut sa ligne au journal et son témoin.
-4. **Écrire l'entrée `CHANGELOG.md` dans la MÊME fusion**, jamais après. Trois
+4. **Écrire l'entrée du journal dans la MÊME fusion**, jamais après — dans le
+   fichier de `livraisons/`, pas dans `CHANGELOG.md` directement. Trois
    parties, dans cet ordre : **pourquoi** (la panne vécue ou le manque
    constaté, pas la solution), **ce que ça change** (ce que la famille voit ou
    peut faire), **ce qui le prouve** (le nombre de témoins, et ceux qui
@@ -440,8 +483,9 @@ une version qu'on ne saura pas déboguer.
 7. PR **prête, jamais en brouillon**, fusionnée immédiatement (squash). Consigne
    permanente de Max : « une manière continue constante ». Le corps de la PR
    reprend la structure de l'entrée du journal.
-8. Vérifier que la production sert bien la nouvelle version :
-   `curl -s https://minecraft-fam.vercel.app/sw.js | grep CACHE_VERSION`
+8. Vérifier que le workflow `Numérotation` a poussé son commit (« vN — … »
+   sur `main`), puis que la production sert bien la nouvelle version :
+   `curl -s https://minecraft-fam.vercel.app/sw.js | grep "CACHE_VERSION = "`
 9. Rebaser la branche sur `main` après fusion.
 
 ### Où va quoi
@@ -1102,6 +1146,56 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   la sonde qui distingue les cas » (v223), et cette fois le rouge était sur un
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
+
+## Les textures en KTX2 (v590) — une image se mesure en carte graphique, pas sur le disque
+
+iOS ferme la page vers 500 Mo de géométrie et de textures (v580), et une image
+JPEG ou PNG se DÉCODE en RGBA : quatre octets par pixel plus un tiers de
+mipmaps, quelle que soit sa taille sur le disque. Six règles.
+
+- **UN MODÈLE DÉPOSÉ A SA VERSION KTX2, ET ELLE EST L'ORIGINAL AU SOMMET PRÈS.**
+  `scripts/compresser-textures-ktx2.mjs` écrit `<nom>-ktx2.glb` à côté du
+  fichier que le jeu charge (`asset || fichier`, v545) : URL neuve, original
+  gardé (une tablette restée en arrière le demande ; `?ktx2=0` le rend). Il ne
+  change que les images ; le script et `tests/ktx2.mjs` (lu par `degats.js`)
+  comparent chaque accesseur octet pour octet, les nœuds, les cartes par rôle
+  et les signatures de programme (v246). Un paquet neuf passe par le script :
+  le témoin de couverture rougit sur tout modèle chargé qui porte une image et
+  n'est pas dans `src/ktx2-liste.js`.
+- **LE CODEC SE CHOISIT PAR RÔLE ET SE JUGE AU DÉCIBEL.** Normales en UASTC
+  (linéaire, préréglage normal, zstd) ; couleurs (sRGB) et données (linéaire)
+  en ETC1S, et UASTC si l'ETC1S rend moins de 33 dB contre l'original, mesuré
+  avec le transcodeur que le JEU sert (`vendor/basis`, three r160). Les photos
+  recuites de New York passent ainsi en UASTC (l'Empire en ETC1S : 23 dB). Le
+  journal du script imprime chaque texture ; la RDO est un non-résultat mesuré.
+- **LA QUALITÉ PASSE AVANT LE POIDS DES FICHIERS (décision de Max, novembre
+  2026 : « Always quality first »).** Devant un codec qui dégrade une image
+  visible (l'Empire en ETC1S, 23 dB), on garde le plus fidèle et l'on paie le
+  téléchargement : +11,7 Mo pour New York, acceptés. Ce qui reste une
+  contrainte, c'est la STABILITÉ sur l'appareil — une page qu'iOS tue ne montre
+  plus rien — donc la mémoire en carte graphique (v580), jamais les octets
+  transférés. Un gain de poids qui coûte de la qualité visible se propose à
+  Max, il ne se livre pas.
+- **LE TRANSCODEUR SE BRANCHE SUR LE RENDERER, AVANT TOUT MODÈLE.**
+  `brancherKTX2(renderer)` (main.js, juste après sa création) ; `urlModele`
+  rend la version KTX2 seulement s'il est branché, `chargeurModeles()` est le
+  GLTFLoader de tous les modèles déposés (flotte, moto, avions, New York).
+  Sous node, rien n'est branché : les sondes chargent les originaux, tels
+  quels. Deux fils de transcodage au plus (chacun a son tas wasm).
+- **UNE EXTENSION QUI DOIT VOIR UNE TEXTURE AVANT LE CHARGEUR PASSE DEVANT LUI.**
+  `register` ajoute après les extensions intégrées, et `KHR_texture_basisu`
+  aurait décodé chaque texture pour son seul fichier : le partage de la flotte
+  (v413) est mis EN TÊTE (`chargeurModeles(partageDesTextures)`) et reconnaît
+  une texture KTX2 à ses octets, comme une image.
+- **UNE TEXTURE COMPRIMÉE PÈSE SES NIVEAUX.** `estimerMemoire` (journal.js)
+  somme les mipmaps d'une `CompressedTexture` au lieu de la compter en RGBA :
+  sans cela le journal de bord ne verrait jamais ce que la compression rend.
+- **CE QUE LE BANC MESURE N'EST PAS CE QUE L'IPHONE REÇOIT.** SwiftShader lit
+  l'ASTC et le BC7 (un octet par pixel) ; une puce Apple reçoit l'ETC1S opaque
+  en ETC2 RGB (un demi-octet). Le banc donne donc la borne haute du gain
+  (×4) ; le script imprime l'estimation iPhone (×6). Les modules du chargeur
+  sont dans `ASSETS` (cache de version) : un module importé au démarrage qui
+  manque hors ligne arrêterait tout le jeu.
 
 ## Un avion garé est un obstacle (v580) — une forme qui n'est pas un rectangle se mesure en silhouette, et l'enfoncement se compte en cases
 
@@ -11742,12 +11836,13 @@ Une session parallèle prend **sa propre branche**, nommée par son sujet :
 `claude/paris-metro-souterrain`, `claude/usine-auto`. La branche historique
 reste celle de la session principale.
 
-**2. `CACHE_VERSION`.** Chaque livraison le monte d'un cran. Deux sessions qui
-partent de v159 écrivent toutes les deux v160 : conflit à la fusion, et si l'une
-passe quand même, la seconde livre une version qui **écrase l'entrée de cache de
-la première**. Donc : on ne choisit pas son numéro à l'avance. On monte
-`CACHE_VERSION` **juste avant de fusionner**, après avoir rebasé sur `main` — le
-numéro se lit alors sur `main`, il ne se devine pas.
+**2. `CACHE_VERSION` — réglé par construction.** Deux sessions parties de v159
+écrivaient toutes les deux v160 : conflit à la fusion, et la seconde pouvait
+**écraser l'entrée de cache de la première**. Le numéro ne s'écrit plus dans une
+branche : chacune dépose son fichier dans `livraisons/` (deux fichiers
+différents, aucun conflit), et le workflow `Numérotation` numérote après la
+fusion (procédure de publication, étape 2). Une session ne choisit ni ne
+renumérote plus rien.
 
 **3. Les mêmes fichiers.** C'est la collision qui coûte cher, et elle
 s'évite en découpant par **zone** plutôt que par tâche. Les zones qui ne se
