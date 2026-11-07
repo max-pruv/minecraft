@@ -163,6 +163,32 @@ entrées de Montréal ne touchent plus d'anneau et sortent de la table.
 ## Empreinte des 490 morceaux
 
 Déclarée, pas prouvée désarmée : le socle seul la mène de ed369fdb… à b9586e29…
-(mesuré sur la branche du socle), les vingt-neuf tracés de b9586e29… à a388c6ed….
+(mesuré sur la branche du socle), les vingt-neuf tracés de b9586e29… à a388c6ed…, et après Barajas, Schiphol, l'A1 sans son point [243, −1221] et la fusion du socle, à b426b3b4….
 Il n'existe plus d'« ancien code » où désarmer rendrait la constante : les
 routes d'avant sont en blocs de l'ancienne carte.
+
+## Le joint des ponts : le témoin lisait le centre, le générateur écrit au coin
+
+`plafond.js` (« la chaussée ne s'ouvre pas au joint du pont ») a rendu 392
+trous sur la branche, aucun sur le socle. Reproduit sous node, bout de pont par
+bout de pont : 137 au premier pont de l'E19 (Bruxelles), 191 sur la M40, le
+reste de un à dix-huit points sur quinze autres bouts. Deux causes, et une
+seule est un défaut du monde.
+
+- **La cote lue au centre de la colonne, le bloc écrit au coin.** world.js
+  demande `routeEn(wx, wz)` au COIN de la colonne et y écrit l'asphalte à
+  `floor(cote) − 1` ; le témoin cherchait ce cube à la cote du CENTRE. Là où
+  le profil franchit un entier entre les deux (E19 : 32,98 au coin, 33,0 au
+  centre), il lisait l'air au-dessus d'un cube plein. C'est la règle de la
+  v539 (« quand une surface se lit ailleurs que le bloc, le bloc voyage avec
+  elle ») appliquée au témoin : il lit désormais le coin, puis le centre, puis
+  le point. Mesuré : 392 → 1 sur la branche, et le témoin lu au coin reste à
+  zéro sur le code d'avant le correctif. Allonger les ouvrages d'un ou deux
+  pas (essayé : 0, 1, 2) ne fait que déplacer les trous d'un pont à l'autre —
+  non-résultat, retiré.
+- **Un sommet de coude sur le joint (règle v428).** Le dernier trou était sur
+  l'axe de l'I-95, au bout du premier pont : le sommet [−59323, 13799] tombait
+  à s 59,3 pour un tablier qui commence à 60, et le ruban, orienté selon le
+  tronçon d'après, laissait le coin ouvert. Le point est retiré (la route
+  passe du point du rayon au suivant) : zéro trou, coude maximal de l'I-95
+  inchangé (29,8°, un autre sommet, déclaré).

@@ -429,11 +429,12 @@ const MM_ECART = 2.2;
 // Carte ×3 (chantier carte-x3) : DÉCLARÉE, pas prouvée désarmée. Le socle
 // (mondes.js, 0,0625 km/bloc) l'a déjà changée seul (ed369fdb… → b9586e29…,
 // mesuré sur la branche du socle) : les neuf lieux tombent sur un autre relief.
-// Les vingt-neuf tracés retracés (routes.js, session C) la mènent à a388c6ed….
+// Les vingt-neuf tracés retracés (routes.js, session C) la mènent à a388c6ed…, puis les deux aérodromes relogés
+// et la fusion du socle (monde-v587) à b426b3b4….
 // Il n'y a plus d'ancien code où « désarmer » rendrait la constante : les
 // routes d'avant sont en blocs de l'ancienne carte. Se remesure à la fusion
 // des autres chantiers (A, B) si l'un d'eux touche les neuf lieux.
-const EMPREINTE_MORCEAUX_V357 = 'a388c6ed1be1c3fdb620ce144b5def179782fdc7bb49277517adfbed2e6ce45e';
+const EMPREINTE_MORCEAUX_V357 = 'b426b3b4a03f37018aebcea792698eca4456ca90276336cd1c9e8ca4e6120988';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -6203,7 +6204,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             // la cote de la route au POINT, et l'on demande un cube plein à
             // cette cote dans la colonne, quel qu'il soit — le sol naturel y
             // ferme la chaussée aussi bien. Au-dessus de l'eau, rien : trou.
-            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X + 0.5, Z + 0.5) || R.routeEn(x, z);
+            // LE CUBE SE CHERCHE À LA COTE QUE LE GÉNÉRATEUR A ÉCRITE, donc au
+            // COIN de la colonne (`routeEn(wx, wz)` dans world.js, règle de
+            // la v539) : au centre, une cote qui franchit un entier entre le
+            // coin et le centre accusait un bloc d'écart qui n'existe pas
+            // (carte ×3 : 137 « trous » au premier pont de l'E19, 191 sur la
+            // M40, tous sur des colonnes pleines lues un bloc trop haut).
+            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X, Z) || R.routeEn(X + 0.5, Z + 0.5) || R.routeEn(x, z);
             const cube = c && !c.ouvrage && g.world.isSolid(X, Math.floor(c.cote) - 1, Z);
             total++;
             if (!cube && !sur(x, z)) { trous++; if (ex.length < 4) ex.push([+x.toFixed(1), +z.toFixed(1)]); }
