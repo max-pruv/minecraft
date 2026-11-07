@@ -36,6 +36,59 @@ modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérif
 les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
 ils ne constituent pas une exception pour les nouveaux rendus.
 
+## Les matériaux scannés (vNEXT) — un scan remplace une tuile par le shader, jamais par les tampons
+
+Chantier réalisme 1. `scripts/materiaux-scannes.mjs` (rejouable, sources CC0
+dans `vendor/materiaux/LICENSE.md`) produit `vendor/materiaux/scannes-v1*` :
+une image couleur à la taille de l'atlas HD, une carte normales + rugosité
+(R, G normale OpenGL ; B rugosité relative, 128 = ×1), une fiche des régions.
+Cinq règles.
+
+- **LE REMAP VIT DANS LE SHADER.** L'uniforme `remapHD` (matierehd.js),
+  indexé par la case d'origine de `tuile`, envoie une tuile peinte vers sa
+  région scannée et son échelle (`blocs` couverts par la région). Les tampons
+  de facadeshd.js ne bougent pas : l'empreinte des 490 morceaux tient par
+  construction. Le rectangle `NEUTRE` (UV absolues, arbres) n'est jamais
+  remappé. Un remap à zéro rejoue la tuile peinte au pixel près.
+- **UN SCAN GARDE LA MOYENNE DE LA TUILE QU'IL REMPLACE.** Ramené canal par
+  canal, en linéaire, à `peindreTuileHD(nom)` : `MOYENNE_TUILE`, `teinteDuMur`
+  et les teintes des quartiers restent justes. Un témoin le mesure dans la
+  toile de l'atlas (5 %). Un scan d'un mètre répété sur une façade aplanit ses
+  basses fréquences et réduit son contraste (`aplanir`, `contraste`), sinon il
+  fait du camouflage — jugé en capture.
+- **AUCUNE CLÉ DE PROGRAMME NEUVE À L'ARRIVÉE DU FICHIER.** La couleur se
+  dessine dans la toile de l'atlas existante ; la carte de normales naît plate
+  avec le matériau, à sa taille finale. Elle n'existe que si `RAYON_HD > 0` :
+  le palier bas garde le programme d'avant (couleur scannée seule).
+- **LE RENDU LOGICIEL GARDE L'ATLAS PEINT** (`?scannes=1` force, `?scannes=0`
+  rejoue l'avant). Le banc ne paie rien de plus, comme pour les ombres.
+- **LES FICHIERS SONT VERSIONNÉS DANS LEUR NOM** (`scannes-v1`) et vivent dans
+  le cache immuable (`isStaticAsset`) : une retouche prend `scannes-v2`.
+  `sonde-captures-scannes.cjs` photographie chaque vue scans posés / atlas
+  peint dans la MÊME page, par l'uniforme.
+
+## Les scans à 2 048 pixels — prêts, et éteints : la mémoire de textures n'a pas de budget
+
+Max : « quality first ». Les scans à 2 048 existent, sur demande seulement
+(`?scannes2k=1`). Quatre règles.
+
+- **AVANT D'AJOUTER DES TEXTURES À UN PALIER, ON LIT CE QUE L'APPAREIL TIENT.**
+  Le journal de bord de l'iPhone de Max au palier haut (rm 16) : quinze plantages
+  de la v580 à la v586, dont Paris à 551 Mo (textures 279, géométrie 272) le jour
+  même. `mondeMo` et `hdMo` bornent la GÉOMÉTRIE ; les textures (corps, flotte,
+  atlas) montent seules jusqu'à 250–375 Mo. +34 Mo nets (atlas et normales de
+  5,6 à 22,4 Mo chacun) n'ont pas leur place tant qu'un budget de textures
+  n'existe pas. Le banc ne le voit pas : il ne remplit jamais son disque (v291).
+- **LA FINESSE EST UNE TAILLE D'ATLAS, PAS UN PROGRAMME.** `materiauHD(…, {
+  taille: 2048 })` : l'atlas peint s'agrandit (bilinéaire), la carte de normales
+  naît à 2 048, les fichiers `scannes-v1-2048` portent les mêmes régions à deux
+  fois la finesse. La taille d'une texture n'entre pas dans la clé.
+- **LE MÊME SCRIPT FAIT LES DEUX TAILLES, ET LA PREMIÈRE AU BIT PRÈS.**
+  `scripts/materiaux-scannes.mjs` boucle sur 1 024 et 2 048 ; `scannes-v1`
+  ressort identique (empreintes vérifiées). Une retouche du 2 048 prend un nom neuf.
+- **LES FICHIERS DE 2 048 NE SE PRÉCHARGENT PAS.** Cache immuable au premier
+  usage ; s'ils manquent, la couche lit ceux de 1 024 agrandis (`etat.repli`).
+
 ## Manhattan : atlas OSM (v583) et façades en relief (v585)
 
 Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par

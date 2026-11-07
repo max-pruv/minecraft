@@ -27,7 +27,9 @@ const isStaticAsset = (url) =>
   || url.includes('/vendor/polices/') || url.includes('/vendor/avions/')
   // les modèles et photos de New York (v565) : immuables, téléchargés à la
   // première visite de Manhattan, jamais avant
-  || url.includes('/vendor/newyork/');
+  || url.includes('/vendor/newyork/')
+  // les matériaux scannés de la couche HD (vNEXT) : leur nom porte leur version
+  || url.includes('/vendor/materiaux/');
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
@@ -36,6 +38,8 @@ const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/police
 // transcodeur est branché ; les originaux restent pour `?ktx2=0`
 const AVIONS = ['airbus-a320', 'airbus-a321', 'chasseur-f35', 'jet-prive']
   .flatMap((n) => [`./vendor/avions/${n}.glb`, `./vendor/avions/${n}-ktx2.glb`]);
+// les matériaux scannés de la couche HD (vNEXT, matierehd.js : `SCANNES_HD`)
+const MATERIAUX = ['.json', '-couleur.jpg', '-normales.png'].map((s) => `./vendor/materiaux/scannes-v1${s}`);
 
 const ASSETS = [
   './',
@@ -248,7 +252,7 @@ self.addEventListener('install', (event) => {
   // première demande.
   caches.open(STATIC_CACHE).then(async (cache) => {
     // Les polices d'abord : l'accueil les attend, les corps non (v245).
-    for (const u of [...POLICES, ...HUMAINS, ...AVIONS]) {
+    for (const u of [...POLICES, ...MATERIAUX, ...HUMAINS, ...AVIONS]) {
       if (await cache.match(u)) continue;
       await cache.add(u).catch(() => {});
     }

@@ -82,7 +82,7 @@ const VUES = [
   await banc.ouvrir();
   try {
     await souffler();
-    const page = await banc.jouerSeul('Capture', { rr: 9, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=6' });
+    const page = await banc.jouerSeul('Capture', { rr: 9, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&ombres=1&hd=6' + (process.env.CAPTURE_PARAMS || '') });
     for (const v of VUES.filter((v) => !process.argv[4] || process.argv[4].split(',').includes(v.nom))) {
       // UNE VUE QUI ÉCHOUE LE DIT, et les suivantes se prennent quand même : le
       // `finally` d'en bas sort en zéro et avalait l'erreur en silence.

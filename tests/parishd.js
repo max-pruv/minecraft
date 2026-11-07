@@ -1665,6 +1665,180 @@ function verifier(nom, ok, detail = '') {
         `${progs ? progs.length : 0} programme(s) dessinant la tour, ${neuvesN.length} né(s) après l'accueil ${JSON.stringify(neuvesN.map((k) => k.slice(0, 80)))}`);
     }
 
+    // ── LES MATÉRIAUX SCANNÉS (vNEXT) ─────────────────────────────────────────
+    //
+    // Des scans CC0 posés SUR l'atlas peint (matierehd.js, `remapHD`) : le
+    // banc rend en logiciel, où ils sont coupés comme la couche — on les force.
+    // Ce qui se garde : la fiche tient dans les cases libres et se crédite ;
+    // la couleur moyenne de chaque scan est celle du peintre (les teintes du
+    // jeu en dépendent) ; le remap change ce que la couche dessine ; aucun
+    // programme ne naît quand les images arrivent ; et le palier bas (portée
+    // HD nulle) n'a pas de carte de normales. Sur l'ancien code `scannesHD`
+    // n'existe pas : on le dit.
+    {
+      const fs = require('fs');
+      const path = require('path');
+      const racine = path.join(__dirname, '..');
+      const ficheF = path.join(racine, 'vendor', 'materiaux', 'scannes-v1.json');
+      const fiche = fs.existsSync(ficheF) ? JSON.parse(fs.readFileSync(ficheF, 'utf8')) : null;
+      const { TUILES_HD, COLS_HD, PX_HD } = await import('../src/facadeshd.js');
+      if (!fiche) {
+        verifier('les matériaux scannés ont leur fiche (vendor/materiaux/scannes-v1.json)', false, 'fiche absente');
+      } else {
+        const licence = fs.readFileSync(path.join(racine, 'vendor', 'materiaux', 'LICENSE.md'), 'utf8');
+        const sw = fs.readFileSync(path.join(racine, 'sw.js'), 'utf8');
+        const occupees = new Map();
+        const fautes = [];
+        for (const r of fiche.regions) {
+          const i = TUILES_HD.indexOf(r.tuile);
+          if (i < 0) fautes.push(`${r.tuile} inconnue`);
+          if (!licence.includes('`' + r.tuile + '`')) fautes.push(`${r.tuile} sans crédit`);
+          if (!(r.blocs > 0)) fautes.push(`${r.tuile} sans échelle`);
+          const c0 = r.x / PX_HD, l0 = r.y / PX_HD, n = r.taille / PX_HD;
+          const surPlace = n === 1 && l0 * COLS_HD + c0 === i;
+          for (let l = l0; l < l0 + n; l++) for (let c = c0; c < c0 + n; c++) {
+            const k = l * COLS_HD + c;
+            if (occupees.has(k)) fautes.push(`${r.tuile} recouvre ${occupees.get(k)}`);
+            if (k < TUILES_HD.length && !surPlace) fautes.push(`${r.tuile} sur la case de ${TUILES_HD[k]}`);
+            occupees.set(k, r.tuile);
+          }
+        }
+        if (!/vendor\/materiaux\//.test(sw) || !/scannes-v1/.test(sw)) fautes.push('sw.js ne garde pas les scans hors ligne');
+        verifier('les matériaux scannés tiennent dans les cases libres de l’atlas (ou sur leur propre case), se créditent et voyagent hors ligne',
+          fautes.length === 0 && fiche.regions.length >= 6, `${fiche.regions.length} région(s) ${JSON.stringify(fautes)}`);
+      }
+
+      await souffler();
+      const sc = await banc.jouerSeul('Scannette', { rr: 4, params: '&hd=2&scannes=1', pret: true });
+      const r = await sc.evaluate(async () => {
+        const g = window.__game;
+        if (!('scannesHD' in g)) return { absent: true };
+        const dodo = (ms) => new Promise((ok) => setTimeout(ok, ms));
+        const t0 = performance.now();
+        while (performance.now() - t0 < 30000 && (!g.scannesHD || g.scannesHD.statut === 'attente')) await dodo(250);
+        const etat = g.scannesHD ? { ...g.scannesHD } : null;
+        if (!etat || etat.statut !== 'charge') return { etat, attente: Math.round(performance.now() - t0) };
+        const THREE = await import('three');
+        const { peindreTuileHD, geometrieHD } = await import('./src/matierehd.js');
+        const { rectHD, PX_HD } = await import('./src/facadeshd.js');
+        const fiche = await (await fetch('./vendor/materiaux/scannes-v1.json')).json();
+        const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        // la moyenne linéaire d'une région de l'atlas installé, contre le peintre
+        const ctx = g.atlasHD.getContext('2d');
+        const k = g.atlasHD.width / fiche.taille;
+        const ecarts = {};
+        for (const rg of fiche.regions) {
+          const d = ctx.getImageData(rg.x * k, rg.y * k, rg.taille * k, rg.taille * k).data;
+          const p = peindreTuileHD(rg.tuile);
+          const moy = (a) => { const s = [0, 0, 0]; let n = 0; for (let i = 0; i < a.length; i += 4) { if (a[i + 3] < 128) continue; for (let c = 0; c < 3; c++) s[c] += lin(a[i + c] / 255); n++; } return s.map((v) => v / n); };
+          const a = moy(d), b = moy(p);
+          ecarts[rg.tuile] = +Math.max(...a.map((v, c) => Math.abs(v / b[c] - 1))).toFixed(3);
+        }
+        // le remap change ce que la couche dessine : un mur de pierre, rendu
+        // remap posé puis remap à zéro (l'atlas peint)
+        const m = g.materiauHD;
+        const rp = rectHD('pierre');
+        const t = { positions: new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]), normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
+          uvs: new Float32Array([0, 0, 3, 0, 3, 3, 0, 3]), colors: new Float32Array(12).fill(1), tiles: new Float32Array([...rp, ...rp, ...rp, ...rp]),
+          matiere: new Float32Array([0.9, 0, 0.9, 0, 0.9, 0, 0.9, 0]), lueur: new Float32Array(4), indices: new Uint16Array([0, 1, 2, 0, 2, 3]) };
+        const scene = new THREE.Scene();
+        scene.add(new THREE.Mesh(geometrieHD(t), m));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const sol = new THREE.DirectionalLight(0xffffff, 2); sol.position.set(1, 0.4, 0.5); scene.add(sol);
+        const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10); cam.position.set(0, 0, 3);
+        const rt = new THREE.WebGLRenderTarget(64, 64);
+        const lire = () => { g.renderer.setRenderTarget(rt); g.renderer.render(scene, cam); const px = new Uint8Array(64 * 64 * 4); g.renderer.readRenderTargetPixels(rt, 0, 0, 64, 64, px); g.renderer.setRenderTarget(null); return px; };
+        // la petite scène du témoin (deux lampes, une cible hors écran) a sa
+        // propre clé : on la compile d'abord, remap à zéro, et l'on ne compte
+        // que ce qui naît quand le remap revient — un uniforme n'en fait naître
+        // aucune
+        const cles = () => new Set((g.renderer.info.programs || []).map((q) => q.cacheKey));
+        const u = g.scannesHD.uniformes;
+        const gardes = u.remapHD.value.map((v) => v.clone());
+        u.remapHD.value.forEach((v) => v.set(0, 0, 0, 0));
+        const sans = lire();
+        const avantCles = cles();
+        u.remapHD.value.forEach((v, i) => v.copy(gardes[i]));
+        const avec = lire();
+        const neuves = [...cles()].filter((c) => !avantCles.has(c));
+        let differents = 0;
+        for (let i = 0; i < avec.length; i += 4) if (Math.abs(avec[i] - sans[i]) + Math.abs(avec[i + 1] - sans[i + 1]) + Math.abs(avec[i + 2] - sans[i + 2]) > 24) differents++;
+        rt.dispose();
+        return { etat, ecarts, differents, pixels: 64 * 64, normales: !!m.normalMap, remaps: u.remapHD.value.filter((v) => v.w > 0).length, neuves: neuves.length };
+      });
+      await sc.close();
+      if (r.absent) {
+        verifier('les matériaux scannés se chargent dans la couche HD (scannesHD)', false, 'scannesHD absent');
+      } else {
+        verifier('les matériaux scannés arrivent dans la couche HD, avec leur carte de normales à portée HD',
+          r.etat && r.etat.statut === 'charge' && r.normales && r.remaps === (fiche ? fiche.regions.length : -1),
+          JSON.stringify({ etat: r.etat, normales: r.normales, remaps: r.remaps, attente: r.attente }));
+        const pire = r.ecarts ? Math.max(...Object.values(r.ecarts)) : 1;
+        verifier('chaque scan garde la couleur moyenne de la tuile peinte qu’il remplace (à 5 % près, en linéaire)',
+          !!r.ecarts && pire <= 0.05, JSON.stringify(r.ecarts));
+        verifier('le remap change ce que la couche dessine, sans faire naître de programme',
+          r.differents > r.pixels * 0.3 && r.neuves === 0, `${r.differents}/${r.pixels} pixels changés, ${r.neuves} programme(s) neuf(s)`);
+      }
+
+      // LE PALIER HAUT (vNEXT, « quality first ») : l'atlas et la carte de
+      // normales à 2 048 pixels, les scans de `scannes-v1-2048` (les mêmes
+      // régions, deux fois plus de pixels), les mêmes moyennes. Hors du palier
+      // haut, 1 024 : la page d'au-dessus n'a pas de palier.
+      await souffler();
+      const s2 = await banc.jouerSeul('Scannette2k', { rr: 4, params: '&hd=2&scannes=1&scannes2k=1', pret: true });
+      const r2 = await s2.evaluate(async () => {
+        const g = window.__game;
+        if (!('scannesHD' in g)) return { absent: true };
+        const t0 = performance.now();
+        while (performance.now() - t0 < 30000 && (!g.scannesHD || g.scannesHD.statut === 'attente')) await new Promise((ok) => setTimeout(ok, 250));
+        const etat = g.scannesHD ? { ...g.scannesHD } : null;
+        if (!etat || etat.statut !== 'charge') return { etat };
+        const { peindreTuileHD } = await import('./src/matierehd.js');
+        const f1 = await (await fetch('./vendor/materiaux/scannes-v1.json')).json();
+        const f2 = await (await fetch('./vendor/materiaux/scannes-v1-2048.json')).json();
+        const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        const ctx = g.atlasHD.getContext('2d');
+        const ecarts = {};
+        for (const rg of f2.regions) {
+          const d = ctx.getImageData(rg.x, rg.y, rg.taille, rg.taille).data;
+          const p = peindreTuileHD(rg.tuile);
+          const moy = (a) => { const s = [0, 0, 0]; let n = 0; for (let i = 0; i < a.length; i += 4) { if (a[i + 3] < 128) continue; for (let c = 0; c < 3; c++) s[c] += lin(a[i + c] / 255); n++; } return s.map((v) => v / n); };
+          const a = moy(d), b = moy(p);
+          ecarts[rg.tuile] = +Math.max(...a.map((v, c) => Math.abs(v / b[c] - 1))).toFixed(3);
+        }
+        const memesRegions = f1.regions.length === f2.regions.length && f1.regions.every((a, i) => {
+          const b = f2.regions[i]; return a.tuile === b.tuile && b.x === 2 * a.x && b.y === 2 * a.y && b.taille === 2 * a.taille && a.blocs === b.blocs;
+        });
+        const m = g.materiauHD;
+        return { etat, ecarts, memesRegions, atlas: g.atlasHD.width, normales: m.normalMap ? m.normalMap.image.width : 0,
+          remaps: g.scannesHD.uniformes.remapHD.value.filter((v) => v.w > 0).length };
+      });
+      await s2.close();
+      verifier('sur demande (?scannes2k=1), les scans à 2 048 pixels : atlas, carte de normales, mêmes régions et mêmes moyennes (à 5 %)',
+        !r2.absent && r2.etat && r2.etat.statut === 'charge' && r2.etat.taille === 2048 && r2.atlas === 2048 && r2.normales === 2048
+          && r2.memesRegions && r2.ecarts && Math.max(...Object.values(r2.ecarts)) <= 0.05 && r2.remaps === (fiche ? fiche.regions.length : -1)
+          && r.etat && r.etat.atlas === 1024,
+        JSON.stringify({ etat: r2.etat, atlas: r2.atlas, normales: r2.normales, memesRegions: r2.memesRegions, ecarts: r2.ecarts, remaps: r2.remaps, horsHaut: r.etat && r.etat.atlas }));
+
+      // le palier bas : la couleur scannée, pas de carte de normales ; et
+      // `?scannes=0` rejoue l'atlas peint
+      for (const [nom, params, attendu] of [['Basile', '&hd=0&arbres=1&scannes=1', 'charge'], ['Paulin', '&hd=2&scannes=0', 'eteint']]) {
+        const p = await banc.jouerSeul(nom, { rr: 4, params, pret: true });
+        const e = await p.evaluate(async () => {
+          const g = window.__game;
+          if (!('scannesHD' in g)) return { absent: true };
+          const t0 = performance.now();
+          while (performance.now() - t0 < 30000 && (!g.scannesHD || g.scannesHD.statut === 'attente')) await new Promise((ok) => setTimeout(ok, 250));
+          return { statut: g.scannesHD && g.scannesHD.statut, normales: !!(g.materiauHD && g.materiauHD.normalMap),
+            remaps: g.scannesHD ? g.scannesHD.uniformes.remapHD.value.filter((v) => v.w > 0).length : -1 };
+        });
+        await p.close();
+        verifier(attendu === 'charge' ? 'au palier bas (portée HD nulle), la couleur scannée sans carte de normales'
+          : 'avec ?scannes=0, l’atlas peint d’avant : rien de chargé, rien de remappé',
+          !e.absent && e.statut === attendu && e.normales === false && (attendu === 'charge' ? e.remaps > 0 : e.remaps === 0), JSON.stringify(e));
+      }
+    }
+
     const bas = await banc.jouerSeul('Firmin', { rr: 4, params: '&hd=0' });
     const res0 = await bas.evaluate(async ([x, z]) => {
       const g = window.__game;

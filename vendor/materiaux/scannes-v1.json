@@ -1,0 +1,70 @@
+{
+ "version": "v1",
+ "taille": 1024,
+ "blocM": 1.1,
+ "regions": [
+  {
+   "tuile": "pierre",
+   "x": 0,
+   "y": 512,
+   "taille": 256,
+   "blocs": 2.3636
+  },
+  {
+   "tuile": "enduit",
+   "x": 256,
+   "y": 512,
+   "taille": 256,
+   "blocs": 1.8182
+  },
+  {
+   "tuile": "brique",
+   "x": 512,
+   "y": 512,
+   "taille": 256,
+   "blocs": 1.8182
+  },
+  {
+   "tuile": "bitume",
+   "x": 768,
+   "y": 512,
+   "taille": 256,
+   "blocs": 1.8909
+  },
+  {
+   "tuile": "trottoir",
+   "x": 0,
+   "y": 768,
+   "taille": 256,
+   "blocs": 2.1364
+  },
+  {
+   "tuile": "pave",
+   "x": 256,
+   "y": 768,
+   "taille": 256,
+   "blocs": 0.9091
+  },
+  {
+   "tuile": "pierre-lisse",
+   "x": 128,
+   "y": 0,
+   "taille": 128,
+   "blocs": 0.9091
+  },
+  {
+   "tuile": "cour",
+   "x": 768,
+   "y": 128,
+   "taille": 128,
+   "blocs": 0.9091
+  },
+  {
+   "tuile": "ecorce",
+   "x": 384,
+   "y": 256,
+   "taille": 128,
+   "blocs": 1.3636
+  }
+ ]
+}

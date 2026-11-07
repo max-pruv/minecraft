@@ -33,7 +33,7 @@ import { guidage, arriveEntre, nomDestination, rotationContinue, repereMinicarte
 import { POLE } from './pole.js';
 import { LIGNES as LIGNES_DC, traceLigneMetro, optionsMetro, HORAIRE_METRO, circuitsWashington } from './washington.js';
 import { buildChunkTampons } from './mesher.js';
-import { materiauHD, geometrieHD } from './matierehd.js';
+import { materiauHD, geometrieHD, TAILLE_SCANNES_HAUTE } from './matierehd.js';
 import { DIRECTIONS_VOISINS } from './arbreshd.js';
 import { Carte, MAP_COLORS } from './carte.js';
 import { toast } from './bandeau.js';
@@ -721,8 +721,22 @@ world.sansSolContinu = new URLSearchParams(location.search).get('solcontinu') ==
 // une PMREM) : la première fois qu'un morceau de Paris arrive avec du détail.
 let hd = null;
 const OMBRE_HD = new URLSearchParams(location.search).get('ombrehd') !== '0';
+// Les matériaux scannés (vNEXT, matierehd.js) : la couleur partout où la couche
+// se dessine, la carte de normales seulement si la portée HD est non nulle
+// (le palier bas ne paie pas sa texture). Coupés en rendu logiciel, comme la
+// couche ; `?scannes=0` rejoue l'atlas peint, `?scannes=1` force.
+const SCANNES_DEMANDES = new URLSearchParams(location.search).get('scannes');
+const SCANNES = SCANNES_DEMANDES === '1' || (SCANNES_DEMANDES !== '0' && !renduLogiciel());
+// Au palier haut (« Loin », vNEXT), les scans à 2 048 pixels : deux fois la
+// finesse pour ≈ 33 Mo de textures de plus, et seulement là. `?scannes2k=0`
+// rejoue le 1 024, `?scannes2k=1` le force (captures, mesures).
+const SCANNES_2K_DEMANDES = new URLSearchParams(location.search).get('scannes2k');
+// Sur demande seulement (`?scannes2k=1`) : le journal de bord montre l'iPhone
+// de Max planter au palier haut à Paris AVANT les scans (textures 250 à 375 Mo,
+// total 420 à 700 Mo, v580 à v586) ; +34 Mo de textures n'y ont pas leur place.
+const SCANNES_2K = SCANNES && RAYON_HD > 0 && SCANNES_2K_DEMANDES === '1';
 function materiauDeParis() {
-  if (!hd) hd = materiauHD(renderer);
+  if (!hd) hd = materiauHD(renderer, { normales: SCANNES && RAYON_HD > 0, scannes: SCANNES, ...(SCANNES_2K ? { taille: TAILLE_SCANNES_HAUTE } : {}) });
   return hd.materiau;
 }
 // ET LA COUCHE SE CHAUFFE À L'ACCUEIL (v541). Son matériau naissait au premier
@@ -9134,7 +9148,7 @@ window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fi
   get rechargeRegle() { return { arrivee: enArrivee(), rapide: fileRapide, regle: rechargeParRegle(), active: rechargeALArrivee() }; }, villeRealiste, renderer, world, player, fun, horizon, scene, camera, chunkMeshes, lampesRue, statsMaillage,
   // le mobilier tombé (v536) : le registre, les comptes, et le maillage d'une pièce
   mobilierCasse: { casses, stats: statsCasse, piece: (cle) => piecesParCle.get(cle) || null }, horizonLoin, horizonTresLoin, horizonUltraLoin, PORTEE_VUE, PALIERS, choisirPalier, mesurePalier, journal, memoireGPU,
-  RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, BUDGET_MONDE, mondeTenu, get rayonMonde() { return rayonMonde; }, get atlasHD() { return hd ? hd.atlas : null; },
+  RAYON_HD, BUDGET_FACADES, detailTenu, planDetail, BUDGET_MONDE, mondeTenu, get rayonMonde() { return rayonMonde; }, get atlasHD() { return hd ? hd.atlas : null; }, get scannesHD() { return hd ? hd.scannes : null; }, get materiauHD() { return hd ? hd.materiau : null; },
   palierRetenu, palierPropose, etendueRange, reglageDe, PARAMS_FORCANTS,
   // CE QUE LE PALIER A RÉELLEMENT APPLIQUÉ, pas ce qu'il déclare : un témoin
   // qui lirait la TABLE vérifierait la table, pas le jeu. `rr` et la file sont
