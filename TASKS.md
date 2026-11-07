@@ -214,6 +214,29 @@ du plan :
   - `carte.js` « le fond de carte entier se rend vite, même à froid » :
     472 ms au portail GitHub pour 400, la dette déclarée sous la v450 ;
     rejouée seule sur la branche : 186 ms, vert.
+  Run 101 (`2013888`, la porte de sortie et le KTX2Loader qui se lie sous
+  r187), les QUATRE tranches finies, `livraison` verte, zéro rouge nouveau.
+  Tranche 3/4 : `maj.js` verte — dont les deux témoins du repli (échec forcé
+  et gel : WebGL atteint en 31 s, la raison dans `?diag=1`) — et la fumée des
+  imports de `three` (111 noms, 158 fichiers, aucun absent) ; `carte.js` la
+  flèche du GPS (gauche 1,92 rad) et le fond de carte à froid (460 ms), les
+  deux déclarés. Tranche 2/4 : `reseau.js` cinq rouges, les cinq des runs 78
+  et 80 (fluidité de l'ami en direct et par le nuage à 1,5 image par seconde,
+  l'hôte sans courtier et le monde jumeau, le passager v265). Tranche 1/4 :
+  `monte.js` quatorze rouges, treize des familles ci-dessus ; le
+  quatorzième, « la circulation naît à l'approche, et ses voitures se
+  montrent » (« aucune voiture »), était VERT aux runs 52 et 80 de la même
+  branche (11 puis 1 voiture en vue) et sa page dit `Rome n'a pas fabriqué de
+  voitures` (`voitures: 0`, la famille déclarée). Double mesure par
+  `sonde-rome-circule.cjs` (scratchpad : le geste exact du témoin sur une page
+  neuve, trois passages par arbre) : branche 3/3 vert, `origin/main` v591 3/3
+  vert, à l'identique — 40 anneaux, UNE voiture en vue, trouvée en 0 à 1 s.
+  Le témoin vit au bord de sa barre sur les deux codes ; au portail c'est
+  l'état laissé par un quart d'heure de témoins sous charge (v279) qui le fait
+  tomber. Tranche 4/4 : `degats.js` les sept témoins des murs (`murs: 0`,
+  `chocsPhys: 0`, le tirage de cadence du v580, 67/67 rejouée seule des deux
+  côtés), `manhattan.js` PeerJS « ID is taken » ; `realisme.js`,
+  `carteMonde.js`, `washington.js`, `reglages.js`, `parishd.js` vertes.
 
 ## La nuit de New York et les voitures noires (v589) — dettes
 
