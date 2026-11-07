@@ -81,6 +81,23 @@ Mesures et méthode dans `docs/echelle-villes.md` ; la table est
   Un témoin qui tire un modèle au hasard (v587) : une fois sur vingt environ.
   Remède tout trouvé pour ce témoin-là : invoquer un modèle NOMMÉ pour la
   propriété qu'il mesure (v579), par exemple la DB11 (feux arrière nommés).
+  **Troisième portail, sur le sha 97595f0 (main v590 + #611 fusionnés, run
+  42384419606) : tranches 3/4 et 4/4 vertes, 2/4 rouge sur les deux dettes de
+  `reseau.js` (fluidité, passager), 1/4 rouge — `monte.js` quatorze rouges en
+  66 min pour 37 mesurées, aucun par cette livraison.** Onze sont rouges à
+  l'identique sur les tranches 1/4 des PR des phares (#606) et de KTX2 (#598)
+  de la veille, sans une ligne de cette branche : « la circulation naît à
+  l'approche » (aucune voiture à Rome), « ne marche pas dans une rue vide »,
+  « les voitures ne se traversent plus » (79 %), « au feu, la voiture freine »,
+  « deux voitures jamais l'une dans l'autre », Moscou ×2, « rendent leur
+  mémoire » (Rome n'a pas fabriqué de voitures), « tombe dans l'eau » (plongée
+  `null`), « collée à une voiture », la radio, le passage peint de Rome en
+  biais. Les trois autres sont déclarées plus bas : « elle ralentit assez pour
+  qu'on puisse la rejoindre » (9,1 m/s ; déclaré 9,0), « les roues avant
+  braquent vers l'intérieur » (`voiture.glb`, le modèle d'attente : la flotte
+  n'était pas arrivée, déclaré), et le passage de Rome. C'est la cadence du
+  runner GitHub sur `monte.js` (CLAUDE.md : le portail GitHub est INDICATIF) ;
+  la mesure qui fait foi reste le portail local de la branche.
 ## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
 
 - **Mesurer sur l'iPhone et l'iPad.** Le banc lit l'ASTC et le BC7 (un octet
