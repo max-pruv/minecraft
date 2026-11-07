@@ -12,7 +12,10 @@ rendu, avec deux sondes rejouables :
   colonne de façade par colonne de façade, plus le mobilier ;
 - `tests/sonde-echelle-captures.cjs` : dans le jeu, à pied, première personne,
   l'œil, les passants, la voiture et la façade devant soi, puis les captures
-  (iPhone 430 × 932 et iPad 820 × 1180, jour et nuit, à pied et du ciel).
+  (iPhone 430 × 932 et iPad 820 × 1180, jour et nuit, à pied et du ciel) ;
+- `tests/sonde-echelle-passant.cjs` : un adulte et un enfant posés contre la
+  façade, le crâne mesuré contre les bandes de la colonne, trois captures
+  iPhone (voir « Un passant contre le rez-de-chaussée, mesuré »).
 
 Les chiffres « avant » sont ceux d'`origin/main` (v587), les « après » ceux de
 cette branche, même sonde, même site : une colonne de six niveaux à vitrine et
@@ -91,12 +94,43 @@ Dans ce dossier, même site, même cap, même heure : `avant-*` sur `origin/main
 | iPhone, nuit | `avant-iphone-terrasse-nuit.png` | `apres-iphone-terrasse-nuit.png` |
 | iPhone, du ciel | `avant-iphone-aerien.png` | `apres-iphone-aerien.png` |
 | iPad, terrasse | `avant-ipad-terrasse.png` | `apres-ipad-terrasse.png` |
+| iPhone, un passant contre la vitrine, de face | `avant-iphone-passant-face.png` | `apres-iphone-passant-face.png` |
+| iPhone, le même, de trois quarts | `avant-iphone-passant-trois-quarts.png` | `apres-iphone-passant-trois-quarts.png` |
+| iPhone, le même, à quatre blocs | `avant-iphone-passant-pres.png` | `apres-iphone-passant-pres.png` |
 
 Ce qu'on y voit : avant, le haut de la vitrine arrive au dossier des chaises
 et l'enseigne à hauteur de tête ; après, la vitrine fait trois mètres
 au-dessus des chaises, l'enseigne est au-dessus des têtes, la porte cochère
 fait trois mètres. Le store banne n'est pas visible sur la terrasse des
 captures (dette ci-dessous).
+
+### Un passant contre le rez-de-chaussée, mesuré
+
+Max a retiré sa validation sur les premières captures : « les personnages
+sont plus grands que le niveau rez-de-chaussée », et aucune ne montrait un
+passant contre une façade. `tests/sonde-echelle-passant.cjs` pose un adulte
+Rocketbox (1,76 m) et un enfant (1,48 m) dos au mur du café de Saint-Germain,
+contre la colonne de façade que la sonde CHERCHE elle-même (la trame est en
+biais, le mur est un escalier de colonnes), et lit dans le monde rendu le
+sommet du crâne (boîte du corps dessiné) contre les bandes de la colonne.
+Mesuré sur `origin/main` (v588) et sur la branche, mêmes colonnes :
+
+| au-dessus du trottoir | avant (v588) | après |
+| --- | --- | --- |
+| crâne de l'adulte / de l'enfant | 1,76 m / 1,48 m | 1,76 m / 1,48 m |
+| haut du vitrage | 2 m | 3 m |
+| marge crâne → haut du vitrage (adulte) | 0,24 m | 1,24 m |
+| bandeau d'enseigne | aucun (étage dès 2 m) | 3 à 4 m |
+| haut de la porte cochère | **1 m** (l'adulte la dépasse de 76 cm) | 3 m |
+| entresol | dès 2 m | dès 4 m |
+
+Le crâne de l'adulte est en face de `VITRINE_MI` après (le milieu du
+vitrage) ; il était en face de `VITRINE_HAUT` avant, à 24 cm du linteau, et
+la porte lui arrivait à la taille. Ce que Max a vu est le monde d'avant ; la
+règle « une personne de 1,8 m tient sous le haut d'une vitrine de 3 m avec
+de la marge » est tenue après, par la table (`ECHELLE_VILLE`), et c'est la
+sonde qui le mesure, pas la capture. Les corps, eux, ne changent pas :
+1,76 m et 1,48 m des deux côtés, la taille déclarée par `humains.js`.
 
 **Photo de référence** (non recopiée dans le dépôt : Wikimedia Commons
 refusait le téléchargement automatisé le jour de la livraison) :
