@@ -1,4 +1,4 @@
-// ON NE PASSE PAS SOUS LE SOL EN DESCENDANT VITE EN VOL (v586).
+// ON NE PASSE PAS SOUS LE SOL EN DESCENDANT VITE EN VOL.
 // Le VRAI joueur (player.js, three prêté par un crochet de module) dans le VRAI
 // monde (world.js), sous node : on vole au-dessus de colonnes couvertes par la
 // surface continue (v297), on prend l'élan de croisière, et l'on descend

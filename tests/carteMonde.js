@@ -5138,7 +5138,9 @@ const VRAIES_KM = [
       !contrat.absent && !fichiersAvions.absent && Object.keys(contrat).length === 4
         && Object.entries(contrat).every(([c, r]) => r.variante === c && r.train === 3 && r.ouvrant && r.tuyeres === r.attendues && r.dedans && r.feux && r.sieges)
         && contrat.jet && contrat.jet.poste === true
-        && Object.values(fichiersAvions).every((f) => f.racine && f.yeux === 0 && f.extensions.length === 0 && f.tris <= 40000)
+        && Object.entries(fichiersAvions).every(([n, f]) => f.racine && f.yeux === 0 && f.tris <= 40000
+          // seule extension permise : les textures KTX2 de la version -ktx2 (v590)
+          && f.extensions.every((e) => /-ktx2\.glb$/.test(n) && e === 'KHR_texture_basisu'))
         && fichiersAvions['airbus-a321.glb'] && fichiersAvions['airbus-a321.glb'].train === 3
         && fichiersAvions['chasseur-f35.glb'] && fichiersAvions['chasseur-f35.glb'].train === 3 && fichiersAvions['chasseur-f35.glb'].verriere,
       JSON.stringify({ contrat, fichiersAvions }));

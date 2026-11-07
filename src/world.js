@@ -5270,7 +5270,7 @@ export class World {
       return { s, auSol: vel.y <= 0 };
     }
     // SOUS LA BANDE, ON N'EST DANS UN VRAI VIDE QUE SI ON N'A PAS TRAVERSÉ LA
-    // SURFACE (v586). Max, en vol, en descendant vite : « on passe sous le
+    // SURFACE. Max, en vol, en descendant vite : « on passe sous le
     // sol ». La boîte ignore les deux cubes de la bande, s'arrête sur le
     // troisième — à `cote − 2`, et la surface passe jusqu'à un demi-bloc
     // au-dessus de la cote : les pieds tombaient SOUS la bande (`s − 2,2`),

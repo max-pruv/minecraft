@@ -83,6 +83,32 @@ Crédit CC BY 4.0, provenance et limites : `docs/manhattan-osm.md`.
 - Un arrêt de collision se mesure sur des images de jeu distinctes : trois
   lectures identiques entre deux images lentes ne prouvent pas un arrêt.
 
+## Les décors sombres (v589) — une nuit de ville se règle comme la nuit du monde, et un métal sans reflet est noir
+
+Max, capture d'iPad à Flushing Meadows : « des décors très noirs, des voitures
+toutes noires ». Trois règles.
+
+- **UN RENDU QUI A SES PROPRES LAMPES GARDE LES PLANCHERS DU MONDE.** Manhattan
+  et ses banlieues règlent ciel et lune eux-mêmes (`manhattan-render.js`) ; leurs
+  planchers de nuit valaient 0,46 et 0,12 quand le monde est à 1,7 et 0,45
+  (v249) : entrer dans le plan, c'était tomber dans une nuit quatre fois plus
+  noire. `NUIT_NY` (1,05 et 0,32, le jour inchangé) ; `reglageNuitNY.avant()`
+  rend la v588. Le jour où une autre ville gagne ses lampes, ses planchers se
+  mesurent contre ceux du monde, en pixels, ombres forcées.
+- **UN MÉTAL SANS REFLET EST NOIR, ET LA FLOTTE N'A DE REFLET QUE SUR SA LAQUE.**
+  Un matériau standard ne renvoie les lampes qu'en proportion de (1 − métal) ;
+  seule la laque (`EST_PEINTURE`) reçoit la sonde cubique. `eclaircirLeMetal`
+  (vehicules.js), au chargement du prototype, borne le métal de tout le reste à
+  `METAL_SANS_REFLET` (0,3) et remonte une couleur unie sous `NOIR_MIN` (3,5 %
+  linéaire, le noir d'une vraie laque) en gardant sa teinte. Des uniformes,
+  aucune clé de programme neuve (v246). `reglageMetal.actif` à faux rend la
+  v588. Un paquet neuf se passe à `sonde-voitures-sombres.cjs` (luminance de
+  jour, de nuit du monde et de nuit de New York, et la part de métal nu).
+- **UNE SONDE DE LUMIÈRE QUI REND DANS UNE CIBLE NE VOIT PAS ACES.** three
+  n'applique la correspondance tonale qu'à l'écran : les chiffres de
+  `sonde-voitures-sombres.cjs` classent les modèles, ils ne sont pas ceux de
+  l'écran. Le témoin du mur gris rend, lui, à l'écran et lit dans la même tâche.
+
 ## Un témoin de terrasse isole son obstacle (v583)
 
 Le témoin de `parishd.js` essaie un autre emplacement si une voiture de la rue
@@ -1034,6 +1060,56 @@ témoin compare à **0,9999** — cette valeur-là PASSE. Les trois affirmations
   code de PRODUCTION qu'aucune livraison n'avait touché.
 
 
+## Les textures en KTX2 (v590) — une image se mesure en carte graphique, pas sur le disque
+
+iOS ferme la page vers 500 Mo de géométrie et de textures (v580), et une image
+JPEG ou PNG se DÉCODE en RGBA : quatre octets par pixel plus un tiers de
+mipmaps, quelle que soit sa taille sur le disque. Six règles.
+
+- **UN MODÈLE DÉPOSÉ A SA VERSION KTX2, ET ELLE EST L'ORIGINAL AU SOMMET PRÈS.**
+  `scripts/compresser-textures-ktx2.mjs` écrit `<nom>-ktx2.glb` à côté du
+  fichier que le jeu charge (`asset || fichier`, v545) : URL neuve, original
+  gardé (une tablette restée en arrière le demande ; `?ktx2=0` le rend). Il ne
+  change que les images ; le script et `tests/ktx2.mjs` (lu par `degats.js`)
+  comparent chaque accesseur octet pour octet, les nœuds, les cartes par rôle
+  et les signatures de programme (v246). Un paquet neuf passe par le script :
+  le témoin de couverture rougit sur tout modèle chargé qui porte une image et
+  n'est pas dans `src/ktx2-liste.js`.
+- **LE CODEC SE CHOISIT PAR RÔLE ET SE JUGE AU DÉCIBEL.** Normales en UASTC
+  (linéaire, préréglage normal, zstd) ; couleurs (sRGB) et données (linéaire)
+  en ETC1S, et UASTC si l'ETC1S rend moins de 33 dB contre l'original, mesuré
+  avec le transcodeur que le JEU sert (`vendor/basis`, three r160). Les photos
+  recuites de New York passent ainsi en UASTC (l'Empire en ETC1S : 23 dB). Le
+  journal du script imprime chaque texture ; la RDO est un non-résultat mesuré.
+- **LA QUALITÉ PASSE AVANT LE POIDS DES FICHIERS (décision de Max, novembre
+  2026 : « Always quality first »).** Devant un codec qui dégrade une image
+  visible (l'Empire en ETC1S, 23 dB), on garde le plus fidèle et l'on paie le
+  téléchargement : +11,7 Mo pour New York, acceptés. Ce qui reste une
+  contrainte, c'est la STABILITÉ sur l'appareil — une page qu'iOS tue ne montre
+  plus rien — donc la mémoire en carte graphique (v580), jamais les octets
+  transférés. Un gain de poids qui coûte de la qualité visible se propose à
+  Max, il ne se livre pas.
+- **LE TRANSCODEUR SE BRANCHE SUR LE RENDERER, AVANT TOUT MODÈLE.**
+  `brancherKTX2(renderer)` (main.js, juste après sa création) ; `urlModele`
+  rend la version KTX2 seulement s'il est branché, `chargeurModeles()` est le
+  GLTFLoader de tous les modèles déposés (flotte, moto, avions, New York).
+  Sous node, rien n'est branché : les sondes chargent les originaux, tels
+  quels. Deux fils de transcodage au plus (chacun a son tas wasm).
+- **UNE EXTENSION QUI DOIT VOIR UNE TEXTURE AVANT LE CHARGEUR PASSE DEVANT LUI.**
+  `register` ajoute après les extensions intégrées, et `KHR_texture_basisu`
+  aurait décodé chaque texture pour son seul fichier : le partage de la flotte
+  (v413) est mis EN TÊTE (`chargeurModeles(partageDesTextures)`) et reconnaît
+  une texture KTX2 à ses octets, comme une image.
+- **UNE TEXTURE COMPRIMÉE PÈSE SES NIVEAUX.** `estimerMemoire` (journal.js)
+  somme les mipmaps d'une `CompressedTexture` au lieu de la compter en RGBA :
+  sans cela le journal de bord ne verrait jamais ce que la compression rend.
+- **CE QUE LE BANC MESURE N'EST PAS CE QUE L'IPHONE REÇOIT.** SwiftShader lit
+  l'ASTC et le BC7 (un octet par pixel) ; une puce Apple reçoit l'ETC1S opaque
+  en ETC2 RGB (un demi-octet). Le banc donne donc la borne haute du gain
+  (×4) ; le script imprime l'estimation iPhone (×6). Les modules du chargeur
+  sont dans `ASSETS` (cache de version) : un module importé au démarrage qui
+  manque hors ligne arrêterait tout le jeu.
+
 ## Un avion garé est un obstacle (v580) — une forme qui n'est pas un rectangle se mesure en silhouette, et l'enfoncement se compte en cases
 
 Deux dettes, une seule chose : la voiture traversait un avion au poste (v534),
@@ -1773,8 +1849,48 @@ leur optique allumée, 19 autres une optique nommée. Quatre règles.
   normale, rien hors du nez. Un modèle neuf passe par elle ; une capture de
   nuit (`sonde-captures-phares.cjs`) montre si le dessin se lit.
 
-Ce qui reste, déclaré dans `TASKS.md` : les feux stop, de recul et de
-détresse sont encore des lentilles génériques posées par `posesDetresse`.
+*(Depuis la v588 les feux stop, de recul et de détresse suivent la même
+règle — voir ci-dessous.)*
+
+## Tout feu suit son optique (v588) — une règle, quatre feux, et une texture se lit avant de s'allumer
+
+Max : « les phares font des ronds très génériques ». Mesuré sur la flotte :
+quinze modèles sans phare reconnu, et partout six formes génériques par voiture
+(deux disques rouges, deux blancs, quatre rectangles orange). Cinq règles.
+
+- **UNE SEULE RÈGLE POUR TOUS LES FEUX.** `optiques.js` (`optiquesDe(m, sens,
+  propre)`, sens `avant` · `arriere` · `recul` · `clignotant`) choisit,
+  copie et partage ; `phares.js` et `vehicules.js` (`feuxArriere`,
+  `feuxDeDetresse`) ne font que poser ce qu'elle rend, en `matiereAdditive`.
+  Les rangs : émissif (1), nommé (2), verre nommé (3), couleur de la texture
+  (4, au navigateur seulement : un canevas lit le pixel au centre UV de chaque
+  triangle ; sous node, pas de pixels, donc pas de rang 4). Le recul : un
+  maillage nommé, sinon la part blanche du bloc arrière, sinon le tiers du bloc
+  le plus proche de l'axe. Les clignotants : les optiques ambre NOMMÉES, sinon
+  les blocs avant et arrière en ambre — jamais une optique lue à la couleur.
+  `posesDetresse` reste (le placement des phares, les témoins), plus aucun
+  disque ni rectangle n'est posé.
+- **UNE TEXTURE SE LIT, ELLE NE S'ALLUME PAS TELLE QUELLE.** Un triangle de
+  rang 4 est entier dans sa zone et regarde son bout ; la couleur retenue ne
+  couvre pas plus du tiers du maillage (sinon c'est la peinture : le taxi
+  jaune) ; les maillages « détails » passent avant la livrée ; et côté par
+  côté, on ne garde que le plus grand morceau d'un seul tenant (triangles qui
+  se touchent par un sommet, `amas`), s'il porte la moitié de la surface, compte
+  quatre triangles, n'est pas au milieu (l'écusson du SUV, « POLICE » sur le
+  coffre) et ne prend pas tout le bouclier (la livrée blanche de l'Alpine).
+  Chacune de ces gardes est née d'une capture, pas d'un témoin : les règles de
+  rang 4 se jugent sur la planche de `sonde-captures-phares.cjs` (trois
+  quarts, face, dos).
+- **CE QU'ON NE RECONNAÎT PAS N'A PAS DE LUEUR.** Taxi Mondeo, Divo, avant de
+  l'Alpine et du SUV de police : aucun feu plutôt qu'une forme inventée, le
+  pinceau sur la route suffit. Déclaré, avec la piste (un relevé des optiques
+  à la main dans la fiche de FLOTTE).
+- **SOUS NODE, ZÉRO DISQUE ; AU NAVIGATEUR, LA TÔLE.** `sonde-feux-flotte.mjs`
+  compte les disques (zéro sur les 41), retrouve chaque lueur arrière et de
+  détresse sur la tôle et à son bout ; le témoin des feux de détresse de
+  `degats.js` lit des copies, pas des lentilles, sur la tôle.
+- **UNE LUEUR S'ÉTEINT AVEC SA SOURCE** (`sourceIntacte`, partagé) : feu stop,
+  recul et détresse comme les phares (v569).
 
 ## Les feux se mesurent sur le prototype (v550) — une règle par modèle ne se mesure jamais sur une voiture
 
@@ -15599,7 +15715,7 @@ Deux dettes des arbres, une mesure. Deux règles.
   `solid`, mesuré ; le maillage reste dans le bruit, 5,0 contre 4,9 ms), et un morceau du bord du disque coûte un ou deux appels de dessin
   au lieu d'un ; l'intérieur, rien.
 
-## On ne passe plus sous le sol (v588) — sous la bande, on demande d'où l'on vient
+## On ne passe plus sous le sol — sous la bande, on demande d'où l'on vient
 
 Max, en vol, en piquant : « on passe sous le sol ». La boîte ignore les deux
 cubes que la surface remplace (`SOUS_SURFACE`) et s'arrêtait sur le troisième,

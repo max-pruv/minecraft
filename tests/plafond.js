@@ -872,7 +872,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
   }
-  // --- ON NE PASSE PAS SOUS LE SOL EN DESCENDANT VITE (v586) ----------------
+  // --- ON NE PASSE PAS SOUS LE SOL EN DESCENDANT VITE ------------------
   // Max, captures d'iPad : en vol, en descendant vite, on passe sous la
   // surface continue et l'on voit le dessous du monde. La boîte ignore la
   // bande que la surface remplace et s'arrêtait sur le troisième cube, sous
