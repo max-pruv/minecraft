@@ -190,9 +190,11 @@ seule est un défaut du monde.
 - **Un sommet de coude sur le joint (règle v428).** Le dernier trou était sur
   l'axe de l'I-95, au bout du premier pont : le sommet [−59323, 13799] tombait
   à s 59,3 pour un tablier qui commence à 60, et le ruban, orienté selon le
-  tronçon d'après, laissait le coin ouvert. Le point est retiré (la route
-  passe du point du rayon au suivant) : zéro trou, coude maximal de l'I-95
-  inchangé (29,8°, un autre sommet, déclaré).
+  tronçon d'après, laissait le coin ouvert. Retiré, le remblai montait à 4,10
+  avant le pont suivant (barre 4 de `carteMonde.js`) ; déplacé à
+  [−59321, 13798], dans le tablier où le ruban comble son coin (v336) :
+  zéro trou, remblai 3,98, coude maximal inchangé (29,8°, un autre sommet,
+  déclaré).
 
 ## Deux ponts à dix pas l'un de l'autre font un viaduc
 
