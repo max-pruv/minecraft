@@ -51,6 +51,20 @@ export const MODELES_KTX2 = [
   ['newyork', 'empire-state.glb'],
   ['newyork', 'statue-liberte.glb'],
   ['newyork', 'quartiers.glb'],
+  // Les corps Rocketbox (humains.js) : neuf fichiers, 38 images en RGBA,
+  // le premier poste de textures une fois la flotte comprimée. Les maillages
+  // à squelette passent par le même script : il vérifie aussi les os, les
+  // poids et les animations, octet pour octet.
+  ['humains', 'homme-chemise.glb'],
+  ['humains', 'homme-veste.glb'],
+  ['humains', 'homme-denim.glb'],
+  ['humains', 'homme-costume.glb'],
+  ['humains', 'femme-tailleur.glb'],
+  ['humains', 'femme-chemise.glb'],
+  ['humains', 'femme-manteau.glb'],
+  ['humains', 'garcon.glb'],
+  ['humains', 'fille.glb'],
+  ['humains', 'policier.glb'],
 ];
 export const nomKTX2 = (f) => f.replace(/\.glb$/, '-ktx2.glb');
 
