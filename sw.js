@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v588';
+const CACHE_VERSION = 'web-minecraft-v591';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -35,7 +35,10 @@ const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemis
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
 // les avions déposés (v563) : immuables, comme les corps et la flotte
-const AVIONS = ['airbus-a320', 'airbus-a321', 'chasseur-f35', 'jet-prive'].map((n) => `./vendor/avions/${n}.glb`);
+// et leurs versions aux textures KTX2 (v590), celles que le jeu charge quand le
+// transcodeur est branché ; les originaux restent pour `?ktx2=0`
+const AVIONS = ['airbus-a320', 'airbus-a321', 'chasseur-f35', 'jet-prive']
+  .flatMap((n) => [`./vendor/avions/${n}.glb`, `./vendor/avions/${n}-ktx2.glb`]);
 
 const ASSETS = [
   './',
@@ -120,6 +123,7 @@ const ASSETS = [
   './src/moto.js',
   './src/sensations.js',
   './src/phares.js',
+  './src/optiques.js',
   './src/traces.js',
   './src/saisons.js',
   './src/villandry.js',
@@ -196,6 +200,17 @@ const ASSETS = [
   './vendor/GLTFLoader.js',
   './vendor/BufferGeometryUtils.js',
   './vendor/voiture.glb',
+  // Les textures KTX2 des modèles déposés (v590) : le chargeur et le
+  // transcodeur Basis de three r160. Importés au démarrage, donc dans le cache
+  // de la version — un module qui manque hors ligne arrêterait tout le jeu.
+  './src/ktx2.js',
+  './src/ktx2-liste.js',
+  './vendor/basis/KTX2Loader.js',
+  './vendor/basis/WorkerPool.js',
+  './vendor/basis/ktx-parse.module.js',
+  './vendor/basis/zstddec.module.js',
+  './vendor/basis/basis_transcoder.js',
+  './vendor/basis/basis_transcoder.wasm',
 ];
 
 // L'INSTALLATION DIT OÙ ELLE EN EST (v257). Max, sur l'iPad : « le jeu reste

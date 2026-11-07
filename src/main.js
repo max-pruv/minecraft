@@ -92,6 +92,7 @@ import { lienDuJeu, dessinerQR, partagerLien, lienWhatsApp, lienSMS } from './pa
 import { jouerLeSon, arreterLeSon, surSonEnAttente, Photographe, micOuvert } from './visio.js';
 import { initCommandes, ICONES } from './commandes.js';
 import { creerSuivi, recevoir, positionA } from './fluidite.js';
+import { brancherKTX2 } from './ktx2.js';
 
 // New York appartient à la Terre. Les anciennes adresses deviennent un lieu de départ.
 const VISITE_MANHATTAN = ['manhattan'].includes(new URLSearchParams(location.search).get('lieu')) || new URLSearchParams(location.search).get('carte') === 'manhattan';
@@ -359,6 +360,9 @@ const canvas = document.getElementById('game');
 // s'exécute que sous WebGPU, dont le rendu doit s'initialiser avant la première
 // image.
 const renderer = RENDU_WEBGPU ? await creerRenderer(canvas, { antialias: true }) : new THREE.WebGLRenderer({ canvas, antialias: true });
+// Les textures KTX2 des modèles déposés (v590) : le transcodeur demande au
+// renderer ce que la carte lit, et il doit être branché avant tout modèle.
+brancherKTX2(renderer);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 // LE REGARD DE NEW YORK, PARTOUT (v247). Max : « regarde les améliorations
 // qu'il y a encore eu dans la ville de New York et reproduis-les sur
