@@ -2,12 +2,51 @@
 
 ## La lumière et le post-traitement (v591) — ce qui reste, déclaré
 
-- [ ] **Le jour de la fusion de la PR #600, après le go de Max seulement :**
-  squash avec un `commit_message` explicite écrit d'après l'entrée du journal,
-  sans identifiant ni nom de modèle ni ligne d'attribution qui en porte un (le
-  commit d7c4adf de la branche en porte un dans son message, non amendable
-  d'ici) ; relire le message du commit sur `main` ; puis supprimer la branche.
-  `CACHE_VERSION` se monte juste avant, après rebase, au numéro lu sur `main`.
+- [x] **La fusion de la PR #600 se fait seule (consigne de Max du 7 novembre,
+  autonomie) :** portail trié (vert, ou rouges prouvés identiques sur
+  `origin/main` et déclarés ici), revue d'écran faite, et la PR #611 passée
+  (la numérotation après la fusion). Squash avec un `commit_message` explicite
+  écrit d'après l'entrée du journal, sans identifiant ni nom de modèle ni ligne
+  d'attribution qui en porte un (le commit d7c4adf de la branche en porte un
+  dans son message, non amendable d'ici) ; relire le message du commit sur
+  `main` ; supprimer la branche ; vérifier que le workflow `Numérotation` a
+  poussé et que la production sert la version (`curl … sw.js`). Les captures
+  ne se font plus valider par Max avant la fusion : il juge en production, sur
+  son iPhone, par le geste envoyé à la session de coordination (défaut 45).
+- [ ] **Portail de cette livraison, trié (GitHub run 77 sur de872eb, et le
+  portail local sur la branche fusionnée avec la v590).** Tout rouge est
+  classé, aucun n'est à la livraison :
+  - identiques sur `origin/main` (run 67 de la v590) : `degats.js` les sept
+    témoins du mur de face (« foncer dans un mur… », `chocs: []`, vmax 41) ;
+    `reseau.js` la fluidité directe (« pas par bonds ») et par le nuage
+    (« pas par paquets », local) ; `monte.js` dix témoins de circulation
+    (« la circulation naît à l'approche — aucune voiture », « les voitures ne
+    se traversent plus », « deux voisines… », « au feu, la voiture freine »,
+    « deux voitures ne sont jamais l'une dans l'autre », Moscou ×2, « rendent
+    leur mémoire — Rome n'a pas fabriqué de voitures », « une voiture tombe
+    dans l'eau », « collée à une voiture ») ; `manhattan.js` « les banlieues…
+    sans compiler de matière » (local : la suite meurt au clic sur
+    « Jouer », `locator.click` 30 s, déclaré v512) ;
+  - déjà déclarés intermittents ici : `monte.js` « on voit son flanc », « un
+    passant change de trottoir au feu », « chaque feuille au-dessus de SA
+    colonne » (`ecartMax` 7,06, famille des 6,28 et 6,72) ; `reseau.js` le
+    passager (v265) ; `carte.js` l'appui long « pointeurs 0 » et les sept
+    témoins du GPS qui en dépendent (v258, v269 : rouge de charge, vert seul) ;
+  - confirmés par le second passage local, verts sur la branche après un rouge
+    GitHub : `parishd.js` « ne traverse pas une terrasse de café » (GitHub :
+    « une voiture de la rue a gêné chaque essai », les quatre sites ; local :
+    `fin` 0,51, 7,5 blocs — le tirage de trafic de la v583) et `monte.js`
+    « ses roues tournent… pas des savonnettes » (GitHub : 0,0 m en 8 s, la
+    page rendait 2,7 s de jeu en 19 s au témoin d'avant ; local : 3,3 m,
+    9,5 rad) ;
+  - attendu : `maj.js` « le badge de version ouvre le journal » (tête du
+    journal à 591, `sw.js` à v590 : la numérotation se fait après la fusion
+    depuis #611, et ce témoin ne peut plus rougir ainsi).
+  Le portail local a été arrêté par la borne de deux heures du banc au milieu
+  de `monte.js` (80 verts, zéro rouge atteint) ; il n'a pas été relancé : les
+  deux confirmations qu'on lui demandait étaient faites, et relancer
+  `monte.js` seule aurait interdit de toucher `src/` pendant l'heure de la
+  reprise sur `main`.
 - [ ] **Défaut 45 de la revue d'écran** : en vol face au soleil bas, la brume
   de hauteur du niveau 2 voile le lointain jusqu'à effacer collines et Seine.
   À juger sur l'iPhone (`?brume=0.5` contre 1) ; si confirmé, l'atténuer dans
