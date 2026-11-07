@@ -1880,6 +1880,21 @@ const VRAIES_KM = [
       shard.batis > 0 && shard.verre <= shard.batis * 0.02,
       `${shard.verre} bloc(s) de verre sur ${shard.batis}`);
 
+    // ET LA TOUR MONTPARNASSE AUSSI (signalée par Max sur une capture du
+    // croisement, #599) : une coque creuse dont trois couches sur quatre
+    // étaient du verre — un treillis noir et blanc où l'on voyait le ciel.
+    // Son bâtisseur est pur, et c'est lui que le monde d'aujourd'hui pose.
+    const montparnasse = await tab.evaluate(async () => {
+      const { buildMontparnasse } = await import('./src/paris.js');
+      const { BLOCK } = await import('./src/blocks.js');
+      let verre = 0, batis = 0;
+      buildMontparnasse((du, y, dv, id) => { batis++; if (id === BLOCK.GLASS) verre++; });
+      return { verre, batis };
+    });
+    verifier('la tour Montparnasse est une tour, pas un treillis de verre : ses murs sont opaques',
+      montparnasse.batis > 0 && montparnasse.verre === 0,
+      `${montparnasse.verre} bloc(s) de verre sur ${montparnasse.batis}`);
+
     const sansVie = Object.entries(facades).filter(([v, c]) =>
       // les bancs : quinze dans la fenêtre depuis les rues à la GTA. La bande du
       // mobilier s'éloigne de l'axe avec la chaussée, et les bancs tombent sur

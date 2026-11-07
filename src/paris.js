@@ -1788,6 +1788,14 @@ export function buildOpera(poser) {
 
 // La tour Montparnasse : deux cents mètres de verre noir au milieu des toits de
 // zinc. C'est la tour que les Parisiens n'aiment pas, et qu'on voit de partout.
+//
+// ET SON VERRE EST UN MUR-RIDEAU, PAS UN TROU. La tour est une coque CREUSE :
+// un bloc de verre transparent dans son mur laissait voir le ciel au travers,
+// et de loin on voyait un treillis noir et blanc (Max, capture du croisement
+// de la #599). C'est la panne du verre dans les murs (v195, v202), réglée sur
+// le Shard en v449 de la même façon : `CITY_BLOCK.CURTAIN` est opaque, porte
+// ses meneaux dans sa texture et s'allume la nuit. Le verre et le mur-rideau
+// sont deux blocs pleins : la forme ne change pas, seul le dessin (v457).
 export function buildMontparnasse(poser) {
   const { set } = boite(poser);
   const H = 34;
@@ -1795,7 +1803,7 @@ export function buildMontparnasse(poser) {
     for (let dx = -3; dx <= 3; dx++) {
       for (let dz = -2; dz <= 2; dz++) {
         if (Math.abs(dx) !== 3 && Math.abs(dz) !== 2) continue;
-        set(dx, y, dz, y % 4 === 0 ? NOIR : VERRE);
+        set(dx, y, dz, y % 4 === 0 ? NOIR : CITY_BLOCK.CURTAIN);
       }
     }
   }
