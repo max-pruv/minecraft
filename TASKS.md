@@ -9682,6 +9682,21 @@ l'embarquement a eu lieu, pas par une hypothèse.
   un mur creux est un trou (même règle qu'à San Francisco, v195). Vu en
   capture aérienne de la rive sud en v206, laissé tel quel : hors du sujet
   de la passe de rues.
+- [ ] **La tour Montparnasse est un treillis de verre : on voit le ciel au
+  travers** (signalé par Max sur la capture « croisement » de la #599, où il
+  est le même avant et après les scans). Un rayon tiré depuis la caméra de la
+  capture (`adresseParis(-1.7, 0.8)`, cap plein sud) touche le repère
+  « Montparnasse » (−394, 447), face z = 445, de la hauteur 64 à 88.
+  `buildMontparnasse` (paris.js) monte une coque CREUSE : `NOIR` une couche
+  sur quatre, `VERRE` (`BLOCK.GLASS`) entre les deux. C'est la panne du verre
+  dans les murs (v195, v202, le Shard en v449), et Montparnasse n'a pas de
+  modèle en relief (`paris-monuments-hd.js` ne la connaît pas), donc ce voxel
+  est ce qu'on voit à toute distance. Le remède est celui du Shard :
+  `CITY_BLOCK.CURTAIN` (opaque, meneaux dans la texture, allumé la nuit) à la
+  place de `VERRE`. C'est un changement de dessin qui garde la forme (v457),
+  si le verre et le mur-rideau arrêtent l'enfant de la même façon : à
+  vérifier, puis un témoin qui compte les blocs de verre du bâtisseur (zéro).
+  `paris-v302.js` et `paris-v531.js` (mondes figés) restent tels quels.
 
 - [x] **Cinq voies de San Francisco restaient sans circuit — FAIT en v223, et
   la cause n'était pas celle qu'on avait notée.** « Elles bordent le parc et la
