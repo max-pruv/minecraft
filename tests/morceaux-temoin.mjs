@@ -71,6 +71,13 @@ export async function empreinteMorceaux(src) {
   // rend la constante d'avant (l'ancien code n'a pas l'interrupteur).
   const Sc = await import(src + '/solcontinu.js');
   if (Sc.reglageSolContinu) Sc.reglageSolContinu.bouleau = false;
+  // LE MARQUAGE DE PARIS HORS DE SA TRAME (vNEXT) : un contenu neuf — plus de
+  // bande de trame sur une avenue nommée, et un passage en travers de l'avenue
+  // au débouché. Désarmé, la branche rend la constante d'avant (l'ancien code
+  // n'a pas l'interrupteur).
+  const Par = await import(src + '/paris.js');
+  const marquage = Par.reglageMarquage ? { ...Par.reglageMarquage } : null;
+  if (Par.reglageMarquage) { Par.reglageMarquage.horsTrame = false; Par.reglageMarquage.avenues = false; }
   try { return await empreinteDesMorceaux({ World, CHUNK, buildChunkTampons, routeEn, segmentsDeRoute, pointA, lieu }); } finally {
     if (VMm.reglageMobilier) VMm.reglageMobilier.recul = recul;
     if (T.rivesCreusees) T.rivesCreusees(true);
@@ -78,6 +85,7 @@ export async function empreinteMorceaux(src) {
     if (Ae.reglageAires) Ae.reglageAires.actif = true;
     if (Pm.reglageNuitEiffel) Pm.reglageNuitEiffel.lueur = true;
     if (Sc.reglageSolContinu) Sc.reglageSolContinu.bouleau = true;
+    if (marquage) Object.assign(Par.reglageMarquage, marquage);
   }
 }
 

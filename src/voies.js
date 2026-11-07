@@ -25,7 +25,7 @@ export function rangerVoies(voies) {
     for (let i = 0; i < voie.pts.length - 1; i++) {
       const [u0, v0] = voie.pts[i], [u1, v1] = voie.pts[i + 1];
       const seg = {
-        u0, v0, u1, v1, l: voie.l, t, sol: voie.sol,
+        u0, v0, u1, v1, l: voie.l, t, sol: voie.sol, voie,
         uMin: Math.min(u0, u1), uMax: Math.max(u0, u1),
       };
       const b0 = Math.floor((Math.min(v0, v1) - voie.l - t - 1) / BANDE);
@@ -62,6 +62,33 @@ export function solDesVoies(bandes, u, v, chaussee, trottoir) {
     if (d <= marge) dedans = trottoir;
   }
   return dedans;
+}
+
+// LA VOIE NOMMÉE DONT LA CHAUSSÉE PORTE CE POINT, avec sa direction et la
+// projection du point sur son axe (vNEXT). `solDesVoies` ne rend que le bloc ;
+// le marquage de Paris a besoin de savoir QUELLE avenue passe là, dans quel
+// sens, et où le point tombe sur son axe, pour poser un passage en travers
+// d'elle au débouché d'une rue de trame. Au joint de deux segments, le point
+// est dans la chaussée des deux : on préfère celui qu'il longe (sa projection
+// tombe DANS le segment), sinon celui qu'il dépasse le moins — projeter sur un
+// bout de segment ferait de tout le demi-disque du joint un seul point de
+// l'axe, et d'un passage une tache. Rend null hors de toute chaussée nommée.
+export function voieEn(bandes, u, v) {
+  const segs = bandes.get(Math.floor(v / BANDE));
+  if (!segs) return null;
+  let best = null;
+  for (const s of segs) {
+    if (u < s.uMin - s.l || u > s.uMax + s.l) continue;
+    const d = distanceSegment(u, v, s);
+    if (d > s.l) continue;
+    const du = s.u1 - s.u0, dv = s.v1 - s.v0, len = Math.hypot(du, dv) || 1;
+    const r = ((u - s.u0) * du + (v - s.v0) * dv) / (len * len);
+    const depasse = Math.max(0, -r, r - 1) * len;
+    if (!best || depasse < best.depasse || (depasse === best.depasse && d < best.d)) {
+      best = { seg: s, d, depasse, du: du / len, dv: dv / len, pu: s.u0 + r * du, pv: s.v0 + r * dv };
+    }
+  }
+  return best;
 }
 
 // --- les circuits de circulation ---------------------------------------------

@@ -109,6 +109,34 @@ toutes noires ». Trois règles.
   `sonde-voitures-sombres.cjs` classent les modèles, ils ne sont pas ceux de
   l'écran. Le témoin du mur gris rend, lui, à l'écran et lit dans la même tâche.
 
+## Les passages piétons de Paris (vNEXT) — un marquage lit la règle du sol, pas une copie de la trame
+
+Max : « sur certaines rues, le passage piéton s'arrête à la moitié de la
+route ». Mesuré sur `origin/main` : 329 passages sur 1 963 hors de la chaussée.
+Trois règles.
+
+- **UNE SEULE RÈGLE POUR LE SOL ET SON MARQUAGE.** `marquageParis` ne lisait
+  que la trame (`formeParis`) ; `solParis` fait passer avant elle la Seine, les
+  quais, les socles, les places, les avenues nommées (`solAvantTrame`, la
+  pré-trame factorisée). Un marquage posé d'après la trame là où le sol n'est
+  pas la trame dessine sur le trottoir. Le marquage demande d'abord
+  `solAvantTrame` : hors de la trame, rien — sauf le bitume d'une avenue.
+- **UN PASSAGE D'AVENUE SE DESSINE DANS LE REPÈRE DE L'AVENUE.** La trame de la
+  rive (lue au BORD de l'avenue : la Grande Armée court à la limite de deux
+  quartiers) dit où une rue débouche ; la bande se pose perpendiculaire à
+  l'axe de l'avenue (`voieEn`, voies.js : segment, direction, projection non
+  bornée au segment — bornée, le demi-disque d'un joint devenait une tache),
+  rayures dans le sens de la traversée. Mes deux premiers jets (bande de la
+  trame prolongée) faisaient des parallélogrammes de trente blocs sur les
+  avenues obliques. Au croisement de deux avenues, pas de passage plutôt qu'un
+  demi-passage : les deux bords doivent être ceux de la même voie
+  (`seg.voie`).
+- **LE DÉSARMEMENT VIT DANS LE MODULE** (`reglageMarquage`, jamais un réglage
+  du jeu) : l'empreinte des 490 morceaux le lit et rend la constante. La sonde
+  (`tests/sonde-passages-paris.mjs`) groupe les colonnes à huit voisins : à
+  quatre, une bande en biais se casse en marches et rend des « courts » qui
+  n'existent pas.
+
 ## Un témoin de terrasse isole son obstacle (v583)
 
 Le témoin de `parishd.js` essaie un autre emplacement si une voiture de la rue
