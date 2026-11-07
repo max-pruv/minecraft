@@ -98,6 +98,16 @@ du plan :
   murs du tirage de cadence, déclarée ci-dessus et à la v583 ; vert rejoué
   seul 67/67), `manhattan.js` morte au clic « Jouer » de la ligne 42 après
   1 ✅ — exactement le premier passage de `origin/main` seule.
+  Run 78 (`80d0a94`, le run 74 annulé par le push de `TASKS.md` : un push
+  annule le run en cours, on ne pousse plus pendant un run), tranche 2/4 :
+  `reseau.js` six rouges, tous déclarés intermittents — fluidité de l'ami en
+  direct (0,82) et par le nuage (0,25), « seule après le départ de l'hôte » et
+  « continue d'essayer de la reconnecter », « un hôte sans courtier est trouvé »
+  et « il le REJOINT » ; `metro.js` et `parent.js` vertes.
+  Tranche 3/4 : `visio.js` « la radio parle plus bas pendant l'appel »
+  (`avant 0,0000`, déclaré, vert rejoué seul) et `carte.js` le fond de carte à
+  froid (411 ms pour 400, déclaré) ; `sauvegarde.js`, `hote.js`, `plafond.js`
+  et `maj.js` vertes.
 
 ## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
 
