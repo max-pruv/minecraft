@@ -36,7 +36,7 @@ modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérif
 les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
 ils ne constituent pas une exception pour les nouveaux rendus.
 
-## La lumière et le post-traitement (v591) — l'image se développe, et la cible reste posée
+## La lumière et le post-traitement (vNEXT) — l'image se développe, et la cible reste posée
 
 Chantier « réalisme » 2 sur 5. `src/postfx.js` (isolé, pour le chantier
 WebGPU) compose l'image en HDR et la développe : exposition et balance selon

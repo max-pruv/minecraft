@@ -6,15 +6,6 @@
 
 export const NOUVEAUTES = [
   {
-    v: 591,
-    titre: 'La lumière devient vraie',
-    puces: [
-      'Les fenêtres et les lampes brillent la nuit',
-      'Le soleil se voit dans le ciel',
-      'Une brume douce au loin et le soir',
-    ],
-  },
-  {
     v: 590,
     titre: 'Le jeu tient mieux sur iPhone',
     puces: [

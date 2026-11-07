@@ -5,7 +5,7 @@
 // voûte qui a changé ou l'auréole autour de l'astre. Isolée : aucune suite ne
 // l'importe. `node tests/sonde-ciel.cjs [racine] [port]` — la racine d'un
 // autre arbre (`git worktree`) pour la double mesure (v195).
-// Mesuré (v591 contre v585, midi, soleil à 70°) : haut de l'écran 176 contre
+// Mesuré (vNEXT contre v585, midi, soleil à 70°) : haut de l'écran 176 contre
 // 156 (∠soleil 20°) ; 60° à l'opposé 164 contre 162 ; 15° à l'opposé 190
 // contre 188. C'est l'auréole qui change, pas la voûte.
 const ROOT = process.argv[2] || require('path').join(__dirname, '..');

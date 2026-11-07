@@ -87,7 +87,7 @@ export function createSky({ scene, camera, sunLight }) {
         soleil: { value: new THREE.Vector3(0, 1, 0) }, jour: { value: 1 }, rasant: { value: 0 },
       },
       vertexShader: 'varying vec3 direction;void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-      // LE CIEL DIFFUSE (v591). Au dégradé horizon → zénith s'ajoutent ce qu'une
+      // LE CIEL DIFFUSE (vNEXT). Au dégradé horizon → zénith s'ajoutent ce qu'une
       // atmosphère fait d'un soleil : une bande de brume claire et désaturée au
       // ras de l'horizon (la lumière diffusée par l'air épais qu'on traverse en
       // regardant loin), et la diffusion vers l'avant autour de l'astre — large
@@ -155,7 +155,7 @@ void main(){
     // et le coucher, et il reste invisible en plein midi. Même largeur que la
     // teinte orange du ciel, sinon on obtient une auréole blanche sur du bleu.
     const rasant = Math.exp(-((hauteur / 0.22) ** 2));
-    // le dôme sait où est le soleil, et s'il rase l'horizon (v591)
+    // le dôme sait où est le soleil, et s'il rase l'horizon (vNEXT)
     dome.material.uniforms.soleil.value.copy(dirSoleil);
     dome.material.uniforms.jour.value = daylight;
     dome.material.uniforms.rasant.value = rasant;

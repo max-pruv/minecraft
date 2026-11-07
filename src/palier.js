@@ -139,7 +139,7 @@ export const PALIERS = {
   // morceau proche ; sur l'iPad de quatre ans, rien.
   // `hdMo` (v299) : ce que les façades DÉTAILLÉES peuvent peser, en mégaoctets
   // — voir `planDetail` plus bas. Zéro : la couche est éteinte de toute façon.
-  // `postfx` (v591) : le niveau de post-traitement (postfx.js, `NIVEAUX`) —
+  // `postfx` (vNEXT) : le niveau de post-traitement (postfx.js, `NIVEAUX`) —
   // 0 rien, 1 étalonnage et bloom à trois étages, 2 bloom à cinq étages et
   // brume de hauteur. Le palier bas ne paie RIEN : sa chaîne de rendu est celle
   // de la v585 au bit près.

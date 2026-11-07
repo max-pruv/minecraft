@@ -1,6 +1,6 @@
 # Ce qui est en cours
 
-## La lumière et le post-traitement (v591) — ce qui reste, déclaré
+## La lumière et le post-traitement (vNEXT) — ce qui reste, déclaré
 
 - [x] **La fusion de la PR #600 se fait seule (consigne de Max du 7 novembre,
   autonomie) :** portail trié (vert, ou rouges prouvés identiques sur
@@ -39,9 +39,10 @@
     « ses roues tournent… pas des savonnettes » (GitHub : 0,0 m en 8 s, la
     page rendait 2,7 s de jeu en 19 s au témoin d'avant ; local : 3,3 m,
     9,5 rad) ;
-  - attendu : `maj.js` « le badge de version ouvre le journal » (tête du
-    journal à 591, `sw.js` à v590 : la numérotation se fait après la fusion
-    depuis #611, et ce témoin ne peut plus rougir ainsi).
+  - attendu, et disparu depuis : `maj.js` « le badge de version ouvre le
+    journal » (la branche portait alors une entrée 591 en tête du journal,
+    `sw.js` restant à v590 ; depuis #611 la branche n'écrit plus de numéro,
+    `livraisons/lumiere-postfx.md` le reçoit après la fusion).
   Le portail local a été arrêté par la borne de deux heures du banc au milieu
   de `monte.js` (80 verts, zéro rouge atteint) ; il n'a pas été relancé : les
   deux confirmations qu'on lui demandait étaient faites, et relancer
@@ -73,7 +74,7 @@
 - [ ] **Deux programmes naissent à l'arrivée dans Paris, avec ou sans
   post-traitement** : le nom d'une station de métro (`nom-station`,
   `MeshBasicMaterial` à carte, et sa variante de profondeur). Mesuré identique
-  sur `postfx=0` ; le témoin de la v591 le nomme et le tolère. La chauffe des
+  sur `postfx=0` ; le témoin de la vNEXT le nomme et le tolère. La chauffe des
   plaques (v529) ne couvre pas cette clé-là : à chauffer à l'accueil, hors de
   cette zone.
 - [ ] **Un témoin qui lit des pixels de l'écran sous le post-traitement
@@ -97,7 +98,7 @@
   fluidité, `monte.js` ×9) sont déjà déclarés plus bas.
 - [x] **« Le ciel est une voûte » (`monte.js`) était rouge sur la branche
   seule, et c'était le témoin.** Il lisait le haut de l'écran à midi, c'est-à-dire
-  à vingt degrés du soleil, dans son auréole (v591 : 176 contre 156 sur v585) ;
+  à vingt degrés du soleil, dans son auréole (vNEXT : 176 contre 156 sur v585) ;
   la voûte loin du soleil n'a pas bougé (164 contre 162 à 60°, sonde
   `sonde-ciel.cjs` sur les deux arbres). Repointé : il lit le ciel à 60° à
   l'opposé du soleil contre 15° sur l'horizon, et publie l'auréole.

@@ -1,4 +1,4 @@
-// LE POST-TRAITEMENT (chantier « lumière », v591) — l'image se compose en HDR,
+// LE POST-TRAITEMENT (chantier « lumière », vNEXT) — l'image se compose en HDR,
 // puis se développe : exposition et balance selon l'heure, bloom des surfaces
 // qui émettent, perspective aérienne lue dans la profondeur, correspondance
 // tonale ACES en dernier.
