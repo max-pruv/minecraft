@@ -1,5 +1,18 @@
 # Ce qui est en cours
 
+## Les portières s'ouvrent pour de vrai (vNEXT) — ce qui reste
+
+- [ ] Les places arrière de la fiche `voiture` (montures.js) sont à z −0,75,
+  c'est-à-dire DEVANT le conducteur (le nez est en −z) : un passager à
+  l'arrière s'assied dans la planche. À remettre derrière (z ≈ +0,9, la
+  banquette de la garniture est à `siege.z + 0,84`), avec un témoin de
+  passager, dans la zone réseau (`reseau.js`).
+- [ ] La garniture fabriquée est sobre (gris anthracite, cuir sombre) : la
+  juger sur la tablette, de près, sur trois modèles génériques et un taxi.
+- [ ] Le passager monte toujours côté droit sans planche de garniture de son
+  côté (la planche couvre toute la largeur, mais pas de boîte à gants) : décor,
+  pas défaut.
+
 ## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
 
 - **Mesurer sur l'iPhone et l'iPad.** Le banc lit l'ASTC et le BC7 (un octet

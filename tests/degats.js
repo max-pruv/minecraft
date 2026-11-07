@@ -139,6 +139,29 @@ function verifier(nom, ok, detail = '') {
           JSON.stringify({ triangles, maillages, octets }));
       }
     }
+    // LA PORTE S'OUVRE POUR DE VRAI (vNEXT). Max : « la porte de la voiture
+    // doit s'ouvrir réellement ; aujourd'hui on voit la personne qui rentre et
+    // qui disparaît là-dedans ». Trente-trois modèles sur quarante et un
+    // refusaient leur portière (`portiere: false`) et l'enfant traversait la
+    // tôle ; derrière l'ouverture de douze d'entre eux, il n'y avait rien — ni
+    // siège ni planche. Chaque modèle a désormais sa portière, qui s'ouvre vers
+    // l'extérieur (ou vers le haut, en élytre), et un habitacle meublé derrière
+    // elle, fait du matériau des corps sculptés : aucun programme neuf.
+    {
+      const { mesurerPortieres } = await import('./portieres-flotte.mjs');
+      const portes = await mesurerPortieres();
+      const sans = portes.filter((x) => !x.porte);
+      const mal = portes.filter((x) => x.porte && !(x.ciseau ? x.monte > 0.6 : x.versDehors > 0.5));
+      verifier(`les ${portes.length} modèles de la flotte (fabriqués compris) ont une portière qui s'ouvre : vers l'extérieur, ou vers le haut en élytre`,
+        portes.length >= 30 && sans.length === 0 && mal.length === 0,
+        JSON.stringify({ sans: sans.map((x) => `${x.f}:${x.raison}`), mal: mal.slice(0, 3) }));
+      const vides = portes.filter((x) => x.porte && !x.meuble);
+      const meublesParGarniture = portes.filter((x) => x.meuble && x.meubleSans === false).length;
+      const neuves = portes.filter((x) => (x.matieresGarniture || []).some((m) => m !== 'vivante'));
+      verifier('par l\'ouverture, chaque modèle montre un habitacle — un siège sous les hanches, une planche devant les genoux — et la garniture fabriquée n\'emploie que le matériau des corps sculptés',
+        vides.length === 0 && meublesParGarniture > 0 && neuves.length === 0,
+        JSON.stringify({ vides: vides.map((x) => x.f), meublesParGarniture, neuves: neuves.map((x) => x.f) }));
+    }
     const flotte = await F.mesurerFlotte();
     const ko = flotte.filter((x) => !(x.phOk && x.detOk));
     verifier(`les phares et les coins des feux des ${flotte.length} modèles de la flotte (taxis et utilitaires fabriqués compris) sont sur la tôle, à leur coin`,

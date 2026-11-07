@@ -461,9 +461,28 @@ function verifier(nom, ok, detail = '') {
       g.player.keys.delete('KeyW');
       return { ms, parcouru: +parcouru.toFixed(2) };
     });
-    await dormir(800);
-    const aliceApres = await alice.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z }));
-    const hoteApres = await hote.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z }));
+    // ON LIT L'ÉCART UNE FOIS LA VOITURE POSÉE, PAS 800 ms APRÈS LE LÂCHER.
+    // La voiture garde son élan (jusqu'à cinq blocs de plus, mesuré) et la
+    // position d'un ami se rejoue avec un retard d'une seconde et demie
+    // (fluidite.js, v556) : lu en roulant, l'écart mesurait la vitesse du
+    // moment fois ce retard (4,87 et 6,49 pour une barre à 4, vert sur un
+    // passage plus lent). On attend que l'hôte ne bouge plus ET que la
+    // passagère l'ait rejoint, douze secondes au plus, la durée au message.
+    const tPose = Date.now();
+    let aliceApres, hoteApres, posee = 0, prec = null;
+    while (Date.now() - tPose < 12000) {
+      [aliceApres, hoteApres] = await Promise.all([
+        alice.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z })),
+        hote.evaluate(() => ({ x: window.__game.player.pos.x, z: window.__game.player.pos.z })),
+      ]);
+      const immobile = prec && Math.hypot(hoteApres.x - prec.h.x, hoteApres.z - prec.h.z) < 0.05
+        && Math.hypot(aliceApres.x - prec.a.x, aliceApres.z - prec.a.z) < 0.05;
+      posee = immobile ? posee + 1 : 0;
+      if (posee >= 2) break;
+      prec = { h: hoteApres, a: aliceApres };
+      await dormir(400);
+    }
+    conduite.pose = Date.now() - tPose;
     const suivi = +Math.hypot(aliceApres.x - aliceAvant.x, aliceApres.z - aliceAvant.z).toFixed(2);
     const ecart = +Math.hypot(aliceApres.x - hoteApres.x, aliceApres.z - hoteApres.z).toFixed(2);
     const roule = +Math.hypot(hoteApres.x - chezHote.x, hoteApres.z - chezHote.z).toFixed(2);
@@ -689,7 +708,12 @@ function verifier(nom, ok, detail = '') {
     await lou.evaluate(() => document.getElementById('ride-btn').click());
     const t0 = Date.now();
     const releves = [];
-    while (Date.now() - t0 < 45000) {
+    // 90 s, PAS 45 : sur les autres branches la montée finit déjà en 40 à
+    // 43 s de montre (portail de la v590), et la portière qui se referme en
+    // fin de séquence (vNEXT) l'a fait passer au-dessus. C'est un ÉTAT FINAL
+    // qu'on attend (assis, portière refermée), pas un débit : allonger ne
+    // blanchit rien (v279). La durée est dans le message (`ms`).
+    while (Date.now() - t0 < 90000) {
       const [cL, cM] = await Promise.all([
         lou.evaluate(() => { const g = window.__game; const e = g.player.embarquement; return { ph: e ? e.phase : null, passager: !!(g.fun.passagerDe && g.fun.passagerDe()) }; }),
         hote.evaluate(() => {
@@ -724,7 +748,7 @@ function verifier(nom, ok, detail = '') {
     if (fin.passager) {
       await lou.evaluate(() => document.getElementById('ride-btn').click());
       const t1 = Date.now();
-      while (Date.now() - t1 < 45000) {
+      while (Date.now() - t1 < 90000) {
         const [cL, cM] = await Promise.all([
           lou.evaluate(() => { const g = window.__game; const e = g.player.embarquement; return { ph: e ? e.phase : null, sens: e ? e.sens : null, passager: !!(g.fun.passagerDe && g.fun.passagerDe()) }; }),
           hote.evaluate(() => {

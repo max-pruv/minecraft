@@ -538,28 +538,29 @@ export const FLOTTE = [
   // reconstruite —, gardés pour les garages et le réseau. Un garage qui
   // rangeait un modèle retiré ressort une voiture tirée de la flotte
   // (`voitureNeuve`, repli du vœu).
-  // `portiere: false` (v366) : sans habitacle, la portière ouverte ne montre que
-  // du noir ; un modèle qui casse vaut moins qu'un modèle qui s'en passe.
-  { fichier: 'bugatti-chiron-stealth.glb', son: 'w16', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false, portiere: false },
+  // LES PORTIÈRES DE TOUTE LA FLOTTE S'OUVRENT (vNEXT). Max : « on voit la
+  // personne qui rentre et qui disparaît là-dedans ». `portiere: false` (v366)
+  // venait du vide derrière l'ouverture ; portieres.js découpe la portière dans
+  // la tôle de chaque modèle et meuble ce que l'habitacle n'a pas
+  // (`garnitureDe`). `portiere: 'ciseau'` : elle se lève (la Revuelto, la MC12).
+  { fichier: 'bugatti-chiron-stealth.glb', son: 'w16', classe: 'hypercar', nom: 'Bugatti Chiron Stealth', habitacle: false },
   // La SF90 XX Stradale de Ddiaz Design (CC-BY-4.0, vendor/voitures/LICENSE.md),
   // posée au manifeste par scripts/ferrari-sf90-xx.py, remplace à l'affichage
   // l'ancienne SF90 : même identifiant pour les garages et le réseau, URL neuve
-  // (`asset`) pour le cache. Portières non séparées dans le modèle : `portiere:
-  // false` (v366), comme la Revuelto.
-  { fichier: 'ferrari-sf90.glb', son: 'v8', asset: 'ferrari-sf90-xx.glb', classe: 'sportive', nom: 'Ferrari SF90 XX Stradale', portiere: false },
+  // (`asset`) pour le cache. Portières découpées dans la tôle (vNEXT).
+  { fichier: 'ferrari-sf90.glb', son: 'v8', asset: 'ferrari-sf90-xx.glb', classe: 'sportive', nom: 'Ferrari SF90 XX Stradale' },
   // L'identifiant des sauvegardes reste stable ; l'URL neuve renouvelle le
   // modèle dans STATIC_CACHE sans retélécharger toute la flotte. Adaptation
-  // CC-BY-4.0 du modèle de BRO (vendor/voitures/LICENSE.md) : portières non
-  // séparées, donc `portiere: false` (v366) plutôt qu'un découpage au hasard.
-  { fichier: 'lamborghini-revuelto.glb', son: 'v12', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', laque: 'jamais', portiere: false },
+  // CC-BY-4.0 du modèle de BRO (vendor/voitures/LICENSE.md) : ses portières
+  // se lèvent en ciseau, comme la vraie (vNEXT, découpées dans la tôle).
+  { fichier: 'lamborghini-revuelto.glb', son: 'v12', asset: 'lamborghini-revuelto-wip.glb', classe: 'sportive', nom: 'Lamborghini Revuelto', laque: 'jamais', portiere: 'ciseau' },
   { fichier: 'lucid-gravity.glb', son: 'electrique', classe: 'suv', nom: 'Lucid Gravity', habitacle: false },
   // LA MC12 GT1 RED BULL (v559), adaptation CC-BY-4.0 du modèle de Dave Love
   // (vendor/voitures/LICENSE.md, `scripts/convertir-mc12.py`). Sa livrée EST
   // sa laque : la rue ne la repeint jamais (`laque: 'jamais'`, comme la
-  // fourgonnette). Ses portes s'ouvrent en élytre et ne sont pas séparées dans
-  // le modèle : `portiere: false` (v366), plutôt qu'une portière classique
-  // découpée dans la tôle d'une voiture qui n'en a pas.
-  { fichier: 'maserati-mc12-gt1.glb', son: 'v12', classe: 'hypercar', nom: 'Maserati MC12 GT1 Red Bull', laque: 'jamais', portiere: false },
+  // fourgonnette). Ses portes s'ouvrent en élytre : découpées dans la tôle,
+  // elles se lèvent (`portiere: 'ciseau'`, vNEXT).
+  { fichier: 'maserati-mc12-gt1.glb', son: 'v12', classe: 'hypercar', nom: 'Maserati MC12 GT1 Red Bull', laque: 'jamais', portiere: 'ciseau' },
   // LA 911 RECONSTRUITE (v545) : `fichier` reste l'IDENTIFIANT (garages,
   // réseau, couleur de la rue) ; `asset` est le fichier CHARGÉ. Une URL neuve
   // renouvelle le modèle dans STATIC_CACHE, où une URL connue ne se
@@ -567,27 +568,27 @@ export const FLOTTE = [
   { fichier: 'porsche-911-gt3-rs.glb', asset: 'porsche-911-gt3-rs-hd-v2-compact.glb', classe: 'sportive', nom: 'Porsche 911 GT3 RS (992)' },
   // LES DIX-HUIT DE MAX (v566) : des paquets Sketchfab mis au contrat par
   // `scripts/convertir-flotte.mjs` (crédits dans vendor/voitures/LICENSE.md).
-  // Aucun n'a de volant séparé ni de portière découpée : `habitacle: false`,
-  // `portiere: false`, comme la Chiron Stealth. La Model Y est la voiture que
+  // Aucun n'a de volant séparé : `habitacle: false`. Leur portière se découpe
+  // dans la tôle et leur habitacle se meuble (vNEXT). La Model Y est la voiture que
   // fabrique la Giga-usine (`usine: true`, lu par la chaîne et le garagiste) ;
   // les livrées de course et le taxi ne se repeignent pas (`laque: 'jamais'`).
-  { fichier: 'tesla-model-y.glb', son: 'electrique', classe: 'suv', nom: 'Tesla Model Y', usine: true, habitacle: false, portiere: false },
-  { fichier: 'tesla-cybertruck.glb', son: 'electrique', classe: 'pickup', nom: 'Tesla Cybertruck', habitacle: false, portiere: false },
-  { fichier: 'aston-martin-victor.glb', son: 'v12', classe: 'hypercar', nom: 'Aston Martin Victor', habitacle: false, portiere: false },
-  { fichier: 'aston-martin-db11.glb', son: 'v12', classe: 'gt', nom: 'Aston Martin DB11', habitacle: false, portiere: false },
-  { fichier: 'alpine-a110-gt4.glb', son: 'sportive', classe: 'sportive', nom: 'Alpine A110 GT4', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'bentley-mulliner-batur.glb', son: 'v12', classe: 'gt', nom: 'Bentley Mulliner Batur', habitacle: false, portiere: false },
-  { fichier: 'rolls-royce-ghost.glb', son: 'v12', classe: 'berline', nom: 'Rolls-Royce Ghost', habitacle: false, portiere: false },
-  { fichier: 'gmc-hummer-ev.glb', son: 'electrique', classe: 'suv', nom: 'GMC Hummer EV', habitacle: false, portiere: false },
-  { fichier: 'chevrolet-camaro-ss-1967.glb', son: 'v8', classe: 'gt', nom: 'Chevrolet Camaro SS 1967', habitacle: false, portiere: false },
-  { fichier: 'cadillac-escalade-esv.glb', son: 'v8', classe: 'suv', nom: 'Cadillac Escalade ESV', habitacle: false, portiere: false },
-  { fichier: 'renault-fuego.glb', classe: 'citadine', nom: 'Renault Fuego', habitacle: false, portiere: false },
-  { fichier: 'porsche-cayenne-turbo-gt.glb', son: 'v8', classe: 'suv', nom: 'Porsche Cayenne Turbo GT', habitacle: false, portiere: false },
-  { fichier: 'abt-audi-rs6-r.glb', son: 'v8', classe: 'gt', nom: 'ABT Audi RS6-R', habitacle: false, portiere: false },
-  { fichier: 'porsche-992-gt3-r.glb', classe: 'sportive', nom: 'Porsche 911 GT3 R (992)', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'bugatti-divo.glb', son: 'w16', classe: 'hypercar', nom: 'Bugatti Divo', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'ford-f150-raptor-r.glb', son: 'v8', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false, portiere: false },
-  { fichier: 'ford-mondeo-taxi.glb', classe: 'berline', taxi: true, nom: 'Ford Mondeo · taxi', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'tesla-model-y.glb', son: 'electrique', classe: 'suv', nom: 'Tesla Model Y', usine: true, habitacle: false },
+  { fichier: 'tesla-cybertruck.glb', son: 'electrique', classe: 'pickup', nom: 'Tesla Cybertruck', habitacle: false },
+  { fichier: 'aston-martin-victor.glb', son: 'v12', classe: 'hypercar', nom: 'Aston Martin Victor', habitacle: false },
+  { fichier: 'aston-martin-db11.glb', son: 'v12', classe: 'gt', nom: 'Aston Martin DB11', habitacle: false },
+  { fichier: 'alpine-a110-gt4.glb', son: 'sportive', classe: 'sportive', nom: 'Alpine A110 GT4', laque: 'jamais', habitacle: false },
+  { fichier: 'bentley-mulliner-batur.glb', son: 'v12', classe: 'gt', nom: 'Bentley Mulliner Batur', habitacle: false },
+  { fichier: 'rolls-royce-ghost.glb', son: 'v12', classe: 'berline', nom: 'Rolls-Royce Ghost', habitacle: false },
+  { fichier: 'gmc-hummer-ev.glb', son: 'electrique', classe: 'suv', nom: 'GMC Hummer EV', habitacle: false },
+  { fichier: 'chevrolet-camaro-ss-1967.glb', son: 'v8', classe: 'gt', nom: 'Chevrolet Camaro SS 1967', habitacle: false },
+  { fichier: 'cadillac-escalade-esv.glb', son: 'v8', classe: 'suv', nom: 'Cadillac Escalade ESV', habitacle: false },
+  { fichier: 'renault-fuego.glb', classe: 'citadine', nom: 'Renault Fuego', habitacle: false },
+  { fichier: 'porsche-cayenne-turbo-gt.glb', son: 'v8', classe: 'suv', nom: 'Porsche Cayenne Turbo GT', habitacle: false },
+  { fichier: 'abt-audi-rs6-r.glb', son: 'v8', classe: 'gt', nom: 'ABT Audi RS6-R', habitacle: false },
+  { fichier: 'porsche-992-gt3-r.glb', classe: 'sportive', nom: 'Porsche 911 GT3 R (992)', laque: 'jamais', habitacle: false },
+  { fichier: 'bugatti-divo.glb', son: 'w16', classe: 'hypercar', nom: 'Bugatti Divo', laque: 'jamais', habitacle: false },
+  { fichier: 'ford-f150-raptor-r.glb', son: 'v8', classe: 'pickup', nom: 'Ford F-150 Raptor R', habitacle: false },
+  { fichier: 'ford-mondeo-taxi.glb', classe: 'berline', taxi: true, nom: 'Ford Mondeo · taxi', laque: 'jamais', habitacle: false },
   // LES DIX VOITURES DE TOUS LES JOURS (v581) : le « Generic passenger car
   // pack » de Comrade1280 (CC-BY-4.0, vendor/voitures/LICENSE.md), dix
   // voitures sans marque dans une seule scène, isolées et mises au contrat par
@@ -595,16 +596,16 @@ export const FLOTTE = [
   // triangles chacune, ~0,45 Mo : la rue gagne des voitures ordinaires à côté
   // des supercars. Leur couleur est cuite dans la texture de carrosserie (une
   // livrée) : `laque: 'jamais'`, sinon la teinte tirée la multiplierait.
-  { fichier: 'generique-citadine.glb', classe: 'citadine', nom: 'Citadine', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'generique-coupe.glb', classe: 'citadine', nom: 'Coupé des années 80', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'generique-compacte.glb', classe: 'citadine', nom: 'Compacte cinq portes', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'generique-monospace.glb', classe: 'utilitaire', nom: 'Monospace', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'generique-tout-terrain.glb', classe: 'suv', nom: 'Tout-terrain 4×4', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'generique-pickup.glb', classe: 'pickup', nom: 'Pick-up double cabine', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'generique-berline.glb', classe: 'berline', nom: 'Berline familiale', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'generique-supercar.glb', classe: 'sportive', nom: 'Supercar à aileron', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'generique-suv.glb', classe: 'suv', nom: 'Grand SUV', laque: 'jamais', habitacle: false, portiere: false },
-  { fichier: 'generique-break.glb', classe: 'berline', nom: 'Break familial', laque: 'jamais', habitacle: false, portiere: false },
+  { fichier: 'generique-citadine.glb', classe: 'citadine', nom: 'Citadine', laque: 'jamais', habitacle: false },
+  { fichier: 'generique-coupe.glb', classe: 'citadine', nom: 'Coupé des années 80', laque: 'jamais', habitacle: false },
+  { fichier: 'generique-compacte.glb', classe: 'citadine', nom: 'Compacte cinq portes', laque: 'jamais', habitacle: false },
+  { fichier: 'generique-monospace.glb', classe: 'utilitaire', nom: 'Monospace', laque: 'jamais', habitacle: false },
+  { fichier: 'generique-tout-terrain.glb', classe: 'suv', nom: 'Tout-terrain 4×4', laque: 'jamais', habitacle: false },
+  { fichier: 'generique-pickup.glb', classe: 'pickup', nom: 'Pick-up double cabine', laque: 'jamais', habitacle: false },
+  { fichier: 'generique-berline.glb', classe: 'berline', nom: 'Berline familiale', laque: 'jamais', habitacle: false },
+  { fichier: 'generique-supercar.glb', classe: 'sportive', nom: 'Supercar à aileron', laque: 'jamais', habitacle: false },
+  { fichier: 'generique-suv.glb', classe: 'suv', nom: 'Grand SUV', laque: 'jamais', habitacle: false },
+  { fichier: 'generique-break.glb', classe: 'berline', nom: 'Break familial', laque: 'jamais', habitacle: false },
   // LA LUCID AIR SAPPHIRE (`scripts/convertir-lucid-air.mjs`, crédit dans
   // vendor/voitures/LICENSE.md) : la seule du dépôt avec un vrai habitacle, un
   // volant à elle et de vraies portes avant (`Portiere_G`, `Portiere_D`, que
@@ -621,13 +622,13 @@ export const FLOTTE = [
   // blanc ne se repeint jamais (`laque: 'jamais'`). `horsRue` : elle ne roule
   // pas dans la circulation — c'est la police qui l'appelle (patrouille.js) —,
   // et l'en tenir hors du tirage garde chaque rue du monde identique à la v552
-  // (la règle ne lit que `n`, v305). Portières et volant ne sont pas des
-  // pièces séparées du modèle : `portiere: false`, `habitacle: false`.
-  { fichier: 'police-car.glb', classe: 'berline', nom: 'Voiture de police', laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  // (la règle ne lit que `n`, v305). Le volant n'est pas une pièce séparée
+  // du modèle : `habitacle: false` ; la portière se découpe (vNEXT).
+  { fichier: 'police-car.glb', classe: 'berline', nom: 'Voiture de police', laque: 'jamais', horsRue: true, police: true, habitacle: false },
   // LE SUV DE POLICE (v566), même règle : hors de la rue, appelé par la
   // patrouille en alternance avec la Crown Victoria, sa rampe séparée en
   // `Gyrophare_G` / `Gyrophare_D` par la conversion.
-  { fichier: 'police-suv.glb', classe: 'suv', nom: 'SUV de police', laque: 'jamais', horsRue: true, police: true, portiere: false, habitacle: false },
+  { fichier: 'police-suv.glb', classe: 'suv', nom: 'SUV de police', laque: 'jamais', horsRue: true, police: true, habitacle: false },
 ];
 
 // UNE ALLURE PAR CLASSE, ET LA CLASSE VIT DANS LE MANIFESTE (v260). Max :

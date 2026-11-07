@@ -37,10 +37,13 @@
 
 import * as THREE from 'three';
 import { partager } from './liberer.js';
+import { Atelier } from './modeles.js';
 
 // Ouverture : soixante degrés, vers l'EXTÉRIEUR (le signe se lit dans la
 // matrice — v249 — et un témoin le lit).
 export const OUVERTURE = 60 * Math.PI / 180;
+// En ciseau (Lamborghini), la portière se lève de soixante-quinze degrés.
+export const OUVERTURE_CISEAU = 75 * Math.PI / 180;
 
 const plans = new Map();     // clé de modèle → plan (ou null : pas de portière)
 // POURQUOI un modèle n'a pas de portière : un refus se dit (v223), sinon il ne
@@ -57,7 +60,7 @@ function cleModele(g) { return (g && g.userData && g.userData.flotte) || null; }
 function maillagesDe(g) {
   const out = [];
   (function visite(o) {
-    if (o !== g && o.userData && (o.userData.arms || o.userData.estPortiere)) return;
+    if (o !== g && o.userData && (o.userData.arms || o.userData.estPortiere || o.userData.garniture)) return;
     if (o.isMesh && o.geometry && o.geometry.attributes && o.geometry.attributes.position
       && !Array.isArray(o.material) && !o.isInstancedMesh && !o.isSkinnedMesh) out.push(o);
     for (const c of o.children) visite(c);
@@ -76,7 +79,10 @@ function sousUneRoue(o, g) {
 export function planPortieres(g) {
   const cle = cleModele(g);
   if (!cle) return null;
-  if (plans.has(cle)) return plans.get(cle);
+  // un plan ne vaut que pour le prototype qui l'a produit : un témoin qui
+  // bâtit son propre prototype du même fichier (porsche-911.mjs) ne doit pas
+  // laisser au jeu des géométries qui ne sont pas les siennes (vNEXT)
+  if (plans.has(cle)) { const p = plans.get(cle); if (!p || !p.proto || p.proto === g.userData.proto) return p; }
   const t0 = (typeof performance !== 'undefined' ? performance : Date).now();
   // LE PLAN SE CALCULE SUR LE PROTOTYPE, jamais sur la voiture : une voiture
   // froissée (degats3d.js, v343) porte des géométries clonées et déformées,
@@ -85,7 +91,10 @@ export function planPortieres(g) {
   const proto = g.userData.proto;
   if (!proto) return null;   // modèle pas encore arrivé : on réessaiera
   const roues = [];
-  proto.traverse((o) => { if (/^Wheel_/i.test(o.name || '')) roues.push(o); });
+  // les nœuds de roue les plus hauts seulement : un pneu fait de plusieurs
+  // primitives rend des enfants « Wheel_FL_1… » (la MC12, vNEXT), et prendre
+  // les quatre premiers z triés mettait les quatre roues à l'avant
+  proto.traverse((o) => { if (/^Wheel_/i.test(o.name || '') && !(o.parent && sousUneRoue(o.parent, proto))) roues.push(o); });
   if (roues.length < 4) { refus.set(cle, { raison: 'roues' }); plans.set(cle, null); return null; }
   proto.updateMatrixWorld(true);
   const inv = new THREE.Matrix4().copy(proto.matrixWorld).invert();
@@ -165,6 +174,21 @@ export function planPortieres(g) {
     }
     return [dans, hors];
   };
+  // LA PEAU DE LA VOITURE, relevée au passage (vNEXT) : pour chaque flanc,
+  // tranche de hauteur et tranche de longueur, le |x| le plus grand de la
+  // carrosserie ; pour chaque colonne (x, z), le plus haut sommet. C'est dans
+  // cette enveloppe que se pose la garniture fabriquée (`garnitureDe`) : rien
+  // ne doit en sortir. Et la ceinture de caisse — le bas des vitres de la
+  // portière — dit jusqu'où monte le panneau de porte.
+  const peau = new Map(), toit = new Map();
+  const ceinture = { '-1': Infinity, '1': Infinity };
+  function noterPeau(x, y, z) {
+    const ke = ((x < 0 ? 0 : 1) * 4096 + (Math.floor(y / 0.1) + 64)) * 4096 + Math.floor(z / 0.2) + 2048;
+    const ax = Math.abs(x);
+    if (!(peau.get(ke) >= ax)) peau.set(ke, ax);
+    const kt = (Math.floor(x / 0.2) + 2048) * 4096 + Math.floor(z / 0.2) + 2048;
+    if (!(toit.get(kt) >= y)) toit.set(kt, y);
+  }
   for (const m of maillages) {
     if (sousUneRoue(m, proto)) { coupes.push(null); continue; }
     const geo = m.geometry, pos = geo.attributes.position, idx = geo.index;
@@ -189,7 +213,9 @@ export function planPortieres(g) {
     for (let k = 0; k < pos.count; k++) {
       a.fromBufferAttribute(pos, k).applyMatrix4(M);
       P[k * 3] = a.x; P[k * 3 + 1] = a.y; P[k * 3 + 2] = a.z;
+      noterPeau(a.x, a.y, a.z);
     }
+    const vitre = estVitre(m.material);
     const ix = idx ? idx.array : null;
     for (let i = 0; i + 2 < n; i += 3) {
       const i0 = ix ? ix[i] : i, i1 = ix ? ix[i + 1] : i + 1, i2 = ix ? ix[i + 2] : i + 2;
@@ -228,6 +254,7 @@ export function planPortieres(g) {
       }
       const cote = v.x < 0 ? '-1' : '1';
       const pt = portees[cote];
+      if (vitre) ceinture[cote] = Math.min(ceinture[cote], ay, by, cy);
       const cible = cote === '-1' ? gauche : droite;
       let aire;
       if (mi) {
@@ -364,16 +391,211 @@ export function planPortieres(g) {
     return new THREE.Vector3(cote === '-1' ? bx.min.x : bx.max.x, 0, bx.min.z);
   };
   const plan = {
-    cle, ms, geos, sources: maillages.map((m) => m.geometry), demiLarg, z0, z1, y0, y1, xIn, rayon,
+    cle, proto, ms, geos, sources: maillages.map((m) => m.geometry), demiLarg, z0, z1, y0, y1, xIn, rayon,
     longueur: { '-1': portees['-1'].box.max.z - portees['-1'].box.min.z, '1': portees['1'].box.max.z - portees['1'].box.min.z },
     charnieres: { '-1': charniere('-1'), '1': charniere('1') },
     aire: { '-1': portees['-1'].aire, '1': portees['1'].aire },
     ambigues: aireTotale ? ambigues / aireTotale : 0,
     triangles: portees['-1'].n + portees['1'].n,
     tranches, sommetsNeufs,
+    peau, toit, ceinture,
+    deja: sonderHabitacle(proto, maillages, { z0, z1, y0, y1, demiLarg }),
   };
   plans.set(cle, plan);
   return plan;
+}
+
+
+// Une vitre : ce qu'on voit au travers. Elle ne compte ni pour la ceinture de
+// caisse (son bas, si), ni pour les sondes de l'habitacle (un rayon qui la
+// touche ne prouve pas qu'il y a un siège derrière).
+function estVitre(mat) {
+  const ms = Array.isArray(mat) ? mat : [mat];
+  return ms.some((x) => x && (x.transparent || x.opacity < 0.99 || x.transmission > 0 || /glass|vitre|window|windshield/i.test(x.name || '')));
+}
+
+// CE QUE LE MODÈLE A DÉJÀ DANS SON HABITACLE (vNEXT). Mesuré par la sonde des
+// portières : derrière l'ouverture, la plupart des paquets n'ont RIEN — 0 à 4
+// rayons sur 24 touchent quelque chose sur les dix voitures de tous les jours,
+// et l'enfant qui monte voyait la rue au travers de la voiture. Trois
+// questions, posées par des rayons sur le PROTOTYPE (jamais touché), dans le
+// repère de la voiture : y a-t-il une assise sous le siège du conducteur, une
+// planche devant lui, des panneaux sur les flancs ? Ce qui existe déjà n'est
+// pas fabriqué une seconde fois (deux sièges l'un dans l'autre se voient).
+function sonderHabitacle(proto, maillages, d) {
+  const cibles = maillages.filter((m) => !sousUneRoue(m, proto) && !estVitre(m.material));
+  const W = proto.matrixWorld;
+  const rc = new THREE.Raycaster();
+  rc.layers.enableAll();
+  // un rayon rend le premier point touché, dans le repère de la voiture — une
+  // peau en double face (la plupart des paquets déposés, v566) se touche AUSSI
+  // de dedans : c'est la POSITION du point qui dit s'il y a un meuble
+  const Winv = new THREE.Matrix4().copy(W).invert();
+  const tire = (o, dir, loin) => {
+    rc.set(new THREE.Vector3(...o).applyMatrix4(W), new THREE.Vector3(...dir).transformDirection(W));
+    rc.far = loin;
+    const h = rc.intersectObjects(cibles, false)[0];
+    return h ? h.point.clone().applyMatrix4(Winv) : null;
+  };
+  const xs = 0.33, ys = 0.52, zs = 0.22;
+  // une assise : sous les hanches, à moins de 0,22 (le plancher est plus bas)
+  const assise = (x) => { const h = tire([x, ys + 0.4, zs], [0, -1, 0], 0.62); return !!h && h.y > ys - 0.22; };
+  const sieges = assise(-xs) && assise(xs);
+  // une planche : devant le conducteur, avant le pied du montant avant
+  const hp = tire([-xs, ys + 0.3, zs], [0, 0, -1], Math.max(0.6, zs - d.z0 + 0.6));
+  const planche = !!hp && hp.z > d.z0 - 0.3;
+  // des panneaux : un meuble, pas la tôle vue de dedans
+  let murs = 0, n = 0;
+  for (const sx of [-1, 1]) for (const y of [d.y0 + 0.2, d.y0 + 0.4]) for (const k of [0.25, 0.75, 1.3]) {
+    const z = d.z0 + (d.z1 - d.z0) * k;
+    n++;
+    const h = tire([0, y, z], [sx, 0, 0], d.demiLarg + 0.2);
+    if (h && Math.abs(h.x) < d.demiLarg - 0.15) murs++;
+  }
+  return { sieges, planche, murs: murs >= n * 0.75 };
+}
+
+// LA GARNITURE FABRIQUÉE (vNEXT). Max : « on voit la personne qui rentre et qui
+// disparaît là-dedans ». Une portière qui s'ouvre sur le vide montre la rue au
+// travers de la voiture ; on meuble donc l'habitacle de ce que le modèle n'a
+// pas : plancher, deux baquets et la banquette, console, planche et volant,
+// panneaux de flanc derrière la portière, et le PANNEAU DE PORTE sur la face
+// intérieure de chaque portière (il pivote avec elle). Tout à l'atelier, avec
+// `matiereVivante` (v538) : aucun programme neuf. Une fois par modèle,
+// géométries partagées ; chaque voiture équipée n'en porte qu'une copie de
+// maillages. Chaque pièce se pose DANS l'enveloppe relevée (`peau`, `toit`) :
+// un baquet qui percerait le toit d'une voiture basse se tasse, un panneau se
+// tient à sept centimètres en dedans de la tôle.
+const SOMBRE = 0x1b1d21, CUIR = 0x2c2a2b, CUIR_CLAIR = 0x3a3836, MOQUETTE = 0x141518, GARNI = 0x26282d, CHROME = 0x6b6f76;
+export function garnitureDe(plan, siege = { x: -0.33, y: 0.52, z: 0.22 }) {
+  if (plan.garniture !== undefined) return plan.garniture;
+  if (!plan.peau) { plan.garniture = null; return null; }
+  const { peau, toit, z0, z1, y0, demiLarg } = plan;
+  const deja = plan.deja || {};
+  // le |x| intérieur minimal sur une plage (y, z) d'un flanc
+  const env = (cote, ya, yb, za, zb) => {
+    let m = Infinity;
+    for (let yb0 = Math.floor(ya / 0.1); yb0 <= Math.floor(yb / 0.1); yb0++) {
+      for (let zb0 = Math.floor(za / 0.2); zb0 <= Math.floor(zb / 0.2); zb0++) {
+        const v = peau.get(((cote < 0 ? 0 : 1) * 4096 + yb0 + 64) * 4096 + zb0 + 2048);
+        if (v !== undefined && v < m) m = v;
+      }
+    }
+    return m === Infinity ? demiLarg : m;
+  };
+  // le toit le plus BAS au-dessus d'une plage (x, z) — on se tient dessous
+  const sous = (xa, xb, za, zb) => {
+    let m = Infinity;
+    for (let xb0 = Math.floor(xa / 0.2); xb0 <= Math.floor(xb / 0.2); xb0++) {
+      for (let zb0 = Math.floor(za / 0.2); zb0 <= Math.floor(zb / 0.2); zb0++) {
+        const v = toit.get((xb0 + 2048) * 4096 + zb0 + 2048);
+        if (v !== undefined && v < m) m = v;
+      }
+    }
+    return m;
+  };
+  const xs = Math.abs(siege.x), zs = siege.z;
+  const zr = zs + 0.84;                         // la banquette (mesurée sur la Lucid Air)
+  const ceint = (c) => Math.max(y0 + 0.3, Math.min(plan.y1 - 0.15, Number.isFinite(plan.ceinture[c]) ? plan.ceinture[c] : y0 + 0.55 * (plan.y1 - y0)));
+  const yPl = y0 + 0.04;                        // dessus du plancher
+  const A = new Atelier();
+  const boite = (c, x0, x1, ya, yb, za, zb, o = {}) => {
+    if (!(x1 - x0 > 0.01 && yb - ya > 0.01 && zb - za > 0.01)) return;
+    A.boite(c, { p: [(x0 + x1) / 2, (ya + yb) / 2, (za + zb) / 2], e: [x1 - x0, yb - ya, zb - za], ...o });
+  };
+  // le plancher, d'un flanc à l'autre, de la planche au dos de la banquette
+  const lp = Math.min(env(-1, y0, y0 + 0.2, z0 - 0.2, zr + 0.3), env(1, y0, y0 + 0.2, z0 - 0.2, zr + 0.3)) - 0.08;
+  boite(MOQUETTE, -lp, lp, yPl - 0.05, yPl, z0 - 0.35, zr + 0.35);
+  // l'assise : à la hauteur des hanches que `placeAssise` (main.js) donnera,
+  // sous le toit mesuré au-dessus du siège
+  const toitS = sous(-xs - 0.2, -xs + 0.2, zs - 0.2, zs + 0.2);
+  let hanches = siege.y;
+  if (Number.isFinite(toitS) && hanches + 0.706 > toitS - 0.06) hanches = Math.max(0.3, toitS - 0.06 - 0.706);
+  const yAs = Math.max(yPl + 0.08, hanches - 0.03);
+  if (!deja.sieges) {
+    for (const sx of [-1, 1]) {
+      const x = sx * xs;
+      const plafond = sous(x - 0.2, x + 0.2, zs, zs + 0.45);
+      // l'assise et son pied
+      boite(GARNI, x - 0.16, x + 0.16, yPl, yAs - 0.09, zs - 0.18, zs + 0.18);
+      A.boite(CUIR, { p: [x, yAs - 0.05, zs - 0.03], e: [0.42, 0.1, 0.46], r: [-0.06, 0, 0] });
+      // les bourrelets de l'assise
+      for (const b of [-1, 1]) A.boite(CUIR_CLAIR, { p: [x + b * 0.19, yAs - 0.01, zs - 0.03], e: [0.06, 0.08, 0.44] });
+      // le dossier, incliné en arrière, sous le toit
+      const hD = Math.max(0.3, Math.min(0.62, (Number.isFinite(plafond) ? plafond - 0.1 : yAs + 0.75) - yAs - 0.06));
+      A.boite(CUIR, { p: [x, yAs + hD / 2, zs + 0.26], e: [0.42, hD, 0.11], r: [0.18, 0, 0] });
+      for (const b of [-1, 1]) A.boite(CUIR_CLAIR, { p: [x + b * 0.2, yAs + hD * 0.45, zs + 0.24], e: [0.06, hD * 0.8, 0.13], r: [0.18, 0, 0] });
+      // l'appuie-tête, s'il reste de la place sous le toit
+      if (!Number.isFinite(plafond) || yAs + hD + 0.17 < plafond - 0.06) {
+        A.boite(CUIR, { p: [x, yAs + hD + 0.08, zs + 0.33], e: [0.24, 0.14, 0.09], r: [0.18, 0, 0] });
+      }
+    }
+    // la banquette arrière
+    const lb = Math.min(env(-1, yAs - 0.1, yAs + 0.2, zr - 0.2, zr + 0.3), env(1, yAs - 0.1, yAs + 0.2, zr - 0.2, zr + 0.3)) - 0.1;
+    const plafondR = sous(-0.4, 0.4, zr, zr + 0.4);
+    const hR = Math.max(0.25, Math.min(0.55, (Number.isFinite(plafondR) ? plafondR - 0.12 : yAs + 0.65) - yAs));
+    boite(GARNI, -lb, lb, yPl, yAs - 0.08, zr - 0.2, zr + 0.2);
+    boite(CUIR, -lb, lb, yAs - 0.1, yAs, zr - 0.22, zr + 0.22);
+    A.boite(CUIR, { p: [0, yAs + hR / 2, zr + 0.28], e: [lb * 2, hR, 0.11], r: [0.15, 0, 0] });
+  }
+  // la console centrale, entre les deux baquets
+  boite(SOMBRE, -0.09, 0.09, yPl, yAs - 0.02, z0 - 0.05, zs + 0.15);
+  if (!deja.planche) {
+    // LA PLANCHE DE BORD, sous le pare-brise mesuré au-dessus d'elle
+    const zA = z0 - 0.42, zB = z0 + 0.1;
+    const lpl = Math.min(env(-1, 0.5, 0.8, zA, zB), env(1, 0.5, 0.8, zA, zB)) - 0.1;
+    const haut = Math.min(yAs + 0.34, sous(-lpl, lpl, zA, zB) - 0.08);
+    boite(SOMBRE, -lpl, lpl, yPl, Math.max(yPl + 0.2, haut - 0.12), zA, zB - 0.05);
+    boite(GARNI, -lpl, lpl, haut - 0.12, haut, zA, zB);
+    // le volant, devant le conducteur : jante et colonne
+    const yV = Math.min(haut + 0.02, yAs + 0.3), zV = Math.max(zB + 0.04, zs - 0.42);
+    A.tore(SOMBRE, { p: [-xs, yV, zV], e: [0.34, 0.34, 0.34], r: [-0.42, 0, 0], tube: 0.13, seg: 18 });
+    A.cylindre(GARNI, { p: [-xs, yV - 0.02, (zV + zB) / 2], e: [0.05, Math.max(0.05, zV - zB + 0.08), 0.05], r: [Math.PI / 2 - 0.42, 0, 0] });
+    A.cylindre(CHROME, { p: [-xs, yV, zV], e: [0.07, 0.03, 0.07], r: [Math.PI / 2 - 0.42, 0, 0] });
+  }
+  if (!deja.murs) {
+    // LES FLANCS DERRIÈRE LA PORTIÈRE (montant central, places arrière) et
+    // devant elle (la cloison du pédalier) : sans eux, l'enfant qui ouvre voit
+    // la rue au travers de l'autre côté de la voiture
+    for (const c of [-1, 1]) {
+      const ce = ceint(String(c));
+      const xa = env(c, yPl, ce, z1, zr + 0.35) - 0.07;
+      boite(GARNI, c < 0 ? -xa : xa - 0.04, c < 0 ? -xa + 0.04 : xa, yPl, ce - 0.02, z1 + 0.02, zr + 0.35);
+      const xf = env(c, yPl, ce, z0 - 0.35, z0) - 0.07;
+      boite(GARNI, c < 0 ? -xf : xf - 0.04, c < 0 ? -xf + 0.04 : xf, yPl, ce - 0.04, z0 - 0.35, z0 - 0.02);
+    }
+    // le dos de la banquette ferme le coffre : on ne voit pas la rue par là
+    const lc = Math.min(env(-1, yPl, yAs + 0.3, zr + 0.3, zr + 0.5), env(1, yPl, yAs + 0.3, zr + 0.3, zr + 0.5)) - 0.08;
+    boite(GARNI, -lc, lc, yPl, Math.min(ceint('-1'), ceint('1')) - 0.02, zr + 0.4, zr + 0.44);
+  }
+  // LES PANNEAUX DE PORTE : sur la face intérieure de chaque portière, du
+  // seuil à la ceinture de caisse, avec l'accoudoir et la poignée. Posés en
+  // repère de la voiture, rangés dans un membre à part dont le pivot est la
+  // charnière : `equiperPortieres` les accroche au pivot de SA portière.
+  if (plan.charnieres) {
+    for (const c of [-1, 1]) {
+      const ch = plan.charnieres[String(c)];
+      const ce = ceint(String(c));
+      const zA = ch.z + 0.06, zB = ch.z + plan.longueur[String(c)] - 0.06;
+      const xi = env(c, y0 + 0.05, ce, zA, zB) - 0.08;
+      A.membre('carte' + c, [ch.x, 0, ch.z]);
+      const x0 = c < 0 ? -xi : xi - 0.035, x1 = c < 0 ? -xi + 0.035 : xi;
+      boite(GARNI, x0, x1, y0 + 0.05, ce - 0.03, zA, zB);
+      const xr = c < 0 ? -xi + 0.035 : xi - 0.035;
+      boite(CUIR, Math.min(xr, xr - c * 0.07), Math.max(xr, xr - c * 0.07), ce - 0.2, ce - 0.14, zA + 0.15, zB - 0.12);
+      boite(CHROME, Math.min(xr, xr - c * 0.025), Math.max(xr, xr - c * 0.025), ce - 0.09, ce - 0.06, zA + 0.1, zA + 0.22);
+      A.membre('tronc');
+    }
+  }
+  const racine = A.finir();
+  // les membres se retrouvent par leur NOM sur chaque clone : `clone` recopie
+  // `userData` par JSON, et des groupes n'ont rien à y faire
+  for (const [nom, gm] of Object.entries(racine.userData.membres)) gm.name = 'Garniture_' + nom;
+  delete racine.userData.membres;
+  racine.traverse((o) => { o.userData.garniture = true; if (o.isMesh) partager(o.geometry); });
+  racine.name = 'Garniture';
+  plan.garniture = racine;
+  return racine;
 }
 
 // LES VRAIES PORTES D'UN MODÈLE (Lucid Air Sapphire) : deux nœuds `Portiere_G` et
@@ -427,7 +649,7 @@ function vraiesPortes(g) {
 // ÉQUIPER UNE VOITURE : SES maillages perdent les portières, elle gagne deux
 // pivots. Rend `{ '-1': pivot, '1': pivot, plan }`, ou null si le modèle ne
 // s'y prête pas. Idempotent : une voiture déjà équipée rend ses pivots.
-export function equiperPortieres(g, refuse = false) {
+export function equiperPortieres(g, refuse = false, opts = {}) {
   if (!g) return null;
   if (g.userData.portieres) return g.userData.portieres;
   if (refuse) return null;
@@ -452,12 +674,19 @@ export function equiperPortieres(g, refuse = false) {
     }
   }
   const pivots = {};
+  // la charnière d'une porte en ciseau est HAUTE (mi-hauteur de l'ouverture) :
+  // posée au sol, la portière levée plongerait dans l'aile avant
+  const ch = {};
+  for (const cote of ['-1', '1']) {
+    ch[cote] = plan.charnieres[cote].clone();
+    if (opts.ciseau) ch[cote].y = (plan.y0 + plan.y1) / 2;
+  }
   for (const cote of ['-1', '1']) {
     const p = new THREE.Group();
     p.name = 'Portiere_' + (cote === '-1' ? 'G' : 'D');
     p.userData.estPortiere = true;
     p.userData.cote = Number(cote);
-    p.position.copy(plan.charnieres[cote]);
+    p.position.copy(ch[cote]);
     p.userData.longueur = plan.longueur[cote];
     pivots[cote] = p;
   }
@@ -472,14 +701,31 @@ export function equiperPortieres(g, refuse = false) {
       d.layers.mask = m.layers.mask;
       d.castShadow = m.castShadow; d.receiveShadow = m.receiveShadow;
       d.renderOrder = m.renderOrder;
-      T.makeTranslation(-plan.charnieres[cote].x, 0, -plan.charnieres[cote].z).multiply(M);
+      T.makeTranslation(-ch[cote].x, -ch[cote].y, -ch[cote].z).multiply(M);
       T.decompose(d.position, d.quaternion, d.scale);
       pivots[cote].add(d);
     }
     m.geometry = gs.reste;
   });
   g.add(pivots['-1']); g.add(pivots['1']);
-  g.userData.portieres = { '-1': pivots['-1'], '1': pivots['1'], plan };
+  // LA GARNITURE (vNEXT) : l'habitacle que le modèle n'a pas, et un panneau
+  // sur la face intérieure de chaque portière, qui pivote avec elle
+  const gar = opts.garniture === false ? null : garnitureDe(plan, g.userData.siege || undefined);
+  if (gar) {
+    const c = gar.clone();
+    for (const cote of ['-1', '1']) {
+      const carte = c.getObjectByName('Garniture_carte' + Number(cote));
+      if (!carte) continue;
+      carte.removeFromParent();
+      carte.position.set(0, -ch[cote].y, 0);
+      pivots[cote].add(carte);
+    }
+    g.add(c);
+  }
+  // UNE PORTE EN CISEAU (la Revuelto, vNEXT) pivote vers le HAUT autour de sa
+  // charnière avant, comme la vraie ; la fiche de la flotte le dit
+  if (opts.ciseau) for (const cote of ['-1', '1']) pivots[cote].userData.ciseau = true;
+  g.userData.portieres = { '-1': pivots['-1'], '1': pivots['1'], plan, garniture: !!gar };
   return g.userData.portieres;
 }
 
@@ -489,6 +735,12 @@ export function equiperPortieres(g, refuse = false) {
 export function ouvrir(pivot, k) {
   if (!pivot) return;
   const e = k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k);
+  if (pivot.userData.ciseau) {
+    // l'arête arrière monte (rotation négative autour de x : le +z local part
+    // vers le haut), un peu écartée du flanc
+    pivot.rotation.set(-OUVERTURE_CISEAU * e, pivot.userData.cote * 0.14 * e, 0);
+    return;
+  }
   pivot.rotation.y = pivot.userData.cote * OUVERTURE * e;
 }
 
