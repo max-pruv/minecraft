@@ -4966,7 +4966,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         // tranchée, le sol continu passe sous la nappe et le voxel décide (la
         // fenêtre la plus écartée tombait sur un lac près de Lyon, mesuré)
         const sec = []; for (let k = 0; k < L; k++) sec.push(w.terrainHeight(Math.round(seg.x0 + ux * k), Math.round(seg.z0 + uz * k)) > 30 ? 1 : 0);
-        let best = -1; for (let k = 0; k + 400 < L; k += 20) { let s = 0, mouille = 0; for (let j = k; j < k + 400; j++) { s += ec[j]; if (!sec[j]) mouille++; } if (mouille <= 40 && s > best) { best = s; k0 = k; } }
+        let best = -1; for (let k = 0; k + 400 < L; k += 20) { let s = 0, mouille = 0; for (let j = k; j < k + 400; j++) { s += ec[j]; if (!sec[j]) mouille++; } if (!mouille && s > best) { best = s; k0 = k; } }
       }
       for (let k = k0; k < k0 + 400; k++) {
         const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
@@ -5012,7 +5012,12 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         // à la moitié : la rampe du viaduc (v467) relève la voie de deux blocs
         // au plus avant une rivière, et une tranchée de deux blocs y devient une
         // tranchée d'un bloc — 240 → 170 colonnes dans cette fenêtre, mesuré.
-        continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 100 && tranchJuste === tranchee,
+        // Carte ×3 : le relief est trois fois plus étalé sous une pente de voie
+        // inchangée, la voie le suit de plus près et les tranchées de deux
+        // blocs se raréfient — la meilleure fenêtre sèche de Paris–Lyon en
+        // porte 46 colonnes (mesuré, sonde `fen.mjs` du scratchpad, toutes les
+        // lignes : 0 à 45 pas d'axe). La garde passe à 30, la moitié.
+        continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 30 && tranchJuste === tranchee,
         `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise, ${sousLEau} sous l'eau (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
     }
 
