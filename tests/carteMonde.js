@@ -590,7 +590,17 @@ const VRAIES_KM = [
         const p = m.profilDe(s);
         for (let k = 1; k <= p.n; k++) out.penteMax = Math.max(out.penteMax, Math.abs(p.cote[k] - p.cote[k - 1]) / p.pas);
         out.bouts.push(+(p.cote[0] - p.terr[0]).toFixed(2), +(p.cote[p.n] - p.terr[p.n]).toFixed(2));
-        for (let k = 0; k <= p.n; k++) if (!p.ouvrage[k]) { out.remblaiMax = Math.max(out.remblaiMax, p.cote[k] - p.terr[k]); out.deblaiMax = Math.max(out.deblaiMax, p.terr[k] - p.cote[k]); }
+        // LA TRANCHÉE HORS NORME DE L'I-95 SUD (carte ×3) : là où la table
+        // `DEBLAIS_HORS_NORME` permet plus que neuf, le déblai se compte à part.
+        const permis = (sa) => m.deblaiMaxA ? m.deblaiMaxA(s, sa) : 9;
+        for (let k = 0; k <= p.n; k++) if (!p.ouvrage[k]) {
+          out.remblaiMax = Math.max(out.remblaiMax, p.cote[k] - p.terr[k]);
+          const d = p.terr[k] - p.cote[k], pm = permis(k * p.pas);
+          if (pm > 9) { const cle = s.route.nom + '|' + s.de + '-' + s.vers; out.horsNorme = out.horsNorme || {}; out.horsNorme[cle] = Math.max(out.horsNorme[cle] || 0, +d.toFixed(2)); }
+          else out.deblaiMax = Math.max(out.deblaiMax, d);
+        }
+        // Qui bénéficie de l'exception : à chaque bout de chaque segment.
+        if (m.deblaiMaxA) for (const sa of [0, s.longueur]) if (m.deblaiMaxA(s, sa) > 9) { out.exceptionPour = out.exceptionPour || []; out.exceptionPour.push(s.route.nom + '@' + (sa ? s.vers : s.de)); }
         out.ponts += p.spans.length;
         for (const sp of p.spans) out.pontsBlocs += Math.round(sp.s1 - sp.s0) + 1;
         for (let sa = 0; sa <= s.longueur; sa += 4) {
@@ -928,6 +938,14 @@ const VRAIES_KM = [
       !a1.absent && a1.segments >= 1 && a1.penteMax <= 0.07 && a1.bouts.every((v) => Math.abs(v) < 0.05)
       && a1.remblaiMax <= 4.01 && a1.deblaiMax <= 9.01,
       JSON.stringify(a1.absent ? a1 : { longueur: Math.round(a1.longueur), penteMax: +a1.penteMax.toFixed(3), bouts: a1.bouts, remblaiMax: +a1.remblaiMax.toFixed(1), deblaiMax: +a1.deblaiMax.toFixed(1) }));
+    // L'EXCEPTION DE L'I-95 SUD (carte ×3, décision de Max) : la tranchée par
+    // où l'on entre plein sud dans Washington creuse jusqu'à 13,7 blocs, et
+    // seulement là — les cent derniers blocs avant la porte, sur cette route.
+    // Aucune autre route, et aucun autre bout, n'a le droit de dépasser neuf.
+    verifier('la tranchée hors norme de l\'I-95 Sud ne vaut qu\'à l\'entrée de Washington, à 13,7 blocs au plus, et pour aucune autre route',
+      !a1.absent && !!a1.horsNorme && Object.keys(a1.horsNorme).length === 1 && (a1.horsNorme['I-95 Sud|ny-washington'] || 99) <= 13.7
+      && JSON.stringify(a1.exceptionPour) === JSON.stringify(['I-95 Sud@washington']) && a1.deblaiMax <= 9.01,
+      JSON.stringify(a1.absent ? a1 : { horsNorme: a1.horsNorme, exceptionPour: a1.exceptionPour, deblaiAilleurs: +a1.deblaiMax.toFixed(2) }));
     // LA BARRE DES SANCTUAIRES SE CALCULE : l'emprise fait 8,5 blocs de demi-
     // largeur et un talus au plus 12,9 (déblai 9 sur une pente de 0,7), soit
     // 21,4 depuis l'axe ; on exige huit blocs de plus. L'axe direct est à 45

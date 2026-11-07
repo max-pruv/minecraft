@@ -423,7 +423,7 @@ export const ROUTES = [
     // l'avenue s'arrête sur la rue de la grille v = 84, au bout de la
     // bretelle de l'I-295 que pose `washington.js`.
     avenues: { washington: [[-63167, 17998], [-63167, 17997], [-63167, 17985], [-63148, 17985], [-63148, 17939], [-63158, 17933], [-63174, 17923], [-63184, 17917]] },
-    via: [[-59978, 14789], [-59983, 14790], [-60122, 14847], [-60161, 14895], [-60164, 14918], [-60202, 14972], [-60211, 15054], [-60320, 15223], [-60417, 15357], [-60451, 15384], [-60506, 15487], [-60655, 15681], [-60720, 15754], [-60809, 15849], [-61042, 16011], [-61064, 16037], [-61137, 16151], [-61261, 16279], [-61303, 16328], [-61336, 16357], [-61373, 16366], [-61560, 16443], [-61627, 16465], [-61706, 16545], [-61809, 16694], [-61926, 16937], [-62012, 17046], [-62029, 17060], [-62077, 17089], [-62140, 17111], [-62230, 17154], [-62347, 17247], [-62417, 17281], [-62488, 17327], [-62534, 17372], [-62591, 17466], [-62611, 17488], [-62669, 17528], [-62699, 17564], [-62743, 17654], [-62770, 17690], [-62883, 17806], [-62925, 17872], [-62975, 17967], [-62995, 17990], [-63026, 18006], [-63038, 18008], [-63088, 18012]] },
+    via: [[-59978, 14789], [-59983, 14790], [-60122, 14847], [-60161, 14895], [-60164, 14918], [-60202, 14972], [-60211, 15054], [-60320, 15223], [-60417, 15357], [-60451, 15384], [-60506, 15487], [-60655, 15681], [-60720, 15754], [-60809, 15849], [-61042, 16011], [-61064, 16037], [-61137, 16151], [-61261, 16279], [-61303, 16328], [-61346, 16357], [-61373, 16366], [-61560, 16443], [-61627, 16465], [-61706, 16545], [-61809, 16694], [-61926, 16937], [-62012, 17046], [-62029, 17060], [-62077, 17089], [-62140, 17111], [-62230, 17154], [-62347, 17247], [-62417, 17281], [-62488, 17327], [-62534, 17372], [-62591, 17466], [-62611, 17488], [-62669, 17528], [-63093, 18067], [-63103, 18074], [-63113, 18077], [-63125, 18078], [-63136, 18076], [-63146, 18071], [-63155, 18064], [-63161, 18055], [-63166, 18044], [-63167, 18033], [-63167, 18016]] },
   // LE TŌMEI (v381), TOKYO–NAGOYA, le long de la côte du Tōkaidō. Le relevé de
   // la v310 le disait : « un aérodrome sur l'axe ». C'est pire : à l'ouest de
   // Tokyo, Haneda (r 76) et Yokota (r 56) ferment la plaine, le Shinkansen
@@ -622,6 +622,31 @@ export const VIADUC = 4;
 // En pas d'abscisse : sous cet écart, deux ponts voisins n'en font qu'un.
 export const ECART_VIADUC = 10;
 export const DEBLAI_MAX = 9;
+// LA TRANCHÉE HORS NORME DE L'I-95 SUD (carte ×3, décision de Max, 7 nov.
+// 2026 : « Tranchée hors norme »). Washington est assise sous une crête de
+// 43 à 49 blocs qui l'entoure sauf au sud, et la carte ×3 a fait passer la
+// porte d'est dans la boîte de la ville (152 colonnes de route dedans) :
+// on entre désormais plein sud, et les cent derniers blocs avant la porte
+// creusent jusqu'à 13,1 dans le flanc de la crête. L'exception est une
+// TABLE (route, ville du bout, longueur avant ce bout, plafond) : `deblaiMaxA`
+// la lit pour le talus, et toute autre route — ou le reste de celle-ci —
+// garde `DEBLAI_MAX` au bit près. Elle ne touche ni la ville (zéro colonne de
+// route dans sa boîte) ni aucun sanctuaire : Washington est à soixante mille
+// blocs du point d'apparition. Un témoin de `carteMonde.js` exige 13,7 au plus
+// ici, 9 au plus partout ailleurs, et que l'exception ne serve à personne d'autre.
+export const DEBLAIS_HORS_NORME = [{ route: 'I-95 Sud', bout: 'washington', longueur: 400, max: 13.7 }];
+function exceptionDe(seg) {
+  return DEBLAIS_HORS_NORME.find((e) => e.route === seg.route.nom && (seg.de === e.bout || seg.vers === e.bout)) || null;
+}
+// Le déblai permis à l'abscisse `s` d'un segment.
+export function deblaiMaxA(seg, s) {
+  const e = exceptionDe(seg);
+  if (!e) return DEBLAI_MAX;
+  const dans = seg.vers === e.bout ? s >= seg.longueur - e.longueur : s <= e.longueur;
+  return dans ? e.max : DEBLAI_MAX;
+}
+// Le plus grand déblai qu'un segment permet quelque part (sa portée).
+function deblaiPlafond(seg) { const e = exceptionDe(seg); return e ? Math.max(DEBLAI_MAX, e.max) : DEBLAI_MAX; }
 // La pente du talus, par bloc d'écart à l'axe : 0,7 et non 1, parce que les
 // quatre coins d'une cellule de surface s'écartent de l'axe de |fx| + |fz|
 // blocs entre eux — jusqu'à √2 sur une route à 45° — et qu'à un bloc par bloc
@@ -681,7 +706,7 @@ function indexer() {
       const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0)) + 1;
       for (let i = 0; i <= n; i++) {
         const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n;
-        const m = DEMI_EMPRISE + DEBLAI_MAX / TALUS_PENTE + 2;
+        const m = DEMI_EMPRISE + deblaiPlafond(s) / TALUS_PENTE + 2;
         for (let cx = Math.floor((x - m) / CASE); cx <= Math.floor((x + m) / CASE); cx++) {
           for (let cz = Math.floor((z - m) / CASE); cz <= Math.floor((z + m) / CASE); cz++) {
             const cle = cx * 100000 + cz;
@@ -834,14 +859,15 @@ const q64 = (v) => Math.round(v * 64) / 64;
 // point hors d'elle est à plus de cette distance de l'axe, donc `routeEn` ne
 // peut rien y rendre — on ne le projette pas (v352). Conservateur par
 // construction : la boîte ne retire que des segments qui rendraient null.
-const PORTEE_ROUTE = DEMI_EMPRISE + DEBLAI_MAX / TALUS_PENTE + 1;
+const porteeRoute = (seg) => DEMI_EMPRISE + deblaiPlafond(seg) / TALUS_PENTE + 1;
 const BOITES = new WeakMap();
 function boiteDe(seg) {
   let b = BOITES.get(seg);
   if (!b) {
     let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
     for (const [x, z] of seg.pts) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (z < z0) z0 = z; if (z > z1) z1 = z; }
-    b = { x0: x0 - PORTEE_ROUTE, z0: z0 - PORTEE_ROUTE, x1: x1 + PORTEE_ROUTE, z1: z1 + PORTEE_ROUTE };
+    const P = porteeRoute(seg);
+    b = { x0: x0 - P, z0: z0 - P, x1: x1 + P, z1: z1 + P };
     BOITES.set(seg, b);
   }
   return b;
@@ -866,7 +892,7 @@ export function routeEn(x, z) {
   // ce `terrainHeight` de trop faisait un cinquième du coût d'un morceau de
   // Paris dans le worker (mesuré, sonde-cout-morceau.mjs). Même réponse, au
   // bit près : le témoin compare les blocs et les tampons.
-  if (pr.dist - largeurA(seg, pr.s).demiEmprise >= DEBLAI_MAX / TALUS_PENTE) return null;
+  if (pr.dist - largeurA(seg, pr.s).demiEmprise >= deblaiMaxA(seg, pr.s) / TALUS_PENTE) return null;
   const p = profilDe(seg);
   if (!p) return null;
   const L = largeurA(seg, pr.s);
@@ -930,7 +956,7 @@ export function routeEn(x, z) {
   }
   const terr = SOL(x, z) + 1;
   const ecart = cote - terr;
-  const w = Math.min(Math.abs(ecart), DEBLAI_MAX) / TALUS_PENTE;
+  const w = Math.min(Math.abs(ecart), deblaiMaxA(seg, pr.s)) / TALUS_PENTE;
   const u = ad - L.demiEmprise;
   if (u >= w) return null;
   return { seg, s: pr.s, d: pr.d, cote: q64(terr + ecart * (1 - u / w)), piece: 'talus', ouvrage: false };

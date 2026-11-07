@@ -79,34 +79,39 @@ creusait plus de 9 blocs ; à −162°, 17 bancs et le déblai tient.
   déblai 1,5. Le déplacer demande une marche de migration (zone A). Laissé en
   place, déclaré.
 - Le village gaulois et la caserne tiennent leurs cinq promesses sur la carte ×3.
-- **L'I-95 Sud à Washington (déclaré, rouge de `carteMonde.js`) — trois options
-  pour Max, mesurées.** Le tracé livré tient ses bornes (remblai 3,98, déblai
-  8,52, joints fermés) ; il est rouge parce que son emprise mord 152 colonnes
-  de Washington (x +37..+67, z +91..+96 du centre). Cause : sur la carte ×3,
-  une crête de 41 à 48 borde la boîte au sud et à l'est, et seule la bande
-  basse du fondu (z +97..+105, neuf blocs) arrive à la cote de la rue (33) ;
-  une autoroute de 17 blocs d'emprise plus ses talus n'y tient pas sans mordre
-  la ville ou monter sur la crête.
-
-  (a) **Porte au sud-ouest ou au sud-est : ne marche pas.** Balayage (approche
-  droite sur 250 blocs, profil épinglé à 33, `wsw.mjs`) : bord est et sud-est
-  (x +22..+70) 10,6 à 14,6 de déblai sous toute approche ; bord sud au droit de
-  la porte actuelle (x +34) 13,6 ; bord ouest 6,6 à 12,6 mais côté Georgetown
-  et Virginie, à 250 blocs de Pennsylvania Avenue SE. Le seul bord bas assez
-  près est x −26..−14 (8,6 à 9,8, à la limite) : il débouche sur des lots
-  (z +82..+96, aucune rue avant x +16), donc il tombe dans (b).
-  (b) **Entrée nord ou sud-ouest avec une avenue de raccord déclarée.** Le nord
-  de la boîte est bas (35 à 40). Il faut une avenue neuve dans le plan de
-  Washington jusqu'au pont Sousa ou au pont de la 11e Rue : des colonnes de
-  lots qui deviennent rue, donc une décision de plan dans `washington.js`
-  (hors de ma zone) et une ville figée sous les blocs posés avant la date
-  (règle v303). Je ne l'ai pas tracée.
-  (c) **Tranchée hors norme déclarée.** L'approche par le sud comme avant
-  demande 13,2 à 13,7 de déblai (36 approches balayées) au lieu de 9 : une
-  exception de 4,7 blocs sur la crête, sans toucher à la ville ni à aucun bloc
-  d'enfant (Washington est loin de tout sanctuaire). Le témoin du déblai
-  porterait alors une exception nommée, comme `PISTES_COURTES`.
-  Ma recommandation : (c), parce qu'elle ne change que la route.
+- **L'I-95 Sud entre dans Washington par le sud, en tranchée hors norme
+  (option (c), décision de Max, 7 nov. 2026).**
+  - *La cause.* Sur la carte ×3, une crête de 41 à 49 blocs borde la boîte de
+    Washington au sud et à l'est ; seule une bande basse de neuf blocs y
+    arrive à la cote de la rue (33). Le premier tracé tenait ses bornes
+    (remblai 3,98, déblai 8,52) mais son emprise mordait 152 colonnes de la
+    ville. Les deux autres options étaient mesurées et écartées : (a) une
+    porte au sud-ouest ou au sud-est demande 10,6 à 14,6 de déblai ou débouche
+    sur des lots ; (b) une entrée au nord demande une avenue neuve dans le plan
+    de `washington.js`, donc une ville figée sous les blocs posés avant.
+  - *Le tracé.* La porte reste (−63 167, 17 998) ; on y arrive plein sud par
+    un arc de rayon ≈ 60 blocs (`carc.mjs`, arc balayé : coude de la queue
+    19,3° au plus), et le sommet (−61 336, 16 357) recule de dix blocs à
+    l'ouest : la rampe qui épingle le bout à la cote de la rue (35, pour 48 sur
+    la crête juste avant) abaissait tout le profil d'un bloc au milieu, et ce
+    sommet passait à 9,28 de déblai au s 2 187. Déplacé : 6,0 au pire hors de
+    la zone. Mesuré sous node (`chk95.mjs`) : 4 839 blocs, remblai 3,99,
+    déblai 13,07 au s 4 824 (quinze blocs avant la porte), joints de 15 pas au
+    moins, aucune ville, aérodrome, repère ni rail sur l'axe, **zéro colonne
+    de route dans la boîte de Washington** (1 151 colonnes de route à trente
+    blocs de la porte).
+  - *L'exception.* Une table, `DEBLAIS_HORS_NORME` (routes.js) : l'I-95 Sud,
+    les quatre cents derniers blocs avant Washington, 13,7 au plus. `deblaiMaxA`
+    la lit pour le talus (dix-neuf blocs de large au lieu de treize, à 0,7 par
+    bloc) et pour la portée de `routeEn` ; toute autre route garde
+    `DEBLAI_MAX` au bit près. Elle ne touche ni la ville (zéro colonne dedans)
+    ni aucun bloc d'enfant : Washington est à soixante mille blocs du point
+    d'apparition et de tous les sanctuaires, et un ouvrage de route n'écrit
+    que des blocs, jamais `terrainHeight`.
+  - *Le témoin* (`carteMonde.js`) : la tranchée de la zone ≤ 13,7, le déblai
+    partout ailleurs ≤ 9, et l'exception ne sert qu'à `I-95 Sud@washington`
+    (lu à chaque bout de chaque segment : une route nommée autrement, ou l'autre
+    bout de celle-ci, n'en bénéficie pas).
 
 ## Les aires des aérodromes, et deux aérodromes relogés
 
@@ -163,7 +168,7 @@ entrées de Montréal ne touchent plus d'anneau et sortent de la table.
 ## Empreinte des 490 morceaux
 
 Déclarée, pas prouvée désarmée : le socle seul la mène de ed369fdb… à b9586e29…
-(mesuré sur la branche du socle), les vingt-neuf tracés de b9586e29… à a388c6ed…, et après Barajas, Schiphol, l'A1 sans son point [243, −1221] et la fusion du socle, à b426b3b4… ; les viaducs fondus la mènent à 96224dd2….
+(mesuré sur la branche du socle), les vingt-neuf tracés de b9586e29… à a388c6ed…, et après Barajas, Schiphol, l'A1 sans son point [243, −1221] et la fusion du socle, à b426b3b4… ; les viaducs fondus la mènent à 96224dd2…, et l'I-95 Sud par le sud à 5717ce0e….
 Il n'existe plus d'« ancien code » où désarmer rendrait la constante : les
 routes d'avant sont en blocs de l'ancienne carte.
 
