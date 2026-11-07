@@ -16,7 +16,8 @@
 // comme les autres fusions de ce fichier.
 import { fusionnerGarages } from './garages.js';
 import { migrerBlocsCarte3, migrerPositionsCarte3, menagerBlocsCielParis, releverBlocsToitsParis, releverPositionsParis,
-  migrerBlocsParisDouble, migrerPositionsParisDouble, migrerBlocsFonduDoux, migrerPositionsFonduDoux, migrerChaineCarte } from './world.js';
+  migrerBlocsParisDouble, migrerPositionsParisDouble, migrerBlocsFonduDoux, migrerPositionsFonduDoux, migrerChaineCarte,
+  releverBlocsEchelleParis, releverPositionsEchelle, MIGRATION_ECHELLE } from './world.js';
 
 const STATE_TS = '_t'; // when the pushing device last wrote this document
 
@@ -59,6 +60,7 @@ const nomAvantMenage = (nom) => `${nom}~avant-menage-paris`;
 const nomAvantReleve = (nom) => `${nom}~avant-releve-paris`;
 const nomAvantParisDouble = (nom) => `${nom}~avant-paris-double`;
 const nomAvantFonduDoux = (nom) => `${nom}~avant-fondu-doux`;
+const nomAvantEchelle = (nom) => `${nom}~avant-echelle-paris`;
 
 const MAX_PHOTOS = 8;
 
@@ -369,7 +371,9 @@ export class ProfileSync {
     // donc faite d'un seul tenant (`migrerChaineCarte`, world.js).
     const chaine = migrerChaineCarte(normalizeEdits(remote.edits), remote.garages);
     const editsRecus = chaine.edits;
-    const posRecues = migrerPositionsFonduDoux(migrerPositionsParisDouble(releverPositionsParis(migrerPositionsCarte3(remote.pos).pos).pos).pos).pos;
+    // … ET PAR L'ÉCHELLE DES VILLES (vNEXT), EN DERNIER : les façades de Paris
+    // ont monté de trois rangs, ce qui dormait sur un toit monte avec.
+    const posRecues = releverPositionsEchelle(migrerPositionsFonduDoux(migrerPositionsParisDouble(releverPositionsParis(migrerPositionsCarte3(remote.pos).pos).pos).pos).pos, editsRecus).pos;
     out.pos = filtrerParMonde(mergePos(local.pos, posRecues), vivant);
     out.edits = filtrerParMonde(mergeAllEdits(local.edits, editsRecus), vivant);
     // Les garages suivent les blocs : rangés par monde, et emportés quand le
@@ -585,6 +589,29 @@ export class ProfileSync {
     } catch { return 'échec'; }             // réessayé à la lecture suivante
   }
 
+  // LA COPIE D'AVANT L'ÉCHELLE DES VILLES (vNEXT) — même forme : sur le document
+  // du nuage tel qu'il est, une fois, sur son propre document, et seulement si
+  // la marche 8 → 9 a quelque chose à monter. Elle se juge sur le document TEL
+  // QUE LA CHAÎNE D'AVANT LE REND (la marche est la dernière) : une cabane
+  // d'avant Paris doublé n'est sur un toit d'aujourd'hui qu'une fois emmenée.
+  async mettreALAbriAvantEchelle(nom, remote) {
+    if (!MIGRATION_ECHELLE.permise) return 'préversion';    // elle ne migre pas, elle ne copie pas (world.js)
+    if (this.copieEchelle || !remote || !this.cloud.configured) return this.copieEchelle || 'rien';
+    const edits = remote.edits;
+    if (!edits || typeof edits !== 'object' || !Object.keys(edits).length) return 'rien à sauver';
+    const avant = migrerBlocsFonduDoux(migrerBlocsParisDouble(menagerBlocsCielParis(releverBlocsToitsParis(migrerBlocsCarte3(normalizeEdits(edits)).tout).tout).tout).tout).tout;
+    if (!releverBlocsEchelleParis(avant).deplaces) return (this.copieEchelle = 'rien à monter');
+    try {
+      const deja = await this.cloud.statePull(nomAvantEchelle(nom));
+      if (deja && (deja.editsz || deja.edits)) return (this.copieEchelle = 'déjà sauvé');
+    } catch { return 'nuage muet'; }        // on ne réécrit pas dans le doute
+    const paquet = await this.resserrer({ edits, pos: remote.pos || {}, echelle: 1, at: Date.now() });
+    try {
+      await this.cloud.statePush(nomAvantEchelle(nom), paquet, false);
+      return (this.copieEchelle = 'sauvé');
+    } catch { return 'échec'; }             // réessayé à la lecture suivante
+  }
+
   // LA COPIE D'AVANT LE RELEVÉ DES TOITS DE PARIS (v301) — même forme que celle
   // du ménage : sur le document du nuage tel qu'il est, une fois, sur son
   // propre document, et seulement si le relevé a quelque chose à déplacer.
@@ -658,6 +685,7 @@ export class ProfileSync {
     await this.mettreALAbriAvantMenage(name, remote);
     await this.mettreALAbriAvantParisDouble(name, remote);
     await this.mettreALAbriAvantFonduDoux(name, remote);
+    await this.mettreALAbriAvantEchelle(name, remote);
     const { state, changed } = this.merge(this.snapshot(), remote);
     this.apply(state);
     // Cette lecture-ci arrive APRÈS que le jeu a chargé son monde depuis le
@@ -692,6 +720,7 @@ export class ProfileSync {
           await this.mettreALAbriAvantMenage(name, remote);
           await this.mettreALAbriAvantParisDouble(name, remote);
           await this.mettreALAbriAvantFonduDoux(name, remote);
+          await this.mettreALAbriAvantEchelle(name, remote);
           const { state: merged, changed } = this.merge(local, remote);
           local = merged;
           if (changed) {

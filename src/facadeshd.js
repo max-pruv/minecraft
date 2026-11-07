@@ -163,6 +163,8 @@ export const FACADE_HD = new Set([
 // fenêtre serait éclairée à moitié. Le mailleur (la tuile plate) et la couche
 // (le relief) lisent la même règle.
 export function yBaie(id, y) {
+  // le second bloc du vitrage (vNEXT) tire sur le soubassement, deux rangs plus bas
+  if (id === ARCHI.VITRINE_MI2) return y - 2;
   return (id === ARCHI.ETAGE_HAUT || id === ARCHI.ENTRESOL_HAUT || id === ARCHI.VITRINE_MI) ? y - 1 : y;
 }
 
@@ -1026,6 +1028,44 @@ function vitrineHaut(f, r, allumee, st, bas) {
   }
 }
 
+// LES BANDES DE L'ÉCHELLE (vNEXT, `echelle-ville.js`) : le rez-de-chaussée
+// visible fait quatre blocs, la porte cochère trois, l'entresol trois. Le haut
+// du vitrage s'arrête à dix centimètres du bas de la bande d'enseigne ; le
+// bandeau est à 3,1 m du trottoir et le store s'y attache (réel : 3 m). Les
+// registres d'avant (`vitrineHaut`, `porteHaut`, `entresolBas`) ne changent pas :
+// la ville figée (`paris-v531.js`) les empile encore comme en v301.
+function enseigne(f, r, allumee, st, bas) {
+  const s0 = 0.08, s1 = 0.92, t1 = 0.10;
+  const porte = bas === ARCHI.PORTE_HAUT;
+  if (porte) f.plan(0, 1, 0, 1, 0, st.mur);
+  else {
+    f.murAutour(s0, s1, 0, t1, st.mur);
+    f.creux(s0, s1, 0, t1, -0.14, 'menuiserie', 'verre', 1, allumee ? 1.2 : 0.35, { bas: false });
+    for (const [a, b] of [[s0, s0 + 0.04], [s1 - 0.04, s1], [0.49, 0.51]]) f.plan(a, b, 0, t1, -0.06, 'menuiserie');
+  }
+  // le bandeau d'enseigne, et le store au-dessus de la vitrine — pas au-dessus
+  // d'une porte cochère
+  f.boite(0.02, 0.98, t1 + 0.04, 0.56, 0, 0.05, 'enseigne');
+  if (!porte && st.store && r > 0.35) {
+    const dt = 0.13, t = t1 + 0.04;
+    f.quad([[0.94, t, 0], [0.06, t, 0], [0.06, t - dt, 0.42], [0.94, t - dt, 0.42]], [0, 0.42, dt], 'store', 1);
+    f.quad([[0.06, t, 0], [0.94, t, 0], [0.94, t - dt, 0.42], [0.06, t - dt, 0.42]], [0, -0.42, -dt], 'store', 0.7);
+  }
+}
+
+function porteMi(f, st) {
+  const s0 = 0.28, s1 = 0.72;
+  f.murAutour(s0, s1, 0, 1, st.mur);
+  f.creux(s0, s1, 0, 1, -0.16, 'pierre-lisse', 'bois', 0.9, 0, { haut: false, bas: false });
+  f.boite(s0 - 0.05, s0, 0, 1, 0, 0.05, 'pierre-lisse');
+  f.boite(s1, s1 + 0.05, 0, 1, 0, 0.05, 'pierre-lisse');
+}
+
+function entresolAllege(f, st) {
+  f.plan(0, 1, 0, 1, 0, st.mur);
+  f.boite(0, 1, 0.0, 0.06, 0, 0.06, 'pierre-lisse');   // l'assise qui sépare le commerce de l'immeuble
+}
+
 function porteBas(f, st) {
   const s0 = 0.28, s1 = 0.72;
   f.murAutour(s0, s1, 0, 1, st.mur);
@@ -1372,6 +1412,11 @@ export function facadeHD(buf, face, x, y, z, wx, wy, wz, id, ao, bas = BLOCK.AIR
     case ARCHI.VITRINE_HAUT: vitrineHaut(f, graine, allumee, st, bas); break;
     case ARCHI.PORTE_BAS: porteBas(f, st); break;
     case ARCHI.PORTE_HAUT: porteHaut(f, st); break;
+    // les bandes de l'échelle (vNEXT)
+    case ARCHI.VITRINE_MI2: vitrineMi(f, allumee, st); break;
+    case ARCHI.ENSEIGNE: enseigne(f, graine, allumee, st, bas); break;
+    case ARCHI.PORTE_MI: porteMi(f, st); break;
+    case ARCHI.ENTRESOL_ALLEGE: entresolAllege(f, st); break;
     // les registres d'un bloc, pour les blocs que les enfants posent
     case ARCHI.ETAGE: etage(f, r, allumee, false, st); break;
     case ARCHI.NOBLE: etage(f, r, allumee, true, st); break;
@@ -1574,7 +1619,10 @@ export function terrasseHD(buf, x, y, z, wx, wz, vers) {
 // mesuré, zéro terrasse dans six quartiers sur cent quarante versions. Les
 // deux comptent, l'ancien bloc parce qu'un enfant a pu le poser.
 // `opts.vitrineSeule` rejoue la règle d'avant, pour l'empreinte (v421).
-const DEVANTURES = new Set([ARCHI.VITRINE, ARCHI.VITRINE_MI]);
+// Depuis l'échelle des villes (vNEXT) le premier rang est enterré et le bloc à
+// un au-dessus du trottoir est le SOUBASSEMENT (`VITRINE_BAS`) ; la ville
+// figée garde le vitrage là. Les trois comptent.
+const DEVANTURES = new Set([ARCHI.VITRINE, ARCHI.VITRINE_MI, ARCHI.VITRINE_BAS]);
 export function mobilierTrottoir(at, wx, wz, opts) {
   const bord = (dx, dz) => { const v = at(dx, 0, dz); return v === ARCHI.BORDURE || v === ARCHI.PAVE; };
   const cote = bord(1, 0) ? 'px' : bord(-1, 0) ? 'mx' : bord(0, 1) ? 'pz' : bord(0, -1) ? 'mz' : null;

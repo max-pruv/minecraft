@@ -343,7 +343,15 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // Les rues à la GTA : 540f2b43… → b05196a5…. Désarmées (MARGE_GTA à 0,4 dans
 // voirie.js, la recherche des bouches de métro d'avant), la branche rend
 // 540f2b43…, la constante de la v531, au bit près.
-const EMPREINTE_JOURNAL_V391 = 'b05196a5abe619bbc11c2ecffa2181a095e674b8e09cef3376f1fede37e387b8';
+// vNEXT : les façades de Paris à l'échelle d'un passant (trois des huit sites
+// du journal fabriqué sont dans le disque de Paris) : b05196a5… → 0332dd4c….
+// La preuve : le même code, le bâtisseur désarmé (`reglageEchelleParis.actif`
+// à faux), rend b05196a5…, la constante de la v544, au bit près — la marche
+// de migration ne touche pas ce chemin (aucun bloc du journal fabriqué n'est
+// daté d'avant `DATE_ECHELLE_PARIS` au-dessus d'un ancien toit de Paris… et
+// `empreinteJournal` n'appelle pas la chaîne : elle lit `installerEdits` et
+// `setBlock`, qui n'y passent pas).
+const EMPREINTE_JOURNAL_V391 = '0332dd4ce1b00b10024ff667450a6c54fbf79cbb3acbaaa45b58a25562146839';
 // v414 : les tabliers des villes engendrées s'allongent sous la voie (Rome est
 // dans les neuf lieux) : 1f385723… → 863d4203…. La preuve : le même code, les
 // allongements retirés de la liste des tabliers (`ext`), rend 1f385723…, la
@@ -3154,6 +3162,144 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     !double.absent && double.bati === 0 && double.lotBati,
     double.absent ? 'Paris n\'a pas doublé' : `autour de la maison : ${double.bati} bloc(s) de ville · lot après la date bâti : ${double.lotBati}`);
 
+  // --- L'ÉCHELLE DES VILLES (vNEXT) : le rez-de-chaussée fait quatre blocs, ---
+  // --- la façade monte de trois rangs, et ce qu'on a bâti dessus monte avec ---
+  //
+  // Mesuré avant une ligne (`sonde-echelle-paris.mjs`) : le premier rang de
+  // toute façade était écrit à la cote du trottoir, enterré ; un rez-de-chaussée
+  // ne montrait que deux blocs, une porte cochère 0,84 m, une enseigne à 1,4 m —
+  // la hauteur de tête d'un passant, ce que Max a vu. Le bâtisseur lit la table
+  // d'échelle (`echelle-ville.js`) et la façade monte de `CROISSANCE_PARIS`
+  // rangs, la MÊME pour toute colonne de lot. Le relief ne bouge pas (les deux
+  // empreintes ci-dessus) ; ce sont les immeubles qui montent, et une cabane
+  // posée sur un toit de la v586 serait dans le comble neuf. La règle est celle
+  // du relevé des toits (v301), sur le monde d'aujourd'hui : pure, idempotente,
+  // jugée sur un document fabriqué, EN DERNIER dans la chaîne ; une colonne où
+  // la ville cède (v306) ou reste figée (v544) n'a pas d'immeuble qui monte, et
+  // rien n'y bouge.
+  const echelle = await (async () => {
+    const W = await import('../src/world.js');
+    const P = await import('../src/paris.js');
+    const { ARCHI, BLOCK } = await import('../src/blocks.js');
+    let E = null; try { E = await import('../src/echelle-ville.js'); } catch {}
+    if (!W.releverEchelleParis || !W.DATE_ECHELLE_PARIS || !E || !ARCHI.ENSEIGNE) return { absent: true };
+    const w = new W.World();
+    let col = null;
+    for (let dx = -60; dx < 60 && !col; dx++) for (let dz = -60; dz < 60 && !col; dz++) {
+      const x = P.PARIS.x + dx, z = P.PARIS.z + dz;
+      if (P.solParis(x, z) !== null || !P.lotParisLibre(x, z)) continue;
+      const g = P.gabaritParis(x, z);
+      if (!g.dedans && !g.angle && g.bh === 6) col = { x, z, g };
+    }
+    if (!col) return { absent: false, colonne: false };
+    const { x, z, g } = col;
+    const h = w.terrainHeight(x, z);
+    // la façade neuve se LIT sur le monde : socle enterré, quatre blocs de
+    // rez-de-chaussée, l'enseigne au-dessus, la corniche à la hauteur de la table
+    const lu = [];
+    for (let dy = 1; dy <= g.facade + 2; dy++) lu.push(w.getBlock(x, h + dy - 1, z));
+    // le rez-de-chaussée de la table : trois rangs de devanture (dy 2..4) et
+    // le bandeau d'enseigne (dy 5), au-dessus du socle enterré (dy 1)
+    const rdc = lu.slice(E.ECHELLE_VILLE.socle, E.ECHELLE_VILLE.socle + E.ECHELLE_VILLE.rdc - 1);
+    const facadeTable = E.hauteurFacade(g.bh);
+    const voxel = {
+      socle: lu[0] === BLOCK.STONEBRICK,
+      rdcVitrine: rdc.filter((id) => [ARCHI.VITRINE_BAS, ARCHI.VITRINE_MI, ARCHI.VITRINE_MI2, ARCHI.PORTE_BAS, ARCHI.PORTE_MI, ARCHI.PORTE_HAUT].includes(id)).length === rdc.length,
+      enseigne: lu[E.ECHELLE_VILLE.socle + E.ECHELLE_VILLE.rdc - 1] === ARCHI.ENSEIGNE,
+      corniche: lu[facadeTable] === ARCHI.CORNICHE,
+      facade: g.facade === facadeTable, croissance: g.sommet - g.sommetV586 === E.CROISSANCE_PARIS,
+    };
+    const toitAncien = h + g.sommetV586 - 1, toitNeuf = h + g.sommet - 1, monte = g.sommet - g.sommetV586;
+    const toitNeufPlein = w.getBlock(x, toitNeuf, z) !== 0 && w.getBlock(x, toitNeuf + 1, z) === 0;
+    const t = W.DATE_ECHELLE_PARIS - 86400000;
+    let rue = null;
+    for (let d = 1; d < 20 && !rue; d++) for (const [dx, dz] of [[d, 0], [-d, 0], [0, d], [0, -d]]) if (P.solParis(x + dx, z + dz) !== null) { rue = [x + dx, z + dz]; break; }
+    const hr = w.terrainHeight(rue[0], rue[1]);
+    const cabane = `${x},${toitAncien + 1},${z}`, cabane2 = `${x},${toitAncien + 2},${z}`;
+    const facade = `${x},${h + 4},${z}`, tour = `${rue[0]},${hr + 15},${rue[1]}`;
+    const apres = `${x},${toitAncien + 6},${z}`, loin = `${x + 900},${h + 20},${z}`;
+    const doc = { local: {
+      [cabane]: [8, t], [cabane2]: [10, t], [facade]: [1, t], [tour]: [5, t],
+      [apres]: [5, W.DATE_ECHELLE_PARIS + 1000], [loin]: [5, t], '@manhattan-v240:1,2,3': [3, t, 1, 2],
+    }, 'manhattan-v1:local': { [cabane]: [3, t] } };
+    const t0 = Date.now();
+    const un = W.releverBlocsEchelleParis(doc), deux = W.releverBlocsEchelleParis(un.tout);
+    const ms = Date.now() - t0;
+    const L = un.tout.local;
+    const haut1 = `${x},${toitAncien + 1 + monte},${z}`, haut2 = `${x},${toitAncien + 2 + monte},${z}`;
+    // la chaîne entière, dans l'ordre de sync.js : la cabane arrive sur le toit neuf, une fois
+    const chaine = W.migrerChaineCarte(doc, {}).edits.local;
+    const cabanes = Object.entries(chaine).filter(([, v]) => v && v[0] === 8).map(([k]) => k);
+    // la ville cède (v306) et la ville figée (v544) : une cabane sur une colonne
+    // qui porte un bloc d'avant ces dates ne bouge pas, ni sur une voisine
+    const cede = W.releverEchelleParis({ [`${x + 1},${h + 1},${z}`]: [5, W.DATE_PARIS_DOUBLE - 1], [cabane]: [8, t] });
+    const figee = W.releverEchelleParis({ [`${x},${h + 1},${z}`]: [5, W.DATE_RUES_GTA - 1], [cabane]: [8, t] });
+    const pos = W.releverPositionsEchelle({ 1: { x: x + 0.5, y: toitAncien + 2, z: z + 0.5, t }, 2: { x: rue[0] + 0.5, y: hr + 2, z: rue[1] + 0.5, t } });
+    const gar = W.suivreGaragesEchelle({ local: { g: { x: x + 0.5, y: toitAncien + 1, z: z + 0.5, l: 1, p: 1, t } } }, { local: doc.local });
+    const garOrphelin = W.suivreGaragesEchelle({ local: { g: { x: x + 0.5, y: toitAncien + 1, z: z + 0.5, l: 1, p: 1, t } } }, { local: L });
+    return {
+      absent: false, colonne: true, voxel, toitNeufPlein, monte, deplaces: un.deplaces,
+      cabane: !!L[haut1] && !!L[haut2] && !L[cabane] && !L[cabane2] && L[haut1][1] === W.DATE_ECHELLE_PARIS,
+      facade: !!L[facade], tour: !!L[tour], apres: !!L[apres], loin: !!L[loin],
+      marque: !!L['@manhattan-v240:1,2,3'], archive: !!un.tout['manhattan-v1:local'][cabane],
+      idempotent: deux.deplaces === 0 && JSON.stringify(deux.tout) === JSON.stringify(un.tout),
+      chaine: cabanes.length === 1 && cabanes[0] === haut1 && !!chaine[haut2] && !!chaine[facade] && !!chaine[tour],
+      cede: cede.deplaces === 0, figee: figee.deplaces === 0,
+      pos: pos.pos[1].y === toitAncien + 2 + monte && pos.pos[2].y === hr + 2 && pos.deplaces === 1,
+      garage: gar.deplacees === 1 && garOrphelin.deplacees === 1 && Object.values(gar.garages.local)[0].y === toitAncien + 1 + monte,
+      version: W.CARTE_VERSION,
+      bilan: `colonne (${x}, ${z}), façade ${g.facade}, toit ${toitAncien} → ${toitNeuf} (+${monte}), ${un.deplaces} déplacé(s), ${ms} ms, carte ${W.CARTE_VERSION}`,
+    };
+  })();
+  verifier('le rez-de-chaussée de Paris fait quatre blocs visibles sur un socle enterré, l\'enseigne au-dessus, la corniche à la hauteur de la table d\'échelle',
+    !echelle.absent && echelle.colonne && echelle.voxel.socle && echelle.voxel.rdcVitrine && echelle.voxel.enseigne
+      && echelle.voxel.corniche && echelle.voxel.facade && echelle.voxel.croissance && echelle.toitNeufPlein,
+    echelle.absent ? 'la table d\'échelle des villes n\'existe pas' : JSON.stringify(echelle.voxel) + ' · ' + echelle.bilan);
+  verifier('et une cabane bâtie sur un toit de la v586 monte avec la façade, d\'un seul tenant, en dernier dans la chaîne (carte 9)',
+    !echelle.absent && echelle.monte === 3 && echelle.deplaces === 2 && echelle.cabane && echelle.chaine && echelle.version >= 9,
+    echelle.absent ? 'la table d\'échelle des villes n\'existe pas' : echelle.bilan);
+  verifier('et rien ne bouge dans la façade, la rue, après la date, hors de Paris, ni sur une colonne cédée ou figée — positions et garages suivent',
+    !echelle.absent && echelle.facade && echelle.tour && echelle.apres && echelle.loin && echelle.marque && echelle.archive
+      && echelle.idempotent && echelle.cede && echelle.figee && echelle.pos && echelle.garage,
+    echelle.absent ? 'la table d\'échelle des villes n\'existe pas' : JSON.stringify(echelle));
+
+  // ET LA PRÉVERSION NE MIGRE PAS (vNEXT) : une préversion Vercel parle au
+  // nuage de la production ; sur elle la marche 8 → 9 est l'identité, pour
+  // les blocs, les positions et les garages, et le stockage reste en carte 8.
+  const garde = await (async () => {
+    const W = await import('../src/world.js');
+    if (!W.MIGRATION_ECHELLE || !W.preversion || !W.releveEchelleDe) return { absent: true };
+    const hotes = {
+      prev: W.preversion('minecraft-fam-git-claude-echel-c3b2f2-maxpruvost-4441s-projects.vercel.app'),
+      prod: W.preversion('minecraft-fam.vercel.app'), banc: W.preversion('127.0.0.1'), node: W.preversion(undefined),
+    };
+    const { PARIS, solParis, lotParisLibre, gabaritParis } = await import('../src/paris.js');
+    let col = null;
+    for (let r = 2; r < 60 && !col; r++) for (let a = 0; a < 16 && !col; a++) {
+      const x = Math.round(PARIS.x + r * Math.cos(a)), z = Math.round(PARIS.z + r * Math.sin(a));
+      if (solParis(x, z) === null && lotParisLibre(x, z) && !gabaritParis(x, z).dedans) col = { x, z };
+    }
+    const g = W.releveEchelleDe(col.x, col.z);
+    const t = W.DATE_ECHELLE_PARIS - 86400000;
+    const doc = { local: { [`${col.x},${g.ancien + 1},${col.z}`]: [5, t] } };
+    const pos = { local: { x: col.x + 0.5, y: g.ancien + 2, z: col.z + 0.5, t } };
+    const garages = { g1: { x: col.x, y: g.ancien + 1, z: col.z, l: 2, p: 2 } };
+    W.MIGRATION_ECHELLE.permise = false;
+    let res;
+    try {
+      const c = W.migrerChaineCarte(doc, garages);
+      const ps = W.releverPositionsEchelle(pos, doc);
+      res = { blocsIntacts: JSON.stringify(c.edits) === JSON.stringify(doc), garagesMemes: c.garages === garages, posMeme: ps.pos === pos };
+    } finally { W.MIGRATION_ECHELLE.permise = true; }
+    const c2 = W.migrerChaineCarte(doc, garages);
+    res.permiseMonte = Object.keys(c2.edits.local)[0] === `${col.x},${g.ancien + 1 + g.monte},${col.z}`;
+    return { ...hotes, ...res, carteAvant: W.CARTE_AVANT_ECHELLE, carte: W.CARTE_VERSION };
+  })();
+  verifier('une préversion Vercel ne migre pas : la marche 8 → 9 y est l\'identité (blocs, positions, garages) et la production, le banc et node migrent',
+    !garde.absent && garde.prev && !garde.prod && !garde.banc && !garde.node
+      && garde.blocsIntacts && garde.garagesMemes && garde.posMeme && garde.permiseMonte && garde.carteAvant === 8 && garde.carte === 9,
+    JSON.stringify(garde));
+
   // --- LA FICHE D'UN GARAGE SUIT SES BLOCS (v487) ------------------------
   //
   // Un garage est rangé par POSITION (`garages.js`). Les marches de la carte
@@ -3223,7 +3369,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       stock = { ou: f && [f.x, f.y, f.z], version: memoire.get('web-minecraft-carte-v1'), n: Object.keys(gs).length };
     } finally { if (avantLS === undefined) delete globalThis.localStorage; else globalThis.localStorage = avantLS; }
     return { av: lue(avant), or: lue(orph), deux: deux.garages === avant.garages && deux.deplacees === 0,
-      vide: seuls.garages === undefined, c3: [Object.keys(c3a.garages.local)[0], Object.keys(c3o.garages.local)[0], c3a.deplacees], stock };
+      vide: seuls.garages === undefined, c3: [Object.keys(c3a.garages.local)[0], Object.keys(c3o.garages.local)[0], c3a.deplacees], stock, version: W.CARTE_VERSION };
   })();
   verifier('🅿️ la fiche d\'un garage de l\'ancien Paris part avec le groupe de ses murs — d\'un document d\'avant comme en orpheline',
     !garagesCarte.absent && garagesCarte.av.plancher === 99 && !garagesCarte.av.vieux
@@ -3236,7 +3382,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('🅿️ et un garage de Rome suit la carte 3 ; et l\'appareil qui a migré sans la fiche la retrouve à la migration de stockage',
     !garagesCarte.absent && garagesCarte.c3[2] >= 1 && garagesCarte.c3[0] === garagesCarte.c3[1] && garagesCarte.c3[0] !== 'a'
       && garagesCarte.stock && garagesCarte.stock.ou && garagesCarte.stock.ou.join() === garagesCarte.av.ou.join()
-      && garagesCarte.stock.version === '8' && garagesCarte.stock.n === 2,
+      && garagesCarte.stock.version === String(garagesCarte.version) && garagesCarte.stock.n === 2,   // la version de la carte se LIT (9 depuis l'échelle des villes, vNEXT)
     garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ c3: garagesCarte.c3, stock: garagesCarte.stock }));
 
   // --- LONDRES À LA RÈGLE DU KIT (v339) : la ville d'avant reste sous ce ----

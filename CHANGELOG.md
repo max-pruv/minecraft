@@ -170,6 +170,8 @@ ont leurs phares (zéro avant) ; le témoin des feux de détresse du navigateur
 lit des copies d'optique sur la tôle au lieu de lentilles. Planche de captures
 de nuit avant/après (trois quarts, face, dos) dans la PR.
 
+---
+
 ## v587 — Chaque moteur a sa voix, et la flamme est une réchauffe
 
 **Pourquoi.** Max : « il y a des avions normaux qui ne crachent pas de feu.

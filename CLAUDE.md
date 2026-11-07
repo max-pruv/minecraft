@@ -36,6 +36,75 @@ modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérif
 les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
 ils ne constituent pas une exception pour les nouveaux rendus.
 
+## Paris à l'échelle d'un passant (vNEXT) — une table d'échelle, lue par les bâtisseurs ET les témoins
+
+Max, trois captures d'iPhone : « les passants paraissent grands par rapport
+aux immeubles ». Mesuré avant une ligne (`docs/echelle-villes.md`) : les
+personnages, l'œil, les voitures, le mobilier étaient justes ; le BÂTI était
+d'un tiers à trois quarts trop bas sur tout ce qu'un passant a devant les
+yeux. Cinq règles.
+
+- **LE PREMIER RANG D'UN BÂTISSEUR EST ENTERRÉ.** `poser(dy, id)` écrit à
+  `wy = h + dy − 1` et le trottoir est à `h` : `dy = 1` est au ras du
+  trottoir, invisible. Toute façade qui dépense une bande de rez-de-chaussée
+  sur ce rang la perd — le vitrage s'arrêtait à 1,35 m, la porte cochère
+  montrait 84 cm de bois. Le rang 1 est un SOCLE de pierre, jamais une bande
+  de façade, et toute hauteur de façade se compte en rangs VISIBLES.
+- **UNE TABLE, DEUX LECTEURS.** `src/echelle-ville.js` (pur, sans import,
+  lu par le worker) porte `ECHELLE_VILLE` (socle 1, RDC 4 dont l'enseigne,
+  porte 3, entresol 3, étage 3), `hauteurFacade`, `CROISSANCE_PARIS` (un
+  résultat : 3) et `REEL`, les fourchettes réelles sourcées. `paris.js` la lit
+  pour bâtir ; `plafond.js`, `parishd.js` et `carte.js` la lisent pour juger.
+  Un bâtisseur qui recopie une hauteur et un témoin qui recopie la même
+  finissent par diverger — la discipline de `postesAvion`, pour une façade.
+  Les autres villes y passeront avec la même table et chacune sa migration
+  (déclaré dans `TASKS.md` avec leurs mesures : RDC visible de 1 à 2 m).
+- **LE BÂTI MONTE, LE RELIEF NON, ET CE QU'UN ENFANT A POSÉ SUIT LE TOIT.**
+  Marche 8 → 9 de la chaîne (`releverEchelleParis`, world.js) : un bloc de
+  lot de Paris posé avant `DATE_ECHELLE_PARIS` au-dessus de l'ancien sommet
+  (`gabaritParis(x, z).sommetV586`, relief du monde COURANT) monte de
+  `sommet − sommetV586`, redaté, et la position de l'enfant et la fiche d'un
+  garage suivent (`suivreGaragesEchelle`). Pure, idempotente par la date, EN
+  DERNIER dans `migrerChaineCarte` et `migrerLesBlocs`, copie d'avant sur le
+  nuage (`~avant-echelle-paris`, seulement si la marche déplace quelque
+  chose). Une colonne cédée (v306) ou figée (v544) ne bouge pas : la ville y
+  est l'ancienne, et le bâtisseur neuf n'y écrit rien. La date se relit à la
+  fusion (v309). `releveEchelleDe` lit la trame d'aujourd'hui : juste tant
+  qu'elle ne bouge pas — le prochain retramage de Paris fige `paris.js`
+  (v303), et cette marche avec.
+- **DES BLOCS NEUFS, JAMAIS DES BLOCS RENOMMÉS.** `VITRINE_MI2`, `ENSEIGNE`,
+  `PORTE_MI`, `ENTRESOL_ALLEGE` (ids 664–667, tuiles à partir de
+  `ARCHI_ECHELLE_TILE_START`) ont leur tuile, leur registre HD, leur `yBaie`,
+  leur couleur de carte et leur place dans `DEVANTURES` ; les anciens ids et
+  tuiles ne bougent pas, parce que la ville figée (`paris-v531.js`) et les
+  blocs posés par les enfants les portent. Un bloc qui change de forme change
+  de nom (la règle de `editsz`, pour une façade).
+- **LE DÉSARMEMENT VIT DANS LE MODULE, ET L'EMPREINTE SE PROUVE AVEC.**
+  `reglageEchelleParis.actif = false` rend la colonne v586 au bloc près (le
+  témoin le lit), et c'est ainsi que `morceaux-temoin.mjs` relève l'empreinte
+  des 490 morceaux : `ed369fdb…` des deux côtés. L'empreinte du journal
+  fabriqué (v403) a trois de ses huit sites dans Paris : elle se relève
+  (b05196a5… → 0332dd4c…) et se prouve de la même façon. `sommetV586` ne lit jamais
+  le drapeau : la marche a besoin de l'ancien sommet quel que soit le réglage.
+  Le coût se mesure et se déclare (façades HD de Paris +9 %, sous `hdMo`).
+- **UNE PRÉVERSION NE MIGRE PAS.** Chaque PR a une préversion Vercel, que
+  Max essaie sur son iPhone, et elle parle au MÊME nuage que la production :
+  y entrer avec le profil de Marlon y aurait relevé ses toits dans son
+  document du nuage AVANT la validation, et une marche datée ne se rejoue
+  pas. `MIGRATION_ECHELLE.permise` (world.js) tombe à faux sur un hôte qui
+  finit par `.vercel.app` sans être `minecraft-fam.vercel.app`
+  (`preversion`, pure) : la marche 8 → 9 est l'identité (blocs, positions,
+  garages), le stockage de l'appareil reste en carte 8
+  (`CARTE_AVANT_ECHELLE`) et la copie d'avant ne part pas. La production,
+  le banc (127.0.0.1) et node migrent. Toute marche de migration à venir se
+  pose la question de la préversion le jour où elle naît ; sur une
+  préversion on joue avec un prénom de test, jamais celui d'un enfant.
+
+Et un témoin de couche HD qui lit « le verre » d'une colonne lit le verre de
+TOUS les étages : ce qui n'appartient qu'au rez-de-chaussée (l'enseigne, le
+store, le bois de la porte) est ce qui se mesure contre la fourchette du
+rez-de-chaussée.
+
 ## Manhattan : atlas OSM (v583) et façades en relief (v585)
 
 Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par

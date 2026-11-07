@@ -1,5 +1,103 @@
 # Ce qui est en cours
 
+## Paris à l'échelle d'un passant (vNEXT) — lots suivants et dettes
+
+Mesures et méthode dans `docs/echelle-villes.md` ; la table est
+`src/echelle-ville.js`, que tout bâtisseur et tout témoin lisent.
+
+- [x] **POUR MAX, SUR LA TABLETTE** : validé le 7 novembre 2026 sur les
+  captures du banc, dont le passant de 1,76 m contre la vitrine
+  (`docs/echelle-villes/*-iphone-passant-*.png`). Reste à regarder en jeu, de
+  jour et de nuit, puis du ciel. Sur une préversion Vercel, entrer avec un
+  PRÉNOM DE TEST : elle ne migre rien (garde `preversion`, world.js), mais elle
+  lit et écrit le nuage de la production pour tout le reste.
+- [ ] **À LA FUSION : relire `DATE_ECHELLE_PARIS` (world.js)** à l'heure de la
+  fusion (règle de la v309) — la date écrite est un brouillon.
+- [ ] **Les villes engendrées (`villesmonde.js`, 262 villes)** : rang 1
+  enterré, RDC visible 2 m. Passer par la table (socle + 4 rangs de RDC) avec
+  une marche de migration des toits datée, comme Paris — et une copie d'avant.
+  Même lecture (`sonde-echelle-paris.mjs` à adapter à `batirColonneVillesMonde`).
+- [ ] **Nice, Lille, San Francisco** : étages de DEUX blocs (Uni / ETAGE
+  alternés), RDC visible 1 m. Étages 2 → 3 et RDC à la table : le bâti double
+  presque de hauteur, migration propre à chaque ville (toits), ville figée
+  `*-v531.js` inchangée.
+- [ ] **Londres** : mêmes blocs ARCHI, RDC visible 2 m ; socle + RDC, migration.
+- [ ] **Washington** : maisons de 7 rangs pour trois niveaux (RDC 1 m) ; les
+  musées (15 blocs) sont justes. Manhattan : à mesurer au rendu (modèles et
+  façades procédurales OSM).
+- [ ] **Le store banne ne se voit pas sur la terrasse** des captures : la
+  tuile `store` est mesurée à 3,14 (une ligne, `bas = haut`) — vérifier le
+  registre `store` de `facadeshd.js` au-dessus d'une vitrine de 4 rangs.
+- [ ] **Plaques de rue à 4,5 m** (allège de l'entresol) : un mètre trop haut
+  (réel 2,5–3,5). Réverbère de `props.js` à ≈ 3,0 m (réel 3,5–4,5) et colonne
+  Morris à 2,8 m (réel ≈ 4) : un peu petits, à remonter avec leur témoin.
+- [ ] **La trame de Paris n'est pas figée pour cette marche** :
+  `releveEchelleDe` lit `gabaritParis` d'aujourd'hui, juste tant que la trame
+  ne bouge pas (règle de la v303 : le prochain retramage fige `paris.js`).
+- [ ] Un bloc posé sur un toit de Paris par une tablette restée sur la v588
+  après la date sera laissé à l'ancienne hauteur (le prix de toute marche
+  datée, v242).
+- [ ] **Portail GitHub de la PR #607 (run 42147675330), tranches 2/4 et 3/4
+  rouges, aucune par cette livraison** — chaque rouge démonté par la règle de
+  la v195 (rejoué SEUL des deux côtés) ou par la même tranche d'une PR sans ce
+  code. Tranche 2/4, `reseau.js` : la fluidité des amis (direct, nuage), le
+  passager, l'hôte sans courtier — tous déclarés plus bas, et rouges à
+  l'identique sur les tranches 2/4 des PR #609, #597 et des phares. Tranche
+  3/4, `maj.js` : les deux témoins du loader (dettes v559) et le badge du
+  journal ({premiere 589, servie 588} : structurel tant que `CACHE_VERSION`
+  n'est pas monté, par consigne). `carte.js` : « le fond de carte entier se
+  rend vite, même à froid » 489 ms pour 400 au portail (462 sur la tranche 3/4
+  de la PR #597), 236 ms seul sur la branche et 339 sur `origin/main` v588 —
+  la charge du portail, déjà déclarée (v450) ; et **« minicarte (820 × 1180) :
+  sous le menu ☰ elle reste… sous laquelle elle se cache »** rend
+  `cachee: false` au portail, vert seul des deux côtés (123 ✅ sur
+  `origin/main`, 121 ✅ sur la branche). Le témoin lit la visibilité de la
+  minicarte 500 ms FIXES après le toucher qui ouvre la carte du monde
+  (`tests/carte.js`, famille de la v270) : sur un runner chargé, la classe
+  `carte-ouverte` n'est pas encore posée. Remède tout trouvé : attendre
+  `__carte.ouverte` ET l'état, borné, la durée au message. Le diff de la
+  livraison ne touche ni `main.js`, ni `index.html`, ni la minicarte.
+  **Second portail, sur le sha rebasé 917e409 (run 42154336112) : tranche 4/4
+  verte, 1/4, 2/4 et 3/4 rouges, aucune par cette livraison.** Comparé tranche
+  par tranche aux portails des PR des phares (#606) et de KTX2 (#598), sans une
+  ligne de cette branche. Tranche 3/4 : les deux rouges d'avant, et « commandes
+  (420 × 760) : toucher l'écran… casse en construction » rend `construction 0`
+  — vert à 430 × 932 dans le même run et aux deux tailles sur trois autres
+  portails ; attente FIXE de 400 ms après le toucher (`tests/maj.js`, famille
+  v270), intermittence déclarée v509/v510. Tranche 2/4 : les fluidités et le
+  passager (déclarés), et « la voiture qu'on prend dans la rue garde sa
+  couleur » `auVolant false` après 335 s (vert en 2–3 s sur trois autres
+  portails ; déclaré v365, v369, v388 ; observateur à 2 images/s), qui emporte
+  ses deux dépendants (carte de l'ami `assis false`, « arrive derrière » `arrive
+  0` — ce dernier rouge aussi sur phares 2/4). Tranche 1/4, `monte.js`, neuf
+  rouges : huit sont déclarés plus bas ET rouges sur au moins une des deux
+  autres tranches 1/4 (traversées 75 %, Moscou ×2, mémoire des voitures,
+  flâneur de Rome, passage peint de Londres, passant lancé, radio) ; le
+  neuvième — **« les feux stop s'allument au freinage… » `stops: [] n: 0`** —
+  est le tirage d'un modèle sans optique arrière reconnue : `invoquer('voiture')`
+  tire un modèle sur 36, et `sonde-feux-flotte.mjs` rejouée sous node sur cette
+  tête rend deux tirables à `stops 0`, la Divo et le taxi Mondeo (la dette v588
+  de ce fichier) ; `v1 11,6` après 1,2 s de gaz est l'allure d'une hypercar.
+  Un témoin qui tire un modèle au hasard (v587) : une fois sur vingt environ.
+  Remède tout trouvé pour ce témoin-là : invoquer un modèle NOMMÉ pour la
+  propriété qu'il mesure (v579), par exemple la DB11 (feux arrière nommés).
+  **Troisième portail, sur le sha 97595f0 (main v590 + #611 fusionnés, run
+  42384419606) : tranches 3/4 et 4/4 vertes, 2/4 rouge sur les deux dettes de
+  `reseau.js` (fluidité, passager), 1/4 rouge — `monte.js` quatorze rouges en
+  66 min pour 37 mesurées, aucun par cette livraison.** Onze sont rouges à
+  l'identique sur les tranches 1/4 des PR des phares (#606) et de KTX2 (#598)
+  de la veille, sans une ligne de cette branche : « la circulation naît à
+  l'approche » (aucune voiture à Rome), « ne marche pas dans une rue vide »,
+  « les voitures ne se traversent plus » (79 %), « au feu, la voiture freine »,
+  « deux voitures jamais l'une dans l'autre », Moscou ×2, « rendent leur
+  mémoire » (Rome n'a pas fabriqué de voitures), « tombe dans l'eau » (plongée
+  `null`), « collée à une voiture », la radio, le passage peint de Rome en
+  biais. Les trois autres sont déclarées plus bas : « elle ralentit assez pour
+  qu'on puisse la rejoindre » (9,1 m/s ; déclaré 9,0), « les roues avant
+  braquent vers l'intérieur » (`voiture.glb`, le modèle d'attente : la flotte
+  n'était pas arrivée, déclaré), et le passage de Rome. C'est la cadence du
+  runner GitHub sur `monte.js` (CLAUDE.md : le portail GitHub est INDICATIF) ;
+  la mesure qui fait foi reste le portail local de la branche.
 ## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
 
 - **Mesurer sur l'iPhone et l'iPad.** Le banc lit l'ASTC et le BC7 (un octet
