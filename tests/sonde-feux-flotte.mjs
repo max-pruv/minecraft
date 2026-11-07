@@ -12,7 +12,7 @@ import { GLTFLoader } from '../vendor/GLTFLoader.js';
 
 // node n'a ni document ni image : une toile muette pour l'enseigne du taxi,
 // une texture vide pour les images des GLB (on mesure de la géométrie)
-function sansNavigateur() {
+export function sansNavigateur() {
   if (typeof globalThis.document !== 'undefined') return;
   const ctx = new Proxy({}, { get: (t, k) => (k in t ? t[k] : (k === 'measureText' ? () => ({ width: 1 }) : () => {})), set: (t, k, v) => { t[k] = v; return true; } });
   globalThis.document = { createElement: () => ({ width: 1, height: 1, getContext: () => ctx, style: {} }) };

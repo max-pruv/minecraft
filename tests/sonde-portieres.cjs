@@ -22,19 +22,20 @@ const { Banc } = require('./banc.js');
         await new Promise((r) => setTimeout(r, 0));
         g.updateMatrixWorld(true);
         const plan = P.planPortieres(g);
-        if (!plan) { res.push({ f: f.fichier, plan: null, roues: (g.userData.roues || []).length }); continue; }
-        const eq = P.equiperPortieres(g);
-        P.ouvrir(eq['-1'], 1); P.ouvrir(eq['1'], 1);
+        if (!plan) { res.push({ f: f.fichier, plan: null, roues: (g.userData.roues || []).length, refus: P.refus.get(f.fichier) }); continue; }
+        const ciseau = f.portiere === 'ciseau';
+        const eq = P.equiperPortieres(g, false, { ciseau });
+        P.ouvrir(eq['-1'], 1);
         g.updateMatrixWorld(true);
         // le trou : rayons de dehors vers l'axe, au travers de l'ouverture
-        const rc = new THREE.Raycaster();
-        const cibles = []; g.traverse((o) => { if (o.isMesh && !(o.parent && o.parent.userData.estPortiere)) cibles.push(o); });
+        const rc = new THREE.Raycaster(); rc.layers.enableAll();
+        const cibles = []; g.traverse((o) => { if (!o.isMesh) return; for (let q = o; q && q !== g; q = q.parent) if (q === eq['-1']) return; cibles.push(o); });
         let habitacle = 0, vide = 0;
         for (let k = 0; k < 6; k++) for (let j = 0; j < 4; j++) {
           const z = plan.z0 + (plan.z1 - plan.z0) * (k + 0.5) / 6;
           const y = 0.55 + j * 0.13;
           rc.set(new THREE.Vector3(-plan.demiLarg - 1, y, z), new THREE.Vector3(1, 0, 0));
-          rc.far = plan.demiLarg * 2 + 0.6;
+          rc.far = plan.demiLarg * 2 + 1.1;
           const h = rc.intersectObjects(cibles, false);
           if (h.length) habitacle++; else vide++;
         }
@@ -44,7 +45,7 @@ const { Banc } = require('./banc.js');
         res.push({ f: f.fichier, ms: Math.round(plan.ms), tri: plan.triangles,
           aire: [plan.aire['-1'], plan.aire['1']].map((x) => +x.toFixed(2)),
           L: +plan.longueur['-1'].toFixed(2), z: [+plan.z0.toFixed(2), +plan.z1.toFixed(2)], dl: +plan.demiLarg.toFixed(2),
-          ambig: +plan.ambigues.toFixed(3), coupes: plan.tranches, neufs: plan.sommetsNeufs, deborde: +Math.max(0, plan.longueur['-1'] - (plan.z1 - plan.z0)).toFixed(3), vu: `${habitacle}/${habitacle + vide}`, arriereX: +arriere.x.toFixed(2) });
+          ambig: +plan.ambigues.toFixed(3), coupes: plan.tranches, neufs: plan.sommetsNeufs, deborde: +Math.max(0, plan.longueur['-1'] - (plan.z1 - plan.z0)).toFixed(3), vu: `${habitacle}/${habitacle + vide}`, deja: plan.deja, gar: !!eq.garniture, fiche: f.portiere, arriereX: +arriere.x.toFixed(2) });
       }
       return res;
     });

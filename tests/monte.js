@@ -571,7 +571,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // fichier neuf qui est chargé (sa laque s'appelle `Paint_Arancio`, que
     // l'ancien n'a pas), ses quatre roues et son volant sont là, il est posé au
     // sol à la longueur annoncée par le paquet (4,74 m), ses sept images sont
-    // décodées, sa fiche refuse la portière (elle n'est pas séparée, v366), et
+    // décodées, sa fiche déclare ses portières en élytre (découpées, vNEXT), et
     // l'enfant y est assis sous le pavillon mesuré, face à la route (v249). Sur
     // l'ancien code, c'est l'ancien fichier qui se charge : rouge, et il le dit.
     //
@@ -650,16 +650,16 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.yaw = av.yaw; g.player.flying = av.flying;
     }, avantRevuelto);
     await dormir(600);
-    verifier('la Revuelto adaptée se charge par son asset, au sol, avec ses roues, son volant, ses sept images, sans portière, et l\'enfant y est assis sous le pavillon',
+    verifier('la Revuelto adaptée se charge par son asset, au sol, avec ses roues, son volant, ses sept images, ses portières en élytre (vNEXT), et l\'enfant y est assis sous le pavillon',
       !revuelto.err && revuelto.asset === 'lamborghini-revuelto-wip.glb' && revuelto.laque && revuelto.roues === 4 && revuelto.volant
-        && revuelto.images >= 7 && revuelto.portiere === false && revuelto.longueur > 4.5 && revuelto.longueur < 5.0
+        && revuelto.images >= 7 && revuelto.portiere === 'ciseau' && revuelto.longueur > 4.5 && revuelto.longueur < 5.0
         && Math.abs(revuelto.sol) < 0.02 && revuelto.rayon > 0.25 && revuelto.rayon < 0.45
         && !!revuelto.siege && revuelto.siege.dansVoiture && revuelto.siege.dansLeCadre && revuelto.siege.regarde > 0.9
         && (revuelto.siege.toit === null || revuelto.siege.crane < revuelto.siege.toit),
       JSON.stringify(revuelto));
-    verifier('la SF90 XX Stradale se charge par son asset, au sol, avec ses roues, son volant, ses images, sans portière, et l\'enfant y est assis sous le pavillon',
+    verifier('la SF90 XX Stradale se charge par son asset, au sol, avec ses roues, son volant, ses images, sa portière (vNEXT), et l\'enfant y est assis sous le pavillon',
       !sf90.err && sf90.asset === 'ferrari-sf90-xx.glb' && sf90.laque && sf90.roues === 4 && sf90.volant
-        && sf90.images >= 20 && sf90.portiere === false && sf90.longueur > 4.7 && sf90.longueur < 5.0
+        && sf90.images >= 20 && sf90.portiere !== false && sf90.longueur > 4.7 && sf90.longueur < 5.0
         && Math.abs(sf90.sol) < 0.02 && sf90.rayon > 0.30 && sf90.rayon < 0.40
         && !!sf90.siege && sf90.siege.dansVoiture && sf90.siege.dansLeCadre && sf90.siege.regarde > 0.9
         && (sf90.siege.toit === null || sf90.siege.crane < sf90.siege.toit),
@@ -675,8 +675,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
     // réelle (5,14 m), avec son volant et ses images ; chaque roue TOURNE
     // autour de son moyeu (un point du pneu garde sa distance au pivot) ; sa
     // livrée survit au repeint de la rue (`repeindre` ne reconnaît pas sa laque,
-    // et sa fiche dit `laque: 'jamais'`) ; sa fiche refuse la portière (élytres
-    // non séparées, v366) ; et l'enfant y est assis sous le pavillon, face à la
+    // et sa fiche dit `laque: 'jamais'`) ; sa fiche déclare ses portières en
+    // élytre (découpées, vNEXT) ; et l'enfant y est assis sous le pavillon, face à la
     // route (v249). Sur l'ancien code, la voiture n'est pas dans la flotte :
     // rouge, et il le dit. Même placement que la Revuelto : une dalle à soi,
     // puis l'on rend tout (v279).
@@ -763,9 +763,9 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       g.player.yaw = av.yaw; g.player.flying = av.flying;
     }, avantMc12);
     await dormir(600);
-    verifier('la MC12 GT1 Red Bull se charge au manifeste, au sol, à sa longueur, avec ses quatre roues qui tournent sur leur moyeu, son volant, ses images et sa livrée que la rue ne repeint pas, sans portière, et l\'enfant y est assis sous le pavillon',
+    verifier('la MC12 GT1 Red Bull se charge au manifeste, au sol, à sa longueur, avec ses quatre roues qui tournent sur leur moyeu, son volant, ses images et sa livrée que la rue ne repeint pas, ses portières en élytre (vNEXT), et l\'enfant y est assis sous le pavillon',
       !mc12.err && mc12.forme === 'manifeste' && mc12.laque && mc12.roues === 4 && mc12.volant && mc12.images >= 12
-        && mc12.portiere === false && mc12.laqueFiche === 'jamais' && !mc12.peinte
+        && mc12.portiere === 'ciseau' && mc12.laqueFiche === 'jamais' && !mc12.peinte
         && mc12.longueur > 5.05 && mc12.longueur < 5.3 && Math.abs(mc12.sol) < 0.02 && mc12.rayon > 0.3 && mc12.rayon < 0.42
         && !!mc12.moyeu && mc12.moyeu.ecart < 0.002 && mc12.moyeu.bouge > 0.2
         && !!mc12.siege && mc12.siege.dansVoiture && mc12.siege.dansLeCadre && mc12.siege.regarde > 0.9
@@ -9527,8 +9527,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         for (let i = 0; i < n; i++) { v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(M); zMin = Math.min(zMin, v.z); zMax = Math.max(zMax, v.z); }
       });
       const proto = await V.chargerVoitureFlotte(V.FLOTTE.find((f) => f.fichier === MODELE));
-      const aProto = aire(proto, (o) => !(o.userData && o.userData.arms));
-      const aVoiture = aire(b.mesh, (o) => !(o.userData && o.userData.arms) && !o.userData.effetDegats);
+      // la garniture (vNEXT) est une géométrie AJOUTÉE, mesurée par son propre
+      // témoin (degats.js) : ce témoin-ci garde la DÉCOUPE, rien d'autre
+      const aProto = aire(proto, (o) => !(o.userData && (o.userData.arms || o.userData.garniture)));
+      const aVoiture = aire(b.mesh, (o) => !(o.userData && (o.userData.arms || o.userData.garniture)) && !o.userData.effetDegats);
       const debord = Math.max(0, plan.z0 - zMin) + Math.max(0, zMax - plan.z1);
       // et le choc sur le flanc gauche, après
       let froisse = null;
@@ -9567,7 +9569,8 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       b.mesh.updateMatrixWorld(true);
       const p = eq['-1'], plan = eq.plan, L = p.userData.longueur;
       const portes = [], tout = [];
-      p.traverse((o) => { if (o.isMesh) portes.push(o); });
+      let panneaux = 0;
+      p.traverse((o) => { if (o.isMesh) { portes.push(o); if (o.userData.garniture) panneaux++; } });
       b.mesh.traverse((o) => { if (o.isMesh) tout.push(o); });
       const rc = new THREE.Raycaster(); rc.layers.enableAll();
       const viser = (oeilLocal) => {
@@ -9584,14 +9587,69 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       };
       const face = viser(new THREE.Vector3(-plan.demiLarg - 2.5, 0.9, plan.z0 - 0.8));
       const dos = viser(new THREE.Vector3(-plan.demiLarg + 0.2, 0.9, plan.z1 + 1.2));
-      // autant de maillages de portière que de maillages découpés : le revers n'en ajoute aucun
+      // autant de maillages de portière que de maillages découpés : le revers n'en ajoute aucun.
+      // Le panneau de garniture (vNEXT) est UN maillage de plus par portière, déclaré :
+      // il se compte à part, et il n'y en a qu'un.
       const attendus = plan.geos.filter((x) => x && x['-1']).length;
       g.animalManager.scene.remove(b.mesh); g.animalManager.animals.splice(g.animalManager.animals.indexOf(b), 1);
-      return { face, dos, maillages: portes.length, attendus };
+      return { face, dos, maillages: portes.length - panneaux, panneaux, attendus };
     });
     verifier('une portière ouverte se voit aussi de derrière, sans un appel de dessin de plus',
-      !embRevers.err && embRevers.face > 4 && embRevers.dos >= embRevers.face / 2 && embRevers.maillages === embRevers.attendus,
+      !embRevers.err && embRevers.face > 4 && embRevers.dos >= embRevers.face / 2 && embRevers.maillages === embRevers.attendus && embRevers.panneaux <= 1,
       JSON.stringify(embRevers));
+    // 12. LA PORTE S'OUVRE POUR DE VRAI, MÊME SUR UN MODÈLE QUI LA REFUSAIT
+    // (vNEXT). Max : « on voit la personne qui rentre et qui disparaît
+    // là-dedans ». Le SUV générique refusait sa portière : l'enfant marchait
+    // au travers de la tôle. On rejoue la séquence entière par le bouton, et
+    // une boucle d'images DANS la page (v226) relève l'angle de la portière
+    // et la place de l'avatar dans le repère de la voiture : la portière
+    // s'ouvre ; tant que l'avatar traverse le flanc (entre l'axe de la caisse
+    // et sa peau), il est DANS l'ouverture — entre le montant avant et le
+    // montant central, la tête sous le cadre — jamais dans la tôle.
+    const embSuv = await emb.evaluate(async () => {
+      const g = window.__game, am = g.animalManager;
+      const attendre = async (f, ms) => { const t0 = performance.now(); while (!f() && performance.now() - t0 < ms) await new Promise((r) => setTimeout(r, 100)); return f(); };
+      if (g.fun.montureConduite()) { document.getElementById('ride-btn').click(); await attendre(() => !g.player.embarquement && !g.fun.montureConduite(), 30000); }
+      for (const a of [...am.animals]) { am.scene.remove(a.mesh); am.animals.splice(am.animals.indexOf(a), 1); }
+      const x = g.player.pos.x, z = g.player.pos.z; g.player.yaw = 0;
+      const a = am.invoquer('voiture', x, z - 4, false, { flotte: 'generique-suv.glb' });
+      a.yaw = Math.PI / 2; a.mesh.rotation.y = a.yaw + Math.PI;
+      await attendre(() => (a.mesh.userData.roues || []).length && a.mesh.userData.modele, 10000);
+      const f0 = g.renderer.info.render.frame; await attendre(() => g.renderer.info.render.frame - f0 > 5, 15000);
+      const rel = [];
+      let actif = true;
+      const releve = () => {
+        if (!actif) return;
+        const e = g.player.embarquement, eq = a.mesh.userData.portieres;
+        let av = null; a.mesh.traverse((o) => { if (o.userData && o.userData.arms && o !== a.mesh && o.parent === a.mesh) av = o; });
+        rel.push({ ph: e ? e.phase : null, angle: eq ? Math.max(Math.abs(eq['-1'].rotation.x), Math.abs(eq['-1'].rotation.y)) : null,
+          av: av && av.visible ? { x: av.position.x, y: av.position.y, z: av.position.z, s: av.scale.y } : null });
+        requestAnimationFrame(releve);
+      };
+      requestAnimationFrame(releve);
+      document.getElementById('ride-btn').click();
+      await attendre(() => g.fun.montureConduite() === a && !g.player.embarquement, 40000);
+      actif = false;
+      const eq = a.mesh.userData.portieres;
+      const plan = eq && eq.plan;
+      const res = { volant: g.fun.montureConduite() === a, images: rel.length, porte: !!eq,
+        angleMax: +Math.max(0, ...rel.map((r) => r.angle || 0)).toFixed(2), phases: [...new Set(rel.map((r) => r.ph))] };
+      if (plan) {
+        // au travers du flanc : entre 0,25 bloc de l'axe et la peau
+        const flanc = rel.filter((r) => r.ph === 'entree' && r.av && Math.abs(r.av.x) > 0.25 && Math.abs(r.av.x) < plan.demiLarg);
+        const horsOuverture = flanc.filter((r) => r.av.z < plan.z0 - 0.02 || r.av.z > plan.z1 + 0.02);
+        const teteHaute = flanc.filter((r) => r.av.y + 1.476 * r.av.s > plan.y1 + 0.02);
+        Object.assign(res, { flanc: flanc.length, horsOuverture: horsOuverture.length, teteHaute: teteHaute.length,
+          ouverture: [+plan.z0.toFixed(2), +plan.z1.toFixed(2), +plan.y1.toFixed(2)], exemple: (horsOuverture[0] || teteHaute[0] || {}).av || null });
+      }
+      document.getElementById('ride-btn').click();
+      await attendre(() => !g.player.embarquement && !g.fun.montureConduite(), 30000);
+      am.scene.remove(a.mesh); am.animals.splice(am.animals.indexOf(a), 1);
+      return res;
+    });
+    verifier('sur le SUV générique, qui refusait sa portière, elle s\'ouvre, et l\'enfant passe PAR l\'ouverture — entre les montants, la tête sous le cadre — puis s\'assied au volant',
+      embSuv.porte && embSuv.volant && embSuv.angleMax > 0.7 && embSuv.flanc >= 3 && embSuv.horsOuverture === 0 && embSuv.teteHaute === 0,
+      JSON.stringify(embSuv));
     // MONTER DANS UN AVION (v381). Les avions montaient d'un coup ; l'enfant
     // marche désormais au pied d'un escalier (d'une échelle pour le
     // chasseur) posé contre la porte avant gauche, le gravit, la porte (la

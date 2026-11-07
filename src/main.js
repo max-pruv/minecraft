@@ -8312,7 +8312,7 @@ function plafondAuSiege(a, siege) {
     // ni l'avatar de l'enfant, ni celui d'un ami assis là (v253) : une tête
     // n'est pas un toit — reconnu à ses bras articulés (`buildKidMesh`)
     // ni une portière (v366) : ouverte, elle n'est pas le toit
-    for (let p = o; p && p !== a.mesh; p = p.parent) if (p === avatarLocal || (p.userData && (p.userData.arms || p.userData.estPortiere))) return;
+    for (let p = o; p && p !== a.mesh; p = p.parent) if (p === avatarLocal || (p.userData && (p.userData.arms || p.userData.estPortiere || p.userData.garniture))) return;
     const pos = o.geometry.attributes.position;
     _plafondM.multiplyMatrices(_plafondInv, o.matrixWorld);
     let haut = -Infinity;

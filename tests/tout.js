@@ -132,6 +132,8 @@ const GARDIENS = {
   'tests/porsche-911-textures.mjs': ['degats.js'],
   // les lumières de la flotte (v550), lues par degats.js sous node
   'tests/sonde-feux-flotte.mjs': ['degats.js'],
+  // les portières de toute la flotte (vNEXT), lues par degats.js sous node
+  'tests/portieres-flotte.mjs': ['degats.js'],
   'tests/sonde-police.cjs': ['monte.js'],
   'src/net.js': ['reseau.js', 'visio.js', 'hote.js', 'manhattan.js', 'degats.js', 'reglages.js'],
   'src/nouveautes.js': ['maj.js'],
@@ -368,7 +370,7 @@ const GARDIENS = {
   'src/effects.js': ['monte.js', 'carte.js'],
   'src/props.js': ['monte.js', 'carte.js'],
   'src/mobiliercasse.js': ['monte.js', 'plafond.js'],
-  'src/modeles.js': ['monte.js'],
+  'src/modeles.js': ['monte.js', 'degats.js'],
   'src/betes.js': ['monte.js'],
   // LE BANDEAU DU JEU (v285). Il vivait dans `creatures.js` — retiré avec le mode
   // d'attrape — et c'est la VOIX du jeu : « fais demi-tour », « Sauvegarde

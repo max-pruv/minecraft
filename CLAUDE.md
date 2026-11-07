@@ -1230,7 +1230,7 @@ paramétriques) sont partis de `FLOTTE` et de `vendor/voitures/`. Deux règles.
 - **UN TÉMOIN QUI NOMME UN MODÈLE LE NOMME POUR UNE PROPRIÉTÉ.** Vingt témoins
   invoquaient l'AMG GT ou la F40 sans dire pourquoi ; il a fallu retrouver ce
   qu'ils attendaient : une portière découpable (la Lucid Gravity — les
-  dix-huit de la v566 ont `portiere: false`), des feux avant nommés (la DB11,
+  dix-huit de la v566 avaient `portiere: false` jusqu'à la vNEXT), des feux avant nommés (la DB11,
   par leur matériau), une classe (la Divo pour l'hypercar), le manifeste (la
   MC12 et la Model Y), des images partagées entre fichiers (cinq déposés). Un
   modèle nommé dans un témoin s'écrit avec la raison à côté.
@@ -4610,9 +4610,9 @@ porte qui s'ouvre ». `src/embarquement.js` (la séquence) et `src/portieres.js`
   coûte quelques appels de dessin de plus (une portière par matériau
   découpé) — seulement celle où l'enfant est monté.
 - **UN MODÈLE QUI CASSE S'EN PASSE, ET C'EST SA FICHE QUI LE DIT.**
-  `portiere: false` (vehicules.js, FLOTTE) comme `habitacle` (v230) ; les
-  taxis fabriqués (`fabrique`, triangles trop grands) aussi. 51 modèles sur 55
-  ont leur portière. Un refus se dit (`refus` de `portieres.js`,
+  `portiere: false` (vehicules.js, FLOTTE) comme `habitacle` (v230). *(Depuis
+  la vNEXT aucune fiche ne le porte : voir « Les portières s'ouvrent pour de
+  vrai ».)* Un refus se dit (`refus` de `portieres.js`,
   `refusSortie` de la séquence) : « il est sorti côté passager » se démonte
   par la raison du refus du côté conducteur (« mur », « eau », « circulation »,
   « voiture »).
@@ -4760,6 +4760,47 @@ fichier** : le diff montre ce qu'on retire à l'autre côté.
 Ce qui reste, déclaré dans `TASKS.md` : la vue de la séquence ne se juge que
 sur le banc, pas sur l'iPad ; les amis ne voient pas la porte d'un avion
 s'ouvrir, ni celle d'une rame (v489).
+
+## Les portières s'ouvrent pour de vrai (vNEXT) — un refus de portière se mesure derrière l'ouverture, et ce qui manque se fabrique dans la peau mesurée
+
+Max : « on voit la personne qui rentre et qui disparaît là-dedans ». 33
+modèles sur 41 refusaient leur portière. Cinq règles.
+
+- **UN REFUS SE DÉMONTE PAR CE QU'IL CACHE.** La découpe (v366, v372)
+  réussissait sur tous ces modèles ; ce qui rendait la portière laide, c'était
+  le VIDE derrière (ni siège ni planche : la rue au travers de la voiture).
+  Le remède n'est pas une autre découpe, c'est l'habitacle qui manque.
+- **CE QUI MANQUE SE FABRIQUE, ET SEULEMENT CE QUI MANQUE.** `sonderHabitacle`
+  (portieres.js) tire sur le prototype : un siège sous les hanches, une
+  planche devant le conducteur, des panneaux sur les flancs ; la garniture
+  (`garnitureDe`) ne pose que ce qui n'y est pas, plus le panneau de chaque
+  portière (il pivote avec elle). Les paquets ont souvent une peau en double
+  face : un rayon touche AUSSI la tôle de dedans, et c'est la POSITION du
+  point touché qui dit s'il y a un meuble. Tout à l'atelier, `matiereVivante`
+  (v538) : aucun programme neuf, et un témoin compare les matériaux.
+- **LA GARNITURE SE POSE DANS LA PEAU MESURÉE.** La découpe relève, pour chaque
+  tranche, la peau du modèle (`peau` : |x| par côté, par tranche de y et de z ;
+  `toit` : le plus haut point par colonne ; `ceinture` : le bas des vitres de
+  la portière) ; un siège, une planche, un panneau se dimensionnent contre
+  elle, jamais contre une boîte. Et `plafondAuSiege` (main.js) saute la
+  garniture : sinon le dossier serait le toit.
+- **UNE PORTE EN ÉLYTRE A SA CHARNIÈRE EN HAUT.** `portiere: 'ciseau'` dans la
+  fiche (la Revuelto, la MC12) : le pivot monte à mi-hauteur de l'ouverture, la
+  portière se lève (`OUVERTURE_CISEAU`) et s'écarte un peu. Posée au sol, elle
+  plongeait dans l'aile avant.
+- **L'AVATAR PASSE PAR L'OUVERTURE.** `avatarEntre` (embarquement.js) : il
+  s'accroupit devant, glisse de côté à un z tenu entre les montants
+  (`passageDe`), les hanches assez basses pour que la tête reste sous le cadre,
+  puis se cale dans le siège ; la sortie joue l'inverse. Une voiture sans
+  portière ne fait plus marcher l'enfant au travers de la tôle : il s'assied
+  d'un coup. Le témoin relève image par image, dans la page, où est l'avatar.
+
+Et deux pièges de mesure. **Un plan mémoïsé par nom de fichier ne vaut que
+pour le prototype qui l'a produit** : `porsche-911.mjs` bâtit sa propre 911,
+et le plan qu'il laissait faisait refuser la portière de la vraie (le plan
+porte son `proto`). **Les pivots de roue sont les nœuds `Wheel_*` les plus
+hauts** : la MC12 porte des enfants `Wheel_FL_1…` (primitives du chargeur), et
+les quatre premiers z triés étaient tous à l'avant — refus « gabarit ».
 
 ## Les coupoles ont leur édifice (v365) — un gabarit partagé se cherche dans toutes les villes, et le ciel se lit sur les modèles
 

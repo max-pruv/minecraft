@@ -59,8 +59,8 @@ export const SEQUENCE_ACTIVE = (() => {
 
 // Les durées, en secondes de JEU.
 export const DUREES = {
-  marcheMin: 0.35, marcheMax: 1.1, ouverture: 0.35, entree: 0.6, fermeture: 0.35,
-  sortieOuverture: 0.3, sortie: 0.55, sortieFermeture: 0.35,
+  marcheMin: 0.35, marcheMax: 1.1, ouverture: 0.4, entree: 0.95, fermeture: 0.4,
+  sortieOuverture: 0.35, sortie: 0.85, sortieFermeture: 0.4,
   // l'avion (v381) : la marche jusqu'au pied de l'escalier peut faire le
   // tour du nez, on la borne plus large ; puis on monte les marches
   marcheAvionMax: 2.0, gravir: 0.9, ouvertureAvion: 0.45, entreeAvion: 0.5, fermetureAvion: 0.45,
@@ -84,16 +84,27 @@ const lerp = (a, b, k) => a + (b - a) * k;
 // La fiche du modèle dit-elle « pas de portière » ? Même discipline que
 // `habitacle` (v230) : un modèle qui casse vaut moins qu'un modèle qui s'en
 // passe, et la règle vit dans sa fiche.
+// DEPUIS LA vNEXT, PRESQUE PLUS AUCUN MODÈLE NE S'EN PASSE. Max : « on voit la
+// personne qui rentre et qui disparaît là-dedans ». La découpe réussissait sur
+// toute la flotte (sonde des portières) ; ce qui la faisait refuser, c'était le
+// VIDE derrière l'ouverture — aucun rayon ne touchait d'habitacle. La garniture
+// fabriquée (portieres.js, `garnitureDe`) meuble ce vide ; les taxis fabriqués
+// et les dix-huit modèles déposés ouvrent donc leur portière.
+function ficheDe(g) {
+  const f = g && g.userData ? g.userData.flotte : null;
+  return f ? FLOTTE.find((x) => x.fichier === f) || null : null;
+}
 function portiereRefusee(g) {
   const f = g && g.userData ? g.userData.flotte : null;
   if (!f) return true;
   if (f === 'voiture.glb') return false;
-  const e = FLOTTE.find((x) => x.fichier === f);
-  // Les taxis fabriqués (`fabrique`) ont des bords nets depuis la v372 (la
-  // découpe coupe au plan), mais RIEN derrière : mesuré par la sonde des
-  // portières, aucun des vingt-quatre rayons tirés au travers de l'ouverture
-  // ne touche un habitacle. Une portière ouverte y montrerait le vide.
-  return !e || e.portiere === false || !!e.fabrique;
+  const e = ficheDe(g);
+  return !e || e.portiere === false;
+}
+// Équiper une voiture selon sa fiche : refusée, ou en ciseau (la Revuelto).
+function equiper(g) {
+  const e = ficheDe(g);
+  return equiperPortieres(g, portiereRefusee(g), { ciseau: !!(e && e.portiere === 'ciseau') });
 }
 
 export function creerEmbarquement(ctx) {
@@ -124,7 +135,8 @@ export function creerEmbarquement(ctx) {
     const p = portes && portes.plan;
     const demiLarg = p ? p.demiLarg : 1.1;
     const z0 = p ? p.z0 : -0.9, z1 = p ? p.z1 : 0.35;
-    return { demiLarg, z0, z1, zPorte: (z0 + z1) / 2 + 0.1 };
+    const y0 = p ? p.y0 : 0.25, y1 = p ? p.y1 : 1.15;
+    return { demiLarg, z0, z1, y0, y1, zPorte: (z0 + z1) / 2 + 0.1 };
   }
   function pointPorte(d, cote) {
     return new THREE.Vector3(cote * (d.demiLarg + ECART_PORTE), 0, d.zPorte);
@@ -212,25 +224,56 @@ export function creerEmbarquement(ctx) {
     animerHumain(a, temps, vitesse);
     return a;
   }
+  // DE LA PORTIÈRE AU SIÈGE, PAR L'OUVERTURE (vNEXT). Max : « on voit la
+  // personne qui rentre et qui disparaît là-dedans ». L'ancien arc allait
+  // droit au siège : il passait par le montant central (le siège est à
+  // z 0,22, l'ouverture finit vers 0,2) et la tête, encore debout, sortait par
+  // le toit. Trois temps, comme dans une vraie voiture : on se tourne et l'on
+  // s'accroupit devant l'ouverture (ses hanches à la hauteur de l'assise), on
+  // glisse de côté DANS l'ouverture — à une cote z tenue entre les montants,
+  // la tête sous le cadre, penchée vers l'intérieur —, puis on se cale dans le
+  // siège, face à la route. La descente joue la même chose à l'envers.
+  function passageDe(s0) {
+    const d = s0.d, cible = s0.assise;
+    const marge = Math.min(0.22, Math.max(0.05, (d.z1 - d.z0) / 2 - 0.05));
+    const zP = Math.max(d.z0 + marge, Math.min(d.z1 - marge, cible.z - 0.12));
+    // les hanches sous le cadre de l'ouverture : la tête est à 0,706 au-dessus
+    const hHaut = (d.y1 - 0.06) - 0.706 * cible.echelle;
+    const hBas = cible.y + 0.77 * cible.echelle;
+    const hanches = Math.min(hBas, hHaut);
+    return { zP, yP: hanches - 0.77 * cible.echelle };
+  }
   function avatarEntre(g, s0, k, temps) {
-    // de la portière au siège : on s'assied en entrant, le corps tourne vers
-    // l'avant, les jambes se replient — une pose qui SE MÉLANGE, pas un saut
     const a = av.obtenir();
     if (a.parent !== g) g.add(a);
     a.visible = true;
     const cible = s0.assise;
-    const D = s0.D, kk = lisse(k);
-    // d'abord vers le flanc, puis vers le siège : un arc, pas une glissade
-    const milieu = new THREE.Vector3(s0.cote * (s0.d.demiLarg - 0.1), 0, cible.z);
-    const p = k < 0.5
-      ? D.clone().lerp(milieu, lisse(k / 0.5))
-      : milieu.clone().lerp(new THREE.Vector3(cible.x, 0, cible.z), lisse((k - 0.5) / 0.5));
-    p.y = lerp(0, cible.y, kk);
-    a.position.copy(p);
-    a.scale.setScalar(lerp(1, cible.echelle, kk));
-    a.rotation.set(0, lerp(s0.cote * Math.PI / 2, 0, lisse(Math.max(0, k * 1.4 - 0.2))), 0);
+    const D = s0.D, cote = s0.cote;
+    const { zP, yP } = passageDe(s0);
     const P = av.pose;
-    const pose = { cuisses: P.cuisses * kk, genoux: P.genoux * kk, bras: P.bras * kk, coudes: P.coudes * kk };
+    let x, y, z, cap, assis, penche = 0, ech;
+    if (k < 0.3) {
+      // s'accroupir devant l'ouverture, en se tournant dos à la route
+      const u = lisse(k / 0.3);
+      x = D.x; z = lerp(D.z, zP, u); y = lerp(0, yP, u);
+      cap = lerp(cote * Math.PI / 2, 0, u);
+      assis = u; ech = lerp(1, cible.echelle, u);
+    } else if (k < 0.75) {
+      // glisser de côté au travers de l'ouverture, la tête penchée dedans
+      const u = lisse((k - 0.3) / 0.45);
+      x = lerp(D.x, cible.x, u); z = zP; y = yP;
+      cap = 0; assis = 1; ech = cible.echelle;
+      penche = Math.sin(u * Math.PI) * 0.22;
+    } else {
+      // se caler dans le siège
+      const u = lisse((k - 0.75) / 0.25);
+      x = cible.x; z = lerp(zP, cible.z, u); y = lerp(yP, cible.y, u);
+      cap = 0; assis = 1; ech = cible.echelle;
+    }
+    a.position.set(x, y, z);
+    a.scale.setScalar(ech);
+    a.rotation.set(0, cap, cote * penche);
+    const pose = { cuisses: P.cuisses * assis, genoux: P.genoux * assis, bras: P.bras * assis, coudes: P.coudes * assis };
     a.userData.legs.forEach((l) => { l.rotation.x = pose.cuisses; });
     a.userData.arms.forEach((b) => { b.rotation.x = pose.bras; });
     animerHumain(a, temps, 0, pose);
@@ -332,7 +375,7 @@ export function creerEmbarquement(ctx) {
     if (!SEQUENCE_ACTIVE || !av || !a || !a.mesh || !a.def || !a.def.siege || a.def.pilote || a.def.selle) { ctx.toggleRide(a); return; }
     const g = a.mesh;
     a.montee = true; a.state = 'idle';
-    const portes = equiperPortieres(g, portiereRefusee(g));
+    const portes = equiper(g);
     const d = dims(g, portes);
     const cote = -1;   // le volant est à gauche (x = −0,33, v249)
     const D = pointPorte(d, cote);
@@ -760,7 +803,7 @@ export function creerEmbarquement(ctx) {
       const ancienne = s.portes ? s.portes[String(s.cote)] : null;
       if (ancienne) ouvrir(ancienne, 0);
       s.a = commeMonture(v);
-      s.portes = equiperPortieres(v.mesh, portiereRefusee(v.mesh));
+      s.portes = equiper(v.mesh);
       s.d = dims(v.mesh, s.portes);
       s.rebranchee = (s.rebranchee || 0) + 1;
     }
@@ -772,7 +815,7 @@ export function creerEmbarquement(ctx) {
     if (!SEQUENCE_ACTIVE || !av || !veh || !veh.mesh || !veh.def || !siege || veh.def.selle) { fin(); return; }
     const g = veh.mesh;
     const a = commeMonture(veh);
-    const portes = equiperPortieres(g, portiereRefusee(g));
+    const portes = equiper(g);
     const d = dims(g, portes);
     const cote = 1;   // le conducteur est à gauche : on monte à droite
     const D = pointPorte(d, cote);
@@ -796,7 +839,7 @@ export function creerEmbarquement(ctx) {
   const distantes = new Map();   // pivot → { k, cible }
   function porteDistante(mesh, cote, o) {
     if (!mesh || (cote !== 1 && cote !== -1)) return;
-    const portes = equiperPortieres(mesh, portiereRefusee(mesh));
+    const portes = equiper(mesh);
     const p = portes ? portes[String(cote)] : null;
     if (!p) return;
     const e = distantes.get(p) || { k: 0, cible: 0 };
@@ -852,13 +895,13 @@ export function creerEmbarquement(ctx) {
     const sansSequence = !SEQUENCE_ACTIVE || !av || !a.mesh || !a.def || !a.def.siege || a.def.pilote;
     if (sansSequence && !opts.presse) { ctx.toggleRide(null); return; }
     const g = a.mesh;
-    const portes = g.userData.portieres || null;
+    const portes = g.userData.portieres || equiper(g);
     const d = dims(g, portes);
     const cam = { p: player.camera.position.clone(), q: player.camera.quaternion.clone() };
     ctx.toggleRide(null);           // on n'est plus au volant, tout de suite
     if (!ctx.existe(a)) return;     // rangée ailleurs : rien à animer
     const sortie = choisirSortie(a, d);
-    if (opts.presse || !sortie.cote) {
+    if (opts.presse || !sortie.cote || !portes) {
       player.pos.copy(sortie.monde);
       player.vel.set(0, 0, 0);
       player.yaw = a.yaw + Math.PI;
@@ -891,12 +934,12 @@ export function creerEmbarquement(ctx) {
     if (!SEQUENCE_ACTIVE || !av || !veh || !veh.mesh || !veh.def || !siege || veh.def.selle) return false;
     const g = veh.mesh;
     const a = commeMonture(veh);
-    const portes = equiperPortieres(g, portiereRefusee(g));
+    const portes = equiper(g);
     const d = dims(g, portes);
     const cam = { p: player.camera.position.clone(), q: player.camera.quaternion.clone() };
     // côté passager d'abord : c'est par là qu'il est monté
     const sortie = choisirSortie(a, d, [1, -1]);
-    if (!sortie.cote) {
+    if (!sortie.cote || !portes) {
       player.pos.copy(sortie.monde);
       player.vel.set(0, 0, 0);
       player.yaw = a.yaw + Math.PI;
@@ -1060,7 +1103,7 @@ export function creerEmbarquement(ctx) {
     if (s.rame) { updateRame(); publier(); return; }
     if (!s.portes && s.phase !== 'approche') {
       // le modèle est peut-être arrivé pendant la marche
-      s.portes = equiperPortieres(g, portiereRefusee(g));
+      s.portes = equiper(g);
     }
     const tete = new THREE.Vector3();
     if (s.sens === 'monter') {
@@ -1080,6 +1123,11 @@ export function creerEmbarquement(ctx) {
         const pos = camSequence(s, tete);
         appliquerCamera(lisse(Math.min(1, s.t / 0.35 + (s.phase === 'approche' ? 0 : 1))), pos);
         av.obtenir().visible = player.camera.position.distanceTo(w) > 1.2;
+      } else if (s.phase === 'ouverture' && !s.portes) {
+        // PAS DE PORTIÈRE (une fiche qui la refuse) : on ne traverse pas la
+        // tôle en marchant (vNEXT) — l'enfant est au volant d'un geste, et la
+        // caméra rend la main comme après une fermeture
+        asseoirMaintenant(); s.phase = 'fermeture'; s.t = 0; signaler(0);
       } else if (s.phase === 'ouverture') {
         const k = Math.min(1, s.t / DUREES.ouverture);
         porte(k);
