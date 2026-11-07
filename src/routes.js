@@ -619,6 +619,8 @@ export const PENTE = 0.06;
 // se creuse jusqu'à `DEBLAI_MAX` — au-delà ce serait un tunnel, et aucun
 // corridor n'en a besoin (mesuré : 7,2 au pire).
 export const VIADUC = 4;
+// En pas d'abscisse : sous cet écart, deux ponts voisins n'en font qu'un.
+export const ECART_VIADUC = 10;
 export const DEBLAI_MAX = 9;
 // La pente du talus, par bloc d'écart à l'axe : 0,7 et non 1, parce que les
 // quatre coins d'une cellule de surface s'écartent de l'axe de |fx| + |fz|
@@ -764,6 +766,16 @@ export function profilDe(seg) {
     let j = k; while (j + 1 <= n && ouvrage[j + 1]) j++;
     if (j - k + 1 < 3) for (let i = k; i <= j; i++) ouvrage[i] = 0;
     k = j;
+  }
+  // DEUX OUVRAGES À DIX PAS L'UN DE L'AUTRE FONT UN SEUL VIADUC (carte ×3).
+  // Entre les deux, un terre-plein de quelques blocs sur un remblai de quatre :
+  // deux culées de suite, et la voiture qui sort du premier tablier retombait
+  // dans le second (I-95 Sud, deux ponts sur 444 traversées). On comble.
+  for (let k = 0, fin = -1; k <= n; k++) {
+    if (!ouvrage[k]) continue;
+    if (fin >= 0 && k - fin - 1 <= ECART_VIADUC) for (let i = fin + 1; i < k; i++) ouvrage[i] = 1;
+    while (k + 1 <= n && ouvrage[k + 1]) k++;
+    fin = k;
   }
   const spans = [];
   for (let k = 0; k <= n; k++) {

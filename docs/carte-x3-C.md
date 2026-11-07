@@ -163,7 +163,7 @@ entrées de Montréal ne touchent plus d'anneau et sortent de la table.
 ## Empreinte des 490 morceaux
 
 Déclarée, pas prouvée désarmée : le socle seul la mène de ed369fdb… à b9586e29…
-(mesuré sur la branche du socle), les vingt-neuf tracés de b9586e29… à a388c6ed…, et après Barajas, Schiphol, l'A1 sans son point [243, −1221] et la fusion du socle, à b426b3b4….
+(mesuré sur la branche du socle), les vingt-neuf tracés de b9586e29… à a388c6ed…, et après Barajas, Schiphol, l'A1 sans son point [243, −1221] et la fusion du socle, à b426b3b4… ; les viaducs fondus la mènent à 96224dd2….
 Il n'existe plus d'« ancien code » où désarmer rendrait la constante : les
 routes d'avant sont en blocs de l'ancienne carte.
 
@@ -193,3 +193,17 @@ seule est un défaut du monde.
   tronçon d'après, laissait le coin ouvert. Le point est retiré (la route
   passe du point du rayon au suivant) : zéro trou, coude maximal de l'I-95
   inchangé (29,8°, un autre sommet, déclaré).
+
+## Deux ponts à dix pas l'un de l'autre font un viaduc
+
+La sonde des ponts (`sonde-ponts-eau.cjs`, le vrai joueur sous node) : 442
+traversées sur 444. Une voiture tombait entre les deux ponts [463, 466] et
+[475, 481] de l'I-95 Sud : trois pas de tablier, dix de terre-plein sur un
+remblai d'un peu plus de quatre, puis un second tablier — deux culées de
+suite. `profilDe` comble désormais l'écart entre deux ouvrages distants de
+`ECART_VIADUC` (dix) pas au plus : un seul viaduc. Zéro voiture tombée, zéro
+trou au joint, et seuls trois couples du registre sont fondus (AP-2 577–598,
+les deux de l'I-95 Sud). Le seul rouge restant est le pont qui part à treize
+blocs de la porte de New York de l'I-95 Sud (la voiture arrive au bout de la
+route) : déjà rouge sur le socle, il tient à la porte posée sur la rive de
+l'Hudson (v367), pas au tracé.

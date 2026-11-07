@@ -430,11 +430,12 @@ const MM_ECART = 2.2;
 // (mondes.js, 0,0625 km/bloc) l'a déjà changée seul (ed369fdb… → b9586e29…,
 // mesuré sur la branche du socle) : les neuf lieux tombent sur un autre relief.
 // Les vingt-neuf tracés retracés (routes.js, session C) la mènent à a388c6ed…, puis les deux aérodromes relogés
-// et la fusion du socle (monde-v587) à b426b3b4….
+// et la fusion du socle (monde-v587) à b426b3b4…, et les viaducs fondus
+// (ECART_VIADUC, routes.js) à 96224dd2….
 // Il n'y a plus d'ancien code où « désarmer » rendrait la constante : les
 // routes d'avant sont en blocs de l'ancienne carte. Se remesure à la fusion
 // des autres chantiers (A, B) si l'un d'eux touche les neuf lieux.
-const EMPREINTE_MORCEAUX_V357 = 'b426b3b4a03f37018aebcea792698eca4456ca90276336cd1c9e8ca4e6120988';
+const EMPREINTE_MORCEAUX_V357 = '96224dd2a700902cd780d319e4a714c96082136dd08a88950a7408a3395bd286';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
