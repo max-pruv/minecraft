@@ -129,8 +129,14 @@ Trois règles.
   rayures dans le sens de la traversée. Mes deux premiers jets (bande de la
   trame prolongée) faisaient des parallélogrammes de trente blocs sur les
   avenues obliques. Au croisement de deux avenues, pas de passage plutôt qu'un
-  demi-passage : les deux bords doivent être ceux de la même voie
-  (`seg.voie`).
+  demi-passage : les deux bords doivent être encore sur la chaussée de CETTE
+  avenue (`couvertParVoie`, pas « la voie que `voieEn` préfère » : là où une
+  avenue en rejoint une autre, le bord est dans les deux chaussées, et la
+  Grande Armée perdait sa bande au débouché des Ternes — vu en capture, une
+  colonne de large, pas au témoin, dont les comptes n'avaient pas bougé).
+  Les rayures suivent l'axe de l'avenue (`long`) : dans `marquageHD` c'est
+  l'axe de la rue traversée, et une bande perpendiculaire à lui n'était
+  qu'une ligne fine.
 - **LE DÉSARMEMENT VIT DANS LE MODULE** (`reglageMarquage`, jamais un réglage
   du jeu) : l'empreinte des 490 morceaux le lit et rend la constante. La sonde
   (`tests/sonde-passages-paris.mjs`) groupe les colonnes à huit voisins : à

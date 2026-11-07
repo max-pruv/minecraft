@@ -31,7 +31,7 @@
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, voieEn, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit, chainerVoies, VOIE_CIRCUIT } from './voies.js';
+import { rangerVoies, solDesVoies, voieEn, couvertParVoie, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit, chainerVoies, VOIE_CIRCUIT } from './voies.js';
 import { positionDe } from './mondes.js';
 import { entreesDe } from './routes.js';
 import { sectionDeRue, sectionGTA } from './voirie.js';
@@ -1217,16 +1217,19 @@ function passageDAvenue(u, v) {
   // au joint de deux segments, c'est ce qui garde une bande et non une tache), et la normale
   const { seg, pu, pv } = voie;
   const nu = -voie.dv, nv = voie.du;
-  // Les deux bords de la chaussée doivent être ceux de LA MÊME avenue : au
-  // croisement de deux avenues, l'autre passe avant et la bande s'arrêterait
-  // au milieu de la chaussée — le défaut même qu'on corrige. Là, pas de passage
-  // (c'est un carrefour d'avenues, déclaré), plutôt qu'un demi-passage.
+  // Les deux bords de la chaussée doivent être encore sur CETTE avenue : au
+  // croisement de deux avenues, l'autre passe avant sur une partie de la
+  // largeur et la bande s'arrêterait au milieu de la chaussée — le défaut même
+  // qu'on corrige. Là, pas de passage (un carrefour d'avenues, déclaré), plutôt
+  // qu'un demi-passage. Là où une avenue en rejoint une autre (les Ternes sur
+  // la Grande Armée), le bord est dans les deux chaussées : il compte.
   for (const cote of [1, -1]) {
-    const b = voieEn(BANDES, pu + nu * (seg.l - 0.5) * cote, pv + nv * (seg.l - 0.5) * cote);
-    if (!b || b.seg.voie !== seg.voie) return null;
+    if (!couvertParVoie(BANDES, pu + nu * (seg.l - 0.5) * cote, pv + nv * (seg.l - 0.5) * cote, seg.voie)) return null;
   }
   const bord = seg.l + seg.t + 0.5;
-  const long = Math.abs(nu) >= Math.abs(nv) ? 'u' : 'v';
+  // `long` est l'axe de la RUE qu'on traverse (chaque bloc dessine une rayure le
+  // long de lui, les blocs voisins en travers font le zèbre) : ici l'avenue
+  const long = Math.abs(voie.du) >= Math.abs(voie.dv) ? 'u' : 'v';
   for (const cote of [1, -1]) {
     // la trame de cette rive, lue AU BORD de l'avenue, appliquée au point de l'axe
     const t = trameDeParis(pu + nu * bord * cote, pv + nv * bord * cote);

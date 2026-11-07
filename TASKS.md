@@ -2,7 +2,7 @@
 
 ## Les passages piétons de Paris (vNEXT) — ce qui reste
 
-- [ ] **Douze passages d'avenue courts sur 90** (`tests/sonde-passages-paris.mjs`,
+- [ ] **Dix-huit passages d'avenue courts sur 101** (`tests/sonde-passages-paris.mjs`,
   `avenues.courts`) : au joint de deux segments d'une même avenue (Haussmann à
   (−487, 252), (−484, 252)), les colonnes se projettent sur l'un ou l'autre
   segment et la bande se casse ; quelques colonnes isolées au bord d'une

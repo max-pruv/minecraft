@@ -33,7 +33,7 @@ un monument, une route) recouvrent.
 `tests/sonde-passages-paris.mjs` (pure, sous node, moins d'une seconde, tout
 le disque) : aucun passage d'une rue de trame ne s'arrête hors de la chaussée
 (0 coupé sur 1 605 ; 329 sur 1 963 sur `origin/main`), et les avenues ont
-leurs passages d'un bord à l'autre (78 entiers sur 90 ; aucun sur
+leurs passages d'un bord à l'autre (83 entiers sur 101 ; aucun sur
 `origin/main`). Les deux sont rouges sur l'ancien code. Le sol est identique
 colonne par colonne sur les 549 081 colonnes du disque. L'empreinte des 490
 morceaux, règle désarmée (`reglageMarquage`), rend la constante au bit près ;

@@ -91,6 +91,20 @@ export function voieEn(bandes, u, v) {
   return best;
 }
 
+// Ce point est-il sur la chaussée de CETTE voie (l'un de ses segments), quelle
+// que soit la voie que `voieEn` préfère là ? Au débouché d'une avenue sur une
+// autre, un point de la chaussée de la première est aussi dans celle de la
+// seconde (vNEXT).
+export function couvertParVoie(bandes, u, v, voie) {
+  const segs = bandes.get(Math.floor(v / BANDE));
+  if (!segs) return false;
+  for (const s of segs) {
+    if (s.voie !== voie || u < s.uMin - s.l || u > s.uMax + s.l) continue;
+    if (distanceSegment(u, v, s) <= s.l) return true;
+  }
+  return false;
+}
+
 // --- les circuits de circulation ---------------------------------------------
 //
 // « Ya toujours pas de voitures dans les villes » (Max). Il avait raison, et la
