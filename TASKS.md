@@ -57,6 +57,30 @@ Mesures et méthode dans `docs/echelle-villes.md` ; la table est
   `carte-ouverte` n'est pas encore posée. Remède tout trouvé : attendre
   `__carte.ouverte` ET l'état, borné, la durée au message. Le diff de la
   livraison ne touche ni `main.js`, ni `index.html`, ni la minicarte.
+  **Second portail, sur le sha rebasé 917e409 (run 42154336112) : tranche 4/4
+  verte, 1/4, 2/4 et 3/4 rouges, aucune par cette livraison.** Comparé tranche
+  par tranche aux portails des PR des phares (#606) et de KTX2 (#598), sans une
+  ligne de cette branche. Tranche 3/4 : les deux rouges d'avant, et « commandes
+  (420 × 760) : toucher l'écran… casse en construction » rend `construction 0`
+  — vert à 430 × 932 dans le même run et aux deux tailles sur trois autres
+  portails ; attente FIXE de 400 ms après le toucher (`tests/maj.js`, famille
+  v270), intermittence déclarée v509/v510. Tranche 2/4 : les fluidités et le
+  passager (déclarés), et « la voiture qu'on prend dans la rue garde sa
+  couleur » `auVolant false` après 335 s (vert en 2–3 s sur trois autres
+  portails ; déclaré v365, v369, v388 ; observateur à 2 images/s), qui emporte
+  ses deux dépendants (carte de l'ami `assis false`, « arrive derrière » `arrive
+  0` — ce dernier rouge aussi sur phares 2/4). Tranche 1/4, `monte.js`, neuf
+  rouges : huit sont déclarés plus bas ET rouges sur au moins une des deux
+  autres tranches 1/4 (traversées 75 %, Moscou ×2, mémoire des voitures,
+  flâneur de Rome, passage peint de Londres, passant lancé, radio) ; le
+  neuvième — **« les feux stop s'allument au freinage… » `stops: [] n: 0`** —
+  est le tirage d'un modèle sans optique arrière reconnue : `invoquer('voiture')`
+  tire un modèle sur 36, et `sonde-feux-flotte.mjs` rejouée sous node sur cette
+  tête rend deux tirables à `stops 0`, la Divo et le taxi Mondeo (la dette v588
+  de ce fichier) ; `v1 11,6` après 1,2 s de gaz est l'allure d'une hypercar.
+  Un témoin qui tire un modèle au hasard (v587) : une fois sur vingt environ.
+  Remède tout trouvé pour ce témoin-là : invoquer un modèle NOMMÉ pour la
+  propriété qu'il mesure (v579), par exemple la DB11 (feux arrière nommés).
 
 ## Chaque moteur a sa voix, la flamme est une réchauffe (v587) — dettes
 
