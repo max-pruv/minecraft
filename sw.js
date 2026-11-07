@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v591';
+const CACHE_VERSION = 'web-minecraft-v590';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -27,10 +27,7 @@ const isStaticAsset = (url) =>
   || url.includes('/vendor/polices/') || url.includes('/vendor/avions/')
   // les modèles et photos de New York (v565) : immuables, téléchargés à la
   // première visite de Manhattan, jamais avant
-  || url.includes('/vendor/newyork/')
-  // three r187 (build WebGPU), chargé seulement sous `?rendu=webgpu` : immuable,
-  // jamais téléchargé par une installation ordinaire (chantier WebGPU)
-  || url.includes('/vendor/three-webgpu/');
+  || url.includes('/vendor/newyork/');
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
@@ -193,7 +190,6 @@ const ASSETS = [
   './src/sync.js',
   './src/admin.js',
   './vendor/three.module.min.js',
-  './src/rendu-webgpu.js',
   './vendor/peerjs.min.js',
   './vendor/qrcode.module.js',
   // La vraie voiture (réalisme v2) : le chargeur glTF et le modèle d'artiste.

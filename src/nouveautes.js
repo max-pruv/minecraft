@@ -6,15 +6,6 @@
 
 export const NOUVEAUTES = [
   {
-    v: 591,
-    titre: 'Un moteur d\'image à l\'essai',
-    puces: [
-      'Rien ne change pour toi aujourd\'hui',
-      'Un nouveau rendu se teste derrière un réglage',
-      'Pour un jeu plus beau et plus rapide',
-    ],
-  },
-  {
     v: 590,
     titre: 'Le jeu tient mieux sur iPhone',
     puces: [

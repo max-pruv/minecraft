@@ -53,7 +53,7 @@ du plan :
   sa carte d'attente, sans erreur — à mesurer avec `sonde-rendu-webgpu.cjs` sur
   une voiture déposée, et `?ktx2=0` rend les originaux en attendant.
 
-### Rouges du portail de la v591 (PR #609), mesurés des deux côtés
+### Rouges du portail de la vNEXT (PR #609), mesurés des deux côtés
 
 - [ ] **Portail local (17 suites, 1 577 ✅, 10 ❌) et GitHub (run 42143763412,
   tranche 3 verte, 1, 2 et 4 rouges) sur le commit 70ca620.** La branche
@@ -92,7 +92,7 @@ du plan :
   terrasse de café, `reseau.js` l'hôte sans courtier trouvé par un invité,
   `monte.js` « au feu… au lieu de piler », `manhattan.js` PeerJS « ID is
   taken » ; et `degats.js` verte.
-  Troisième passage GitHub, sur la fusion `0f5423d` (v591), tranche 4/4 :
+  Troisième passage GitHub, sur la fusion `0f5423d` (vNEXT), tranche 4/4 :
   `parishd.js` verte (la terrasse de café aussi), `degats.js` un seul rouge,
   « deux murs pris à pleine vitesse » à `murs: 1` en 31 s (la famille des
   murs du tirage de cadence, déclarée ci-dessus et à la v583 ; vert rejoué

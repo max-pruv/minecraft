@@ -118,7 +118,7 @@ voiture rencontrée à 2,63 blocs produisaient un faux échec. Le verdict reste
 strict : franchir la terrasse cassée ou s'arrêter devant la terrasse intacte.
 Ne pas abaisser les distances pour faire passer une interférence de trafic.
 
-## Le rendu WebGPU à l'essai (v591) — un rendu qui change de règles se mesure avant d'être cru
+## Le rendu WebGPU à l'essai (vNEXT) — un rendu qui change de règles se mesure avant d'être cru
 
 Chantier réalisme 3 : étude, prototype derrière `?rendu=webgpu`, plan dans
 `docs/webgpu.md`. Le rendu par défaut est la ligne d'avant au bit près
