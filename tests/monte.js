@@ -4740,12 +4740,12 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const matin = { est: await est(0.08), ouest: await ouest(0.08) };
       const soir = { est: await est(0.42), ouest: await ouest(0.42) };
       // midi : le soleil est à vingt degrés du zénith, et son auréole — la
-      // diffusion du dôme (v588) — éclaircit tout ce qui est à moins de
+      // diffusion du dôme (v591) — éclaircit tout ce qui est à moins de
       // vingt-cinq degrés de lui, le haut de l'écran compris, quelle que soit
       // la direction du regard. La voûte se lit donc LOIN du soleil : le ciel
       // à soixante degrés d'élévation à l'opposé de son azimut (≈ 48° de
       // l'astre), contre le ciel à quinze degrés sur l'horizon, du même côté.
-      // Mesuré à la sonde (branche v588 · v585) : 60° à l'opposé 164 · 162,
+      // Mesuré à la sonde (branche v591 · v585) : 60° à l'opposé 164 · 162,
       // 15° à l'opposé 190 · 188, et l'ancien pixel du haut d'écran 176 · 156 —
       // c'est l'auréole qui avait changé, pas la voûte. On la relève aussi.
       window.__setDayTime(0.25);
@@ -4816,7 +4816,7 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       `matin ${JSON.stringify(regard.matin)} · soir ${JSON.stringify(regard.soir)}`);
     // UNE BORNE DE GARDE SE POSE À LA MOITIÉ : 0,86 mesuré ici, 1,00 sur
     // l'ancien code — 0,93, pas 0,9 collé sous la mesure. Et la voûte se lit
-    // loin du soleil (v588) : lu au haut de l'écran, à vingt degrés de l'astre,
+    // loin du soleil (v591) : lu au haut de l'écran, à vingt degrés de l'astre,
     // ce témoin rendait 0,97 sur un dôme dont la voûte n'avait pas bougé.
     verifier('le ciel est une voûte : plus profond à soixante degrés, loin du soleil, qu\'à l\'horizon',
       ok(regard.ciel.zenith) && ok(regard.ciel.bas) && regard.ciel.zenith / regard.ciel.bas < 0.93,

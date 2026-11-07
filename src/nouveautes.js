@@ -6,12 +6,39 @@
 
 export const NOUVEAUTES = [
   {
-    v: 588,
+    v: 591,
     titre: 'La lumière devient vraie',
     puces: [
       'Les fenêtres et les lampes brillent la nuit',
       'Le soleil se voit dans le ciel',
       'Une brume douce au loin et le soir',
+    ],
+  },
+  {
+    v: 590,
+    titre: 'Le jeu tient mieux sur iPhone',
+    puces: [
+      'Les voitures prennent bien moins de mémoire',
+      'Les avions et New York aussi',
+      'Elles restent aussi belles qu’avant',
+    ],
+  },
+  {
+    v: 589,
+    titre: 'La nuit n\'est plus toute noire',
+    puces: [
+      'New York se voit mieux la nuit',
+      'Les voitures gardent leur forme le soir',
+      'Plus de voitures toutes noires',
+    ],
+  },
+  {
+    v: 588,
+    titre: 'Les phares ont leur vraie forme',
+    puces: [
+      'Chaque phare brille comme sur la vraie voiture',
+      'Les feux rouges s\'allument en freinant',
+      'Plus aucun rond collé sur la carrosserie',
     ],
   },
   {

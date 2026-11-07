@@ -316,7 +316,7 @@ photographique globale ni les performances d’un appareil physique : Chromium
 utilise SwiftShader. Le changement améliore la géométrie des façades, mais
 l’objectif d’une ville au niveau de fidélité d’un GTA récent reste à atteindre.
 
-## Le relevé de la v588 — la lumière et le post-traitement, 6 novembre 2026
+## Le relevé de la v591 — la lumière et le post-traitement, 6 novembre 2026
 
 Joué sur la branche `claude/lumiere-realiste` (PR #600), `postfx=1` contre
 `postfx=0` sur le même code, plus la vraie v585 (arbre à 1e5724b) pour le
@@ -327,7 +327,7 @@ porte déjà le dôme qui diffuse (`sky.js`, à tout palier) :
 node tests/sonde-revue-ecran.cjs <dossier> --etats=paris,tour-eiffel,vol-libre,campagne,ny-rue,ny-volant '--params=&postfx=1'   # puis &postfx=0
 ```
 
-Captures réduites de moitié dans `docs/revue-ecran/v588/` : `<vue>-<état>-<heure>-apres.jpg`
+Captures réduites de moitié dans `docs/revue-ecran/v591/` : `<vue>-<état>-<heure>-apres.jpg`
 et `-avant.jpg` (24 et 24, iPhone et iPad, jour et nuit), le crépuscule
 (`iphone-paris[-vol]-crepuscule-{apres,avant,v585}.jpg`), Paris la nuit en v585
 (`iphone-paris[-vol]-nuit-v585.jpg`), et face au soleil bas

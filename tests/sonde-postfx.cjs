@@ -1,4 +1,4 @@
-// LA SONDE DU POST-TRAITEMENT (v588) — lue par `parishd.js`, donc pas isolée.
+// LA SONDE DU POST-TRAITEMENT (v591) — lue par `parishd.js`, donc pas isolée.
 //
 // Quatre questions, une fonction chacune, sur une page du banc ouverte avec
 // `?postfx=1&ombres=1&hd=2` :
@@ -17,7 +17,7 @@
 //   EN DERNIER : rendre sur l'écran compile les variantes d'écran des
 //   programmes, c'est-à-dire des clés neuves.
 // - `lirePixels(page, zones)` : des moyennes RGB sur l'écran, l'écran reposé
-//   d'abord (la cible HDR reste posée entre deux images, v588).
+//   d'abord (la cible HDR reste posée entre deux images, v591).
 const lumi = (r, v, b) => 0.2126 * r + 0.7152 * v + 0.0722 * b;
 
 async function clesNeuves(page, avant) {
