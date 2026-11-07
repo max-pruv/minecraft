@@ -31,7 +31,7 @@
 // villes, avec ses îlots, ses cours et sa ligne de corniche.
 
 import { BLOCK, CITY_BLOCK, DECOR_START, ARCHI } from './blocks.js';
-import { rangerVoies, solDesVoies, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit, chainerVoies, VOIE_CIRCUIT } from './voies.js';
+import { rangerVoies, solDesVoies, voieEn, couvertParVoie, fabriqueCircuits, contournerRonds, contournerBlocs, circuitSurRue, densifierCircuit, chainerVoies, VOIE_CIRCUIT } from './voies.js';
 import { positionDe } from './mondes.js';
 import { entreesDe } from './routes.js';
 import { sectionDeRue, sectionGTA } from './voirie.js';
@@ -575,6 +575,8 @@ const ENTREES = entreesDe('paris').map((e) => ({
 export const ENTREES_PARIS = ENTREES.map((v) => v.pts.map(([u, w]) => [PARIS.x + u, PARIS.z + w]));
 
 const BANDES = rangerVoies([...VOIES, ...ENTREES]);
+// publiées pour les témoins (vNEXT) : le passage d'avenue se juge contre les MÊMES bandes
+export const BANDES_PARIS = BANDES;
 const chausseeCroisee = (u, v) => solDesVoies(BANDES, u, v, BITUME, PAVE) === BITUME;
 
 
@@ -1062,7 +1064,12 @@ function trameDeParis(u, v) {
 // ondes de basse fréquence. Une grille droite gauchie, c'est une ville qui a
 // poussé toute seule — et cela ne coûte que quatre sinus par colonne.
 function formeParis(u, v) {
-  const t = trameDeParis(u, v);
+  return formeDans(trameDeParis(u, v), u, v);
+}
+// La même maille, dans un quartier DONNÉ : le passage d'avenue (vNEXT) lit la
+// trame de la rive où la rue débouche pour une colonne qui est, elle, au milieu
+// de l'avenue — parfois dans l'autre quartier.
+function formeDans(t, u, v) {
   const c = Math.cos(t.ang), s = Math.sin(t.ang);
   let p = u * c - v * s, q = u * s + v * c;
   // Le gauchissement travaille en blocs : son amplitude est déjà donnée à la
@@ -1160,10 +1167,92 @@ export function infoFacadeParis(x, z) {
 // de tout cela : leurs rues tordues n'en ont pas dans la vraie ville non plus.
 export const PASSAGE_PROFONDEUR = 2;   // blocs de passage piéton depuis le coin
 export const LIGNE_EFFET = 3;          // la ligne d'effet est dans le bloc d'après
+// LE MARQUAGE NE CONNAÎT QUE LA TRAME, ET LE SOL NE LA SUIT PAS PARTOUT (vNEXT).
+//
+// Max : « sur certaines rues, le passage piéton ne couvre pas toute la
+// chaussée, il s'arrête parfois à la moitié de la route ». Mesuré sur tout le
+// disque (`tests/sonde-passages-paris.mjs`) : 329 passages sur 1 963 avaient
+// une partie de leur bande hors de la chaussée par la règle, 353 sur 1 973 dans
+// le monde rendu — sur la branche et sur la production, au même compte. La cause : `marquageParis` lisait la trame
+// (`formeParis`) et rien d'autre, quand `solParis` fait passer AVANT la trame
+// les quais, les places, les jardins, les socles, l'Étoile, les Champs et les
+// avenues nommées. Au débouché d'une rue de trame sur la Grande Armée, la bande
+// de la trame tombait pour moitié sur le trottoir de l'avenue (jamais dessinée)
+// et pour moitié sur sa chaussée — une bande de la largeur d'une rue de trame,
+// posée en biais au milieu d'une avenue deux fois plus large : le passage qui
+// « s'arrête à la moitié de la route ».
+//
+// Deux règles. Là où une règle antérieure de `solParis` décide du sol
+// (`solAvantTrame`), la trame ne marque rien : une seule règle pour le sol et
+// pour son marquage, et une bande ne peut plus déborder de la chaussée qui la
+// porte. Et au débouché d'une rue de trame sur une avenue nommée, l'avenue
+// reçoit SON passage : une bande de `DEMI_PASSAGE_AVENUE` de chaque côté de
+// l'axe de la rue de trame, sur toute la chaussée de l'avenue, rayée dans le
+// sens de la marche — là où un passant qui descend la rue de trame traverse
+// l'avenue. Seulement si la rue CROISE l'avenue (plus de `CROISE_MIN` d'angle) :
+// une rue de trame presque parallèle n'est pas un débouché. `reglageMarquage`
+// rend l'ancien marquage, pour l'empreinte des 490 morceaux.
+export const reglageMarquage = { horsTrame: true, avenues: true };
+export const DEMI_PASSAGE_AVENUE = 2;  // demi-largeur du passage en travers d'une avenue
+const CROISE_MIN = Math.sin(Math.PI / 6);
+// Une avenue court souvent à la LIMITE de deux quartiers (elle est tracée sur le
+// vrai plan, les quartiers sont des disques) : la trame change d'une rive à
+// l'autre, et une rue de trame qui débouche d'un côté n'a pas de suite de
+// l'autre. Le passage se calcule donc dans le repère de l'AVENUE : on projette
+// la colonne sur l'axe de l'avenue, on lit la trame de chaque rive au bord, et
+// l'on cherche la rue de trame la plus proche de ce point de l'axe. Si elle
+// croise l'avenue (plus de `CROISE_MIN` d'angle) et que son axe coupe celui de
+// l'avenue à moins de `DEMI_PASSAGE_AVENUE` blocs de là — l'écart `ep` à l'axe
+// de la rue, mesuré au point de l'axe de l'avenue, divisé par le sinus de
+// l'angle —, la colonne est sur le passage. Toutes les colonnes d'une même
+// projection ont le même verdict : le passage va d'un bord de la chaussée à
+// l'autre PAR CONSTRUCTION, perpendiculaire à l'avenue, rayé dans le sens de la
+// traversée. (Prolonger la bande de la rue en biais à travers l'avenue, essayé
+// d'abord, faisait des parallélogrammes de trente blocs sur les avenues
+// obliques : une rue à 33° coupe une avenue sur quinze blocs.)
+function passageDAvenue(u, v) {
+  const voie = voieEn(BANDES, u, v);
+  if (!voie) return null;
+  // la projection de la colonne sur l'axe de l'avenue (non bornée au segment :
+  // au joint de deux segments, c'est ce qui garde une bande et non une tache), et la normale
+  const { seg, pu, pv } = voie;
+  const nu = -voie.dv, nv = voie.du;
+  // Les deux bords de la chaussée doivent être encore sur CETTE avenue : au
+  // croisement de deux avenues, l'autre passe avant sur une partie de la
+  // largeur et la bande s'arrêterait au milieu de la chaussée — le défaut même
+  // qu'on corrige. Là, pas de passage (un carrefour d'avenues, déclaré), plutôt
+  // qu'un demi-passage. Là où une avenue en rejoint une autre (les Ternes sur
+  // la Grande Armée), le bord est dans les deux chaussées : il compte.
+  for (const cote of [1, -1]) {
+    if (!couvertParVoie(BANDES, pu + nu * (seg.l - 0.5) * cote, pv + nv * (seg.l - 0.5) * cote, seg.voie)) return null;
+  }
+  const bord = seg.l + seg.t + 0.5;
+  // `long` est l'axe de la RUE qu'on traverse (chaque bloc dessine une rayure le
+  // long de lui, les blocs voisins en travers font le zèbre) : ici l'avenue
+  const long = Math.abs(voie.du) >= Math.abs(voie.dv) ? 'u' : 'v';
+  for (const cote of [1, -1]) {
+    // la trame de cette rive, lue AU BORD de l'avenue, appliquée au point de l'axe
+    const t = trameDeParis(pu + nu * bord * cote, pv + nv * bord * cote);
+    if (t.desordre >= 2) continue;
+    const g = formeDans(t, pu, pv);
+    const c = Math.cos(t.ang), s = Math.sin(t.ang);
+    // la rue le long de q a son écart mesuré sur p, dont le gradient vaut (c, −s) :
+    // |gradient · direction de l'avenue| est le sinus de l'angle entre les deux
+    const sinQ = Math.abs(c * voie.du - s * voie.dv);
+    const sinP = Math.abs(s * voie.du + c * voie.dv);
+    if (sinQ >= CROISE_MIN && g.ep < DEMI_PASSAGE_AVENUE * sinQ) return { type: 'passage', long, sens: 0, avenue: true };
+    if (sinP >= CROISE_MIN && g.eq < DEMI_PASSAGE_AVENUE * sinP) return { type: 'passage', long, sens: 0, avenue: true };
+  }
+  return null;
+}
 export function marquageParis(x, z) {
   const u = x - PARIS.x, v = z - PARIS.z;
   if (u * u + v * v > PARIS.r * PARIS.r) return null;
   const f = formeParis(u, v), t = f.t;
+  if (reglageMarquage.horsTrame) {
+    const hors = solAvantTrame(u, v, false);
+    if (hors !== null) return reglageMarquage.avenues && hors === BITUME ? passageDAvenue(u, v) : null;
+  }
   if (t.desordre >= 2) return null;
   const c = Math.cos(t.ang), s = Math.sin(t.ang);
   // la rue le long de q a son écart mesuré par ep ; l'axe q vaut (s, c) en
@@ -1197,7 +1286,41 @@ export function solParis(x, z, jardinsAvant = false) {
   // cercle, et un carré avant une racine.
   if (u > PARIS.r || u < -PARIS.r || v > PARIS.r || v < -PARIS.r) return null;
   if (u * u + v * v > PARIS.r * PARIS.r) return null;
+  const hors = solAvantTrame(u, v, jardinsAvant);
+  if (hors !== null) return hors;
 
+  // Et enfin la trame ordinaire du quartier : ses rues, ses pans coupés et le
+  // cœur de ses îlots.
+  const f = formeParis(u, v);
+  if (f.d < f.t.rue) return BITUME;
+  // La bordure de granit : le trait clair qui sépare la chaussée du trottoir.
+  // Un détail d'un seul bloc, et c'est pourtant lui qui fait qu'une rue se lit
+  // comme une rue plutôt que comme deux aplats côte à côte.
+  if (f.d < f.t.rue + 0.35) return ARCHI.BORDURE;
+  if (f.d < f.t.face) return PAVE;
+
+  // Le pan coupé. À l'angle de deux rues, l'immeuble est tranché en biais et le
+  // trottoir s'élargit d'autant : c'est la signature des carrefours parisiens,
+  // et la raison pour laquelle un croisement à Paris n'est jamais un angle droit
+  // franc. Il n'y en a pas dans les quartiers médiévaux, qui l'ignoraient.
+  if (f.t.desordre < k(1) && f.ep + f.eq < f.t.face * 2 + 1.6) return PAVE;
+
+  // La cour intérieure : pavée, avec parfois un arbre. Elle n'existe que si
+  // l'îlot est plus large que deux fois son bâti — ailleurs, il est plein.
+  if (f.d >= f.fond) {
+    return ((Math.round(u) * 5 + Math.round(v) * 3) % 11) === 0 ? ARBRE : COUR;
+  }
+  return null;
+}
+
+// TOUT CE QUI PASSE AVANT LA TRAME (vNEXT) : la Seine et ses ponts, les quais,
+// le pourtour des socles, les places et les jardins, l'Étoile, les Champs, les
+// avenues nommées, les parvis. Rend le sol, ou null si c'est la trame du
+// quartier qui décide. `solParis` et `marquageParis` lisent la MÊME fonction :
+// un marquage de trame ne se pose jamais sur un sol que la trame n'a pas écrit.
+// (`u`, `v` sont déjà dans le disque de Paris.)
+function solAvantTrame(u, v, jardinsAvant) {
+  const x = u + PARIS.x, z = v + PARIS.z;
   const d = versSeine(x, z);
   if (d < 0) {
     // Les ponts passent par-dessus l'eau : sans eux, les deux rives ne se
@@ -1342,29 +1465,6 @@ export function solParis(x, z, jardinsAvant = false) {
   if (socle !== null) {
     if (socle < 0.55) return PAVE;
     return ((Math.round(u) * 3 + Math.round(v) * 5) % 7) === 0 ? ARBRE : BLOCK.GRASS;
-  }
-
-
-  // Et enfin la trame ordinaire du quartier : ses rues, ses pans coupés et le
-  // cœur de ses îlots.
-  const f = formeParis(u, v);
-  if (f.d < f.t.rue) return BITUME;
-  // La bordure de granit : le trait clair qui sépare la chaussée du trottoir.
-  // Un détail d'un seul bloc, et c'est pourtant lui qui fait qu'une rue se lit
-  // comme une rue plutôt que comme deux aplats côte à côte.
-  if (f.d < f.t.rue + 0.35) return ARCHI.BORDURE;
-  if (f.d < f.t.face) return PAVE;
-
-  // Le pan coupé. À l'angle de deux rues, l'immeuble est tranché en biais et le
-  // trottoir s'élargit d'autant : c'est la signature des carrefours parisiens,
-  // et la raison pour laquelle un croisement à Paris n'est jamais un angle droit
-  // franc. Il n'y en a pas dans les quartiers médiévaux, qui l'ignoraient.
-  if (f.t.desordre < k(1) && f.ep + f.eq < f.t.face * 2 + 1.6) return PAVE;
-
-  // La cour intérieure : pavée, avec parfois un arbre. Elle n'existe que si
-  // l'îlot est plus large que deux fois son bâti — ailleurs, il est plein.
-  if (f.d >= f.fond) {
-    return ((Math.round(u) * 5 + Math.round(v) * 3) % 11) === 0 ? ARBRE : COUR;
   }
   return null;
 }

@@ -3559,6 +3559,32 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       JSON.stringify({ mesure: tr, barres: BARRES_TRAVAIL }));
   }
 
+  // --- LES PASSAGES PIÉTONS DE PARIS COUVRENT TOUTE LA CHAUSSÉE (vNEXT) -----
+  //
+  // Max : « sur certaines rues, le passage piéton ne couvre pas toute la
+  // chaussée, il s'arrête parfois à la moitié de la route ». Le marquage
+  // (`marquageParis`) ne lisait que la trame ; le sol (`solParis`) fait passer
+  // AVANT elle les avenues nommées, les places, les quais : la bande d'une rue
+  // de trame tombait pour moitié sur le trottoir d'une avenue, dessinée là où
+  // la chaussée n'est pas. `sonde-passages-paris.mjs` (pure, sous node, moins
+  // d'une seconde) lit `marquageParis` ET `solParis` sur tout le disque.
+  // Mesuré sur l'ancien code : 329 passages de trame coupés sur 1 963, 3 302
+  // colonnes de passage hors de la chaussée, aucun passage d'avenue. Ici :
+  // zéro coupé, et au débouché d'une rue de trame sur une avenue nommée un
+  // passage en travers de l'avenue (90, dont 78 d'un bord à l'autre ; les
+  // courts sont aux joints de deux segments d'une même avenue, déclarés).
+  // Barres à la moitié de la mesure (v237).
+  {
+    const { mesurer } = await import('./sonde-passages-paris.mjs');
+    const m = await mesurer('../src');
+    verifier('à Paris, aucun passage piéton d\'une rue de trame ne s\'arrête au milieu de la chaussée (tout le disque, par la règle du sol)',
+      m.trame.n > 1000 && m.trame.coupes === 0 && m.trame.colonnesHorsChaussee === 0,
+      `${m.trame.coupes} coupés sur ${m.trame.n}, ${m.trame.colonnesHorsChaussee} colonnes hors chaussée, ${m.secondes} s ; ${JSON.stringify(m.trame.exemples)}`);
+    verifier('au débouché d\'une rue de trame sur une avenue nommée, un passage traverse l\'avenue d\'un bord à l\'autre',
+      m.avenues.entiers >= 40 && m.avenues.courts <= 20 && m.avenues.horsChaussee === 0,
+      `${m.avenues.entiers} entiers, ${m.avenues.courts} courts, ${m.avenues.sansRue} sans rue en face, ${m.avenues.horsChaussee} colonnes hors chaussée ; ${JSON.stringify(m.avenues.exemples)}`);
+  }
+
   // LA LIGNE 1 DE PARIS SE PARCOURT COMME L'ENFANT LA VIT (v473). La sonde
   // (`sonde-metro-paris.mjs`, lue telle quelle) engendre le vrai monde sous
   // node : de la rue au quai case par case pour chaque bouche, le passage des
