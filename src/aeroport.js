@@ -248,9 +248,9 @@ export const AEROPORTS = [
   { cle: 'orly', nom: 'Paris–Orly', x: -429, z: 949, r: 62, sol: 33, profil: 'ville' },               // vrai cap 176° → 186°, 232 → 632 blocs (Paris à une fois et demie), eau 2,3 %
   { cle: 'lhr', nom: 'Londres–Heathrow', x: -3596, z: -4438, r: 78, sol: 37, profil: 'hub' },         // vrai cap 260° — exact, 388 → 460 blocs (le vrai site est un vallon, +13/−16), eau 3 %
   { cle: 'jfk', nom: 'New York–JFK', x: -60474, z: 15107, r: 84, sol: 39, profil: 'hub' },            // vrai cap 128° → 243°, 207 → 919 blocs : le Queens est dans le plan de New York et Long Island dans la mer
-  { cle: 'mad', nom: 'Madrid–Barajas', x: -6960, z: 15024, r: 78, sol: 38, profil: 'hub' },           // vrai cap 48° → 63°, 215 → 415 blocs, eau 1,1 %
+  { cle: 'mad', nom: 'Madrid–Barajas', x: -6910, z: 14833, r: 78, sol: 36, profil: 'hub' },           // vrai cap 48° → 48°, 215 → 567 blocs, eau 5,2 % — relogé par la session C (hors de l'AP-2)
   { cle: 'bcn', nom: 'Barcelone–El Prat', x: -763, z: 13831, r: 66, sol: 36, profil: 'ville' },       // vrai cap 212° → 222°, 189 → 461 blocs, eau 5,9 %
-  { cle: 'ams', nom: 'Amsterdam–Schiphol', x: 2495, z: -5915, r: 74, sol: 37, profil: 'hub' },        // vrai cap 238° → 243°, 188 → 284 blocs, eau 5 %
+  { cle: 'ams', nom: 'Amsterdam–Schiphol', x: 2438, z: -5949, r: 74, sol: 36, profil: 'hub' },        // vrai cap 238° → 253°, 188 → 324 blocs, eau 4,1 % — relogé par la session C (hors de l'E19)
   { cle: 'fra', nom: 'Francfort', x: 7009, z: -1855, r: 74, sol: 34, profil: 'hub' },                 // vrai cap 227° → 222°, 192 → 240 blocs, eau 4,9 %
   { cle: 'fco', nom: 'Rome–Fiumicino', x: 11207, z: 12506, r: 72, sol: 34, profil: 'ville' },         // vrai cap 239° → 279° (le vrai site est sur la mer), 352 → 432 blocs
   { cle: 'hnd', nom: 'Tokyo–Haneda', x: 160540, z: 24004, r: 76, sol: 35, profil: 'hub' },            // vrai cap 176° → 191° (la baie), 234 → 370 blocs
@@ -496,9 +496,9 @@ export const PROLONGEMENTS = {
   orly: { 0: [24, 132] },
   lhr: { 0: [82, 82], 25: [87, 87] },
   jfk: { 0: [138, 14], 25: [143, 19] },
-  mad: { 0: [82, 82], 25: [87, 87] },
+  mad: { 0: [81, 83], 25: [87, 87] },
   bcn: { 0: [74, 74] },
-  ams: { 0: [151, 21], 25: [136, 48] },
+  ams: { 0: [114, 58], 25: [106, 78] },
   fra: { 0: [86, 86], 25: [92, 92] },
   fco: { 0: [124, 12] },
   hnd: { 0: [84, 84], 25: [76, 102] },
@@ -1578,18 +1578,17 @@ export const AIRES_V587 = {
 };
 // LA CARTE ×3 (v588) : la sonde rejouée sur les nouveaux emplacements ET les
 // routes retracées (session C). Roissy, Orly, Heathrow et Yokota ne sont plus
-// coupés. Barajas et Schiphol perdent une aire chacun d'un côté : l'AP-2 et
-// l'E19 sortent de Madrid et d'Amsterdam par l'axe de l'aérodrome, et le
-// balayage des angles d'entrée (−45° à +45°) n'en trouve aucun qui évite
-// l'aire (docs/carte-x3-C.md). Une route qui bouge se rejoue par la sonde.
+// coupés. Barajas et Schiphol ont été relogés hors de l'AP-2 et de l'E19
+// (docs/carte-x3-C.md) ; leurs aires se remesurent sur leur nouveau site.
+// Une route ou un aérodrome qui bouge se rejoue par la sonde.
 export const AIRES = {
   cdg: [[70, 70], [157, 0]],
   orly: [[22, 130], [22, 130]],
   lhr: [[77, 50], [99, 99]],
   jfk: [[13, 9], [105, 27]],
-  mad: [[77, 0], [0, 64]],
+  mad: [[76, 78], [48, 99]],
   bcn: [[71, 71], [71, 55]],
-  ams: [[83, 0], [150, 0]],
+  ams: [[34, 54], [120, 36]],
   fra: [[82, 82], [106, 83]],
   fco: [[120, 8], [109, 8]],
   hnd: [[80, 80], [89, 88]],

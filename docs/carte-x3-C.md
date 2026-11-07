@@ -108,17 +108,41 @@ creusait plus de 9 blocs ; à −162°, 17 bancs et le déblai tient.
   porterait alors une exception nommée, comme `PISTES_COURTES`.
   Ma recommandation : (c), parce qu'elle ne change que la route.
 
-## Les aires des aérodromes (exception accordée à C dans aeroport.js)
+## Les aires des aérodromes, et deux aérodromes relogés
 
 `node tests/sonde-aires-aeroports.mjs` rejouée sur les routes retracées, et
-`AIRES` (la seule table touchée) mise à l'égalité, comme `plafond.js` l'exige.
-Roissy 26/70/44/0 → 70/70/157/0, Orly 22/51/22/68 → 22/130/22/130, Heathrow NO
-94 → 99, Yokota NO 27 → 58 : plus coupés. Barajas (SE 54 → 0, NO 80 → 0) et
-Schiphol (SE 10 → 0, NE 26 → 0) perdent leurs aires du côté de la ville :
-l'AP-2 et l'E19 sortent de Madrid et d'Amsterdam par l'axe de l'aérodrome.
-Balayé (`fin.mjs`, angles d'entrée −45° à +45° par 5°, aires réelles comme
-obstacles) : **aucun** angle n'évite l'aire (`ap2scan.log`, `e19scan.log`). Les
-autres côtés gardent leurs aires (Barajas 77 et 64, Schiphol 83 et 150).
+`AIRES` mise à l'égalité, comme `plafond.js` l'exige. Roissy 26/70/44/0 →
+70/70/157/0, Orly 22/51/22/68 → 22/130/22/130, Heathrow NO 94 → 99, Yokota
+NO 27 → 58 : plus coupés.
+
+**Barajas et Schiphol étaient posés sur le passage de leur route**, et aucun
+tracé ne pouvait les éviter :
+
+- Barajas occupait le seul couloir bas entre la crête au nord-est de Madrid et
+  la LGV Madrid–Barcelone, qui longe son disque au sud. L'AP-2 traversait son
+  disque r + 12 (45 points d'axe). Tourner la sortie de Madrid vers le nord
+  (−22,5° à −40°) coûtait 10,9 à 12,4 de déblai ; vers le sud, la voie ferrée.
+- Schiphol était dans l'axe d'entrée de l'E19 à Amsterdam (35 points d'axe dans
+  r + 12). Le seul angle libre (−15°) laissait une avenue d'entrée de 18
+  colonnes vues, pour une barre de 20.
+
+On a donc relogé les deux aérodromes plutôt que les routes. La sonde de B
+(`sonde-places-aeroports.mjs`, `juger` et ses cinq promesses, plus la cible de
+piste) a été rejouée pour ces deux sites seulement, avec une sixième
+contrainte : à r + 12 + 21,4 (emprise et talus) de tout axe de route, AP-2 et
+E19 compris (brouillon `place2.mjs`). Le vrai cap cède en dernier :
+
+| | avant | après | cap (vrai → retenu) | distance à la ville | axe de route le plus proche |
+| --- | --- | --- | --- | --- | --- |
+| Barajas | (−6960, 15024), sol 38 | (−6910, 14833), sol 36 | 48° → 48° | 415 → 567 | 12 → 176 |
+| Schiphol | (2495, −5915), sol 37 | (2438, −5949), sol 36 | 238° → 253° | 284 → 324 | 48 → 109 |
+
+Eau 5,2 % et 4,1 % (barre 6), pistes à 300/300. `PROLONGEMENTS` remesurée par
+`sonde-prolongements-aeroports.mjs` (Barajas [81, 83] / [87, 87], Schiphol
+[114, 58] / [106, 78]) et `AIRES` par la sonde des aires (Barajas 76/78/48/99,
+Schiphol 34/54/120/36). Les tracés de l'AP-2 et de l'E19 n'ont pas eu à
+changer : ils ne touchent plus aucun disque d'aérodrome (contrôle sur les
+29 routes, zéro point d'axe à r + 12).
 
 ## Trains
 
