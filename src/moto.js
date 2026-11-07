@@ -13,7 +13,7 @@
 // Comme une voiture neuve (montures.js), une coque d'attente sculptée tient
 // la place tant que le fichier n'est pas là, et reste le secours s'il manque.
 import * as THREE from 'three';
-import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { chargeurModeles, urlModele } from './ktx2.js';
 import { partagerTout, liberer } from './liberer.js';
 import { matiereAdditive } from './avions.js';
 
@@ -23,7 +23,7 @@ let chargement = null, proto = null;
 export function chargerMoto() {
   if (typeof document === 'undefined') return null;
   if (chargement) return chargement;
-  chargement = new GLTFLoader().loadAsync('./vendor/voitures/' + FICHIER_MOTO).then((gltf) => {
+  chargement = chargeurModeles().loadAsync(urlModele('./vendor/voitures/' + FICHIER_MOTO)).then((gltf) => {
     const cadre = new THREE.Group();
     cadre.add(gltf.scene);
     cadre.rotation.y = Math.PI;                      // +Z nez (contrat) → −z jeu

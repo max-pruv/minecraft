@@ -63,15 +63,16 @@ export async function empoisonner(fichier = 'aston-martin-db11.glb') {
 // retrouve la carrosserie à moins de trois centièmes. Et aucun sommet hors du
 // nez : le premier quart de la longueur, sous les sept dixièmes de la hauteur.
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _n = new THREE.Vector3(), _t = new THREE.Vector3();
-function lueursSurTole(corps, lueurs, b) {
+function lueursSurTole(corps, lueurs, b, bout = 'avant') {
   const L = b.max.z - b.min.z, h = b.max.y - b.min.y;
+  const auBout = (z) => (bout === 'avant' ? z <= b.min.z + L / 4 : bout === 'arriere' ? z >= b.max.z - L / 4 : z <= b.min.z + L / 4 || z >= b.max.z - L / 4);
   let triangles = 0, sur = 0, essais = 0, horsNez = 0;
   for (const l of lueurs) {
     const pos = l.geometry.attributes.position, nt = pos.count / 3;
     triangles += nt;
     for (let i = 0; i < pos.count; i++) {
       _a.fromBufferAttribute(pos, i).add(l.position);
-      if (_a.z > b.min.z + L / 4 || _a.y > b.min.y + 0.7 * h || Math.abs(_a.x) > Math.max(-b.min.x, b.max.x) + 0.02) horsNez++;
+      if (!auBout(_a.z) || _a.y > b.min.y + 0.7 * h || Math.abs(_a.x) > Math.max(-b.min.x, b.max.x) + 0.02) horsNez++;
     }
     const pas = Math.max(1, Math.floor(nt / 40));
     for (let i = 0; i < nt; i += pas) {
@@ -111,20 +112,31 @@ export async function mesurerFlotte({ modeles = null } = {}) {
     // un phare est à l'avant (le premier sixième de la longueur) et sous la
     // ceinture de caisse (60 % de la hauteur)
     const phOk = ph.length === 2 && ph.every((p) => p.z < b.min.z + L / 6 && p.y < b.min.y + 0.6 * h);
-    const g = V.feuxArriere(m, { frein: true });
-    const ecStop = (g ? g.userData.stops : []).map((s) => ecart(corps, s.position, new THREE.Vector3(0, 0, 1).applyQuaternion(s.quaternion)));
+    // LES FEUX ARRIÈRE ET DE DÉTRESSE SUIVENT AUSSI L'OPTIQUE (v587) : plus un
+    // disque ni un rectangle, des copies de triangles sur la tôle, à leur bout
+    const g = V.feuxArriere(m, { frein: true, recul: true });
+    const stops = g ? g.userData.stops : [], reculs = g ? g.userData.reculs : [];
+    const arr = [...stops, ...reculs];
     const surTole = (e) => e !== null && e > -0.05 && e < 0.06;
+    V.feuxDeDetresse(m, true);
+    const dg = m.userData.detresse, cligno = dg ? dg.children.filter((o) => o.isMesh) : [];
     // LA LUEUR ÉPOUSE L'OPTIQUE (v569) : allumée de nuit, chaque lueur est une
     // copie des triangles de l'optique du modèle, à fleur de SA tôle et au nez
     // — jamais un disque plaqué par-dessus (deux ronds de 0,17 bloc avant).
     const gp = P.allumerPhares(m, 1);
     const lueurs = gp ? gp.children.filter((o) => o.isMesh && !(gp.userData.pinceaux || []).includes(o)) : [];
-    const disques = lueurs.filter((o) => o.geometry.type === 'CircleGeometry' || o.geometry.type === 'SphereGeometry').length;
+    const forme = (o) => /Circle|Sphere|Plane/.test(o.geometry.type);
+    const disques = [...lueurs, ...arr, ...cligno].filter(forme).length;
     const lu = lueursSurTole(corps, lueurs, b);
-    P.eteindrePhares(m);
+    const la = lueursSurTole(corps, arr, b, 'arriere');
+    const lc = lueursSurTole(corps, cligno, b, 'deux');
+    P.eteindrePhares(m); V.feuxArriere(m, {}); V.feuxDeDetresse(m, false);
     res.push({
       lueurs: lueurs.length, disques, triangles: lu.triangles, surToleLueur: lu.part, horsNez: lu.horsNez, rang: gp ? gp.userData.rang : null,
       lueurOk: disques === 0 && lu.horsNez === 0 && (lueurs.length === 0 || lu.part >= 0.9),
+      stops: stops.length, reculs: reculs.length, cligno: cligno.length, surToleArriere: la.part, horsArriere: la.horsNez, surToleCligno: lc.part, horsCligno: lc.horsNez,
+      arriereOk: disques === 0 && la.horsNez === 0 && lc.horsNez === 0 && (arr.length === 0 || la.part >= 0.9) && (cligno.length === 0 || lc.part >= 0.9)
+        && (stops.length === 0) === (reculs.length === 0),
       f: f.fichier, boite: [b.min.z, b.max.z, b.min.y, b.max.y].map((v) => +v.toFixed(2)),
       phares: ph.map((p) => [+p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2)]), phOk,
       // et chaque feu à son coin : les deux avant dans le premier sixième, les
@@ -132,7 +144,6 @@ export async function mesurerFlotte({ modeles = null } = {}) {
       // barre lumineuse du Lucid Gravity, un SUV, est à 0,61 h)
       ecDet, detOk: det.length === 4 && ecDet.every(surTole)
         && det.every((p, i) => (i < 2 ? p.z < b.min.z + L / 6 : p.z > b.max.z - L / 6) && p.y < b.min.y + 0.66 * h),
-      ecStop, stopOk: ecStop.length === 2 && ecStop.every(surTole),
     });
   }
   return res;
@@ -140,6 +151,6 @@ export async function mesurerFlotte({ modeles = null } = {}) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const r = await mesurerFlotte();
-  for (const x of r) console.log(`${x.phOk && x.detOk && x.stopOk && x.lueurOk ? 'ok ' : 'KO '} ${x.f} ${x.err || ''} lueurs ${x.lueurs} rang ${x.rang} tri ${x.triangles} tôle ${x.surToleLueur} horsNez ${x.horsNez} disques ${x.disques} phares ${JSON.stringify(x.phares)} ${x.phOk ? '' : '!'} det ${JSON.stringify(x.ecDet)} stop ${JSON.stringify(x.ecStop)} boite ${JSON.stringify(x.boite)}`);
-  console.log('KO :', r.filter((x) => !(x.phOk && x.detOk && x.stopOk && x.lueurOk)).length, '/', r.length);
+  for (const x of r) console.log(`${x.phOk && x.detOk && x.arriereOk && x.lueurOk ? 'ok ' : 'KO '} ${x.f} ${x.err || ''} lueurs ${x.lueurs} rang ${x.rang} tri ${x.triangles} tôle ${x.surToleLueur} horsNez ${x.horsNez} disques ${x.disques} stops ${x.stops} reculs ${x.reculs} cligno ${x.cligno} tôleAr ${x.surToleArriere}/${x.horsArriere} tôleCl ${x.surToleCligno}/${x.horsCligno} phares ${JSON.stringify(x.phares)} ${x.phOk ? '' : '!'} det ${JSON.stringify(x.ecDet)} boite ${JSON.stringify(x.boite)}`);
+  console.log('KO :', r.filter((x) => !(x.phOk && x.detOk && x.arriereOk && x.lueurOk)).length, '/', r.length);
 }

@@ -1,5 +1,69 @@
 # Ce qui est en cours
 
+## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
+
+- **Mesurer sur l'iPhone et l'iPad.** Le banc lit l'ASTC et le BC7 (un octet
+  par pixel) ; l'estimation iPhone (ETC2 RGB, un demi-octet) vient du script.
+  Relire `journal_appareil` (`gpu.texMo`) après une session dans Paris, avec et
+  sans `?ktx2=0`.
+- **Niveaux de détail des voitures de la rue** : non faits. Après les textures,
+  la géométrie de la flotte (88 Mo pour la rue entière au banc) est le poste
+  suivant ; une version `-loin` décimée au-delà d'une distance à mesurer.
+- **Géométrie comprimée (EXT_meshopt_compression)** : les fichiers KTX2 gardent
+  leurs accesseurs bruts pour que la preuve « au sommet près » soit triviale ;
+  un codec sans perte réduirait le transfert de la flotte (72 Mo).
+- **Le vieux `vendor/voiture.glb` et les corps humains** (chantier 5) ne sont
+  pas convertis.
+- [ ] **Rouges du portail de la v590, tous déjà déclarés, aucun de la
+  livraison.** Le seul défaut de la livraison (fichiers `-ktx2.glb` aux
+  attributs entrelacés : `degats.js`, portières et dégâts) est corrigé en
+  8e7c18b, et son témoin (`tests/ktx2.mjs`) garde la disposition. Le reste :
+  - `reseau.js`, rejouée SEULE sur la branche, deux passages : le premier
+    rend le trio « à trois, chacun voit les deux autres »
+    (`[["Alice"],["Marlon"],[]]`), ses dépendants, les trois témoins du
+    passager dans l'avion d'un ami (`vuAvion: null`) et le banc qui lâche sur
+    `null.peer` (reseau.js:616) — mot pour mot la famille rejouée seule sur
+    `origin/main` v575 (déclarée sous « Un avion garé est un obstacle »). Le
+    second passage rend la trio verte et la famille « veille sans retour /
+    reprise / départ de l'hôte » rouge, déclarée elle aussi (1 sur 2 de
+    chaque côté en v536), plus « pas par bonds » et l'hôte sans courtier,
+    déclarés. `origin/main` v587 rejouée seule, deux passages : 1 rouge
+    chacun (« par paquets », l'heure de l'envoi relayée : déclarés). La
+    branche rougit donc plus souvent, et l'on a vérifié que ce n'est pas le
+    transcodeur : rejouée avec `SANS_KTX2` forcé, elle rend 92 verts et deux
+    rouges (« pas par bonds », l'hôte sans courtier), la trio et la veille
+    vertes — les rouges vont et viennent avec ET sans KTX2. Même tableau au
+    portail GitHub (tranche 2/4, sept rouges de ces familles). La livraison
+    ne touche ni `net.js`, ni `sync.js`, ni `relaisnuage.js`.
+  - `maj.js` (trois rouges des loaders au premier portail) : verte rejouée
+    seule sur la branche et sur `origin/main`, puis verte au portail GitHub de
+    8e7c18b.
+  - `monte.js` : huit rouges en local, quinze au portail GitHub (tranche
+    1/4), tous des familles déclarées (Moscou ×2, mémoire des voitures de
+    Rome, chevauchements au même point, rue vide, plongée à quai, recul
+    contre une voiture, flâneur, feu, Rome en biais, radio, Saint-Dizier,
+    traces de pneus, caisse de travers).
+  - `carte.js` « le fond de carte entier se rend vite, même à froid » :
+    472 ms au portail GitHub pour 400, la dette déclarée sous la v450 ;
+    rejouée seule sur la branche : 186 ms, vert.
+
+## La nuit de New York et les voitures noires (v589) — dettes
+
+- [ ] **La plaque d'asphalte à bord en escalier (v589, déclarée).** Capture d'iPad
+  de Max à Flushing Meadows de nuit : sol noir, une plaque éclairée à bord en
+  escalier. Non reproduite au banc (`sonde-decors-sombres.cjs`, Flushing, Queens,
+  vue plongeante, crépuscule et minuit, ombres forcées, qualité tablette) : le
+  sol y reste lisible. Pistes non mesurées : frontière entre les secteurs de sol
+  du plan (PBR, 64 × 64) et les morceaux voxel ; ombre de lune à angle rasant
+  sur le vrai GPU ; palier de l'appareil. À relire avec `?diag=1` sur l'iPad.
+- [ ] **Les livrées texturées sombres (v589).** `NOIR_MIN` ne touche que les
+  couleurs unies : les monospaces, SUV et tout-terrain génériques (livrée bordeaux
+  à 50/7/7 sRGB) restent les plus sombres de la flotte (2,5 à 3,6 sous la nuit de
+  New York dans la sonde). Mesuré et écarté : la luminance moyenne
+  linéaire de leur carte vaut déjà 0,043 (les décors clairs pèsent) ; une
+  multiplication de la couleur brûlerait les décors avant d'éclaircir la caisse.
+  La piste est la médiane de la carte et une teinte de caisse, pas un facteur.
+
 ## Chaque moteur a sa voix, la flamme est une réchauffe (v587) — dettes
 
 - [ ] **On n'entend pas le moteur d'un ami.** Aucun son d'ami ne joue de
@@ -345,10 +409,12 @@
   bugatti-divo : matériaux muets). De nuit, ils n'ont plus de rond plaqué,
   seulement le pinceau sur la route. Remède possible : découper l'optique dans
   le convertisseur (`convertir-flotte.mjs`), un matériau `Headlight` à part.
-- [ ] Les feux stop, de recul et de détresse restent des lentilles génériques
-  (`feuxArriere`, `posesDetresse`) : même principe à appliquer à l'arrière
-  (copier l'optique arrière en rouge au freinage), mais il touche la rue
-  (`montrer`) — une livraison à elle.
+- [x] Les feux stop, de recul et de détresse copient l'optique du modèle
+  (v588, `optiques.js`). Reste sans aucune lueur, parce que rien ne se
+  reconnaît : taxi Mondeo et Divo (tous feux), avant de l'Alpine et du SUV de
+  police ; et la voiture de police n'a pas de détresse (ses optiques ne se
+  lisent qu'à la texture). Piste : déclarer l'optique dans la fiche de FLOTTE
+  (un maillage, une boîte UV), plutôt que d'élargir la lecture des textures.
 - [ ] **Rouges du portail de la v569 : aucun de la livraison.** `degats.js`
   verte (les deux témoins neufs compris), `maj.js` « le loader dit combien de
   fichiers » et « le loader ne s'efface… » (déclarés, v559), `monte.js` cinq
