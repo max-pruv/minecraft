@@ -5418,7 +5418,24 @@ export class World {
   //     vaut ce qu'on a avancé cette image, plus une marge, parce qu'une
   //     pente d'un bloc par bloc ne peut pas descendre plus vite que cela.
   // Rend la hauteur de surface (ou null), pour que l'appelant sache.
-  accrocherAuSol(pos, vel, { etaitAuSol, pasH = 0, half, hauteur, vole = false }) {
+  // Le corps (la boîte posée en `x, y, z`) touche-t-il un cube solide que la
+  // surface continue remplace ? Alors on est DANS la terre sous la surface.
+  corpsDansLaBande(x, y, z, half, hauteur) {
+    const eps = 1e-4;
+    const minX = Math.floor(x - half + eps), maxX = Math.floor(x + half - eps);
+    const minY = Math.floor(y + eps), maxY = Math.floor(y + hauteur - eps);
+    const minZ = Math.floor(z - half + eps), maxZ = Math.floor(z + half - eps);
+    for (let by = minY; by <= maxY; by++) {
+      for (let bz = minZ; bz <= maxZ; bz++) {
+        for (let bx = minX; bx <= maxX; bx++) {
+          if (blockIsSolid(this.getBlock(bx, by, bz)) && this.blocSousLaSurface(bx, by, bz)) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  accrocherAuSol(pos, vel, { etaitAuSol, pasH = 0, half, hauteur, vole = false, yAvant }) {
     if (this.sansSolContinu) return null;
     const eps = 1e-4;
     // SOUS UN PONT, DEUX SURFACES : le tablier et le sol. On prend celle qui
@@ -5441,7 +5458,25 @@ export class World {
       if (vel.y < 0) vel.y = 0;
       return { s, auSol: vel.y <= 0 };
     }
-    if (pos.y <= s - SOUS_SURFACE) return null;   // sous la bande : le voxel décide, comme avant
+    // SOUS LA BANDE, ON N'EST DANS UN VRAI VIDE QUE SI ON N'A PAS TRAVERSÉ LA
+    // SURFACE. Max, en vol, en descendant vite : « on passe sous le
+    // sol ». La boîte ignore les deux cubes de la bande, s'arrête sur le
+    // troisième — à `cote − 2`, et la surface passe jusqu'à un demi-bloc
+    // au-dessus de la cote : les pieds tombaient SOUS la bande (`s − 2,2`),
+    // et la règle du tunnel les y laissait. Puis on glissait d'une colonne à
+    // l'autre, chaque fois deux cubes plus bas, jusqu'aux minerais. Deux
+    // questions distinguent un tunnel d'une chute dans la terre : étions-nous
+    // AU-DESSUS de la surface au début de l'image (alors on vient de la
+    // traverser), ou le corps est-il dans un cube que la surface remplace (on
+    // est dans la terre, pas dans un vide) ? Un enfant dans un tunnel de
+    // train n'y était pas et n'est entouré que d'air : il y reste.
+    if (pos.y <= s - SOUS_SURFACE) {
+      const traverse = yAvant !== undefined && yAvant >= s - eps;
+      if (!traverse && !this.corpsDansLaBande(pos.x, pos.y, pos.z, half, hauteur)) return null;
+      pos.y = s + eps;
+      if (vel.y < 0) vel.y = 0;
+      return { s, auSol: vel.y <= 0 };
+    }
     if (!vole && etaitAuSol && vel.y <= 0 && pos.y - s < ACCROCHE_SOL + pasH
         && this.boiteLibre(pos.x, s + eps, pos.z, half, hauteur)) {
       pos.y = s + eps; vel.y = 0;

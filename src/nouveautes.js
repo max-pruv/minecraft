@@ -6,6 +6,24 @@
 
 export const NOUVEAUTES = [
   {
+    v: 592,
+    titre: "Les passants bougent pour de vrai",
+    puces: [
+      "Une vraie marche, filmée sur des gens",
+      "Ils courent, flânent et attendent",
+      "Chacun garde sa façon d'attendre",
+    ],
+  },
+  {
+    v: 591,
+    titre: "Plus de chute sous le sol",
+    puces: [
+      "En vol, on peut descendre très vite",
+      "On s'arrête toujours sur l'herbe",
+      "Coincé dessous ? On remonte tout seul",
+    ],
+  },
+  {
     v: 590,
     titre: 'Le jeu tient mieux sur iPhone',
     puces: [

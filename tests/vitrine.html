@@ -14,7 +14,8 @@
 <script type="module">
   import * as T from "three";
   import { construireHumain } from "/src/personnages.js";
-  import { animerHumain } from "/src/humains.js";
+  import { animerHumain, chargerHumains } from "/src/humains.js";
+  import { chargerMouvements } from "/src/mouvements.js";
   import { construireTaxi } from "/src/taxis.js";
   const renderer = new T.WebGLRenderer({ antialias: true });
   renderer.setSize(1500, 950);
@@ -50,6 +51,10 @@
   floor.receiveShadow = true;
   scene.add(floor);
   const params = new URLSearchParams(location.search);
+  // ?capture : les vrais corps et leurs mouvements de capture (attendus avant
+  // de bâtir) ; ?v=1.6 l'allure ; ?attitude=telephone l'attitude au repos ;
+  // ?tous les neuf corps côte à côte.
+  if (params.has("capture") || params.has("tous")) { await chargerHumains(); await chargerMouvements(); }
   const models = [];
   if (params.has("taxi")) {
     const taxi = construireTaxi();
@@ -58,17 +63,16 @@
     camera.position.set(-5, 2.4, -7);
     camera.lookAt(0, 0.8, 0);
   } else {
-    for (let i = 0; i < 4; i++) {
-      const g = construireHumain({
-        tenue: "passant",
-        modeleHumain: [
-          "homme-chemise",
-          "femme-chemise",
-          "homme-veste",
-          "femme-manteau",
-        ][i],
-      });
-      g.position.x = (i - 1.5) * 0.8;
+    const liste = params.has("tous")
+      ? ["homme-chemise", "femme-chemise", "homme-veste", "femme-manteau", "homme-denim", "homme-costume", "femme-tailleur", "garcon", "fille"]
+      : ["homme-chemise", "femme-chemise", "homme-veste", "femme-manteau"];
+    for (let i = 0; i < liste.length; i++) {
+      const enfant = /garcon|fille/.test(liste[i]);
+      const g = construireHumain(enfant
+        ? { tenue: "enfant", genre: liste[i] === "fille" ? "femme" : "homme" }
+        : { tenue: "passant", modeleHumain: liste[i] });
+      if (params.get("attitude")) { g.userData.attitude = params.get("attitude"); if (g.userData.anim) g.userData.anim.attitude = g.userData.attitude; }
+      g.position.x = (i - (liste.length - 1) / 2) * 0.8;
       scene.add(g);
       models.push(g);
     }
@@ -78,7 +82,7 @@
   function tick() {
     requestAnimationFrame(tick);
     for (const g of models)
-      animerHumain(g, frame / 60, params.has("walk") ? 1.6 : 0);
+      animerHumain(g, frame / 60, params.has("walk") ? 1.6 : +(params.get("v") || 0));
     frame++;
     renderer.render(scene, camera);
   }

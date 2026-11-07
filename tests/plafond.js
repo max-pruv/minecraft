@@ -880,6 +880,21 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       lignes.length >= 6 && lignes.every((r) => r.plein.force === 1 && r.lent.murs > 0 && r.lent.murs < 0.25 && r.frole.murs > 0 && r.frole.murs < 0.1),
       t ? JSON.stringify(t) : `sonde : ${err}`);
   }
+  // --- ON NE PASSE PAS SOUS LE SOL EN DESCENDANT VITE ------------------
+  // Max, captures d'iPad : en vol, en descendant vite, on passe sous la
+  // surface continue et l'on voit le dessous du monde. La boîte ignore la
+  // bande que la surface remplace et s'arrêtait sur le troisième cube, sous
+  // la bande, où l'accrochage croyait à un tunnel. Le VRAI joueur sous node
+  // (`sonde-plongee-vol.cjs`) : 150 descentes en croisière sur des colonnes
+  // couvertes, trois cadences ; et vingt enfants déjà coincés sous la bande.
+  // Mesuré sur `origin/main` : 4 sous le sol, 0 coincé repris sur 20.
+  {
+    let t = null, err = '';
+    try { t = await require('./sonde-plongee-vol.cjs').mesurer(require('path').resolve(__dirname, '..'), { essais: 150 }); } catch (e) { err = String(e && e.message || e); }
+    verifier('en vol, descendre vite ne fait pas passer sous la surface, et un enfant coincé dessous remonte',
+      !!t && t.lus > 100 && t.sous === 0 && t.coinces >= 10 && t.repris === t.coinces,
+      t ? JSON.stringify(t) : `sonde : ${err}`);
+  }
   // --- L'AVION VOLE PLUS HAUT (v582) ----------------------------------------
   // Max : « permettre qu'un avion vole beaucoup plus haut en altitude ». Le
   // toit d'un avion suit la portée de la vue (`plafondAvion`, player.js) :

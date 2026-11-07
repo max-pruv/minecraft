@@ -25,6 +25,56 @@ pour être lus. Les invariants et les décisions d'architecture, eux, vivent dan
 
 ---
 
+## v592 — Les passants bougent comme de vraies personnes
+
+**Pourquoi.** Chantier « réalisme » 5 sur 5. Depuis la v241 les passants ont
+des corps réalistes (Rocketbox), mais leur marche était dessinée à la main : un
+balancier de bras et de jambes, raide, le même pour tout le monde, qui faisait
+reconnaître un jeu au premier regard. Max, sur la vitrine : bras et pieds à
+reprendre.
+
+**Ce que ça change.** Les passants, les habitants et l'avatar à pied jouent des
+mouvements capturés sur de vraies personnes (base CMU de Carnegie Mellon,
+crédit dans `vendor/humains/LICENSE.md`) : marche, marche lente, course et deux
+attentes. Chacun garde son attitude (tirée de sa graine), on passe d'une prise à
+l'autre en fondu, et les pieds restent au sol. Un seul fichier immuable de
+53 Ko (`vendor/humains/mouvements-v1.bin`), produit hors ligne par
+`scripts/convertir-mouvements.mjs`. Les mouvements sont reciblés au chargement,
+une fois par corps, jamais pendant une image. La taille des corps ne change pas
+(sommet du crâne 1,73 à 1,75 m debout contre 1,76 en marche dessinée, la
+posture réelle). La marche dessinée reste le repli tant que le fichier n'est
+pas arrivé.
+
+**Ce qui le prouve.** Six témoins dans `tests/realisme.js` : capture jouée
+(marche et attente), clips partagés par corps, pieds au sol en marchant, en
+courant et à l'arrêt, attitudes variées dans la rue, aucun programme neuf,
+moins de 0,3 ms par personne (177 µs mesuré). `manhattan.js` est corrigé au
+passage : ses trois entrées en jeu attendent la chauffe de New York et appuient
+par le document (le blocage du clic se produisait aussi sur `main`). Captures
+validées par Max (planche de la vitrine). La sonde `tests/sonde-cout-capture.cjs`
+mesure le coût dans une rue de Paris.
+
+## v591 — En vol, on ne passe plus sous le sol
+
+**Pourquoi.** Max, captures d'iPad : en volant et en descendant très vite, le
+personnage passait sous le sol — on voyait le dessous des collines, puis la
+roche et ses minerais. Hors des villes, le sommet du terrain est une surface
+lisse qui remplace les deux cubes du dessus ; en descendant vite, le joueur
+traversait ces deux cubes et s'arrêtait sur le troisième, juste sous la
+surface, là où le jeu croyait à un tunnel. En glissant de colonne en colonne,
+on s'enfonçait encore de deux blocs à chaque fois.
+
+**Ce que ça change.** En vol, on peut piquer aussi vite qu'on veut : on se pose
+sur l'herbe. Le même garde-fou vaut pour l'avion et la voiture. Un enfant déjà
+coincé sous le sol par une ancienne version remonte tout seul. Les vrais
+tunnels et les grottes ouvertes restent praticables.
+
+**Ce qui le prouve.** Un témoin de `plafond.js` (`sonde-plongee-vol.cjs`, le
+vrai joueur dans le vrai monde) : 150 descentes en croisière à trois cadences,
+zéro sous la surface (4 sur `origin/main`), et vingt enfants coincés dessous,
+vingt repris (0 sur `origin/main`). Le témoin du tunnel sous une colonne
+naturelle reste vert.
+
 ## v590 — Les textures des modèles tiennent quatre à six fois moins de place
 
 **Pourquoi.** iOS ferme la page vers 500 Mo de géométrie et de textures (v580),
