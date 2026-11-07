@@ -415,9 +415,25 @@ une version qu'on ne saura pas déboguer.
    tant que `main` n'exige pas le contrôle — un rouge déjà déclaré ne bloque pas
    une fusion (v195) — et il ne remplace pas la revue d'écran (6 bis). Avant de
    fusionner, on attend ses quatre coches, ou on dit pourquoi pas.
-2. Bump de `CACHE_VERSION` dans `sw.js` à **chaque** livraison, sinon les
-   clients installés (PWA sur l'iPad) ne voient jamais la mise à jour. C'est ce
-   numéro qui fait foi partout ailleurs.
+2. **Une branche n'écrit JAMAIS de numéro de version** (décision de Max,
+   novembre 2026 : « c'est vraiment un truc bête »). Ni `CACHE_VERSION` dans
+   `sw.js`, ni la tête de `CHANGELOG.md`, ni la tête de `src/nouveautes.js` :
+   plusieurs sessions en parallèle y écrivaient toutes le même numéro, d'où un
+   conflit et une renumérotation à la main à chaque fusion. La livraison
+   dépose un fichier dans `livraisons/` (format dans `livraisons/README.md` :
+   titre et puces du journal du jeu, puis l'entrée du CHANGELOG sous
+   `## vNEXT — …`), et écrit `vNEXT` partout où elle citerait son numéro
+   (`CLAUDE.md`, `TASKS.md`). Après la fusion, le workflow `Numérotation`
+   (`scripts/numeroter.mjs`) donne le numéro suivant dans l'ordre d'arrivée
+   sur `main`, insère les deux entrées, monte `CACHE_VERSION`, remplace
+   `vNEXT` sur les lignes ajoutées par CETTE fusion, supprime le fichier et
+   pousse sur `main` — c'est ce commit que Vercel déploie. Le job `livraison`
+   du portail refuse une PR qui touche encore `CACHE_VERSION` ou dont le
+   fichier est mal formé (`node scripts/numeroter.mjs --verifier` en local).
+   Le numéro reste ce qui fait que les clients installés (PWA sur l'iPad)
+   reçoivent la mise à jour : une livraison qui change ce que le jeu sert
+   DOIT donc porter son fichier, sinon rien ne monte. Une date « relue à la
+   fusion » (`DATE_…`) reste à poser à la main avant la fusion.
 3. Tout fichier `src/*.js` **nouveau** doit être ajouté à la liste `ASSETS` de
    `sw.js`, sinon il manque hors ligne.
 
@@ -449,7 +465,8 @@ une version qu'on ne saura pas déboguer.
    dans le DIFF et non dans l'intention (`git diff --stat origin/main` nomme les
    fichiers), et chaque groupe de fichiers qui répond à une demande différente
    veut sa ligne au journal et son témoin.
-4. **Écrire l'entrée `CHANGELOG.md` dans la MÊME fusion**, jamais après. Trois
+4. **Écrire l'entrée du journal dans la MÊME fusion**, jamais après — dans le
+   fichier de `livraisons/`, pas dans `CHANGELOG.md` directement. Trois
    parties, dans cet ordre : **pourquoi** (la panne vécue ou le manque
    constaté, pas la solution), **ce que ça change** (ce que la famille voit ou
    peut faire), **ce qui le prouve** (le nombre de témoins, et ceux qui
@@ -478,8 +495,9 @@ une version qu'on ne saura pas déboguer.
 7. PR **prête, jamais en brouillon**, fusionnée immédiatement (squash). Consigne
    permanente de Max : « une manière continue constante ». Le corps de la PR
    reprend la structure de l'entrée du journal.
-8. Vérifier que la production sert bien la nouvelle version :
-   `curl -s https://minecraft-fam.vercel.app/sw.js | grep CACHE_VERSION`
+8. Vérifier que le workflow `Numérotation` a poussé son commit (« vN — … »
+   sur `main`), puis que la production sert bien la nouvelle version :
+   `curl -s https://minecraft-fam.vercel.app/sw.js | grep "CACHE_VERSION = "`
 9. Rebaser la branche sur `main` après fusion.
 
 ### Où va quoi
@@ -11830,12 +11848,13 @@ Une session parallèle prend **sa propre branche**, nommée par son sujet :
 `claude/paris-metro-souterrain`, `claude/usine-auto`. La branche historique
 reste celle de la session principale.
 
-**2. `CACHE_VERSION`.** Chaque livraison le monte d'un cran. Deux sessions qui
-partent de v159 écrivent toutes les deux v160 : conflit à la fusion, et si l'une
-passe quand même, la seconde livre une version qui **écrase l'entrée de cache de
-la première**. Donc : on ne choisit pas son numéro à l'avance. On monte
-`CACHE_VERSION` **juste avant de fusionner**, après avoir rebasé sur `main` — le
-numéro se lit alors sur `main`, il ne se devine pas.
+**2. `CACHE_VERSION` — réglé par construction.** Deux sessions parties de v159
+écrivaient toutes les deux v160 : conflit à la fusion, et la seconde pouvait
+**écraser l'entrée de cache de la première**. Le numéro ne s'écrit plus dans une
+branche : chacune dépose son fichier dans `livraisons/` (deux fichiers
+différents, aucun conflit), et le workflow `Numérotation` numérote après la
+fusion (procédure de publication, étape 2). Une session ne choisit ni ne
+renumérote plus rien.
 
 **3. Les mêmes fichiers.** C'est la collision qui coûte cher, et elle
 s'évite en découpant par **zone** plutôt que par tâche. Les zones qui ne se
