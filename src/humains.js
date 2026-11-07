@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "../vendor/GLTFLoader.js";
 import { clone } from "../vendor/SkeletonUtils.js";
 import { partager, partagerTout } from "./liberer.js";
+import { chargerMouvements, mouvementsPrets, clipsDuCorps, attitudeDe, priseDAllure } from "./mouvements.js";
 
 // LES MODÈLES ARRIVENT APRÈS L'ACCUEIL, JAMAIS AVANT (v245). Ce module se
 // chargeait par un `await` de premier niveau sur les neuf fichiers — 8,2 Mo,
@@ -62,6 +63,8 @@ export function chargerHumains() {
   }
   const loader = new GLTFLoader();
   const base = new URL("../vendor/humains/", import.meta.url).href;
+  // les mouvements de capture (128 Ko) partent avec les corps
+  chargerMouvements();
   // le réseau travaille en parallèle, l'analyse se fait dans l'ordre
   const tampons = noms.map((nom) =>
     fetch(`${base}${nom}.glb`).then((r) =>
@@ -84,6 +87,18 @@ export function chargerHumains() {
     charges = true;
     for (const cb of abonnes.splice(0)) {
       try { cb(); } catch (err) { console.warn("mise à niveau des corps :", err.message); }
+    }
+    // LE RECIBLAGE SE FAIT ICI, UN CORPS PAR TÂCHE, JAMAIS DANS UNE IMAGE.
+    // Recibler les cinq prises d'un corps coûte quelques millisecondes (six
+    // mesurées au banc, davantage sur une tablette) : fait à la première
+    // animation d'une personne, il tombait dans l'image où elle apparaît, et
+    // le témoin de coût de realisme.js le payait dans sa moyenne.
+    await chargerMouvements();
+    if (mouvementsPrets()) {
+      for (const [cle, proto] of prototypes) {
+        clipsDuCorps(cle, proto);
+        await souffler();
+      }
     }
   })();
   return chargement;
@@ -185,6 +200,7 @@ export function construireCorpsRealiste(p) {
     arms,
     anatomie: "rocketbox-v241",
     rig,
+    modele: choix,
     corps,
     enfant,
     hauteur: enfant ? 1.48 : 1.76,
@@ -226,26 +242,115 @@ export function construireCorpsRealiste(p) {
 // `pose` (v249) : une posture tenue à la place de la marche — l'enfant assis
 // au volant : cuisses en avant, genoux pliés, bras tendus vers le volant. Les
 // angles sont ceux des pivots de l'atelier (le même signe que `swing`).
+// `pose.surcouche` : la posture se pose PAR-DESSUS le mouvement en cours (le
+// sursaut d'un passant pendant son pas de côté) au lieu de repartir du repos.
+//
+// SANS POSE, LE CORPS JOUE UNE CAPTURE RÉELLE (mouvements.js) : marche,
+// marche lente ou course selon l'allure, et au repos l'attitude de la
+// personne (deux attentes tirées de son identifiant). Un AnimationMixer
+// par personne, des clips partagés par corps, des fondus de 0,3 s entre deux
+// prises. Le temps qu'on lui donne est celui de l'appelant : un passant
+// lointain, animé à 10 ou 15 Hz (main.js), joue sa capture à la même cadence.
+// La marche dessinée reste le repli tant que le fichier n'est pas là.
+export const FONDU_PRISE = 0.3;
+export const reglageCapture = { actif: true };
+
+function pilote(g) {
+  const u = g.userData;
+  if (u.anim !== undefined) return u.anim;
+  if (!reglageCapture.actif || !mouvementsPrets() || !u.modele) return null;
+  const clips = clipsDuCorps(u.modele, prototypes.get(u.modele));
+  if (!clips) return (u.anim = null);
+  const graine = u.graine ?? g.id;
+  u.anim = {
+    mixer: new THREE.AnimationMixer(u.corps),
+    clips,
+    actions: new Map(),
+    attitude: u.attitude || attitudeDe(graine),
+    graine,
+    courante: null,
+    t: null,
+  };
+  return u.anim;
+}
+function action(an, nom) {
+  let a = an.actions.get(nom);
+  if (!a) {
+    const clip = an.clips.get(nom);
+    if (!clip) return null;
+    a = an.mixer.clipAction(clip);
+    an.actions.set(nom, a);
+  }
+  return a;
+}
+
+// Ce que l'animation coûte au fil principal, cumulé (lu par la sonde et le
+// témoin de coût : millisecondes et appels, capture et repli confondus).
+export const coutAnimation = { ms: 0, appels: 0 };
 export function animerHumain(g, temps, vitesse = 0, pose = null) {
+  const t0 = performance.now();
+  animer(g, temps, vitesse, pose);
+  coutAnimation.ms += performance.now() - t0;
+  coutAnimation.appels++;
+}
+function animer(g, temps, vitesse, pose) {
   const { rig, arms, legs, corps } = g.userData;
   if (!rig) return;
+  const an = pilote(g);
   if (pose) {
+    if (an && !pose.surcouche && an.courante) {
+      // une posture tenue reprend la main : la capture s'arrête, et les os
+      // qu'elle a tournés repartent du repos (pas d'épaule figée en plein pas)
+      an.mixer.stopAllAction();
+      an.courante = null;
+      for (const r of Object.values(rig)) r.bone.quaternion.copy(r.repos);
+    }
     for (const cote of ["L", "R"]) {
       rotation(rig, cote + "_Thigh", pose.cuisses);
       rotation(rig, cote + "_Calf", pose.genoux);
-      rotation(rig, cote + "_Foot", 0);
+      if (!pose.surcouche) rotation(rig, cote + "_Foot", 0);
       rotation(rig, cote + "_UpperArm", pose.bras);
       rotation(rig, cote + "_Forearm", pose.coudes);
     }
     legs[0].rotation.x = legs[1].rotation.x = pose.cuisses;
-    rotation(rig, "Spine1", 0);
-    rotation(rig, "Head", Math.sin(temps * 0.55) * 0.018);
-    corps.position.y = 0;
+    if (!pose.surcouche) {
+      rotation(rig, "Spine1", 0);
+      rotation(rig, "Head", Math.sin(temps * 0.55) * 0.018);
+      corps.position.y = 0;
+    }
     return;
   }
   // Une marche à genoux et coudes fléchis, pas quatre barres qui cisaillent.
   const marche = Math.min(1, vitesse / 1.6),
     phase = temps * 6.2;
+  if (an) {
+    const dt = an.t === null ? 0 : Math.max(0, Math.min(0.25, temps - an.t));
+    an.t = temps;
+    const choix = priseDAllure(vitesse, an.attitude);
+    const a = action(an, choix.nom) || action(an, "attente");
+    if (a && a !== an.courante) {
+      a.reset();
+      // une attente commence n'importe où dans sa boucle : deux personnes
+      // qui s'arrêtent ensemble ne bougent pas en miroir
+      if (choix.nom === an.attitude) a.time = ((an.graine * 0.618) % 1) * a.getClip().duration;
+      a.play();
+      if (an.courante) a.crossFadeFrom(an.courante, FONDU_PRISE, false);
+      an.courante = a;
+    }
+    if (a) a.setEffectiveTimeScale(choix.echelle);
+    an.mixer.update(dt);
+    // le geste d'un métier (frapper l'enclume, ratisser) se pose par-dessus
+    // les bras de la capture, autour de l'épaule
+    if (!(vitesse > 0))
+      for (const [cote, i] of [["L", 0], ["R", 1]]) {
+        const geste = arms[i].rotation.x;
+        const r = rig[cote + "_UpperArm"];
+        if (r && Math.abs(geste) > 0.02) r.bone.quaternion.premultiply(q.setFromAxisAngle(r.axe, geste));
+      }
+    for (let i = 0; i < 2; i++) legs[i].rotation.x = Math.sin(phase + i * Math.PI) * 0.32 * marche;
+    corps.position.y = 0;
+    return;
+  }
   for (const [cote, i] of [
     ["L", 0],
     ["R", 1],

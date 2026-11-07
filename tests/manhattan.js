@@ -12,26 +12,24 @@ function verifier(nom, ok, detail = "") {
   console.log(`${ok ? "✅" : "❌"} ${nom}${detail ? " — " + detail : ""}`);
   if (!ok) echecs.push(nom);
 }
-// UN APPUI SUR UNE PAGE QUI REND MAL SE FAIT PAR LE DOCUMENT (v427).
-// `locator.click` attend deux images identiques : l'accueil de Manhattan
-// rend 0,25 à 0,5 image par seconde en rendu logiciel, et le même clic a
-// pris 11 s sur origin/main et 38 s sur la branche, au-delà des 30 s par
-// défaut — un tirage. On vérifie ce que l'enfant voit (visible, actif, à
-// découvert sous le doigt), puis on appuie.
-const appuyer = async (p, trouver, nom) => {
-  const t0 = Date.now();
-  await p.waitForFunction((src) => {
-    const el = new Function("return " + src)()();
-    if (!el || el.disabled) return false;
-    const b = el.getBoundingClientRect();
-    if (!b.width || !b.height || getComputedStyle(el).visibility !== "visible") return false;
-    const dessus = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
-    if (!el.contains(dessus)) return false;
-    el.click();
-    return true;
-  }, trouver.toString(), { timeout: 90000, polling: 250 })
-    .catch((e) => { throw new Error(`${nom} jamais appuyable en ${Date.now() - t0} ms : ${e.message}`); });
-};
+// L'ACCUEIL DE MANHATTAN REND TROIS À CINQ IMAGES EN HUIT SECONDES AU BANC
+// (rendu logiciel, sonde-accueil-ny.cjs) : `locator.click` attend deux images
+// identiques et expire à trente secondes, sur main comme ailleurs (v427). On
+// vérifie ce que l'enfant voit, puis on appuie par le document. Et l'on joue
+// comme l'enfant qui lit l'accueil : quand la chauffe de New York est finie
+// (v319) — l'ancien clic l'attendait sans le dire ; appuyer tout de suite
+// faisait compiler les banlieues en y entrant (75 clés avant, 118 après).
+async function entrerDansLeJeu(p) {
+  const appuyer = async (trouver) => {
+    await p.waitForFunction(trouver, null, { timeout: 60000 });
+    await p.evaluate((f) => (0, eval)(f)().click(), `(${trouver})`);
+  };
+  await appuyer(() => { const b = document.querySelector(".who-card.active"); return b && b.offsetWidth > 0 && b; });
+  await appuyer(() => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.offsetWidth > 0));
+  await p.waitForFunction(() => !window.__chauffeNY || window.__chauffeNY().finie, null, { timeout: 150000 })
+    .catch(() => {});
+  await appuyer(() => { const b = document.querySelector("#play-btn"); return b && !b.disabled && b.offsetWidth > 0 && b; });
+}
 (async () => {
   const banc = new Banc({ portJeu: 8359, portPairs: 9359 });
   await banc.ouvrir();
@@ -57,9 +55,7 @@ const appuyer = async (p, trouver, nom) => {
           __game.world.ctx === "local",
       ),
     );
-    await appuyer(p, () => document.querySelector(".who-card.active"), "la carte de joueur");
-    await appuyer(p, () => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.getBoundingClientRect().width > 0), "« Plus tard »");
-    await appuyer(p, () => document.getElementById("play-btn"), "« Jouer »");
+    await entrerDansLeJeu(p);
     await p.waitForFunction(() => __game.running);
     verifier(
       "le voyage explicite place le joueur à New York en coordonnées terrestres",
@@ -1186,9 +1182,7 @@ const appuyer = async (p, trouver, nom) => {
     // Première reprise cloud : une collision oblige tout le chantier ancien
     // à changer d'emplacement. La position doit arriver auprès de ses blocs.
     const reprise = await banc.joueur("TerreReprise", { rr: 2, tactile: true });
-    await appuyer(reprise, () => document.querySelector(".who-card.active"), "la carte de joueur");
-    await appuyer(reprise, () => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.getBoundingClientRect().width > 0), "« Plus tard »");
-    await appuyer(reprise, () => document.getElementById("play-btn"), "« Jouer »");
+    await entrerDansLeJeu(reprise);
     await reprise.waitForFunction(() => __game.running);
     const positionImportee = await reprise.evaluate(async () => {
       const { ORIGINE_MANHATTAN: o } = await import("/src/manhattan-world.js");
@@ -1319,9 +1313,7 @@ const appuyer = async (p, trouver, nom) => {
     await offline.waitForFunction(() => window.__game?.villeRealiste, null, {
       timeout: 90000,
     });
-    await appuyer(offline, () => document.querySelector(".who-card.active"), "la carte de joueur");
-    await appuyer(offline, () => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Plus tard" && b.getBoundingClientRect().width > 0), "« Plus tard »");
-    await appuyer(offline, () => document.getElementById("play-btn"), "« Jouer »");
+    await entrerDansLeJeu(offline);
     await offline.waitForFunction(() => __game.running, null, {
       timeout: 30000,
     });

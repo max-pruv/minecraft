@@ -63,8 +63,10 @@
   courtier local quand une page se relance ; le filtre de `banc.js` n'écarte
   que les erreurs de chargement.
 - `locator.click` sur l'accueil de Manhattan (0,25 à 0,5 image/s) prenait 11
-  à 38 s : un tirage. Les trois accueils de `manhattan.js` appuient par le
-  document (v427).
+  à 38 s : un tirage. Réglé sur `main` par `entrerDansLeJeu` (appui par le
+  document, v427, ET attente de la chauffe de New York, v319), repris tel quel
+  à la fusion : ce second geste peut aussi rendre le témoin des banlieues
+  vert — à relire au portail suivant avant de rayer la ligne du dessus.
 
 ## La nuit de New York et les voitures noires (v589) — dettes
 
@@ -96,6 +98,22 @@
   électrique (Lucid Gravity), puis un A320, le jet, le chasseur pleins gaz.
 - [ ] Les voitures de la rue et la police n'ont pas de moteur audible (comme
   avant) ; seule la monture de l'enfant joue une recette.
+
+## Les personnages vivants (capture de mouvement) — ce qui reste, déclaré
+
+- **Téléphoner, parler, regarder autour, s'asseoir** : les prises CMU 79_36,
+  18_08, 40_10 et 18_12 rendaient des poses fausses en vitrine (bras levés,
+  tronc rejeté) ; retirées du fichier, traitements gardés dans
+  `scripts/convertir-mouvements.mjs`. Piste : d'autres prises CMU, ou le
+  jeu de données 100STYLE (CC BY 4.0) pour les démarches.
+- **Le pas de côté devant une voiture** (v351) joue la course : pas de prise
+  « s'écarter » dédiée.
+- **Les pieds glissent un peu** quand l'allure s'écarte de celle de la prise
+  (cadence à la puissance 0,75, bornée 0,7–1,6).
+- **Rendu peau / yeux / cheveux et variété des teintes** : non traités dans
+  cette livraison (objectif 2 du chantier).
+- **Sur la tablette** : le coût (17 µs par appel au banc) est à relire avec
+  `?diag=1` sur l'iPad au palier bas.
 
 ## Façades en relief de Manhattan (v585) — validation du 1er novembre
 

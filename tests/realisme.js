@@ -614,6 +614,114 @@ async function appuyer(p, sel, texte) {
         fautes.length === 0,
       { avant, apres, fautes },
     );
+
+    // ——— LES PERSONNAGES VIVANTS : la capture de mouvement ———————————————
+    // Sur l'ancien code, aucun corps n'a de mixeur : les quatre premiers
+    // verdicts rougissent par construction (rien à jouer, rien de partagé).
+    await souffler();
+    const v = await banc.jouerSeul("Vivants", { rr: 2, pret: true });
+    await v.evaluate(async () => {
+      const g = window.__game;
+      const { adresseParis } = await import("/src/paris.js");
+      const [x, z] = adresseParis(-0.8, -0.9);
+      g.player.pos.set(x + 0.5, g.world.terrainHeight(Math.floor(x), Math.floor(z)) + 1.01, z + 0.5);
+    });
+    // les passants naissent par tranches, et une capture ne se lit qu'en jeu :
+    // on attend des personnes animées, borné, la durée dans le message
+    const t0v = Date.now();
+    let vivants = null;
+    for (const fin = Date.now() + 60000; Date.now() < fin; ) {
+      vivants = await v.evaluate(async () => {
+        const H = await import("/src/humains.js");
+        const g = window.__game;
+        const gens = [];
+        g.scene.traverse((o) => { if (o.userData && o.userData.rig && o.visible && o.userData.modele) gens.push(o); });
+        const joue = gens.filter((o) => o.userData.anim && o.userData.anim.courante && o.userData.anim.courante.isRunning());
+        const prises = {}, attitudes = {};
+        const clipsParCorps = new Map();
+        let partages = 0;
+        for (const o of joue) {
+          const n = o.userData.anim.courante.getClip().name;
+          prises[n] = (prises[n] || 0) + 1;
+          attitudes[o.userData.anim.attitude] = (attitudes[o.userData.anim.attitude] || 0) + 1;
+          const c = o.userData.anim.courante.getClip(), k = o.userData.modele + "|" + c.name;
+          if (clipsParCorps.has(k)) partages += clipsParCorps.get(k) === c ? 1 : -100; else clipsParCorps.set(k, c);
+        }
+        return { gens: gens.length, joue: joue.length, prises, attitudes, partages,
+          us: +(1000 * H.coutAnimation.ms / Math.max(1, H.coutAnimation.appels)).toFixed(1) };
+      });
+      if (vivants.joue >= 4 && Object.keys(vivants.prises).length >= 2) break;
+      await dormir(1500);
+    }
+    vivants.secondes = Math.round((Date.now() - t0v) / 1000);
+    verifier("les passants jouent une capture de mouvement réelle (marche et attente)",
+      vivants.joue >= 4 && vivants.joue >= vivants.gens * 0.8 && Object.keys(vivants.prises).length >= 2, vivants);
+    verifier("les clips sont partagés par corps, jamais recalculés par personne",
+      vivants.partages >= 0 && vivants.joue >= 4, vivants);
+    // Les pieds restent au sol : un corps construit dans la page marche, court
+    // et attend ; la cheville la plus basse reste à sa hauteur de repos.
+    const pieds = await v.evaluate(async () => {
+      const P = await import("/src/personnages.js"), H = await import("/src/humains.js"), M = await import("/src/mouvements.js");
+      const THREE = await import("three");
+      // les corps et les mouvements arrivent après l'accueil : on les attend
+      await H.chargerHumains(); await M.chargerMouvements();
+      const res = {};
+      for (const modele of ["homme-chemise", "femme-tailleur", "homme-costume"]) {
+        const g = P.construireHumain({ tenue: "passant", modeleHumain: modele });
+        g.updateMatrixWorld(true);
+        const pied = (n) => { let b = null; g.traverse((o) => { if (o.isBone && /L_Foot$/.test(o.name) && n === "L") b = o; if (o.isBone && /R_Foot$/.test(o.name) && n === "R") b = o; }); return b; };
+        const L = pied("L"), R = pied("R"), w = new THREE.Vector3();
+        const bas = () => { g.updateMatrixWorld(true); return Math.min(L.getWorldPosition(w).y, R.getWorldPosition(w).y); };
+        const repos = bas();
+        const ecarts = [];
+        for (const [vit, att] of [[1.11, "attente"], [0.4, "attente"], [2.8, "attente"], [0, "attente"], [0, "attente2"]]) {
+          delete g.userData.anim; g.userData.attitude = att;
+          for (let i = 0; i < 40; i++) { H.animerHumain(g, i / 20, vit); if (i > 8) ecarts.push(bas() - repos); }
+        }
+        res[modele] = { min: +Math.min(...ecarts).toFixed(3), max: +Math.max(...ecarts).toFixed(3), anim: !!g.userData.anim };
+      }
+      res.repertoire = M.REPERTOIRE.map((r) => r[0]);
+      res.memeAttitude = M.attitudeDe(17) === M.attitudeDe(17);
+      // la répartition sur cent identifiants (quatre passants de la rue ne
+      // font pas une distribution : ils étaient tous mains aux hanches)
+      res.parAttitude = {};
+      for (let i = 0; i < 100; i++) { const a = M.attitudeDe(i); res.parAttitude[a] = (res.parAttitude[a] || 0) + 1; }
+      return res;
+    });
+    const auSol = ["homme-chemise", "femme-tailleur", "homme-costume"].every((m) => pieds[m].anim && pieds[m].min > -0.06 && pieds[m].max < 0.2);
+    verifier("en marchant, en courant et à l'arrêt, les pieds restent au sol", auSol, pieds);
+    verifier("chaque personne garde son attitude, et la rue en a plusieurs",
+      pieds.memeAttitude && pieds.parAttitude.attente > 30 && pieds.parAttitude.attente2 > 20,
+      { cent: pieds.parAttitude, rue: vivants.attitudes });
+    // Une personne fixe devant la caméra, rendue avant puis après avoir joué
+    // la capture : ses matériaux gardent leurs programmes (la peau avait déjà
+    // son squelette). Lire les clés de toute la rue au fil de l'horloge est un
+    // tirage : les passants qui arrivent apportent les leurs, capture ou non.
+    const programmes = await v.evaluate(async () => {
+      const P = await import("/src/personnages.js"), H = await import("/src/humains.js"), M = await import("/src/mouvements.js");
+      await H.chargerHumains(); await M.chargerMouvements();
+      const g = window.__game, cam = g.camera;
+      const h = P.construireHumain({ tenue: "passant", modeleHumain: "homme-costume" });
+      const d = cam.getWorldDirection(new (cam.position.constructor)());
+      h.position.copy(cam.position).addScaledVector(d, 3); h.position.y -= 1.2;
+      g.scene.add(h);
+      const cles = () => { const k = new Set(); h.traverse((o) => { if (!o.isSkinnedMesh) return; for (const m of [].concat(o.material)) { const pr = g.renderer.properties.get(m); if (pr && pr.programs) for (const key of pr.programs.keys()) k.add(key); } }); return [...k]; };
+      const image = () => new Promise((f) => requestAnimationFrame(() => requestAnimationFrame(() => f())));
+      H.reglageCapture.actif = false; H.animerHumain(h, 0, 0); delete h.userData.anim; H.reglageCapture.actif = true;
+      await image(); await image();
+      const avant = cles();
+      for (let i = 0; i < 30; i++) H.animerHumain(h, i / 15, i < 15 ? 1.2 : 0);
+      await image(); await image();
+      const apres = cles();
+      const joue = !!(h.userData.anim && h.userData.anim.courante);
+      g.scene.remove(h);
+      return { avant: avant.length, neuves: apres.filter((k) => !avant.includes(k)).length, joue };
+    });
+    verifier("une personne qui se met à jouer la capture ne compile aucun programme neuf",
+      programmes.avant > 0 && programmes.neuves === 0 && programmes.joue, programmes);
+    // borne de garde : le coût d'un appel (capture comprise) reste sous 0,3 ms
+    // (mesuré 17 µs dans Paris, sonde-cout-capture.cjs)
+    verifier("animer une personne coûte moins de 0,3 ms", vivants.us > 0 && vivants.us < 300, { us: vivants.us });
   } finally {
     await banc.fermer();
   }

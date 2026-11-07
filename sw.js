@@ -2,7 +2,7 @@
 // once it has been opened online at least once.
 // Bump CACHE_VERSION on every release so clients pick up new files.
 
-const CACHE_VERSION = 'web-minecraft-v590';
+const CACHE_VERSION = 'web-minecraft-v592';
 
 // The face scanner (library + models, ~8 MB) lives in its own cache that
 // survives version bumps: those files are pinned and never change, so a
@@ -29,7 +29,9 @@ const isStaticAsset = (url) =>
   // première visite de Manhattan, jamais avant
   || url.includes('/vendor/newyork/');
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
-  'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`);
+  'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`)
+  // les mouvements de capture (personnages vivants) : un fichier immuable, versionné par son nom
+  .concat(['./vendor/humains/mouvements-v1.bin']);
 const POLICES = ['bricolage-latin', 'jakarta-latin'].map((n) => `./vendor/polices/${n}.woff2`);
 // les avions déposés (v563) : immuables, comme les corps et la flotte
 // et leurs versions aux textures KTX2 (v590), celles que le jeu charge quand le
@@ -143,7 +145,7 @@ const ASSETS = [
   './src/vehicules.js',
   './src/voiesdoubles.js',
   './src/raccords.js',
-  './src/presence.js', './src/humains.js', './vendor/SkeletonUtils.js',
+  './src/presence.js', './src/humains.js', './src/mouvements.js', './vendor/SkeletonUtils.js',
   './src/taxis.js',
   './src/utilitaires.js',
   './src/modeles.js',
