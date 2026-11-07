@@ -63,7 +63,7 @@ const VERT_TOIT = uni(5);    // les toits de pagode de Chinatown
 // LE RAYON VIENT DU REGISTRE, il n'est pas réécrit ici. Un littéral à cet
 // endroit a déjà coûté une livraison à Paris : il masquait le rayon de
 // `mondes.js`, et rien ne se bâtissait au-delà de l'ancienne valeur.
-export const SF = positionDe('sf');
+export const SF = positionDe('sf', 'terreV4');
 
 // LA REMISE À L'ÉCHELLE GTA (v192). Neuf blocs par kilomètre, c'était un bloc
 // pour CENT ONZE MÈTRES : Market Street faisait trois cents mètres de large et

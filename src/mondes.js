@@ -186,7 +186,14 @@ export const MONDES = {
       // Boston 387, Washington 755, Montréal 1 472. Décision de Max : « le
       // monde ×2 », et Paris d'abord pour ce qui suit. L'ancre ne bouge
       // toujours pas ; le monde passe de 43 000 à 86 000 blocs.
-      kmParBloc: 0.1875,
+      // AGRANDIE UNE TROISIÈME FOIS, ×3, EN v588 (décision de Max, 5 nov. 2026) :
+      // « New York mange Boston ». Boston était DANS la boîte du plan de New York
+      // (Manhattan + dix banlieues, v583) ; à ×3, il en sort de 1 211 blocs, et les
+      // villes peuvent prendre 1,5 fois leur emprise sans toucher le point
+      // d'apparition. Mesuré avant la ligne : sous le point d'apparition, l'ancien
+      // et le nouveau Paris, 17 265 colonnes, zéro déplacée (`docs/carte-x3.md`).
+      // La carte d'avant est figée dans `terreV4`.
+      kmParBloc: 0.0625,
       // L'ANCRE ne bouge pas. C'est là que les enfants ont le plus construit,
       // et ancrer la projection sur leur Paris épargne leurs blocs. La ville,
       // elle, a déménagé en v306 (Paris doublé) : sa surcharge est dans sa
@@ -387,7 +394,14 @@ MONDES.terreV2.lieux = MONDES.terre.lieux;
 // pour qu'un Paris qui bouge en v306 ne soit pas pris pour une ville qui a
 // bougé en v242. Jamais proposée à l'enfant, jamais mise à jour.
 MONDES.terreV3 = { id: 'terreV3', nom: 'La Terre (v242–v305)', emoji: '🌍',
-  projection: MONDES.terre.projection, lieux: MONDES.terre.lieux };
+  projection: { ...MONDES.terre.projection, kmParBloc: 0.1875 }, lieux: MONDES.terre.lieux };
+
+// LA QUATRIÈME CARTE, TELLE QU'ELLE ÉTAIT DE LA v306 À LA v587 : 0,1875 km par
+// bloc, AVEC la surcharge de Paris doublé. La marche 8 → 9 de la migration lit les
+// villes ici et les retrouve sur la carte courante. Jamais mise à jour.
+MONDES.terreV4 = { id: 'terreV4', nom: 'La Terre (v306–v587)', emoji: '🌍',
+  projection: { ...MONDES.terre.projection, kmParBloc: 0.1875 }, lieux: MONDES.terre.lieux,
+  surcharge: true };
 
 // --- ce que le reste du jeu appelle ------------------------------------------
 
@@ -409,7 +423,7 @@ export function positionDe(cle, mondeId = 'terre') {
   const lieu = (m.lieux || []).find((l) => l.cle === cle);
   if (!lieu) throw new Error(`lieu inconnu sur ${mondeId} : ${cle}`);
   const { x, z } = projeteur(mondeId).versBlocs(lieu.lat, lieu.lon);
-  const s = mondeId === 'terre' ? lieu.terre : null;
+  const s = (mondeId === 'terre' || MONDES[mondeId].surcharge) ? lieu.terre : null;
   if (s) return { x: x + s.dx, z: z + s.dz, r: s.r, nom: lieu.nom };
   return { x, z, r: lieu.r, nom: lieu.nom };
 }

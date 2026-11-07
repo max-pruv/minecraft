@@ -217,6 +217,7 @@ const GARDIENS = {
   'src/sanfrancisco-v343.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la San Francisco d'avant le kit, sous ce qu'un enfant a bâti (v361)
   'src/lille-v344.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // la Lille d'avant le kit, sous ce qu'un enfant a bâti (v368)
   'src/paris-v531.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // Paris d'avant les rues à la GTA, sous ce qu'un enfant a bâti
+  'src/monde-v587.js': ['carteMonde.js', 'carte.js', 'plafond.js', 'sauvegarde.js'],       // villes, lieux et repères de la v587, figés pour la carte d'avant ×3
   'src/londres-v531.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // Londres d'avant les rues à la GTA, sous ce qu'un enfant a bâti
   'src/nice-v531.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // Nice d'avant les rues à la GTA, sous ce qu'un enfant a bâti
   'src/lille-v531.js': ['carte.js', 'carteMonde.js', 'plafond.js', 'sauvegarde.js'],    // Lille d'avant les rues à la GTA, sous ce qu'un enfant a bâti

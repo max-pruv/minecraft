@@ -164,6 +164,7 @@ const ASSETS = [
   './src/montures.js',
   './src/avions.js',
   './src/mondes.js',
+  './src/monde-v587.js',
   './src/capitales.js',
   './src/terre.js',
   './src/londres.js',

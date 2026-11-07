@@ -56,7 +56,11 @@ async function traverserLesPonts(src = path.resolve(__dirname, '../src')) {
       if (!o && deb !== null) { ponts.push([deb, s]); deb = null; }
     }
     for (const [a, b] of ponts) for (const dir of [-1, 1]) {
-      const s0 = dir > 0 ? a - 25 : b + 25, s1 = dir > 0 ? b + 25 : a - 25;
+      // on ne roule pas au-delà du bout de la route : un pont à moins de
+      // vingt-cinq blocs d'une porte (l'I-95 Sud au bord de l'Hudson, carte ×3)
+      // se traverse jusqu'à la porte, pas dans le vide qui suit
+      const borne = (v) => Math.max(0, Math.min(seg.longueur, v));
+      const s0 = borne(dir > 0 ? a - 25 : b + 25), s1 = borne(dir > 0 ? b + 25 : a - 25);
       const L = R.largeurA(seg, s0), o = -dir * (L.terrePlein + L.demiChaussee / 2);
       const P = (s) => { const q = R.pointA(seg, s); return { x: q.x - q.fz * o, z: q.z + q.fx * o, fx: q.fx * dir, fz: q.fz * dir }; };
       const d0 = P(s0), r0 = R.routeEn(d0.x, d0.z);

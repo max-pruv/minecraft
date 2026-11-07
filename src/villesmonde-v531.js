@@ -372,7 +372,7 @@ export function typoDe(fiche) {
 }
 
 function fabrique(cle, fiche) {
-  const ancre = positionDe(cle);
+  const ancre = positionDe(cle, 'terreV4');
   const kmLon = 111.32 * Math.cos((fiche.lat0 * Math.PI) / 180);
   // LES DEUX UNITÉS D'UNE FICHE (v200). L'échelle est celle du registre, donc
   // multipliée par K_VILLES : `u`/`v` rendent des BLOCS DU MONDE, et monuments
@@ -2921,7 +2921,7 @@ function chercheMer(v) {
     // de kilomètres et ne sait rien répondre à vingt-sept. Le disque se mesure
     // donc à l'échelle du monde, et la marge en kilomètres, à la résolution de
     // la carte qu'on interroge.
-    const rayonKm = v.r * K_VILLES * MONDES.terre.projection.kmParBloc;
+    const rayonKm = v.r * K_VILLES * MONDES.terreV4.projection.kmParBloc;
     for (const [marge, poids] of [[20, 2], [45, 1]]) {
       const dist = rayonKm + marge;
       const lat = v.lat - (s * dist) / 111.19;

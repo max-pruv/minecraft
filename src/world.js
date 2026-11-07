@@ -6,7 +6,7 @@ import { aUnModeleHD, porteeHD } from './paris-monuments-hd.js';
 import { echelleDe, etirerBatisseur } from './echelle-monuments.js';
 import { carrefoursDeVoies } from './voies.js';
 import { idGarage, CLE_GARAGES } from './garages.js';
-import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste, tronconsDAire, videParUnTroncon } from './aeroport.js';
+import { buildAeroport, buildAerodrome, AEROPORTS, AEROPORTS_AVANT_V306, NES_APRES_V306, tronconsDePiste, tronconsDAire, videParUnTroncon, AEROPORTS_V587 } from './aeroport.js';
 import {
   USINE, hauteurUsine, solUsine, buildUsine, buildParcUsine, dansLUsine,
 } from './usine.js';
@@ -45,7 +45,7 @@ import {
 import {
   hauteurVillesMonde, aPorteeDuFondu, solVillesMonde, batirColonneVillesMonde, mobilierVillesMonde,
   pontVillesMonde,
-  landmarksVillesMonde, placesVillesMonde, dansVilleMonde, VILLES_MONDE,
+  landmarksVillesMonde, placesVillesMonde, dansVilleMonde, villeMondeEn, VILLES_MONDE,
 } from './villesmonde.js';
 import {
   LILLE, adresseLille, hauteurLille, solLille, lotLilleLibre, batirColonneLille,
@@ -97,6 +97,8 @@ import * as NICE_V531 from './nice-v531.js';
 import * as SF_V531 from './sanfrancisco-v531.js';
 import * as LILLE_V531 from './lille-v531.js';
 import * as VM_V531 from './villesmonde-v531.js';
+import { VILLES_V587, LIEUX_V587, REPERES_V587 } from './monde-v587.js';
+import { dansZones as dansZonesNY, TALUS as TALUS_NY } from './new-york-banlieues.js';
 import { surLaVoie, presDeLaVoie, voieEn, brancherSol, gareEn, rubansVoieDans, PAS_PILE, EP_TABLIER, EMPRISE } from './trains.js';
 import { routeEn, rubansDans, brancherSol as brancherSolRoutes } from './routes.js';
 
@@ -1641,19 +1643,68 @@ export const CITIES = [
 // Ce que la configuration porte, c'est TOUT ce que la v306 a déplacé et rien
 // d'autre : la ville de Paris (sa place, son disque, son relief, sa trame
 // d'avant la v303, ses monuments), les trois aérodromes, les trois sites.
+// LA CARTE ×3 (chantier « carte ×3 », session A). Tout ce qui suit décrit des
+// mondes d'AVANT la carte ×3 : ils lisent la carte d'avant (`terreV4`, figée
+// dans mondes.js) et les villes, les lieux, les repères et les aérodromes À LEUR
+// PLACE D'AVANT, figés dans `monde-v587.js` et `AEROPORTS_V587` (aeroport.js) — jamais les
+// positions d'aujourd'hui. Un lieu se retrouve par son NOM, dans l'ordre : un
+// lieu né après la v587 n'existe pas dans ces mondes-là, un lieu retiré non plus.
+function figerParNom(liste, figes, nomDe) {
+  const files = new Map();
+  for (const f of figes) {
+    if (!files.has(f[0])) files.set(f[0], []);
+    files.get(f[0]).push(f);
+  }
+  const out = [];
+  for (const e of liste) {
+    const f = files.get(nomDe(e))?.shift();
+    if (f) out.push([e, f]);
+  }
+  return out;
+}
+const CITIES_V587 = figerParNom(CITIES, VILLES_V587, (c) => c.key)
+  .map(([c, f]) => ({ ...c, x: f[1], z: f[2], r: f[3] }));
+const PLACES_V587 = figerParNom(PLACES, LIEUX_V587, (p) => p.name)
+  .map(([p, f]) => ({ ...p, x: f[1], z: f[2], r: f[3] }));
+const placeV587 = (p) => { const i = PLACES.indexOf(p); return { ...p, x: LIEUX_V587[i][1], z: LIEUX_V587[i][2] }; };
+const GAULOIS_V587 = placeV587(GAULOIS);
+const VOLCANO_V587 = placeV587(VOLCANO);
+// la caserne : un repère (`VILLE`), figé comme les autres
+const VILLE_V587 = (() => { const f = REPERES_V587.find((r) => r[0] === VILLE.name); return f ? { ...VILLE, x: f[1], z: f[2] } : VILLE; })();
+const PARIS_V587 = CITIES_V587.find((c) => c.key === 'paris');
+// Les repères se figent par nom ET par position relative à leur ancien lieu :
+// la boîte et le bâtisseur restent ceux du code (un bâtisseur pose en relatif).
+const reperesV587 = (liste) => figerParNom(liste, REPERES_V587, (lm) => lm.name)
+  .map(([lm, f]) => ({ ...lm, x: f[1], z: f[2] }));
+// Le décalage d'un module de relief qui n'a pas de copie figée (la Chine, la
+// Giga-usine, Manhattan et Liberty Island) : on le lit au même endroit RELATIF
+// à son ancre, sur la carte d'aujourd'hui. Ces trois reliefs ne dépendent que
+// de l'écart à leur ancre (aucun bruit), et c'est l'empreinte de `plafond.js`,
+// relevée sur origin/main, qui le prouve.
+const ecartX3 = (cle) => {
+  const a = positionDe(cle), b = positionDe(cle, 'terreV4');
+  return { x: a.x - b.x, z: a.z - b.z };
+};
+const DECALAGE_V587 = { chine: ecartX3('chine'), usine: ecartX3('gigatexas'), ny: ecartX3('ny') };
+const HAUTEURS_V587 = {
+  sf: SF_V531.hauteurSF, nice: NICE_V531.hauteurNice, lille: LILLE_V531.hauteurLille,
+  londres: LONDRES_V531.hauteurLondres, washington: WASHINGTON_V367.hauteurWashington,
+  villesMonde: VM_V531.hauteurVillesMonde,
+};
+
 const PARIS_AVANT_POS = PARIS_V302.PARIS;
-const CITIES_AVANT = CITIES.map((c) => (c.key === 'paris'
+const CITIES_AVANT = CITIES_V587.map((c) => (c.key === 'paris'
   ? { ...c, x: PARIS_AVANT_POS.x, z: PARIS_AVANT_POS.z, r: PARIS_AVANT_POS.r } : c));
 const GAULOIS_AVANT = { ...GAULOIS, x: -420, z: 300 };
 const VOLCANO_AVANT = { ...VOLCANO, x: -140, z: 420 };
 const VILLE_AVANT = (() => { const [x, z] = PARIS_V302.adresseParis(-8.64, 9.25); return { ...VILLE, x, z }; })();
-const PLACES_AVANT = PLACES.map((p) => (p === GAULOIS ? GAULOIS_AVANT : p === VOLCANO ? VOLCANO_AVANT
+const PLACES_AVANT = PLACES_V587.map((p) => (p.name === GAULOIS.name ? { ...p, ...GAULOIS_AVANT } : p.name === VOLCANO.name ? { ...p, ...VOLCANO_AVANT }
   : p.name === 'Caserne & Commissariat' ? { ...p, x: VILLE_AVANT.x, z: VILLE_AVANT.z + 14 } : p));
 const NOMS_MONUMENTS_PARIS = new Set(['Tour Eiffel', 'Arc de Triomphe', 'Pyramide du Louvre', 'Panthéon',
   'Invalides', 'Opéra', 'Montparnasse', 'Bastille', 'Moulin Rouge', 'Sacré-Cœur', 'Notre-Dame']);
 const AEROPORT_AVANT = new Map(AEROPORTS_AVANT_V306.map((a) => [a.nom, a]));
 // Les aérodromes nés après la v306 (Changi, v486) ne sont pas dans ce monde-là.
-const NES_APRES_V306_NOMS = new Set(AEROPORTS.filter((a) => NES_APRES_V306.has(a.cle)).map((a) => a.nom));
+const NES_APRES_V306_NOMS = new Set(AEROPORTS_V587.filter((a) => NES_APRES_V306.has(a.cle)).map((a) => a.nom));
 function repereAvant(lm) {
   if (NOMS_MONUMENTS_PARIS.has(lm.name) && Math.hypot(lm.x - PARIS.x, lm.z - PARIS.z) < PARIS.r) {
     if (lm.name === 'Notre-Dame') return { ...lm, x: PARIS_AVANT_POS.x + PARIS_V302.CITE.u, z: PARIS_V302.zCite() };
@@ -1675,7 +1726,8 @@ export const CONF_NEUF = {
   places: PLACES, reperes: LANDMARKS, hauteurParis, parisAvant: false, fonduDoux: true,
   mursDeQuai: true, falaises: true, villesAvant: false, climat: true, sansTrameLondres: true,
   metroParis: true, metroMonde: true, voiesJardinsParis: true, clairieres: true,
-  pistesDegagees: true,
+  pistesDegagees: true, monde: 'terre', decalage: null,
+  hauteurs: { sf: hauteurSF, nice: hauteurNice, lille: hauteurLille, londres: hauteurLondres, washington: hauteurWashington, villesMonde: hauteurVillesMonde },
 };
 // LE MONDE DE LA v306 À LA v308 — celui d'aujourd'hui sans le fondu doux des
 // villes (v309). La marche 6 → 7 juge sur lui ce qui y a été posé, et la marche
@@ -1685,11 +1737,26 @@ export const CONF_NEUF = {
 // Et ces deux mondes-là ont les villes d'avant leur passe au kit (Londres
 // v339, `londres-v332.js` ; Nice v359, `nice-v340.js`) : c'est celles qu'on y
 // voyait (`villesAvant`).
-export const CONF_V308 = { ...CONF_NEUF, reperes: LANDMARKS_V317, fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false, metroMonde: false, voiesJardinsParis: false, clairieres: false, pistesDegagees: false };
+// LE MONDE DE LA v309 À LA v587 — celui de la production avant la carte ×3,
+// figé (chantier « carte ×3 »). La marche 8 → 9 (`migrerCarteX3`) juge sur lui
+// ce qu'un enfant y a posé, et la marche 6 → 7 y compare la v308. Carte d'avant
+// (`terreV4`), villes, lieux, repères et aérodromes d'avant, reliefs des villes
+// lus dans leurs copies figées. Il ne se met JAMAIS à jour.
+const AVANT_X3 = {
+  monde: 'terreV4', villes: CITIES_V587, aeroports: AEROPORTS_V587, gaulois: GAULOIS_V587,
+  volcan: VOLCANO_V587, places: PLACES_V587, hauteurParis: PARIS_V531.hauteurParis,
+  decalage: DECALAGE_V587, hauteurs: HAUTEURS_V587,
+};
+// Ses pistes prolongées et ses aires sont celles de la v587, aux places d'avant
+// (`AEROPORTS_V587` porte ses tables, aeroport.js).
+export const CONF_V587 = { ...CONF_NEUF, ...AVANT_X3, cle: 'v587', reperes: reperesV587(LANDMARKS.filter((lm) => !lm.piste))
+  .concat(AEROPORTS_V587.flatMap(tronconsDePiste), AEROPORTS_V587.flatMap(tronconsDAire)) };
+export const CONF_V308 = { ...CONF_NEUF, ...AVANT_X3, cle: 'v308', reperes: reperesV587(LANDMARKS_V317), fonduDoux: false, mursDeQuai: false, falaises: false, villesAvant: true, climat: false, sansTrameLondres: false, metroParis: false, metroMonde: false, voiesJardinsParis: false, clairieres: false, pistesDegagees: false };
 export const CONF_AVANT = {
   cle: 'avant-v306', villes: CITIES_AVANT, aeroports: AEROPORTS_AVANT_V306, gaulois: GAULOIS_AVANT,
-  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: LANDMARKS_V317.filter((lm) => !NES_APRES_V306_NOMS.has(lm.name)).map(repereAvant),
+  volcan: VOLCANO_AVANT, places: PLACES_AVANT, reperes: reperesV587(LANDMARKS_V317).filter((lm) => !NES_APRES_V306_NOMS.has(lm.name)).map(repereAvant),
   hauteurParis: PARIS_V302.hauteurParis, parisAvant: true, fonduDoux: false, villesAvant: true,
+  monde: 'terreV4', decalage: DECALAGE_V587, hauteurs: HAUTEURS_V587,
 };
 
 // SF painted-lady facades reuse the plain decor blocks (Uni pattern).
@@ -1849,7 +1916,7 @@ export function hauteurBase(x, z, mondeId = 'terre') {
 // la date de la refonte, pour qu'aucune passe ne le redéplace et pour qu'il
 // l'emporte sur sa copie d'avant. C'est la règle du receveur qui cède :
 // l'ancienne version ne peut pas apprendre la règle neuve.
-export const CARTE_VERSION = 8;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309) ; 8 : les fiches des garages suivent leurs blocs (v487)
+export const CARTE_VERSION = 9;   // 4 : le ménage du ciel de Paris (v298) ; 5 : les toits de Paris relevés (v301) ; 6 : Paris doublé (v306) ; 7 : le fondu doux des villes (v309) ; 8 : les fiches des garages suivent leurs blocs (v487) ; 9 : la carte ×3 (chaque bloc suit sa ville)
 const CLE_CARTE = 'web-minecraft-carte-v1';
 const ECART_MAX = 24;          // au-delà, on ne déplace plus : on laisse et on dit
 // L'heure de la refonte ×2. Un bloc daté d'avant a été posé sur la carte de
@@ -1892,7 +1959,9 @@ function lesVillesQuiBougent() {
 // se compare pas : la ville aplanit, la projection n'y change rien.
 function solDecideParUneVille(x, z) {
   if (dansUneZoneATerre(x, z, CONF_AVANT)) return true;
-  const ny = positionDe('ny');
+  // la carte 3 de la v242 (`terreV3`), jamais la carte d'aujourd'hui : la carte
+  // ×3 a déplacé New York, et cette marche se rejoue sur chaque document
+  const ny = positionDe('ny', 'terreV3');
   return x >= ny.x + BORNES_MANHATTAN.x0 && x < ny.x + BORNES_MANHATTAN.x1
     && z >= ny.z + BORNES_MANHATTAN.z0 && z < ny.z + BORNES_MANHATTAN.z1;
 }
@@ -1910,7 +1979,7 @@ function destinationCarte3(x, z) {
   const ville = lesVillesQuiBougent().find((v) => x >= v.x0 && x <= v.x1 && z >= v.z0 && z <= v.z1 && v.dedans(x, z));
   if (ville) d = { dx: ville.dx, dz: ville.dz, dy: 0, ville: ville.cle };
   else if (!solDecideParUneVille(x, z)) {
-    const dy = hauteurBase(x, z, 'terre') - hauteurBase(x, z, 'terreV2');
+    const dy = hauteurBase(x, z, 'terreV3') - hauteurBase(x, z, 'terreV2');
     if (dy !== 0) d = Math.abs(dy) > ECART_MAX ? { laisse: true } : { dx: 0, dz: 0, dy };
   }
   if (destinations.size > 400000) destinations.clear();
@@ -2370,6 +2439,23 @@ function dansVilleAvant(x, z, t) {
   }
   return false;
 }
+// LA VILLE FIGÉE SE LIT TRANSLATÉE DU DÉPLACEMENT DE SA VILLE (carte ×3).
+// Les copies figées (`*-v332…v531.js`) vivent à l'adresse de la carte d'avant
+// (`terreV4`) : c'est ce qui rend les mondes d'avant au bloc près. Dans le
+// monde d'aujourd'hui une ville a bougé d'un seul tenant — elle garde son plan
+// — et la marche 8 → 9 a emmené les blocs de l'enfant du même vecteur
+// (`positionDe(cle) − positionDe(cle, 'terreV4')`, la règle de `siteX3`) : la
+// ville d'avant sous un bloc emmené est donc la copie lue à (x − dx, z − dz),
+// exactement l'ancienne ville sous lui. Paris ne bouge pas (zéro).
+const ECARTS_X3 = new Map(), ZERO_X3 = { dx: 0, dz: 0 };
+function ecartVilleX3(cle) {
+  let e = ECARTS_X3.get(cle);
+  if (e) return e;
+  const a = positionDe(cle, 'terreV4'), b = positionDe(cle);
+  e = a && b && (a.x !== b.x || a.z !== b.z) ? { dx: b.x - a.x, dz: b.z - a.z } : ZERO_X3;
+  ECARTS_X3.set(cle, e);
+  return e;
+}
 // La ville d'aujourd'hui et celle d'avant, sous la même forme : le monde
 // d'avant (`CONF_AVANT`) engendre la seconde partout dans l'ancien disque.
 // La ville neuve a des boulevards de la règle du kit, donc des coins de
@@ -2391,12 +2477,14 @@ const PARIS_AVANT = {
 // centre (le plan double) ; le reste se TRANSLATE d'un seul tenant.
 const ECHELLE_PARIS_DOUBLE = 2;
 const SITES_DEMENAGES = (() => {
-  const l = [{ cle: 'paris', dilate: true, x0: PARIS_AVANT_POS.x, z0: PARIS_AVANT_POS.z, r: PARIS_AVANT_POS.r, x1: PARIS.x, z1: PARIS.z }];
+  const l = [{ cle: 'paris', dilate: true, x0: PARIS_AVANT_POS.x, z0: PARIS_AVANT_POS.z, r: PARIS_AVANT_POS.r, x1: PARIS_V587.x, z1: PARIS_V587.z }];
+  // les aérodromes de la v306 à la v587, figés (carte ×3) : la marche 5 → 6
+  // emmène un bloc là où était son aérodrome AVANT la carte ×3
   for (const a of AEROPORTS_AVANT_V306) {
-    const b = AEROPORTS.find((q) => q.cle === a.cle);
+    const b = AEROPORTS_V587.find((q) => q.cle === a.cle);
     if (b && (b.x !== a.x || b.z !== a.z)) l.push({ cle: a.cle, x0: a.x, z0: a.z, r: a.r + 8, x1: b.x, z1: b.z });
   }
-  for (const [cle, av, ap] of [['gaulois', GAULOIS_AVANT, GAULOIS], ['volcan', VOLCANO_AVANT, VOLCANO], ['caserne', VILLE_AVANT, VILLE]]) {
+  for (const [cle, av, ap] of [['gaulois', GAULOIS_AVANT, GAULOIS_V587], ['volcan', VOLCANO_AVANT, VOLCANO_V587], ['caserne', VILLE_AVANT, VILLE_V587]]) {
     l.push({ cle, x0: av.x, z0: av.z, r: av.r + 8, x1: ap.x, z1: ap.z });
   }
   return l;
@@ -2406,7 +2494,7 @@ const SITES_DEMENAGES = (() => {
 // bloc, et un journal de cent mille blocs ne paie qu'un test de boîte.
 const DISQUES_V306 = [
   ...SITES_DEMENAGES.map((s) => ({ x: s.x0, z: s.z0, r: s.r })),
-  ...SITES_DEMENAGES.map((s) => ({ x: s.x1, z: s.z1, r: s.cle === 'paris' ? PARIS.r + 4 : s.r })),
+  ...SITES_DEMENAGES.map((s) => ({ x: s.x1, z: s.z1, r: s.cle === 'paris' ? PARIS_V587.r + 4 : s.r })),
 ];
 const BOITE_V306 = DISQUES_V306.reduce((b, d) => ({
   x0: Math.min(b.x0, d.x - d.r), x1: Math.max(b.x1, d.x + d.r), z0: Math.min(b.z0, d.z - d.r), z1: Math.max(b.z1, d.z + d.r),
@@ -2589,7 +2677,7 @@ function reliefMemo(cache, monde, x, z) {
 }
 function ecartFonduDoux(x, z) {
   const a = reliefMemo(reliefsV308, () => mondeV308 || (mondeV308 = new World({ v308: true })), x, z);
-  const b = reliefMemo(reliefsV309, () => mondeV309 || (mondeV309 = new World()), x, z);
+  const b = reliefMemo(reliefsV309, () => mondeV309 || (mondeV309 = new World({ v587: true })), x, z);
   return b - a;
 }
 
@@ -2625,7 +2713,7 @@ function planFonduDoux(map) {
     if (c1 < 0 || c2 < 0) continue;
     const x = +k.slice(0, c1), y = +k.slice(c1 + 1, c2), z = +k.slice(c2 + 1);
     if (x !== x || y !== y || z !== z || y < 0 || y > 255) continue;
-    if (!aPorteeDuFondu(x, z)) continue;
+    if (!VM_V531.aPorteeDuFondu(x, z)) continue;
     candidats.set(cle3(x, y, z), [x, y, z, k]);
   }
   if (!candidats.size) return { deplacements: [], laisses: 0 };
@@ -2672,7 +2760,7 @@ export function migrerPositionsFonduDoux(pos) {
     out[ctx] = p;
     if (ctx.includes(':') || !p || ![p.x, p.y, p.z].every(Number.isFinite) || !(num(p.t) < DATE_FONDU_DOUX)) continue;
     const x = Math.floor(p.x), z = Math.floor(p.z);
-    if (!aPorteeDuFondu(x, z)) continue;
+    if (!VM_V531.aPorteeDuFondu(x, z)) continue;
     const dy = ecartFonduDoux(x, z);
     if (!dy || Math.abs(dy) > ECART_MAX) continue;
     out[ctx] = { ...p, y: p.y + dy, t: DATE_FONDU_DOUX };
@@ -2974,12 +3062,238 @@ export function suivreGaragesParisDouble(garages, edits) {
 // arrivé est son propre centre.
 export function suivreGaragesFonduDoux(garages, edits) {
   const dest = (ax, az) => {
-    if (!aPorteeDuFondu(ax, az)) return null;
+    if (!VM_V531.aPorteeDuFondu(ax, az)) return null;
     const dy = ecartFonduDoux(ax, az);
     return dy && Math.abs(dy) <= ECART_MAX ? { dx: 0, dy, dz: 0 } : null;
   };
   return suivreGaragesDoc(garages, edits, DATE_FONDU_DOUX, null,
-    enGroupes(DATE_FONDU_DOUX, planFonduDoux, (cx, cz) => [[cx, cz]], dest, aPorteeDuFondu));
+    enGroupes(DATE_FONDU_DOUX, planFonduDoux, (cx, cz) => [[cx, cz]], dest, VM_V531.aPorteeDuFondu));
+}
+
+// --- LA MARCHE 8 → 9 : la carte ×3 (chantier « carte ×3 », session A) -------
+//
+// Décision de Max (5 novembre 2026) : la carte passe de 0,1875 à 0,0625 km par
+// bloc. Paris, l'ancre, ne bouge pas ; toutes les autres villes s'éloignent
+// d'elle, trois fois plus loin, et emmènent ce qu'un enfant y a bâti. C'est la
+// règle de la v242, qui fait loi : un bloc SUIT SA VILLE.
+//
+// Un groupe de blocs (six voisins, posés avant `DATE_CARTE_X3`) dont l'ancrage
+// (son centre arrondi) tombe, SUR LA CARTE D'AVANT (`terreV4`), dans :
+//   - le plan de New York (le rectangle `BORNES`, les banlieues `ZONES` et leur
+//     `TALUS`, autour de l'ANCIENNE origine) : New York garde son plan, il
+//     part d'un seul vecteur ;
+//   - un aérodrome qui a bougé (`AEROPORTS_V587` → `AEROPORTS`, lus à l'appel :
+//     c'est la session B qui les déplace) ;
+//   - le disque d'une ville qui a bougé (le registre, et le rayon de la fiche
+//     pour une ville engendrée), plus le fondu (`MARGE_SUIVI`) ;
+//   - un lieu (rayon > 0) qui a bougé ;
+// part du même vecteur que ce qui le porte, À LA MÊME HAUTEUR AU-DESSUS DU SOL :
+// dy = sol d'aujourd'hui à l'arrivée − sol de la v587 au départ, lus sur les
+// deux mondes (`new World()`, `new World({ v587: true })`).
+// Ailleurs, en campagne, il ne bouge qu'en hauteur, de la différence de sol
+// sous lui (règle de la v199), bornée à `ECART_MAX` — au-delà on le laisse et
+// on le compte. Paris et le continent du départ ne bougent pas : le relief y est
+// identique au bloc près (le témoin des colonnes de `plafond.js`), et la marche
+// n'y déplace donc rien.
+//
+// CE QU'ELLE NE FAIT PAS, ET POURQUOI : la règle « un bloc perché sur un toit
+// se pose au sol » de la v306 n'est pas reprise. En v306 Paris DOUBLAIT : ses
+// immeubles changeaient, un toit d'avant pouvait tomber dans une rue d'après.
+// Ici une ville se TRANSLATE avec ses immeubles (palier 1 : seules les routes et
+// les villes ×1,5 du palier 2 changeront les plans) — une cabane sur un toit
+// retrouve le même toit, et la poser au sol l'enfermerait dans l'immeuble. Le
+// palier 2 (villes ×1,5) devra, lui, reprendre la règle de la v306.
+//
+// Pure, idempotente par la date (un bloc déplacé prend `DATE_CARTE_X3`),
+// appliquée au stockage une fois (`migrerLesBlocs`) et à chaque document reçu
+// du nuage avant la fusion (`migrerChaineCarte`, sync.js). LA DATE SE RELIT À LA
+// FUSION (v309) : une date en avance redéplacerait ce qu'un enfant pose sur la
+// carte neuve.
+export const DATE_CARTE_X3 = Date.UTC(2026, 10, 6, 12, 0, 0);
+let sitesX3 = null;
+function lesSitesQuiBougentX3() {
+  if (sitesX3) return sitesX3;
+  const l = [];
+  // New York : le plan entier, autour de l'ancienne origine
+  const nyA = positionDe('ny', 'terreV4'), nyN = positionDe('ny');
+  if (nyA.x !== nyN.x || nyA.z !== nyN.z) {
+    const B = BORNES_MANHATTAN, m = MARGE_SUIVI;
+    l.push({ cle: 'ny', dx: nyN.x - nyA.x, dz: nyN.z - nyA.z,
+      x0: nyA.x + Math.min(B.x0 - m, -2000), x1: nyA.x + Math.max(B.x1 + m, 2000),
+      z0: nyA.z + Math.min(B.z0 - m, -3000), z1: nyA.z + Math.max(B.z1 + m, 3000),
+      dedans: (x, z) => {
+        const u = x - nyA.x, v = z - nyA.z;
+        return (u >= B.x0 - m && u < B.x1 + m && v >= B.z0 - m && v < B.z1 + m) || dansZonesNY(u, v, TALUS_NY);
+      } });
+  }
+  const disque = (cle, x, z, r, dx, dz) => {
+    if (!dx && !dz) return;
+    l.push({ cle, dx, dz, x0: x - r, x1: x + r, z0: z - r, z1: z + r,
+      dedans: (px, pz) => (px - x) * (px - x) + (pz - z) * (pz - z) <= r * r });
+  };
+  // les aérodromes (avant les villes : ils sont à douze blocs des disques)
+  for (const a of AEROPORTS_V587) {
+    const b = AEROPORTS.find((q) => q.cle === a.cle);
+    if (b) disque('aero:' + a.cle, a.x, a.z, a.r + 8, b.x - a.x, b.z - a.z);
+  }
+  // les villes du registre (bâties à la main et engendrées)
+  const rayons = new Map(VM_V531.VILLES_MONDE.map((f) => [f.cle, f.rayon]));
+  for (const la of lieuxDuMonde('terreV4')) {
+    if (la.cle === 'ny') continue;
+    const ln = positionDe(la.cle);
+    disque(la.cle, la.x, la.z, Math.max(la.r || 0, rayons.get(la.cle) || 0) + MARGE_SUIVI, ln.x - la.x, ln.z - la.z);
+  }
+  // les lieux à rayon (le parc de l'usine, la Chine…) : par nom, dans l'ordre
+  for (const [p, f] of figerParNom(PLACES, LIEUX_V587, (q) => q.name)) {
+    if (!(f[3] > 0)) continue;
+    disque('lieu:' + f[0], f[1], f[2], f[3] + 8, p.x - f[1], p.z - f[2]);
+  }
+  return (sitesX3 = l);
+}
+function siteX3(x, z) {
+  for (const s of lesSitesQuiBougentX3()) {
+    if (x >= s.x0 && x <= s.x1 && z >= s.z0 && z <= s.z1 && s.dedans(x, z)) return s;
+  }
+  return null;
+}
+let mondeX3Avant = null, mondeX3Neuf = null;
+const reliefsX3Avant = new Map(), reliefsX3Neuf = new Map();
+const reliefX3Avant = (x, z) => reliefMemo(reliefsX3Avant, () => mondeX3Avant || (mondeX3Avant = new World({ v587: true })), x, z);
+const reliefX3Neuf = (x, z) => reliefMemo(reliefsX3Neuf, () => mondeX3Neuf || (mondeX3Neuf = new World()), x, z);
+// Où va une colonne (x, z) de la carte d'avant ? null : elle reste ; sinon
+// { dx, dy, dz } — ou { laisse: true } quand la campagne a trop changé.
+const destinationsX3 = new Map();
+function destinationX3(x, z) {
+  const cle = (x + 262144) * 524288 + (z + 262144);
+  let d = destinationsX3.get(cle);
+  if (d !== undefined) return d;
+  const s = siteX3(x, z);
+  if (s) {
+    let dy = reliefX3Neuf(x + s.dx, z + s.dz) - reliefX3Avant(x, z);
+    if (Math.abs(dy) > ECART_MAX) dy = 0;   // la ville part quand même, à la même cote
+    d = { dx: s.dx, dy, dz: s.dz, site: s.cle };
+  } else {
+    const dy = reliefX3Neuf(x, z) - reliefX3Avant(x, z);
+    d = !dy ? null : Math.abs(dy) > ECART_MAX ? { laisse: true } : { dx: 0, dy, dz: 0 };
+  }
+  if (destinationsX3.size > 400000) destinationsX3.clear();
+  destinationsX3.set(cle, d);
+  return d;
+}
+
+// Les groupes que la marche 8 → 9 emmène : [[groupe, d]]. Un bloc dont la
+// colonne ne bouge pas (Paris, le départ) n'entre pas dans un groupe : c'est
+// ce qui rend la marche presque gratuite sur un journal bâti à Paris, rejoué
+// à chaque fusion.
+function planCarteX3(map) {
+  const cle3 = (x, y, z) => ((x + 262144) * 256 + y) * 524288 + (z + 262144);
+  const candidats = new Map();
+  for (const k in map || {}) {
+    const e = map[k];
+    if (!Array.isArray(e) || k.charCodeAt(0) === 64 || !(num(e[1]) < DATE_CARTE_X3)) continue;
+    const c1 = k.indexOf(','), c2 = k.indexOf(',', c1 + 1);
+    if (c1 < 0 || c2 < 0) continue;
+    const x = +k.slice(0, c1), y = +k.slice(c1 + 1, c2), z = +k.slice(c2 + 1);
+    if (x !== x || y !== y || z !== z || y < 0 || y > 255) continue;
+    if (destinationX3(x, z) === null) continue;
+    candidats.set(cle3(x, y, z), [x, y, z, k]);
+  }
+  if (!candidats.size) return { deplacements: [], laisses: 0 };
+  const deplacements = [];
+  const vus = new Set();
+  let laisses = 0;
+  for (const [k0, p0] of candidats) {
+    if (vus.has(k0)) continue;
+    const groupe = [p0]; vus.add(k0);
+    for (let i = 0; i < groupe.length; i++) {
+      const [x, y, z] = groupe[i];
+      for (let v = 0; v < 6; v++) {
+        const kv = cle3(x + VOISINS[v][0], y + VOISINS[v][1], z + VOISINS[v][2]);
+        const c = candidats.get(kv);
+        if (c !== undefined && !vus.has(kv)) { vus.add(kv); groupe.push(c); }
+      }
+    }
+    let sx = 0, sz = 0;
+    for (const [x, , z] of groupe) { sx += x; sz += z; }
+    const d = destinationX3(Math.round(sx / groupe.length), Math.round(sz / groupe.length));
+    if (!d) continue;
+    if (d.laisse || groupe.some(([, y]) => y + d.dy < 1 || y + d.dy > 254)) { laisses += groupe.length; continue; }
+    deplacements.push([groupe, d]);
+  }
+  return { deplacements, laisses };
+}
+
+// Sur UNE carte de blocs. Pure ; la carte est rendue telle quelle quand rien
+// ne bouge. Les marques d'import de Manhattan ([id, date, dx, dz]) suivent
+// comme un bloc posé à leur origine.
+export function migrerCarteX3(map) {
+  const { deplacements, laisses } = planCarteX3(map);
+  let neuf = null, deplaces = 0;
+  const copie = () => { if (!neuf) { neuf = {}; for (const k in map) neuf[k] = map[k]; } };
+  for (const k in map || {}) {
+    const e = map[k];
+    if (k.charCodeAt(0) !== 64 || !Array.isArray(e) || e.length !== 4 || !(num(e[1]) < DATE_CARTE_X3)) continue;
+    if (!Number.isFinite(e[2]) || !Number.isFinite(e[3])) continue;
+    const d = destinationX3(Math.floor(e[2]), Math.floor(e[3]));
+    if (!d || d.laisse || (!d.dx && !d.dz)) continue;
+    copie();
+    neuf[k] = [e[0], DATE_CARTE_X3, e[2] + d.dx, e[3] + d.dz];
+    deplaces++;
+  }
+  if (!deplacements.length) return { carte: neuf || map || {}, deplaces, laisses };
+  copie();
+  for (const [groupe] of deplacements) for (const p of groupe) delete neuf[p[3]];
+  for (const [groupe, d] of deplacements) {
+    for (const [x, y, z, k] of groupe) {
+      const cle = `${x + d.dx},${y + d.dy},${z + d.dz}`, e0 = map[k], e = [e0[0], DATE_CARTE_X3, e0.length > 2 ? e0[2] : null, Number.isFinite(e0[3]) ? e0[3] : num(e0[1])];
+      const p = neuf[cle];
+      if (!p || num(e[1]) > num(p[1]) || (num(e[1]) === num(p[1]) && e[0] > p[0])) neuf[cle] = e;
+      deplaces++;
+    }
+  }
+  return { carte: neuf, deplaces, laisses };
+}
+
+export function migrerBlocsCarteX3(tout) {
+  const out = {};
+  let deplaces = 0, laisses = 0;
+  for (const [ctx, map] of Object.entries(tout || {})) {
+    if (ctx.includes(':') || !map || typeof map !== 'object' || Array.isArray(map)) { out[ctx] = map; continue; }
+    const r = migrerCarteX3(map);
+    out[ctx] = r.carte; deplaces += r.deplaces; laisses += r.laisses;
+  }
+  return { tout: out, deplaces, laisses };
+}
+
+// La position de l'enfant suit sa ville (ou le sol sous elle), comme un bloc.
+export function migrerPositionsCarteX3(pos) {
+  const out = {};
+  let deplaces = 0;
+  for (const [ctx, p] of Object.entries(pos || {})) {
+    out[ctx] = p;
+    if (ctx.includes(':') || !p || ![p.x, p.y, p.z].every(Number.isFinite) || !(num(p.t) < DATE_CARTE_X3)) continue;
+    const d = destinationX3(Math.floor(p.x), Math.floor(p.z));
+    if (!d || d.laisse) continue;
+    out[ctx] = { ...p, x: p.x + d.dx, y: p.y + d.dy, z: p.z + d.dz, t: DATE_CARTE_X3 };
+    deplaces++;
+  }
+  return { pos: out, deplaces };
+}
+
+// 8 → 9 : la fiche d'un garage suit le groupe de ses murs ; orpheline, elle
+// retrouve le groupe arrivé par l'ancrage d'avant (le même vecteur, ramené).
+export function suivreGaragesCarteX3(garages, edits) {
+  const antecedents = (cx, cz) => {
+    const l = [[cx, cz]];
+    for (const s of lesSitesQuiBougentX3()) l.push([cx - s.dx, cz - s.dz]);
+    return l;
+  };
+  const dest = (ax, az) => {
+    const d = destinationX3(ax, az);
+    return d && !d.laisse ? d : null;
+  };
+  return suivreGaragesDoc(garages, edits, DATE_CARTE_X3, null,
+    enGroupes(DATE_CARTE_X3, planCarteX3, antecedents, dest, () => true));
 }
 
 // LA CHAÎNE ENTIÈRE, sur un document reçu ou sur le stockage : les blocs et
@@ -2998,7 +3312,11 @@ export function migrerChaineCarte(edits, garages) {
   const g4 = suivreGaragesParisDouble(g2.garages, e3);
   const e5 = migrerBlocsFonduDoux(e4).tout;
   const g5 = suivreGaragesFonduDoux(g4.garages, e4);
-  return { edits: e5, garages: g5.garages, deplacees: g1.deplacees + g2.deplacees + g4.deplacees + g5.deplacees };
+  // 8 → 9 : la carte ×3, EN DERNIER — elle juge sur le monde de la v587, où
+  // toutes les marches d'avant ont posé ce qu'elles ont emmené.
+  const e6 = migrerBlocsCarteX3(e5).tout;
+  const g6 = suivreGaragesCarteX3(g5.garages, e5);
+  return { edits: e6, garages: g6.garages, deplacees: g1.deplacees + g2.deplacees + g4.deplacees + g5.deplacees + g6.deplacees };
 }
 
 // La migration du STOCKAGE DE L'APPAREIL, une fois par version de carte.
@@ -3070,6 +3388,10 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
   g = suivreGaragesFonduDoux(garages, tout); garages = g.garages;
   const fd = migrerBlocsFonduDoux(tout);
   tout = fd.tout; deplaces += fd.deplaces; laisses += fd.laisses;
+  // 8 → 9 : la carte ×3 (chaque bloc suit sa ville), en dernier.
+  g = suivreGaragesCarteX3(garages, tout); garages = g.garages;
+  const x3 = migrerBlocsCarteX3(tout);
+  tout = x3.tout; deplaces += x3.deplaces; laisses += x3.laisses;
   ecrire(tout);
   if (garages !== garagesLus) {
     try { localStorage.setItem(CLE_GARAGES, JSON.stringify(garages)); } catch { /* ignore */ }
@@ -3079,7 +3401,8 @@ export function migrerLesBlocs(lire, ecrire, lirePos = null, ecrirePos = null) {
     const q = releverPositionsParis(p.pos);
     const r = migrerPositionsParisDouble(q.pos);
     const f = migrerPositionsFonduDoux(r.pos);
-    if (p.deplaces || q.deplaces || r.deplaces || f.deplaces) ecrirePos(f.pos);
+    const x = migrerPositionsCarteX3(f.pos);
+    if (p.deplaces || q.deplaces || r.deplaces || f.deplaces || x.deplaces) ecrirePos(x.pos);
   }
   try { localStorage.setItem(CLE_CARTE, String(CARTE_VERSION)); } catch { /* ignore */ }
   return { deplaces, laisses, intacts, retires };
@@ -3198,8 +3521,8 @@ export class World {
   // `avant` : le monde d'avant Paris doublé (v306, `CONF_AVANT`) — pour juger
   // les blocs posés dedans, jamais pour jouer.
   // `v308` : le monde d'avant le fondu doux (v309, `CONF_V308`), même usage.
-  constructor({ avant = false, v308 = false } = {}) {
-    this.conf = avant ? CONF_AVANT : v308 ? CONF_V308 : CONF_NEUF;
+  constructor({ avant = false, v308 = false, v587 = false } = {}) {
+    this.conf = avant ? CONF_AVANT : v308 ? CONF_V308 : v587 ? CONF_V587 : CONF_NEUF;
     this.chunks = new Map();      // "cx,cz" -> Uint8Array
     this.tops = new Map();        // "cx,cz" -> y du bloc le plus haut (plafond de maillage)
     this.reliefsMemo = new Map(); // "cx,cz" -> relief brut du morceau et de sa marge (v352)
@@ -3223,6 +3546,12 @@ export class World {
     this.cacheSol = new Map();          // "x,z" -> { nat, cote } : la fiche d'une colonne (sol continu, v297)
     this.sansSolContinu = false;        // ?solcontinu=0 : la mesure A/B, jamais un réglage
     this.editTimes = new Map();   // "x,y,z" -> ms timestamp, for multiplayer merge
+    // LA DATE D'ORIGINE D'UN BLOC EMMENÉ PAR LA CARTE ×3 (marche 8 → 9). Sa
+    // date courante est `DATE_CARTE_X3`, qui rend la marche idempotente ; les
+    // gardes par date (villes figées, rues à la GTA, jardins…) lisent celle-ci,
+    // la date où l'enfant l'a vraiment posé. Elle voyage en 4ᵉ élément de
+    // l'entrée du journal ([bloc, date, provenance, origine]).
+    this.editOrigines = new Map();
     this.onOp = null;             // hook(k, id, ts) — net layer broadcasts local edits
     this.onBloc = null;           // hook(x, y, z, id) — TOUT bloc écrit, local ou reçu (v251)
     this.ctx = 'local';           // monde courant : 'local' ou le code du monde en ligne
@@ -3304,7 +3633,7 @@ export class World {
     // La vraie Terre : les océans du planisphère et les grandes chaînes.
     // Après les lacs — la mer a le dernier mot sur le bruit — et avant les
     // villes, qui gardent la main sur leur propre relief.
-    h = hauteurTerre(x, z, h, 'terre', this.conf);
+    h = hauteurTerre(x, z, h, this.conf.monde || 'terre', this.conf);
 
     // city districts: Paris and New York are flat plateaus; San Francisco
     // keeps its rolling hills so its streets climb like the real thing
@@ -3327,25 +3656,26 @@ export class World {
     // et la mer sur trois côtés. L'ancienne version se contentait d'ajouter du
     // bruit à la base plate — la ville n'avait donc ni collines ni côte, alors
     // que ce sont exactement les deux choses qui la font reconnaître.
-    h = hauteurSF(x, z, h, 33);
+    h = this.conf.hauteurs.sf(x, z, h, 33);
 
     // Nice : la baie des Anges se creuse, et les trois collines se lèvent —
     // celle du Château, Cimiez et le mont Boron.
-    h = hauteurNice(x, z, h, 32);
+    h = this.conf.hauteurs.nice(x, z, h, 32);
 
     // Lille : la Deûle et les douves de la citadelle se creusent, et le rempart
     // de Vauban se relève au-dessus de la ville.
-    h = hauteurLille(x, z, h, 34);
+    h = this.conf.hauteurs.lille(x, z, h, 34);
 
     // Londres : la Tamise se creuse dans la plaine — son coude de Westminster
     // est LE trait qu'on reconnaît sur tous les plans — et Primrose Hill se
     // lève au nord, d'où toute la ville se découvre.
-    h = hauteurLondres(x, z, h, 33);
+    h = this.conf.hauteurs.londres(x, z, h, 33);
 
     // La Chine : les crêtes de la muraille, la rivière de Guilin et ses
     // karsts, les rizières en marches — une région entière dans ce qui était
     // une zone morte entre San Francisco et le Pôle Nord.
-    h = hauteurChine(x, z, h);
+    const dec = this.conf.decalage;
+    h = dec ? hauteurChine(x + dec.chine.x, z + dec.chine.z, h) : hauteurChine(x, z, h);
 
     // Le tour du monde : Londres, Rome, Barcelone, Pise, Gizeh, Agra, Sydney,
     // Rio et Seattle. Chacune aplanit le parvis de son monument, avec un fondu
@@ -3356,27 +3686,28 @@ export class World {
     // grille chanfreinée de Barcelone, l'Arno de Pise, le plateau de Gizeh,
     // la Yamuna d'Agra, le port de Sydney, la baie de Rio et ses mornes, la
     // baie d'Elliott de Seattle. Cf. src/villesmonde.js.
-    h = hauteurVillesMonde(x, z, h, this.conf.fonduDoux);
+    h = this.conf.hauteurs.villesMonde(x, z, h, this.conf.fonduDoux);
 
     // La Giga-usine d'Austin : son disque est plat — une chaîne de production
     // qui ondule n'assemble rien du tout. Cf. src/usine.js.
-    h = hauteurUsine(x, z, h);
+    h = dec ? hauteurUsine(x + dec.usine.x, z + dec.usine.z, h) : hauteurUsine(x, z, h);
 
     // Liberty Island : un haut-fond dans la baie, juste au-dessus de l'eau.
     // Sans lui, la statue se dresserait sur la mer.
-    const ld = Math.hypot(x - (NY.x + LIBERTE.u), z - (NY.z + LIBERTE.v));
+    const nx = dec ? x + dec.ny.x : x, nz = dec ? z + dec.ny.z : z;
+    const ld = Math.hypot(nx - (NY.x + LIBERTE.u), nz - (NY.z + LIBERTE.v));
     if (ld < LIBERTE.r) h = Math.max(h, WATER_LEVEL + 1 - Math.floor(ld / 3));
 
     // Manhattan ne se pose pas sur le continent : elle en est détachée par
     // l'Hudson et l'East River. C'est le seul quartier dont le terrain est
     // creusé autant que nivelé.
-    h = hauteurManhattan(x, z, h);
+    h = hauteurManhattan(nx, nz, h);
 
     // Washington : le Potomac et l'Anacostia se creusent et se rejoignent, le
     // ravin de Rock Creek coupe le nord-ouest, et les collines nommées se
     // lèvent — Capitol Hill sous le Capitole, la crête d'Arlington en face,
     // Mount Saint Alban sous la cathédrale.
-    h = hauteurWashington(x, z, h);
+    h = this.conf.hauteurs.washington(x, z, h);
 
     // Le pôle Nord : une banquise plate posée sur l'océan, tout au nord. On n'y
     // arrive qu'en volant longtemps — c'est un trésor caché, il n'est annoncé
@@ -3799,7 +4130,7 @@ export class World {
     if (tirage >= DENSITE_MAX) return null;
     // ni dans l'emprise qu'une piste prolongée vide (v548) : la tranchée y
     // efface le tronc, et la couronne qui débordait restait en l'air
-    if (this.conf.pistesDegagees && videParUnTroncon(x, z)
+    if (this.conf.pistesDegagees && videParUnTroncon(x, z, this.conf.aeroports)
       && !this.morceauxAvantPistes.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)))) return null;
     let cl = cm !== undefined ? cm : this.climat(x, z);
     const avantClimat = cl && cl !== 'desert' && this.morceauxAvantClimat.has(World.key(Math.floor(x / CHUNK), Math.floor(z / CHUNK)));
@@ -3869,7 +4200,7 @@ export class World {
   // d'au plus `TREMBLE` degrés.
   climat(x, z) {
     if (!this.conf.climat) return null;
-    const ciel = cielDe(x, z, 'terre');
+    const ciel = cielDe(x, z, this.conf.monde || 'terre');
     const t = fbm(x * 0.006, z * 0.006, SEED + 931) - 0.5;
     return climatReel(ciel.lat + t * 1.2, ciel.lon + t * 1.2);
   }
@@ -3881,7 +4212,7 @@ export class World {
   // générateur et au mailleur sur l'essentiel du monde.
   climatDuMorceau(cx, cz) {
     if (!this.conf.climat) return null;
-    const ciel = cielDe(cx * CHUNK + CHUNK / 2, cz * CHUNK + CHUNK / 2, 'terre');
+    const ciel = cielDe(cx * CHUNK + CHUNK / 2, cz * CHUNK + CHUNK / 2, this.conf.monde || 'terre');
     return climatCertain(ciel.lat, ciel.lon, 0.8);
   }
 
@@ -4220,7 +4551,11 @@ export class World {
           const dcGTA = !dcAvant && this.ruesAvantGTA(wx, wz);
           const DC = dcAvant ? WASHINGTON_V367 : dcGTA ? DC_V531 : DC_NEUF;
           const solWashington = DC.solWashington;
-          const sw = solWashington(wx, wz);
+          // la Washington figée se lit translatée (carte ×3) ; la variante de
+          // la v531 vit dans le module vivant, à l'adresse d'aujourd'hui
+          const eDC = dcAvant ? this.ecartFige('washington') : ZERO_X3;
+          const fx = wx - eDC.dx, fz = wz - eDC.dz;
+          const sw = solWashington(fx, fz);
           // LES PONTS DE L'ANACOSTIA (v444) : sur l'eau et la berge qui
           // descend, le tablier est à la cote de la rue ; le lit et l'eau
           // restent dessous, le relief ne bouge pas. Le métro, lui, se creuse
@@ -4234,13 +4569,13 @@ export class World {
           // LE FEU PASSE AVANT LE RÉVERBÈRE : un coin de carrefour n'en reçoit
           // jamais un (`lampadaireDeVille` écarte les coins), mais l'ordre dit
           // ce qui compte quand les deux pourraient répondre.
-          if (!arbreDeVille(data, x, z, hp, wx, wz, solWashington, sw)
-            && !feuDeVille(data, x, z, hp, wx, wz, sw,
-              feuxDeVille(dcAvant ? 'dc-v367' : dcGTA ? 'dc-v531' : 'dc', WASHINGTON, DC.VOIES_CIRCUITS_DC, solWashington))
-            && !lampadaireDeVille(data, x, z, hp, wx, wz, solWashington, sw) && sw !== null) {
+          if (!arbreDeVille(data, x, z, hp, fx, fz, solWashington, sw)
+            && !feuDeVille(data, x, z, hp, fx, fz, sw,
+              feuxDeVille(dcAvant ? 'dc-v367' : dcGTA ? 'dc-v531' : 'dc', dcAvant ? WASHINGTON_V367.WASHINGTON : WASHINGTON, DC.VOIES_CIRCUITS_DC, solWashington))
+            && !lampadaireDeVille(data, x, z, hp, fx, fz, solWashington, sw) && sw !== null) {
             data[World.index(x, hp, z)] = sw;
           }
-          DC.batirColonneWashington(wx, wz, h, (dy, id) => {
+          DC.batirColonneWashington(fx, fz, h, (dy, id) => {
             const wy = h + dy;
             if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
           }, this.colonnesStations.size > 0 && this.colonnesStations.has(cleColonneParis(wx, wz)));
@@ -4363,29 +4698,32 @@ export class World {
           || (this.colonnesVilleAvant.size > 0 && this.colonnesVilleAvant.has(cleColonneParis(wx, wz))));
         const londresAvant = villeAvant && city.key === 'londres';
         const gta = !villeAvant && city && this.ruesAvantGTA(wx, wz);
-        for (const [cle, sol, libre, batir, pont, ancre, voies, cleFeux, portee] of [
+        for (const [cle, sol, libre, batir, pont, ancre, voies, cleFeux, portee, fige] of [
           villeAvant && city.key === 'nice'
-            ? ['nice', NICE_V340.solNice, NICE_V340.lotNiceLibre, NICE_V340.batirColonneNice, null, NICE,
-              NICE_V340.VOIES_NICE, 'nice-v340']
-            : gta ? ['nice', NICE_V531.solNice, NICE_V531.lotNiceLibre, NICE_V531.batirColonneNice, null, NICE,
-              NICE_V531.VOIES_NICE, 'nice-v531', NICE_V531.PORTEE_FEUX_NICE]
+            ? ['nice', NICE_V340.solNice, NICE_V340.lotNiceLibre, NICE_V340.batirColonneNice, null, NICE_V340.NICE,
+              NICE_V340.VOIES_NICE, 'nice-v340', undefined, true]
+            : gta ? ['nice', NICE_V531.solNice, NICE_V531.lotNiceLibre, NICE_V531.batirColonneNice, null, NICE_V531.NICE,
+              NICE_V531.VOIES_NICE, 'nice-v531', NICE_V531.PORTEE_FEUX_NICE, true]
             : ['nice', solNice, lotNiceLibre, batirColonneNice, null, NICE, VOIES_NICE, 'nice', PORTEE_FEUX_NICE],
           villeAvant && city.key === 'lille'
-            ? ['lille', LILLE_V344.solLille, LILLE_V344.lotLilleLibre, LILLE_V344.batirColonneLille, null, LILLE,
-              LILLE_V344.VOIES_LILLE, 'lille-v344']
-            : gta ? ['lille', LILLE_V531.solLille, LILLE_V531.lotLilleLibre, LILLE_V531.batirColonneLille, null, LILLE,
-              LILLE_V531.VOIES_LILLE, 'lille-v531', LILLE_V531.PORTEE_FEUX_LILLE]
+            ? ['lille', LILLE_V344.solLille, LILLE_V344.lotLilleLibre, LILLE_V344.batirColonneLille, null, LILLE_V344.LILLE,
+              LILLE_V344.VOIES_LILLE, 'lille-v344', undefined, true]
+            : gta ? ['lille', LILLE_V531.solLille, LILLE_V531.lotLilleLibre, LILLE_V531.batirColonneLille, null, LILLE_V531.LILLE,
+              LILLE_V531.VOIES_LILLE, 'lille-v531', LILLE_V531.PORTEE_FEUX_LILLE, true]
             : ['lille', solLille, lotLilleLibre, batirColonneLille, null, LILLE, VOIES_LILLE, 'lille', PORTEE_FEUX_LILLE],
           londresAvant
             ? ['londres', LONDRES_V332.solLondres, LONDRES_V332.lotLondresLibre, LONDRES_V332.batirColonneLondres,
-              LONDRES_V332.pontLondres, LONDRES, LONDRES_V332.VOIES_LONDRES, 'londres-v332']
+              LONDRES_V332.pontLondres, LONDRES_V332.LONDRES, LONDRES_V332.VOIES_LONDRES, 'londres-v332', undefined, true]
             : gta ? ['londres', LONDRES_V531.solLondres, LONDRES_V531.lotLondresLibre, LONDRES_V531.batirColonneLondres,
-              LONDRES_V531.pontLondres, LONDRES, LONDRES_V531.VOIES_LONDRES, 'londres-v531', LONDRES_V531.PORTEE_FEUX_LONDRES]
+              LONDRES_V531.pontLondres, LONDRES_V531.LONDRES, LONDRES_V531.VOIES_LONDRES, 'londres-v531', LONDRES_V531.PORTEE_FEUX_LONDRES, true]
             : ['londres', solLondres, lotLondresLibre, batirColonneLondres, pontLondres, LONDRES, VOIES_LONDRES,
               'londres', PORTEE_FEUX_LONDRES],
         ]) {
           if (!city || city.key !== cle) continue;
-          const ss = sol(wx, wz);
+          // une ville figée se lit translatée du déplacement de sa ville (carte ×3)
+          const eF = fige ? this.ecartFige(cle) : ZERO_X3;
+          const fx = wx - eF.dx, fz = wz - eF.dz;
+          const ss = sol(fx, fz);
           // UN ARBRE, PAS UN CARRÉ VERT — et la leçon vaut pour TOUTE ville,
           // pas seulement pour Paris.
           //
@@ -4403,9 +4741,9 @@ export class World {
           // retrouvait pavé sous ses arbres alors que le code plantait bien
           // de l'herbe — le tronc et la couronne, eux, survivaient, ce qui
           // rendait le défaut invisible en capture de rue.
-          if (arbreDeVille(data, x, z, h, wx, wz, sol, ss)) { fait = true; continue; }
-          if (feuDeVille(data, x, z, h, wx, wz, ss, feuxDeVille(cleFeux, ancre, voies, sol, portee))) { fait = true; continue; }
-          if (lampadaireDeVille(data, x, z, h, wx, wz, sol, ss)) { fait = true; continue; }
+          if (arbreDeVille(data, x, z, h, fx, fz, sol, ss)) { fait = true; continue; }
+          if (feuDeVille(data, x, z, h, fx, fz, ss, feuxDeVille(cleFeux, ancre, voies, sol, portee))) { fait = true; continue; }
+          if (lampadaireDeVille(data, x, z, h, fx, fz, sol, ss)) { fait = true; continue; }
           if (ss !== null) {
             // UN PONT SE POSE AU-DESSUS DE L'EAU, PAS AU FOND DU LIT. Sur une
             // colonne de fleuve, `h` est le lit (base − 7) et l'eau monte
@@ -4415,8 +4753,8 @@ export class World {
             // relief ne bouge pas.
             const surEau = pont && h < WATER_LEVEL && pont(wx - city.x, wz - city.z) !== null;
             data[World.index(x, surEau ? city.base + 1 : h, z)] = ss;
-          } else if (libre(wx, wz)) {
-            batir(wx, wz, (dy, id) => {
+          } else if (libre(fx, fz)) {
+            batir(fx, fz, (dy, id) => {
               const wy = h + dy - 1;
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
             });
@@ -4430,17 +4768,20 @@ export class World {
           const V = villeAvant ? SF_V343 : gta ? SF_V531 : null;
           const sol = V ? V.solSF : solSF, libre = V ? V.lotSFLibre : lotSFLibre;
           const batir = V ? V.batirColonneSF : batirColonneSF;
-          const feux = villeAvant ? feuxDeVille('sf-v359', SF, V.VOIES_SF, sol)
-            : gta ? feuxDeVille('sf-v531', SF, V.VOIES_SF, sol, V.PORTEE_FEUX_SF)
+          const feux = villeAvant ? feuxDeVille('sf-v359', V.SF, V.VOIES_SF, sol)
+            : gta ? feuxDeVille('sf-v531', V.SF, V.VOIES_SF, sol, V.PORTEE_FEUX_SF)
               : feuxDeVille('sf', SF, VOIES_SF, sol, PORTEE_FEUX_SF);
-          const ss = sol(wx, wz);
-          if (feuDeVille(data, x, z, h, wx, wz, ss, feux)) {
+          // une ville figée se lit translatée du déplacement de sa ville (carte ×3)
+          const eF = V ? this.ecartFige('sf') : ZERO_X3;
+          const fx = wx - eF.dx, fz = wz - eF.dz;
+          const ss = sol(fx, fz);
+          if (feuDeVille(data, x, z, h, fx, fz, ss, feux)) {
             // le trottoir et son feu tricolore sont posés (v274)
-          } else if (lampadaireDeVille(data, x, z, h, wx, wz, sol, ss)) {
+          } else if (lampadaireDeVille(data, x, z, h, fx, fz, sol, ss)) {
             // le trottoir et son réverbère sont posés (v248)
           } else if (ss !== null) data[World.index(x, h, z)] = ss;
-          else if (libre(wx, wz)) {
-            batir(wx, wz, (dy, id) => {
+          else if (libre(fx, fz)) {
+            batir(fx, fz, (dy, id) => {
               const wy = h + dy - 1;
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
             });
@@ -4471,11 +4812,19 @@ export class World {
         // Les huit villes iconiques : leur sol, et leurs maisons quand la
         // colonne est un lot à bâtir.
         {
-          const VMx = this.ruesAvantGTA(wx, wz) ? VM_V531 : VM_NEUF;
+          const v531VM = this.ruesAvantGTA(wx, wz);
+          const VMx = v531VM ? VM_V531 : VM_NEUF;
+          // la ville engendrée de la v531 se lit translatée du déplacement de
+          // SA ville (carte ×3) — chaque ville a son vecteur
+          let fx = wx, fz = wz;
+          if (v531VM && this.conf.monde !== 'terreV4') {
+            const fv = villeMondeEn(wx, wz);
+            if (fv) { const e = ecartVilleX3(fv.cle); fx -= e.dx; fz -= e.dz; }
+          }
           const solVillesMonde = VMx.solVillesMonde, pontVillesMonde = VMx.pontVillesMonde;
-          const svm = solVillesMonde(wx, wz);
+          const svm = solVillesMonde(fx, fz);
           if (svm === 'lot') {
-            VMx.batirColonneVillesMonde(wx, wz, (dy, id) => {
+            VMx.batirColonneVillesMonde(fx, fz, (dy, id) => {
               const wy = h + dy - 1;
               if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
             });
@@ -4488,7 +4837,7 @@ export class World {
           // comme n'importe quel sol. C'est le défaut de Paris (v187), de
           // Londres, de Nice et de Lille (v197), une quatrième fois : il ne
           // manquait plus que la boucle qui dessine le monde entier.
-          if (arbreDeVille(data, x, z, h, wx, wz, solVillesMonde, svm)) continue;
+          if (arbreDeVille(data, x, z, h, fx, fz, solVillesMonde, svm)) continue;
           if (svm !== null) {
             // UN PONT SE POSE AU-DESSUS DE L'EAU, PAS AU FOND DU LIT — la
             // leçon de la Tamise (v208), appliquée aux villes engendrées.
@@ -4496,7 +4845,7 @@ export class World {
             // tablier va à la cote de la RUE, et sa pile descend jusqu'au lit,
             // sinon la route flotte.
             if (h < WATER_LEVEL) {
-              const pvm = pontVillesMonde(wx, wz);
+              const pvm = pontVillesMonde(fx, fz);
               if (pvm) {
                 if (pvm.cote >= 0 && pvm.cote < HEIGHT) data[World.index(x, pvm.cote, z)] = svm;
                 if (pvm.pile) {
@@ -4511,7 +4860,7 @@ export class World {
             // Le trottoir porte son mobilier : auvents des boutiques,
             // lampadaires, bancs, bacs à fleurs. Cf. mobilierVillesMonde.
             if (svm === CITY_BLOCK.SIDEWALK) {
-              VMx.mobilierVillesMonde(wx, wz, (dy, id) => {
+              VMx.mobilierVillesMonde(fx, fz, (dy, id) => {
                 const wy = h + dy;
                 if (wy >= 0 && wy < HEIGHT) data[World.index(x, wy, z)] = id;
               });
@@ -5040,7 +5389,7 @@ export class World {
     return data[World.index(x - cx * CHUNK, y, z - cz * CHUNK)];
   }
 
-  setBlock(x, y, z, id, ts, remote = false) {
+  setBlock(x, y, z, id, ts, remote = false, origine) {
     if (y < 0 || y >= HEIGHT) return;
     const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
     const data = this.ensureChunk(cx, cz);
@@ -5050,17 +5399,21 @@ export class World {
     const t = ts !== undefined ? ts : Date.now();
     this.edits.set(k, id);
     this.editTimes.set(k, t);
-    if (dansParisCede(x, z, t)) marquerParisCede(this.colonnesCedees, x, z);
-    if (dansVilleAvant(x, z, t)) marquerParisCede(this.colonnesVilleAvant, x, z);
-    if (dansRuesGTA(x, z, t)) marquerParisCede(this.colonnesRuesGTA, x, z);
-    if (dansTrameLondres(x, z, t)) marquerParisCede(this.colonnesTrameLondres, x, z);
-    if (dansJardinsParis(x, z, t)) marquerParisCede(this.colonnesJardinsParis, x, z);
-    if (dansMetroBoiteDC(x, z, t)) marquerParisCede(this.colonnesMetroDC, x, z);
-    if (dansStations(x, z, t)) marquerParisCede(this.colonnesStations, x, z);
-    if (dansTourEiffelAvant(x, z, t)) this.tourEiffelAvant = true;
-    if (t <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
-    if (t <= DATE_CLAIRIERES) this.marquerAvantClairieres(x, z);
-    if (t <= DATE_PISTES_DEGAGEES) this.marquerAvantPistes(x, z);
+    // un bloc réécrit perd sa date d'origine, sauf si l'écriture la porte
+    if (Number.isFinite(origine)) this.editOrigines.set(k, origine);
+    else if (this.editOrigines.size) this.editOrigines.delete(k);
+    const tg = Number.isFinite(origine) ? origine : t;   // la date que lisent les gardes
+    if (dansParisCede(x, z, tg)) marquerParisCede(this.colonnesCedees, x, z);
+    if (dansVilleAvant(x, z, tg)) marquerParisCede(this.colonnesVilleAvant, x, z);
+    if (dansRuesGTA(x, z, tg)) marquerParisCede(this.colonnesRuesGTA, x, z);
+    if (dansTrameLondres(x, z, tg)) marquerParisCede(this.colonnesTrameLondres, x, z);
+    if (dansJardinsParis(x, z, tg)) marquerParisCede(this.colonnesJardinsParis, x, z);
+    if (dansMetroBoiteDC(x, z, tg)) marquerParisCede(this.colonnesMetroDC, x, z);
+    if (dansStations(x, z, tg)) marquerParisCede(this.colonnesStations, x, z);
+    if (dansTourEiffelAvant(x, z, tg)) this.tourEiffelAvant = true;
+    if (tg <= DATE_CLIMATS) this.marquerAvantClimat(x, z);
+    if (tg <= DATE_CLAIRIERES) this.marquerAvantClairieres(x, z);
+    if (tg <= DATE_PISTES_DEGAGEES) this.marquerAvantPistes(x, z);
     if (!remote && this.onOp) this.onOp(k, id, t);
     if (this.onBloc) this.onBloc(x, y, z, id);
 
@@ -5319,9 +5672,10 @@ export class World {
   // Un journal installé d'un bloc — chargement local, fusion du nuage,
   // changement de monde, resynchronisation du worker. L'index se REFAIT : le
   // tenir à jour bloc par bloc ne peut pas voir un journal remplacé.
-  installerEdits(edits, temps, ctx) {
+  installerEdits(edits, temps, ctx, origines) {
     this.edits = edits instanceof JournalBlocs ? edits : new JournalBlocs(edits instanceof Map ? edits.entries() : edits);
     this.editTimes = temps instanceof Map ? temps : new Map(temps || []);
+    this.editOrigines = origines instanceof Map ? origines : new Map(origines || []);
     if (ctx) this.ctx = ctx;
     this.chunks.clear();
     this.tops.clear();
@@ -5350,6 +5704,13 @@ export class World {
   // Un lot de la trame générique de Londres reste-t-il ? (v447) Oui si une de
   // ses colonnes est marquée — le marquage couvre déjà les huit voisines d'un
   // bloc d'enfant.
+  // Où lire une ville figée dans CE monde (carte ×3) : translatée du
+  // déplacement de sa ville dans le monde d'aujourd'hui, en place dans les
+  // mondes d'avant, dont les villes sont à l'adresse `terreV4`.
+  ecartFige(cle) {
+    return this.conf.monde === 'terreV4' ? ZERO_X3 : ecartVilleX3(cle);
+  }
+
   // La ville d'avant les rues à la GTA reste-t-elle sur cette colonne ?
   ruesAvantGTA(x, z) {
     return this.colonnesRuesGTA.size > 0 && this.colonnesRuesGTA.has(cleColonneParis(x, z));
@@ -5377,7 +5738,10 @@ export class World {
     this.morceauxAvantClairieres.clear();
     this.morceauxAvantPistes.clear();
     this.tourEiffelAvant = false;
-    for (const [k, t] of this.editTimes) {
+    const origines = this.editOrigines;
+    for (const [k, t0] of this.editTimes) {
+      // la date d'origine d'un bloc emmené par la carte ×3, sinon la sienne
+      const t = origines.size ? (origines.get(k) ?? t0) : t0;
       if (!(t <= DATE_TOUR_EIFFEL || t <= DATE_PISTES_DEGAGEES || t <= DATE_PARIS_DOUBLE || t <= DATE_FIGEE_MAX || t <= DATE_CLIMATS || t <= DATE_TRAME_LONDRES || t <= DATE_METRO_BOITE_DC || t <= DATE_JARDINS_PARIS || t <= DATE_CLAIRIERES || t <= DATE_STATIONS || t <= DATE_RUES_GTA)) continue;
       const virgule = k.indexOf(','), derniere = k.lastIndexOf(',');
       const x = +k.slice(0, virgule), z = +k.slice(derniere + 1);
@@ -5406,7 +5770,10 @@ export class World {
 
   exportEdits() {
     const out = {};
-    for (const [k, id] of this.edits) out[k] = [id, this.editTimes.get(k) || 0];
+    for (const [k, id] of this.edits) {
+      const o = this.editOrigines.get(k);
+      out[k] = o === undefined ? [id, this.editTimes.get(k) || 0] : [id, this.editTimes.get(k) || 0, null, o];
+    }
     return out;
   }
 
@@ -5427,7 +5794,7 @@ export class World {
       const localId = this.edits.get(k);
       if (t < localT || (t === localT && (localId === id || localId > id))) continue;
       const [x, y, z] = k.split(',').map(Number);
-      this.setBlock(x, y, z, id, t, true);
+      this.setBlock(x, y, z, id, t, true, entry[3]);
       applied++;
     }
     return applied;
@@ -5497,6 +5864,7 @@ export class World {
       if (!Array.isArray(entry)) continue;
       this.edits.set(k, entry[0]);
       this.editTimes.set(k, entry[1] || 0);
+      if (Number.isFinite(entry[3])) this.editOrigines.set(k, entry[3]);
     }
     this.indexerMonumentsTouches();
     this.cacheSol.clear();
@@ -5519,6 +5887,7 @@ export class World {
     this.tops.clear();
     this.edits.clear();
     this.editTimes.clear();
+    this.editOrigines.clear();
     this.monumentsTouches.clear();
     this.tourEiffelAvant = false;
     this.colonnesCedees.clear();
@@ -5540,6 +5909,7 @@ export class World {
     World.saveAll(all);
     this.edits.clear();
     this.editTimes.clear();
+    this.editOrigines.clear();
     this.monumentsTouches.clear();
     this.tourEiffelAvant = false;
     this.colonnesCedees.clear();

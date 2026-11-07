@@ -56,7 +56,7 @@ const VERT = uni(5);
 
 // LE RAYON VIENT DU REGISTRE (`mondes.js`), jamais d'un littéral ici : c'est le
 // piège de San Francisco, dont le `r: 66` masquait la valeur de la carte.
-export const NICE = positionDe('nice');
+export const NICE = positionDe('nice', 'terreV4');
 
 export const BLOCS_PAR_KM = 30;
 // Le plan d'auteur a été relevé à dix blocs par kilomètre ; tout ce qui y est

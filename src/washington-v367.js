@@ -147,7 +147,7 @@ const de = (lat, lon) => [
 // blocs encore libre — et son coin sud-est plonge dans la mer existante, qui
 // joue l'estuaire du Potomac. C'est la disposition vraie : la ville sur la
 // rive nord, le fleuve qui s'élargit vers le sud-est.
-export const WASHINGTON = positionDe('washington');
+export const WASHINGTON = positionDe('washington', 'terreV4');
 
 export const BOITE = { u0: -244, u1: 67, v0: -109, v1: 96 };
 export const WASHINGTON_R = 187;   // le cercle qui contient la boîte

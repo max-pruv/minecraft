@@ -34,16 +34,17 @@ import { DEMI_VILLE } from './routes.js';
 // Relevé par `node tests/sonde-rue-dense.cjs raccords` (ligne TABLE). Remesurée
 // avec les rues à la GTA : onze raccords ont bougé d'un à huit blocs.
 export const RACCORDS_COURTS = {
-  'E19|amsterdam': 11.5, 'A20|quebec': 0, 'A-4|madrid': 29.5, 'A3|cologne': 0,
-  'A3|francfort': 0, 'E1|kyoto': 18, 'A4|turin': 0, 'Yamuna|delhi': 34,
-  'Yamuna|agra': 29.5, 'A1 Sud|naples': 0, 'M1|budapest': 0, 'A1 Nord|milan': 0,
-  '401|toronto': 39, 'Hansalinie|cologne': 4.5, 'Hansalinie|hambourg': 0,
-  'I-95|boston': 0, 'Tōmei|tokyo': 1.5, 'A8|marseille': 0.5, 'US-101|losangeles': 8.5,
+  // Remesurée sur la carte ×3 (tracés retracés par sonde, docs/carte-x3-C.md) :
+  // dix-sept raccords d'avant ne touchent plus d'anneau (porte déplacée), et
+  // les villes engendrées gardent l'arrêt avant la première voie d'anneau.
+  'E19|amsterdam': 6, 'A20|quebec': 0, 'A-4|madrid': 29.5,
+  'A3|cologne': 0, 'A3|francfort': 0, 'A4|turin': 0, 'Yamuna|delhi': 4,
+  'A1 Sud|naples': 0, 'M1|budapest': 0, 'A8|marseille': 4,
+  'US-101|losangeles': 12, 'A1 Nord|bologne': 0, 'Hansalinie|cologne': 0,
+  'Hansalinie|hambourg': 0,
   // les villes bâties à la main (v450) : leur entrée finit sur une avenue
-  // nommée que des circuits roulent — Lille dès la rue de Paris. Remesurée
-  // avec la voie au milieu de sa moitié (v578) : A6 Paris et A1 Lille d'un
-  // demi-bloc.
-  'A1|paris': 262.5, 'A6|paris': 201.5, 'A1|lille': 12, 'A8|nice': 17.5,
+  // nommée que des circuits roulent — Lille dès la rue de Paris.
+  'A1|paris': 263, 'A6|paris': 201.5, 'A1|lille': 11.5, 'A8|nice': 24,
 };
 
 // Une voie à moins de 1,6 bloc, dans le même axe (|cos| > 0,7) : c'est le

@@ -31,6 +31,14 @@ import { positionDe } from './mondes.js';
 // promesse des aérodromes (v223) — et le détour coûte 5 blocs contre 151 par
 // l'ouest. Le vrai A1 passe à l'ouest de Roissy ; le Roissy du jeu a été
 // déplacé (v223), et l'on contourne celui du jeu.
+//
+// CARTE ×3 (chantier carte-x3, session C) : les vingt-neuf `via` ont été
+// RETRACÉS sur la carte à 0,0625 km par bloc, pas multipliés par trois —
+// couloir le plus bas avec cap, `profilDe` sur chaque candidat, puis la porte
+// de chaque ville engendrée choisie par sa rue (avenue d'entrée propre) ET
+// par son relief. Les villes bâties à la main gardent leur angle d'entrée.
+// Les commentaires de mesure ci-dessous (blocs, ponts, déblai) datent de la
+// carte d'avant ; les mesures d'aujourd'hui sont dans docs/carte-x3-C.md.
 export const ROUTES = [
   // LE POINT DE PASSAGE SE MESURE (v223, v300) — CONTRE TOUS LES OBSTACLES.
   // L'axe direct Paris–Lille passe DANS la marge de Roissy et la maison
@@ -60,7 +68,7 @@ export const ROUTES = [
   // et parmi eux celui qui ne laisse aucun trou aux joints de ses trois ponts
   // — le premier, cinq blocs au-dessus de son lit, se franchit dessus et
   // dessous : 22 blocs de marge au-delà de toutes les barres, coudes ≤ 27°.
-  { nom: 'A1', villes: ['paris', 'lille'], via: [[-200, -280], [-90, -710]] },
+  { nom: 'A1', villes: ['paris', 'lille'], via: [[-254, -76], [-253, -136], [-254, -141], [-264, -155], [-280, -170], [-332, -200], [-340, -207], [-351, -224], [-358, -245], [-358, -256], [-353, -277], [-328, -315], [-193, -450], [-160, -474], [-58, -517], [11, -523], [44, -531], [81, -556], [212, -690], [228, -719], [238, -763], [236, -822], [210, -907], [210, -938], [222, -989], [262, -1296], [314, -1434], [320, -1456], [318, -1525], [292, -1610], [288, -1673], [320, -1780], [326, -1921], [357, -2002], [358, -2021], [336, -2105], [336, -2199], [341, -2221], [372, -2292], [412, -2425], [418, -2465], [418, -2573], [424, -2613], [449, -2692], [456, -2803], [458, -2809], [469, -2832]] },
   // L'E429 (v310), LILLE–BRUXELLES : la première vers une ville ENGENDRÉE.
   // Une ville engendrée n'a pas d'avenue d'entrée dessinée ; on arrive donc
   // DANS L'AXE DE SA TRAME, sur la rue qui mène au centre — le point de
@@ -78,7 +86,7 @@ export const ROUTES = [
   // premier sanctuaire à 802 blocs. Le point de passage a été choisi parmi
   // cinq sur l'axe (r + 29 à r + 69) : les plus proches mettaient un pont de
   // deux blocs sur le coude, dont le joint s'ouvrait (153 trous).
-  { nom: 'E429', villes: ['lille', 'bruxelles'], via: [[431, -998]], bord: { bruxelles: 34 } },
+  { nom: 'E429', villes: ['lille', 'bruxelles'], via: [[732, -3004], [935, -3152], [992, -3187], [1158, -3251], [1228, -3298], [1304, -3333], [1349, -3339], [1505, -3340], [1666, -3386], [1894, -3387], [1974, -3379], [1979, -3376], [1989, -3372], [2012, -3362]], bord: { bruxelles: 34 } },
   // L'E19 (v311), BRUXELLES–AMSTERDAM : deux villes engendrées, et c'est le
   // RELIEF qui a dessiné le tracé, pas la carte. L'axe direct arrive par le
   // sud d'Amsterdam, où le pays est à 47-52 pour une ville à 33 : un profil à
@@ -97,7 +105,7 @@ export const ROUTES = [
   // Schiphol à 85 blocs au-delà de son disque, l'Atomium à 146, et les deux
   // avenues d'entrée sur la rue de bout en bout (75 et 93 colonnes, aucune
   // dans un bloc, aucune sur l'eau).
-  { nom: 'E19', villes: ['bruxelles', 'amsterdam'], via: [[620, -970], [648, -981], [667, -1004], [720, -1175], [612, -1831], [613, -1851], [628, -1875], [641, -1882]], bord: { bruxelles: 34 } },
+  { nom: 'E19', villes: ['bruxelles', 'amsterdam'], via: [[2113, -3465], [2115, -3470], [2132, -3493], [2177, -3624], [2182, -3665], [2150, -3795], [2146, -3926], [2136, -3969], [2120, -4015], [2129, -4080], [2096, -4206], [2056, -4344], [2048, -4479], [2020, -4594], [2014, -4765], [1975, -4898], [1975, -4935], [2017, -5038], [2036, -5132], [2109, -5361], [2231, -5646], [2408, -5791], [2548, -5895], [2606, -5928]], bord: { bruxelles: 34 } },
   // L'A20 (v312), MONTRÉAL–QUÉBEC : la rive nord du Saint-Laurent, sur le
   // Nouveau Monde. Rien à contourner — aucune ville, aucun aérodrome, aucun
   // repère à moins de deux mille blocs — et un pays bas, 34 à 40 blocs à la
@@ -110,7 +118,7 @@ export const ROUTES = [
   // d'entrée s'arrête au premier îlot (`avenueDEntree`, villesmonde.js). Et la
   // porte, à vingt blocs du bord, tombait SUR un îlot (34 blocs du centre) :
   // à vingt-deux, elle est sur la rue, et l'avenue fait quinze blocs.
-  { nom: 'A20', villes: ['montreal', 'quebec'], via: [[-19825, 2190], [-19781, 2167], [-19767, 2146], [-19745, 1840], [-19605, 1566], [-19551, 1494], [-19511, 1463]], bord: { quebec: 22 } },
+  { nom: 'A20', villes: ['montreal', 'quebec'], via: [[-59257, 6160], [-59228, 6157], [-59216, 6156], [-59211, 6154], [-59197, 6144], [-59193, 6139], [-59188, 6130], [-59186, 6120], [-59190, 6023], [-59187, 6004], [-59169, 5959], [-59017, 5734], [-58961, 5668], [-58942, 5633], [-58879, 5434], [-58804, 5244], [-58663, 5017], [-58627, 4978], [-58559, 4921], [-58497, 4778], [-58469, 4744], [-58414, 4671], [-58299, 4589], [-58242, 4512], [-58186, 4451], [-58087, 4300], [-57984, 4206], [-57917, 4115], [-57877, 4072], [-57799, 4014], [-57686, 3953], [-57668, 3938], [-57663, 3935], [-57660, 3930], [-57659, 3923]], bord: { quebec: 22 } },
   // LA BR-116 (v313), SÃO PAULO–RIO, la Via Dutra. Deux leçons de mesure.
   // São Paulo n'a pas sa trame là où sa fiche la déclare : sur les axes de
   // `trame.ang`, l'avenue d'entrée tombe sur des îlots (zéro colonne) et, un
@@ -124,7 +132,7 @@ export const ROUTES = [
   // de la route ; dans la largeur réelle, zéro sur 5 644.
   // Mesuré sous node : 701 blocs, un pont (s 664–676), déblai 7,4, remblai
   // 2,9, zéro rail, zéro repère, avenue de Rio 87 colonnes sur la rue.
-  { nom: 'BR-116', villes: ['saopaulo', 'rio'], via: [[-13532, 43112], [-13442, 43112], [-13343, 43061], [-13122, 42756], [-13100, 42745]] },
+  { nom: 'BR-116', villes: ['saopaulo', 'rio'], via: [[-40324, 128993], [-40169, 128990], [-40049, 129016], [-40019, 129018], [-40008, 129015], [-39941, 128981], [-39863, 128927], [-39810, 128827], [-39799, 128786], [-39774, 128695], [-39749, 128604], [-39649, 128406], [-39582, 128315], [-39430, 128154], [-39359, 128094], [-39320, 128063], [-39304, 128023], [-39288, 127928], [-39268, 127888], [-39253, 127871], [-39169, 127816], [-39093, 127796], [-39004, 127779], [-38907, 127723], [-38858, 127711], [-38534, 127710], [-38489, 127716], [-38415, 127773], [-38336, 127810], [-38294, 127826], [-38289, 127830], [-38260, 127834]] },
   // L'A-4 (v314), MADRID–SÉVILLE, l'Autovía del Sur : la plus longue du
   // registre. L'entrée de chaque ville se choisit par l'ANGLE (la règle de
   // São Paulo, v313) : 75° à Madrid, où l'axe de la trame vers le sud porte des
@@ -138,7 +146,7 @@ export const ROUTES = [
   // voisin franchissait un ravin de deux colonnes, trop étroit pour un pont
   // (il faut trois colonnes), donc COMBLÉ — dix blocs de remblai pour une
   // barre à quatre. Le profil exact se relit sur chaque variante.
-  { nom: 'A-4', villes: ['madrid', 'seville'], via: [[-2550, 5401], [-2559, 5440], [-2599, 5485], [-2881, 6073], [-3391, 6930]] },
+  { nom: 'A-4', villes: ['madrid', 'seville'], via: [[-7276, 15411], [-7285, 15450], [-7325, 15495], [-7330, 15499], [-7334, 15503], [-7336, 15508], [-7341, 15583], [-7342, 15750], [-7355, 15799], [-7401, 15876], [-7418, 15917], [-7429, 15984], [-7444, 16027], [-7579, 16234], [-7595, 16266], [-7601, 16349], [-7657, 16458], [-7686, 16494], [-7730, 16593], [-7740, 16691], [-7767, 16781], [-7803, 16820], [-7871, 16875], [-7953, 16994], [-7987, 17070], [-8068, 17200], [-8077, 17283], [-8111, 17369], [-8144, 17474], [-8218, 17653], [-8238, 17734], [-8243, 17876], [-8270, 17967], [-8329, 18087], [-8421, 18217], [-8454, 18281], [-8535, 18595], [-8549, 18632], [-8584, 18689], [-8634, 18746], [-8771, 18948], [-8862, 19162], [-8930, 19272], [-8976, 19391], [-8997, 19418], [-9101, 19496], [-9142, 19547], [-9177, 19616], [-9224, 19681], [-9261, 19720], [-9305, 19779], [-9371, 19896], [-9463, 20116], [-9480, 20175], [-9530, 20262], [-9657, 20388], [-9750, 20453], [-9840, 20494], [-9872, 20503], [-9882, 20509]] },
   // L'A109 (v315), NAIROBI–MOMBASA : la première route d'Afrique, et la plus
   // longue (1 999 blocs). Au sud de Nairobi, là où le cap mène, le pays est
   // semé de mares : chaque colonne d'eau isolée se COMBLE (une buse, règle de
@@ -152,7 +160,7 @@ export const ROUTES = [
   // trace-vite.mjs, qui recopie désormais la règle de la buse et exige huit
   // blocs de sol entre deux ponts) : deux ponts, déblai 7,3, remblai 3,5,
   // pente 0,061, joint fermé (0 / 13 065), zéro rail, zéro repère.
-  { nom: 'A109', villes: ['nairobi', 'mombasa'], via: [[13300, 29941], [13335, 29961], [13368, 30011], [13929, 31249], [14169, 31426], [14227, 31440], [14294, 31501]], bord: { mombasa: 14 } },
+  { nom: 'A109', villes: ['nairobi', 'mombasa'], via: [[40199, 89421], [40199, 89421], [40244, 89465], [40248, 89466], [40290, 89477], [40301, 89480], [40343, 89493], [40393, 89545], [40455, 89734], [40509, 89807], [40544, 89864], [40606, 89934], [40682, 90041], [40944, 90303], [41063, 90379], [41109, 90424], [41203, 90559], [41222, 90599], [41240, 90664], [41282, 90766], [41320, 90925], [41366, 91049], [41452, 91200], [41503, 91353], [41550, 91430], [41593, 91555], [41653, 91675], [41693, 91736], [41817, 91865], [41872, 91944], [41901, 91998], [41995, 92127], [42036, 92206], [42112, 92307], [42132, 92346], [42155, 92475], [42185, 92534], [42232, 92605], [42269, 92709], [42289, 92785], [42363, 92977], [42389, 93020], [42516, 93146], [42631, 93229], [42643, 93246], [42737, 93293], [43023, 93699], [43141, 93833], [43245, 93940], [43295, 93990], [43364, 94126], [43395, 94196], [43397, 94203], [43406, 94230]], bord: { mombasa: 14 } },
   // L'A3 (v320), COLOGNE–FRANCFORT : la première route qui a une VOIE FERRÉE
   // le long de son axe — l'ICE va droit de gare à gare (36°), et la route ne
   // doit ni le croiser ni le longer dans son emprise. Elle passe donc tout
@@ -170,7 +178,7 @@ export const ROUTES = [
   // 804 blocs, aucun pont, déblai 4,8, remblai 1,4, pente 0,063, zéro colonne
   // d'emprise ou de talus sur le rail, la gare ou son quai, l'aérodrome à 118
   // blocs au-delà de son disque, zéro repère.
-  { nom: 'A3', villes: ['cologne', 'francfort'], via: [[1540, -961], [1544, -942], [1555, -925], [1572, -915], [2118, -573], [2152, -552]] },
+  { nom: 'A3', villes: ['cologne', 'francfort'], via: [[5136, -3429], [5140, -3410], [5151, -3393], [5219, -3332], [5334, -3287], [5437, -3228], [5467, -3213], [5492, -3180], [5556, -3069], [5693, -2928], [5780, -2808], [5933, -2656], [5976, -2630], [6008, -2620], [6082, -2610], [6133, -2589], [6285, -2479], [6380, -2389], [6424, -2365], [6467, -2353], [6556, -2349], [6599, -2338], [6764, -2229], [6879, -2116], [6916, -2088], [6962, -2069], [7054, -2062], [7058, -2061], [7092, -2040]] },
   // L'E1 (v323), KYOTO–NAGOYA, la Meishin : la seconde route qui a un rail le
   // long de son axe — le Shinkansen va droit de Kyoto à Tokyo et traverse
   // Nagoya à douze blocs de son centre, presque dans l'axe de la route (−14°
@@ -186,7 +194,7 @@ export const ROUTES = [
   // 5,4, remblai 0,8, pente 0,067, aucune colonne d'emprise ou de talus à
   // moins de dix-neuf blocs du rail, aucun aérodrome à moins de 732 blocs,
   // le premier repère à 77.
-  { nom: 'E1', villes: ['kyoto', 'nagoya'], via: [[52034, 8412], [52185, 8362]] },
+  { nom: 'E1', villes: ['kyoto', 'nagoya'], via: [[156040, 24712], [156045, 24686], [156038, 24629], [156036, 24624], [156027, 24610], [156023, 24606], [155998, 24595], [155981, 24592], [155948, 24598], [155908, 24617], [155850, 24677], [155787, 24789], [155779, 24826], [155781, 24847], [155788, 24868], [155813, 24911], [155859, 24957], [155924, 25002], [155966, 25017], [156007, 25022], [156037, 25015], [156176, 24973], [156221, 24925], [156425, 24796], [156673, 24695], [156686, 24694], [156798, 24680], [156869, 24661], [156939, 24628], [157028, 24611], [157123, 24611], [157147, 24612], [157178, 24601]] },
   // L'AUTOSOLE (v324), BOLOGNE–FLORENCE, le tronçon de l'Autostrada del Sole
   // qui passe l'Apennin. L'axe direct est sec, sans rail ni aérodrome ; ce
   // qui a dessiné le tracé, c'est une règle de `routes.js` qu'une sonde
@@ -201,7 +209,7 @@ export const ROUTES = [
   // 18 216 tracés, refus 14 552 coude · 1 578 déblai · 1 111 remblai · 369
   // ponts proches ; celui-ci : 346 blocs, aucun pont, déblai 7,4, remblai 0,8,
   // pente 0,067, coudes de 20°, zéro rail, zéro aérodrome à moins de 835.
-  { nom: 'Autosole', villes: ['bologne', 'florence'], via: [[3252, 2853], [3257, 3052], [3230, 3135]] },
+  { nom: 'Autosole', villes: ['bologne', 'florence'], bord: { bologne: 14 }, via: [[10178, 8042], [10164, 8051], [10154, 8072], [10150, 8132], [10153, 8227], [10177, 8312], [10178, 8381], [10157, 8515], [10122, 8621], [10114, 8666], [10114, 8762], [10122, 8843], [10125, 8848], [10138, 8862], [10167, 8922], [10186, 8998]] },
   // L'A4 ITALIENNE (v327), MILAN–TURIN, la Torino–Milano : la plaine du Pô,
   // mais pas plate partout — l'axe direct creusait au-delà de neuf blocs, et
   // c'est le déblai qui a fait le tri (7 599 refus). Sorties par le RAYON
@@ -211,7 +219,7 @@ export const ROUTES = [
   // · 7 599 déblai · 1 031 remblai · 25 ponts proches, sept admissibles, tous
   // sans pont ; celui-ci : 552 blocs, déblai 7,5, remblai 0,7, pente 0,060,
   // zéro rail, l'aérodrome le plus proche à 2 046 blocs.
-  { nom: 'A4', villes: ['milan', 'turin'], via: [[2375, 2280], [2310, 2319], [1996, 2365], [1908, 2410]] },
+  { nom: 'A4', villes: ['milan', 'turin'], via: [[7729, 6314], [7679, 6347], [7612, 6376], [7552, 6405], [7485, 6431], [7362, 6509], [7318, 6520], [7242, 6524], [7199, 6536], [7164, 6554], [7110, 6598], [7071, 6618], [6964, 6635], [6869, 6666], [6737, 6725], [6694, 6736], [6575, 6739], [6444, 6770], [6364, 6782], [6227, 6827], [6188, 6834], [6178, 6839], [6159, 6856]] },
   // LE YAMUNA EXPRESSWAY (v328), DELHI–AGRA : la route du Taj Mahal. Les deux
   // villes sont grandes (rayons 130 et 167) et leurs trames ont chacune une
   // avenue très longue dans l'axe du trajet — Delhi à 58° (quatre-vingt-dix-
@@ -222,7 +230,7 @@ export const ROUTES = [
   // qui appelle `profilDe`) : 18 216 tracés, soixante-huit admissibles, tous
   // sans pont ; celui-ci : 672 blocs, déblai 7,0, remblai 1,0, pente 0,060,
   // zéro rail, l'aérodrome de Delhi à 395 blocs au-delà de sa marge.
-  { nom: 'Yamuna', villes: ['delhi', 'agra'], via: [[29042, 12324], [29156, 12541], [29293, 12881]] },
+  { nom: 'Yamuna', villes: ['delhi', 'agra'], via: [[87506, 36284], [87526, 36318], [87538, 36450], [87543, 36496], [87543, 36892], [87549, 36938], [87597, 37062], [87603, 37107], [87603, 37335], [87609, 37381], [87651, 37484], [87661, 37527], [87665, 37622], [87688, 37702], [87749, 37797], [87807, 37857], [87851, 37917], [87925, 38066], [87976, 38123], [88007, 38173], [88047, 38250], [88140, 38354], [88156, 38382], [88204, 38486], [88215, 38501], [88257, 38532], [88391, 38578], [88406, 38594], [88412, 38623]] },
   // L'A1 ITALIENNE, SUD (v329), ROME–NAPLES : la seconde moitié de l'Autostrada
   // del Sole. Rome est immense (rayon 216) et ses avenues propres ne sont PAS
   // dans l'axe de Naples (42°) : l'est (−4°, trente-sept blocs sur la rue) est
@@ -234,7 +242,7 @@ export const ROUTES = [
   // Fiumicino est au NORD de Rome : la route part à l'est, loin de sa marge
   // (358 blocs). Mesuré sous node : 8 115 admissibles, 1 176 sans pont ;
   // celui-ci : 785 blocs, aucun pont, déblai 3,5, remblai 1,2, pente 0,062.
-  { nom: 'A1 Sud', villes: ['rome', 'naples'], via: [[3943, 4308], [3981, 4322], [4010, 4350], [4081, 4532], [4346, 4894]] },
+  { nom: 'A1 Sud', villes: ['rome', 'naples'], via: [[11859, 12556], [11897, 12570], [11926, 12598], [11930, 12602], [11933, 12607], [11935, 12612], [11937, 12647], [12009, 12816], [12026, 12875], [12065, 12960], [12130, 13053], [12244, 13168], [12281, 13196], [12363, 13228], [12448, 13289], [12671, 13486], [12732, 13520], [12837, 13577], [12911, 13587], [12957, 13605], [12995, 13631], [13096, 13732], [13124, 13769], [13175, 13862], [13300, 14044]] },
   // L'A4/M1 (v332), VIENNE–BUDAPEST : la plaine du Danube, la plus facile du
   // registre — les deux villes ont une avenue propre presque dans l'axe
   // (Vienne à 4°, trente-quatre blocs sur la rue ; Budapest à −160°, vingt-
@@ -242,7 +250,7 @@ export const ROUTES = [
   // appelle `profilDe`) : 18 216 tracés, 1 573 admissibles, 547 sans pont ;
   // celui-ci : 966 blocs, aucun pont, déblai 1,9, remblai 1,1, pente 0,061,
   // coudes de 17°, zéro rail, zéro aérodrome à moins de 3 701 blocs.
-  { nom: 'M1', villes: ['vienne', 'budapest'], via: [[5374, 595], [5628, 692], [6194, 978]] },
+  { nom: 'M1', villes: ['vienne', 'budapest'], via: [[16304, 1296], [16309, 1297], [16327, 1303], [16346, 1312], [16461, 1405], [16509, 1409], [16676, 1514], [16821, 1565], [16909, 1612], [17098, 1750], [17147, 1777], [17334, 1905], [17391, 1955], [17431, 1976], [17478, 1981], [17732, 2002], [17833, 2040], [17943, 2058], [17972, 2063], [18110, 2074], [18253, 2106], [18329, 2110], [18372, 2122], [18413, 2131], [18543, 2241], [18559, 2251], [18622, 2272], [18678, 2280], [18752, 2305], [18796, 2319], [18984, 2372], [19105, 2473], [19177, 2554], [19205, 2574], [19209, 2577]] },
   // L'A1 ITALIENNE, NORD (v333), MILAN–BOLOGNE : la première moitié de
   // l'Autostrada del Sole, qui rejoint l'Autosole à Bologne. La Frecciarossa
   // sort de Milan à 51° et Bologne est à 34°, à trois cents blocs à GAUCHE du
@@ -259,7 +267,7 @@ export const ROUTES = [
   // porte · 106 trop de ponts · 76 ponts proches · 25 rail ; trente et un
   // admissibles, sept sans pont ; celui-ci : 969 blocs, aucun pont, déblai
   // 3,6, remblai 1,4, pente 0,062, aucune colonne d'emprise sur le rail.
-  { nom: 'A1 Nord', villes: ['milan', 'bologne'], via: [[2511, 2188], [2550, 2194], [2584, 2215], [2811, 2374], [3018, 2555], [3206, 2759]] },
+  { nom: 'A1 Nord', villes: ['milan', 'bologne'], via: [[7864, 6293], [7906, 6335], [7954, 6391], [8257, 6668], [8724, 6917], [8808, 6967], [9118, 7119], [9204, 7186], [9257, 7232], [9343, 7257], [9372, 7273], [9389, 7287], [9469, 7409], [9537, 7483], [9582, 7549], [9603, 7594], [9653, 7628], [9793, 7756], [9821, 7790], [10031, 7989], [10090, 8004], [10114, 8001], [10200, 7991]] },
   // L'A24 (v334), BERLIN–HAMBOURG : la plaine de l'Elbe, basse et semée de
   // mares, sans rail ni aérodrome sur l'axe. Hambourg a de l'eau qui touche
   // son disque au nord-est (entre 20° et 50°, l'Alster et ses bras, à r − 10
@@ -273,7 +281,7 @@ export const ROUTES = [
   // de ponts · 103 pont près d'une porte · 50 ponts proches ; trente-quatre
   // admissibles, UN sans pont — celui-ci : 1 317 blocs, déblai 3,9, remblai
   // 1,3, pente 0,061, zéro rail, zéro aérodrome.
-  { nom: 'A24', villes: ['berlin', 'hambourg'], via: [[3932, -2036], [3560, -2192], [3189, -2348], [2858, -2584], [2819, -2595]], bord: { hambourg: 24 } },
+  { nom: 'A24', villes: ['berlin', 'hambourg'], via: [[12522, -6401], [12410, -6420], [12337, -6446], [12282, -6474], [12257, -6479], [12217, -6479], [12102, -6460], [11682, -6460], [11637, -6466], [11539, -6506], [11428, -6527], [11361, -6554], [11308, -6585], [11193, -6627], [11011, -6666], [10927, -6710], [10810, -6758], [10719, -6813], [10694, -6841], [10630, -6953], [10602, -6983], [10369, -7146], [10297, -7217], [10207, -7329], [10010, -7473], [9991, -7492], [9928, -7592], [9856, -7652], [9803, -7683], [9674, -7742], [9545, -7832], [9477, -7885], [9447, -7899], [9403, -7910], [9309, -7913], [9260, -7926], [9214, -7946], [9121, -8011], [9060, -8066], [9000, -8096], [8917, -8112], [8864, -8130], [8846, -8145], [8837, -8151], [8832, -8152], [8821, -8152], [8782, -8163]], bord: { hambourg: 24 } },
   // L'I-45 (v336), DALLAS–HOUSTON : la première route des États-Unis. Le
   // pays entre les deux est ondulé — des croupes de dix à quinze blocs tous
   // les quelques centaines de blocs — et Houston est assise au pied d'une
@@ -289,7 +297,7 @@ export const ROUTES = [
   // 443 remblai. Celui-ci : 2 168 blocs, trois ponts (deux ravins et un
   // ruisseau, à plus de cent quatre-vingts blocs des portes), déblai 7,7,
   // remblai 3,9, pente 0,061, zéro rail, zéro aérodrome.
-  { nom: 'I-45', villes: ['dallas', 'houston'], via: [[-28933, 9811], [-28846, 9999], [-28781, 10192], [-28735, 10388], [-28719, 10591], [-28708, 10794], [-28676, 10994], [-28655, 11195], [-28612, 11393], [-28569, 11590], [-28559, 11628], [-28535, 11660], [-28500, 11679], [-28460, 11682], [-28422, 11668], [-28393, 11640], [-28378, 11603]] },
+  { nom: 'I-45', villes: ['dallas', 'houston'], via: [[-86328, 28937], [-86297, 29026], [-86232, 29161], [-86208, 29259], [-86120, 29396], [-86093, 29475], [-86080, 29584], [-86036, 29691], [-86018, 29768], [-85981, 29831], [-85924, 29891], [-85851, 29992], [-85758, 30066], [-85709, 30117], [-85683, 30161], [-85637, 30285], [-85595, 30364], [-85567, 30400], [-85414, 30559], [-85319, 30729], [-85300, 30800], [-85291, 30916], [-85209, 31140], [-85177, 31283], [-85125, 31369], [-85085, 31419], [-85065, 31464], [-85047, 31553], [-85003, 31661], [-84997, 31706], [-84993, 31879], [-84965, 31993], [-84957, 32073], [-84926, 32205], [-84914, 32290], [-84883, 32349], [-84846, 32406], [-84801, 32507], [-84785, 32572], [-84777, 32659], [-84741, 32770], [-84733, 32815], [-84731, 32898], [-84702, 33024], [-84695, 33105], [-84683, 33148], [-84650, 33224], [-84639, 33268], [-84637, 33315], [-84645, 33360], [-84666, 33437], [-84681, 33520], [-84712, 33633], [-84740, 33716], [-84793, 33826], [-84803, 33870], [-84809, 34054], [-84841, 34178], [-84844, 34219], [-84849, 34235], [-84847, 34259], [-84841, 34277], [-84817, 34309], [-84782, 34328], [-84742, 34331], [-84704, 34317], [-84675, 34289], [-84660, 34252]] },
   // L'A7 (v337), LYON–MARSEILLE : l'autoroute du Soleil, le long du Rhône.
   // Le TGV va droit de gare à gare (82°) : la route passe à l'OUEST du rail
   // de bout en bout, sans le croiser (v320). Lyon sort par son axe sud-est
@@ -302,7 +310,7 @@ export const ROUTES = [
   // 7,4, remblai 1,4, pente 0,061, zéro colonne sur le rail. Le premier
   // candidat (deux ponts) a été écarté : son entrée à Lyon (50°) n'avait que
   // dix-neuf relevés sur la rue, pour vingt exigés.
-  { nom: 'A7', villes: ['lyon', 'marseille'], via: [[674, 2100], [663, 2138], [668, 2178], [732, 2585], [755, 2998], [858, 3398], [873, 3435]] },
+  { nom: 'A7', villes: ['lyon', 'marseille'], via: [[2612, 5768], [2605, 5806], [2603, 5825], [2581, 5861], [2564, 5870], [2538, 5878], [2526, 5886], [2467, 5971], [2431, 6027], [2394, 6103], [2344, 6202], [2321, 6299], [2309, 6338], [2304, 6379], [2378, 6556], [2456, 6699], [2491, 6756], [2516, 6824], [2528, 6981], [2599, 7191], [2683, 7330], [2726, 7445], [2773, 7510], [2806, 7598], [2857, 7804], [2861, 7836], [2846, 7930], [2846, 7950], [2876, 8049], [2882, 8094], [2883, 8370], [2904, 8451], [2937, 8522], [2953, 8599], [2952, 8616], [2919, 8758], [2918, 8866], [2924, 8911], [2957, 9011], [2957, 9064], [2924, 9164], [2918, 9210], [2919, 9353], [2925, 9385], [2985, 9577], [3042, 9643], [3051, 9659], [3053, 9680], [3044, 9781], [3045, 9804], [3052, 9823], [3079, 9859], [3210, 9990], [3213, 9993], [3228, 10030]] },
   // L'AP-2 (v338), MADRID–BARCELONE : la plus longue de l'Espagne, le long
   // de l'AVE qui va droit de gare à gare (−14°) ; la route ne le croise
   // jamais. Le pays monte vers la Catalogne : à l'approche de Barcelone, une
@@ -318,7 +326,7 @@ export const ROUTES = [
   // décision prise sur l'axe se vérifie sur toute la largeur). Celui-ci :
   // 2 094 blocs, quatre ponts, joint fermé, déblai 8,8, remblai 3,1, pente
   // 0,062, zéro colonne sur le rail.
-  { nom: 'AP-2', villes: ['madrid', 'barcelone'], via: [[-2467, 5133], [-2278, 5071], [-2082, 5032], [-1891, 4977], [-1704, 4907], [-1512, 4854], [-1321, 4797], [-1124, 4765], [-927, 4729], [-738, 4667], [-549, 4605], [-510, 4595]] },
+  { nom: 'AP-2', villes: ['madrid', 'barcelone'], via: [[-7161, 15119], [-7014, 15054], [-6866, 15006], [-6785, 14969], [-6670, 14942], [-6579, 14910], [-6536, 14894], [-6337, 14891], [-6294, 14880], [-6236, 14846], [-6187, 14804], [-6132, 14778], [-5975, 14766], [-5875, 14732], [-5765, 14707], [-5701, 14674], [-5634, 14648], [-5589, 14640], [-5506, 14638], [-5452, 14623], [-5373, 14582], [-5275, 14557], [-5217, 14523], [-5178, 14488], [-5067, 14408], [-5014, 14362], [-4907, 14302], [-4844, 14252], [-4809, 14234], [-4675, 14195], [-4491, 14120], [-4230, 13981], [-4150, 13958], [-3971, 13954], [-3854, 13919], [-3695, 13854], [-3649, 13848], [-3587, 13858], [-3313, 13964], [-3221, 13987], [-3073, 13993], [-3024, 14006], [-2895, 14048], [-2883, 14049], [-2812, 14031], [-2758, 14003], [-2641, 13967], [-2388, 13867], [-2213, 13827], [-2140, 13816], [-2039, 13782], [-1930, 13772], [-1839, 13745], [-1805, 13726], [-1667, 13682], [-1546, 13626], [-1501, 13620], [-1361, 13621], [-1250, 13596], [-1191, 13562], [-1092, 13550], [-986, 13545], [-849, 13513], [-785, 13507], [-732, 13491], [-722, 13486], [-701, 13467], [-696, 13464], [-674, 13454], [-653, 13454]] },
   // LA 401 (v355), TORONTO–MONTRÉAL : la première route qui CONTOURNE une
   // ville au lieu d'y entrer par le côté qui la regarde. Montréal est sous
   // son pays à l'ouest et au sud-ouest (45 à 49 blocs à r + 25, ville à 33),
@@ -339,7 +347,7 @@ export const ROUTES = [
   // Celui-ci : 2 711 blocs, aucun pont, déblai 6,6, remblai 1,0, pente
   // 0,060, coudes ≤ 24°, zéro colonne sur un rail, aucune colonne d'emprise
   // prise à une autre route (l'A20 sort de Montréal par l'est, à 88° de là).
-  { nom: '401', villes: ['toronto', 'montreal'], via: [[-22014, 3244], [-21986, 3234], [-21971, 3223], [-21955, 3199], [-21941, 3165], [-21941, 3120], [-21963, 3071], [-21963, 3059], [-21958, 3047], [-21944, 3033], [-21801, 2977], [-20821, 2732], [-20781, 2737], [-20616, 2778], [-20589, 2774], [-20547, 2751], [-20512, 2709], [-20488, 2697], [-20400, 2690], [-20226, 2730], [-20199, 2729], [-20169, 2719], [-20112, 2677], [-19986, 2545], [-19955, 2472], [-19939, 2268]] },
+  { nom: '401', villes: ['toronto', 'montreal'], via: [[-65857, 9313], [-65848, 9307], [-65760, 9275], [-65754, 9276], [-65742, 9277], [-65737, 9275], [-65722, 9267], [-65510, 9114], [-65347, 9043], [-65266, 8993], [-65204, 8966], [-65101, 8866], [-64986, 8807], [-64858, 8757], [-64785, 8719], [-64682, 8663], [-64618, 8645], [-64537, 8637], [-64357, 8594], [-64255, 8552], [-64234, 8550], [-64218, 8552], [-64118, 8584], [-64097, 8586], [-64061, 8578], [-63753, 8424], [-63677, 8362], [-63622, 8336], [-63543, 8322], [-63477, 8295], [-63384, 8230], [-63304, 8162], [-63068, 8050], [-63025, 8008], [-62973, 7905], [-62920, 7844], [-62810, 7780], [-62736, 7727], [-62677, 7669], [-62574, 7531], [-62497, 7457], [-62454, 7431], [-62366, 7413], [-62270, 7381], [-62190, 7343], [-62111, 7275], [-62013, 7206], [-61954, 7176], [-61786, 7131], [-61710, 7126], [-61653, 7104], [-61532, 7021], [-61417, 6952], [-61361, 6927], [-61312, 6914], [-61156, 6913], [-61090, 6900], [-60985, 6849], [-60940, 6841], [-60833, 6839], [-60742, 6812], [-60682, 6784], [-60596, 6774], [-60516, 6762], [-60471, 6745], [-60413, 6707], [-60387, 6669], [-60320, 6629], [-60180, 6561], [-60043, 6472], [-60000, 6460], [-59911, 6443], [-59857, 6415], [-59759, 6346], [-59677, 6269], [-59537, 6172], [-59526, 6169], [-59503, 6175]] },
   // LA HANSALINIE (v355), COLOGNE–HAMBOURG : l'A1 allemande, rebaptisée de
   // son surnom parce que « A1 » est déjà Paris–Lille. Les deux villes sont
   // sous leur pays du côté qui regarde l'autre, et la v337 avait buté sur
@@ -361,7 +369,7 @@ export const ROUTES = [
   // aucun pont, déblai 5,4, remblai 1,4, pente 0,060, coudes ≤ 22°, zéro
   // colonne sur un rail ni sur un pont de ville, aucune prise à une autre
   // route.
-  { nom: 'Hansalinie', villes: ['cologne', 'hambourg'], via: [[1540, -1107], [1530, -1207], [1613, -1549], [1705, -1741], [1790, -1827], [1822, -1841], [2005, -1852], [2032, -1864], [2079, -1904], [2094, -1928], [2106, -1995], [2086, -2095], [2072, -2119], [2027, -2169], [2020, -2182], [2014, -2232], [2027, -2284], [2040, -2305], [2100, -2378], [2347, -2593], [2522, -2680], [2545, -2682], [2647, -2671], [2661, -2664], [2688, -2640]] },
+  { nom: 'Hansalinie', villes: ['cologne', 'hambourg'], via: [[5197, -3576], [5203, -3583], [5257, -3615], [5397, -3708], [5434, -3736], [5565, -3867], [5593, -3903], [5634, -4012], [5716, -4164], [5819, -4320], [5907, -4432], [6001, -4513], [6065, -4611], [6106, -4696], [6112, -4741], [6112, -4885], [6120, -4930], [6154, -5000], [6191, -5057], [6274, -5285], [6347, -5400], [6467, -5605], [6478, -5641], [6601, -5861], [6642, -5908], [6667, -5994], [6693, -6037], [6819, -6163], [6939, -6250], [7144, -6451], [7241, -6521], [7259, -6540], [7337, -6658], [7407, -6734], [7490, -6790], [7715, -7053], [7804, -7115], [7894, -7264], [8085, -7455], [8113, -7491], [8167, -7589], [8225, -7655], [8305, -7778], [8492, -7970], [8521, -8006], [8597, -8191], [8601, -8218], [8604, -8223], [8608, -8227], [8612, -8230], [8617, -8231], [8628, -8228]] },
   // L'I-95 (v362), NEW YORK–BOSTON : la première route qui touche MANHATTAN,
   // et Manhattan n'est pas un disque. C'est un RECTANGLE de 480 × 2 300 blocs
   // (`BORNES`, manhattan-plan.js) — l'île au milieu, l'Hudson et l'East River
@@ -386,7 +394,7 @@ export const ROUTES = [
   // admissibles, tous à un pont au moins ; celui-ci : 390 blocs, un pont
   // (s 152–160, un ruisseau), coudes ≤ 18°, déblai 1,5, remblai 1,7, JFK à
   // 512 blocs au-delà de sa marge, le premier repère à 526.
-  { nom: 'I-95', villes: ['ny', 'boston'], portes: { ny: [-19769, 4140] }, via: [[-19739, 4140], [-19498, 4128], [-19415, 4096]] },
+  { nom: 'I-95', villes: ['ny', 'boston'], portes: { ny: [-59382, 13805] }, via: [[-59328, 13800], [-59321, 13798], [-59309, 13789], [-59286, 13767], [-59201, 13615], [-59174, 13560], [-59060, 13384], [-59056, 13380], [-58920, 13272], [-58848, 13200], [-58761, 13080], [-58657, 12973], [-58570, 12853], [-58470, 12685], [-58383, 12612], [-58289, 12506], [-58252, 12415], [-58223, 12373], [-58109, 12258], [-58037, 12163], [-57942, 12077], [-57809, 11883], [-57767, 11849], [-57657, 11767]] },
   // L'I-95 SUD (v367) : New York–Washington. Deux villes qui ne sont pas des
   // disques. À New York, la porte de l'I-95 regarde le nord-est : celle-ci est
   // une SECONDE porte déclarée, sur la rive de l'Hudson, trente-six blocs à
@@ -410,12 +418,12 @@ export const ROUTES = [
   // d'une porte ; vingt et un admissibles, aucun sans pont ; celui-ci : 1 560
   // blocs, un pont (s 1 048–1 070), coudes ≤ 21°, déblai 7,0 (5,5 avant que le
   // bout ne descende au niveau de la rue), remblai 1,1.
-  { nom: 'I-95 Sud', villes: ['ny', 'washington'], portes: { ny: [-20321, 5130], washington: [-21191, 6197] }, boutNet: ['washington'],
+  { nom: 'I-95 Sud', villes: ['ny', 'washington'], portes: { ny: [-59932, 14789], washington: [-63167, 17998] }, boutNet: ['washington'],
     // La grille de la v370 (pas de 28) n'a plus de rue en u = 37, v = 73 :
     // l'avenue s'arrête sur la rue de la grille v = 84, au bout de la
     // bretelle de l'I-295 que pose `washington.js`.
-    avenues: { washington: [[-21191, 6197], [-21191, 6196], [-21191, 6184], [-21172, 6184], [-21172, 6138], [-21182, 6132], [-21198, 6122], [-21208, 6116]] },
-    via: [[-20361, 5130], [-20404, 5131], [-20441, 5145], [-20451, 5153], [-20680, 5525], [-20684, 5538], [-20684, 5552], [-20687, 5565], [-20762, 5689], [-20781, 5707], [-20817, 5725], [-20842, 5752], [-21048, 6155], [-21052, 6169], [-21052, 6196], [-21055, 6211], [-21061, 6224], [-21072, 6235], [-21105, 6255], [-21130, 6260], [-21147, 6258], [-21161, 6252], [-21173, 6242], [-21183, 6230], [-21189, 6216]] },
+    avenues: { washington: [[-63167, 17998], [-63167, 17997], [-63167, 17985], [-63148, 17985], [-63148, 17939], [-63158, 17933], [-63174, 17923], [-63184, 17917]] },
+    via: [[-59978, 14789], [-59983, 14790], [-60122, 14847], [-60161, 14895], [-60164, 14918], [-60202, 14972], [-60211, 15054], [-60320, 15223], [-60417, 15357], [-60451, 15384], [-60506, 15487], [-60655, 15681], [-60720, 15754], [-60809, 15849], [-61042, 16011], [-61064, 16037], [-61137, 16151], [-61261, 16279], [-61303, 16328], [-61346, 16357], [-61373, 16366], [-61560, 16443], [-61627, 16465], [-61706, 16545], [-61809, 16694], [-61926, 16937], [-62012, 17046], [-62029, 17060], [-62077, 17089], [-62140, 17111], [-62230, 17154], [-62347, 17247], [-62417, 17281], [-62488, 17327], [-62534, 17372], [-62591, 17466], [-62611, 17488], [-62669, 17528], [-63093, 18067], [-63103, 18074], [-63113, 18077], [-63125, 18078], [-63136, 18076], [-63146, 18071], [-63155, 18064], [-63161, 18055], [-63166, 18044], [-63167, 18033], [-63167, 18016]] },
   // LE TŌMEI (v381), TOKYO–NAGOYA, le long de la côte du Tōkaidō. Le relevé de
   // la v310 le disait : « un aérodrome sur l'axe ». C'est pire : à l'ouest de
   // Tokyo, Haneda (r 76) et Yokota (r 56) ferment la plaine, le Shinkansen
@@ -434,7 +442,7 @@ export const ROUTES = [
   // admissibles ; celui-ci : 1 140 blocs, UN pont (s 264–271, une crique au
   // sud-ouest de Tokyo), déblai et remblai 1,8, coudes ≤ 25°.
   { nom: 'Tōmei', villes: ['tokyo', 'nagoya'], bord: { tokyo: 24 },
-    via: [[53256, 8150], [53023, 8317], [52949, 8378], [52921, 8389], [52887, 8390], [52828, 8365], [52773, 8334], [52712, 8328], [52445, 8420], [52378, 8414], [52320, 8388], [52298, 8371]] },
+    via: [[160414, 23576], [160386, 23567], [160368, 23567], [160363, 23565], [160349, 23556], [160342, 23548], [160337, 23538], [160331, 23512], [160330, 23503], [160335, 23487], [160340, 23479], [160353, 23466], [160375, 23456], [160396, 23454], [160465, 23466], [160503, 23464], [160599, 23429], [160637, 23427], [160669, 23437], [160737, 23470], [160770, 23510], [160785, 23553], [160801, 23572], [160812, 23611], [160793, 23690], [160753, 23783], [160734, 23802], [160671, 23839], [160438, 23897], [160406, 23896], [160288, 23851], [160268, 23850], [160247, 23854], [160166, 23889], [160117, 23901], [159962, 23905], [159919, 23915], [159791, 23969], [159688, 23995], [159515, 23999], [159470, 24005], [159398, 24034], [159195, 24139], [159107, 24201], [159058, 24243], [158977, 24292], [158846, 24354], [158765, 24403], [158711, 24447], [158632, 24489], [158387, 24548], [158293, 24553], [158249, 24564], [158117, 24650], [158047, 24684], [157991, 24695], [157800, 24697], [157664, 24726], [157643, 24724], [157530, 24678], [157429, 24661], [157379, 24639], [157353, 24617], [157348, 24614], [157344, 24614], [157324, 24603], [157295, 24569]] },
   // LA M40 (v415), LONDRES–BIRMINGHAM. L'axe direct est barré par une crête
   // de 46 à 55 blocs, nord-sud, de z −2 110 à z −1 430 ; au sud elle vient
   // mourir dans la marge de Heathrow, à l'ouest de Londres un mur de 43 à 50
@@ -453,7 +461,7 @@ export const ROUTES = [
   // ponts (s 209–227 et 927–942, joints fermés), déblai 7,5, remblai 2,4,
   // coudes ≤ 21°, aucun rail, aucun repère, Heathrow loin derrière.
   { nom: 'M40', villes: ['londres', 'birmingham'],
-    via: [[-1191, -1493], [-1187, -1533], [-1183, -1546], [-1166, -1580], [-1135, -1632], [-1128, -1652], [-1127, -1680], [-1138, -1719], [-1152, -1748], [-1186, -1799], [-1201, -1818], [-1304, -1920], [-1370, -1965], [-1399, -1980], [-1456, -1998], [-1490, -2002], [-1529, -2000], [-1556, -1994], [-1582, -1984], [-1637, -1947], [-1709, -1905], [-1767, -1878], [-1798, -1874], [-1811, -1875], [-1824, -1881], [-1845, -1902]] },
+    via: [[-3087, -4689], [-3077, -4718], [-3077, -4723], [-3080, -4728], [-3158, -4809], [-3251, -4905], [-3316, -5049], [-3342, -5081], [-3410, -5111], [-3484, -5136], [-3654, -5173], [-3749, -5205], [-3816, -5247], [-3897, -5282], [-3943, -5288], [-4086, -5291], [-4156, -5310], [-4170, -5321], [-4217, -5384], [-4305, -5482], [-4390, -5589], [-4653, -5858], [-4690, -5886], [-4815, -5961], [-4906, -6046], [-5013, -6106], [-5105, -6186], [-5127, -6195]] },
   // L'A6 (v419), PARIS–LYON, l'autoroute du Soleil. Le TGV va droit de gare à
   // gare (57,6° depuis Paris) : règle de la v320, on choisit un côté et l'on
   // n'en change plus. À l'EST du rail, un massif de 46 à plus de 60 blocs de
@@ -482,7 +490,7 @@ export const ROUTES = [
   // aucun rail, aucun repère, aucun aérodrome à moins de sa marge et d'une
   // portée de talus.
   { nom: 'A6', villes: ['paris', 'lyon'],
-    via: [[-333, 699], [-336, 732], [-360, 781], [-364, 798], [-363, 806], [-280, 990], [-168, 1103], [-116, 1202], [-24, 1304], [-17, 1321], [2, 1393], [24, 1424], [308, 1705], [523, 1814], [536, 1828], [594, 1923], [659, 1983]] },
+    via: [[-333, 699], [-336, 732], [-360, 781], [-364, 798], [-363, 806], [-359, 810], [-356, 821], [-336, 839], [-219, 896], [-168, 944], [-117, 1195], [-67, 1272], [-42, 1315], [12, 1455], [51, 1522], [74, 1591], [109, 1665], [144, 1755], [165, 1809], [246, 1934], [333, 2054], [369, 2104], [441, 2183], [523, 2269], [555, 2306], [642, 2389], [672, 2446], [715, 2512], [762, 2679], [839, 2815], [845, 2837], [847, 2859], [840, 2897], [794, 3034], [769, 3138], [765, 3172], [771, 3211], [817, 3325], [825, 3369], [827, 3440], [871, 3596], [874, 3763], [885, 3806], [920, 3864], [957, 3902], [1041, 4018], [1162, 4110], [1209, 4155], [1290, 4278], [1361, 4356], [1431, 4463], [1528, 4543], [1556, 4584], [1631, 4745], [1681, 4796], [1709, 4814], [1861, 4883], [2012, 4994], [2164, 5147], [2190, 5190], [2227, 5319], [2282, 5404], [2298, 5418], [2514, 5559], [2528, 5577], [2530, 5582], [2531, 5587], [2532, 5591], [2597, 5651]] },
   // L'A8 (v428), MARSEILLE–NICE, la Provençale. L'axe direct est en mer
   // (401 blocs d'eau sur 596) : la route passe par l'intérieur, et le relevé
   // en couronne (scratchpad ring.mjs) ferme Marseille de presque tous les
@@ -511,7 +519,7 @@ export const ROUTES = [
   // un bloc et demi avant le deuxième pont, et le coin de son coude laissait
   // deux points du joint sans cube ni tablier (le témoin du joint, plafond.js).
   { nom: 'A8', villes: ['marseille', 'nice'], bord: { marseille: 14 },
-    via: [[956, 3410], [961, 3386], [963, 3346], [977, 3291], [987, 3276], [1016, 3255], [1087, 3233], [1101, 3222], [1108, 3212], [1126, 3174], [1143, 3142], [1156, 3131], [1190, 3118], [1208, 3118], [1226, 3123], [1438, 3240], [1475, 3246], [1522, 3247]] },
+    via: [[3318, 9941], [3319, 9924], [3342, 9871], [3342, 9865], [3342, 9853], [3344, 9848], [3353, 9833], [3361, 9826], [3409, 9806], [3470, 9800], [3586, 9799], [3646, 9785], [3811, 9706], [3961, 9648], [4126, 9524], [4231, 9460], [4297, 9430], [4340, 9418], [4421, 9411], [4547, 9382], [4666, 9381], [4804, 9423], [4868, 9429], [4971, 9451], [5027, 9449], [5048, 9442], [5175, 9357], [5224, 9335], [5235, 9334], [5258, 9336], [5263, 9337], [5267, 9340], [5290, 9343], [5327, 9340]] },
   // L'US-101 (v439), SAN FRANCISCO–LOS ANGELES. L'axe direct (2 403 blocs)
   // passe dans la marge de SFO et sur deux repères. San Francisco est une
   // presqu'île : la baie à l'est DANS le disque, le Pacifique à l'ouest, et au
@@ -536,7 +544,7 @@ export const ROUTES = [
   // rail, un repère ou une autre route, l'axe à trente-cinq blocs au moins
   // de la marge de tout aérodrome.
   { nom: 'US-101', villes: ['sf', 'losangeles'], bord: { losangeles: 40 },
-    via: [[-38854, 6976], [-38849, 6984], [-38842, 6990], [-38822, 6997], [-38816, 6997], [-38810, 6995], [-38765, 6965], [-38756, 6962], [-38755, 6962], [-38740, 6967], [-38710, 6990], [-38661, 7049], [-38413, 7538], [-38238, 7835], [-38113, 8148], [-37752, 8793], [-37723, 8824], [-37516, 8962], [-37463, 8980]] },
+    via: [[-116245, 20120], [-116240, 20128], [-116233, 20134], [-116213, 20141], [-116207, 20141], [-116201, 20139], [-116156, 20109], [-116147, 20106], [-116146, 20106], [-116131, 20111], [-116101, 20134], [-116078, 20161], [-116066, 20192], [-115984, 20307], [-115959, 20375], [-115943, 20464], [-115891, 20551], [-115856, 20662], [-115823, 20733], [-115810, 20849], [-115769, 20971], [-115595, 21207], [-115500, 21297], [-115350, 21401], [-115313, 21429], [-115279, 21457], [-115207, 21488], [-115092, 21583], [-115042, 21645], [-115007, 21676], [-114957, 21744], [-114835, 21867], [-114727, 21950], [-114682, 22005], [-114663, 22039], [-114615, 22163], [-114568, 22252], [-114514, 22331], [-114424, 22426], [-114387, 22483], [-114355, 22553], [-114310, 22619], [-114265, 22666], [-114143, 22758], [-114131, 22776], [-114115, 22817], [-114109, 22862], [-114108, 23054], [-114097, 23098], [-113998, 23278], [-113930, 23365], [-113876, 23462], [-113795, 23608], [-113775, 23626], [-113622, 23789], [-113595, 23825], [-113523, 23970], [-113494, 24054], [-113475, 24088], [-113416, 24153], [-113326, 24314], [-113263, 24456], [-113227, 24495], [-113181, 24557], [-113121, 24601], [-113078, 24651], [-113041, 24721], [-112944, 24886], [-112885, 24946], [-112730, 25138], [-112672, 25215], [-112637, 25246], [-112559, 25298], [-112477, 25377], [-112387, 25445], [-112373, 25460], [-112304, 25573], [-112237, 25639], [-112101, 25730], [-112075, 25762], [-111907, 26018], [-111789, 26225], [-111668, 26499], [-111652, 26517], [-111630, 26529], [-111594, 26535]] },
   // L'A1 CENTRE (v461), FLORENCE–ROME : le maillon qui manquait à l'Autostrada
   // del Sole — Milan–Bologne (A1 Nord), Bologne–Florence (Autosole) et
   // Rome–Naples (A1 Sud) étaient faites. L'axe direct est celui de la
@@ -568,7 +576,7 @@ export const ROUTES = [
   // autre route, aucun tablier de ville creusé, l'axe à 83 blocs au moins du
   // rail et à 98 au-delà de la marge de Fiumicino.
   { nom: 'A1 Centre', villes: ['florence', 'rome'],
-    via: [[3315, 3203], [3355, 3207], [3392, 3222], [3663, 3474], [3737, 3557], [3798, 3637], [3828, 3710], [3850, 3782], [3848, 3853], [3841, 3924], [3833, 4031], [3825, 4092], [3818, 4107], [3810, 4118]] },
+    via: [[10263, 9237], [10303, 9239], [10340, 9257], [10344, 9259], [10349, 9267], [10497, 9512], [10576, 9667], [10630, 9747], [10702, 9825], [10768, 9942], [10905, 10119], [10963, 10179], [11100, 10356], [11118, 10391], [11190, 10661], [11306, 10847], [11359, 10987], [11442, 11121], [11454, 11169], [11459, 11299], [11517, 11533], [11586, 11673], [11607, 11736], [11635, 11857], [11641, 11920], [11653, 11967], [11701, 12067], [11755, 12227], [11754, 12268], [11741, 12340]] },
 ];
 
 // --- la section -----------------------------------------------------------------
@@ -611,7 +619,34 @@ export const PENTE = 0.06;
 // se creuse jusqu'à `DEBLAI_MAX` — au-delà ce serait un tunnel, et aucun
 // corridor n'en a besoin (mesuré : 7,2 au pire).
 export const VIADUC = 4;
+// En pas d'abscisse : sous cet écart, deux ponts voisins n'en font qu'un.
+export const ECART_VIADUC = 10;
 export const DEBLAI_MAX = 9;
+// LA TRANCHÉE HORS NORME DE L'I-95 SUD (carte ×3, décision de Max, 7 nov.
+// 2026 : « Tranchée hors norme »). Washington est assise sous une crête de
+// 43 à 49 blocs qui l'entoure sauf au sud, et la carte ×3 a fait passer la
+// porte d'est dans la boîte de la ville (152 colonnes de route dedans) :
+// on entre désormais plein sud, et les cent derniers blocs avant la porte
+// creusent jusqu'à 13,1 dans le flanc de la crête. L'exception est une
+// TABLE (route, ville du bout, longueur avant ce bout, plafond) : `deblaiMaxA`
+// la lit pour le talus, et toute autre route — ou le reste de celle-ci —
+// garde `DEBLAI_MAX` au bit près. Elle ne touche ni la ville (zéro colonne de
+// route dans sa boîte) ni aucun sanctuaire : Washington est à soixante mille
+// blocs du point d'apparition. Un témoin de `carteMonde.js` exige 13,7 au plus
+// ici, 9 au plus partout ailleurs, et que l'exception ne serve à personne d'autre.
+export const DEBLAIS_HORS_NORME = [{ route: 'I-95 Sud', bout: 'washington', longueur: 400, max: 13.7 }];
+function exceptionDe(seg) {
+  return DEBLAIS_HORS_NORME.find((e) => e.route === seg.route.nom && (seg.de === e.bout || seg.vers === e.bout)) || null;
+}
+// Le déblai permis à l'abscisse `s` d'un segment.
+export function deblaiMaxA(seg, s) {
+  const e = exceptionDe(seg);
+  if (!e) return DEBLAI_MAX;
+  const dans = seg.vers === e.bout ? s >= seg.longueur - e.longueur : s <= e.longueur;
+  return dans ? e.max : DEBLAI_MAX;
+}
+// Le plus grand déblai qu'un segment permet quelque part (sa portée).
+function deblaiPlafond(seg) { const e = exceptionDe(seg); return e ? Math.max(DEBLAI_MAX, e.max) : DEBLAI_MAX; }
 // La pente du talus, par bloc d'écart à l'axe : 0,7 et non 1, parce que les
 // quatre coins d'une cellule de surface s'écartent de l'axe de |fx| + |fz|
 // blocs entre eux — jusqu'à √2 sur une route à 45° — et qu'à un bloc par bloc
@@ -671,7 +706,7 @@ function indexer() {
       const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0)) + 1;
       for (let i = 0; i <= n; i++) {
         const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n;
-        const m = DEMI_EMPRISE + DEBLAI_MAX / TALUS_PENTE + 2;
+        const m = DEMI_EMPRISE + deblaiPlafond(s) / TALUS_PENTE + 2;
         for (let cx = Math.floor((x - m) / CASE); cx <= Math.floor((x + m) / CASE); cx++) {
           for (let cz = Math.floor((z - m) / CASE); cz <= Math.floor((z + m) / CASE); cz++) {
             const cle = cx * 100000 + cz;
@@ -757,6 +792,16 @@ export function profilDe(seg) {
     if (j - k + 1 < 3) for (let i = k; i <= j; i++) ouvrage[i] = 0;
     k = j;
   }
+  // DEUX OUVRAGES À DIX PAS L'UN DE L'AUTRE FONT UN SEUL VIADUC (carte ×3).
+  // Entre les deux, un terre-plein de quelques blocs sur un remblai de quatre :
+  // deux culées de suite, et la voiture qui sort du premier tablier retombait
+  // dans le second (I-95 Sud, deux ponts sur 444 traversées). On comble.
+  for (let k = 0, fin = -1; k <= n; k++) {
+    if (!ouvrage[k]) continue;
+    if (fin >= 0 && k - fin - 1 <= ECART_VIADUC) for (let i = fin + 1; i < k; i++) ouvrage[i] = 1;
+    while (k + 1 <= n && ouvrage[k + 1]) k++;
+    fin = k;
+  }
   const spans = [];
   for (let k = 0; k <= n; k++) {
     if (!ouvrage[k]) continue;
@@ -814,14 +859,15 @@ const q64 = (v) => Math.round(v * 64) / 64;
 // point hors d'elle est à plus de cette distance de l'axe, donc `routeEn` ne
 // peut rien y rendre — on ne le projette pas (v352). Conservateur par
 // construction : la boîte ne retire que des segments qui rendraient null.
-const PORTEE_ROUTE = DEMI_EMPRISE + DEBLAI_MAX / TALUS_PENTE + 1;
+const porteeRoute = (seg) => DEMI_EMPRISE + deblaiPlafond(seg) / TALUS_PENTE + 1;
 const BOITES = new WeakMap();
 function boiteDe(seg) {
   let b = BOITES.get(seg);
   if (!b) {
     let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
     for (const [x, z] of seg.pts) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (z < z0) z0 = z; if (z > z1) z1 = z; }
-    b = { x0: x0 - PORTEE_ROUTE, z0: z0 - PORTEE_ROUTE, x1: x1 + PORTEE_ROUTE, z1: z1 + PORTEE_ROUTE };
+    const P = porteeRoute(seg);
+    b = { x0: x0 - P, z0: z0 - P, x1: x1 + P, z1: z1 + P };
     BOITES.set(seg, b);
   }
   return b;
@@ -846,7 +892,7 @@ export function routeEn(x, z) {
   // ce `terrainHeight` de trop faisait un cinquième du coût d'un morceau de
   // Paris dans le worker (mesuré, sonde-cout-morceau.mjs). Même réponse, au
   // bit près : le témoin compare les blocs et les tampons.
-  if (pr.dist - largeurA(seg, pr.s).demiEmprise >= DEBLAI_MAX / TALUS_PENTE) return null;
+  if (pr.dist - largeurA(seg, pr.s).demiEmprise >= deblaiMaxA(seg, pr.s) / TALUS_PENTE) return null;
   const p = profilDe(seg);
   if (!p) return null;
   const L = largeurA(seg, pr.s);
@@ -910,7 +956,7 @@ export function routeEn(x, z) {
   }
   const terr = SOL(x, z) + 1;
   const ecart = cote - terr;
-  const w = Math.min(Math.abs(ecart), DEBLAI_MAX) / TALUS_PENTE;
+  const w = Math.min(Math.abs(ecart), deblaiMaxA(seg, pr.s)) / TALUS_PENTE;
   const u = ad - L.demiEmprise;
   if (u >= w) return null;
   return { seg, s: pr.s, d: pr.d, cote: q64(terr + ecart * (1 - u / w)), piece: 'talus', ouvrage: false };

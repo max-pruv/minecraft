@@ -76,7 +76,7 @@ const NOIR = uni(25);
 // le savoir, et qui fait « Londres » instantanément vu du ciel.
 const MALL_ROUGE = brique(16);
 
-export const LONDRES = { ...positionDe('londres'), r: 112 };
+export const LONDRES = { ...positionDe('londres', 'terreV4'), r: 112 };
 
 // 24 blocs par kilomètre : un bloc fait 42 mètres. Le centre est Charing
 // Cross ; u croît vers l'est, v vers le sud, comme partout dans le jeu.

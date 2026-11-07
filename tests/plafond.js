@@ -181,7 +181,15 @@ function verifier(nom, ok, detail = '') {
 // sous ces cinq sites — et SEULEMENT là : c'est l'empreinte du dessous qui le
 // prouve, mesurée avec la MÊME découpe sur `origin/main` et sur la branche.
 // v305 : aea20fdad3a5c1672e23177dfe28a6bee9f5ae3c
-const EMPREINTE_RELIEF = '85c89a216e6ecea71187f3f630477f7f68830ee8';
+//
+// **CARTE ×3 (0,1875 → 0,0625 km par bloc).** Décision de Max : New York
+// mangeait Boston. Comme en v199 et v242, la casse ne se BORNE pas — les villes
+// s'écartent de Paris et le relief se réécrit dans toute la fenêtre. Ce qui
+// porte la preuve, c'est le témoin des 4 040 colonnes (sous le point
+// d'apparition et sous Paris, `terreV4` et la carte d'après rendent le même
+// sol), et le monde de la production figé dans `CONF_V587`.
+// v587 : 85c89a216e6ecea71187f3f630477f7f68830ee8
+const EMPREINTE_RELIEF = 'd6d5a0a5757210c13890339aa9b3294449e2ec9f';
 
 // ET CELLE-CI, ELLE, N'A PAS LE DROIT DE BOUGER.
 //
@@ -275,7 +283,12 @@ const EMPREINTE_RELIEF = '85c89a216e6ecea71187f3f630477f7f68830ee8';
 // volcan. Mesurée avec cette même découpe sur `origin/main` (v302), sur la
 // v305 et sur la branche : 154 158 colonnes, 2aeceaa1… des trois côtés.
 // v242 → v305 : 23e5ce82956ab83322ef7b56dd1f9a5b68cc92b7
-const EMPREINTE_HORS_VILLES = '2aeceaa10b2009e081d6bdb0a03586ae4022e1fb';
+//
+// CARTE ×3 : non bornée, comme v199 et v242 — la découpe change (154 158 →
+// 153 578 colonnes) et le hash avec. La preuve est le témoin des 4 040
+// colonnes et `CONF_V587`, pas ce hash.
+// v306 → v587 : 2aeceaa10b2009e081d6bdb0a03586ae4022e1fb
+const EMPREINTE_HORS_VILLES = '1fae79ab5a5f22f0835e46e5c5891eeddd3f9740';
 
 // LE MONDE D'AVANT PARIS DOUBLÉ (v306), MESURÉ SUR LA PRODUCTION. La migration
 // juge les blocs d'avant contre ce monde-là (`new World({ avant: true })`) :
@@ -343,7 +356,12 @@ const EMPREINTE_AVANT_RELIEF = '81fbba5dcf224332176417875ace7d1723a3b561';
 // Les rues à la GTA : 540f2b43… → b05196a5…. Désarmées (MARGE_GTA à 0,4 dans
 // voirie.js, la recherche des bouches de métro d'avant), la branche rend
 // 540f2b43…, la constante de la v531, au bit près.
-const EMPREINTE_JOURNAL_V391 = 'b05196a5abe619bbc11c2ecffa2181a095e674b8e09cef3376f1fede37e387b8';
+// Carte ×3 : le journal est posé à des coordonnées fixes sur un relief qui a
+// changé (la casse non bornée, voir EMPREINTE_RELIEF) ; ce qu'il garde — les
+// blocs réappliqués par morceau, l'index qui n'en lit aucun (`lecturesDuJournal`,
+// témoin voisin) — se prouve par ce témoin-là et par ceux de la marche 8 → 9,
+// pas par ce hash. b05196a5… → 2156362e….
+const EMPREINTE_JOURNAL_V391 = '2156362e8224e482a43189dff601c41dcfd4e893f579f20ed819e411f1ac6dff';
 // v414 : les tabliers des villes engendrées s'allongent sous la voie (Rome est
 // dans les neuf lieux) : 1f385723… → 863d4203…. La preuve : le même code, les
 // allongements retirés de la liste des tabliers (`ext`), rend 1f385723…, la
@@ -426,7 +444,17 @@ const MM_ECART = 2.2;
 // 9fc2d321…, la constante de la v555, au bit près ; et le creusement de toute
 // l'emprise du métro, comparé colonne par colonne à `origin/main`, ne change
 // rien à moins de trois blocs du sol (10 921 colonnes changées, toutes dessous).
-const EMPREINTE_MORCEAUX_V357 = 'ed369fdb3743a2f970a00313be3299bde394dc529c9cbe686235ded95cbe8db4';
+// Carte ×3 (chantier carte-x3) : DÉCLARÉE, pas prouvée désarmée. Le socle
+// (mondes.js, 0,0625 km/bloc) l'a déjà changée seul (ed369fdb… → b9586e29…,
+// mesuré sur la branche du socle) : les neuf lieux tombent sur un autre relief.
+// Les vingt-neuf tracés retracés (routes.js, session C) la mènent à a388c6ed…, puis les deux aérodromes relogés
+// et la fusion du socle (monde-v587) à b426b3b4…, et les viaducs fondus
+// (ECART_VIADUC, routes.js) à 96224dd2…, et l'I-95 Sud entrée plein sud dans
+// Washington, sa tranchée hors norme déclarée (DEBLAIS_HORS_NORME), à 5717ce0e….
+// Il n'y a plus d'ancien code où « désarmer » rendrait la constante : les
+// routes d'avant sont en blocs de l'ancienne carte. Se remesure à la fusion
+// des autres chantiers (A, B) si l'un d'eux touche les neuf lieux.
+const EMPREINTE_MORCEAUX_V357 = '5717ce0e10bff27b0e0fafef52129e71942a020d46e46bf5aad7dffb553de376';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -1025,8 +1053,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('rue : un raccord d\'autoroute ne roule pas dans la voie d\'un anneau — il s\'arrête avant, il ne reste que des demi-tours',
       // les rues à la GTA élargissent les anneaux jusqu'aux portes : mesuré, 7
       // raccords et 26 blocs sur la v531, 9 et 41 ici (Québec rejoint ceux qui
-      // font demi-tour à la porte, Boston à cinq blocs) ; la barre de blocs ne bouge pas
-      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 10,
+      // font demi-tour à la porte, Boston à cinq blocs) ; la barre de blocs ne bouge pas.
+      // Carte ×3 (tracés retracés) : 11 raccords et 57 blocs, tous des demi-tours
+      // de porte — la barre de blocs tient, celle des raccords suit d'un cran.
+      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 12,
       b ? JSON.stringify({ raccords: b.raccords, touches: b.touches, blocs: b.blocs, pires: b.pires }) : `sonde : ${err}`);
     verifier('rue : la table des raccords courts est celle que la règle rend aujourd\'hui (un anneau qui bouge la fait remesurer)',
       !!b && b.ecarts.length === 0, b ? JSON.stringify(b.ecarts) : `sonde : ${err}`);
@@ -1573,13 +1603,19 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // seize, du Berliner Dom au palais d'Hiver.
     {
       const CIg = EM && EM.CIELS ? EM.CIELS : {};
-      const avant = new Map(W.CONF_V308.reperes.map((l) => [`${l.name}@${l.x},${l.z}`, l]));
+      // Le monde d'avant vit sur la carte d'avant (carte ×3, v588) : un repère
+      // s'y retrouve par son nom DANS SA VILLE, pas par ses coordonnées.
+      const VFg = await import('../src/villesmonde-v531.js').catch(() => null);
+      const villesAv = [...(W.CONF_V308.villes || W.CITIES).map((c) => ({ nom: c.name, x: c.x, z: c.z, r: c.r })),
+        ...((VFg && VFg.VILLES_MONDE) || VILLES_MONDE).map((f) => ({ nom: f.ancre.nom, x: f.ancre.x, z: f.ancre.z, r: f.rayon }))];
+      const villeAv = (x, z) => villesAv.find((q) => Math.hypot(x - q.x, z - q.z) < q.r);
+      const avant = new Map(W.CONF_V308.reperes.map((l) => [`${l.name}@${(villeAv(l.x, l.z) || {}).nom}`, l]));
       const gabaritDe = (f) => f.gabarit || (/6 \+ r, 0, OR/.test(String(f)) ? 'dome'
         : /poser\(1, 5, 0, OR\)/.test(String(f)) ? 'palaisLong' : null);
       const tours = [], vus = [];
       for (const lm of reperes) {
         const v = villeDe(lm.x, lm.z);
-        const a = avant.get(`${lm.name}@${lm.x},${lm.z}`);
+        const a = v && avant.get(`${lm.name}@${v.nom}`);
         if (!v || !a || !gabaritDe(a.build)) continue;
         let h = 0;
         const base = new Set(), couches = new Map(), pied = [1e9, -1e9, 1e9, -1e9];
@@ -1849,7 +1885,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   }
   const empreinte = createHash('sha1').update(vals.join(',')).digest('hex');
   verifier('le paysage est resté exactement le même',
-    empreinte === EMPREINTE_RELIEF, `${vals.length} colonnes · ${empreinte.slice(0, 12)}`);
+    empreinte === EMPREINTE_RELIEF, `${vals.length} colonnes · ${empreinte}`);
 
   // LE TÉMOIN QUI SURVEILLE LE TÉMOIN.
   //
@@ -1866,7 +1902,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   const empreinteHors = createHash('sha1').update(hors.join(',')).digest('hex');
   verifier('et hors des villes, le paysage n\'a pas bougé d\'un bloc',
     empreinteHors === EMPREINTE_HORS_VILLES,
-    `${hors.length} colonnes · ${empreinteHors.slice(0, 12)}`);
+    `${hors.length} colonnes · ${empreinteHors}`);
 
   // Ce que la zone d'influence NE DOIT PAS toucher : les endroits où les
   // enfants ont bâti. Si l'un d'eux tombe dedans un jour, ce témoin le dira
@@ -2186,6 +2222,96 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       : `${chezLesEnfants.n} colonnes · ${chezLesEnfants.total} déplacée(s)`
         + (chezLesEnfants.total ? ` · ${JSON.stringify(chezLesEnfants.bouge)}` : ''));
 
+  // LA CARTE ×3 (v588) : ON NE PEUT PAS BORNER LA CASSE, ALORS ON PROUVE LE
+  // SOL SOUS LES ENFANTS. La projection passe de 0,1875 à 0,0625 km par bloc :
+  // le relief se réécrit partout où la projection décide de la géographie, et
+  // les deux empreintes du haut de ce fichier changent. Ce qui garde
+  // l'invariant 1, c'est la règle de v199 et v242 : la carte d'avant est figée
+  // (`MONDES.terreV4`, et le monde entier qu'on y voyait, `CONF_V587`), et le
+  // sol autour du point d'apparition et sous Paris est IDENTIQUE, colonne par
+  // colonne, entre les deux — le relief brut ET le monde avec ses villes.
+  // Aucune mise à jour de valeur ne peut satisfaire ce témoin.
+  const carteX3 = await (async () => {
+    const W = await import('../src/world.js');
+    const M = await import('../src/mondes.js');
+    if (!M.MONDES.terreV4 || !W.CONF_V587) return { absent: true };
+    const P = M.positionDe('paris', 'terreV3');
+    const avant = new W.World({ v587: true }), apres = new W.World();
+    const bouge = [];
+    let n = 0, relief = 0, monde = 0;
+    for (const [nom, cx, cz, r] of [['apparition', 0, 0, 90], ['Paris', P.x, P.z, 200]]) {
+      for (let dx = -r; dx <= r; dx += 7) for (let dz = -r; dz <= r; dz += 7) {
+        const x = Math.round(cx + dx), z = Math.round(cz + dz);
+        n++;
+        const a = W.hauteurBase(x, z, 'terreV4'), b = W.hauteurBase(x, z, 'terre');
+        const ma = avant.terrainHeight(x, z), mb = apres.terrainHeight(x, z);
+        if (a !== b) { relief++; bouge.push({ ou: nom, x, z, avant: a, apres: b }); }
+        if (ma !== mb) { monde++; bouge.push({ ou: nom + ' (monde)', x, z, avant: ma, apres: mb }); }
+      }
+    }
+    return { n, relief, monde, bouge: bouge.slice(0, 5),
+      kmAvant: M.MONDES.terreV4.projection.kmParBloc, kmApres: M.MONDES.terre.projection.kmParBloc };
+  })();
+  verifier('carte ×3 : le sol n\'a pas bougé d\'un bloc autour du départ ni sous Paris (carte d\'avant figée contre carte neuve)',
+    !carteX3.absent && carteX3.n > 3000 && carteX3.relief === 0 && carteX3.monde === 0 && carteX3.kmApres < carteX3.kmAvant,
+    carteX3.absent ? 'la carte d\'avant la carte ×3 n\'est pas gardée'
+      : `${carteX3.n} colonnes · relief ${carteX3.relief} · monde ${carteX3.monde} déplacée(s) · ${carteX3.kmAvant} → ${carteX3.kmApres} km/bloc`
+        + (carteX3.bouge.length ? ` · ${JSON.stringify(carteX3.bouge)}` : ''));
+
+  // LA MARCHE 8 → 9 (v588) : chaque bloc suit sa ville. Pure, sur un document
+  // fabriqué tel que la v587 l'écrirait — c'est ce que le nuage lui donnera.
+  // New York (rectangle du plan) et Tokyo (disque du registre) partent du
+  // déplacement de leur ville, une maison d'un seul tenant ; Paris, le départ
+  // et les trois sanctuaires ne bougent pas ; un bloc posé après la date
+  // reste ; une marque d'import de Manhattan suit son origine ; la position
+  // et la fiche d'un garage suivent ; repasser la marche ne change rien.
+  const marcheX3 = await (async () => {
+    const W = await import('../src/world.js');
+    const M = await import('../src/mondes.js');
+    if (!W.migrerCarteX3 || !M.MONDES.terreV4) return { absent: true };
+    const t = W.DATE_CARTE_X3 - 86400000;
+    const nyA = M.positionDe('ny', 'terreV4'), ny = M.positionDe('ny');
+    const toA = M.positionDe('tokyo', 'terreV4'), to = M.positionDe('tokyo');
+    const P = M.positionDe('paris');
+    const doc = {
+      [`${nyA.x + 10},40,${nyA.z - 500}`]: [3, t, 1],
+      [`${nyA.x + 10},60,${nyA.z - 500}`]: [3, W.DATE_CARTE_X3 + 1000],
+      [`${P.x + 20},40,${P.z + 10}`]: [5, t],
+      '10,40,10': [6, t], '26,40,-14': [6, t], '-34,40,40': [6, t], [`${MAISON_X},${SOL_MAISON + 1},${MAISON_Z}`]: [6, t],
+      '@manhattan-v240:1,2,3': [3, t, nyA.x, nyA.z],
+    };
+    for (let dx = 0; dx < 7; dx++) for (let dz = 0; dz < 7; dz++) doc[`${toA.x + 3 + dx},40,${toA.z + 3 + dz}`] = [4, t];
+    const r1 = W.migrerCarteX3(doc), r2 = W.migrerCarteX3(r1.carte);
+    const c = r1.carte, cles = Object.keys(c);
+    const at = (x, z) => cles.filter((k) => { const [a, , b] = k.split(',').map(Number); return a === x && b === z; });
+    const nyNeuf = at(nyA.x + 10 + ny.x - nyA.x, nyA.z - 500 + ny.z - nyA.z);
+    const toits = cles.filter((k) => { const [a, , b] = k.split(',').map(Number);
+      return a >= to.x + 3 && a < to.x + 10 && b >= to.z + 3 && b < to.z + 10; });
+    const ys = new Set(toits.map((k) => k.split(',')[1]));
+    const pos = W.migrerPositionsCarteX3({ 24680: { x: toA.x + 5.5, y: 41, z: toA.z + 5.5, yaw: 0, pitch: 0, t } }).pos[24680];
+    const gar = { local: { a: { x: toA.x + 6, y: 40, z: toA.z + 6, l: 7, p: 7, places: [], voiture: null, t } } };
+    const g = W.suivreGaragesCarteX3(gar, { local: doc }).garages;
+    const f = g && Object.values(g.local || {})[0];
+    return {
+      deplaces: r1.deplaces,
+      ny: nyNeuf.length === 1 && !c[`${nyA.x + 10},40,${nyA.z - 500}`] && !!c[`${nyA.x + 10},60,${nyA.z - 500}`],
+      tokyo: toits.length === 49 && ys.size === 1,
+      fixes: [`${P.x + 20},40,${P.z + 10}`, '10,40,10', '26,40,-14', '-34,40,40', `${MAISON_X},${SOL_MAISON + 1},${MAISON_Z}`]
+        .every((k) => c[k] && c[k][1] === t),
+      marque: c['@manhattan-v240:1,2,3'] && [c['@manhattan-v240:1,2,3'][2] - ny.x, c['@manhattan-v240:1,2,3'][3] - ny.z].join(),
+      pos: pos && [pos.x - to.x, pos.z - to.z].join(),
+      garage: f && [f.x - to.x, f.z - to.z].join(),
+      idempotent: r2.deplaces === 0 && Object.keys(r2.carte).sort().join('|') === cles.sort().join('|'),
+      bouge: (nyA.x !== ny.x || nyA.z !== ny.z) && (toA.x !== to.x || toA.z !== to.z),
+    };
+  })();
+  verifier('carte ×3 : un bloc de New York ou de Tokyo d\'avant suit sa ville, d\'un seul tenant ; Paris, le départ et les sanctuaires restent',
+    !marcheX3.absent && marcheX3.bouge && marcheX3.ny && marcheX3.tokyo && marcheX3.fixes,
+    marcheX3.absent ? 'la marche 8 → 9 n\'existe pas' : JSON.stringify(marcheX3));
+  verifier('carte ×3 : la marque d\'import, la position et la fiche du garage suivent ; repasser la marche ne change rien',
+    !marcheX3.absent && marcheX3.marque === '0,0' && marcheX3.pos === '5.5,5.5' && marcheX3.garage === '6,6' && marcheX3.idempotent,
+    marcheX3.absent ? 'la marche 8 → 9 n\'existe pas' : JSON.stringify(marcheX3));
+
   // LES BLOCS SUIVENT LEUR VILLE (v242).
   //
   // La migration de v199 ne déplaçait les blocs qu'en hauteur : une maison
@@ -2203,8 +2329,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const M = await import('../src/mondes.js');
     const { BORNES } = await import('../src/manhattan-plan.js');
     if (!W.migrerBlocsCarte3 || !M.MONDES.terreV2) return { absent: true };
-    const nyA = M.positionDe('ny', 'terreV2'), ny = M.positionDe('ny');
-    const liA = M.positionDe('lille', 'terreV2'), li = M.positionDe('lille');
+    const nyA = M.positionDe('ny', 'terreV2'), ny = M.positionDe('ny', M.MONDES.terreV3 ? 'terreV3' : 'terre');
+    const liA = M.positionDe('lille', 'terreV2'), li = M.positionDe('lille', M.MONDES.terreV3 ? 'terreV3' : 'terre');
     const t = Date.UTC(2026, 7, 1);
     const doc = { local: {
       [`${nyA.x + 10},40,${nyA.z - 500}`]: [3, t, 1],       // Manhattan, ancienne origine
@@ -2603,8 +2729,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // le x d'une longitude, par dichotomie : `cielDe` est croissant en x
     const point = (lat, lon) => {
       const z = Math.round(zDeLatitude(lat));
-      let a = -80000, b = 80000;
-      for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+      let a = -400000, b = 400000;
+      for (let k = 0; k < 50; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
       return { x: Math.round(a), z };
     };
     const lire = (sites) => {
@@ -2663,8 +2789,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     sans.conf = { ...W.CONF_NEUF, climat: false, clairieres: false };
     const point = (lat, lon) => {
       const z = Math.round(zDeLatitude(lat));
-      let a = -80000, b = 80000;
-      for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+      let a = -400000, b = 400000;
+      for (let k = 0; k < 50; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
       return { x: Math.round(a), z };
     };
     const sol = (q) => q !== BLOCK.AIR && q !== BLOCK.WATER && q !== BLOCK.LOG && q !== BLOCK.BIRCH && q !== BLOCK.LEAVES;
@@ -2706,8 +2832,12 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const taiga = lire([[62, 125], [52, -72], [60, 75], [63, 27]]);
     // LES STEPPES (v347) : le Kazakhstan, la Mongolie, le Montana, la Patagonie
     const steppe = lire([[50, 65], [47, 105], [47, -107], [-45, -68]]);
-    // LES TROPIQUES HUMIDES (v349) : l'Amazonie, le Congo, Bornéo
-    const tropiques = lire([[-5, -62], [0, 22], [1, 114]]);
+    // LES TROPIQUES HUMIDES (v349) : l'Amazonie, le Congo, Bornéo. Trois points
+    // ne suffisent plus à la carte ×3 : le monde SANS la règle y a parfois sa
+    // forêt tempérée la plus dense (le bruit de forêt vaut 1 au point du Congo
+    // et de Bornéo) et le rapport tombe à 1,3 au point, 3 à 13 ailleurs ; on
+    // lit neuf points, la moyenne que la règle promet
+    const tropiques = lire([[-5, -62], [-3, -60], [-8, -65], [-4, -55], [0, 22], [2, 24], [-1, 20], [1, 114], [0, 112]]);
     // LE CLIMAT MÉDITERRANÉEN (v469) : l'Andalousie, la Toscane, le
     // Péloponnèse, la vallée centrale de Californie
     const mediterranee = lire([[37.6, -4.2], [43.1, 11.4], [37.5, 22.3], [37.2, -120.3]]);
@@ -2807,12 +2937,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const avec = new W.World();
     const sans = new W.World();
     sans.conf = { ...W.CONF_NEUF, clairieres: false };
+    // la fenêtre de tirage suit l'échelle de la carte (carte ×3), comme
+    // `sonde-rouler-foret.cjs` : en blocs figés, elle n'atteignait plus les
+    // tropiques ni la savane
+    const { MONDES } = await import('../src/mondes.js');
+    const E = 0.1875 / MONDES.terre.projection.kmParBloc;
     const r = {};
     let g = 31; const rnd = () => ((g = (Math.imul(g, 1103515245) + 12345) >>> 0) / 2 ** 32);
     const cibles = { foret: 0, taiga: 0, tropiques: 0, mediterranee: 0, steppe: 0, savane: 0, toundra: 0 };
     for (const k of Object.keys(cibles)) r[k] = { zones: 0, avec: 0, sans: 0, ajoutes: 0, massif: 0, massifChanges: 0 };
     for (let essai = 0; essai < 60000 && Object.values(r).some((o) => o.zones < 6); essai++) {
-      const x0 = Math.round(-55000 + rnd() * 110000), z0 = Math.round(-16000 + rnd() * 56000);
+      const x0 = Math.round((-55000 + rnd() * 110000) * E), z0 = Math.round((-16000 + rnd() * 56000) * E);
       const cl = avec.climat(x0, z0);
       const brut = sans.foret(x0, z0);   // le bruit de forêt, sans les bosquets
       const k = cl === null ? (brut > 0.55 ? 'foret' : null) : cl;
@@ -3209,7 +3344,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     for (let dx = 0; dx < 7; dx++) for (let dz = 0; dz < 7; dz++) c3[`${ro.x + 3 + dx},40,${ro.z + 3 + dz}`] = [4, t3];
     const g3 = { local: { a: { x: ro.x + 6, y: 40, z: ro.z + 6, l: 7, p: 7, places: [], voiture: null, t: 0 } } };
     const c3a = W.migrerChaineCarte({ local: c3 }, g3);
-    const c3o = W.migrerChaineCarte(W.migrerChaineCarte({ local: c3 }).edits, g3);
+    // l'orpheline : les blocs déjà passés par la carte 3, la fiche non (la
+    // carte ×3 les emmène ensuite ensemble ; une fiche orpheline de DEUX
+    // marches n'est pas suivie — dette déclarée, docs/carte-x3-A.md)
+    const c3o = W.migrerChaineCarte(W.migrerBlocsCarte3({ local: c3 }).tout, g3);
     // 4. le stockage
     const memoire = new Map([['web-minecraft-carte-v1', '7'], ['web-minecraft-garages-v1', JSON.stringify(garages)]]);
     const avantLS = globalThis.localStorage;
@@ -3220,7 +3358,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       W.migrerLesBlocs(() => tout, (x) => { tout = x; });
       const gs = JSON.parse(memoire.get('web-minecraft-garages-v1')).local;
       const f = Object.values(gs).find((x) => x.voiture);
-      stock = { ou: f && [f.x, f.y, f.z], version: memoire.get('web-minecraft-carte-v1'), n: Object.keys(gs).length };
+      stock = { ou: f && [f.x, f.y, f.z], version: memoire.get('web-minecraft-carte-v1'), attendu: String(W.CARTE_VERSION), n: Object.keys(gs).length };
     } finally { if (avantLS === undefined) delete globalThis.localStorage; else globalThis.localStorage = avantLS; }
     return { av: lue(avant), or: lue(orph), deux: deux.garages === avant.garages && deux.deplacees === 0,
       vide: seuls.garages === undefined, c3: [Object.keys(c3a.garages.local)[0], Object.keys(c3o.garages.local)[0], c3a.deplacees], stock };
@@ -3236,7 +3374,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
   verifier('🅿️ et un garage de Rome suit la carte 3 ; et l\'appareil qui a migré sans la fiche la retrouve à la migration de stockage',
     !garagesCarte.absent && garagesCarte.c3[2] >= 1 && garagesCarte.c3[0] === garagesCarte.c3[1] && garagesCarte.c3[0] !== 'a'
       && garagesCarte.stock && garagesCarte.stock.ou && garagesCarte.stock.ou.join() === garagesCarte.av.ou.join()
-      && garagesCarte.stock.version === '8' && garagesCarte.stock.n === 2,
+      && garagesCarte.stock.version === garagesCarte.stock.attendu && garagesCarte.stock.n === 2,
     garagesCarte.absent ? 'la fiche d\'un garage ne suit pas ses blocs' : JSON.stringify({ c3: garagesCarte.c3, stock: garagesCarte.stock }));
 
   // --- LONDRES À LA RÈGLE DU KIT (v339) : la ville d'avant reste sous ce ----
@@ -3265,7 +3403,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const L = N[ancre], t = W[date] - 86400000;
     const nf = new W.World();
     const av = new W.World({ v308: true });   // les villes d'avant le kit partout
-    const bat = (M, x, z, f) => (M[batir].length >= 4 ? M[batir](x, z, nf.terrainHeight(x, z), f) : M[batir](x, z, f));
+    // CARTE ×3 : la copie figée et le monde d'avant vivent à l'adresse de la
+    // carte d'avant (`terreV4`) ; la ville d'aujourd'hui a bougé d'un seul
+    // tenant. L'ancienne ville sous une colonne d'aujourd'hui se lit donc
+    // translatée de ce vecteur — ce que le jeu fait (`ecartFige`).
+    const dx = A[ancre] ? L.x - A[ancre].x : 0, dz = A[ancre] ? L.z - A[ancre].z : 0;
+    const a = (f) => (x, z) => f(x - dx, z - dz);
+    const solA = a(A[sol]), libreA = a(A[libre]);
+    const bat = (M, x, z, f) => {
+      const [bx, bz] = M === A ? [x - dx, z - dz] : [x, z];
+      return M[batir].length >= 4 ? M[batir](bx, bz, nf.terrainHeight(x, z), f) : M[batir](bx, bz, f);
+    };
     // une ancienne rue que la ville neuve bâtit, et un ancien lot qu'elle fait rue
     let rueBatie = null, lotRue = null;
     // cent vingt-huit directions : à Washington, les rues à la GTA ne laissent
@@ -3280,13 +3428,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // et rien n'y est posé par-dessus dans la ville d'avant — un monument se
       // pose APRÈS les colonnes (Lille, v368 : la Vieille Bourse à côté)
       const degage = () => croix((xx, zz) => {
-        const g = av.terrainHeight(xx, zz);
-        for (let y = g + 1; y <= g + 6; y++) if (av.getBlock(xx, y, zz) !== 0) return false;
+        const g = av.terrainHeight(xx - dx, zz - dz);
+        for (let y = g + 1; y <= g + 6; y++) if (av.getBlock(xx - dx, y, zz - dz) !== 0) return false;
         return true;
       });
-      if (!rueBatie && croix((xx, zz) => A[sol](xx, zz) === CITY_BLOCK.ASPHALT)
+      if (!rueBatie && croix((xx, zz) => solA(xx, zz) === CITY_BLOCK.ASPHALT)
         && N[libre](x, z) && mur() && degage()) rueBatie = [x, z];
-      if (!lotRue && voisin(A[libre]) && voisin((xx, zz) => N[sol](xx, zz) !== null)) lotRue = [x, z];
+      if (!lotRue && voisin(libreA) && voisin((xx, zz) => N[sol](xx, zz) !== null)) lotRue = [x, z];
     }
     if (!rueBatie || !lotRue) return { absent: false, introuvable: true, rueBatie, lotRue };
     const monde = (carte) => {
@@ -3320,8 +3468,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const toit = (() => { let y0 = gc; bat(A, cx, cz, (dy) => { y0 = Math.max(y0, gc + dy - 1); }); return y0; })();
     const wc = monde({ [`${cx},${toit + 1},${cz}`]: [8, t] });
     const porte = wc.getBlock(cx, toit, cz) !== 0;
-    return { absent: false, enferme, batiNeuf, porte, toit, gc, rueBatie, lotRue };
+    return { absent: false, enferme, batiNeuf, porte, toit, gc, rueBatie, lotRue, dx, dz };
   };
+  const figees = {};
   for (const [ville, args] of [
     ['Londres', ['DATE_RUES_LONDRES', 'londres-v332.js', 'londres.js', 'LONDRES', 'solLondres', 'lotLondresLibre', 'batirColonneLondres']],
     ['Nice', ['DATE_RUES_NICE', 'nice-v340.js', 'nice.js', 'NICE', 'solNice', 'lotNiceLibre', 'batirColonneNice']],
@@ -3329,13 +3478,71 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     ['Lille', ['DATE_RUES_LILLE', 'lille-v344.js', 'lille.js', 'LILLE', 'solLille', 'lotLilleLibre', 'batirColonneLille']],
     ['Washington', ['DATE_RUES_WASHINGTON', 'washington-v367.js', 'washington.js', 'WASHINGTON', 'solWashington', 'lotWashingtonLibre', 'batirColonneWashington']],
   ]) {
-    const r = await figee(...args);
+    const r = figees[ville] = await figee(...args);
     verifier(`à ${ville}, une maison posée sur une ancienne rue n'est pas enfermée dans un immeuble neuf`,
       !r.absent && !r.introuvable && r.enferme === 0 && r.batiNeuf > 0,
       r.absent ? `pas de date des rues de ${ville}` : JSON.stringify(r));
     verifier(`et une cabane posée sur un ancien toit de ${ville} garde son toit`,
       !r.absent && !r.introuvable && r.porte,
       r.absent ? `pas de date des rues de ${ville}` : JSON.stringify(r));
+  }
+
+  // --- CARTE ×3 : LA MAISON EMMENÉE RESTE DANS SON ANCIENNE RUE ---------------
+  //
+  // Une maison posée à Londres avant la v587, sur une rue d'avant le kit (v339)
+  // que la ville neuve bâtit, à l'adresse de la carte d'avant (`terreV4`). La
+  // marche 8 → 9 l'emmène avec Londres et lui donne la date de la carte ×3 ;
+  // sa date d'origine part en 4ᵉ élément de l'entrée. Reçue du nuage
+  // (`mergeEdits`), elle doit être à sa nouvelle adresse, et toujours dans
+  // l'ancienne rue : les gardes lisent la date d'origine, et le monde lit la
+  // ville figée translatée. Sans le 4ᵉ élément, la même maison est enfermée
+  // dans la façade neuve — c'est ce qui prouve que le champ porte la garde. Et
+  // le champ survit à l'export du journal. Rouge sur l'ancien code : la marche
+  // jette la date d'origine.
+  {
+    const W = await import('../src/world.js');
+    const r = figees.Londres;
+    let res = { absent: !W.DATE_CARTE_X3 || !W.migrerCarteX3 || !r || r.absent || r.introuvable };
+    if (!res.absent) {
+      const [nx, nz] = r.rueBatie, ax = nx - r.dx, az = nz - r.dz;
+      const vieux = new W.World({ v587: true }), nf = new W.World();
+      const ga = vieux.terrainHeight(ax, az), gn = nf.terrainHeight(nx, nz);
+      const tPose = W.DATE_RUES_LONDRES - 86400000;
+      const doc = {};
+      for (let dy = 1; dy <= 3; dy++) doc[`${ax},${ga + dy},${az}`] = [5, tPose, 0];
+      const m = W.migrerCarteX3(doc).carte;
+      // Reçue du nuage : la fusion l'écrit au journal, et la page se relance
+      // (v189) — c'est le journal rechargé (`loadEdits`) qui dessine le monde.
+      const lire = (carte) => {
+        const recu = new W.World();
+        recu.mergeEdits(carte);
+        const journal = JSON.stringify({ local: recu.exportEdits() });
+        const avantLS = globalThis.localStorage;
+        globalThis.localStorage = { getItem: (k) => (k === W.World.STORAGE_KEY ? journal : null), setItem() {}, removeItem() {} };
+        let w;
+        try { w = new W.World(); w.loadEdits(); } finally {
+          if (avantLS === undefined) delete globalThis.localStorage; else globalThis.localStorage = avantLS;
+        }
+        let enferme = 0, ici = 0;
+        for (let dy = 1; dy <= 3; dy++) if (w.getBlock(nx, gn + dy, nz) === 5) ici++;
+        for (const [ddx, ddz] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const g = Math.max(gn, nf.terrainHeight(nx + ddx, nz + ddz));
+          for (let y = g + 1; y <= gn + 6; y++) {
+            if (!(ddx === 0 && ddz === 0 && y <= gn + 3) && w.getBlock(nx + ddx, y, nz + ddz) !== 0) enferme++;
+          }
+        }
+        return { w, enferme, ici };
+      };
+      const avec = lire(m);
+      const sans = lire(Object.fromEntries(Object.entries(m).map(([k, e]) => [k, e.slice(0, 3)])));
+      const e0 = Object.values(m)[0];
+      const exp = Object.values(avec.w.exportEdits())[0];
+      res = { absent: false, ici: avec.ici, enferme: avec.enferme, sansOrigine: sans.enferme, entree: e0, export: exp,
+        date: e0 && e0[1] === W.DATE_CARTE_X3, origine: e0 && e0[3] === tPose, garde: exp && exp[3] === tPose };
+    }
+    verifier('carte ×3 : une maison posée sur une ancienne rue de Londres avant la v587, emmenée par la marche, est dans l\'ancienne rue à sa nouvelle adresse',
+      !res.absent && res.ici === 3 && res.enferme === 0 && res.sansOrigine > 0 && res.date && res.origine && res.garde,
+      res.absent ? 'la marche 8 → 9 ou la rue de Londres manque' : JSON.stringify(res));
   }
 
   // --- LA TRAME GÉNÉRIQUE QUITTE LONDRES (v447), SAUF SOUS CE QU'UN ENFANT --
@@ -3436,11 +3643,17 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       if (Math.abs(hOut - hIn) / 15 > 1) raides++;
     }
     if (!W.migrerFonduDoux || !VM.FONDU_PORTEE) return { absent: true, raides, rayons };
-    const v8 = new W.World({ v308: true }), nf = new W.World();
+    // Ce qu'on juge ici, c'est le monde de la v309 contre celui de la v308 :
+    // depuis la carte ×3 (v588), tous deux vivent sur la carte d'avant, aux
+    // adresses que les fiches figées leur donnent (`villesmonde-v531.js`), et
+    // le monde de la production d'alors est `CONF_V587`.
+    const VF = await import('../src/villesmonde-v531.js');
+    const VILLES_AV = VF.VILLES_MONDE;
+    const v8 = new W.World({ v308: true }), nf = W.CONF_V587 ? new W.World({ v587: true }) : new W.World();
     // 2. le monde de la v308, contre la production
     const rel = [];
     for (const cle of ['salvador', 'jakarta', 'bari', 'busan', 'oslo']) {
-      const f = VILLES_MONDE.find((v) => v.cle === cle);
+      const f = VILLES_AV.find((v) => v.cle === cle);
       for (let x = Math.round(f.ancre.x - f.rayon - 80); x <= f.ancre.x + f.rayon + 80; x += 3)
         for (let z = Math.round(f.ancre.z - f.rayon - 80); z <= f.ancre.z + f.rayon + 80; z += 3) rel.push(v8.terrainHeight(x, z));
     }
@@ -3448,19 +3661,19 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // 3. seulement abaisser, seulement dans la couronne
     const fautes = [];
     let abaissees = 0, pire = 0;
-    for (const f of VILLES_MONDE) for (let k = 0; k < 90; k++) {
+    for (const f of VILLES_AV) for (let k = 0; k < 90; k++) {
       const a = k * 2.399, d = f.rayon - 30 + (k * 7) % (VM.FONDU_PORTEE + 60);
       const x = Math.round(f.ancre.x + Math.cos(a) * d), z = Math.round(f.ancre.z + Math.sin(a) * d);
       const h8 = v8.terrainHeight(x, z), h9 = nf.terrainHeight(x, z);
       if (h9 === h8) continue;
       abaissees++; pire = Math.max(pire, h8 - h9);
       const dd = Math.hypot(x - f.ancre.x, z - f.ancre.z);
-      if (h9 > h8 || h8 - h9 > 24 || !VM.aPorteeDuFondu(x, z) || VILLES_MONDE.some((g) => Math.hypot(x - g.ancre.x, z - g.ancre.z) <= g.rayon)) {
+      if (h9 > h8 || h8 - h9 > 24 || !VF.aPorteeDuFondu(x, z) || VILLES_AV.some((g) => Math.hypot(x - g.ancre.x, z - g.ancre.z) <= g.rayon)) {
         if (fautes.length < 4) fautes.push({ x, z, h8, h9, dd: Math.round(dd - f.rayon) });
       }
     }
     // 4. la marche 6 → 7, sur un document fabriqué
-    const sal = VILLES_MONDE.find((v) => v.cle === 'salvador');
+    const sal = VILLES_AV.find((v) => v.cle === 'salvador');
     let site = null;
     for (let k = 0; k < 64 && !site; k++) {
       const a = 2 * Math.PI * k / 64;
@@ -3646,9 +3859,21 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const t0 = Date.now();
     const r = await mesurer(require('path').resolve(__dirname, '..'));
     const st = r.stations;
-    const rates = st.filter((x) => !(x.joueur && x.joueur.arrive && x.retour && x.retour.arrive));
+    // UNE STATION DÉCLARÉE (carte ×3) : la bouche de Pentagon sort dans la
+    // marge de la zone, où le relief n'est pas celui de Washington mais celui
+    // de la Terre ; à la carte ×3 une colline y monte de dix blocs le long de
+    // l'escalier (3 → 13, mesuré ; 3 → 6 sur la v590), et l'escalier finit
+    // sous la pente. Le remède (choisir la bouche contre le vrai relief) est
+    // une dette de `TASKS.md`. Déclarée nommément : si elle repasse, la
+    // déclaration rougit, et si une autre tombe, le témoin aussi.
+    const DECLAREES = ['Pentagon'];
+    const ratesToutes = st.filter((x) => !(x.joueur && x.joueur.arrive && x.retour && x.retour.arrive));
+    const rates = ratesToutes.filter((x) => !DECLAREES.includes(x.nom));
+    verifier('les stations déclarées sans chemin le sont encore (sinon on retire la déclaration)',
+      DECLAREES.every((n) => ratesToutes.some((x) => x.nom === n)),
+      `déclarées : ${DECLAREES.join(', ')} ; ratées : ${ratesToutes.map((x) => x.nom).join(', ') || 'aucune'}`);
     // trente-six depuis la v555 : Hôtel de Ville a retrouvé sa bouche
-    verifier('de la rue au quai et du quai à la rue, le vrai joueur passe dans les trente-six stations',
+    verifier('de la rue au quai et du quai à la rue, le vrai joueur passe dans les trente-six stations (Pentagon déclarée)',
       st.length === 36 && rates.length === 0,
       `${st.length - rates.length}/${st.length} stations ; ratées : ${rates.map((x) => `${x.ville} ${x.nom}${x.arrive ? (x.joueur && x.joueur.arrive ? ' (remontée ' + JSON.stringify(x.retour.bute) + ')' : ' (descente ' + JSON.stringify(x.joueur.bute) + ')') : ' (pas de chemin)'}`).join(', ') || 'aucune'}, ${Date.now() - t0} ms`);
     const bas = st.filter((x) => x.arrive && (x.hautMin < 3 || x.sous4 > 8 || x.sautsBas > 0 || x.sautsRetour > 2));
@@ -4443,7 +4668,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     const e = await empreinteJournal('../src');
     verifier('les blocs de l\'enfant sont réappliqués au bloc près (journal fabriqué de quarante mille)',
       e.empreinte === EMPREINTE_JOURNAL_V391 && e.morceaux === 362,
-      `${e.empreinte.slice(0, 16)} pour ${EMPREINTE_JOURNAL_V391.slice(0, 16)}, ${e.morceaux} morceaux`);
+      `${e.empreinte} pour ${EMPREINTE_JOURNAL_V391.slice(0, 16)}, ${e.morceaux} morceaux`);
   }
 
   // --- LE SOL CONTINU (v297) : le rendu, le contact et la couture lisent la ---
@@ -4499,7 +4724,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       }
       return { cellules: t.cellulesSol, couvertes, sommetsSurface, fautes, ecarts, centres, exacts, milieux, moyennes };
     };
-    const a1 = mesurer(-110, -330), colline = mesurer(400, -600);
+    // le site de campagne se repointe à la carte ×3 : (−110, −330) n'a plus de
+    // colonne couverte (relief et villes déplacés) ; (−152, −328) en a 256,
+    // trouvé à la sonde dans le voisinage
+    const a1 = mesurer(-152, -328), colline = mesurer(400, -600);
     verifier('hors des villes, le sol naturel est une surface continue, et le cube qu\'elle remplace n\'est plus dessiné',
       a1.cellules > 200 && colline.cellules > 200 && a1.fautes === 0 && colline.fautes === 0,
       `campagne ${a1.cellules} cellules · ${a1.couvertes} colonnes couvertes · ${a1.fautes} face(s) voxel de trop — colline ${colline.cellules} · ${colline.couvertes} · ${colline.fautes}`);
@@ -4512,7 +4740,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     // sur une colonne d'herbe HORS de l'A1 (le via de la v300 a mis le
     // couloir sur l'ancienne, (−108, −328) : posé sur une chaussée, rien ne
     // change, et le témoin rougissait sur du code sain)
-    let X = -60, Z = -328;
+    let X = -160, Z = -324;
     while (X < 0 && (w.routeEn(X, Z) || w.solContinu(X + 0.5, Z + 0.5) === null)) X++;
     const h = w.terrainHeight(X, Z);
     const avant = w.solContinu(X + 0.5, Z + 0.5), couvAvant = w.blocSousLaSurface(X, h, Z);
@@ -4526,8 +4754,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       avant === h + 1 && couvAvant && apres === null && !couvApres && cellulesApres < a1.cellules && retrait === h + 1 && cellulesRetrait === a1.cellules,
       `surface ${avant} → posé ${apres} (${cellulesApres} cellules) → retiré ${retrait} (${cellulesRetrait})`);
     w.sansSolContinu = true;
-    const voxel = buildChunkTampons(w, Math.floor(-110 / CHUNK), Math.floor(-330 / CHUNK));
-    const voxelContact = w.solContinu(-109.5, -329.5);
+    const voxel = buildChunkTampons(w, Math.floor(-152 / CHUNK), Math.floor(-328 / CHUNK));
+    const voxelContact = w.solContinu(-151.5, -327.5);
     w.sansSolContinu = false;
     verifier('le voxel d\'avant se rejoue à la demande (?solcontinu=0), pour mesurer — pas une cellule, le voxel décide',
       voxel.cellulesSol === 0 && voxelContact === null, `${voxel.cellulesSol} cellule(s), contact ${voxelContact}`);
@@ -4579,7 +4807,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       // chaussée est un bloc au-dessus de l'herbe, et le contact rend `null`
       // en ville — le voxel décide, marche comprise
       const f = VILLES_MONDE.find((v) => (v.cle || v.nom) === 'vilnius');
-      const a = 3.19, ux = Math.cos(a), uz = Math.sin(a);
+      // angle repointé à la carte ×3 (3,19 tombait sur un rayon où le relief a bougé) :
+      // 2,62 est au milieu d'une plage d'angles où le relief change d'un bloc au seuil
+      const a = 2.62, ux = Math.cos(a), uz = Math.sin(a);
       let nuls = 0, saut = 0, prev = null, pas = 0;
       // de r − 2 (le raccord : deux rangs de part et d'autre du ressaut ; en deçà
       // la rue est à plat et reste en voxel, à la même cote) à r + 4
@@ -4726,7 +4956,7 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         `${aller.length} pas · marche max ${marche.toFixed(3)} bloc · ${continu ? `écart au rail ${ecart.toFixed(4)}` : 'pas de cote continue (code d\'avant la v302)'}`);
       // 2. sur quatre cents blocs de ligne : les blocs de la plate-forme, les
       //    rubans du mailleur (quatre files par pas), et la surface à la cote
-      let obs = 0, planches = 0, colonnes = 0, surface = 0, ecartSurf = 0, tranchee = 0, tranchJuste = 0, sansRail = 0, pas = 0, talus = 0, falaise = 0;
+      let obs = 0, planches = 0, colonnes = 0, surface = 0, ecartSurf = 0, tranchee = 0, tranchJuste = 0, sansRail = 0, pas = 0, talus = 0, falaise = 0, sousLEau = 0;
       // UNE FALAISE RESTE UNE FALAISE (v297) : au bord d'une paroi naturelle
       // (le relief saute de huit blocs ou plus autour de la colonne — la rive
       // d'un lac), le talus descend d'un côté et monte de l'autre, la cellule
@@ -4741,7 +4971,19 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         }
         return haut - bas >= 8;
       };
-      for (let k = 300; k < 700; k++) {
+      // LA FENÊTRE SE CHERCHE (carte ×3) : écrite en dur (k 300 à 700), elle
+      // ne tombait plus sur les tranchées quand la ligne a triplé. On prend
+      // les quatre cents pas où le profil s'écarte le plus du relief.
+      let k0 = 300;
+      {
+        const ec = []; for (let k = 0; k < L; k++) ec.push(Math.abs(T.coteContinue(seg, k / L) - (w.terrainHeight(Math.round(seg.x0 + ux * k), Math.round(seg.z0 + uz * k)) + 1)) >= 2 ? 1 : 0);
+        // … HORS DE L'EAU : un remblai qui traverse un lac n'est pas une
+        // tranchée, le sol continu passe sous la nappe et le voxel décide (la
+        // fenêtre la plus écartée tombait sur un lac près de Lyon, mesuré)
+        const sec = []; for (let k = 0; k < L; k++) sec.push(w.terrainHeight(Math.round(seg.x0 + ux * k), Math.round(seg.z0 + uz * k)) > 30 ? 1 : 0);
+        let best = -1; for (let k = 0; k + 400 < L; k += 20) { let s = 0, mouille = 0; for (let j = k; j < k + 400; j++) { s += ec[j]; if (!sec[j]) mouille++; } if (!mouille && s > best) { best = s; k0 = k; } }
+      }
+      for (let k = k0; k < k0 + 400; k++) {
         const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
         pas++;
         if (continu) {
@@ -4768,6 +5010,9 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
           }
           const sc = w.solContinu(x + 0.5, z + 0.5);
           if (sc !== null) { surface++; ecartSurf = Math.max(ecartSurf, Math.abs(sc - cote)); }
+          // une colonne sous l'eau n'est ni tranchée ni remblai : le sol continu
+          // passe sous la nappe et le voxel décide (on la compte à part)
+          if (w.terrainHeight(x, z) <= 30) { sousLEau++; continue; }
           if (v.piece !== 'talus' && Math.abs(cote - (w.terrainHeight(x, z) + 1)) >= 2) {
             if (auBordDUneFalaise(x, z)) { falaise++; continue; }
             tranchee++; if (sc !== null && Math.abs(sc - cote) < 1e-6) tranchJuste++;
@@ -4782,8 +5027,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         // à la moitié : la rampe du viaduc (v467) relève la voie de deux blocs
         // au plus avant une rivière, et une tranchée de deux blocs y devient une
         // tranchée d'un bloc — 240 → 170 colonnes dans cette fenêtre, mesuré.
-        continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 100 && tranchJuste === tranchee,
-        `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+        // Carte ×3 : le relief est trois fois plus étalé sous une pente de voie
+        // inchangée, la voie le suit de plus près et les tranchées de deux
+        // blocs se raréfient — la meilleure fenêtre sèche de Paris–Lyon en
+        // porte 46 colonnes (mesuré, sonde `fen.mjs` du scratchpad, toutes les
+        // lignes : 0 à 45 pas d'axe). La garde passe à 30, la moitié.
+        continu && colonnes > 3000 && talus > 200 && surface >= colonnes * 0.85 && ecartSurf < 1e-6 && tranchee > 30 && tranchJuste === tranchee,
+        `${surface} colonnes de surface sur ${colonnes} (${talus} de talus), écart max à la cote ${ecartSurf.toFixed(4)} · en tranchée ou remblai de deux blocs et plus : ${tranchJuste}/${tranchee}, et ${falaise} au bord d'une falaise, ${sousLEau} sous l'eau (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
     }
 
     // LE VIADUC DE LA MANCHE (v467). Sur l'eau, la voie était une chaussée de
@@ -4803,9 +5053,18 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const L = seg.longueur, ux = (seg.x1 - seg.x0) / L, uz = (seg.z1 - seg.z0) / L, nx = -uz, nz = ux;
       const neuf = !!(T.viaducs && T.surViaduc);
       let colonnes = 0, eau = 0, digue = 0, piles = 0, pas = 0, sansTablier = 0, sansContact = 0, ecartContact = 0, bas = Infinity;
-      for (let k = 290; k < 530; k++) {
+      // LA MANCHE SE CHERCHE (carte ×3) : la plus longue suite de mer sous
+      // l'axe, jamais une fenêtre écrite en dur qui ne suit pas l'échelle.
+      let m0 = 290, m1 = 530;
+      { let run = 0, st = 0, br = 0; for (let k = 0; k < L; k++) { if (w.terrainHeight(Math.round(seg.x0 + ux * k), Math.round(seg.z0 + uz * k)) < 30) { if (!run) st = k; run++; if (run > br) { br = run; m0 = st; m1 = st + run; } } else run = 0; } }
+      for (let k = m0; k < m1; k++) {
         const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
         if (w.terrainHeight(Math.round(ax), Math.round(az)) >= 30) continue;   // un îlot : pas la mer
+        // UNE RIVE N'EST PAS UN PONT (v539) : au dernier pas de la mer, le point
+        // d'où l'on lit le contact peut être sur la culée, que le sol porte et
+        // que `voieEn` ne déclare pas ouvrage ; la fenêtre cherchée à la carte
+        // ×3 finit pile là (pas 1761 de l'Eurostar, mesuré)
+        { const vv = neuf ? T.voieEn(ax + ux * 0.5, az + uz * 0.5) : null; if (vv && !vv.ouvrage) continue; }
         pas++;
         const cote = T.coteContinue(seg, k / L);
         bas = Math.min(bas, cote);
@@ -4990,13 +5249,16 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const r = await tab.evaluate(async () => {
         const { Horizon } = await import('./src/horizon.js');
         const VM = await import('./src/villesmonde.js');
+        const { positionDe } = await import('./src/mondes.js');
+        const NY = positionDe('ny');
         const w = window.__game.world;
         const rome = VM.VILLES_MONDE.find((f) => f.cle === 'rome');
         const villes = w.conf.villes;
         const ou = {
           paris: villes.find((c) => c.key === 'paris'),
           londres: villes.find((c) => c.key === 'londres'),
-          ny: { x: -20045, z: 5030, r: 152 },
+          // demandé au registre (carte ×3) : écrit en dur, il visait la mer
+          ny: { ...NY, r: 152 },
           rome: { x: rome.ancre.x, z: rome.ancre.z, r: rome.rayon },
         };
         const out = {};
@@ -5435,8 +5697,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         const w = window.__game.world, carte = window.__carte;
         const point = (lat, lon) => {
           const z = Math.round(zDeLatitude(lat));
-          let a = -80000, b = 80000;
-          for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+          let a = -400000, b = 400000;
+          for (let k = 0; k < 50; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
           return { x: Math.round(a), z };
         };
         const blond = (c) => c[0] > c[1] && c[1] > c[2] * 1.1;     // le sable : R > G > B
@@ -5486,8 +5748,8 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         const w = window.__game.world, carte = window.__carte;
         const point = (lat, lon) => {
           const z = Math.round(zDeLatitude(lat));
-          let a = -80000, b = 80000;
-          for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
+          let a = -400000, b = 400000;
+          for (let k = 0; k < 50; k++) { const m = (a + b) / 2; if (cielDe(m, z).lon < lon) a = m; else b = m; }
           return { x: Math.round(a), z };
         };
         const out = {};
@@ -6023,7 +6285,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             // la cote de la route au POINT, et l'on demande un cube plein à
             // cette cote dans la colonne, quel qu'il soit — le sol naturel y
             // ferme la chaussée aussi bien. Au-dessus de l'eau, rien : trou.
-            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X + 0.5, Z + 0.5) || R.routeEn(x, z);
+            // LE CUBE SE CHERCHE À LA COTE QUE LE GÉNÉRATEUR A ÉCRITE, donc au
+            // COIN de la colonne (`routeEn(wx, wz)` dans world.js, règle de
+            // la v539) : au centre, une cote qui franchit un entier entre le
+            // coin et le centre accusait un bloc d'écart qui n'existe pas
+            // (carte ×3 : 137 « trous » au premier pont de l'E19, 191 sur la
+            // M40, tous sur des colonnes pleines lues un bloc trop haut).
+            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X, Z) || R.routeEn(X + 0.5, Z + 0.5) || R.routeEn(x, z);
             const cube = c && !c.ouvrage && g.world.isSolid(X, Math.floor(c.cote) - 1, Z);
             total++;
             if (!cube && !sur(x, z)) { trous++; if (ex.length < 4) ex.push([+x.toFixed(1), +z.toFixed(1)]); }

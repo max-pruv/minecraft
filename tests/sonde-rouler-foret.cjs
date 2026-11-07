@@ -22,6 +22,11 @@ async function mesurer(src, opts = {}) {
   const SRC = pathToFileURL(src).href;
   const { Player } = await import(SRC + '/player.js');
   const W = await import(SRC + '/world.js');
+  // LA FENÊTRE DE TIRAGE SUIT L'ÉCHELLE DE LA CARTE (carte ×3) : écrite en
+  // blocs pour 0,1875 km par bloc, elle n'atteignait plus les tropiques ni la
+  // savane quand la carte a triplé ; on la demande à la projection
+  const { MONDES } = await import(SRC + '/mondes.js');
+  const E = 0.1875 / MONDES.terre.projection.kmParBloc;
   const w = new W.World();
   const cam = { position: { copy() {} }, rotation: { set() {} } };
   let g = 777; const rnd = () => ((g = (Math.imul(g, 1103515245) + 12345) >>> 0) / 2 ** 32);
@@ -38,7 +43,7 @@ async function mesurer(src, opts = {}) {
   const sites = Object.fromEntries(Object.keys(BIOMES).map((k) => [k, []]));
   for (let essai = 0; essai < 400000; essai++) {
     if (Object.values(sites).every((l) => l.length >= N)) break;
-    const x = Math.round(-55000 + rnd() * 110000), z = Math.round(-16000 + rnd() * 56000);
+    const x = Math.round((-55000 + rnd() * 110000) * E), z = Math.round((-16000 + rnd() * 56000) * E);
     const a = Math.floor(rnd() * 8) * Math.PI / 4;
     const h = w.terrainHeight(x, z);
     if (h <= 31 || h >= 56 || w.cityAt(x, z)) continue;

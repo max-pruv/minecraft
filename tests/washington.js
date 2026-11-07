@@ -216,13 +216,19 @@ const descendre = async (p, ms) => {
     // ce qu'un enfant voit et ce sous quoi il bâtit — la v558 ne change que
     // la profondeur, sans date neuve. L'empreinte de ce qui est posé à moins
     // de trois blocs du sol sur toute l'emprise, gardée ou non, relevée sur la
-    // v547.
+    // v547. Le relief se lit sur le monde où l'empreinte a été relevée (la
+    // v587, à la place d'avant de Washington) : depuis la carte ×3 le relief
+    // autour de Pentagon a monté d'un ou deux blocs (217 colonnes, toutes là),
+    // et l'empreinte jugeait le relief au lieu du creusement.
     const { createHash } = require('crypto');
     const { World } = await import('../src/world.js');
-    const w = new World(), E = D.EMPRISE_METRO_DC, h = createHash('sha256');
+    const { positionDe } = await import('../src/mondes.js');
+    const avant = positionDe('washington', 'terreV4');
+    const w = new World({ v587: true }), E = D.EMPRISE_METRO_DC, h = createHash('sha256');
+    const ddx = avant.x - D.WASHINGTON.x, ddz = avant.z - D.WASHINGTON.z;
     for (const garde of [false, true]) {
       for (let x = E.x0; x <= E.x1; x++) for (let z = E.z0; z <= E.z1; z++) {
-        const sol = Math.floor(w.terrainHeight(x, z));
+        const sol = Math.floor(w.terrainHeight(x + ddx, z + ddz));
         const l = [];
         D.creuserMetroWashington(x, z, sol, (dy, id) => { if (dy > -3) l.push(dy + ':' + id); }, garde);
         h.update(l.sort().join(',') + ';');

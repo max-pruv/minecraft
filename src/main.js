@@ -1092,7 +1092,7 @@ function synchroniserLeWorker() {
   if (!maillageDistant) return;
   generationDistante++;
   enAttente.clear();
-  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, ctx: world.ctx, hd: world.hd, arbres: world.arbres, sansSolContinu: world.sansSolContinu, mobilierCasse: world.mobilierCasse ? [...world.mobilierCasse] : [] });
+  maillageDistant.postMessage({ type: 'edits', edits: world.edits, temps: world.editTimes, origines: world.editOrigines, ctx: world.ctx, hd: world.hd, arbres: world.arbres, sansSolContinu: world.sansSolContinu, mobilierCasse: world.mobilierCasse ? [...world.mobilierCasse] : [] });
 }
 // L'ENFANT ATTEND SON MORCEAU, IL NE LE FABRIQUE PAS (v436).
 //
