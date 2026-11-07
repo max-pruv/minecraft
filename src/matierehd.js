@@ -26,6 +26,7 @@
 // (facadeshd.js) : rien n'est téléchargé, le jeu reste à un mégaoctet.
 
 import * as THREE from 'three';
+import { RENDU_WEBGPU, matiereHD, domeDegrade } from './rendu-webgpu.js';
 import { TUILES_HD, COLS_HD, PX_HD } from './facadeshd.js';
 
 // --- un hasard stable ---------------------------------------------------------------
@@ -579,9 +580,12 @@ export function atlasHD() {
 
 function environnementHD(renderer) {
   const env = new THREE.Scene();
+  // Sous WebGPU, un ShaderMaterial ne se compile pas : le même dégradé en nœuds
+  // (rendu-webgpu.js, chantier WebGPU).
+  const degrade = RENDU_WEBGPU && domeDegrade({ sol: new THREE.Color(0.30, 0.28, 0.26), horizon: new THREE.Color(0.78, 0.80, 0.84), zenith: new THREE.Color(0.36, 0.52, 0.78), puissance: 1 });
   const dome = new THREE.Mesh(
     new THREE.SphereGeometry(100, 32, 16),
-    new THREE.ShaderMaterial({
+    degrade || new THREE.ShaderMaterial({
       side: THREE.BackSide,
       vertexShader: 'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
       fragmentShader: `varying vec3 p;void main(){float h=normalize(p).y;
@@ -620,6 +624,11 @@ export function materiauHD(renderer) {
     roughness: 1, metalness: 1,        // multipliés par la matière de chaque sommet
     envMap: environnementHD(renderer), envMapIntensity: 0.8,
   });
+  // Sous `?rendu=webgpu`, la matière par sommet s'écrit en nœuds (rendu-webgpu.js,
+  // chantier WebGPU) : le greffon GLSL ci-dessous serait ignoré en silence.
+  if (RENDU_WEBGPU && matiereHD(materiau, uniforms)) {
+    return { materiau, uniforms, atlas: canvas, profondeur: profondeurHD(materiau) };
+  }
   materiau.onBeforeCompile = (shader) => {
     shader.uniforms.nuitHD = uniforms.nuitHD;
     shader.vertexShader = shader.vertexShader

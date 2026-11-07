@@ -428,6 +428,53 @@ function verifier(nom, ok, detail = '') {
       !cache.err && cache.releves >= 1 && cache.fautifs === 0,
       `${JSON.stringify(cache)} (désarmé : 11 fautifs sur 848 ms)`);
 
+    // UN DRAPEAU D'ESSAI NE LAISSE JAMAIS L'ENFANT BLOQUÉ (chantier WebGPU).
+    //
+    // Max, iPhone, `?rendu=webgpu&diag=1` : « Chargement du monde… » une minute,
+    // rien d'autre. La cause était un module vendu qui importait de `three` deux
+    // noms absents du build r187 (la fumée le garde désormais) ; la RÈGLE qui en
+    // sort est plus large : si WebGPU ne démarre pas — module qui ne se lie pas,
+    // initialisation qui jette ou qui pend, première image qui ne vient pas —
+    // la page se recharge sans le drapeau, et la page WebGL dit pourquoi dans
+    // `?diag=1` et au journal de bord. Deux chemins, forcés par l'adresse :
+    // `?webgpu=echec` (le module jette, `rendu-webgpu.js` appelle le repli) et
+    // `?webgpu=gel` (`creerRenderer` ne rend jamais la main : c'est le chien de
+    // garde d'`index.html`, hors du graphe de modules, qui doit le voir, en
+    // `?webgpums=` millisecondes). On n'ouvre PAS la page par `banc.joueur` :
+    // son attente de `__game` meurt avec le contexte que la relance détruit —
+    // on relit la page toutes les demi-secondes jusqu'à la voir arriver sur
+    // `rendu=webgl` avec un `__game`. Le troisième chemin (un module qui ne se
+    // lie pas) est éprouvé par la sonde du scratchpad, pas ici : il faut casser
+    // un module vendu par `page.route`, et seulement sous l'import map r187.
+    for (const [chemin_, params] of [['echec', '&webgpu=echec'], ['gel', '&webgpu=gel&webgpums=4000']]) {
+      const ctx = await banc.navigateur.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
+      const page = await ctx.newPage();
+      const erreurs = [];
+      page.on('pageerror', (e) => erreurs.push(String(e.message).split('\n')[0].slice(0, 120)));
+      const t0 = Date.now();
+      const url = `http://127.0.0.1:${banc.portJeu}/index.html?stay=1&rr=2&dpr=1&prep=0&embarq=0&cloud=&rendu=webgpu&diag=1${params}`;
+      await page.goto(url, { waitUntil: 'load', timeout: 90000 }).catch(() => {});
+      let arrive = null;
+      while (Date.now() - t0 < 60000 && !arrive) {
+        await new Promise((r) => setTimeout(r, 500));
+        const r = await page.evaluate(() => ({ url: location.search, game: !!window.__game, repli: sessionStorage.getItem('wm-webgpu-repli') })).catch(() => null);
+        if (r && r.game && /[?&]rendu=webgl(&|$)/.test(r.url)) arrive = r;
+      }
+      // la ligne de diagnostic s'écrit à l'image : on la laisse venir, bornée
+      let diag = '';
+      for (let i = 0; i < 20 && !/repli/.test(diag); i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        diag = await page.evaluate(() => (((document.getElementById('debug') || {}).textContent || '').split('\n').find((l) => /rendu/.test(l)) || '')).catch(() => '');
+      }
+      const duree = Math.round((Date.now() - t0) / 1000);
+      let raison = null;
+      try { raison = arrive && arrive.repli ? JSON.parse(arrive.repli).raison : null; } catch { /* rien */ }
+      verifier(`WebGPU qui ne démarre pas (${chemin_}) : le jeu repart sous WebGL et dit pourquoi dans ?diag=1`,
+        !!arrive && !!raison && /repli/.test(diag) && /webgl/.test(diag),
+        `arrivé=${!!arrive} en ${duree} s · raison=${JSON.stringify(raison)} · diag=${JSON.stringify(diag.slice(0, 160))} · erreurs=${JSON.stringify(erreurs.slice(0, 2))}`);
+      await ctx.close();
+    }
+
     // LE PREMIER CHARGEMENT NE TÉLÉCHARGE PAS CE QUI NE SERT PAS À JOUER.
     //
     // Mesuré sur la production : 1,12 Mo compressés pour le jeu entier, et

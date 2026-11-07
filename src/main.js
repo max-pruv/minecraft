@@ -2,6 +2,7 @@
 
 import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde, decalerSelonLaSection, DECALAGE_GTA } from './voiesdoubles.js';
 import * as THREE from 'three';
+import { RENDU_WEBGPU, creerRenderer, etatRendu, ligneDiag, repliWebGPU } from './rendu-webgpu.js';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
 import { creerEffetSaison } from './saisons.js';
@@ -354,10 +355,18 @@ const DAY_LENGTH = 600;              // seconds for a full day/night cycle
 // --- renderer / scene -------------------------------------------------------
 
 const canvas = document.getElementById('game');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+// LE RENDU WEBGPU, DERRIÈRE `?rendu=webgpu` (chantier réalisme 3/5) : voir
+// rendu-webgpu.js. Par défaut, EXACTEMENT la ligne d'avant — l'attente ne
+// s'exécute que sous WebGPU, dont le rendu doit s'initialiser avant la première
+// image.
+const renderer = RENDU_WEBGPU ? await creerRenderer(canvas, { antialias: true }) : new THREE.WebGLRenderer({ canvas, antialias: true });
 // Les textures KTX2 des modèles déposés (v590) : le transcodeur demande au
 // renderer ce que la carte lit, et il doit être branché avant tout modèle.
 brancherKTX2(renderer);
+// Un repli de WebGPU vers WebGL (index.html, rendu-webgpu.js) se dit au
+// journal de bord : c'est ce qui permet de lire, dans `journal_appareil`, où
+// le rendu à l'essai a échoué sur l'appareil de Max sans qu'il recopie rien.
+{ const repli = repliWebGPU(); if (repli) journal.erreur(`repli WebGL : ${repli.raison}`, 'webgpu'); }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 // LE REGARD DE NEW YORK, PARTOUT (v247). Max : « regarde les améliorations
 // qu'il y a encore eu dans la ville de New York et reproduis-les sur
@@ -383,6 +392,8 @@ renderer.toneMappingExposure = 1.05;
 let renduLogicielMemo;
 function renduLogiciel() {
   if (renduLogicielMemo !== undefined) return renduLogicielMemo;
+  // Sous WebGPU, c'est l'adaptateur qui le dit (SwiftShader sur le banc).
+  if (RENDU_WEBGPU && etatRendu().logiciel !== undefined) { renduLogicielMemo = etatRendu().logiciel; return renduLogicielMemo; }
   try {
     const gl = renderer.getContext();
     const ext = gl.getExtension('WEBGL_debug_renderer_info');
@@ -5764,6 +5775,11 @@ function withOwnLook(base, override) {
 
 // Render each character look to a little 3D portrait for the picker.
 function makeCharPortraits() {
+  // Un second contexte, rendu de façon SYNCHRONE puis lu par toDataURL : le
+  // rendu WebGPU ne sait faire ni l'un ni l'autre (init asynchrone, lecture
+  // asynchrone). Sous `?rendu=webgpu` les portraits sont vides — blocage
+  // déclaré du plan (docs/webgpu.md).
+  if (RENDU_WEBGPU || !THREE.WebGLRenderer) return NET_CHARACTERS.map(() => '');
   const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   r.setSize(96, 128);
   const cam2 = new THREE.PerspectiveCamera(38, 96 / 128, 0.1, 10);
@@ -8857,6 +8873,7 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
+    + `${ligneDiag(renderer)}\n`
     + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS}${rayonMonde < RENDER_RADIUS ? ` (monde ${rayonMonde}, ${Math.round(mondeTenu.octets / 1048576)}/${Math.round(BUDGET_MONDE / 1048576)} Mo)` : ''} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · arbres ${world.arbres ? 'en cartes' : 'en cubes'} · horizon ${PORTEE_VUE}`
     // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
     // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :

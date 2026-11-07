@@ -27,7 +27,10 @@ const isStaticAsset = (url) =>
   || url.includes('/vendor/polices/') || url.includes('/vendor/avions/')
   // les modèles et photos de New York (v565) : immuables, téléchargés à la
   // première visite de Manhattan, jamais avant
-  || url.includes('/vendor/newyork/');
+  || url.includes('/vendor/newyork/')
+  // three r187 (build WebGPU), chargé seulement sous `?rendu=webgpu` : immuable,
+  // jamais téléchargé par une installation ordinaire (chantier WebGPU)
+  || url.includes('/vendor/three-webgpu/');
 const HUMAINS = ['homme-denim', 'homme-costume', 'femme-tailleur', 'homme-chemise', 'homme-veste',
   'femme-chemise', 'femme-manteau', 'garcon', 'fille'].map((n) => `./vendor/humains/${n}.glb`)
   // les mouvements de capture (personnages vivants) : un fichier immuable, versionné par son nom
@@ -192,6 +195,7 @@ const ASSETS = [
   './src/sync.js',
   './src/admin.js',
   './vendor/three.module.min.js',
+  './src/rendu-webgpu.js',
   './vendor/peerjs.min.js',
   './vendor/qrcode.module.js',
   // La vraie voiture (réalisme v2) : le chargeur glTF et le modèle d'artiste.

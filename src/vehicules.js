@@ -51,7 +51,9 @@ function refleter(o, m, intensite) {
 }
 export function refletsVoiture() {
   if (!refletsRT && typeof document !== 'undefined') {
-    refletsRT = new THREE.WebGLCubeRenderTarget(128, {
+    // le build WebGPU de three n'exporte pas WebGLCubeRenderTarget (chantier WebGPU)
+    const CibleCubique = THREE.WebGLCubeRenderTarget || THREE.CubeRenderTarget;
+    refletsRT = new CibleCubique(128, {
       generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter,
     });
     refletsCamera = new THREE.CubeCamera(0.5, 120, refletsRT);

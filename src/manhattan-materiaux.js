@@ -2,6 +2,7 @@
 // vendor/newyork/LICENSE.md. Les motifs sont en mètres du monde, pas étirés par
 // la taille des cubes instanciés. PBR Three.js r160, reflets PMREM.
 import * as THREE from "three";
+import { RENDU_WEBGPU, domeDegrade } from './rendu-webgpu.js';
 import { ALEA } from "./manhattan-plan.js";
 import { PHOTO_NY } from "./new-york-modeles.js";
 function texture(type) {
@@ -274,9 +275,11 @@ export function materiauxManhattan(renderer) {
   // la ville six fois par image : budget identique avec cent tours de verre.
   const env = new THREE.Scene();
   env.background = new THREE.Color(0x8cabb9);
+  // Sous WebGPU un ShaderMaterial ne se compile pas : le même dégradé en
+  // nœuds (rendu-webgpu.js), au bit près sur la formule.
   const room = new THREE.Mesh(
     new THREE.SphereGeometry(100, 32, 16),
-    new THREE.ShaderMaterial({
+    (RENDU_WEBGPU && domeDegrade({ horizon: new THREE.Color(0.18, 0.22, 0.23), zenith: new THREE.Color(0.58, 0.72, 0.82), lisse: [-0.2, 0.65] })) || new THREE.ShaderMaterial({
       side: THREE.BackSide,
       vertexShader:
         "varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",

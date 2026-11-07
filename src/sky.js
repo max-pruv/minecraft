@@ -4,6 +4,7 @@
 // suivent la caméra, et le brouillard les épargne.
 
 import * as THREE from 'three';
+import { RENDU_WEBGPU, domeDegrade, tuilage } from './rendu-webgpu.js';
 import { decor } from './couches.js';
 
 const RAYON = 420;        // distance des astres : loin devant, mais bien avant le plan lointain (900)
@@ -78,9 +79,11 @@ export function createSky({ scene, camera, sunLight }) {
   // Manhattan (manhattan-render.js), à la place d'une couleur unie. Il porte
   // la correspondance tonale du rendu, sinon il serait le seul objet de la
   // scène à ne pas y passer et jurerait avec tout le reste.
+  // Sous `?rendu=webgpu`, le même dégradé en nœuds (rendu-webgpu.js, chantier
+  // WebGPU) : un ShaderMaterial n'a pas de programme là-bas.
   const dome = new THREE.Mesh(
     new THREE.SphereGeometry(1, 24, 12),
-    new THREE.ShaderMaterial({
+    (RENDU_WEBGPU && domeDegrade({ zenith: new THREE.Color(0x4f86b8), horizon: new THREE.Color(0x87ceeb) })) || new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
       uniforms: { zenith: { value: new THREE.Color(0x4f86b8) }, horizon: { value: new THREE.Color(0x87ceeb) } },
       vertexShader: 'varying vec3 direction;void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
@@ -156,6 +159,7 @@ export function createSky({ scene, camera, sunLight }) {
 // L'eau ondule par déplacement des sommets dans le shader : le coût est nul
 // côté processeur, et le lac du château cesse d'être une plaque figée.
 export function animerEau(material) {
+  if (RENDU_WEBGPU && tuilage(material, { onde: true })) return;   // la version en nœuds (chantier WebGPU)
   material.userData.temps = { value: 0 };
   material.onBeforeCompile = (shader) => {
     shader.uniforms.temps = material.userData.temps;

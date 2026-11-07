@@ -17,14 +17,12 @@ import {
 	CompressedCubeTexture,
 	Data3DTexture,
 	DataTexture,
-	DisplayP3ColorSpace,
 	FileLoader,
 	FloatType,
 	HalfFloatType,
 	NoColorSpace,
 	LinearFilter,
 	LinearMipmapLinearFilter,
-	LinearDisplayP3ColorSpace,
 	LinearSRGBColorSpace,
 	Loader,
 	RedFormat,
@@ -43,6 +41,15 @@ import {
 	SRGBColorSpace,
 	UnsignedByteType,
 } from 'three';
+// (Grand Tour, chantier WebGPU) three r187 n'exporte plus les deux espaces de
+// couleur Display P3 que ce chargeur de r160 importait par leur nom : sous
+// l'import map de `?rendu=webgpu`, le graphe de modules ne se liait plus et
+// `main.js` ne s'évaluait jamais (« Chargement du monde… » sans fin, vu par
+// Max sur son iPhone). Ce sont les valeurs de r160, en dur : sous r160 rien
+// ne change, sous r187 le fichier se charge.
+const DisplayP3ColorSpace = 'display-p3';
+const LinearDisplayP3ColorSpace = 'display-p3-linear';
+
 import { WorkerPool } from './WorkerPool.js';
 import {
 	read,

@@ -1,5 +1,173 @@
 # Ce qui est en cours
 
+## Rendu WebGPU (chantier réalisme 3) — prototype `?rendu=webgpu`, ce qui reste
+
+Étude et prototype dans `docs/webgpu.md` (inventaire, version locale, mesures,
+plan en huit étapes). Le rendu par défaut ne change pas. Déclaré, dans l'ordre
+du plan :
+
+- [ ] **Mettre three à jour (r160 → r187) sans changer de rendu** : un seul
+  cœur, les trois chargeurs de `vendor/` (`GLTFLoader`, `BufferGeometryUtils`,
+  `SkeletonUtils`) repris de r187. Le prototype fait tourner les chargeurs
+  r160 sur le cœur r187 sans les avoir éprouvés sur toute la flotte.
+- [ ] **La chauffe en `await compileAsync`, une compilation à la fois.** La
+  cale `compile()` du prototype met les dix-sept appels en file et retire
+  l'état de précompilation après chacun ; une chauffe écrite pour un rendu
+  asynchrone attendrait chaque compilation dans la chaîne `pas` AVANT de
+  disposer ses géométries d'essai, et le témoin des clés de `maj.js` lirait
+  des pipelines.
+- [ ] **Manhattan n'est pas portée** (`manhattan-materiaux.js` : triplanaire,
+  bump, émissif ; `skyDome` ; l'environnement) : New York sous `?rendu=webgpu`
+  est en matériaux classiques sans ses greffons.
+- [ ] **L'ombre des façades HD n'est pas découpée sous WebGPU** : le rendu de
+  nœuds n'a pas `customDepthMaterial` (v572) ; à écrire en `castShadowNode`.
+- [ ] **Les portraits sont vides sous WebGPU** : `makeCharPortraits` ouvre un
+  second `WebGLRenderer` et lit `toDataURL` ; en asynchrone, dans une cible.
+- [ ] **Douze témoins lisent WebGL** : dix par `renderer.info.programs` et des
+  clés GLSL (`physical`, `shadowMapEnabled`, `envMap`), deux par
+  `properties.get(m).programs` (`monte.js:9748`, `parishd.js:1651`). Sous
+  WebGPU la cale rend des clés de pipelines ; les comparaisons sont à repointer.
+- [ ] **La cadence n'a jamais été mesurée sur un appareil.** Le banc rend en
+  logiciel des deux côtés (SwiftShader : 2 i/s sous les trois rendus). Pour
+  Max, sur l'iPhone : `?rendu=webgpu&diag=1` dans le Marais, puis la même
+  adresse sans `rendu=` — lire « i/s médiane », « pire image », « appels »,
+  « pipelines », et la ligne `rendu webgpu · dos … · adaptateur …`. Un
+  `dos webgl2` dit que Safari n'a pas donné d'adaptateur.
+- [ ] **Le repli de l'iPad de six ans** : sans `navigator.gpu`, le même
+  `WebGPURenderer` tourne sur son dos WebGL2 (`?dos=webgl` l'éprouve), dont le
+  coût n'est pas celui de l'ancien `WebGLRenderer`. À lire dans le journal de
+  bord (`journal_appareil`, dos par appareil) avant de retirer `?rendu=webgl`.
+- [ ] **L'atlas en `NearestFilter` est lu au texel (`textureLoad`) sans mip** :
+  à juger en capture bloc par bloc sur la tablette ; `LinearFilter` rendrait
+  les mips et changerait l'aspect de près.
+- [ ] **`PCFSoftShadowMap` n'existe plus** : `manhattan-render.js` le demande,
+  r187 prend PCF avec un avertissement.
+- [ ] **Les reflets de carrosserie** (`CubeRenderTarget`, une face par image)
+  tournent au banc ; non éprouvés sur l'iPad face par face.
+
+- [ ] **KTX2 sous `?rendu=webgpu` : le chargeur se lie, le transcodage reste à
+  mesurer sur l'appareil.** Le KTX2Loader de r160 (v590) importait de `three`
+  `DisplayP3ColorSpace` et `LinearDisplayP3ColorSpace`, que r187 n'exporte
+  plus : sous le drapeau, le graphe de modules ne se liait pas et `main.js` ne
+  s'évaluait jamais — c'est le « Chargement du monde… » d'une minute vu par Max
+  sur son iPhone (vNEXT). Les deux valeurs sont en dur dans le chargeur, la
+  fumée compare tous les imports nommés de `three` aux exports des deux builds,
+  et la page repart sous WebGL si le drapeau ne démarre pas (porte de sortie,
+  `index.html` + `rendu-webgpu.js`). Ce qui reste : au banc, sous WebGPU,
+  `detectSupport` ne trouve aucun format compressé (SwiftShader) et transcode
+  en RGBA32 — correct, mais c'est le poids d'avant la v590. Sur l'iPhone, le
+  `WebGPURenderer` doit annoncer `texture-compression-astc` ; à lire dans le
+  journal de bord (`estimerMemoire`) avec `?rendu=webgpu&diag=1`, et `?ktx2=0`
+  rend les originaux en attendant.
+- [ ] **Le troisième chemin de la porte de sortie n'a pas de témoin au
+  portail.** Un module vendu qui importe de `three` un nom absent de r187 est
+  attrapé par l'écouteur `error` d'`index.html` (hors du graphe de modules) ;
+  éprouvé par la sonde du scratchpad (`page.route` sur `KTX2Loader.js`,
+  seulement sous l'import map r187 — cassé aussi sous WebGL, la page de repli
+  ne démarre pas non plus, vu au premier jet). Les deux autres chemins
+  (`?webgpu=echec`, `?webgpu=gel`) sont des témoins de `maj.js`. Le porter
+  au portail demande une route dans `banc.js`.
+
+### Rouges du portail de la vNEXT (PR #609), mesurés des deux côtés
+
+- [ ] **Portail local (17 suites, 1 577 ✅, 10 ❌) et GitHub (run 42143763412,
+  tranche 3 verte, 1, 2 et 4 rouges) sur le commit 70ca620.** La branche
+  n'écrit rien sous WebGL : `tsl` n'est importé que dans `creerRenderer` sous
+  `?rendu=webgpu`, et chaque greffon (`tuilage`, `domeDegrade`,
+  `alphaParInstance`) rend faux ou nul sans lui — le code d'avant s'exécute
+  tel quel. Tous les rouges, sauf un, sont des dettes déjà déclarées plus bas :
+  `reseau.js` fluidité de l'ami ×2 (direct 0,70 et 0,77 de part juste, nuage
+  0,40 et 0,53), le passager (`roule` 7,6 à 9,0 pour un suivi de 3,9 à 5,9),
+  l'avion qui prend feu chez l'ami (`vehicule: false` à 1,8 s) ; `monte.js`
+  les deux chevauchements de voitures (taux 83,5 % et 6,7 % ici ; 84,5 % et
+  6,1 % sur GitHub), la rue vide, « rendent leur mémoire », la radio à
+  −49,4 dB pour −55 ; sur GitHub en plus le flâneur de Rome, le passage peint
+  de Rome, deux voisines, Moscou ×2, la sirène ; `degats.js` le dernier
+  enfoncement à 0 ms (local) et, sur GitHub seulement, les sept témoins des
+  murs (`murs: 0`, `chocsPhys: 0` : la voiture n'atteint aucun mur en 29 s sur
+  la machine GitHub, le tirage de cadence du v580). **Double mesure, rejouée
+  SEULE** : `degats.js` 67 ✅ / 0 ❌ sur la branche ET sur `origin/main` (v587,
+  arbre détaché), le dernier enfoncement à 0,2 ms des deux côtés.
+  `manhattan.js` meurt des deux côtés sur un clic que Playwright laisse
+  « waiting for scheduled navigations to finish » (la relance de page de la
+  synchronisation, v189/v196) : sur la branche à `tests/manhattan.js:40` au
+  portail (0 vert) et à la ligne 1163 seule (37 ✅, le chapitre hors ligne) ;
+  sur `origin/main` à la ligne 42 seule, après 1 ✅. Un passage de chaque côté
+  pour une intermittence : la distribution n'est pas établie (v269), mais
+  `main` meurt plus tôt que la branche sur le même geste.
+- [x] **Le seul rouge non déclaré, « les banlieues se dessinent… sans compiler
+  de matière en y entrant » (tranche 4/4, `115 → 119` clés, paquet en 49 s),
+  est une intermittence de machine lente, mesurée.** Relance de la même tranche
+  sur le même commit : vert (`142 → 143`, paquet en 33 s). `manhattan.js` seule
+  sur `origin/main` (v587), second passage : vert aussi (`160 → 160`, 22 s),
+  puis la suite meurt au même clic que la branche (ligne 1163, 37 ✅) — même
+  distribution des deux côtés (v269). Sous WebGL la branche n'y touche pas par
+  construction (`tsl` n'est importé que sous `?rendu=webgpu`). La relance des
+  trois tranches a rendu, en plus, des rouges tous déclarés : `parishd.js` la
+  terrasse de café, `reseau.js` l'hôte sans courtier trouvé par un invité,
+  `monte.js` « au feu… au lieu de piler », `manhattan.js` PeerJS « ID is
+  taken » ; et `degats.js` verte.
+  Troisième passage GitHub, sur la fusion `0f5423d` (vNEXT), tranche 4/4 :
+  `parishd.js` verte (la terrasse de café aussi), `degats.js` un seul rouge,
+  « deux murs pris à pleine vitesse » à `murs: 1` en 31 s (la famille des
+  murs du tirage de cadence, déclarée ci-dessus et à la v583 ; vert rejoué
+  seul 67/67), `manhattan.js` morte au clic « Jouer » de la ligne 42 après
+  1 ✅ — exactement le premier passage de `origin/main` seule.
+  Run 78 (`80d0a94`, le run 74 annulé par le push de `TASKS.md` : un push
+  annule le run en cours, on ne pousse plus pendant un run), tranche 2/4 :
+  `reseau.js` six rouges, tous déclarés intermittents — fluidité de l'ami en
+  direct (0,82) et par le nuage (0,25), « seule après le départ de l'hôte » et
+  « continue d'essayer de la reconnecter », « un hôte sans courtier est trouvé »
+  et « il le REJOINT » ; `metro.js` et `parent.js` vertes.
+  Tranche 3/4 : `visio.js` « la radio parle plus bas pendant l'appel »
+  (`avant 0,0000`, déclaré, vert rejoué seul) et `carte.js` le fond de carte à
+  froid (411 ms pour 400, déclaré) ; `sauvegarde.js`, `hote.js`, `plafond.js`
+  et `maj.js` vertes. Ses tranches 1/4 et 4/4 ont été ANNULÉES à 14 h 05 par
+  le push de `1736477` (le `cancel-in-progress` du workflow a mis deux minutes
+  à les atteindre) : le run 80 les rejoue.
+  Run 80 (`1736477`, TASKS seul), tranche 3/4 : `maj.js` deux rouges du
+  loader de mise à jour — « le loader dit combien de fichiers sont rangés »
+  (textes vus sans le compte) et « le loader ne s'efface qu'une fois les corps
+  et les programmes prêts » (`humains: false`, programmes 34/41 à 6,9 s) —,
+  les deux déclarés intermittents (v559, table « ❌ 2 fois, ✅ 3 fois | ✅ 4
+  fois » plus bas), et VERTS au run 78 sur le même arbre une heure plus tôt :
+  le même témoin, deux verdicts, zéro ligne changée. `plafond.js` verte.
+  Tranche 2/4 (finie à 14 h 48, avant l'annulation) : `metro.js` et
+  `parent.js` vertes ; `reseau.js` cinq rouges — les deux fluidités de l'ami
+  (direct 0,31, nuage 0,50 : déclarées), et trois d'UNE racine : « la voiture
+  qu'on prend dans la rue garde sa couleur » rend `{ auVolant: false }` (la
+  boucle n'a pris aucune voiture de la rue à teinte connue dans sa fenêtre —
+  l'intermittence déclarée aux v326, v365 et v369 : ❌ au portail, ✅ 77/77
+  rejouée seule, ❌ sur `origin/main` aussi), et « chez l'ami, la voiture de
+  la rue qui arrive derrière… » (`releves: 0, essais: 0`) comme « sur la carte
+  de l'ami, l'enfant au volant… » (`assis: false`) exigent `prise.auVolant`
+  dans leur verdict : rouges PAR CONSTRUCTION quand le premier l'est (v285 :
+  « le second verdict dépend du premier »), rien de mesuré en plus. Deux
+  témoins qui ne peuvent pas rendre de verdict sans le premier devraient le
+  dire (`err: 'pas au volant'`) au lieu de rougir — dette de témoin.
+  Portail local sur la fusion (`--malgre-fumee`) : `reseau.js` « pas par
+  paquets » (déclaré), `manhattan.js` morte au clic de la ligne 42 (déclaré),
+  `monte.js` six rouges dont cinq déclarés (deux voisines, piler au feu,
+  heurtée par l'enfant, rendent leur mémoire, « Atterrissage vers ») et UN
+  nouveau : « s'il ne peut pas atteindre le bord, il garde le bord pour poste »
+  rend `{ err: 'pas de chaussée' }` — la sonde du témoin n'a trouvé aucune
+  colonne de chaussée à moins de seize blocs du QUATRIÈME passant de Rome, au
+  niveau de ses pieds. C'est une absence de mesure (v272 : `null` n'est pas un
+  verdict), pas un fait du jeu. Double mesure (`sonde-bord-chaussee.cjs` du
+  brouillon : la recherche MÊME du témoin, rejouée pour tous les passants de
+  Rome, ville remplie, trois pages de suite par arbre) : branche `9f0a56f`
+  0 passant sans chaussée sur 15 · 15 · 15, `gens[3]` sur le trottoir 3/3 ;
+  `origin/main` v590 (`711ea4f`) 0 sur 15 · 15 · 15, `gens[3]` 3/3 — même
+  distribution des deux côtés, et le rouge ne se reproduit sur aucune page
+  neuve. Ce que le portail a vu est l'HÉRITAGE d'état de `monte.js` (v279) :
+  à ce point de la suite, les trois premiers passants viennent d'être posés
+  sur la chaussée par le témoin d'avant, l'enfant a bougé, et le quatrième
+  est là où le rapatriement l'a mis (une esplanade, du gazon) — seize blocs
+  sans chaussée à son niveau. Dette : le témoin cherche un passant QUI A une
+  chaussée à portée (parmi les dix-huit) au lieu de prendre le quatrième, et
+  publie lequel ; tant qu'il ne le fait pas, `{ err: 'pas de chaussée' }` est
+  une absence de mesure, pas un rouge du jeu.
+
 ## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
 
 - **Mesurer sur l'iPhone et l'iPad.** Le banc lit l'ASTC et le BC7 (un octet
@@ -46,6 +214,29 @@
   - `carte.js` « le fond de carte entier se rend vite, même à froid » :
     472 ms au portail GitHub pour 400, la dette déclarée sous la v450 ;
     rejouée seule sur la branche : 186 ms, vert.
+  Run 101 (`2013888`, la porte de sortie et le KTX2Loader qui se lie sous
+  r187), les QUATRE tranches finies, `livraison` verte, zéro rouge nouveau.
+  Tranche 3/4 : `maj.js` verte — dont les deux témoins du repli (échec forcé
+  et gel : WebGL atteint en 31 s, la raison dans `?diag=1`) — et la fumée des
+  imports de `three` (111 noms, 158 fichiers, aucun absent) ; `carte.js` la
+  flèche du GPS (gauche 1,92 rad) et le fond de carte à froid (460 ms), les
+  deux déclarés. Tranche 2/4 : `reseau.js` cinq rouges, les cinq des runs 78
+  et 80 (fluidité de l'ami en direct et par le nuage à 1,5 image par seconde,
+  l'hôte sans courtier et le monde jumeau, le passager v265). Tranche 1/4 :
+  `monte.js` quatorze rouges, treize des familles ci-dessus ; le
+  quatorzième, « la circulation naît à l'approche, et ses voitures se
+  montrent » (« aucune voiture »), était VERT aux runs 52 et 80 de la même
+  branche (11 puis 1 voiture en vue) et sa page dit `Rome n'a pas fabriqué de
+  voitures` (`voitures: 0`, la famille déclarée). Double mesure par
+  `sonde-rome-circule.cjs` (scratchpad : le geste exact du témoin sur une page
+  neuve, trois passages par arbre) : branche 3/3 vert, `origin/main` v591 3/3
+  vert, à l'identique — 40 anneaux, UNE voiture en vue, trouvée en 0 à 1 s.
+  Le témoin vit au bord de sa barre sur les deux codes ; au portail c'est
+  l'état laissé par un quart d'heure de témoins sous charge (v279) qui le fait
+  tomber. Tranche 4/4 : `degats.js` les sept témoins des murs (`murs: 0`,
+  `chocsPhys: 0`, le tirage de cadence du v580, 67/67 rejouée seule des deux
+  côtés), `manhattan.js` PeerJS « ID is taken » ; `realisme.js`,
+  `carteMonde.js`, `washington.js`, `reglages.js`, `parishd.js` vertes.
 
 ## La nuit de New York et les voitures noires (v589) — dettes
 

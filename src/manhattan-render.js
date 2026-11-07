@@ -1,5 +1,6 @@
 import { BATIMENTS_HISTORIQUES } from './manhattan-historique.js';
 import * as THREE from "three";
+import { RENDU_WEBGPU, domeDegrade } from './rendu-webgpu.js';
 import { WATER_LEVEL } from "./world.js";
 import { decor } from "./couches.js";
 import {
@@ -379,9 +380,11 @@ export class ManhattanRenderer {
       plan.userData.ownedGeometry = true;
       this.root.add(decor(plan));
     }
+    // Sous WebGPU, le dôme en nœuds (rendu-webgpu.js) : mêmes uniformes
+    // `zenith` et `horizon`, que la mise à jour du ciel écrit telles quelles.
     this.skyDome = new THREE.Mesh(
       new THREE.SphereGeometry(1, 24, 12),
-      new THREE.ShaderMaterial({
+      (RENDU_WEBGPU && domeDegrade({ zenith: new THREE.Color(), horizon: new THREE.Color() })) || new THREE.ShaderMaterial({
         side: THREE.BackSide,
         depthWrite: false,
         uniforms: {
