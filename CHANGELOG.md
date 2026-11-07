@@ -47,7 +47,10 @@ compile avec la cible posée), le bloom qui ajoute de la lumière la nuit sans e
 retirer nulle part (environ 3 % des pixels éclaircis une fois la ville
 chargée — 1,8 % à l'arrivée, ce qui a fait rougir le témoin une fois —, zéro
 assombri), et la parité de
-jour avec l'ancien chemin (luminance à 1 % près). Revue d'écran avant et après
+jour avec l'ancien chemin (luminance à 1 % près) ; et le témoin de la voûte du
+ciel (`monte.js`) lit désormais le ciel loin du soleil — à midi, le haut de
+l'écran est dans son auréole, qui est justement ce que le dôme ajoute. Revue
+d'écran avant et après
 sur Paris, la tour Eiffel, la campagne, le vol libre et Manhattan, iPhone et
 iPad, jour et nuit, dans la PR.
 

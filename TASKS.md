@@ -43,6 +43,26 @@
   `?postfx=1` (le banc ne l'allume pas) ; le jour où une suite force
   `postfx`, ses lectures de pixels passent par `sonde-postfx.cjs`.
 
+- [ ] **Rouges du portail GitHub de la PR #600 (exécution 57), aucun de la
+  livraison — chacun relu dans le journal du portail d'une PR fusionnée
+  voisine (exécution 67, `memoire-ktx2` → v590, le 6 novembre), rouge à
+  l'identique :** `manhattan.js` « les banlieues se dessinent avec les modèles
+  de Max, sans compiler de matière en y entrant » (clés 115 → 119 sur la
+  branche, 127 → 129 sur `main` : deux à quatre clés naissent à l'entrée dans
+  les quartiers, `postfx` n'y est pas — le banc ne l'allume pas ; à démonter par
+  une sonde qui NOMME la case de la clé qui diffère, v319) ; `degats.js` « foncer
+  dans un mur abîme la voiture » (`chocs: []`, la voiture n'atteint pas le mur
+  à `vmax 41` sur les deux arbres ; cascade de sept rouges derrière, le même
+  intermittent que « deux murs », l. 121). Les autres rouges de l'exécution
+  (`carte.js` flèche du GPS, `maj.js` loaders et badge 587, `reseau.js`
+  fluidité, `monte.js` ×9) sont déjà déclarés plus bas.
+- [x] **« Le ciel est une voûte » (`monte.js`) était rouge sur la branche
+  seule, et c'était le témoin.** Il lisait le haut de l'écran à midi, c'est-à-dire
+  à vingt degrés du soleil, dans son auréole (v588 : 176 contre 156 sur v585) ;
+  la voûte loin du soleil n'a pas bougé (164 contre 162 à 60°, sonde
+  `sonde-ciel.cjs` sur les deux arbres). Repointé : il lit le ciel à 60° à
+  l'opposé du soleil contre 15° sur l'horizon, et publie l'auréole.
+
 ## Chaque moteur a sa voix, la flamme est une réchauffe (v587) — dettes
 
 - [ ] **On n'entend pas le moteur d'un ami.** Aucun son d'ami ne joue de

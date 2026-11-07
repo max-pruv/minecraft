@@ -85,6 +85,18 @@ soleil et la bande d'horizon dans le dôme. Six règles.
   témoin attend le compte de morceaux à façades qui ne bouge plus (v291), et
   sa barre est la moitié de la mesure (v237). Le journal disait « 7,8 % » :
   un chiffre qu'aucun état ne rend ; on écrit la mesure, pas le souvenir.
+- **UN TÉMOIN DE VOÛTE LIT LE CIEL LOIN DU SOLEIL : À MIDI, LE ZÉNITH EST DANS
+  L'AURÉOLE.** « Le ciel est une voûte » (`monte.js`, v247) lisait le haut de
+  l'écran, regard vers le haut, à midi — à vingt degrés d'un soleil à 70°
+  d'élévation. Le dôme qui diffuse l'a éclairci (176 contre 156 sur v585) et
+  le témoin a rougi ; la voûte loin du soleil, elle, n'avait pas bougé (164
+  contre 162 à 60° d'élévation à l'opposé, 190 contre 188 à 15° — sonde
+  `sonde-ciel.cjs`, mêmes angles sur les deux arbres). Un ciel qui porte son
+  soleil se mesure par l'azimut de la `DirectionalLight`, à l'opposé ; ce qu'on
+  lisait près de l'astre se publie à part (`aureole`), parce que c'est lui qui
+  change. Et le rouge était sur la branche seule : la règle de la v195 dit
+  « pas déjà en production », elle ne dit pas « le témoin a tort » — c'est la
+  sonde qui le dit, en lisant la grandeur à plusieurs angles.
 - **L'EXPOSITION DU JEU SE PORTE DANS LE DÉVELOPPEMENT.** Les matériaux ne
   l'appliquent plus (pas de correspondance tonale vers une cible) :
   `etalonner` multiplie par `renderer.toneMappingExposure`, ce qui garde la
