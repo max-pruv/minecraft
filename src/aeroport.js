@@ -1576,19 +1576,20 @@ export const AIRES_V587 = {
   'bas-llv': [[38, 9], [5, 58]],
   'bas-ykt': [[9, 58], [58, 9]],
 };
-// LA CARTE ×3 (v588) : la sonde rejouée sur les nouveaux emplacements. ELLE
-// LIT ENCORE LES ROUTES DE L'ANCIENNE CARTE (leurs points de passage sont en
-// blocs, et elles se retracent) : Roissy, Orly, Heathrow et Yokota sont coupés
-// par une route qui n'est plus la bonne. Le jour où les routes sont retracées,
-// `plafond.js` rougit et l'on rejoue la sonde — c'est son rôle.
+// LA CARTE ×3 (v588) : la sonde rejouée sur les nouveaux emplacements ET les
+// routes retracées (session C). Roissy, Orly, Heathrow et Yokota ne sont plus
+// coupés. Barajas et Schiphol perdent une aire chacun d'un côté : l'AP-2 et
+// l'E19 sortent de Madrid et d'Amsterdam par l'axe de l'aérodrome, et le
+// balayage des angles d'entrée (−45° à +45°) n'en trouve aucun qui évite
+// l'aire (docs/carte-x3-C.md). Une route qui bouge se rejoue par la sonde.
 export const AIRES = {
-  cdg: [[26, 70], [44, 0]],
-  orly: [[22, 51], [22, 68]],
-  lhr: [[77, 50], [94, 99]],
+  cdg: [[70, 70], [157, 0]],
+  orly: [[22, 130], [22, 130]],
+  lhr: [[77, 50], [99, 99]],
   jfk: [[13, 9], [105, 27]],
-  mad: [[77, 54], [80, 64]],
+  mad: [[77, 0], [0, 64]],
   bcn: [[71, 71], [71, 55]],
-  ams: [[83, 10], [150, 26]],
+  ams: [[83, 0], [150, 0]],
   fra: [[82, 82], [106, 83]],
   fco: [[120, 8], [109, 8]],
   hnd: [[80, 80], [89, 88]],
@@ -1601,7 +1602,7 @@ export const AIRES = {
   'bas-sd': [[58, 58], [58, 58]],
   'bas-adw': [[0, 18], [0, 122]],
   'bas-llv': [[58, 58], [10, 58]],
-  'bas-ykt': [[58, 37], [27, 42]],
+  'bas-ykt': [[58, 37], [58, 42]],
 };
 // Désarmées, les aires rendent l'aérodrome d'avant au bloc près : c'est ce
 // qui prouve l'empreinte des 490 morceaux (jamais un réglage du jeu).

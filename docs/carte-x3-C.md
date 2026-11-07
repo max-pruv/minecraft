@@ -79,16 +79,46 @@ creusait plus de 9 blocs ; à −162°, 17 bancs et le déblai tient.
   déblai 1,5. Le déplacer demande une marche de migration (zone A). Laissé en
   place, déclaré.
 - Le village gaulois et la caserne tiennent leurs cinq promesses sur la carte ×3.
-- **L'I-95 Sud à Washington (déclaré, rouge de `carteMonde.js`).** La porte et
-  l'avenue (translatées) restent au sud, parce que l'avenue doit passer le pont
-  Sousa jusqu'à Pennsylvania Avenue SE. Sur la carte ×3, une crête de 44 à 48
-  (terrain, socle) borde la ville au sud et à l'est à moins de dix blocs du
-  bord ; seule la bande basse du fondu (z +97..+105 du centre) arrive à la porte
-  sous 9 de déblai. L'axe y longe le bord de la ville et son emprise mord 152
-  colonnes de Washington (x +37..+67, z +91..+96). Arriver par le sud comme
-  avant demande 13 blocs de déblai (balayé : 36 approches, toutes 13,2 à 13,7).
-  Le côté NORD de la boîte est bas (35 à 40) : une entrée nord demande une
-  avenue neuve qui rejoigne le pont Sousa — décision de plan, pas de tracé.
+- **L'I-95 Sud à Washington (déclaré, rouge de `carteMonde.js`) — trois options
+  pour Max, mesurées.** Le tracé livré tient ses bornes (remblai 3,98, déblai
+  8,52, joints fermés) ; il est rouge parce que son emprise mord 152 colonnes
+  de Washington (x +37..+67, z +91..+96 du centre). Cause : sur la carte ×3,
+  une crête de 41 à 48 borde la boîte au sud et à l'est, et seule la bande
+  basse du fondu (z +97..+105, neuf blocs) arrive à la cote de la rue (33) ;
+  une autoroute de 17 blocs d'emprise plus ses talus n'y tient pas sans mordre
+  la ville ou monter sur la crête.
+
+  (a) **Porte au sud-ouest ou au sud-est : ne marche pas.** Balayage (approche
+  droite sur 250 blocs, profil épinglé à 33, `wsw.mjs`) : bord est et sud-est
+  (x +22..+70) 10,6 à 14,6 de déblai sous toute approche ; bord sud au droit de
+  la porte actuelle (x +34) 13,6 ; bord ouest 6,6 à 12,6 mais côté Georgetown
+  et Virginie, à 250 blocs de Pennsylvania Avenue SE. Le seul bord bas assez
+  près est x −26..−14 (8,6 à 9,8, à la limite) : il débouche sur des lots
+  (z +82..+96, aucune rue avant x +16), donc il tombe dans (b).
+  (b) **Entrée nord ou sud-ouest avec une avenue de raccord déclarée.** Le nord
+  de la boîte est bas (35 à 40). Il faut une avenue neuve dans le plan de
+  Washington jusqu'au pont Sousa ou au pont de la 11e Rue : des colonnes de
+  lots qui deviennent rue, donc une décision de plan dans `washington.js`
+  (hors de ma zone) et une ville figée sous les blocs posés avant la date
+  (règle v303). Je ne l'ai pas tracée.
+  (c) **Tranchée hors norme déclarée.** L'approche par le sud comme avant
+  demande 13,2 à 13,7 de déblai (36 approches balayées) au lieu de 9 : une
+  exception de 4,7 blocs sur la crête, sans toucher à la ville ni à aucun bloc
+  d'enfant (Washington est loin de tout sanctuaire). Le témoin du déblai
+  porterait alors une exception nommée, comme `PISTES_COURTES`.
+  Ma recommandation : (c), parce qu'elle ne change que la route.
+
+## Les aires des aérodromes (exception accordée à C dans aeroport.js)
+
+`node tests/sonde-aires-aeroports.mjs` rejouée sur les routes retracées, et
+`AIRES` (la seule table touchée) mise à l'égalité, comme `plafond.js` l'exige.
+Roissy 26/70/44/0 → 70/70/157/0, Orly 22/51/22/68 → 22/130/22/130, Heathrow NO
+94 → 99, Yokota NO 27 → 58 : plus coupés. Barajas (SE 54 → 0, NO 80 → 0) et
+Schiphol (SE 10 → 0, NE 26 → 0) perdent leurs aires du côté de la ville :
+l'AP-2 et l'E19 sortent de Madrid et d'Amsterdam par l'axe de l'aérodrome.
+Balayé (`fin.mjs`, angles d'entrée −45° à +45° par 5°, aires réelles comme
+obstacles) : **aucun** angle n'évite l'aire (`ap2scan.log`, `e19scan.log`). Les
+autres côtés gardent leurs aires (Barajas 77 et 64, Schiphol 83 et 150).
 
 ## Trains
 
