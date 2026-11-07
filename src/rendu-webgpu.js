@@ -43,8 +43,42 @@ export function renduActif() { return RENDU_WEBGPU ? 'webgpu' : 'webgl'; }
 let tsl = null;
 // Ce que l'appareil a dit de lui : nom de l'adaptateur, logiciel ou matériel,
 // le dos réel (WebGPU, ou WebGL2 si le navigateur a refusé).
-const etat = { nom: 'webgl', adaptateur: null, logiciel: undefined, dos: null, erreur: null, renderers: 0 };
+const etat = { nom: 'webgl', adaptateur: null, logiciel: undefined, dos: null, erreur: null, renderers: 0, images: 0, etape: null };
 export function etatRendu() { return etat; }
+
+// LA PORTE DE SORTIE (retour de Max : « Chargement du monde… » sans fin sur
+// son iPhone sous `?rendu=webgpu`). Un drapeau d'essai ne laisse jamais
+// l'enfant bloqué : ce qui pend ou jette ici se borne, et la page se recharge
+// sans le drapeau par `window.__repliWebGL` (index.html, hors du graphe de
+// modules — lui seul voit un module qui ne se lie pas). La raison voyage dans
+// sessionStorage ; la page WebGL la dit dans `?diag=1` et dans le journal de
+// bord. `?webgpu=echec` force l'échec du module, `?webgpu=gel` fait pendre
+// `creerRenderer` pour toujours (le chien de garde d'index.html) : les deux
+// chemins, pour les témoins.
+export const DELAI_INIT_MS = 20000;   // import de three/tsl, adaptateur, appareil, init()
+export const DELAI_IMAGE_MS = 30000;  // la première image rendue après l'initialisation
+export const CLE_REPLI = 'wm-webgpu-repli';
+const ESSAI = PARAMS.get('webgpu');
+function replier(raison) {
+  etat.erreur = String(raison && raison.message || raison).slice(0, 240);
+  if (typeof window !== 'undefined' && typeof window.__repliWebGL === 'function') { window.__repliWebGL(etat.erreur); return new Promise(() => {}); }
+  return Promise.reject(raison instanceof Error ? raison : new Error(etat.erreur));
+}
+// Ce que la page WebGL sait d'un repli qui vient d'avoir lieu (lu par `ligneDiag`
+// et par main.js pour le journal de bord) ; `null` s'il n'y en a pas eu.
+export function repliWebGPU() {
+  try { const v = sessionStorage.getItem(CLE_REPLI); return v ? JSON.parse(v) : null; } catch { return null; }
+}
+const borne = (promesse, ms, raison) => Promise.race([promesse, new Promise((_, rejet) => setTimeout(() => rejet(new Error(`${raison} (${Math.round(ms / 1000)} s)`)), ms))]);
+// Sous `?diag=1`, l'étape en cours s'écrit dans le loader de l'accueil : c'est
+// ce que Max lit sur son iPhone quand « Chargement du monde… » ne part pas.
+const DIAG = PARAMS.get('diag') === '1';
+function etape(nom) {
+  etat.etape = nom;
+  if (!DIAG || typeof document === 'undefined') return;
+  const t = document.getElementById('boot-text');
+  if (t) t.textContent = `Chargement du monde… (WebGPU : ${nom})`;
+}
 
 async function adaptateur() {
   if (typeof navigator === 'undefined' || !navigator.gpu) return null;
@@ -65,22 +99,49 @@ async function adaptateur() {
 // `WebGPURenderer`, `init()`, puis les cales.
 export async function creerRenderer(canvas, options = {}) {
   if (!RENDU_WEBGPU || !THREE.WebGPURenderer) return new THREE.WebGLRenderer({ canvas, ...options });
+  if (ESSAI === 'gel') return new Promise(() => {});            // le chien de garde d'index.html doit le voir
+  if (ESSAI === 'echec') return replier('échec forcé (?webgpu=echec)');
+  try {
+    const r = await borne(initialiser(canvas, options), DELAI_INIT_MS, `WebGPU ne s'est pas initialisé`);
+    // Et la première image : un rendu créé qui ne dessine jamais est un canvas
+    // noir pour toujours (v251 : « un canvas qui dessine n'est pas un canvas qui
+    // présente », ici l'inverse). Un onglet caché ne rend pas : on ne juge que
+    // visible.
+    if (etat.renderers === 1 && typeof setTimeout === 'function') {
+      const garde = () => {
+        if (etat.images > 0) return;
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') { setTimeout(garde, DELAI_IMAGE_MS); return; }
+        replier(`aucune image rendue ${Math.round(DELAI_IMAGE_MS / 1000)} s après l'initialisation (étape ${etat.etape})`);
+      };
+      setTimeout(garde, DELAI_IMAGE_MS);
+    }
+    return r;
+  } catch (e) {
+    return replier(e);
+  }
+}
+
+async function initialiser(canvas, options) {
+  etape('module three/tsl');
   if (!tsl) tsl = await import('three/tsl');
   // `?dos=webgl` force le dos WebGL2 du MÊME rendu r187 (les mêmes matériaux
   // en nœuds, la même chauffe) : c'est ce que verra une tablette sans WebGPU,
   // et c'est le bras que le banc compare au WebGPU réel.
   const forceWebGL = /[?&]dos=webgl(&|$)/.test(location.search);
+  etape('adaptateur');
   const a = forceWebGL ? null : await adaptateur();
   let device = null;
-  if (a) { try { device = await a.requestDevice(); } catch (e) { etat.erreur = String(e && e.message || e); } }
+  if (a) { etape('appareil'); try { device = await a.requestDevice(); } catch (e) { etat.erreur = String(e && e.message || e); } }
   // Sans adaptateur, three retombe de lui-même sur son dos WebGL2 : le jeu
   // tourne, et `etat.dos` le dit — on ne mesure jamais WebGL en croyant
   // mesurer WebGPU.
+  etape(a && device ? 'init (dos WebGPU)' : 'init (dos WebGL2)');
   const r = new THREE.WebGPURenderer({ canvas, ...options, forceWebGL, ...(device ? { device } : {}) });
   await r.init();
   etat.dos = r.backend && r.backend.isWebGPUBackend ? 'webgpu' : 'webgl2';
   etat.nom = 'webgpu';
   etat.renderers++;
+  etape('prêt');
   caler(r);
   return r;
 }
@@ -162,7 +223,7 @@ function caler(r) {
   // lui-même à chaque pause de sa boucle : sinon cette image part dans le
   // tampon interne et le canvas saute une image.
   Object.defineProperty(r, 'render', { configurable: true, writable: true, value: (scene, camera) => {
-    if (imageNeuve) { r.info.reset(); imageNeuve = false; }
+    if (imageNeuve) { r.info.reset(); imageNeuve = false; etat.images = (etat.images || 0) + 1; }
     const enVol = r._precompilationState;
     if (enVol) r._finishPreCompile();
     try { return rendre(scene, camera); } finally { if (enVol) r._beginPreCompile(enVol); }
@@ -258,7 +319,10 @@ export function alphaParInstance(m) {
 
 // La ligne de `?diag=1` : le rendu, l'adaptateur, le dos réel, les pipelines.
 export function ligneDiag(renderer) {
-  if (!RENDU_WEBGPU) return 'rendu webgl (three r160)';
+  if (!RENDU_WEBGPU) {
+    const repli = repliWebGPU();
+    return `rendu webgl (three ${THREE.REVISION})${repli ? ` · repli : WebGPU n'a pas démarré — ${repli.raison}` : ''}`;
+  }
   const n = renderer && renderer.info && renderer.info.programs ? renderer.info.programs.length : '?';
   return `rendu webgpu (three ${THREE.REVISION}) · dos ${etat.dos || '?'} · ${etat.adaptateur || 'adaptateur inconnu'}${etat.logiciel ? ' · LOGICIEL' : ''} · ${n} pipelines${etat.erreur ? ` · ${etat.erreur}` : ''}`;
 }

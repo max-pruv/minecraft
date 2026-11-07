@@ -19,6 +19,12 @@ crée un rendu WebGPU — ou son dos WebGL2 si l'appareil n'a pas d'adaptateur,
 et le dit — et dessine Paris, le ciel, la couche HD, la fumée, les traces et
 une voiture avec les greffons portés en nœuds (TSL). `?diag=1` nomme le rendu,
 le dos, l'adaptateur et les pipelines : c'est ce que Max lit sur son iPhone.
+Et le drapeau a sa porte de sortie : si WebGPU ne démarre pas — un module qui
+ne se lie pas (le KTX2Loader de r160 importait deux noms que r187 n'a plus :
+c'est ce qui gelait l'iPhone de Max sur « Chargement du monde… »), une
+initialisation qui jette ou qui pend, une première image qui ne vient pas — la
+page repart sous WebGL en quelques secondes et dit pourquoi dans `?diag=1` et
+au journal de bord.
 `docs/webgpu.md` porte l'inventaire, les mesures et le plan en huit étapes ;
 `docs/webgpu/`, les captures du Marais côte à côte.
 
@@ -30,7 +36,10 @@ chemin un canvas figé par une compilation asynchrone lancée sans attendre
 (l'état de précompilation de three laissé en place) et des compteurs remis à
 zéro par la boucle interne de three — corrigés, vérifiés par la couleur de
 l'image présentée (ciel, sol) après « Jouer ». Le portail ne joue pas le
-prototype : la fumée vérifie que le module neuf arrive sur la tablette, et le
+prototype : la fumée vérifie que le module neuf arrive sur la tablette et que
+tout nom importé de `three` existe dans les deux builds (rouge sur le
+KTX2Loader de la v590), deux témoins de `maj.js` forcent la porte de sortie
+(`?webgpu=echec`, `?webgpu=gel`) et lisent la page WebGL d'arrivée, et le
 reste du jeu ne le lit que sous le drapeau.
 
 ---

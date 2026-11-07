@@ -100,6 +100,48 @@ function verifier(nom, ok, detail = '') {
     verifier('aucun module n\'en importe un qui n\'existe pas',
       casses.length === 0, casses.join(' · ') || 'tous les imports résolvent');
 
+    // UN MODULE QUI IMPORTE `three` PAR SES NOMS SE LIE CONTRE LES DEUX BUILDS
+    // (chantier WebGPU). Sous `?rendu=webgpu`, l'import map sert three r187 à
+    // TOUT le graphe ; le KTX2Loader de r160 (v590) importait deux espaces de
+    // couleur que r187 n'exporte plus, le graphe ne se liait pas, et l'iPhone
+    // de Max restait sur « Chargement du monde… ». Aucune suite ne pouvait le
+    // voir : le banc n'ouvre le drapeau que dans une sonde isolée. On lit donc
+    // les noms importés de `three` dans `src/`, `vendor/` et `vendor/basis/`
+    // contre les `export{…}` des deux builds — un nom absent de l'un des deux
+    // casse le jeu sous ce rendu-là, avant la première ligne de `main.js`.
+    const exportsDe = (texte) => {
+      const noms = new Set();
+      for (const m of texte.matchAll(/export\s*\{([^}]*)\}/g)) {
+        for (const part of m[1].split(',')) { const t = part.trim(); if (!t) continue; const as = t.split(/\s+as\s+/); noms.add((as[1] || as[0]).trim()); }
+      }
+      for (const m of texte.matchAll(/export\s+(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/g)) noms.add(m[1]);
+      return noms;
+    };
+    const lireVendu = (f) => fs.readFileSync(chemin.join(racine, f), 'utf8');
+    const expR160 = exportsDe(lireVendu('vendor/three.module.min.js'));
+    const expR187 = new Set([...exportsDe(lireVendu('vendor/three-webgpu/three.webgpu.min.js')), ...exportsDe(lireVendu('vendor/three-webgpu/three.core.min.js'))]);
+    const lecteurs = [
+      ...fichiersSrc.map((f) => `src/${f}`),
+      ...['vendor', 'vendor/basis'].flatMap((d) => fs.readdirSync(chemin.join(racine, d)).filter((f) => f.endsWith('.js') && !f.endsWith('.min.js')).map((f) => `${d}/${f}`)),
+    ];
+    const absentsR187 = [], absentsR160 = [];
+    let nomsLus = 0;
+    for (const f of lecteurs) {
+      for (const m of lireVendu(f).matchAll(/import\s*\{([^}]*)\}\s*from\s*['"]three['"]/g)) {
+        for (const part of m[1].split(',')) {
+          const n = part.trim().split(/\s+as\s+/)[0].trim(); if (!n) continue;
+          nomsLus++;
+          if (!expR187.has(n)) absentsR187.push(`${f} : ${n}`);
+          if (!expR160.has(n)) absentsR160.push(`${f} : ${n}`);
+        }
+      }
+    }
+    verifier('tout nom importé de three existe dans les deux builds (r160 et r187 sous ?rendu=webgpu)',
+      nomsLus > 50 && expR187.size > 100 && expR160.size > 100 && absentsR187.length === 0 && absentsR160.length === 0,
+      `${nomsLus} nom(s) lus dans ${lecteurs.length} fichier(s) · exports r160 ${expR160.size}, r187 ${expR187.size}`
+      + ` · absents de r187 : ${absentsR187.join(', ') || 'aucun'} · absents de r160 : ${absentsR160.join(', ') || 'aucun'}`
+      + ' (sur le KTX2Loader de la v590 : DisplayP3ColorSpace et LinearDisplayP3ColorSpace absents de r187)');
+
     // L'ATELIER ET LES FEUX D'ARTIFICE SONT PARTIS (v255). Max : « supprime la
     // fonctionnalité de pouvoir faire les feux d'artifice, et tout ça
     // (Atelier, Coffre, Quête, Panneau, Chantier, Records, Chapeaux) à part

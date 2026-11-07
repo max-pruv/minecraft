@@ -45,13 +45,28 @@ du plan :
 - [ ] **Les reflets de carrosserie** (`CubeRenderTarget`, une face par image)
   tournent au banc ; non éprouvés sur l'iPad face par face.
 
-- [ ] **KTX2 sous `?rendu=webgpu`, chemin non éprouvé.** La v590 branche le
-  transcodeur sur le renderer (`brancherKTX2(renderer)`, main.js) ; sous le
-  drapeau c'est un `WebGPURenderer` r187 qui le reçoit, et `detectSupport`
-  n'a été mesuré que sur le WebGL r160. Le défaut (WebGL) ne change pas ; une
-  texture KTX2 qui ne se transcoderait pas sous WebGPU rendrait le modèle avec
-  sa carte d'attente, sans erreur — à mesurer avec `sonde-rendu-webgpu.cjs` sur
-  une voiture déposée, et `?ktx2=0` rend les originaux en attendant.
+- [ ] **KTX2 sous `?rendu=webgpu` : le chargeur se lie, le transcodage reste à
+  mesurer sur l'appareil.** Le KTX2Loader de r160 (v590) importait de `three`
+  `DisplayP3ColorSpace` et `LinearDisplayP3ColorSpace`, que r187 n'exporte
+  plus : sous le drapeau, le graphe de modules ne se liait pas et `main.js` ne
+  s'évaluait jamais — c'est le « Chargement du monde… » d'une minute vu par Max
+  sur son iPhone (vNEXT). Les deux valeurs sont en dur dans le chargeur, la
+  fumée compare tous les imports nommés de `three` aux exports des deux builds,
+  et la page repart sous WebGL si le drapeau ne démarre pas (porte de sortie,
+  `index.html` + `rendu-webgpu.js`). Ce qui reste : au banc, sous WebGPU,
+  `detectSupport` ne trouve aucun format compressé (SwiftShader) et transcode
+  en RGBA32 — correct, mais c'est le poids d'avant la v590. Sur l'iPhone, le
+  `WebGPURenderer` doit annoncer `texture-compression-astc` ; à lire dans le
+  journal de bord (`estimerMemoire`) avec `?rendu=webgpu&diag=1`, et `?ktx2=0`
+  rend les originaux en attendant.
+- [ ] **Le troisième chemin de la porte de sortie n'a pas de témoin au
+  portail.** Un module vendu qui importe de `three` un nom absent de r187 est
+  attrapé par l'écouteur `error` d'`index.html` (hors du graphe de modules) ;
+  éprouvé par la sonde du scratchpad (`page.route` sur `KTX2Loader.js`,
+  seulement sous l'import map r187 — cassé aussi sous WebGL, la page de repli
+  ne démarre pas non plus, vu au premier jet). Les deux autres chemins
+  (`?webgpu=echec`, `?webgpu=gel`) sont des témoins de `maj.js`. Le porter
+  au portail demande une route dans `banc.js`.
 
 ### Rouges du portail de la vNEXT (PR #609), mesurés des deux côtés
 

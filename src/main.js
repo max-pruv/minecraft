@@ -2,7 +2,7 @@
 
 import { secondeVoieParis, secondeVoieVilleMonde, voiesAutoroute, allureDuTroncon, allureVilleMonde, decalerSelonLaSection, DECALAGE_GTA } from './voiesdoubles.js';
 import * as THREE from 'three';
-import { RENDU_WEBGPU, creerRenderer, etatRendu, ligneDiag } from './rendu-webgpu.js';
+import { RENDU_WEBGPU, creerRenderer, etatRendu, ligneDiag, repliWebGPU } from './rendu-webgpu.js';
 import { BLOCK, BLOCK_INFO, HOTBAR_BLOCKS, PLACEABLE_BLOCKS, DECOR_ITEMS, DECOR_START, decorMapColor, PROP_ITEMS, PROP_START, isProp, MEUBLE_ITEMS, MEUBLE_START, isMeuble, RUE_ITEMS, RUE_START, RUE, isRue, ARCHI, CITY_BLOCK, ROUTE_BLOCK } from './blocks.js';
 import { passageEn } from './passages.js';
 import { creerEffetSaison } from './saisons.js';
@@ -363,6 +363,10 @@ const renderer = RENDU_WEBGPU ? await creerRenderer(canvas, { antialias: true })
 // Les textures KTX2 des modèles déposés (v590) : le transcodeur demande au
 // renderer ce que la carte lit, et il doit être branché avant tout modèle.
 brancherKTX2(renderer);
+// Un repli de WebGPU vers WebGL (index.html, rendu-webgpu.js) se dit au
+// journal de bord : c'est ce qui permet de lire, dans `journal_appareil`, où
+// le rendu à l'essai a échoué sur l'appareil de Max sans qu'il recopie rien.
+{ const repli = repliWebGPU(); if (repli) journal.erreur(`repli WebGL : ${repli.raison}`, 'webgpu'); }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 // LE REGARD DE NEW YORK, PARTOUT (v247). Max : « regarde les améliorations
 // qu'il y a encore eu dans la ville de New York et reproduis-les sur

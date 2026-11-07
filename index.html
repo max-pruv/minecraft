@@ -2990,6 +2990,50 @@
       document.write('<script type="importmap">' + JSON.stringify({ imports: imports }) + '<\/script>');
     })();
   </script>
+  <script>
+    // LA PORTE DE SORTIE DU RENDU À L'ESSAI (chantier WebGPU). Un drapeau
+    // d'essai ne laisse jamais l'enfant bloqué : si le jeu ne démarre pas sous
+    // `?rendu=webgpu`, la page se recharge sans lui, et la raison voyage dans
+    // sessionStorage (`?diag=1` la lit, le journal de bord aussi).
+    //
+    // Pourquoi ICI et pas dans `src/rendu-webgpu.js` : la première panne vue
+    // (iPhone de Max, « Chargement du monde… » sans fin) était un module
+    // vendu qui importait de `three` deux noms que le build r187 n'exporte
+    // plus. Le graphe de modules ne se LIE pas : aucun module du jeu ne
+    // s'exécute, donc aucun module du jeu ne peut se rattraper. Seul ce script
+    // classique, hors du graphe, voit l'erreur (événement `error` de la
+    // fenêtre) et peut agir. `rendu-webgpu.js` appelle le même `__repliWebGL`
+    // pour ce qui échoue plus tard (adaptateur, appareil, `init()`, première
+    // image). `?webgpu=gel` (ce script) et `?webgpu=echec` (le module) sont
+    // les deux chemins, pour les témoins ; `?webgpums=` règle le délai.
+    (function () {
+      if (!/[?&]rendu=webgpu(&|$)/.test(location.search)) return;
+      var erreurs = [];
+      var m = location.search.match(/[?&]webgpums=(\d+)/);
+      var delai = m ? Number(m[1]) : 40000;
+      function replier(raison) {
+        if (window.__repliFait) return;
+        window.__repliFait = true;
+        raison = String(raison).slice(0, 240);
+        try { sessionStorage.setItem('wm-webgpu-repli', JSON.stringify({ raison: raison, t: Date.now(), erreurs: erreurs.slice(0, 3) })); } catch (e) { /* mode privé */ }
+        try { console.error('rendu WebGPU : repli sur WebGL — ' + raison); } catch (e) { /* rien */ }
+        var t = document.getElementById('boot-text');
+        if (t) t.textContent = 'Le nouveau rendu n’a pas démarré — on repasse au rendu habituel…';
+        var url = location.href.replace(/([?&])rendu=webgpu(&|$)/, '$1rendu=webgl$2');
+        setTimeout(function () { location.replace(url); }, 400);
+      }
+      window.__repliWebGL = replier;
+      window.addEventListener('error', function (e) {
+        var msg = String((e && (e.message || (e.error && e.error.message))) || '');
+        erreurs.push(msg.slice(0, 200));
+        // un module qui ne se lie pas ou ne se charge pas : main.js ne s'évaluera jamais
+        if (!window.__game && /does not provide an export|Failed to fetch|Importing a module script failed|import map|Unexpected token|SyntaxError|does not export/i.test(msg)) replier(msg);
+      });
+      setTimeout(function () {
+        if (!window.__game) replier('le jeu n’a pas démarré en ' + Math.round(delai / 1000) + ' s' + (erreurs.length ? ' · ' + erreurs[0] : ''));
+      }, delai);
+    })();
+  </script>
   <script type="module" src="./src/main.js"></script>
   <script>
     // Mise à jour obligatoire au lancement.

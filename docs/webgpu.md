@@ -240,6 +240,16 @@ d'être laissée pleine ; le repli WebGL2 ne rogne aucun greffon ; et une
 mesure de cadence sur l'appareil tranche, jamais une estimation de banc.
 
 
+- **Un module de r160 gardé sous r187.** Le KTX2Loader (v590) importait de
+  `three` deux espaces de couleur Display P3 que r187 n'exporte plus : sous
+  l'import map du drapeau, le graphe de modules ne se liait pas et `main.js` ne
+  s'évaluait jamais — « Chargement du monde… » une minute sur l'iPhone de Max,
+  sans une ligne d'erreur visible. Mesure : la fumée compare tous les imports
+  nommés de `three` (src, vendor, vendor/basis) aux exports des deux builds. Et
+  la règle qui en sort : le drapeau a une porte de sortie bornée hors du graphe
+  de modules (`index.html`), qui recharge sans lui et dit pourquoi dans
+  `?diag=1` et au journal de bord ; `?webgpu=echec` et `?webgpu=gel` la
+  forcent (témoins de `maj.js`), `?webgpums=` règle le délai.
 - **Safari.** WebGPU est dans Safari 26 (iOS 26) ; l'iPhone de Max y est, l'iPad
   de la famille (six ans, v296) n'y sera jamais. Le repli WebGL2 du
   `WebGPURenderer` n'est pas « l'ancien rendu » : c'est le rendu de nœuds sur

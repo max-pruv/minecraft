@@ -122,7 +122,7 @@ Ne pas abaisser les distances pour faire passer une interférence de trafic.
 
 Chantier réalisme 3 : étude, prototype derrière `?rendu=webgpu`, plan dans
 `docs/webgpu.md`. Le rendu par défaut est la ligne d'avant au bit près
-(`RENDU_WEBGPU ? await creerRenderer(…) : new THREE.WebGLRenderer(…)`). Six règles.
+(`RENDU_WEBGPU ? await creerRenderer(…) : new THREE.WebGLRenderer(…)`). Huit règles.
 
 - **DEUX THREE DANS LE DÉPÔT, UN SEUL `import 'three'`.** `index.html` écrit
   l'import map pendant l'analyse d'après l'adresse : `three` → r160 par défaut,
@@ -163,6 +163,30 @@ Chantier réalisme 3 : étude, prototype derrière `?rendu=webgpu`, plan dans
   l'appareil, avec `?rendu=webgpu&diag=1`, et la ligne de diagnostic nomme le
   dos réel (`webgpu` ou `webgl2`) et l'adaptateur : on ne mesure pas WebGL en
   croyant mesurer WebGPU.
+- **UN MODULE VENDU QUI IMPORTE `three` PAR SES NOMS SE LIT CONTRE LES EXPORTS
+  DES DEUX BUILDS.** Max, iPhone, `?rendu=webgpu&diag=1` : « Chargement du
+  monde… » une minute, rien d'autre. Le KTX2Loader de r160 (v590) importait
+  `DisplayP3ColorSpace` et `LinearDisplayP3ColorSpace`, que r187 n'exporte plus ;
+  sous l'import map du drapeau le graphe de modules ne se LIE pas, donc aucun
+  module du jeu ne s'exécute — ni `main.js`, ni ce qui aurait pu dire l'erreur.
+  Le banc ne pouvait pas le voir : il n'ouvre le drapeau que dans une sonde
+  isolée, à qui `prep=0` cachait de surcroît la préparation. Les deux valeurs
+  sont en dur dans le chargeur ; la fumée lit TOUS les imports nommés de `three`
+  (`src/`, `vendor/`, `vendor/basis/`) contre les `export{…}` des deux builds.
+  Tout module de r160 qu'on garde sous r187 passe par là.
+- **UN DRAPEAU D'ESSAI A UNE PORTE DE SORTIE BORNÉE, ET ELLE VIT HORS DU GRAPHE
+  DE MODULES.** Un module qui ne se lie pas, seul un script classique le voit :
+  `index.html` (`__repliWebGL`) écoute `error` et tient un chien de garde
+  (`?webgpums=`, 40 s) sur `window.__game` ; `rendu-webgpu.js` borne chaque
+  étape (`DELAI_INIT_MS`) et la première image (`DELAI_IMAGE_MS`, pas quand
+  l'onglet est caché), écrit l'étape dans le loader sous `?diag=1`. Le repli
+  recharge la page avec `rendu=webgl` et la raison voyage dans sessionStorage
+  (`CLE_REPLI`) : la page WebGL la dit dans `?diag=1` (`ligneDiag`) et au journal
+  de bord (`journal.erreur`, main.js). `?webgpu=echec` et `?webgpu=gel` forcent
+  les deux chemins (témoins de `maj.js`) ; le troisième — un import cassé — se
+  provoque par `page.route` SOUS L'IMPORT MAP R187 SEULEMENT, sinon la page de
+  repli ne démarre pas non plus (sonde du scratchpad, premier jet). « Un drapeau
+  d'essai ne doit jamais laisser l'enfant bloqué » (Max, par la coordinatrice).
 
 ## Invariants non négociables
 
