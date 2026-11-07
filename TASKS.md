@@ -117,6 +117,19 @@ du plan :
   les deux déclarés intermittents (v559, table « ❌ 2 fois, ✅ 3 fois | ✅ 4
   fois » plus bas), et VERTS au run 78 sur le même arbre une heure plus tôt :
   le même témoin, deux verdicts, zéro ligne changée. `plafond.js` verte.
+  Tranche 2/4 (finie à 14 h 48, avant l'annulation) : `metro.js` et
+  `parent.js` vertes ; `reseau.js` cinq rouges — les deux fluidités de l'ami
+  (direct 0,31, nuage 0,50 : déclarées), et trois d'UNE racine : « la voiture
+  qu'on prend dans la rue garde sa couleur » rend `{ auVolant: false }` (la
+  boucle n'a pris aucune voiture de la rue à teinte connue dans sa fenêtre —
+  l'intermittence déclarée aux v326, v365 et v369 : ❌ au portail, ✅ 77/77
+  rejouée seule, ❌ sur `origin/main` aussi), et « chez l'ami, la voiture de
+  la rue qui arrive derrière… » (`releves: 0, essais: 0`) comme « sur la carte
+  de l'ami, l'enfant au volant… » (`assis: false`) exigent `prise.auVolant`
+  dans leur verdict : rouges PAR CONSTRUCTION quand le premier l'est (v285 :
+  « le second verdict dépend du premier »), rien de mesuré en plus. Deux
+  témoins qui ne peuvent pas rendre de verdict sans le premier devraient le
+  dire (`err: 'pas au volant'`) au lieu de rougir — dette de témoin.
   Portail local sur la fusion (`--malgre-fumee`) : `reseau.js` « pas par
   paquets » (déclaré), `manhattan.js` morte au clic de la ligne 42 (déclaré),
   `monte.js` six rouges dont cinq déclarés (deux voisines, piler au feu,
