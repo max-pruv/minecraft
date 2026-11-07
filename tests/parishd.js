@@ -1735,6 +1735,105 @@ function verifier(nom, ok, detail = '') {
       verifier('le programme d\'ombre de la couche HD est chauffé à l\'accueil : aucun ne naît quand Paris arrive',
         avantO.length >= 1 && neuvesO.length === 0, `${avantO.length} avant d'entrer, ${neuvesO.length} neuve(s) en jeu`);
     }
+    // ── LA LUMIÈRE ET LE POST-TRAITEMENT (vNEXT) ───────────────────────────────
+    //
+    // L'image se compose en HDR puis se développe (postfx.js) ; le niveau vient
+    // du palier, le palier bas ne paie rien, le rendu logiciel le coupe. Ce
+    // qui se garde ici : (1) la règle pure du palier ; (2) sous le post-
+    // traitement, AUCUN programme ne naît en jeu — ni à la nuit tombée, ni à
+    // l'arrivée dans Paris —, parce que la chauffe compile avec la cible posée
+    // (vNEXT) ; (3) le bloom ajoute de la lumière la nuit, autour de ce qui
+    // émet, et n'en retire nulle part ; (4) de jour, le développement rend la
+    // luminosité de l'ancien chemin (ACES, exposition 1,05) : rien ne délave.
+    {
+      const PX = require('./sonde-postfx.cjs');
+      const PAL = await import('../src/palier.js');
+      verifier('le post-traitement est dans la fiche du palier : rien au palier bas, un niveau au moyen, deux au haut, et `?postfx=` force',
+        PAL.PALIERS.bas.postfx === 0 && PAL.PALIERS.moyen.postfx === 1 && PAL.PALIERS.haut.postfx === 2
+          && PAL.reglageDe(PAL.PALIERS.bas, true).postfx === 0 && PAL.reglageDe(null, true).postfx === 1
+          && PAL.PARAMS_FORCANTS.includes('postfx'),
+        JSON.stringify({ bas: PAL.PALIERS.bas.postfx, moyen: PAL.PALIERS.moyen.postfx, haut: PAL.PALIERS.haut.postfx, sansPalierTactile: PAL.reglageDe(null, true).postfx }));
+      await souffler();
+      const lumi = await banc.jouerSeul('Lumina', { rr: 4, ombres: 1, viewport: { width: 1280, height: 720 }, dpr: 1, params: '&hd=2&postfx=1', pret: true });
+      // quelques images rendues avant de relever les clés : ce que la première
+      // image compile (les ombres des arbres du point d'apparition, v572) n'est
+      // pas ce qu'on mesure
+      await lumi.waitForFunction(() => __game.renderer.info.render.frame > 5, null, { timeout: 60000 }).catch(() => {});
+      const regle = await lumi.evaluate(async () => {
+        const M = await import('./src/postfx.js'); const g = __game;
+        const q = (s) => new URLSearchParams(s);
+        return { actif: g.postfx.actif, cout: g.postfx.cout(), applique: g.reglageApplique && g.reglageApplique.postfx, cible: !!g.renderer.getRenderTarget(),
+          logiciel: M.niveauDemande(q(''), { palier: 2, logiciel: true }), bas: M.niveauDemande(q(''), { palier: 0, logiciel: false }),
+          force: M.niveauDemande(q('postfx=2'), { palier: 0, logiciel: true }), coupe: M.niveauDemande(q('postfx=0'), { palier: 2, logiciel: false }) };
+      });
+      verifier('`?postfx=1` allume le post-traitement au banc, la cible HDR reste posée entre deux images, et la règle du niveau coupe en rendu logiciel, suit le palier, cède à l\'adresse',
+        regle.actif && regle.cout.actif && regle.cout.passes >= 4 && regle.cible && regle.applique === 1
+          && regle.logiciel === 0 && regle.bas === 0 && regle.force === 2 && regle.coupe === 0,
+        JSON.stringify(regle));
+      const avantNuit = await PX.cles(lumi);
+      await lumi.evaluate(() => window.__setDayTime(0.75));
+      // on attend le FAIT du monde — la nuit tombée dans ce que le ciel publie
+      // — jamais le verdict (v291), borné
+      const nuitVenue = await lumi.waitForFunction(() => __game.etatLumiere().nuit > 0.9, null, { timeout: 30000 }).then(() => true).catch(() => false);
+      const img0 = await lumi.evaluate(() => __game.renderer.info.render.frame);
+      await lumi.waitForFunction((n) => __game.renderer.info.render.frame > n + 3, img0, { timeout: 30000 }).catch(() => {});
+      const neuvesNuit = await PX.clesNeuves(lumi, avantNuit);
+      verifier('sous le post-traitement, la nuit tombée ne compile aucun programme : les vitres et les lanternes montent, la clé ne bouge pas',
+        nuitVenue && neuvesNuit.length === 0, `nuit ${nuitVenue} · ${neuvesNuit.length} clé(s) neuve(s) ${neuvesNuit.map((k) => k.slice(0, 60)).join(' | ')}`);
+      // Paris, la nuit : la ville éclairée arrive avec ses façades, ses
+      // lampadaires, ses voitures — et aucun programme ne doit naître pour le
+      // post-traitement. Deux clés naissent à Paris AVEC OU SANS post-traitement
+      // (`basic` et `depth` avec une carte, mesurées identiques sur `postfx=0`,
+      // vNEXT) : ce n'est pas la cible qui les fait naître, et on les nomme.
+      const avantParis = await PX.cles(lumi);
+      await lumi.evaluate((P) => { const j = __game.player; j.pos.set(P.x + 20, 45, P.z + 20); j.yaw = 0.5; j.pitch = -0.2; j.syncCamera(); }, (await import('../src/mondes.js')).positionDe('paris'));
+      const t0 = Date.now();
+      await lumi.waitForFunction(() => __game.statsMaillage && __game.statsMaillage.recus && __game.statsMaillage.recus.length >= 40, null, { timeout: 45000 }).catch(() => {});
+      await dormir(8000);
+      const neuvesParis = await PX.clesNeuves(lumi, avantParis);
+      const eclairees = neuvesParis.filter((k) => /^(lambert|standard|physical|phong|points|sprite|line)/.test(k));
+      const porteurs = await lumi.evaluate((cles) => {
+        const g = __game; const noms = [];
+        g.scene.traverse((o) => { if (!o.isMesh) return; const ms = Array.isArray(o.material) ? o.material : [o.material];
+          for (const m of ms) { const pr = g.renderer.properties.get(m); const k = pr && pr.currentProgram && pr.currentProgram.cacheKey; if (k && cles.includes(k)) noms.push(`${o.name || o.type}/${m.name || m.type}`); } });
+        return [...new Set(noms)].slice(0, 6);
+      }, neuvesParis);
+      verifier('à l\'arrivée dans Paris la nuit, aucun matériau éclairé ne se recompile pour la cible : les programmes ont été chauffés avec elle',
+        eclairees.length === 0 && neuvesParis.length <= 2,
+        `${neuvesParis.length} clé(s) neuve(s) en ${Math.round((Date.now() - t0) / 1000)} s (${porteurs.join(', ') || 'porteur inconnu'}) : ${neuvesParis.map((k) => k.slice(0, 40)).join(' | ')}`);
+      // LE BLOOM SE MESURE SUR LA VILLE CHARGÉE, JAMAIS À SON ARRIVÉE. Huit
+      // secondes après le saut, 14 morceaux à façades installés : 1,8 % de pixels
+      // éclaircis — le rouge du portail ; la ville chargée (49 morceaux à façades,
+      // 42 Mo), 2,8 à 3,3 %, stable sur trois minutes, le MÊME chiffre sur le
+      // commit de la livraison (`sonde-bloom-charge`, deux arbres). On attend
+      // donc le FAIT du monde — le compte de morceaux à façades qui ne bouge plus
+      // sur trois relevés — borné à 60 s, la durée dans le message (v291), et la
+      // barre se pose à la moitié de la mesure (v237) : 1,5 %.
+      const charge = await lumi.evaluate(async () => {
+        const g = __game; const compte = () => [...g.chunkMeshes.values()].filter((e) => e.facades).length;
+        let der = -1, stable = 0; const t0 = performance.now();
+        while (performance.now() - t0 < 60000) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const n = compte(); stable = n === der ? stable + 1 : 0; der = n;
+          if (stable >= 3 && n > 0) break;
+        }
+        return { facades: der, stable, ms: Math.round(performance.now() - t0) };
+      });
+      const bloom = await PX.bloomLaNuit(lumi);
+      verifier('la nuit à Paris chargé, le bloom ajoute de la lumière autour de ce qui émet et n\'en retire nulle part',
+        bloom.eclaircis > bloom.pixels * 0.015 && bloom.assombris <= bloom.pixels * 0.0005 && bloom.moyenne > 0,
+        `${bloom.eclaircis} pixels éclaircis (${(bloom.part * 100).toFixed(2)} %), ${bloom.assombris} assombris, +${bloom.moyenne.toFixed(2)} de luminance moyenne sur ${bloom.pixels} · ${charge.facades} morceau(x) à façades, stable ${charge.stable} relevé(s), en ${charge.ms} ms`);
+      // le jour, en dernier : la parité rend une image par l'ANCIEN chemin, qui
+      // compile les variantes d'écran — des clés neuves, voulues ici
+      await lumi.evaluate(() => window.__setDayTime(0.42));
+      await lumi.waitForFunction(() => __game.etatLumiere().jour > 0.95, null, { timeout: 30000 }).catch(() => {});
+      const img1 = await lumi.evaluate(() => __game.renderer.info.render.frame);
+      await lumi.waitForFunction((n) => __game.renderer.info.render.frame > n + 3, img1, { timeout: 30000 }).catch(() => {});
+      const parite = await PX.pariteDuJour(lumi);
+      await lumi.close();
+      verifier('de jour, le développement garde la luminosité de l\'ancien chemin (ACES, exposition du jeu) : rien ne délave, rien ne bouche',
+        parite.rapport > 0.85 && parite.rapport < 1.12, `luminance moyenne ${parite.postfx.toFixed(1)} contre ${parite.ancien.toFixed(1)} par l'ancien chemin (rapport ${parite.rapport.toFixed(3)})`);
+    }
   } finally {
     await banc.fermer();
   }

@@ -82,9 +82,33 @@ export function createSky({ scene, camera, sunLight }) {
     new THREE.SphereGeometry(1, 24, 12),
     new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
-      uniforms: { zenith: { value: new THREE.Color(0x4f86b8) }, horizon: { value: new THREE.Color(0x87ceeb) } },
+      uniforms: {
+        zenith: { value: new THREE.Color(0x4f86b8) }, horizon: { value: new THREE.Color(0x87ceeb) },
+        soleil: { value: new THREE.Vector3(0, 1, 0) }, jour: { value: 1 }, rasant: { value: 0 },
+      },
       vertexShader: 'varying vec3 direction;void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-      fragmentShader: 'varying vec3 direction;uniform vec3 zenith;uniform vec3 horizon;void main(){float h=max(normalize(direction).y,0.);gl_FragColor=vec4(mix(horizon,zenith,pow(h,.65)),1.);\n #include <tonemapping_fragment>\n #include <colorspace_fragment>\n}',
+      // LE CIEL DIFFUSE (vNEXT). Au dégradé horizon → zénith s'ajoutent ce qu'une
+      // atmosphère fait d'un soleil : une bande de brume claire et désaturée au
+      // ras de l'horizon (la lumière diffusée par l'air épais qu'on traverse en
+      // regardant loin), et la diffusion vers l'avant autour de l'astre — large
+      // et faible à midi, serrée et chaude quand il rase l'horizon. Les valeurs
+      // dépassent 1 près du soleil : la correspondance tonale les compresse, et
+      // le post-traitement (postfx.js) en fait l'éblouissement.
+      fragmentShader: `varying vec3 direction;uniform vec3 zenith;uniform vec3 horizon;uniform vec3 soleil;uniform float jour;uniform float rasant;
+void main(){
+  vec3 d=normalize(direction);float h=max(d.y,0.);
+  vec3 c=mix(horizon,zenith,pow(h,.65));
+  float bande=exp(-h*7.0);
+  vec3 brume=mix(horizon,vec3(dot(horizon,vec3(.333))),0.35)*(1.0+0.3*jour);
+  c=mix(c,brume,bande*0.45*jour);
+  float cosS=max(dot(d,soleil),0.0);
+  float mie=pow(cosS,6.0)*0.10*jour+pow(cosS,48.0)*(0.25+1.4*rasant);
+  vec3 teinte=mix(vec3(1.0,0.92,0.8),vec3(1.0,0.55,0.25),rasant);
+  c+=teinte*mie*smoothstep(-0.1,0.05,soleil.y);
+  gl_FragColor=vec4(c,1.);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`,
     })
   );
   dome.scale.setScalar(RAYON * 2);      // au-delà des astres, en deçà du plan lointain
@@ -131,6 +155,10 @@ export function createSky({ scene, camera, sunLight }) {
     // et le coucher, et il reste invisible en plein midi. Même largeur que la
     // teinte orange du ciel, sinon on obtient une auréole blanche sur du bleu.
     const rasant = Math.exp(-((hauteur / 0.22) ** 2));
+    // le dôme sait où est le soleil, et s'il rase l'horizon (vNEXT)
+    dome.material.uniforms.soleil.value.copy(dirSoleil);
+    dome.material.uniforms.jour.value = daylight;
+    dome.material.uniforms.rasant.value = rasant;
     halo.material.opacity = rasant * 0.9;
     halo.visible = halo.material.opacity > 0.01 && hauteur > -0.3;
 

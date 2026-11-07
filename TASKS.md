@@ -1,5 +1,108 @@
 # Ce qui est en cours
 
+## La lumière et le post-traitement (vNEXT) — ce qui reste, déclaré
+
+- [x] **La fusion de la PR #600 se fait seule (consigne de Max du 7 novembre,
+  autonomie) :** portail trié (vert, ou rouges prouvés identiques sur
+  `origin/main` et déclarés ici), revue d'écran faite, et la PR #611 passée
+  (la numérotation après la fusion). Squash avec un `commit_message` explicite
+  écrit d'après l'entrée du journal, sans identifiant ni nom de modèle ni ligne
+  d'attribution qui en porte un (le commit d7c4adf de la branche en porte un
+  dans son message, non amendable d'ici) ; relire le message du commit sur
+  `main` ; supprimer la branche ; vérifier que le workflow `Numérotation` a
+  poussé et que la production sert la version (`curl … sw.js`). Les captures
+  ne se font plus valider par Max avant la fusion : il juge en production, sur
+  son iPhone, par le geste envoyé à la session de coordination (défaut 45).
+- [ ] **Portail de cette livraison, trié (GitHub run 77 sur de872eb, et le
+  portail local sur la branche fusionnée avec la v590).** Tout rouge est
+  classé, aucun n'est à la livraison :
+  - identiques sur `origin/main` (run 67 de la v590) : `degats.js` les sept
+    témoins du mur de face (« foncer dans un mur… », `chocs: []`, vmax 41) ;
+    `reseau.js` la fluidité directe (« pas par bonds ») et par le nuage
+    (« pas par paquets », local) ; `monte.js` dix témoins de circulation
+    (« la circulation naît à l'approche — aucune voiture », « les voitures ne
+    se traversent plus », « deux voisines… », « au feu, la voiture freine »,
+    « deux voitures ne sont jamais l'une dans l'autre », Moscou ×2, « rendent
+    leur mémoire — Rome n'a pas fabriqué de voitures », « une voiture tombe
+    dans l'eau », « collée à une voiture ») ; `manhattan.js` « les banlieues…
+    sans compiler de matière » (local : la suite meurt au clic sur
+    « Jouer », `locator.click` 30 s, déclaré v512) ;
+  - déjà déclarés intermittents ici : `monte.js` « on voit son flanc », « un
+    passant change de trottoir au feu », « chaque feuille au-dessus de SA
+    colonne » (`ecartMax` 7,06, famille des 6,28 et 6,72) ; `reseau.js` le
+    passager (v265) ; `carte.js` l'appui long « pointeurs 0 » et les sept
+    témoins du GPS qui en dépendent (v258, v269 : rouge de charge, vert seul) ;
+  - confirmés par le second passage local, verts sur la branche après un rouge
+    GitHub : `parishd.js` « ne traverse pas une terrasse de café » (GitHub :
+    « une voiture de la rue a gêné chaque essai », les quatre sites ; local :
+    `fin` 0,51, 7,5 blocs — le tirage de trafic de la v583) et `monte.js`
+    « ses roues tournent… pas des savonnettes » (GitHub : 0,0 m en 8 s, la
+    page rendait 2,7 s de jeu en 19 s au témoin d'avant ; local : 3,3 m,
+    9,5 rad) ;
+  - attendu, et disparu depuis : `maj.js` « le badge de version ouvre le
+    journal » (la branche portait alors une entrée 591 en tête du journal,
+    `sw.js` restant à v590 ; depuis #611 la branche n'écrit plus de numéro,
+    `livraisons/lumiere-postfx.md` le reçoit après la fusion).
+  Le portail local a été arrêté par la borne de deux heures du banc au milieu
+  de `monte.js` (80 verts, zéro rouge atteint) ; il n'a pas été relancé : les
+  deux confirmations qu'on lui demandait étaient faites, et relancer
+  `monte.js` seule aurait interdit de toucher `src/` pendant l'heure de la
+  reprise sur `main`.
+- [ ] **Défaut 45 de la revue d'écran** : en vol face au soleil bas, la brume
+  de hauteur du niveau 2 voile le lointain jusqu'à effacer collines et Seine.
+  À juger sur l'iPhone (`?brume=0.5` contre 1) ; si confirmé, l'atténuer dans
+  l'axe du soleil ou la borner par la distance au sol (`src/postfx.js`).
+- [ ] **Le coût se mesure sur l'appareil, pas au banc.** Le banc rend en
+  logiciel ; `?diag=1` affiche `postfx niveau · msaa · cible · étages · passes ·
+  ms soumission`. À relever sur l'iPhone de Max et l'iPad : cadence médiane et
+  pire image avec `?postfx=1`, `?postfx=2`, `?postfx=0` dans Paris de nuit.
+  Si le niveau 2 (brume de hauteur, cinq étages de bloom) coûte plus de deux
+  millisecondes, il reste au palier haut seulement ; si le niveau 1 coûte sur
+  l'iPad moyen, `msaa` descend à 2 par `?msaa=2` avant de toucher au niveau.
+- [ ] **Pas de repli sans échantillons multiples.** La cible HDR porte
+  `samples` (MSAA) et une texture de profondeur ; three r160 résout la
+  profondeur. Si un appareil refuse (erreur GL à la première image), le
+  post-traitement doit tomber à `msaa 0` et un anticrénelage d'écran (FXAA)
+  prendre le relais — non écrit, pas mesuré nécessaire.
+- [ ] **Les étages suivants du chantier, écartés de cet incrément avec leur
+  raison :** l'occlusion ambiante à l'écran (demande les normales ou un rayon
+  de profondeur par pixel, trop cher sur mobile sans mesure), les ombres en
+  cascades (l'addon change la clé de TOUS les programmes et les lampes de rue
+  sont déjà au plafond de quatre), les sondes de lumière indirecte (l'hémisphère
+  est déjà une harmonique d'ordre 1 ; une sonde par ville est un chantier de
+  contenu). Chacun se mesure avant de s'écrire (v247 : la passe est le coût).
+- [ ] **Deux programmes naissent à l'arrivée dans Paris, avec ou sans
+  post-traitement** : le nom d'une station de métro (`nom-station`,
+  `MeshBasicMaterial` à carte, et sa variante de profondeur). Mesuré identique
+  sur `postfx=0` ; le témoin de la vNEXT le nomme et le tolère. La chauffe des
+  plaques (v529) ne couvre pas cette clé-là : à chauffer à l'accueil, hors de
+  cette zone.
+- [ ] **Un témoin qui lit des pixels de l'écran sous le post-traitement
+  repose l'écran d'abord** (`renderer.setRenderTarget(null)`) : la cible HDR
+  reste posée entre deux images. Aucun témoin du portail ne le fait avec
+  `?postfx=1` (le banc ne l'allume pas) ; le jour où une suite force
+  `postfx`, ses lectures de pixels passent par `sonde-postfx.cjs`.
+
+- [ ] **Rouges du portail GitHub de la PR #600 (exécution 57), aucun de la
+  livraison — chacun relu dans le journal du portail d'une PR fusionnée
+  voisine (exécution 67, `memoire-ktx2` → v590, le 6 novembre), rouge à
+  l'identique :** `manhattan.js` « les banlieues se dessinent avec les modèles
+  de Max, sans compiler de matière en y entrant » (clés 115 → 119 sur la
+  branche, 127 → 129 sur `main` : deux à quatre clés naissent à l'entrée dans
+  les quartiers, `postfx` n'y est pas — le banc ne l'allume pas ; à démonter par
+  une sonde qui NOMME la case de la clé qui diffère, v319) ; `degats.js` « foncer
+  dans un mur abîme la voiture » (`chocs: []`, la voiture n'atteint pas le mur
+  à `vmax 41` sur les deux arbres ; cascade de sept rouges derrière, le même
+  intermittent que « deux murs », l. 121). Les autres rouges de l'exécution
+  (`carte.js` flèche du GPS, `maj.js` loaders et badge 587, `reseau.js`
+  fluidité, `monte.js` ×9) sont déjà déclarés plus bas.
+- [x] **« Le ciel est une voûte » (`monte.js`) était rouge sur la branche
+  seule, et c'était le témoin.** Il lisait le haut de l'écran à midi, c'est-à-dire
+  à vingt degrés du soleil, dans son auréole (vNEXT : 176 contre 156 sur v585) ;
+  la voûte loin du soleil n'a pas bougé (164 contre 162 à 60°, sonde
+  `sonde-ciel.cjs` sur les deux arbres). Repointé : il lit le ciel à 60° à
+  l'opposé du soleil contre 15° sur l'horizon, et publie l'auréole.
+
 ## Les textures en KTX2 (mémoire, chantier réalisme 4) — ce qui reste
 
 - **Mesurer sur l'iPhone et l'iPad.** Le banc lit l'ASTC et le BC7 (un octet

@@ -36,6 +36,87 @@ modèles simplement arrondis et nom « HD » ne prouvent pas la qualité. Vérif
 les vraies images, le contact et la conduite ; les défauts hérités se déclarent,
 ils ne constituent pas une exception pour les nouveaux rendus.
 
+## La lumière et le post-traitement (vNEXT) — l'image se développe, et la cible reste posée
+
+Chantier « réalisme » 2 sur 5. `src/postfx.js` (isolé, pour le chantier
+WebGPU) compose l'image en HDR et la développe : exposition et balance selon
+l'heure, bloom de ce qui émet la nuit, lueur du soleil dans la part de
+brouillard, brume de hauteur, ACES en dernier ; `sky.js` porte la diffusion du
+soleil et la bande d'horizon dans le dôme. Six règles.
+
+- **LE NIVEAU VIENT DU PALIER, ET LE PALIER BAS NE PAIE RIEN.** `postfx` dans
+  la fiche (`palier.js`) : 0 · 1 · 2 ; `niveauDemande` coupe en rendu logiciel
+  comme les ombres (v247), suit le palier, cède à `?postfx=`. Au niveau 0 rien
+  n'est créé : `creerPostFx` rend un objet inerte dont `rendre` est
+  `renderer.render` : la chaîne de rendu est celle de la v585. Ce qui change à
+  TOUT palier, c'est le dôme du ciel (`sky.js` : diffusion du soleil, bande
+  d'horizon) — un dessin, le même programme, aucune cible, donc rien à payer ;
+  et c'est pour cela qu'une capture `postfx=0` de cette branche n'est pas une
+  capture de la v585. `?postfx=` et `?msaa=`
+  sont des paramètres FORÇANTS (v284) : une page qui les porte ne range pas de
+  palier.
+- **RENDRE VERS UNE CIBLE CHANGE LA CLÉ DE TOUT PROGRAMME, DONC LA CIBLE RESTE
+  POSÉE.** three retire la correspondance tonale et la conversion sRGB des
+  matériaux dès que la cible n'est pas l'écran : un programme compilé pour
+  l'écran et un programme compilé pour la cible sont deux clés. La chauffe de
+  l'accueil passe donc par `postfx.avecCible` (`pas`, `pasNY` de main.js), et
+  `postfx.rendre` REPOSE la cible après chaque image : ce qui compile entre deux
+  images — un prototype de la flotte qui arrive, la chauffe asynchrone des
+  fabriquées — compile pour la cible courante, c'est-à-dire la bonne. Les
+  étages du bloom se chauffent vers la cible, la composition vers l'écran
+  (`chauffer`) : chacun là où il se dessinera. Mesuré : zéro clé neuve à la nuit
+  tombée, zéro due au post-traitement à l'arrivée dans Paris.
+  **Et c'est la cible POSÉE qui garde, pas `avecCible`** : l'accueil rend le
+  monde avant que la chauffe ne commence, donc la cible est déjà là quand `pas`
+  tourne — `chauffe()` sans l'enveloppe laisse le témoin vert (vérifié). Le
+  désarmement qui le fait rougir est de rendre l'écran après chaque image :
+  19 clés neuves à Paris (corps, dépôts), 2 la nuit, cible absente. Un témoin de
+  clés se vérifie rouge sur ce désarmement-là, jamais sur l'enveloppe seule.
+- **UN TÉMOIN QUI LIT L'ÉCRAN REPOSE L'ÉCRAN.** `gl.readPixels` lit le FBO
+  lié ; sous le post-traitement c'est la cible HDR. `sonde-postfx.cjs` fait
+  `renderer.setRenderTarget(null)` avant de lire, et compare deux réglages en
+  REDÉVELOPPANT la même image (`rendre(…, { sansScene: true })`) dans une seule
+  tâche : deux rendus à deux images comparent le mouvement de la rue, pas le
+  réglage (mon premier témoin du bloom comptait 23 % de pixels « assombris »
+  — des voitures qui avaient avancé).
+  **Et il mesure la ville CHARGÉE, jamais son arrivée** : huit secondes après
+  le saut, 14 morceaux à façades rendent 1,8 % de pixels éclaircis ; chargée,
+  2,8 à 3,3 %, stable, le même chiffre sur le commit de la livraison. Le
+  témoin attend le compte de morceaux à façades qui ne bouge plus (v291), et
+  sa barre est la moitié de la mesure (v237). Le journal disait « 7,8 % » :
+  un chiffre qu'aucun état ne rend ; on écrit la mesure, pas le souvenir.
+- **UN TÉMOIN DE VOÛTE LIT LE CIEL LOIN DU SOLEIL : À MIDI, LE ZÉNITH EST DANS
+  L'AURÉOLE.** « Le ciel est une voûte » (`monte.js`, v247) lisait le haut de
+  l'écran, regard vers le haut, à midi — à vingt degrés d'un soleil à 70°
+  d'élévation. Le dôme qui diffuse l'a éclairci (176 contre 156 sur v585) et
+  le témoin a rougi ; la voûte loin du soleil, elle, n'avait pas bougé (164
+  contre 162 à 60° d'élévation à l'opposé, 190 contre 188 à 15° — sonde
+  `sonde-ciel.cjs`, mêmes angles sur les deux arbres). Un ciel qui porte son
+  soleil se mesure par l'azimut de la `DirectionalLight`, à l'opposé ; ce qu'on
+  lisait près de l'astre se publie à part (`aureole`), parce que c'est lui qui
+  change. Et le rouge était sur la branche seule : la règle de la v195 dit
+  « pas déjà en production », elle ne dit pas « le témoin a tort » — c'est la
+  sonde qui le dit, en lisant la grandeur à plusieurs angles.
+- **L'EXPOSITION DU JEU SE PORTE DANS LE DÉVELOPPEMENT.** Les matériaux ne
+  l'appliquent plus (pas de correspondance tonale vers une cible) :
+  `etalonner` multiplie par `renderer.toneMappingExposure`, ce qui garde la
+  parité de jour avec l'ancien chemin (luminance moyenne à 1 % près, témoin) et
+  suit Manhattan, qui règle la sienne.
+- **CE QUI ÉMET NE DÉBORDE DU SEUIL QUE SOUS LE POST-TRAITEMENT.** Les vitres
+  (`litMaterial`) et les lanternes (`reglerLueurDesLampes`, props.js) montent
+  au-dessus du blanc la nuit, seulement si `postfx.actif` : le seuil du bloom
+  (1,6 le jour → 1,0 la nuit : jamais sous le blanc, un mouton sous la lune brillait) les prend, bornées par une compression (une source quatre fois plus forte ne fait pas une tache quatre fois plus grande), ACES les ramène. Sans post-traitement
+  le facteur vaut 1, la v248 au bit près. Aucune lampe neuve (quatre pour tout
+  le jeu, v248), aucun matériau neuf hors des quatre quads du post-traitement.
+- **LE COÛT SE MESURE SUR L'APPAREIL.** Le banc rend en logiciel : ses
+  millisecondes ne se transposent pas (v247). `?diag=1` porte `postfx niveau ·
+  msaa · cible · étages · passes · ms soumission`, et `?bloom=`, `?expo=`,
+  `?lueur=`, `?brume=` sont des facteurs à régler en capture dans le jeu. Le
+  budget par milliseconde a décidé l'ordre : exposition et balance (gratuits
+  dans la composition), bloom (deux passes par étage, demi-résolution), brume
+  (une lecture de profondeur) ; SSAO, cascades et sondes sont déclarés, pas
+  écrits (`TASKS.md`).
+
 ## Manhattan : atlas OSM (v583) et façades en relief (v585)
 
 Les volumes ordinaires viennent de `manhattan-osm-data.js`, engendré par

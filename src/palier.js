@@ -139,10 +139,14 @@ export const PALIERS = {
   // morceau proche ; sur l'iPad de quatre ans, rien.
   // `hdMo` (v299) : ce que les façades DÉTAILLÉES peuvent peser, en mégaoctets
   // — voir `planDetail` plus bas. Zéro : la couche est éteinte de toute façon.
-  bas: { rr: 8, file: 6, hd: 0, hdMo: 0, mondeMo: 128 },
+  // `postfx` (vNEXT) : le niveau de post-traitement (postfx.js, `NIVEAUX`) —
+  // 0 rien, 1 étalonnage et bloom à trois étages, 2 bloom à cinq étages et
+  // brume de hauteur. Le palier bas ne paie RIEN : sa chaîne de rendu est celle
+  // de la v585 au bit près.
+  bas: { rr: 8, file: 6, hd: 0, hdMo: 0, mondeMo: 128, postfx: 0 },
   // CE QUE LE JEU FAIT AUJOURD'HUI, au réglage près. Un appareil que la mesure
   // ne sait pas classer atterrit ici et ne perd rien.
-  moyen: { rr: 12, file: 8, hd: 3, hdMo: 128, mondeMo: 224 },
+  moyen: { rr: 12, file: 8, hd: 3, hdMo: 128, mondeMo: 224, postfx: 1 },
   // ── ET CELUI-CI N'A JAMAIS TOURNÉ NULLE PART (v291) ───────────────────────
   //
   // Max, capture d'iPhone sur la production de la v290 : « A problem repeatedly
@@ -189,7 +193,7 @@ export const PALIERS = {
   // v582 — « que le mode de loin voie encore plus loin » : 10 240 → 20 480, par
   // un quatrième étage de deux cent cinquante-six blocs (horizon.js,
   // `PAS_ULTRA_LOIN`), ~3,3 Mo de plus. `rr`, file, `hdMo` : inchangés.
-  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, mondeMo: 224, loin: 20480, surChoixSeulement: true },
+  haut: { rr: 16, file: 8, hd: 6, hdMo: 128, mondeMo: 224, loin: 20480, postfx: 2, surChoixSeulement: true },
 };
 
 export const PALIER_PAR_DEFAUT = 'moyen';
@@ -455,7 +459,7 @@ export const etendueRange = (choix) => !choix || choix === 'auto';
 // Une liste qui décide d'une règle se range avec la règle : c'est la discipline
 // de `postesAvion` — deux tables qui décrivent la même chose finissent par
 // diverger — et c'est ce qui permet à un témoin de la lire sous node.
-export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd', 'palier', 'facadesmo', 'loin', 'mondemo'];
+export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'maillage', 'hd', 'palier', 'facadesmo', 'loin', 'mondemo', 'postfx', 'msaa'];
 
 // ── ET CE QUE VAUT « PAS DE PALIER » SE PUBLIE, IL NE SE RECOPIE PAS ─────────
 //
@@ -471,9 +475,13 @@ export const PARAMS_FORCANTS = ['rr', 'attente', 'dpr', 'qualite', 'ombres', 'ma
 // portable. Deux tables qui décrivent la même chose finissent par diverger —
 // discipline de `postesAvion`.
 export const reglageDe = (palier, tactile) => (palier
-  ? { rr: palier.rr, file: palier.file, hd: palier.hd, hdMo: palier.hdMo, mondeMo: palier.mondeMo || 0, loin: palier.loin || 0 }
+  ? { rr: palier.rr, file: palier.file, hd: palier.hd, hdMo: palier.hdMo, mondeMo: palier.mondeMo || 0, loin: palier.loin || 0, postfx: palier.postfx || 0 }
   : { rr: tactile ? 12 : 16, file: 8, hd: PALIERS[PALIER_PAR_DEFAUT].hd, hdMo: PALIERS[PALIER_PAR_DEFAUT].hdMo,
-    mondeMo: tactile ? PALIERS[PALIER_PAR_DEFAUT].mondeMo : 0, loin: 0 });
+    mondeMo: tactile ? PALIERS[PALIER_PAR_DEFAUT].mondeMo : 0, loin: 0,
+    // sans palier, le post-traitement du palier moyen sur une tablette, celui du
+    // haut sur un ordinateur (qui a une carte graphique : le banc, lui, rend en
+    // logiciel et le coupe de lui-même)
+    postfx: tactile ? PALIERS[PALIER_PAR_DEFAUT].postfx : PALIERS.haut.postfx });
 
 // ── LE DÉTAIL A UN BUDGET D'OCTETS, PAS SEULEMENT UN RAYON (v299) ───────────
 //

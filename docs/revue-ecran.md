@@ -315,3 +315,44 @@ Les défauts 40–41 restent ouverts. Cette revue ne valide pas la fidélité
 photographique globale ni les performances d’un appareil physique : Chromium
 utilise SwiftShader. Le changement améliore la géométrie des façades, mais
 l’objectif d’une ville au niveau de fidélité d’un GTA récent reste à atteindre.
+
+## Le relevé de la vNEXT — la lumière et le post-traitement, 6 novembre 2026
+
+Joué sur la branche `claude/lumiere-realiste` (PR #600), `postfx=1` contre
+`postfx=0` sur le même code, plus la vraie v585 (arbre à 1e5724b) pour le
+crépuscule et Paris la nuit, parce qu'une capture `postfx=0` de cette branche
+porte déjà le dôme qui diffuse (`sky.js`, à tout palier) :
+
+```
+node tests/sonde-revue-ecran.cjs <dossier> --etats=paris,tour-eiffel,vol-libre,campagne,ny-rue,ny-volant '--params=&postfx=1'   # puis &postfx=0
+```
+
+Captures réduites de moitié dans `docs/revue-ecran/vNEXT/` : `<vue>-<état>-<heure>-apres.jpg`
+et `-avant.jpg` (24 et 24, iPhone et iPad, jour et nuit), le crépuscule
+(`iphone-paris[-vol]-crepuscule-{apres,avant,v585}.jpg`), Paris la nuit en v585
+(`iphone-paris[-vol]-nuit-v585.jpg`), et face au soleil bas
+(`iphone-paris-{vol,rue}-soleil-niveau{2,0}.jpg`).
+
+Ce qui se voit, selon la grille : la nuit, les lanternes, les vitrines, la
+pyramide du Louvre et les ampoules de la tour passent d'un aplat blanc à une
+lueur douce, sans tache ni boule (lignes 4 et 10) ; les phares de la voiture
+gardent leur pinceau sur la chaussée ; Manhattan ne change pas de forme, jour
+ou nuit ; le HUD, le joystick et le texte ne bougent pas (6, 7). Au crépuscule,
+en rue, la v585, `postfx=0` et `postfx=1` sont indiscernables : la teinte
+saumon du ciel au couchant existait déjà, et le gain du chantier à cette heure
+est l'exposition et la brume de hauteur du niveau 2, en vol. Face au soleil
+bas (heure 0,465, `sonde-soleil`, iPhone, niveau 2 contre 0) : en rue, le
+disque blanc plat du dôme devient une lueur diffuse et le bout de l'avenue se
+voile, la scène reste lisible — c'est le gain attendu ; en vol à 120 blocs,
+la brume de hauteur du niveau 2 est forte (ligne 45).
+
+| # | Gravité | État | Ce qui cloche | Remède proposé | Fichier probable |
+| --- | --- | --- | --- | --- | --- |
+| 42 | basse — à vérifier sur la tablette | tour Eiffel, nuit, iPhone (`postfx=1`) | Le pinceau du phare, blanc sans post-traitement et en v585, **tire sur l'ocre** sous le développement : une lame additive prend la balance froide de la nuit à l'envers de ce qu'on attend. | Juger sur l'iPhone ; si confirmé, sortir ce qui est `matiereAdditive` de la balance (le développer à part) ou désaturer la lame. | `src/postfx.js`, `src/nuit-eiffel.js` |
+| 43 | moyenne — antérieur au chantier | tour Eiffel, jour (état `tour-eiffel`) | La tour de jour est **son squelette de cubes** : le modèle n'est pas à portée dans cet état (`proche: false` au journal de la sonde) ; identique en v585 et sans post-traitement. La nuit, les ampoules sortent d'un bloc (v575) et la tour se lit. | Poser l'état à portée du détail, ou élargir la portée du modèle de la tour. | `tests/sonde-revue-ecran.cjs`, `src/paris-monuments-hd.js` |
+| 45 | moyenne — à juger sur la tablette | Paris en vol, face au soleil bas, iPhone (`postfx=2`) | La brume de hauteur **voile le lointain jusqu'à effacer les collines et la Seine** : à 120 blocs d'altitude, cap sur le soleil, l'image est laiteuse d'un bord à l'autre ; au niveau 0 le paysage se lit (sous un disque dur). Le soleil fondu en lueur, lui, est juste. | Juger sur l'iPhone avec `?brume=0.5` contre 1 ; si confirmé, atténuer la brume de hauteur dans l'axe du soleil (elle s'ajoute à la lueur) ou la borner par la distance au sol. | `src/postfx.js` |
+| 44 | basse — antérieur au chantier | campagne, iPhone, jour et nuit | La caméra est **dans un talus** (la moitié droite de l'image est de l'herbe à bout portant) ; identique sans post-traitement. L'état pose l'enfant au point d'apparition sans chercher une colonne dégagée. | La sonde cherche un poste d'où l'on voit (règle de la v292). | `tests/sonde-revue-ecran.cjs` |
+
+Cette revue ne mesure pas le coût sur un appareil (le banc rend en logiciel,
+`?diag=1` le dit sur la tablette) et ne juge pas le niveau 2 ailleurs que face
+au soleil : le palier haut se regarde sur l'iPhone de Max.

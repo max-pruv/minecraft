@@ -14,7 +14,8 @@ import { circuitsLondres } from './londres.js';
 import { circuitsSF, ENTREES_SF } from './sanfrancisco.js';
 import { circuitsNice, ENTREES_NICE } from './nice.js';
 import { circuitsLille } from './lille.js';
-import { buildPropMesh } from './props.js';
+import { buildPropMesh, reglerLueurDesLampes } from './props.js';
+import { creerPostFx, niveauDemande, forcesDemandees, MSAA_PAR_DEFAUT } from './postfx.js';
 import { Casses, faconDeCasser, poseDeChute, cleBloc, cleHD, VITESSE_CASSE, PERTE_CASSE, DUREE_CHUTE_MS, GENRES_HD_CASSABLES } from './mobiliercasse.js';
 import { AnimalManager } from './animals.js';
 import { createAtlas, tileUV, activerTuilage, ATLAS_COLS, ATLAS_ROWS, TILE_PX } from './textures.js';
@@ -502,6 +503,28 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 // fausse devenait une bande noire. La vraie taille est posée par
 // ajusterLaVue(), juste en dessous, une fois la caméra créée.
 renderer.setSize(window.innerWidth, window.innerHeight, false);
+// ── LE POST-TRAITEMENT (vNEXT) ────────────────────────────────────────────────
+//
+// L'image se compose en HDR puis se développe (postfx.js) : exposition et
+// balance selon l'heure, bloom de ce qui émet la nuit, lueur du soleil dans la
+// brume, brume de hauteur, ACES en dernier. Le niveau vient du PALIER
+// (`postfx` dans la fiche : 0 au palier bas, qui ne paie rien) ; il est coupé
+// en rendu logiciel comme les ombres (v247) ; `?postfx=0|1|2` force, `?msaa=`
+// règle les échantillons, `?bloom=`, `?expo=`, `?lueur=`, `?brume=` sont des
+// facteurs pour mesurer sur l'appareil. Rien n'est créé quand le niveau est nul.
+//
+// ET LA CIBLE RESTE POSÉE ENTRE DEUX IMAGES. Rendre vers une cible change la
+// clé de tout programme (plus de correspondance tonale dans les matériaux) :
+// ce qui compile tardivement — un prototype de la flotte qui arrive, une chauffe
+// à l'accueil — doit compiler pour la cible, et il compile pour la cible
+// courante. `postfx.rendre` la repose après chaque image ; la chauffe passe par
+// `postfx.avecCible`. Un témoin qui lit des pixels de l'écran sous le
+// post-traitement repose l'écran d'abord (`renderer.setRenderTarget(null)`).
+const POSTFX_NIVEAU = niveauDemande(PARAMS_JEU, { palier: PALIER ? PALIER.postfx : SANS_PALIER.postfx, logiciel: renduLogiciel() });
+const postfx = creerPostFx({ renderer, niveau: POSTFX_NIVEAU,
+  msaa: PARAMS_JEU.has('msaa') ? (Number(PARAMS_JEU.get('msaa')) || 0) : MSAA_PAR_DEFAUT });
+postfx.regler(forcesDemandees(PARAMS_JEU));
+window.__postfx = postfx;
 
 const scene = new THREE.Scene();
 const DAY_SKY = new THREE.Color(0x87ceeb);
@@ -8121,6 +8144,24 @@ mapModal.addEventListener('click', (e) => {
   if (e.target === mapModal) fermerCarte();
 });
 
+// L'IMAGE SE REND PAR LE POST-TRAITEMENT QUAND IL EST ACTIF (vNEXT), droit sur
+// l'écran sinon. Tout ce qui rend l'image passe ici — la boucle, `renderNow`
+// des témoins — pour qu'une seule chaîne existe.
+function etatLumiere() {
+  const px = Math.floor(player.pos.x), pz = Math.floor(player.pos.z);
+  return {
+    jour: lumiereDuMoment.jour, nuit: lumiereDuMoment.nuit, rasant: lumiereDuMoment.rasant,
+    soleilHaut: lumiereDuMoment.soleilHaut, pluie: lumiereDuMoment.pluie,
+    soleil: sky.direction, couleurCiel: skyColor, exposition: renderer.toneMappingExposure,
+    brouillardPres: scene.fog.near, brouillardLoin: scene.fog.far,
+    solY: world.terrainHeight(px, pz) + 1, manhattan: renduDansManhattan,
+  };
+}
+function rendreLImage() {
+  if (!postfx.actif) { renderer.render(scene, camera); return; }
+  postfx.rendre(scene, camera, etatLumiere());
+}
+
 // --- day/night cycle ----------------------------------------------------------------
 
 const skyColor = new THREE.Color();
@@ -8130,6 +8171,9 @@ let dayTime = DAY_LENGTH * 0.3; // start mid-morning
 // lampes de rue (v248), pas `daylight` brut, qui ne tombe jamais sous 0,08.
 let nuitDehors = 0;
 
+// CE QUE L'HEURE FAIT À LA LUMIÈRE, publié pour le post-traitement (vNEXT) :
+// la part de jour, la part de nuit, le soleil au ras de l'horizon.
+const lumiereDuMoment = { jour: 1, nuit: 0, rasant: 0, soleilHaut: true, pluie: 0 };
 function updateSky(dt) {
   dayTime = (dayTime + dt) % DAY_LENGTH;
   const angle = (dayTime / DAY_LENGTH) * Math.PI * 2;
@@ -8146,6 +8190,8 @@ function updateSky(dt) {
   const hauteurSoleil = Math.sin(angle);
   const rasant = Math.exp(-((hauteurSoleil / 0.22) ** 2));
   skyColor.lerp(SUNSET_SKY, rasant * 0.72);
+  lumiereDuMoment.jour = daylight; lumiereDuMoment.nuit = nuitDehors; lumiereDuMoment.rasant = rasant;
+  lumiereDuMoment.soleilHaut = hauteurSoleil > -0.05; lumiereDuMoment.pluie = weather === 'rain' ? 1 : 0;
   // Sur Mars, le ciel est saumon : la poussière de fer en suspension diffuse
   // le rouge au lieu du bleu. C'est ce qui fait vraiment croire à la planète —
   // sans ça, une plaine rouge sous un ciel bleu reste un désert terrestre.
@@ -8175,6 +8221,14 @@ function updateSky(dt) {
     Math.max(lightColor.g, LUMIERE_FENETRE.g * 0.92),
     Math.max(lightColor.b, LUMIERE_FENETRE.b * 0.92),
   );
+  // SOUS LE POST-TRAITEMENT, CE QUI ÉMET DÉPASSE LE SEUIL DU BLOOM LA NUIT
+  // (vNEXT) : les vitres et les lanternes montent au-delà du blanc, la
+  // correspondance tonale les ramène, et l'excédent devient leur lueur. Sans
+  // post-traitement le facteur vaut 1 : la v585 au bit près.
+  if (postfx.actif) {
+    litMaterial.color.multiplyScalar(1 + 1.1 * nuitDehors);
+    reglerLueurDesLampes(1 + 1.4 * nuitDehors);
+  }
   // LE JOUR ET LA NUIT SONT DES LAMPES, PAS UNE TEINTE (v247). Le ciel
   // (hémisphère) porte la lumière diffuse, le soleil la lumière directe et
   // les ombres ; la nuit, la lune prend sa place, bleutée et faible, et la
@@ -8857,6 +8911,12 @@ function updateHud(dt) {
   debugEl.textContent =
     `${mediane ? (1000 / mediane).toFixed(0) : '–'} i/s médiane · pire image ${pire.toFixed(0)} ms · ${info.render.calls} appels · ${(info.render.triangles / 1000).toFixed(0)}k tri · ${info.programs ? info.programs.length : '?'} prog\n`
     + `graphismes ${graphismes()} · dpr ${renderer.getPixelRatio().toFixed(2)} (${canvas.width}×${canvas.height}) · ombres ${renderer.shadowMap.enabled ? 'ON' : 'off'} · reflets ${REFLETS_ACTIFS ? 'ON' : 'off'} · lampes ${LAMPES_ACTIVES ? 'ON' : 'off'}\n`
+    // LE POST-TRAITEMENT SE MESURE SUR L'APPAREIL (vNEXT) : le banc rend en
+    // logiciel et ne peut rien dire de son prix. Niveau, échantillons, cible,
+    // étages de bloom, passes, et les millisecondes de soumission par image.
+    + ((c) => (c.actif
+      ? `postfx niveau ${c.niveau} · msaa ${c.msaa} · cible ${c.cible} · bloom ${c.etages} étage(s) · ${c.passes} passes · ${c.ms} ms soumission\n`
+      : `postfx off (${c.raison})\n`))(postfx.cout())
     + `palier ${motDuPalier()} · étendue ${ETENDUE_CHOISIE} · rr ${RENDER_RADIUS}${rayonMonde < RENDER_RADIUS ? ` (monde ${rayonMonde}, ${Math.round(mondeTenu.octets / 1048576)}/${Math.round(BUDGET_MONDE / 1048576)} Mo)` : ''} · file ${EN_ATTENTE_MAX} · hd ${RAYON_HD} · arbres ${world.arbres ? 'en cartes' : 'en cubes'} · horizon ${PORTEE_VUE}`
     // ET LE MESSAGE DIT SI LA MESURE SERA RANGÉE. Sous une étendue choisie à la
     // main, elle est prise pour informer et JETÉE (v290, règle de la v284) :
@@ -8963,7 +9023,7 @@ function texteDegats() {
 
 const fun = initFun({
   scene, world, player, animalManager, edu, cloud, canvas,
-  renderNow: () => renderer.render(scene, camera),
+  renderNow: () => rendreLImage(),
   emojiBurst,
   myName,
   getNet: () => net,
@@ -9126,7 +9186,7 @@ const guides = creerGuides({
 });
 window.__guides = guides;
 window.__guidesVilles = () => guidesVilles;
-window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
+window.__game = { nomsDeStations, saison: effetSaison, postfx, rendreLImage, etatLumiere, fileMaillage: (m) => { fileDemandee = m; lastPlayerChunk = null; },
   // l'A/B de la recharge dans UNE page (v360) : 'arrivee', 'image', ou null (la règle)
   rechargeMaillage: (m) => { rechargeForcee = m || null; }, get fileDeMorceaux() { return meshQueue; },
   // la règle de la recharge, garde du rendu logiciel mise à part (v379) : un témoin
@@ -9146,7 +9206,7 @@ window.__game = { nomsDeStations, saison: effetSaison, fileMaillage: (m) => { fi
       etendue: ETENDUE_CHOISIE, hd: RAYON_HD, facadesMo: BUDGET_FACADES / 1048576, rr: RENDER_RADIUS, file: EN_ATTENTE_MAX,
       horizon: RAYON_HORIZON, loin: RAYON_LOIN, brouillard: scene.fog.far, planLointain: camera.far,
       ombres: renderer.shadowMap.enabled, jet: jet && jet.pilote ? jet.pilote.max : null,
-      seRange: PALIER_SE_RANGE };
+      seRange: PALIER_SE_RANGE, postfx: POSTFX_NIVEAU };
   }, get maillageDistant() { return !!maillageDistant; }, get avatarLocal() { return avatarLocal; }, get vehicules() { return vehicules; }, get passants() { return passants; }, get poissons() { return poissons; }, __archi: ARCHI, __paris: { PARIS: PARIS_ANCRE }, animalManager, edu, cloud, identity, admin, profileSync, deviceId, pushPlayTime, pullPlayTime, __netFx: netFx, __leaving: leaving, __montrerBandeau: montrerBandeau, __alerte: alerte, __pushPresence: () => envoyerPrefs(), __presenceNow: presenceNow, __reprendreMonde: rememberWorld, get net() { return net; }, get remotePlayers() { return remotePlayers; }, get marlon() { return marlon; }, get cornichon() { return cornichon; }, get npcs() { return npcs; }, get running() { return running; } };
 
 let lastTime = performance.now();
@@ -9397,7 +9457,7 @@ function frame(now) {
   villeRealiste.update(dayTime / DAY_LENGTH, weather, now);
   renduDansManhattan=villeRealiste.active;
   const debutRendu = performance.now();
-  renderer.render(scene, camera);
+  rendreLImage();
   const finImage = performance.now();
   statsMaillage.renduMs += finImage - debutRendu;
   statsMaillage.travailMs += finImage - debutTravail;
@@ -9491,7 +9551,11 @@ requestAnimationFrame(() => {
     renderer.compile(ici, camera, scene);
   };
   const pas = () => {
-    if (chauffe()) { requestAnimationFrame(pas); return; }
+    // avec la cible du post-traitement posée (vNEXT) : c'est pour elle que les
+    // programmes se compilent, puisque c'est dans elle que l'image se dessine
+    if (postfx.avecCible(chauffe)) { requestAnimationFrame(pas); return; }
+    postfx.avecCible(() => {
+    try { postfx.chauffer(); } catch (e) { console.warn('chauffe du post-traitement', e); }
     try { chaufferLesFeux(); } catch (e) { console.warn('chauffe des feux', e); }
     try { chaufferLaCoque(); } catch (e) { console.warn('chauffe de la coque', e); }
     // la couche HD et ses arbres (v541) : un matériau, deux programmes
@@ -9511,6 +9575,7 @@ requestAnimationFrame(() => {
     try { effetSaison.chauffer(renderer, camera, scene); } catch (e) { console.warn('chauffe de la saison', e); }
     // le bâti et les arbres lointains (v553) : un matériau, un programme
     try { chaufferLeLointain(camera); } catch (e) { console.warn('chauffe du lointain', e); }
+    });
     chauffeFinie = true;
     requestAnimationFrame(pasNY);
   };
@@ -9702,7 +9767,7 @@ requestAnimationFrame(() => {
     try {
       if (!etapesNY) { etapesNY = etapesDeNewYork(); chauffeNY.total = etapesNY.length; }
       const t0 = performance.now();
-      do { etapesNY[kNY++](); } while (kNY < etapesNY.length && performance.now() - t0 < budgetNY);
+      postfx.avecCible(() => { do { etapesNY[kNY++](); } while (kNY < etapesNY.length && performance.now() - t0 < budgetNY); });
     } catch (e) { console.warn('chauffe de New York', e); if (!etapesNY) etapesNY = []; }
     chauffeNY.faites = kNY;
     if (kNY < etapesNY.length) requestAnimationFrame(pasNY);

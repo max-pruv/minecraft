@@ -4739,17 +4739,31 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
       const ouest = async (heure) => (await vue(heure, [x0 - 6, sol + 7, z0 + 0.5], [x0, sol + 7, z0 + 0.5], [[x0, sol + 7, z0 + 0.5]]))[0];
       const matin = { est: await est(0.08), ouest: await ouest(0.08) };
       const soir = { est: await est(0.42), ouest: await ouest(0.42) };
-      // midi, regard vers le haut, dos au soleil : le haut de l'écran est
-      // presque au zénith, le bas à une quinzaine de degrés sur l'horizon
+      // midi : le soleil est à vingt degrés du zénith, et son auréole — la
+      // diffusion du dôme (vNEXT) — éclaircit tout ce qui est à moins de
+      // vingt-cinq degrés de lui, le haut de l'écran compris, quelle que soit
+      // la direction du regard. La voûte se lit donc LOIN du soleil : le ciel
+      // à soixante degrés d'élévation à l'opposé de son azimut (≈ 48° de
+      // l'astre), contre le ciel à quinze degrés sur l'horizon, du même côté.
+      // Mesuré à la sonde (branche vNEXT · v585) : 60° à l'opposé 164 · 162,
+      // 15° à l'opposé 190 · 188, et l'ancien pixel du haut d'écran 176 · 156 —
+      // c'est l'auréole qui avait changé, pas la voûte. On la relève aussi.
       window.__setDayTime(0.25);
-      await dodo(400);
-      cam.position.set(x0 + 0.5, sol + 30, z0 + 0.5);
-      cam.lookAt(x0 + 0.5, sol + 40, z0 + 8);
-      cam.updateMatrixWorld(true);
-      r.render(g.scene, cam);
+      const soleilDe = () => { const d = g.scene.children.find((o) => o.isDirectionalLight); return d.position.clone().sub(d.target.position).normalize(); };
+      for (let i = 0; i < 25 && soleilDe().y < 0.9; i++) await dodo(400);
       const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
       const pix = (sx, sy) => { const b = new Uint8Array(4 * 25); gl.readPixels(sx - 2, H - 1 - (sy + 2), 5, 5, gl.RGBA, gl.UNSIGNED_BYTE, b); let l = 0; for (let i = 0; i < 25; i++) l += 0.2126 * b[i * 4] + 0.7152 * b[i * 4 + 1] + 0.0722 * b[i * 4 + 2]; return +(l / 25).toFixed(1); };
-      const ciel = { zenith: pix(Math.round(W / 2), 6), bas: pix(Math.round(W / 2), H - Math.round(H / 6)) };
+      const sDir = soleilDe();
+      const azOppose = Math.atan2(-sDir.x, -sDir.z);
+      const visee = (el) => {
+        const e = el * Math.PI / 180;
+        cam.position.set(x0 + 0.5, sol + 30, z0 + 0.5);
+        cam.lookAt(x0 + 0.5 + Math.sin(azOppose) * Math.cos(e), sol + 30 + Math.sin(e), z0 + 0.5 + Math.cos(azOppose) * Math.cos(e));
+        cam.updateMatrixWorld(true);
+        r.render(g.scene, cam);
+        return pix(Math.round(W / 2), Math.round(H / 2));
+      };
+      const ciel = { zenith: visee(60), bas: visee(15), aureole: visee(88), soleilEl: +(Math.asin(sDir.y) * 180 / Math.PI).toFixed(0) };
       // ---- UN RÉVERBÈRE ÉCLAIRE SON SOL LA NUIT (v248) --------------------
       // L'enfant pose un réverbère (le prop 🛞 de l'inventaire, le même que
       // les villes plantent) sur la dalle, et la nuit tombe. On lit le sol à
@@ -4801,8 +4815,10 @@ async function avancerUnDemiSeconde(p, depart, elan = 0) {
         && regard.matin.est / regard.matin.ouest > 1.25 && regard.soir.est / regard.soir.ouest < 0.8,
       `matin ${JSON.stringify(regard.matin)} · soir ${JSON.stringify(regard.soir)}`);
     // UNE BORNE DE GARDE SE POSE À LA MOITIÉ : 0,86 mesuré ici, 1,00 sur
-    // l'ancien code — 0,93, pas 0,9 collé sous la mesure.
-    verifier('le ciel est une voûte : plus profond au zénith qu\'à l\'horizon',
+    // l'ancien code — 0,93, pas 0,9 collé sous la mesure. Et la voûte se lit
+    // loin du soleil (vNEXT) : lu au haut de l'écran, à vingt degrés de l'astre,
+    // ce témoin rendait 0,97 sur un dôme dont la voûte n'avait pas bougé.
+    verifier('le ciel est une voûte : plus profond à soixante degrés, loin du soleil, qu\'à l\'horizon',
       ok(regard.ciel.zenith) && ok(regard.ciel.bas) && regard.ciel.zenith / regard.ciel.bas < 0.93,
       JSON.stringify(regard.ciel));
     // ---- LES RÉVERBÈRES ÉCLAIRENT LA RUE, PARTOUT (v248) ------------------
