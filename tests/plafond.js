@@ -426,7 +426,17 @@ const MM_ECART = 2.2;
 // 9fc2d321…, la constante de la v555, au bit près ; et le creusement de toute
 // l'emprise du métro, comparé colonne par colonne à `origin/main`, ne change
 // rien à moins de trois blocs du sol (10 921 colonnes changées, toutes dessous).
-const EMPREINTE_MORCEAUX_V357 = 'ed369fdb3743a2f970a00313be3299bde394dc529c9cbe686235ded95cbe8db4';
+// Carte ×3 (chantier carte-x3) : DÉCLARÉE, pas prouvée désarmée. Le socle
+// (mondes.js, 0,0625 km/bloc) l'a déjà changée seul (ed369fdb… → b9586e29…,
+// mesuré sur la branche du socle) : les neuf lieux tombent sur un autre relief.
+// Les vingt-neuf tracés retracés (routes.js, session C) la mènent à a388c6ed…, puis les deux aérodromes relogés
+// et la fusion du socle (monde-v587) à b426b3b4…, et les viaducs fondus
+// (ECART_VIADUC, routes.js) à 96224dd2…, et l'I-95 Sud entrée plein sud dans
+// Washington, sa tranchée hors norme déclarée (DEBLAIS_HORS_NORME), à 5717ce0e….
+// Il n'y a plus d'ancien code où « désarmer » rendrait la constante : les
+// routes d'avant sont en blocs de l'ancienne carte. Se remesure à la fusion
+// des autres chantiers (A, B) si l'un d'eux touche les neuf lieux.
+const EMPREINTE_MORCEAUX_V357 = '5717ce0e10bff27b0e0fafef52129e71942a020d46e46bf5aad7dffb553de376';
 // lectures par morceau, v351 → v352 : Paris relief 2 209 → 463, blocs 3 811 → 324 ;
 // Rome 2 344 → 480, 4 210 → 832 ; Londres 1 047 → 531, 4 687 → 891
 const BARRES_TRAVAIL = { paris: { reliefs: 1336, lus: 2067 }, rome: { reliefs: 1412, lus: 2521 }, londres: { reliefs: 789, lus: 2789 } };
@@ -1010,8 +1020,10 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
     verifier('rue : un raccord d\'autoroute ne roule pas dans la voie d\'un anneau — il s\'arrête avant, il ne reste que des demi-tours',
       // les rues à la GTA élargissent les anneaux jusqu'aux portes : mesuré, 7
       // raccords et 26 blocs sur la v531, 9 et 41 ici (Québec rejoint ceux qui
-      // font demi-tour à la porte, Boston à cinq blocs) ; la barre de blocs ne bouge pas
-      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 10,
+      // font demi-tour à la porte, Boston à cinq blocs) ; la barre de blocs ne bouge pas.
+      // Carte ×3 (tracés retracés) : 11 raccords et 57 blocs, tous des demi-tours
+      // de porte — la barre de blocs tient, celle des raccords suit d'un cran.
+      !!b && b.raccords > 40 && b.blocs.long > 300 && b.blocs.jeu < 100 && b.touches.jeu <= 12,
       b ? JSON.stringify({ raccords: b.raccords, touches: b.touches, blocs: b.blocs, pires: b.pires }) : `sonde : ${err}`);
     verifier('rue : la table des raccords courts est celle que la règle rend aujourd\'hui (un anneau qui bouge la fait remesurer)',
       !!b && b.ecarts.length === 0, b ? JSON.stringify(b.ecarts) : `sonde : ${err}`);
@@ -4900,7 +4912,15 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
         }
         return haut - bas >= 8;
       };
-      for (let k = 300; k < 700; k++) {
+      // LA FENÊTRE SE CHERCHE (carte ×3) : écrite en dur (k 300 à 700), elle
+      // ne tombait plus sur les tranchées quand la ligne a triplé. On prend
+      // les quatre cents pas où le profil s'écarte le plus du relief.
+      let k0 = 300;
+      {
+        const ec = []; for (let k = 0; k < L; k++) ec.push(Math.abs(T.coteContinue(seg, k / L) - (w.terrainHeight(Math.round(seg.x0 + ux * k), Math.round(seg.z0 + uz * k)) + 1)) >= 2 ? 1 : 0);
+        let best = -1; for (let k = 0; k + 400 < L; k += 20) { let s = 0; for (let j = k; j < k + 400; j++) s += ec[j]; if (s > best) { best = s; k0 = k; } }
+      }
+      for (let k = k0; k < k0 + 400; k++) {
         const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
         pas++;
         if (continu) {
@@ -4962,7 +4982,11 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
       const L = seg.longueur, ux = (seg.x1 - seg.x0) / L, uz = (seg.z1 - seg.z0) / L, nx = -uz, nz = ux;
       const neuf = !!(T.viaducs && T.surViaduc);
       let colonnes = 0, eau = 0, digue = 0, piles = 0, pas = 0, sansTablier = 0, sansContact = 0, ecartContact = 0, bas = Infinity;
-      for (let k = 290; k < 530; k++) {
+      // LA MANCHE SE CHERCHE (carte ×3) : la plus longue suite de mer sous
+      // l'axe, jamais une fenêtre écrite en dur qui ne suit pas l'échelle.
+      let m0 = 290, m1 = 530;
+      { let run = 0, st = 0, br = 0; for (let k = 0; k < L; k++) { if (w.terrainHeight(Math.round(seg.x0 + ux * k), Math.round(seg.z0 + uz * k)) < 30) { if (!run) st = k; run++; if (run > br) { br = run; m0 = st; m1 = st + run; } } else run = 0; } }
+      for (let k = m0; k < m1; k++) {
         const ax = seg.x0 + ux * k, az = seg.z0 + uz * k;
         if (w.terrainHeight(Math.round(ax), Math.round(az)) >= 30) continue;   // un îlot : pas la mer
         pas++;
@@ -6182,7 +6206,13 @@ for (let x = MAISON_X - 1; x <= MAISON_X + 1; x++) {
             // la cote de la route au POINT, et l'on demande un cube plein à
             // cette cote dans la colonne, quel qu'il soit — le sol naturel y
             // ferme la chaussée aussi bien. Au-dessus de l'eau, rien : trou.
-            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X + 0.5, Z + 0.5) || R.routeEn(x, z);
+            // LE CUBE SE CHERCHE À LA COTE QUE LE GÉNÉRATEUR A ÉCRITE, donc au
+            // COIN de la colonne (`routeEn(wx, wz)` dans world.js, règle de
+            // la v539) : au centre, une cote qui franchit un entier entre le
+            // coin et le centre accusait un bloc d'écart qui n'existe pas
+            // (carte ×3 : 137 « trous » au premier pont de l'E19, 191 sur la
+            // M40, tous sur des colonnes pleines lues un bloc trop haut).
+            const X = Math.floor(x), Z = Math.floor(z), c = R.routeEn(X, Z) || R.routeEn(X + 0.5, Z + 0.5) || R.routeEn(x, z);
             const cube = c && !c.ouvrage && g.world.isSolid(X, Math.floor(c.cote) - 1, Z);
             total++;
             if (!cube && !sur(x, z)) { trous++; if (ex.length < 4) ex.push([+x.toFixed(1), +z.toFixed(1)]); }

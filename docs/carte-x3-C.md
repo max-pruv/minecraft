@@ -1,0 +1,216 @@
+# Carte ×3 — session C : routes, trains, raccords (mesures)
+
+Chantier « carte ×3 » (`claude/carte-x3`, socle 0,0625 km/bloc, ancienne carte figée
+en `terreV4`). Cette session porte routes.js, trains.js, raccords.js, les tables en
+blocs absolus de villesmonde.js (sauf `rayonKm`) et les sites relogés en v306.
+Tout ce qui suit est mesuré ; les chiffres viennent des sondes du brouillon
+(tracer.mjs, fixebout.mjs, ent.mjs, rail.mjs, tok.mjs) et des témoins rejoués seuls.
+
+## Les vingt-neuf tracés se refont, ils ne se multiplient pas par trois
+
+Un `via` est en blocs de l'ancienne carte. Multiplier par trois les coordonnées
+met une route au bon endroit du globe et nulle part ailleurs : le relief entre
+deux villes est trois fois plus long, les aérodromes, les rails, les autres
+routes et les repères ont bougé. Chaque tracé est donc recherché à nouveau :
+
+- couloir le plus bas avec cap (v355), grille de douze blocs, obstacles dans la
+  grille : disques des villes, aérodromes (r + 12, provisoires, voir plus bas),
+  rails à douze blocs, axes des autres routes à deux emprises et talus, repères
+  (boîte + 7), sanctuaires (40), banlieues de New York (zones + talus + 34) ;
+- lissage par moyenne glissante (v381), simplification, puis `profilDe` appelé
+  sur chaque candidat (v320) et recherche locale qui déplace les points voisins
+  d'une faute (remblai, déblai, joint de pont, obstacle, coude) ;
+- **les entrées des villes bâties à la main gardent leur angle d'avant** : leur
+  avenue d'entrée est dessinée depuis la porte, et les copies figées
+  (`*-v531.js`) l'importent. Les tableaux `portes` et `avenues` (New York,
+  Washington) sont translatés du déplacement de leur ville, pas retracés.
+
+Bornes tenues sur les vingt-neuf (témoins de `carteMonde.js`) : remblai ≤ 4,
+déblai ≤ 9, joints de pont fermés, aucun obstacle. Le coude n'est pas une borne
+de témoin ; les pires restent déclarés : A109 44° près de Nairobi, Hansalinie 38°,
+A6 38°, M1 35°.
+
+## Une porte de ville engendrée se choisit par sa rue ET par son relief
+
+Au premier jet, j'ai choisi les angles de sortie qui tenaient le déblai (la
+crête qui ferme une ville assise sous son pays, v311) en vérifiant l'entrée par
+une émulation du témoin. L'émulation comptait AUSSI les colonnes que la route
+couvre (`routeEn`), que le témoin saute : elle voyait une avenue de 25 à 30
+demi-blocs là où le témoin en voit 15. Neuf entrées étaient trop courtes
+(Bologne ×2, Montréal ×2, Nagoya ×2, Cologne, Hambourg, Mombasa) et celle de Rio
+butait sur un bloc. **Une émulation de témoin recopie aussi ce que le témoin
+saute** ; la barre de l'émulation est désormais 34 (Mombasa, petite ville, 30).
+
+Le balayage `scan.mjs <ville>` rend, pour chaque angle, l'excès de relief sur
+160 blocs au-delà de la porte et la propreté de l'avenue. Les angles retenus
+sont dans ce balayage ; New York, Paris, Lille, Londres, Nice, San Francisco,
+Washington gardent les leurs.
+
+Et une porte déplacée retire des bancs : `surUneEntree` (villesmonde.js) écarte
+le mobilier sur tout le segment porte → ancre. Tōmei sortie de Tokyo à 150° :
+14 bancs dans la fenêtre du témoin pour une barre de 15. L'angle d'avant (132°)
+creusait plus de 9 blocs ; à −162°, 17 bancs et le déblai tient.
+
+## Trois défauts que seul le témoin du monde a vus
+
+- **Un talus creuse un tablier de ville.** L'A1 Centre sortait de Florence à
+  −3° ; son talus tombait sur les colonnes d'un pont de l'Arno (12 colonnes sans
+  sol, toutes `routeEn`). Sortie tournée de 6° (−9°) : zéro.
+- **Une rive se lit sur `TerreUrbaine`, pas sur `World`.** La porte de l'I-95 à
+  New York, translatée, était à 63 blocs de l'eau (barre 60) ; ma sonde sur
+  `new World()` rendait « pas d'eau du tout ». Rapprochée de 6 blocs vers l'île :
+  57, et toujours 34 blocs hors du rectangle (barre 22,4).
+- **Une sonde de routes qui ne construit pas de monde lit un autre profil.**
+  `routes.js` n'a de relief qu'une fois `brancherSol` appelé par un `World` ;
+  sans lui, `largeurA` rend l'emprise sans talus, et ma sonde des colonnes
+  volées rendait zéro là où le témoin en compte 56 (Autosole et A1 Nord à
+  Bologne). Toute sonde de routes commence par `new World()`.
+
+## Ce que ces routes ne règlent pas, et à qui c'est
+
+- **Aérodromes = session B.** Les tracés évitent les aérodromes à leur position
+  provisoire de la carte ×3 (x, z du socle). Quand B les replace, les vingt-neuf
+  tracés se rejouent contre les nouveaux disques (`tout.mjs`), et le témoin
+  « aucun aérodrome à r + 12 » le dira.
+- **Le gabarit de l'Eurostar** : 26 colonnes solides dans le gabarit
+  (`carteMonde.js` « rien de solide ne barre la route du train »), toutes à
+  (−593..−580, −85..−63) : le tronçon de piste de Roissy (aeroport.js, B).
+- **Le volcan** : la ligne Paris–Lyon passe à 38 blocs de son centre (r 45),
+  déblai 1,5. Le déplacer demande une marche de migration (zone A). Laissé en
+  place, déclaré.
+- Le village gaulois et la caserne tiennent leurs cinq promesses sur la carte ×3.
+- **L'I-95 Sud entre dans Washington par le sud, en tranchée hors norme
+  (option (c), décision de Max, 7 nov. 2026).**
+  - *La cause.* Sur la carte ×3, une crête de 41 à 49 blocs borde la boîte de
+    Washington au sud et à l'est ; seule une bande basse de neuf blocs y
+    arrive à la cote de la rue (33). Le premier tracé tenait ses bornes
+    (remblai 3,98, déblai 8,52) mais son emprise mordait 152 colonnes de la
+    ville. Les deux autres options étaient mesurées et écartées : (a) une
+    porte au sud-ouest ou au sud-est demande 10,6 à 14,6 de déblai ou débouche
+    sur des lots ; (b) une entrée au nord demande une avenue neuve dans le plan
+    de `washington.js`, donc une ville figée sous les blocs posés avant.
+  - *Le tracé.* La porte reste (−63 167, 17 998) ; on y arrive plein sud par
+    un arc de rayon ≈ 60 blocs (`carc.mjs`, arc balayé : coude de la queue
+    19,3° au plus), et le sommet (−61 336, 16 357) recule de dix blocs à
+    l'ouest : la rampe qui épingle le bout à la cote de la rue (35, pour 48 sur
+    la crête juste avant) abaissait tout le profil d'un bloc au milieu, et ce
+    sommet passait à 9,28 de déblai au s 2 187. Déplacé : 6,0 au pire hors de
+    la zone. Mesuré sous node (`chk95.mjs`) : 4 839 blocs, remblai 3,99,
+    déblai 13,07 au s 4 824 (quinze blocs avant la porte), joints de 15 pas au
+    moins, aucune ville, aérodrome, repère ni rail sur l'axe, **zéro colonne
+    de route dans la boîte de Washington** (1 151 colonnes de route à trente
+    blocs de la porte).
+  - *L'exception.* Une table, `DEBLAIS_HORS_NORME` (routes.js) : l'I-95 Sud,
+    les quatre cents derniers blocs avant Washington, 13,7 au plus. `deblaiMaxA`
+    la lit pour le talus (dix-neuf blocs de large au lieu de treize, à 0,7 par
+    bloc) et pour la portée de `routeEn` ; toute autre route garde
+    `DEBLAI_MAX` au bit près. Elle ne touche ni la ville (zéro colonne dedans)
+    ni aucun bloc d'enfant : Washington est à soixante mille blocs du point
+    d'apparition et de tous les sanctuaires, et un ouvrage de route n'écrit
+    que des blocs, jamais `terrainHeight`.
+  - *Le témoin* (`carteMonde.js`) : la tranchée de la zone ≤ 13,7, le déblai
+    partout ailleurs ≤ 9, et l'exception ne sert qu'à `I-95 Sud@washington`
+    (lu à chaque bout de chaque segment : une route nommée autrement, ou l'autre
+    bout de celle-ci, n'en bénéficie pas).
+
+## Les aires des aérodromes, et deux aérodromes relogés
+
+`node tests/sonde-aires-aeroports.mjs` rejouée sur les routes retracées, et
+`AIRES` mise à l'égalité, comme `plafond.js` l'exige. Roissy 26/70/44/0 →
+70/70/157/0, Orly 22/51/22/68 → 22/130/22/130, Heathrow NO 94 → 99, Yokota
+NO 27 → 58 : plus coupés.
+
+**Barajas et Schiphol étaient posés sur le passage de leur route**, et aucun
+tracé ne pouvait les éviter :
+
+- Barajas occupait le seul couloir bas entre la crête au nord-est de Madrid et
+  la LGV Madrid–Barcelone, qui longe son disque au sud. L'AP-2 traversait son
+  disque r + 12 (45 points d'axe). Tourner la sortie de Madrid vers le nord
+  (−22,5° à −40°) coûtait 10,9 à 12,4 de déblai ; vers le sud, la voie ferrée.
+- Schiphol était dans l'axe d'entrée de l'E19 à Amsterdam (35 points d'axe dans
+  r + 12). Le seul angle libre (−15°) laissait une avenue d'entrée de 18
+  colonnes vues, pour une barre de 20.
+
+On a donc relogé les deux aérodromes plutôt que les routes. La sonde de B
+(`sonde-places-aeroports.mjs`, `juger` et ses cinq promesses, plus la cible de
+piste) a été rejouée pour ces deux sites seulement, avec une sixième
+contrainte : à r + 12 + 21,4 (emprise et talus) de tout axe de route, AP-2 et
+E19 compris (brouillon `place2.mjs`). Le vrai cap cède en dernier :
+
+| | avant | après | cap (vrai → retenu) | distance à la ville | axe de route le plus proche |
+| --- | --- | --- | --- | --- | --- |
+| Barajas | (−6960, 15024), sol 38 | (−6910, 14833), sol 36 | 48° → 48° | 415 → 567 | 12 → 176 |
+| Schiphol | (2495, −5915), sol 37 | (2438, −5949), sol 36 | 238° → 253° | 284 → 324 | 48 → 109 |
+
+Eau 5,2 % et 4,1 % (barre 6), pistes à 300/300. `PROLONGEMENTS` remesurée par
+`sonde-prolongements-aeroports.mjs` (Barajas [81, 83] / [87, 87], Schiphol
+[114, 58] / [106, 78]) et `AIRES` par la sonde des aires (Barajas 76/78/48/99,
+Schiphol 34/54/120/36). Les tracés de l'AP-2 et de l'E19 n'ont pas eu à
+changer : ils ne touchent plus aucun disque d'aérodrome (contrôle sur les
+29 routes, zéro point d'axe à r + 12).
+
+## Trains
+
+Le profil, les viaducs et les gares sont des fonctions du tracé
+(`voieEn`, `profilDe`), recalculées par construction ; le nombre de trains suit
+la longueur du tour (v222), donc la carte. Les fenêtres des témoins de voie
+(`plafond.js`) étaient écrites en pas de l'ancienne carte (300..700 sur
+Paris–Lyon, 290..530 sur la Manche) : elles se CHERCHENT désormais — la fenêtre
+de 400 pas la plus en tranchée/remblai, le plus long passage en mer.
+
+## Raccords courts
+
+`RACCORDS_COURTS` remesurée par `sonde-rue-dense.cjs raccords` (ligne TABLE) :
+55 raccords, 11 qui gardent un demi-tour à la porte (57 blocs, barre 100). La
+barre « au plus 10 raccords » passe à 12 ; celle des blocs ne bouge pas. Les
+entrées de Montréal ne touchent plus d'anneau et sortent de la table.
+
+## Empreinte des 490 morceaux
+
+Déclarée, pas prouvée désarmée : le socle seul la mène de ed369fdb… à b9586e29…
+(mesuré sur la branche du socle), les vingt-neuf tracés de b9586e29… à a388c6ed…, et après Barajas, Schiphol, l'A1 sans son point [243, −1221] et la fusion du socle, à b426b3b4… ; les viaducs fondus la mènent à 96224dd2…, et l'I-95 Sud par le sud à 5717ce0e….
+Il n'existe plus d'« ancien code » où désarmer rendrait la constante : les
+routes d'avant sont en blocs de l'ancienne carte.
+
+## Le joint des ponts : le témoin lisait le centre, le générateur écrit au coin
+
+`plafond.js` (« la chaussée ne s'ouvre pas au joint du pont ») a rendu 392
+trous sur la branche, aucun sur le socle. Reproduit sous node, bout de pont par
+bout de pont : 137 au premier pont de l'E19 (Bruxelles), 191 sur la M40, le
+reste de un à dix-huit points sur quinze autres bouts. Deux causes, et une
+seule est un défaut du monde.
+
+- **La cote lue au centre de la colonne, le bloc écrit au coin.** world.js
+  demande `routeEn(wx, wz)` au COIN de la colonne et y écrit l'asphalte à
+  `floor(cote) − 1` ; le témoin cherchait ce cube à la cote du CENTRE. Là où
+  le profil franchit un entier entre les deux (E19 : 32,98 au coin, 33,0 au
+  centre), il lisait l'air au-dessus d'un cube plein. C'est la règle de la
+  v539 (« quand une surface se lit ailleurs que le bloc, le bloc voyage avec
+  elle ») appliquée au témoin : il lit désormais le coin, puis le centre, puis
+  le point. Mesuré : 392 → 1 sur la branche (le trou restant est le vrai, ci-dessous).
+  Le témoin lu au coin n'a pas été rejoué sur le socle (la sonde a expiré
+  pendant le portail) : `plafond.js` sur la base le dira. Allonger les ouvrages d'un ou deux
+  pas (essayé : 0, 1, 2) ne fait que déplacer les trous d'un pont à l'autre —
+  non-résultat, retiré.
+- **Un sommet de coude sur le joint (règle v428).** Le dernier trou était sur
+  l'axe de l'I-95, au bout du premier pont : le sommet [−59323, 13799] tombait
+  à s 59,3 pour un tablier qui commence à 60, et le ruban, orienté selon le
+  tronçon d'après, laissait le coin ouvert. Retiré, le remblai montait à 4,10
+  avant le pont suivant (barre 4 de `carteMonde.js`) ; déplacé à
+  [−59321, 13798], dans le tablier où le ruban comble son coin (v336) :
+  zéro trou, remblai 3,98, coude maximal inchangé (29,8°, un autre sommet,
+  déclaré).
+
+## Deux ponts à dix pas l'un de l'autre font un viaduc
+
+La sonde des ponts (`sonde-ponts-eau.cjs`, le vrai joueur sous node) : 442
+traversées sur 444. Une voiture tombait entre les deux ponts [463, 466] et
+[475, 481] de l'I-95 Sud : trois pas de tablier, dix de terre-plein sur un
+remblai d'un peu plus de quatre, puis un second tablier — deux culées de
+suite. `profilDe` comble désormais l'écart entre deux ouvrages distants de
+`ECART_VIADUC` (dix) pas au plus : un seul viaduc. Zéro voiture tombée, zéro
+trou au joint, et seuls trois couples du registre sont fondus (AP-2 577–598,
+les deux de l'I-95 Sud). Le seul rouge restant est le pont qui part à treize
+blocs de la porte de New York de l'I-95 Sud (la voiture arrive au bout de la
+route) : déjà rouge sur le socle, il tient à la porte posée sur la rive de
+l'Hudson (v367), pas au tracé.
